@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CITS4012 — Interactive Study Dashboard</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ===== CSS CUSTOM PROPERTIES ===== */
+    :root {
+      --primary:     #1a1f36;
+      --secondary:   #252d55;
+      --accent:      #5c7cfa;
+      --accent2:     #22d3ee;
+      --success:     #10b981;
+      --warning:     #f59e0b;
+      --danger:      #ef4444;
+      --bg:          #f0f4f8;
+      --card:        #ffffff;
+      --text:        #1e293b;
+      --text-muted:  #64748b;
+      --border:      #e2e8f0;
+      --shadow:      0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    }
+
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* ===== HEADER & NAV ===== */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.25);
+    }
+
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1rem 2rem 0;
+    }
+
+    .header-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+    .header-sub   { font-size: 0.8rem; opacity: 0.65; margin-top: 0.1rem; }
+
+    nav {
+      display: flex;
+      overflow-x: auto;
+      margin-top: 0.75rem;
+      gap: 0;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+
+    nav a {
+      color: rgba(255,255,255,0.65);
+      text-decoration: none;
+      padding: 0.75rem 1.4rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      border-bottom: 3px solid transparent;
+      transition: color 0.18s, border-color 0.18s, background 0.18s;
+      white-space: nowrap;
+    }
+    nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+    nav a.active { color: #fff; border-bottom-color: var(--accent2); }
+
+    /* ===== MAIN LAYOUT ===== */
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 4rem;
+    }
+
+    section {
+      margin-bottom: 5rem;
+      scroll-margin-top: 110px;
+    }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header { margin-bottom: 1.75rem; }
+
+    .section-header h2 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.6rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 1.1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-icon {
+      width: 26px;
+      height: 26px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* ===== TWO-COLUMN GRID ===== */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 880px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ===== MATH RENDERING ===== */
+    .math-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.35rem;
+    }
+
+    .math-block {
+      background: #f5f7ff;
+      border: 1px solid #dde3ff;
+      border-radius: 8px;
+      padding: 0.85rem 1.2rem;
+      margin: 0.6rem 0 0.9rem;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    /* ===== INFO BOXES ===== */
+    .info-box {
+      background: #f0f4ff;
+      border: 1px solid #d0daff;
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+      margin: 0.7rem 0;
+      line-height: 1.5;
+    }
+    .info-box strong { color: var(--accent); }
+
+    .warn-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid var(--warning);
+      border-radius: 0 8px 8px 0;
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+      margin: 0.7rem 0;
+    }
+
+    /* ===== DIVIDERS ===== */
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+    /* ===== CONTROLS ===== */
+    .control-group { margin-bottom: 1rem; }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+
+    .control-label .val {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+      height: 4px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #4c6ef5;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(92,124,250,0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+    /* ===== RADIO PILL GROUP ===== */
+    .radio-group {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .radio-group input[type="radio"] { display: none; }
+    .radio-group label {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      color: var(--text-muted);
+    }
+    .radio-group input[type="radio"]:checked + label {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* ===== STATS ROW ===== */
+    .stats-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 0.9rem 0; }
+
+    .stat-pill {
+      background: #f5f7ff;
+      border: 1px solid #dde3ff;
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+      min-width: 90px;
+    }
+    .stat-pill .sp-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+    }
+    .stat-pill .sp-value {
+      font-weight: 800;
+      color: var(--primary);
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1rem;
+      display: block;
+    }
+
+    /* ===== LCG SEQUENCE DISPLAY ===== */
+    .seq-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.7rem;
+    }
+
+    .seq-chip {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1.5px solid #dde3ff;
+      background: #f5f7ff;
+      color: var(--accent);
+      transition: all 0.1s;
+    }
+    .seq-chip.chip-seed   { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .seq-chip.chip-repeat { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
+    .seq-chip.chip-end    { background: #fef3c7; color: var(--warning); border-color: #fde68a; }
+
+    /* ===== CHART CONTAINERS ===== */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    /* ===== PARAMETER TABLE ===== */
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .param-table td { padding: 0.38rem 0.5rem; }
+    .param-table tr:nth-child(even) td { background: #f8fafc; }
+    .param-table .pt-key {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .param-table .pt-desc { color: var(--text-muted); }
+
+    /* ===== STRATEGY CARDS (bin packing) ===== */
+    .strategy-grid {
+      display: grid;
+      gap: 0.6rem;
+    }
+    .strat-card {
+      padding: 0.65rem 0.9rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+      font-size: 0.82rem;
+    }
+    .strat-card .sc-title { font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+    .strat-card .sc-desc  { color: var(--text-muted); margin-top: 0.15rem; }
+
+    .tag {
+      display: inline-block;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .tag-blue   { background: #dbeafe; color: #1d4ed8; }
+    .tag-green  { background: #dcfce7; color: #166534; }
+    .tag-amber  { background: #fef3c7; color: #92400e; }
+    .tag-purple { background: #ede9fe; color: #6d28d9; }
+
+    /* ===== JSSP TABLE ===== */
+    .jssp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-bottom: 1rem;
+    }
+    .jssp-table th, .jssp-table td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.7rem;
+      text-align: center;
+    }
+    .jssp-table th { background: #f8fafc; font-weight: 700; color: var(--text-muted); font-size: 0.75rem; }
+    .jssp-table td.job-label { font-weight: 700; background: #f8fafc; text-align: left; }
+
+    .op-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+    }
+    .op-machine-badge {
+      display: inline-block;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: #fff;
+    }
+
+    .jssp-input {
+      width: 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      padding: 0.15rem 0.3rem;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .jssp-input:focus { border-color: var(--accent); }
+
+    /* ===== MACHINE LEGEND ===== */
+    .machine-legend {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    /* ===== BENCHMARK TABLE ===== */
+    .bench-grid { display: grid; gap: 0.4rem; }
+    .bench-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1.5fr;
+      gap: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      background: #f8fafc;
+      border-radius: 6px;
+      font-size: 0.79rem;
+    }
+    .bench-row.bench-header {
+      background: none;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .bench-row .bench-space {
+      font-family: monospace;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ===== QUIZ ===== */
+    .quiz-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .quiz-head {
+      padding: 1.1rem 1.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+    }
+    .quiz-head .qh-num  { font-size: 0.68rem; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.06em; }
+    .quiz-head .qh-text { font-size: 0.95rem; font-weight: 500; margin-top: 0.25rem; line-height: 1.55; }
+
+    .quiz-opts {
+      padding: 1.1rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .quiz-opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.7rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .quiz-opt:hover:not(.qo-disabled) {
+      border-color: var(--accent);
+      background: #f0f4ff;
+    }
+    .quiz-opt.qo-correct   { border-color: var(--success); background: #ecfdf5; }
+    .quiz-opt.qo-incorrect { border-color: var(--danger);  background: #fef2f2; }
+    .quiz-opt.qo-disabled  { cursor: default; }
+
+    .opt-badge {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .qo-correct  .opt-badge { background: var(--success); color: #fff; border-color: var(--success); }
+    .qo-incorrect .opt-badge { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+    .quiz-feedback {
+      margin: 0 1.4rem 1.1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-size: 0.845rem;
+      line-height: 1.55;
+      display: none;
+    }
+    .quiz-feedback.qf-correct   { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .quiz-feedback.qf-incorrect { background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; }
+    .quiz-feedback .qf-title    { font-weight: 800; margin-bottom: 0.3rem; font-size: 0.9rem; }
+
+    /* ===== QUIZ SCORE ===== */
+    .score-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      display: none;
+      box-shadow: var(--shadow);
+    }
+
+    .score-ring {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      margin: 0 auto 1.25rem;
+      box-shadow: 0 8px 24px rgba(92,124,250,0.35);
+    }
+    .score-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .score-msg   { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===================================================
+     HEADER & NAVIGATION
+     =================================================== -->
+<header>
+  <div class="header-inner">
+    <div class="header-title">CITS4012 — Artificial Intelligence &amp; Adaptive Systems</div>
+    <div class="header-sub">Interactive Study Dashboard &nbsp;·&nbsp; University of Western Australia</div>
+    <nav id="main-nav">
+      <a href="#lcg"           class="active">PRNG &amp; LCG</a>
+      <a href="#binpacking">Bin Packing</a>
+      <a href="#jssp">Job Shop Scheduling</a>
+      <a href="#solutionspace">Solution Space</a>
+      <a href="#quiz">Knowledge Check</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ===================================================
+     MAIN
+     =================================================== -->
+<main>
+
+  <!-- ===================== SECTION 1: LCG ===================== -->
+  <section id="lcg">
+    <div class="section-header">
+      <h2>Pseudo-Random Number Generation <span class="badge">Lab 1</span></h2>
+      <p>Explore how the Linear Congruential Generator (LCG) produces deterministic sequences that mimic randomness, and why parameter choice is critical.</p>
+    </div>
+
+    <div class="two-col">
+
+      <!-- ---- Theory ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">∑</span> Mathematical Foundation</div>
+
+        <div class="math-label">Core LCG Recurrence Relation</div>
+        <div class="math-block">$$X_{n+1} = (a \cdot X_n + c) \bmod m$$</div>
+
+        <table class="param-table">
+          <tr><td class="pt-key">$X_0$</td><td class="pt-desc"><strong>Seed</strong> — initial value; determines reproducibility of the sequence</td></tr>
+          <tr><td class="pt-key">$a$</td>  <td class="pt-desc"><strong>Multiplier</strong> — scales the current state; must be chosen carefully</td></tr>
+          <tr><td class="pt-key">$c$</td>  <td class="pt-desc"><strong>Increment</strong> — added after multiplication; use $c=0$ for multiplicative generators</td></tr>
+          <tr><td class="pt-key">$m$</td>  <td class="pt-desc"><strong>Modulus</strong> — upper bound on output; output is always in $[0,\ m-1]$</td></tr>
+        </table>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Mersenne Primes (ideal moduli)</div>
+        <div class="math-block">$$m = 2^n - 1, \quad n \in \{3, 5, 7, 13, 17, \ldots\}$$</div>
+
+        <div class="info-box">
+          <strong>Why Mersenne primes?</strong> A modulus with many factors (e.g., 12 = 2²×3) causes the LCG to cycle through only a subset of values — poor <em>equidistribution</em>. Mersenne primes like 7 (2³−1) and <strong>31 (2⁵−1)</strong> have very few factors, maximising the period and producing more uniform outputs. The lab uses modulus 31 as its default.
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Two-Stage PCG (NumPy's default generator)</div>
+        <div class="math-block">$$\text{PCG-64}: \quad \underbrace{X_{n+1} = (a \cdot X_n + c) \bmod 2^{64}}_{\text{LCG core}} \xrightarrow{\ \text{permute}\ } \text{output}$$</div>
+        <p style="font-size:0.82rem; color:var(--text-muted);">
+          The Permuted Congruential Generator (PCG) composes an LCG with an output <em>permutation function</em>, dramatically improving statistical quality while retaining the simplicity and speed of an LCG.
+        </p>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Full-Period Condition (Hull–Dobell Theorem)</div>
+        <div class="math-block">$$\text{Period} = m \iff \gcd(c, m)=1,\ (a-1) \text{ div by all prime factors of } m,\ 4 \mid (a-1) \text{ if } 4 \mid m$$</div>
+      </div>
+
+      <!-- ---- Interactive ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">▶</span> LCG Visualizer — Adjust Parameters &amp; Observe</div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="lcgPreset('classic')">Preset: a=3, m=7</button>
+          <button class="btn btn-secondary" onclick="lcgPreset('mersenne')">Preset: a=3, m=31</button>
+          <button class="btn btn-secondary" onclick="lcgPreset('poor')">Preset: Poor m=12</button>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Seed (X₀) <span class="val" id="v-seed">1</span></div>
+          <input type="range" id="r-seed" min="0" max="30" value="1" oninput="lcgUpdate()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Multiplier (a) <span class="val" id="v-a">3</span></div>
+          <input type="range" id="r-a" min="1" max="15" value="3" oninput="lcgUpdate()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Increment (c) <span class="val" id="v-c">1</span></div>
+          <input type="range" id="r-c" min="0" max="15" value="1" oninput="lcgUpdate()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Modulus (m) <span class="val" id="v-m">31</span></div>
+          <input type="range" id="r-m" min="2" max="50" value="31" oninput="lcgUpdate()">
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-pill"><span class="sp-label">Period</span><span class="sp-value" id="s-period">—</span></div>
+          <div class="stat-pill"><span class="sp-label">Full Period?</span><span class="sp-value" id="s-full">—</span></div>
+          <div class="stat-pill"><span class="sp-label">Unique Values</span><span class="sp-value" id="s-unique">—</span></div>
+        </div>
+
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">
+          <span style="display:inline-block; width:10px; height:10px; background:var(--accent); border-radius:3px;"></span> Seed &nbsp;
+          <span style="display:inline-block; width:10px; height:10px; background:#fee2e2; border:1.5px solid #fca5a5; border-radius:3px; margin-left:0.5rem;"></span> Period restarts &nbsp;
+          <span style="display:inline-block; width:10px; height:10px; background:#fef3c7; border:1.5px solid #fde68a; border-radius:3px; margin-left:0.5rem;"></span> Truncated
+        </p>
+        <div class="seq-display" id="lcg-seq"></div>
+
+        <div class="chart-wrap" style="height:180px;">
+          <canvas id="lcg-hist"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /two-col -->
+  </section>
+
+  <!-- ===================== SECTION 2: BIN PACKING ===================== -->
+  <section id="binpacking">
+    <div class="section-header">
+      <h2>Bin Packing Heuristics <span class="badge">Lab 2</span></h2>
+      <p>Compare four packing strategies on the Crest Packing Problem. Items arrive sequentially on a conveyor belt and must be placed immediately.</p>
+    </div>
+
+    <div class="two-col">
+
+      <!-- ---- Theory ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📦</span> Strategies &amp; Complexity</div>
+
+        <div class="info-box">
+          <strong>Crest Packing Problem (Lab 2):</strong> Items of scale factors in [0.1, 1.0] arrive on a conveyor. Pack into unit-capacity boxes. Items cannot be skipped or reordered. The lab baseline greedy score is <strong>663 / 2000</strong> (20 conveyors × 100 items).
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="strategy-grid">
+          <div class="strat-card" style="border-color:#5c7cfa;">
+            <div class="sc-title">First Fit (FF) <span class="tag tag-blue">O(n²)</span></div>
+            <div class="sc-desc">Scan bins from the start; place in the <em>first</em> bin that fits. Opens a new bin only if no existing bin has space.</div>
+          </div>
+          <div class="strat-card" style="border-color:#22d3ee;">
+            <div class="sc-title">Next Fit (NF) <span class="tag tag-green">O(n)</span></div>
+            <div class="sc-desc">Only check the <em>current</em> bin. If item doesn't fit, close it and open a new one. Never revisits old bins — fastest but wastes space.</div>
+          </div>
+          <div class="strat-card" style="border-color:#f59e0b;">
+            <div class="sc-title">Best Fit (BF) <span class="tag tag-amber">O(n²)</span></div>
+            <div class="sc-desc">Place in the bin with <em>least remaining capacity</em> that still fits — the tightest fit. Reduces wasted space per bin.</div>
+          </div>
+          <div class="strat-card" style="border-color:#10b981;">
+            <div class="sc-title">First Fit Decreasing (FFD) <span class="tag tag-green">O(n log n)</span></div>
+            <div class="sc-desc">Sort items in <em>decreasing</em> order first (requires all sizes upfront), then apply First Fit. <strong>Offline only</strong> — cannot be used on the conveyor directly.</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Capacity Constraint</div>
+        <div class="math-block">$$\sum_{i \in \text{box}_k} s_i \leq C = 1.0 \quad \forall\ k$$</div>
+
+        <div class="math-label">Sorted Insertion via Binary Search</div>
+        <div class="math-block">$$\text{bisect.insort}(L, x) \implies O(\log n)\ \text{search} + O(n)\ \text{insert}$$</div>
+        <p style="font-size:0.82rem; color:var(--text-muted);">Python's <code>bisect</code> module enables $O(\log n)$ search in sorted lists, useful for maintaining sorted structures during packing.</p>
+      </div>
+
+      <!-- ---- Interactive ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">▶</span> Packing Visualizer</div>
+
+        <div class="radio-group">
+          <div><input type="radio" name="bp-strat" id="bp-ff"  value="ff"  checked><label for="bp-ff">First Fit</label></div>
+          <div><input type="radio" name="bp-strat" id="bp-nf"  value="nf"><label for="bp-nf">Next Fit</label></div>
+          <div><input type="radio" name="bp-strat" id="bp-bf"  value="bf"><label for="bp-bf">Best Fit</label></div>
+          <div><input type="radio" name="bp-strat" id="bp-ffd" value="ffd"><label for="bp-ffd">FFD</label></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Number of items <span class="val" id="v-nitems">15</span></div>
+          <input type="range" id="r-nitems" min="5" max="28" value="15"
+            oninput="document.getElementById('v-nitems').textContent=this.value">
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="bpGenerate()">🎲 New Random Items</button>
+          <button class="btn btn-primary"   onclick="bpRun()">Pack!</button>
+          <button class="btn btn-secondary" onclick="bpCompareAll()">Compare All</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-pill"><span class="sp-label">Bins Used</span><span class="sp-value" id="s-bins">—</span></div>
+          <div class="stat-pill"><span class="sp-label">Items Packed</span><span class="sp-value" id="s-packed">—</span></div>
+          <div class="stat-pill"><span class="sp-label">Avg Fill</span><span class="sp-value" id="s-fill">—</span></div>
+        </div>
+
+        <canvas id="bp-canvas" style="width:100%; border-radius:8px; border:1px solid var(--border); display:block; margin-bottom:1rem;" height="280"></canvas>
+
+        <div id="bp-compare-wrap" style="display:none;">
+          <p class="math-label">Strategy Comparison (bins used — lower is better)</p>
+          <div class="chart-wrap" style="height:160px;">
+            <canvas id="bp-compare-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /two-col -->
+  </section>
+
+  <!-- ===================== SECTION 3: JSSP ===================== -->
+  <section id="jssp">
+    <div class="section-header">
+      <h2>Job Shop Scheduling Problem <span class="badge">Labs 3–5</span></h2>
+      <p>Assign operations to machines to minimise makespan. Edit the instance, compute a greedy schedule, and inspect the Gantt chart.</p>
+    </div>
+
+    <div class="two-col">
+
+      <!-- ---- Theory ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📋</span> Formal Formulation</div>
+
+        <div class="info-box">
+          <strong>JSSP:</strong> Given $n$ jobs and $m$ machines, each job requires $m$ operations in a fixed sequence. Each operation $O_{j,k}$ must run on machine $\mu_{j,k}$ for $p_{j,k}$ time units. Schedule all operations to minimise total completion time.
+        </div>
+
+        <div class="math-label">Objective — Minimise Makespan</div>
+        <div class="math-block">$$C_{\max} = \max_{j=1}^{n}\, C_j = \max_{j,k}\, \bigl(S_{j,k} + p_{j,k}\bigr)$$</div>
+
+        <div class="divider"></div>
+
+        <p style="font-size:0.83rem; font-weight:700; margin-bottom:0.65rem;">Feasibility Constraints</p>
+        <ol style="font-size:0.82rem; color:var(--text-muted); padding-left:1.4rem; display:grid; gap:0.45rem;">
+          <li><strong style="color:var(--text);">Machine capacity:</strong> $S_{j,k} \geq S_{j',k} + p_{j',k}$ or vice-versa for any $j \neq j'$ on same machine</li>
+          <li><strong style="color:var(--text);">Precedence:</strong> $S_{j,k+1} \geq S_{j,k} + p_{j,k}$ — each job's operations are ordered</li>
+          <li><strong style="color:var(--text);">Assignment:</strong> Operation $O_{j,k}$ must run on machine $\mu_{j,k}$</li>
+          <li><strong style="color:var(--text);">Non-negativity:</strong> $S_{j,k} \geq 0\ \forall\ j, k$</li>
+          <li><strong style="color:var(--text);">Completion:</strong> $S_{j,k} + p_{j,k} \leq C_{\max}\ \forall\ j, k$</li>
+        </ol>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Internal Representations (from Lab 3)</div>
+        <div class="math-block">$$\text{Instance} \in \mathbb{Z}^{n \times m \times 2} \quad \Bigl([\mu_{j,k},\ p_{j,k}]\Bigr)$$</div>
+        <div class="math-block">$$\text{Schedule} \in \mathbb{Z}^{m \times n \times 3} \quad \Bigl([\text{job},\ S_{j,k},\ S_{j,k}+p_{j,k}]\Bigr)$$</div>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Two-Level Feasibility Check (Lab 3)</div>
+        <div class="info-box" style="font-size:0.82rem;">
+          <strong>consistent():</strong> No two operations overlap on the same machine; no job's operations overlap — checks internal coherence only.<br><br>
+          <strong>satisfies(instance):</strong> Calls consistent(), then additionally checks machine assignments match the instance and precedence constraints are respected.
+        </div>
+      </div>
+
+      <!-- ---- Interactive ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">▶</span> Gantt Chart Visualizer</div>
+
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.85rem;">
+          Edit processing times below. The schedule is computed greedily (jobs processed in order 0→1→2 per round). Colours represent jobs.
+        </p>
+
+        <div style="overflow-x:auto; margin-bottom:0.85rem;">
+          <table class="jssp-table">
+            <thead id="jssp-thead"></thead>
+            <tbody id="jssp-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="jssp.reset(); jssp.render(); jssp.compute()">Reset Instance</button>
+          <button class="btn btn-primary"   onclick="jssp.compute()">Compute &amp; Draw</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-pill"><span class="sp-label">Makespan (C<sub>max</sub>)</span><span class="sp-value" id="jssp-makespan">—</span></div>
+          <div class="stat-pill"><span class="sp-label">Feasible?</span><span class="sp-value" id="jssp-feasible">—</span></div>
+          <div class="stat-pill"><span class="sp-label">n × m</span><span class="sp-value">3 × 3</span></div>
+        </div>
+
+        <canvas id="gantt-canvas" style="width:100%; display:block; border-radius:8px; border:1px solid var(--border); margin-top:0.75rem;" height="210"></canvas>
+
+        <div class="machine-legend" id="jssp-legend"></div>
+      </div>
+
+    </div><!-- /two-col -->
+  </section>
+
+  <!-- ===================== SECTION 4: SOLUTION SPACE ===================== -->
+  <section id="solutionspace">
+    <div class="section-header">
+      <h2>Solution Space Analysis <span class="badge">Labs 4–5</span></h2>
+      <p>Visualise the combinatorial explosion that makes exhaustive enumeration infeasible and motivates random and heuristic search.</p>
+    </div>
+
+    <div class="two-col">
+
+      <!-- ---- Chart ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📊</span> Combinatorial Explosion</div>
+
+        <div class="math-label">Solution Space Size</div>
+        <div class="math-block">$$|\mathcal{S}| = (n!)^m$$</div>
+
+        <div class="info-box">
+          <strong>Lab 4 key insight:</strong> Each machine independently orders $n$ jobs — giving $n!$ orderings per machine. Across $m$ machines, the total candidate count is $(n!)^m$. For the classic <em>ft10</em> benchmark (10 jobs, 10 machines), this is $(10!)^{10} \approx 3.6 \times 10^{65}$.
+        </div>
+
+        <div class="control-group" style="margin-top:1rem;">
+          <div class="control-label">Show jobs up to n = <span class="val" id="v-ss-n">6</span></div>
+          <input type="range" id="r-ss-n" min="2" max="8" value="6" oninput="ssUpdate()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Show machines up to m = <span class="val" id="v-ss-m">5</span></div>
+          <input type="range" id="r-ss-m" min="2" max="6" value="5" oninput="ssUpdate()">
+        </div>
+
+        <div class="chart-wrap" style="height:290px;">
+          <canvas id="ss-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- ---- Benchmark + Random Search ---- -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">🎲</span> Benchmark Instances &amp; Random Search</div>
+
+        <div class="math-label">Random Search Success Rate</div>
+        <div class="math-block">$$P(\text{find optimal}) = \frac{|\text{optimal schedules}|}{(n!)^m} \approx \frac{1}{(n!)^m}$$</div>
+
+        <div class="bench-grid" id="bench-table" style="margin:1rem 0;">
+          <div class="bench-row bench-header">
+            <span>Instance</span><span>n (jobs)</span><span>m (machines)</span><span>|S| ≈</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Lab 5 — Unit-Time Simplification</div>
+        <div class="info-box" style="font-size:0.82rem;">
+          Lab 5 uses unit-time JSSP ($p_{j,k} = 1\ \forall j,k$) to make enumeration tractable for small instances. This gives a lower bound on makespan: $C_{\max} \geq n$ (each machine must process all $n$ jobs, each taking 1 unit). For a 3×3 unit-time instance, the <em>minimum</em> possible makespan is 3.
+        </div>
+
+        <div class="divider"></div>
+
+        <p style="font-size:0.83rem; font-weight:700; margin-bottom:0.6rem;">Beyond Exhaustive &amp; Random Search:</p>
+        <div style="font-size:0.82rem; display:grid; gap:0.4rem; color:var(--text-muted);">
+          <div>→ <strong style="color:var(--text);">Greedy construction</strong> — shortest processing time (SPT), longest (LPT)</div>
+          <div>→ <strong style="color:var(--text);">Local search</strong> — swap adjacent operations on critical path</div>
+          <div>→ <strong style="color:var(--text);">Evolutionary algorithms</strong> — crossover &amp; mutation over permutations</div>
+          <div>→ <strong style="color:var(--text);">Branch &amp; bound</strong> — prune provably suboptimal subtrees</div>
+          <div>→ <strong style="color:var(--text);">Tabu search</strong> — neighbourhood search with memory to avoid cycles</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="math-label">Complexity Classification</div>
+        <div class="math-block">$$\text{JSSP} \in \mathcal{NP}\text{-hard} \quad (\text{even for } n = 3,\ m = 3)$$</div>
+      </div>
+
+    </div><!-- /two-col -->
+  </section>
+
+  <!-- ===================== SECTION 5: QUIZ ===================== -->
+  <section id="quiz">
+    <div class="section-header">
+      <h2>Knowledge Check <span class="badge">5 Questions</span></h2>
+      <p>Test your understanding of all core topics. Each question provides detailed feedback grounded in the lab materials.</p>
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <div class="score-panel" id="score-panel">
+      <div class="score-ring" id="score-ring">0/5</div>
+      <div class="score-title">Quiz Complete!</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn btn-primary" onclick="quizReset()">Try Again</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  CITS4012 — Artificial Intelligence &amp; Adaptive Systems &nbsp;·&nbsp; University of Western Australia &nbsp;·&nbsp; Interactive Study Dashboard
+</footer>
+
+<!-- ===================================================
+     JAVASCRIPT
+     =================================================== -->
+<script>
+'use strict';
+
+// ──────────────────────────────────────────────────
+// UTILITIES
+// ──────────────────────────────────────────────────
+function factorial(n) {
+  if (n <= 1) return 1;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// Active nav highlight on scroll
+const _sections = document.querySelectorAll('section[id]');
+const _navLinks  = document.querySelectorAll('#main-nav a');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  _sections.forEach(s => { if (window.scrollY >= s.offsetTop - 130) cur = s.id; });
+  _navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+}, { passive: true });
+_navLinks.forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  document.querySelector(a.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+}));
+
+
+// ──────────────────────────────────────────────────
+// LCG MODULE
+// ──────────────────────────────────────────────────
+const LCG = (() => {
+  let _chart = null;
+
+  function params() {
+    return {
+      seed: +document.getElementById('r-seed').value,
+      a:    +document.getElementById('r-a').value,
+      c:    +document.getElementById('r-c').value,
+      m:    +document.getElementById('r-m').value,
+    };
+  }
+
+  function sequence(seed, a, c, m, maxLen = 120) {
+    const seq  = [];
+    const seen = new Map();
+    let x = seed;
+    let periodStart = -1;
+    while (seq.length < maxLen) {
+      if (seen.has(x)) { periodStart = seen.get(x); break; }
+      seen.set(x, seq.length);
+      seq.push(x);
+      x = (a * x + c) % m;
+    }
+    return { seq, period: periodStart >= 0 ? seq.length - periodStart : seq.length };
+  }
+
+  function update() {
+    const { seed, a, c, m } = params();
+    document.getElementById('v-seed').textContent = seed;
+    document.getElementById('v-a').textContent    = a;
+    document.getElementById('v-c').textContent    = c;
+    document.getElementById('v-m').textContent    = m;
+
+    const { seq, period } = sequence(seed, a, c, m);
+    const unique   = new Set(seq).size;
+    const isFull   = period === m;
+
+    document.getElementById('s-period').textContent = period;
+    document.getElementById('s-full').textContent   = isFull ? '✓ Yes' : '✗ No';
+    document.getElementById('s-unique').textContent = unique;
+
+    // Sequence chips
+    const container = document.getElementById('lcg-seq');
+    container.innerHTML = '';
+    const chips = seq.slice(0, 36);
+    chips.forEach((n, i) => {
+      const el = document.createElement('div');
+      el.className = 'seq-chip' + (i === 0 ? ' chip-seed' : '');
+      if (i === period && i > 0) el.classList.add('chip-repeat');
+      el.textContent = n;
+      container.appendChild(el);
+    });
+    if (seq.length > 36) {
+      const el = document.createElement('div');
+      el.className = 'seq-chip chip-end';
+      el.textContent = '…';
+      container.appendChild(el);
+    }
+
+    // Frequency histogram
+    const freq = Array(m).fill(0);
+    seq.forEach(n => freq[n]++);
+    const ctx = document.getElementById('lcg-hist').getContext('2d');
+    if (_chart) _chart.destroy();
+    _chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Array.from({ length: m }, (_, i) => i),
+        datasets: [{
+          label: 'Count',
+          data: freq,
+          backgroundColor: freq.map(f => f === 0 ? '#fecaca' : 'rgba(92,124,250,0.65)'),
+          borderColor:     freq.map(f => f === 0 ? '#ef4444' : 'rgba(92,124,250,1)'),
+          borderWidth: 1,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: 'Output Frequency Distribution (0 to m-1)', font: { size: 11 } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'Count' } },
+          x: { title: { display: true, text: 'Value' } }
+        }
+      }
+    });
+  }
+
+  function preset(name) {
+    const p = { classic: [1,3,1,7], mersenne: [1,3,1,31], poor: [3,6,0,12] };
+    const [s,a,c,m] = p[name];
+    document.getElementById('r-seed').value = s;
+    document.getElementById('r-a').value    = a;
+    document.getElementById('r-c').value    = c;
+    document.getElementById('r-m').value    = m;
+    update();
+  }
+
+  return { update, preset };
+})();
+
+window.lcgUpdate = () => LCG.update();
+window.lcgPreset = (n) => LCG.preset(n);
+
+
+// ──────────────────────────────────────────────────
+// BIN PACKING MODULE
+// ──────────────────────────────────────────────────
+const BP = (() => {
+  let _items   = [];
+  let _cmpChart = null;
+
+  const COLORS = [
+    '#5c7cfa','#22d3ee','#10b981','#f59e0b','#ef4444',
+    '#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1',
+    '#84cc16','#06b6d4','#a855f7','#eab308','#d946ef',
+    '#0ea5e9','#65a30d','#db2777','#7c3aed','#059669',
+    '#dc2626','#2563eb','#16a34a','#ca8a04','#9333ea',
+    '#e11d48','#0284c7','#15803d',
+  ];
+
+  function generate() {
+    const n = +document.getElementById('r-nitems').value;
+    _items = Array.from({ length: n }, () => Math.round((Math.random() * 0.9 + 0.1) * 10) / 10);
+    run();
+  }
+
+  function getStrategy() {
+    return document.querySelector('input[name="bp-strat"]:checked').value;
+  }
+
+  function pack(items, strategy) {
+    const CAP = 1.0;
+    const boxes = []; // { items:[], remaining:number }
+
+    const ordered = strategy === 'ffd' ? [...items].sort((a,b) => b - a) : [...items];
+
+    ordered.forEach(item => {
+      let placed = false;
+
+      if (strategy === 'ff' || strategy === 'ffd') {
+        for (let b = 0; b < boxes.length; b++) {
+          if (boxes[b].remaining >= item - 1e-9) {
+            boxes[b].items.push(item);
+            boxes[b].remaining = Math.round((boxes[b].remaining - item) * 100) / 100;
+            placed = true; break;
+          }
+        }
+      } else if (strategy === 'nf') {
+        const last = boxes[boxes.length - 1];
+        if (boxes.length === 0 || last.remaining < item - 1e-9) {
+          boxes.push({ items: [], remaining: CAP });
+        }
+        boxes[boxes.length-1].items.push(item);
+        boxes[boxes.length-1].remaining = Math.round((boxes[boxes.length-1].remaining - item) * 100) / 100;
+        placed = true;
+      } else if (strategy === 'bf') {
+        let bestIdx = -1, bestRem = Infinity;
+        for (let b = 0; b < boxes.length; b++) {
+          if (boxes[b].remaining >= item - 1e-9 && boxes[b].remaining < bestRem) {
+            bestRem = boxes[b].remaining; bestIdx = b;
+          }
+        }
+        if (bestIdx >= 0) {
+          boxes[bestIdx].items.push(item);
+          boxes[bestIdx].remaining = Math.round((boxes[bestIdx].remaining - item) * 100) / 100;
+          placed = true;
+        }
+      }
+
+      if (!placed) {
+        boxes.push({ items: [item], remaining: Math.round((CAP - item) * 100) / 100 });
+      }
+    });
+    return boxes;
+  }
+
+  function run() {
+    if (_items.length === 0) generate();
+    const boxes = pack(_items, getStrategy());
+    updateStats(boxes);
+    draw(boxes);
+    document.getElementById('bp-compare-wrap').style.display = 'none';
+  }
+
+  function updateStats(boxes) {
+    const totalPacked = boxes.reduce((s,b) => s + b.items.length, 0);
+    const avgFill = boxes.reduce((s,b) => s + (1 - b.remaining), 0) / boxes.length;
+    document.getElementById('s-bins').textContent   = boxes.length;
+    document.getElementById('s-packed').textContent = totalPacked;
+    document.getElementById('s-fill').textContent   = (avgFill * 100).toFixed(1) + '%';
+  }
+
+  function draw(boxes) {
+    const canvas = document.getElementById('bp-canvas');
+    const ctx    = canvas.getContext('2d');
+    canvas.width  = canvas.offsetWidth  || 500;
+    canvas.height = 280;
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    if (boxes.length === 0) return;
+    const LABEL_H = 30;
+    const BOX_H   = H - LABEL_H - 10;
+    const GAP     = 6;
+    const maxBoxes = Math.min(boxes.length, Math.floor(W / 28));
+    const visBoxes = boxes.slice(0, maxBoxes);
+    const boxW = Math.min(55, (W - GAP) / visBoxes.length - GAP);
+
+    visBoxes.forEach((box, bi) => {
+      const bx = GAP + bi * (boxW + GAP);
+      const by = 10;
+
+      // Box outline
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth   = 1.5;
+      ctx.strokeRect(bx, by, boxW, BOX_H);
+
+      // Items (draw from bottom)
+      let y = by + BOX_H;
+      box.items.forEach((item, ii) => {
+        const iH = Math.round(item * BOX_H);
+        y -= iH;
+        ctx.fillStyle = COLORS[ii % COLORS.length];
+        ctx.fillRect(bx + 1, y + 0.5, boxW - 2, iH - 1);
+        if (iH >= 14) {
+          ctx.fillStyle   = 'rgba(255,255,255,0.92)';
+          ctx.font        = `bold ${Math.min(11, iH * 0.45)}px sans-serif`;
+          ctx.textAlign   = 'center';
+          ctx.fillText(item.toFixed(1), bx + boxW/2, y + iH/2 + 4);
+        }
+      });
+
+      // Label
+      const fill = Math.round((1 - box.remaining) * 100);
+      ctx.fillStyle = '#64748b';
+      ctx.font      = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('B' + (bi+1), bx + boxW/2, by + BOX_H + 13);
+      ctx.fillText(fill + '%',   bx + boxW/2, by + BOX_H + 23);
+    });
+
+    if (boxes.length > maxBoxes) {
+      ctx.fillStyle = '#64748b';
+      ctx.font      = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`… +${boxes.length - maxBoxes} more bins`, GAP, H - 2);
+    }
+  }
+
+  function compareAll() {
+    if (_items.length === 0) generate();
+    const strategies = ['ff', 'nf', 'bf', 'ffd'];
+    const labels     = ['First Fit', 'Next Fit', 'Best Fit', 'FFD'];
+    const bins       = strategies.map(s => pack(_items, s).length);
+    const colors     = ['#5c7cfa', '#22d3ee', '#f59e0b', '#10b981'];
+
+    document.getElementById('bp-compare-wrap').style.display = 'block';
+
+    const ctx = document.getElementById('bp-compare-chart').getContext('2d');
+    if (_cmpChart) _cmpChart.destroy();
+    _cmpChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Bins Used',
+          data: bins,
+          backgroundColor: colors.map(c => c + 'bb'),
+          borderColor: colors,
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  }
+
+  return { generate, run, compareAll };
+})();
+
+window.bpGenerate  = () => BP.generate();
+window.bpRun       = () => BP.run();
+window.bpCompareAll= () => BP.compareAll();
+
+
+// ──────────────────────────────────────────────────
+// JSSP MODULE
+// ──────────────────────────────────────────────────
+const jssp = (() => {
+  // Default 3×3 instance: jobs[j][op] = [machine, procTime]
+  const DEFAULT = [
+    [[0, 3], [1, 2], [2, 2]],   // Job 0: M0(3)→M1(2)→M2(2)
+    [[1, 2], [2, 1], [0, 4]],   // Job 1: M1(2)→M2(1)→M0(4)
+    [[2, 3], [0, 1], [1, 2]],   // Job 2: M2(3)→M0(1)→M1(2)
+  ];
+
+  const JOB_COLORS = ['#5c7cfa', '#22d3ee', '#10b981', '#f59e0b', '#ef4444'];
+  const M_NAMES    = ['M0', 'M1', 'M2', 'M3', 'M4'];
+
+  let _jobs = DEFAULT.map(j => j.map(op => [...op])); // deep copy
+
+  function reset() {
+    _jobs = DEFAULT.map(j => j.map(op => [...op]));
+  }
+
+  function render() {
+    const nJ = _jobs.length;
+    const nM = _jobs[0].length;
+
+    const thead = document.getElementById('jssp-thead');
+    const tbody = document.getElementById('jssp-tbody');
+    thead.innerHTML = `<tr><th>Job / Op</th>${Array.from({length:nM},(_,i)=>`<th>Op ${i+1}</th>`).join('')}</tr>`;
+    tbody.innerHTML = '';
+
+    _jobs.forEach((job, ji) => {
+      const tr = document.createElement('tr');
+      let html = `<td class="job-label" style="color:${JOB_COLORS[ji]}">Job ${ji}</td>`;
+      job.forEach((op, oi) => {
+        html += `<td>
+          <div class="op-cell">
+            <span class="op-machine-badge" style="background:${JOB_COLORS[op[0] % JOB_COLORS.length]}">
+              M${op[0]}
+            </span>
+            <input class="jssp-input" type="number" min="1" max="9" value="${op[1]}"
+              data-j="${ji}" data-o="${oi}"
+              onchange="jssp._pt(this)">
+          </div>
+        </td>`;
+      });
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    });
+
+    // Legend
+    const legend = document.getElementById('jssp-legend');
+    legend.innerHTML = _jobs.map((_, ji) =>
+      `<div class="legend-item">
+        <div class="legend-swatch" style="background:${JOB_COLORS[ji]}"></div>
+        <span>Job ${ji}</span>
+      </div>`
+    ).join('');
+  }
+
+  // Update processing time from input
+  function _pt(input) {
+    const j = +input.dataset.j, o = +input.dataset.o;
+    _jobs[j][o][1] = clamp(parseInt(input.value) || 1, 1, 20);
+    compute();
+  }
+
+  // Greedy schedule: for each round, schedule the next ready operation for each job
+  function schedule() {
+    const nJ = _jobs.length;
+    const nM = _jobs[0].length;
+    const machT = Array(nM).fill(0);
+    const jobT  = Array(nJ).fill(0);
+    const ops   = [];
+
+    // Each job has nM operations. Schedule them in order.
+    const ptrs = Array(nJ).fill(0);
+
+    while (ops.length < nJ * nM) {
+      let progress = false;
+      for (let ji = 0; ji < nJ; ji++) {
+        if (ptrs[ji] >= nM) continue;
+        const [mach, pt] = _jobs[ji][ptrs[ji]];
+        const start  = Math.max(machT[mach], jobT[ji]);
+        const finish = start + pt;
+        machT[mach] = finish;
+        jobT[ji]    = finish;
+        ops.push({ ji, oi: ptrs[ji], mach, start, finish, pt });
+        ptrs[ji]++;
+        progress = true;
+      }
+      if (!progress) break;
+    }
+    return ops;
+  }
+
+  function consistent(ops, nM) {
+    for (let m = 0; m < nM; m++) {
+      const mOps = ops.filter(o => o.mach === m).sort((a,b) => a.start - b.start);
+      for (let i = 0; i < mOps.length - 1; i++) {
+        if (mOps[i].finish > mOps[i+1].start + 1e-9) return false;
+      }
+    }
+    return true;
+  }
+
+  function compute() {
+    const ops      = schedule();
+    const nM       = _jobs[0].length;
+    const makespan = Math.max(...ops.map(o => o.finish));
+    const isOk     = consistent(ops, nM);
+
+    document.getElementById('jssp-makespan').textContent = makespan;
+    document.getElementById('jssp-feasible').textContent = isOk ? '✓ Yes' : '✗ No';
+    drawGantt(ops, makespan, nM);
+  }
+
+  function drawGantt(ops, makespan, nM) {
+    const canvas = document.getElementById('gantt-canvas');
+    canvas.width  = canvas.offsetWidth || 500;
+    canvas.height = 210;
+    const W  = canvas.width, H = canvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    const LABEL_W = 32;
+    const AXIS_H  = 22;
+    const chartW  = W - LABEL_W - 4;
+    const chartH  = H - AXIS_H;
+    const rowH    = chartH / nM;
+    const scaleX  = chartW / makespan;
+
+    // Grid lines + time labels
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth   = 0.5;
+    for (let t = 0; t <= makespan; t++) {
+      const x = LABEL_W + t * scaleX;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, chartH); ctx.stroke();
+      if (t % Math.max(1, Math.floor(makespan / 10)) === 0 || t === makespan) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(t, x, H - 6);
+      }
+    }
+
+    // Machine rows
+    for (let m = 0; m < nM; m++) {
+      const y = m * rowH;
+      ctx.fillStyle   = m % 2 === 0 ? '#fafbff' : '#f5f7ff';
+      ctx.fillRect(0, y, LABEL_W, rowH);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth   = 0.5;
+      ctx.strokeRect(0, y, LABEL_W, rowH);
+      ctx.fillStyle   = '#475569';
+      ctx.font        = 'bold 10px sans-serif';
+      ctx.textAlign   = 'center';
+      ctx.fillText('M' + m, LABEL_W / 2, y + rowH / 2 + 4);
+    }
+
+    // Operations
+    ops.forEach(op => {
+      const x = LABEL_W + op.start * scaleX;
+      const w = op.pt * scaleX;
+      const y = op.mach * rowH;
+
+      ctx.fillStyle   = JOB_COLORS[op.ji % JOB_COLORS.length];
+      ctx.fillRect(x + 1, y + 2, Math.max(w - 2, 1), rowH - 4);
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth   = 0.5;
+      ctx.strokeRect(x + 1, y + 2, Math.max(w - 2, 1), rowH - 4);
+
+      if (w >= 18) {
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.font      = `bold ${Math.min(11, rowH * 0.36)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('J' + op.ji, x + w/2, y + rowH/2 + 4);
+      }
+    });
+
+    // Makespan dashed line
+    const msX = LABEL_W + makespan * scaleX;
+    ctx.save();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(msX, 0); ctx.lineTo(msX, chartH); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#ef4444';
+    ctx.font      = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Cmax=' + makespan, msX, 11);
+  }
+
+  return { reset, render, compute, _pt };
+})();
+
+
+// ──────────────────────────────────────────────────
+// SOLUTION SPACE MODULE
+// ──────────────────────────────────────────────────
+const SS = (() => {
+  let _chart = null;
+
+  const BENCH = [
+    { name: 'ft06', n: 6,  m: 6  },
+    { name: 'abz5', n: 10, m: 10 },
+    { name: 'la01', n: 10, m: 5  },
+    { name: 'ta01', n: 15, m: 15 },
+    { name: 'dmu01',n: 20, m: 20 },
+  ];
+
+  const COLORS = ['#5c7cfa','#22d3ee','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+
+  function update() {
+    const maxN = +document.getElementById('r-ss-n').value;
+    const maxM = +document.getElementById('r-ss-m').value;
+    document.getElementById('v-ss-n').textContent = maxN;
+    document.getElementById('v-ss-m').textContent = maxM;
+
+    const labels   = Array.from({ length: maxN - 1 }, (_, i) => i + 2);
+    const datasets = [];
+
+    for (let m = 2; m <= maxM; m++) {
+      const data = labels.map(n => {
+        const f = factorial(n);
+        const v = Math.pow(f, m);
+        return v > 0 ? Math.log10(v) : null;
+      });
+      datasets.push({
+        label: `m = ${m}`,
+        data,
+        borderColor: COLORS[m - 2] || '#888',
+        backgroundColor: (COLORS[m - 2] || '#888') + '18',
+        borderWidth: 2.5,
+        tension: 0.3,
+        fill: false,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      });
+    }
+
+    const ctx = document.getElementById('ss-chart').getContext('2d');
+    if (_chart) _chart.destroy();
+    _chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } },
+          title:  { display: true, text: 'log₁₀( (n!)ᵐ ) — solution space size', font: { size: 11 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const m = parseInt(ctx.dataset.label.split('=')[1]);
+                const n = +ctx.label;
+                const v = Math.pow(factorial(n), m);
+                return ` m=${m}: ~10^${ctx.parsed.y.toFixed(1)}  (${v.toExponential(2)})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: 'Number of Jobs (n)' } },
+          y: { beginAtZero: true, title: { display: true, text: 'log₁₀( |S| )' } }
+        }
+      }
+    });
+
+    // Benchmark table
+    const tbl = document.getElementById('bench-table');
+    const rows = BENCH.map(b => {
+      const f = factorial(b.n);
+      const v = Math.pow(f, b.m);
+      const exp = Math.floor(Math.log10(v));
+      return `<div class="bench-row">
+        <span style="font-weight:700">${b.name}</span>
+        <span>${b.n}</span>
+        <span>${b.m}</span>
+        <span class="bench-space">~10<sup>${exp}</sup></span>
+      </div>`;
+    });
+    // Keep the header row
+    tbl.innerHTML = `<div class="bench-row bench-header">
+      <span>Instance</span><span>n</span><span>m</span><span>|S| ≈</span>
+    </div>` + rows.join('');
+  }
+
+  return { update };
+})();
+
+window.ssUpdate = () => SS.update();
+
+
+// ──────────────────────────────────────────────────
+// QUIZ MODULE
+// ──────────────────────────────────────────────────
+const QUIZ = (() => {
+  const questions = [
+    {
+      id: 'q1',
+      text: 'Given an LCG with seed X₀ = 1, multiplier a = 3, increment c = 1, and modulus m = 7, what is X₁?',
+      opts: [
+        { text: 'X₁ = 3',  correct: false },
+        { text: 'X₁ = 4',  correct: true  },
+        { text: 'X₁ = 7',  correct: false },
+        { text: 'X₁ = 1',  correct: false },
+      ],
+      correct_fb: 'Correct! Apply the formula: X₁ = (a·X₀ + c) mod m = (3×1 + 1) mod 7 = 4 mod 7 = 4. Always: multiply → add → modulo.',
+      wrong_fb:   'Incorrect. The LCG formula is Xₙ₊₁ = (a·Xₙ + c) mod m. So X₁ = (3×1 + 1) mod 7 = 4 mod 7 = <strong>4</strong>. Remember: multiply first, then add the increment, then take the modulo.',
+    },
+    {
+      id: 'q2',
+      text: 'In Lab 1, why is a modulus of 12 described as a "particularly poor" choice for an LCG?',
+      opts: [
+        { text: 'Because 12 is even and leads to only even outputs',                                             correct: false },
+        { text: 'Because 12 is larger than the number of die sides (6)',                                         correct: false },
+        { text: 'Because 12 has many factors (1, 2, 3, 4, 6, 12), causing the LCG to cycle through far fewer than m distinct values', correct: true },
+        { text: 'Because Mersenne primes must be less than 10',                                                  correct: false },
+      ],
+      correct_fb: 'Correct! When the modulus shares factors with the multiplier, the LCG cycles through only a subset of [0, m-1] — dramatically reducing equidistribution. Mersenne primes like 7 (2³−1) and 31 (2⁵−1) have very few factors, which helps maximise the period.',
+      wrong_fb:   'Incorrect. The issue with modulus 12 is that it has many factors: 1, 2, 3, 4, 6, 12. If the multiplier shares any of these factors, the LCG will cycle through far fewer than m values, producing a biased and short-period sequence. Mersenne primes are preferred precisely because they have very few factors.',
+    },
+    {
+      id: 'q3',
+      text: 'In the Crest Packing lab, First Fit Decreasing (FFD) is considered an "offline" algorithm, while First Fit (FF) is "online". What is the defining difference?',
+      opts: [
+        { text: 'FFD requires more memory than FF',                                                                     correct: false },
+        { text: 'FFD must know all item sizes before placing any item (needs a global sort); FF places each item as it arrives', correct: true  },
+        { text: 'FF can only be applied to sorted inputs',                                                               correct: false },
+        { text: 'FFD always uses fewer bins than FF, regardless of input',                                               correct: false },
+      ],
+      correct_fb: 'Correct! FFD pre-sorts all items in decreasing order — requiring knowledge of every item size before the first item is placed. This is impossible on the conveyor in Lab 2, where items arrive one by one and cannot be reordered. Online algorithms (FF, NF, BF) make placement decisions with only the current and past items visible.',
+      wrong_fb:   'Incorrect. The key distinction is <em>when</em> item sizes are known. FFD requires a global sort of all items before packing begins — so it must see every item first (offline). On the Lab 2 conveyor, items arrive sequentially and cannot be delayed or reordered, making FFD inapplicable there. Online algorithms like FF place items immediately upon arrival.',
+    },
+    {
+      id: 'q4',
+      text: 'A JSSP candidate solution passes consistent() but fails satisfies(instance). Which situation best explains this?',
+      opts: [
+        { text: 'Two operations on the same machine overlap in time',                           correct: false },
+        { text: 'The schedule contains negative start times',                                   correct: false },
+        { text: 'Operations are scheduled on the correct machines and without overlaps, but job precedence constraints are violated', correct: false },
+        { text: 'The schedule has no internal overlaps, but an operation is assigned to the wrong machine (violating the instance specification)', correct: true  },
+      ],
+      correct_fb: 'Correct! consistent() only checks internal coherence — no overlaps on any machine and no overlaps within any job. satisfies(instance) additionally checks that each operation runs on its designated machine and that the job operation sequences from the instance are respected. Passing consistent() but failing satisfies() means the schedule is internally valid but doesn\'t match the problem specification.',
+      wrong_fb:   'Incorrect. consistent() checks: (1) no two operations on the same machine overlap, and (2) no job\'s operations overlap. If it passes, there are no time overlaps. satisfies(instance) additionally verifies machine assignments and job-level precedence against the instance spec. A schedule can be internally consistent yet assigned to wrong machines — passing consistent() but failing satisfies().',
+    },
+    {
+      id: 'q5',
+      text: 'For a Job Shop Scheduling Problem with n = 4 jobs and m = 3 machines, what is the total number of candidate orderings in the solution space (using the formula from Lab 4)?',
+      opts: [
+        { text: '64  (4³)',         correct: false },
+        { text: '13824  ((4!)³)',   correct: true  },
+        { text: '1728  (12³)',      correct: false },
+        { text: '24   (4!)',        correct: false },
+      ],
+      correct_fb: 'Correct! The solution space size is (n!)ᵐ. Each of the m=3 machines has n!=4!=24 possible orderings of the 4 jobs. Across 3 independent machines: 24³ = 13,824 total candidate orderings. This illustrates the rapid growth: even a small 4×3 instance has nearly 14K candidates.',
+      wrong_fb:   'Incorrect. From Lab 4: the solution space size is (n!)ᵐ. With n=4 jobs and m=3 machines: (4!)³ = 24³ = <strong>13,824</strong>. Each machine independently orders all n jobs (n! ways), and the m machine orderings are chosen independently, so we multiply: (n!)×(n!)×…×(n!) = (n!)ᵐ.',
+    },
+  ];
+
+  let answers = {};
+
+  function render() {
+    const container = document.getElementById('quiz-container');
+    container.innerHTML = '';
+    answers = {};
+    document.getElementById('score-panel').style.display = 'none';
+
+    questions.forEach((q, qi) => {
+      const div = document.createElement('div');
+      div.className = 'quiz-card';
+      div.innerHTML = `
+        <div class="quiz-head">
+          <div class="qh-num">Question ${qi + 1} of ${questions.length}</div>
+          <div class="qh-text">${q.text}</div>
+        </div>
+        <div class="quiz-opts" id="opts-${q.id}">
+          ${q.opts.map((o,oi) => `
+            <div class="quiz-opt" id="opt-${q.id}-${oi}" onclick="QUIZ._answer('${q.id}', ${oi})">
+              <span class="opt-badge">${'ABCD'[oi]}</span>
+              <span>${o.text}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="quiz-feedback" id="fb-${q.id}"></div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function _answer(qid, chosenIdx) {
+    if (answers[qid] !== undefined) return;
+    const q         = questions.find(x => x.id === qid);
+    const isCorrect = q.opts[chosenIdx].correct;
+    answers[qid]    = isCorrect;
+
+    // Style options
+    q.opts.forEach((o, oi) => {
+      const el = document.getElementById(`opt-${qid}-${oi}`);
+      el.classList.add('qo-disabled');
+      if (o.correct) el.classList.add('qo-correct');
+      else if (oi === chosenIdx && !isCorrect) el.classList.add('qo-incorrect');
+    });
+
+    // Feedback
+    const fb = document.getElementById(`fb-${qid}`);
+    fb.className   = `quiz-feedback ${isCorrect ? 'qf-correct' : 'qf-incorrect'}`;
+    fb.style.display = 'block';
+    fb.innerHTML   = `<div class="qf-title">${isCorrect ? '✓ Correct!' : '✗ Incorrect'}</div>
+                      ${isCorrect ? q.correct_fb : q.wrong_fb}`;
+
+    if (Object.keys(answers).length === questions.length) {
+      setTimeout(_showScore, 700);
+    }
+  }
+
+  function _showScore() {
+    const score = Object.values(answers).filter(Boolean).length;
+    const msgs  = [
+      'Keep at it — revisit the LCG and JSSP sections and try again.',
+      'A solid start. Review the theory panels and redo the visualizers.',
+      'Not bad! A couple more passes through the labs will cement these concepts.',
+      'Great work — just one slip. You\'re nearly exam-ready!',
+      'Outstanding! You have a firm grasp of every core concept in this unit.',
+    ];
+    document.getElementById('score-ring').textContent = `${score}/5`;
+    document.getElementById('score-msg').textContent  = msgs[score];
+    document.getElementById('score-panel').style.display = 'block';
+    document.getElementById('score-panel').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function reset() { render(); }
+
+  return { render, _answer, reset };
+})();
+
+window.QUIZ      = QUIZ;
+window.quizReset = () => QUIZ.reset();
+
+
+// ──────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────
+function init() {
+  LCG.update();
+  BP.generate();
+  jssp.render();
+  jssp.compute();
+  SS.update();
+  QUIZ.render();
+
+  // Re-run KaTeX auto-render if library loaded after DOM was ready
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$',  right: '$',  display: false },
+      ],
+      throwOnError: false,
+    });
+  }
+}
+
+// Wait for KaTeX to be available (deferred scripts)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+// Reflow canvases on resize
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => { BP.run(); jssp.compute(); }, 150);
+});
+</script>
+</body>
+</html>

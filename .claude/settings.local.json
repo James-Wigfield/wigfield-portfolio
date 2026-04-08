@@ -4,7 +4,20 @@
       "Bash(jobs)",
       "Bash(curl -s http://localhost:5173)",
       "Bash(npm run:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Skill(update-config)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"VAULT REMINDER: Significant changes made? Update C:\\\\Users\\\\james\\\\Documents\\\\james-claude-brain before finishing.\"}'"
+          }
+        ]
+      }
     ]
   }
 }

@@ -10,7 +10,7 @@ import soundWaves from '../assets/gifs/sound_waves.gif';
 import rooftopCar from '../assets/gifs/rooftop_flying_car.gif';
 
 // ── Change PIN here ───────────────────────────────────────────────
-const HUB_PIN = '2293';
+const HUB_PIN = '6969';
 
 // ── Module registry — add entries here to expand the hub ─────────
 const MODULES = [

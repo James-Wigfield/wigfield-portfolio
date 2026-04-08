@@ -1412,3 +1412,880 @@ strong { color: var(--text-0); font-weight: 600; }
   .hub__header { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .hub-gate__box { padding: 2rem 1.5rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CITS4012 — AI & Adaptive Systems module   (m4- prefix)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Root & layout ───────────────────────────────────────────── */
+.m4-root {
+  min-height: 100vh;
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-sans);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Sticky header ───────────────────────────────────────────── */
+.m4-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 10, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.m4-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.m4-header-top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0 0.5rem;
+}
+.m4-htitle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex: 1;
+}
+.m4-hcode {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--violet);
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  padding: 0.15em 0.55em;
+  border-radius: 3px;
+}
+.m4-hname {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Tab navigation ──────────────────────────────────────────── */
+.m4-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.m4-tabs::-webkit-scrollbar { display: none; }
+.m4-tab {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  margin-bottom: -1px;
+}
+.m4-tab:hover { color: var(--violet); }
+.m4-tab--on {
+  color: var(--violet);
+  border-bottom-color: var(--violet);
+}
+
+/* ── Main content area ───────────────────────────────────────── */
+.m4-main {
+  flex: 1;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ── Hero strip ──────────────────────────────────────────────── */
+.m4-hero {
+  margin-bottom: 2.5rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(167,139,250,0.08) 0%, rgba(34,211,238,0.04) 100%);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 8px;
+}
+.m4-hero-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: var(--violet);
+  margin-bottom: 0.5rem;
+}
+.m4-hero-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-0);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+.m4-hero-sub {
+  font-size: 0.88rem;
+  color: var(--text-1);
+  line-height: 1.6;
+  max-width: 680px;
+}
+
+/* ── Topic card grid ─────────────────────────────────────────── */
+.m4-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.m4-tcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.1rem;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, background 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.m4-tcard:hover {
+  border-color: var(--violet);
+  background: rgba(167,139,250,0.06);
+  transform: translateY(-2px);
+}
+.m4-tcard-code {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--violet);
+}
+.m4-tcard-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-0);
+}
+.m4-tcard-desc {
+  font-size: 0.77rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  flex: 1;
+}
+.m4-tcard-cta {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--violet);
+  margin-top: 0.4rem;
+}
+
+/* ── Two-column layout ───────────────────────────────────────── */
+.m4-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 760px) { .m4-two-col { grid-template-columns: 1fr; } }
+
+/* ── Generic card ────────────────────────────────────────────── */
+.m4-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.m4-card-h {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--cyan);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+/* ── Formula display ─────────────────────────────────────────── */
+.m4-flabel {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--text-2);
+  margin-bottom: 0.3rem;
+}
+.m4-formula {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--cyan);
+  background: rgba(34,211,238,0.07);
+  border: 1px solid rgba(34,211,238,0.18);
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  display: block;
+  letter-spacing: 0.04em;
+}
+
+/* ── Info / warning boxes ────────────────────────────────────── */
+.m4-infobox {
+  background: rgba(34,211,238,0.06);
+  border-left: 3px solid var(--cyan);
+  padding: 0.85rem 1rem;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.83rem;
+  color: var(--text-1);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+.m4-warnbox {
+  background: rgba(251,191,36,0.06);
+  border-left: 3px solid var(--amber);
+  padding: 0.85rem 1rem;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.83rem;
+  color: var(--text-1);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+/* ── Horizontal rule ─────────────────────────────────────────── */
+.m4-hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+/* ── Controls (sliders, inputs) ──────────────────────────────── */
+.m4-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+.m4-ctrl-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-1);
+  min-width: 120px;
+  white-space: nowrap;
+}
+.m4-ctrl input[type="range"] {
+  flex: 1;
+  accent-color: var(--violet);
+  cursor: pointer;
+}
+.m4-ctrl-val {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--violet);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ── Preset buttons row ──────────────────────────────────────── */
+.m4-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.m4-preset-btn {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  color: var(--text-1);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.m4-preset-btn:hover {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+/* ── Stats row ───────────────────────────────────────────────── */
+.m4-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.m4-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.m4-stat-l {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+}
+.m4-stat-v {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+/* ── Sequence chip display ───────────────────────────────────── */
+.m4-seq-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.m4-chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.18em 0.45em;
+  border-radius: 3px;
+  background: rgba(34,211,238,0.08);
+  border: 1px solid rgba(34,211,238,0.2);
+  color: var(--cyan);
+}
+.chip-seed { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: var(--amber); }
+.chip-rep  { background: rgba(251,113,133,0.1); border-color: rgba(251,113,133,0.3); color: var(--rose); }
+.chip-end  { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.3); color: var(--emerald); }
+
+/* ── Canvas ──────────────────────────────────────────────────── */
+.m4-canvas {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  margin-top: 0.75rem;
+}
+
+/* ── Parameter table ─────────────────────────────────────────── */
+.m4-ptable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+.m4-ptable th {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.m4-ptable td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-1);
+}
+.m4-ptable tr:hover td { background: rgba(167,139,250,0.04); }
+.pk { color: var(--violet); font-weight: 600; }
+
+/* ── Strategy info card ──────────────────────────────────────── */
+.m4-strat {
+  background: rgba(167,139,250,0.07);
+  border: 1px solid rgba(167,139,250,0.18);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+.m4-strat-h {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--violet);
+  margin-bottom: 0.3rem;
+}
+.m4-strat-d {
+  font-size: 0.8rem;
+  color: var(--text-1);
+  line-height: 1.55;
+}
+
+/* ── Tag / badge ─────────────────────────────────────────────── */
+.m4-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+  background: rgba(34,211,238,0.08);
+  border: 1px solid rgba(34,211,238,0.2);
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+/* ── Radio pill row ──────────────────────────────────────────── */
+.m4-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.m4-rpill {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  padding: 0.3rem 0.9rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  color: var(--text-1);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.m4-rpill:hover { border-color: var(--violet); color: var(--violet); }
+.m4-rpill--on {
+  border-color: var(--violet);
+  background: rgba(167,139,250,0.15);
+  color: var(--violet);
+}
+
+/* ── Button row ──────────────────────────────────────────────── */
+.m4-btn-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.m4-btn {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 1.1rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  color: var(--text-1);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 600;
+}
+.m4-btn:hover { border-color: var(--violet); color: var(--violet); }
+.m4-btn-p {
+  border-color: var(--violet);
+  color: var(--violet);
+  background: rgba(167,139,250,0.1);
+}
+.m4-btn-p:hover {
+  background: rgba(167,139,250,0.2);
+  color: var(--violet);
+  border-color: var(--violet);
+}
+.m4-btn-g {
+  border-color: var(--emerald);
+  color: var(--emerald);
+  background: rgba(52,211,153,0.08);
+}
+.m4-btn-g:hover {
+  background: rgba(52,211,153,0.15);
+  color: var(--emerald);
+  border-color: var(--emerald);
+}
+
+/* ── JSSP & benchmark tables ─────────────────────────────────── */
+.m4-jssp-tbl,
+.m4-bench-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+.m4-jssp-tbl th,
+.m4-bench-tbl th {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.m4-jssp-tbl td,
+.m4-bench-tbl td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-1);
+}
+.m4-jssp-tbl input {
+  width: 48px;
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.2rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--cyan);
+  text-align: center;
+}
+.m4-jssp-tbl input:focus {
+  outline: none;
+  border-color: var(--violet);
+}
+
+/* ── Bullet list ─────────────────────────────────────────────── */
+.m4-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.m4-bullets li {
+  font-size: 0.83rem;
+  color: var(--text-1);
+  line-height: 1.55;
+  padding-left: 1rem;
+  position: relative;
+}
+.m4-bullets li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--violet);
+  font-weight: 700;
+}
+
+/* ── Section header ──────────────────────────────────────────── */
+.m4-sec-hdr {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.m4-sec-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-0);
+}
+.m4-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  padding: 0.2em 0.6em;
+  border-radius: 3px;
+  background: rgba(167,139,250,0.12);
+  border: 1px solid rgba(167,139,250,0.28);
+  color: var(--violet);
+}
+.m4-sec-sub {
+  font-size: 0.85rem;
+  color: var(--text-1);
+  line-height: 1.65;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Lab sub-tabs ────────────────────────────────────────────── */
+.m4-labtabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.m4-labtabs::-webkit-scrollbar { display: none; }
+.m4-labtab {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.09em;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  margin-bottom: -1px;
+}
+.m4-labtab:hover { color: var(--cyan); }
+.m4-labtab--on {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+}
+
+/* ── Quiz section ────────────────────────────────────────────── */
+.m4-quiz {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.m4-qcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+.m4-qcard:has(.m4-qopt--ok) { border-color: rgba(52,211,153,0.4); }
+.m4-qcard:has(.m4-qopt--ng) { border-color: rgba(251,113,133,0.2); }
+.m4-qhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.m4-qnum {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--violet);
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.25);
+  padding: 0.2em 0.5em;
+  border-radius: 3px;
+  white-space: nowrap;
+  margin-top: 0.15em;
+}
+.m4-qtext {
+  font-size: 0.9rem;
+  color: var(--text-0);
+  line-height: 1.55;
+  font-weight: 500;
+}
+.m4-qopts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.m4-qopt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-1);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 0.83rem;
+  color: var(--text-1);
+  text-align: left;
+  line-height: 1.5;
+}
+.m4-qopt:hover:not(.m4-qopt--done) {
+  border-color: var(--violet);
+  background: rgba(167,139,250,0.07);
+  color: var(--text-0);
+}
+.m4-qopt--done { cursor: default; }
+.m4-qopt--ok {
+  border-color: var(--emerald);
+  background: rgba(52,211,153,0.08);
+  color: var(--emerald);
+}
+.m4-qopt--ng {
+  border-color: var(--rose);
+  background: rgba(251,113,133,0.08);
+  color: var(--rose);
+}
+.m4-qbadge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.15em 0.45em;
+  border-radius: 2px;
+  white-space: nowrap;
+  margin-top: 0.15em;
+}
+.m4-qfb {
+  margin-top: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  border-left: 3px solid transparent;
+}
+.m4-qfb--ok {
+  background: rgba(52,211,153,0.07);
+  border-left-color: var(--emerald);
+  color: var(--text-1);
+}
+.m4-qfb--ng {
+  background: rgba(251,113,133,0.07);
+  border-left-color: var(--rose);
+  color: var(--text-1);
+}
+
+/* ── Score panel ─────────────────────────────────────────────── */
+.m4-score {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+.m4-score-ring {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--violet);
+  white-space: nowrap;
+}
+.m4-score-msg {
+  font-size: 0.85rem;
+  color: var(--text-1);
+  line-height: 1.5;
+}
+
+/* ── Four Quadrants diagram ──────────────────────────────────── */
+.m4-quadrant-wrap {
+  margin-bottom: 2rem;
+}
+.m4-quadrant-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--violet);
+  margin-bottom: 0.75rem;
+}
+.m4-quadrant-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  background: var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  aspect-ratio: 2 / 1;
+}
+.m4-ax {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  font-weight: 600;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.3rem;
+}
+.m4-ax-left, .m4-ax-right {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.m4-ax-left { left: -2rem; transform: translateY(-50%) rotate(180deg); }
+.m4-ax-right { right: -2rem; }
+.m4-quadrant {
+  background: var(--bg-1);
+  padding: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+.m4-quadrant:hover { background: rgba(167,139,250,0.08); }
+.m4-q--sel { background: rgba(167,139,250,0.15) !important; outline: 2px solid var(--violet); outline-offset: -2px; }
+.m4-q-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-0);
+}
+.m4-q-auth {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-2);
+}
+.m4-q-detail {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-top: 0.5rem;
+  animation: m4-fadein 0.15s ease;
+}
+.m4-q-dlabel {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--violet);
+  margin-bottom: 0.3rem;
+}
+.m4-q-quote {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--text-1);
+  border-left: 3px solid var(--violet);
+  padding-left: 0.75rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.6;
+}
+.m4-q-ddesc {
+  font-size: 0.82rem;
+  color: var(--text-1);
+  line-height: 1.6;
+}
+
+@keyframes m4-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Back button ─────────────────────────────────────────────── */
+.m4-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.m4-back:hover {
+  color: var(--violet);
+  border-color: var(--violet);
+}
+
+/* ── m4 responsive ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .m4-hero-title { font-size: 1.3rem; }
+  .m4-topic-grid { grid-template-columns: 1fr 1fr; }
+  .m4-main { padding: 1.25rem 1rem 3rem; }
+  .m4-quadrant-grid { aspect-ratio: auto; }
+  .m4-quadrant { padding: 0.65rem 0.5rem; }
+  .m4-q-label { font-size: 0.72rem; }
+}
