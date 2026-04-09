@@ -2432,3 +2432,53 @@ strong { color: var(--text-0); font-weight: 600; }
 .m4-pseudocode .kw { color: var(--violet); }
 .m4-pseudocode .cm { color: rgba(148,163,184,0.5); }
 .m4-pseudocode .num { color: var(--cyan); }
+
+/* ── Variable description table ─────────────────────────────────────────────── */
+.m4-vartable {
+  background: rgba(0,0,0,0.22);
+  border: 1px solid rgba(51,65,85,0.6);
+  border-left: 3px solid rgba(167,139,250,0.5);
+  border-radius: 0 6px 6px 0;
+  padding: 0.45rem 0.75rem;
+  margin: 0.25rem 0 0.6rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.22rem 0.8rem;
+}
+.m4-var-row { display: contents; }
+.m4-var-sym {
+  white-space: nowrap;
+  align-self: center;
+  font-size: 0.82rem;
+}
+.m4-var-desc {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  align-self: center;
+  line-height: 1.45;
+}
+
+/* ── Dispatching rules highlight table ──────────────────────────────────────── */
+.m4-dispatch-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.77rem;
+  margin: 0.5rem 0;
+}
+.m4-dispatch-tbl th {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+.m4-dispatch-tbl td {
+  padding: 0.3rem 0.5rem;
+  color: var(--text-2);
+  border-bottom: 1px solid rgba(51,65,85,0.35);
+  vertical-align: middle;
+}
+.m4-dispatch-tbl tr:last-child td { border-bottom: none; }
+.m4-dispatch-tbl tr:hover td { background: rgba(167,139,250,0.04); }
