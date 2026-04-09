@@ -16,7 +16,11 @@
       "Bash(node -e \"const l=require\\('./package-lock.json'\\); Object.entries\\(l.packages\\).forEach\\(\\([k,v]\\)=>{ const allDeps={...v.dependencies,...v.optionalDependencies,...v.peerDependencies}; if\\(Object.keys\\(allDeps\\).some\\(d=>d.includes\\('emnapi'\\)\\)\\) console.log\\(k, JSON.stringify\\(allDeps\\)\\) }\\)\")",
       "Bash(node -e \"const l=require\\('./package-lock.json'\\); Object.entries\\(l.packages\\).forEach\\(\\([k,v]\\)=>{ const allDeps={...v.dependencies,...v.optionalDependencies}; if\\(Object.keys\\(allDeps\\).some\\(d=>d.includes\\('napi-rs/wasm'\\)\\)\\) console.log\\(k\\) }\\)\")",
       "Bash(node -e \"const l=require\\('./package-lock.json'\\); const k='node_modules/@napi-rs/wasm-runtime'; console.log\\(l.packages[k] ? JSON.stringify\\(l.packages[k], null, 2\\) : 'NOT IN LOCK FILE'\\)\")",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(npm view:*)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.get\\('packages',{}\\).items\\(\\) if 'emnapi' in k}, indent=2\\)\\)\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('optionalDependencies', {}\\), indent=2\\)\\)\")",
+      "Bash(python -c ':*)"
     ]
   },
   "hooks": {
