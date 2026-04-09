@@ -1,5 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
+
+// ── KaTeX Renderer ─────────────────────────────────────────────────────────────
+function Tex({ src, block = false }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) {
+      katex.render(src, ref.current, { throwOnError: false, displayMode: block });
+    }
+  }, [src, block]);
+  return <span ref={ref} className={block ? 'm4-tex-block' : 'm4-tex-inline'} />;
+}
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function factorial(n) {
@@ -8,7 +21,6 @@ function factorial(n) {
   for (let i = 2; i <= n; i++) r *= i;
   return r;
 }
-function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
 
 const CYBER_COLS = [
   '#22d3ee','#a78bfa','#34d399','#fb7185','#fbbf24',
@@ -16,26 +28,14 @@ const CYBER_COLS = [
   '#06b6d4','#a855f7','#eab308','#d946ef','#0ea5e9',
 ];
 
-// ── Quiz Data ─────────────────────────────────────────────────────────────────
+// ── Quiz Data (10 questions covering all lectures) ────────────────────────────
 const QUIZ_DATA = [
   {
     q: 'Given an LCG with seed X₀=1, multiplier a=3, increment c=1, modulus m=7 — what is X₁?',
     opts: ['X₁ = 3', 'X₁ = 4', 'X₁ = 7', 'X₁ = 1'],
     ans: 1,
-    ok: 'Apply X₁ = (a·X₀ + c) mod m = (3×1 + 1) mod 7 = 4 mod 7 = 4. Always: multiply → add → modulo.',
+    ok: 'Apply X₁ = (a·X₀ + c) mod m = (3×1 + 1) mod 7 = 4 mod 7 = 4.',
     ng: 'Formula: Xₙ₊₁ = (a·Xₙ + c) mod m. So X₁ = (3×1+1) mod 7 = 4. Multiply first, add increment, then modulo.',
-  },
-  {
-    q: 'Why is a modulus of 12 described as a "particularly poor" choice for an LCG?',
-    opts: [
-      '12 is even, producing only even outputs',
-      '12 > 6 (number of die sides)',
-      '12 has many factors (1,2,3,4,6,12), causing the LCG to cycle through far fewer than m distinct values',
-      'Mersenne primes must be < 10',
-    ],
-    ans: 2,
-    ok: 'Correct! Many factors → short cycles, poor equidistribution. Mersenne primes like 7 (2³−1) and 31 (2⁵−1) have very few factors, maximising the period.',
-    ng: 'Modulus 12 has many factors: 1,2,3,4,6,12. Shared factors with the multiplier cause short cycles. Mersenne primes have very few factors, which is why they are preferred.',
   },
   {
     q: 'FFD is "offline" while FF is "online". What is the key difference?',
@@ -46,27 +46,99 @@ const QUIZ_DATA = [
       'FFD always uses fewer bins, regardless of input',
     ],
     ans: 1,
-    ok: 'Correct! FFD pre-sorts all items in decreasing order — requires knowing every size before the first placement. On the Lab 2 conveyor, items arrive one-by-one and cannot be reordered.',
-    ng: 'Key distinction is when sizes are known. FFD must see every item first (offline). Online algorithms (FF, NF, BF) place items immediately upon arrival — perfect for the conveyor.',
-  },
-  {
-    q: 'A JSSP solution passes consistent() but fails satisfies(instance). What best explains this?',
-    opts: [
-      'Two operations on the same machine overlap in time',
-      'The schedule has negative start times',
-      'Operations are scheduled without time overlaps, but job precedence is violated',
-      'The schedule has no internal overlaps, but an operation is assigned to the wrong machine',
-    ],
-    ans: 3,
-    ok: 'Correct! consistent() checks no time overlaps. satisfies(instance) additionally checks machine assignments match the spec. Passing consistent + failing satisfies = internally valid, wrong machine assignment.',
-    ng: 'consistent() checks: (1) no overlapping ops on same machine, (2) no overlapping ops within a job. satisfies() additionally verifies machine assignments against the instance. A schedule can be internally consistent yet use wrong machines.',
+    ok: 'FFD pre-sorts all items in decreasing order — requires knowing every size before the first placement. Online algorithms (FF, NF, BF) place items immediately upon arrival.',
+    ng: 'Key distinction is when sizes are known. FFD must see every item first (offline). Online algorithms place items immediately — perfect for the conveyor belt.',
   },
   {
     q: 'For JSSP with n=4 jobs and m=3 machines, what is the solution space size (n!)ᵐ?',
     opts: ['64  (4³)', '13,824  ((4!)³)', '1,728  (12³)', '24  (4!)'],
     ans: 1,
-    ok: 'Correct! (n!)ᵐ = (4!)³ = 24³ = 13,824. Each of the 3 machines independently orders 4 jobs (4!=24 ways each).',
-    ng: 'Solution space = (n!)ᵐ. With n=4, m=3: (4!)³ = 24³ = 13,824. Each machine independently orders all n jobs.',
+    ok: 'Correct! (n!)ᵐ = (4!)³ = 24³ = 13,824. Each of the 3 machines independently orders 4 jobs.',
+    ng: 'Solution space = (n!)ᵐ. With n=4, m=3: (4!)³ = 24³ = 13,824.',
+  },
+  {
+    q: 'In optimisation, what does the metric (evaluation function) f : H → ℝ measure?',
+    opts: [
+      'The size of the hypothesis space H',
+      'How many candidate solutions exist',
+      'How "good" a hypothesis is — its distance from the target/ideal',
+      'The number of features in the representation language',
+    ],
+    ans: 2,
+    ok: 'The metric maps each hypothesis in H to a real number indicating quality. Also called: error function, cost function, fitness function, objective function.',
+    ng: 'f : H → ℝ maps a candidate solution (hypothesis) to a real number indicating how good it is. The argmin of f gives the best hypothesis.',
+  },
+  {
+    q: 'What does the derivative f\'(x) = 0 tell us, and how do we confirm it is a minimum (not a maximum)?',
+    opts: [
+      'f\'(x) = 0 always means a minimum; no further check needed',
+      'f\'(x) = 0 means a critical point; f\'\'(x) > 0 confirms a local minimum, f\'\'(x) < 0 confirms a local maximum',
+      'f\'(x) = 0 means the function is undefined at that point',
+      'f\'(x) = 0 means x is outside the domain',
+    ],
+    ans: 1,
+    ok: 'Critical points occur where f\'(x) = 0. The second derivative test: f\'\'(x) > 0 → local min (concave up), f\'\'(x) < 0 → local max (concave down).',
+    ng: 'f\'(x) = 0 gives critical points. Check f\'\'(x): positive → concave up → local min; negative → concave down → local max.',
+  },
+  {
+    q: 'The gradient ∇f(x) of a scalar function f : ℝⁿ → ℝ is best described as:',
+    opts: [
+      'The second derivative of f with respect to all variables',
+      'A vector of partial derivatives pointing in the direction of steepest ascent',
+      'The dot product of f with itself',
+      'A scalar value equal to the sum of all partial derivatives',
+    ],
+    ans: 1,
+    ok: '∇f = [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ]ᵀ. It\'s a vector field whose value at any point points in the direction of steepest ascent.',
+    ng: 'The gradient is a vector of partial derivatives. Gradient descent moves opposite to ∇f (down the steepest slope); ascent moves along ∇f.',
+  },
+  {
+    q: 'In gradient descent, the update rule is x ← x − α f\'(x). What role does α (the learning rate) play?',
+    opts: [
+      'It sets the stopping threshold for convergence',
+      'It scales the step size — too small: slow convergence; too large: overshoot and oscillation',
+      'It determines how many restarts are performed',
+      'It is the initial value of x before the first iteration',
+    ],
+    ans: 1,
+    ok: 'α is the learning rate (step-size tuning parameter). Small α → slow but stable convergence. Large α → fast but risks overshooting and oscillating around the minimum.',
+    ng: 'α scales step size. x ← x − α f\'(x): sign of f\'(x) gives direction, magnitude gives size, α scales it. Too large causes oscillation; too small is inefficient.',
+  },
+  {
+    q: 'Newton-Raphson for optimisation uses the update x ← x − f\'(x)/f\'\'(x). Why is this faster than plain gradient descent?',
+    opts: [
+      'It uses randomness to escape local minima',
+      'It approximates the function with a quadratic (using curvature), choosing the optimal step size automatically',
+      'It evaluates f at multiple points in parallel',
+      'It guarantees finding the global optimum',
+    ],
+    ans: 1,
+    ok: 'N-R uses curvature (f\'\'(x)) to fit a local quadratic approximation. This naturally scales the step: large curvature → small step; flat region → large step. Solves quadratics in one step.',
+    ng: 'N-R divides by f\'\'(x) — the curvature. This effectively matches the step to local geometry (like approximating with a quadratic), much faster than fixed-α gradient descent.',
+  },
+  {
+    q: 'In Simulated Annealing, the acceptance probability for a worse solution R (where Quality(R) < Quality(S)) is:',
+    opts: [
+      'Always 0 — worse solutions are never accepted',
+      'Always 0.5 regardless of temperature',
+      'e^((Quality(R) − Quality(S)) / t), which decreases as t → 0 or as the quality gap increases',
+      '1 / (Quality(S) − Quality(R))',
+    ],
+    ans: 2,
+    ok: 'P = e^(ΔQ/t) where ΔQ = Quality(R) − Quality(S) < 0. As t → 0 (cooling), P → 0 (pure hill climb). As t → ∞, P → 1 (random walk). Controls exploration/exploitation.',
+    ng: 'SA uses P = e^((Q(R)−Q(S))/t). With Q(R) < Q(S), the exponent is negative so 0 < P < 1. High temperature t → high P (exploration). Low t → low P (exploitation).',
+  },
+  {
+    q: 'The No Free Lunch theorem (Wolpert & Macready, 1997) states that:',
+    opts: [
+      'Gradient descent always outperforms random search',
+      'There exists a single universally optimal optimisation algorithm',
+      'Averaged across all possible problems, no algorithm outperforms any other — algorithm choice must be problem-specific',
+      'Stochastic methods always beat deterministic methods on real-world problems',
+    ],
+    ans: 2,
+    ok: 'NFL: any performance gain on one class of problems comes at the cost of worse performance on another. "The average performance of any pair of algorithms across all possible problems is identical." Algorithm selection must be informed by domain knowledge.',
+    ng: 'NFL theorem: no universal champion. Performance gains on one problem class trade off against losses on others. Always choose algorithms informed by knowledge of your specific problem domain.',
   },
 ];
 
@@ -136,7 +208,7 @@ function LCGVisualizer() {
       <div className="m4-card">
         <div className="m4-card-h">Mathematical Foundation</div>
         <div className="m4-flabel">Core LCG Recurrence</div>
-        <div className="m4-formula">X(n+1) = (a · Xn + c) mod m</div>
+        <Tex src="X_{n+1} = (a \cdot X_n + c) \bmod m" block />
         <table className="m4-ptable">
           <tbody>
             <tr><td className="pk">X₀</td><td>Seed — initial value; determines reproducibility</td></tr>
@@ -147,19 +219,14 @@ function LCGVisualizer() {
         </table>
         <div className="m4-hr"/>
         <div className="m4-flabel">Mersenne Primes (ideal moduli)</div>
-        <div className="m4-formula">m = 2ⁿ − 1 &nbsp; n ∈ &#123;3, 5, 7, 13, 17, …&#125;</div>
+        <Tex src="m = 2^n - 1 \quad n \in \{3, 5, 7, 13, 17, \ldots\}" block />
         <div className="m4-infobox">
-          <strong>Why Mersenne primes?</strong> A modulus with many factors (e.g. 12 = 2²×3) causes the LCG to cycle through only a subset of values — poor <em>equidistribution</em>. Mersenne primes like 7 and 31 have very few factors, maximising the period.
+          <strong>Why Mersenne primes?</strong> A modulus with many factors (e.g. 12 = 2²×3) causes short cycles — poor <em>equidistribution</em>. Mersenne primes have very few factors, maximising the period.
         </div>
         <div className="m4-hr"/>
         <div className="m4-flabel">Hull–Dobell Full-Period Theorem</div>
-        <div className="m4-formula" style={{fontSize:'0.75rem'}}>
-          Period = m ⟺ gcd(c,m)=1 AND (a−1) divisible by all prime factors of m
-        </div>
-        <div className="m4-hr"/>
-        <div className="m4-flabel">PCG-64 (NumPy default)</div>
-        <div className="m4-infobox" style={{fontSize:'0.8rem'}}>
-          Permuted Congruential Generator: LCG core (2⁶⁴ modulus) + output permutation function. Retains LCG speed while dramatically improving statistical quality.
+        <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+          Period = m ⟺ gcd(c,m)=1 AND (a−1) divisible by all prime factors of m AND if 4|m then 4|(a−1)
         </div>
       </div>
 
@@ -185,10 +252,6 @@ function LCGVisualizer() {
           <div className="m4-stat"><span className="m4-stat-l">Period</span><span className="m4-stat-v" style={{color:'var(--cyan)'}}>{res.period}</span></div>
           <div className="m4-stat"><span className="m4-stat-l">Full?</span><span className="m4-stat-v" style={{color: res.isFull ? 'var(--emerald)' : 'var(--rose)'}}>{res.isFull ? '✓ Yes' : '✗ No'}</span></div>
           <div className="m4-stat"><span className="m4-stat-l">Unique</span><span className="m4-stat-v" style={{color:'var(--violet)'}}>{res.unique}</span></div>
-        </div>
-        <div style={{fontSize:'0.72rem',color:'var(--text-2)',marginBottom:'0.4rem',display:'flex',gap:'0.75rem'}}>
-          <span><span style={{display:'inline-block',width:9,height:9,background:'var(--cyan)',borderRadius:2,marginRight:3}}/>seed</span>
-          <span><span style={{display:'inline-block',width:9,height:9,background:'#fb7185',borderRadius:2,marginRight:3}}/>period restart</span>
         </div>
         <div className="m4-seq-wrap">
           {res.seq.slice(0, 36).map((n, i) => (
@@ -335,9 +398,7 @@ function BinPackingViz() {
         ))}
         <div className="m4-hr"/>
         <div className="m4-flabel">Capacity Constraint</div>
-        <div className="m4-formula">Σ sᵢ ≤ C = 1.0 &nbsp; ∀ box k</div>
-        <div className="m4-flabel" style={{marginTop:'0.75rem'}}>Sorted Insertion</div>
-        <div className="m4-formula" style={{fontSize:'0.75rem'}}>bisect.insort(L, x) → O(log n) search + O(n) insert</div>
+        <Tex src="\sum_i s_i \leq C = 1.0 \quad \forall \text{ box } k" block />
       </div>
 
       <div className="m4-card">
@@ -443,8 +504,10 @@ function JSSPViz() {
 
   useEffect(() => {
     const r = schedule(DEFAULT_JOBS);
-    setRes(r);
-    requestAnimationFrame(() => drawGantt(r, DEFAULT_JOBS[0].length));
+    requestAnimationFrame(() => {
+      setRes(r);
+      drawGantt(r, DEFAULT_JOBS[0].length);
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const compute = () => {
@@ -471,25 +534,20 @@ function JSSPViz() {
     <div className="m4-two-col">
       <div className="m4-card">
         <div className="m4-card-h">Formal Formulation</div>
-        <div className="m4-infobox"><strong>JSSP:</strong> Given n jobs and m machines, each job requires m operations in a fixed sequence. Each operation O(j,k) must run on machine μ(j,k) for p(j,k) time units. Minimise total completion time.</div>
+        <div className="m4-infobox"><strong>JSSP:</strong> n jobs, m machines. Each job Jᵢ requires m operations in fixed order. Each operation O(j,k) runs on machine μ(j,k) for p(j,k) time units. Minimise makespan.</div>
         <div className="m4-flabel">Objective — Minimise Makespan</div>
-        <div className="m4-formula">Cmax = max(j,k) (S(j,k) + p(j,k))</div>
+        <Tex src="C_{\max} = \max_{i,j}\,(s_{ij} + p_{ij})" block />
         <div className="m4-hr"/>
         <div style={{fontSize:'0.82rem',fontWeight:700,color:'var(--text-1)',marginBottom:'0.5rem'}}>Feasibility Constraints</div>
         <ol style={{fontSize:'0.79rem',color:'var(--text-2)',paddingLeft:'1.2rem',display:'grid',gap:'0.35rem'}}>
           <li><strong style={{color:'var(--text-1)'}}>Machine capacity:</strong> No two ops on same machine overlap</li>
-          <li><strong style={{color:'var(--text-1)'}}>Precedence:</strong> S(j,k+1) ≥ S(j,k) + p(j,k)</li>
+          <li><strong style={{color:'var(--text-1)'}}>Precedence:</strong> <Tex src="s_{j,k+1} \geq s_{j,k} + p_{j,k}" /></li>
           <li><strong style={{color:'var(--text-1)'}}>Assignment:</strong> Op O(j,k) must run on machine μ(j,k)</li>
-          <li><strong style={{color:'var(--text-1)'}}>Non-negativity:</strong> S(j,k) ≥ 0</li>
+          <li><strong style={{color:'var(--text-1)'}}>Non-negativity:</strong> <Tex src="s_{j,k} \geq 0" /></li>
         </ol>
         <div className="m4-hr"/>
-        <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
-          <strong>consistent():</strong> Checks no time overlaps on machines and within jobs.<br/><br/>
-          <strong>satisfies(instance):</strong> Also verifies machine assignments and job-level precedence match the instance specification.
-        </div>
-        <div className="m4-hr"/>
         <div className="m4-flabel">Complexity</div>
-        <div className="m4-formula">JSSP ∈ NP-hard &nbsp; (even for n=3, m=3)</div>
+        <Tex src="|H| \leq (n!)^m \quad \text{NP-hard even for } n=3,\,m=3" block />
       </div>
 
       <div className="m4-card">
@@ -606,8 +664,8 @@ function SolutionSpaceViz() {
       <div className="m4-card">
         <div className="m4-card-h">Combinatorial Explosion</div>
         <div className="m4-flabel">Solution Space Size</div>
-        <div className="m4-formula">|S| = (n!)ᵐ</div>
-        <div className="m4-infobox"><strong>Lab 4 key insight:</strong> Each of the m machines independently orders n jobs → n! orderings per machine. Across m machines: (n!)ᵐ total candidates. For ft10 (10 jobs, 10 machines): (10!)¹⁰ ≈ 3.6×10⁶⁵.</div>
+        <Tex src="|H| = (n!)^m" block />
+        <div className="m4-infobox"><strong>Key insight:</strong> Each of the m machines independently orders n jobs → n! orderings per machine. Across m machines: (n!)ᵐ total candidates. For ft10 (10×10): (10!)¹⁰ ≈ 3.6×10⁶⁵.</div>
         <div className="m4-ctrl" style={{marginTop:'1rem'}}>
           <div className="m4-ctrl-lbl"><span>Jobs (n) up to</span><span className="m4-ctrl-val">{maxN}</span></div>
           <input type="range" min="2" max="8" value={maxN} onChange={e=>setMaxN(+e.target.value)}/>
@@ -622,7 +680,7 @@ function SolutionSpaceViz() {
       <div className="m4-card">
         <div className="m4-card-h">Benchmark Instances</div>
         <div className="m4-flabel">Random Search Success Rate</div>
-        <div className="m4-formula">P(find optimal) ≈ 1 / (n!)ᵐ</div>
+        <Tex src="P(\text{find optimal}) \approx \frac{1}{(n!)^m}" block />
         <table className="m4-bench-tbl">
           <thead><tr><th>Instance</th><th>n</th><th>m</th><th>|S| ≈</th></tr></thead>
           <tbody>
@@ -637,16 +695,324 @@ function SolutionSpaceViz() {
           </tbody>
         </table>
         <div className="m4-hr"/>
-        <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
-          <strong>Unit-time JSSP (Lab 5):</strong> p(j,k)=1 for all ops, making small instances tractable. Lower bound: Cmax ≥ n. For 3×3 unit-time: minimum possible makespan is 3.
-        </div>
-        <div className="m4-hr"/>
         <div style={{fontSize:'0.82rem',fontWeight:700,color:'var(--text-1)',marginBottom:'0.5rem'}}>Beyond Exhaustive Search</div>
-        {[['Greedy','Shortest/longest processing time heuristics'],['Local Search','Swap adjacent ops on critical path'],['Evolutionary','Crossover & mutation over permutations'],['Branch & Bound','Prune provably suboptimal subtrees'],['Tabu Search','Neighbourhood search with short-term memory']].map(([n,d])=>(
+        {[['Greedy','SPT/LPT dispatching rules — fast but suboptimal'],['Local Search','Swap adjacent ops on critical path'],['Evolutionary','Crossover & mutation over permutations'],['Branch & Bound','Prune provably suboptimal subtrees'],['Tabu Search','Neighbourhood search with short-term memory']].map(([n,d])=>(
           <div key={n} style={{fontSize:'0.79rem',color:'var(--text-2)',marginBottom:'0.3rem'}}>
             → <strong style={{color:'var(--text-1)'}}>{n}:</strong> {d}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Derivative Visualizer ─────────────────────────────────────────────────────
+const FNS = {
+  'x²':   { f: x => x*x,                  df: x => 2*x,                   tex: 'f(x) = x^2',           dtex: "f'(x) = 2x" },
+  'x³−3x':{ f: x => x*x*x - 3*x,          df: x => 3*x*x - 3,             tex: 'f(x) = x^3 - 3x',      dtex: "f'(x) = 3x^2 - 3" },
+  'sin(x)':{ f: x => Math.sin(x),          df: x => Math.cos(x),           tex: 'f(x) = \\sin(x)',      dtex: "f'(x) = \\cos(x)" },
+  'eˣ':   { f: x => Math.exp(x),           df: x => Math.exp(x),           tex: 'f(x) = e^x',           dtex: "f'(x) = e^x" },
+  'x²−4x+3':{ f: x => x*x - 4*x + 3,     df: x => 2*x - 4,               tex: 'f(x) = x^2-4x+3',      dtex: "f'(x) = 2x-4" },
+};
+
+function DerivativeViz() {
+  const [fnKey, setFnKey] = useState('x²−4x+3');
+  const [xVal, setXVal] = useState(3);
+  const canRef = useRef(null);
+  const XMIN = -4, XMAX = 4;
+
+  const fn = FNS[fnKey];
+
+  useEffect(() => {
+    const canvas = canRef.current;
+    if (!canvas) return;
+    const W = canvas.width = canvas.offsetWidth || 500;
+    const H = canvas.height = 260;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    // Map world → canvas
+    const xs = Array.from({length: 200}, (_, i) => XMIN + (i / 199) * (XMAX - XMIN));
+    const ys = xs.map(fn.f);
+    const yMin = Math.min(...ys) - 1, yMax = Math.max(...ys) + 1;
+    const toX = x => (x - XMIN) / (XMAX - XMIN) * W;
+    const toY = y => H - (y - yMin) / (yMax - yMin) * H;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)'; ctx.lineWidth = 1;
+    for (let gx = Math.ceil(XMIN); gx <= XMAX; gx++) {
+      ctx.beginPath(); ctx.moveTo(toX(gx), 0); ctx.lineTo(toX(gx), H); ctx.stroke();
+    }
+    // Axes
+    ctx.strokeStyle = 'rgba(148,163,184,0.2)'; ctx.lineWidth = 1;
+    if (yMin < 0 && yMax > 0) {
+      const ay = toY(0);
+      ctx.beginPath(); ctx.moveTo(0, ay); ctx.lineTo(W, ay); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(toX(0), 0); ctx.lineTo(toX(0), H); ctx.stroke();
+
+    // Function curve
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2.5; ctx.beginPath();
+    xs.forEach((x, i) => {
+      const px = toX(x), py = toY(fn.f(x));
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+
+    // Tangent line at xVal
+    const slope = fn.df(xVal);
+    const y0 = fn.f(xVal);
+    const TAN_RANGE = 1.5;
+    const tx1 = xVal - TAN_RANGE, tx2 = xVal + TAN_RANGE;
+    const ty1 = y0 + slope * (tx1 - xVal), ty2 = y0 + slope * (tx2 - xVal);
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(toX(tx1), toY(ty1)); ctx.lineTo(toX(tx2), toY(ty2)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Point on curve
+    ctx.fillStyle = '#fb7185';
+    ctx.beginPath(); ctx.arc(toX(xVal), toY(y0), 5, 0, 2 * Math.PI); ctx.fill();
+
+    // Labels
+    ctx.fillStyle = 'rgba(148,163,184,0.6)'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    for (let gx = Math.ceil(XMIN); gx <= XMAX; gx++) {
+      ctx.fillText(gx, toX(gx), H - 3);
+    }
+  }, [fn, xVal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const slope = fn.df(xVal).toFixed(3);
+  const fv = fn.f(xVal).toFixed(3);
+
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Derivative Rules</div>
+        <table className="m4-rule-tbl">
+          <thead><tr><th>Rule</th><th>Formula</th></tr></thead>
+          <tbody>
+            <tr><td>Power</td><td><Tex src="\frac{d}{dx}x^n = nx^{n-1}" /></td></tr>
+            <tr><td>Constant multiple</td><td><Tex src="\frac{d}{dx}cf(x) = c\,f'(x)" /></td></tr>
+            <tr><td>Sum</td><td><Tex src="\frac{d}{dx}(f+g) = f'+g'" /></td></tr>
+            <tr><td>Product</td><td><Tex src="\frac{d}{dx}(fg) = f'g + fg'" /></td></tr>
+            <tr><td>Chain</td><td><Tex src="\frac{d}{dx}f(g(x)) = f'(g)\cdot g'" /></td></tr>
+            <tr><td>Exponential</td><td><Tex src="\frac{d}{dx}e^x = e^x" /></td></tr>
+          </tbody>
+        </table>
+        <div className="m4-hr"/>
+        <div className="m4-flabel">Limit Definition</div>
+        <Tex src="f'(x) = \lim_{\Delta x \to 0} \frac{f(x+\Delta x) - f(x)}{\Delta x}" block />
+        <div className="m4-hr"/>
+        <div className="m4-flabel">Second Derivative Test</div>
+        <Tex src="f'(c)=0,\;f''(c)<0 \Rightarrow \text{local max}" block />
+        <Tex src="f'(c)=0,\;f''(c)>0 \Rightarrow \text{local min}" block />
+        <div className="m4-warnbox" style={{marginTop:'0.5rem'}}>
+          <strong>Key insight:</strong> Derivatives are the foundation of gradient methods. If we can compute f'(x), we know which way to step toward an optimum.
+        </div>
+      </div>
+
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive Tangent Line</div>
+        <div className="m4-radio-row" style={{flexWrap:'wrap'}}>
+          {Object.keys(FNS).map(k => (
+            <label key={k} className={`m4-rpill ${fnKey===k?'m4-rpill--on':''}`}>
+              <input type="radio" checked={fnKey===k} onChange={()=>{setFnKey(k); setXVal(0);}} style={{display:'none'}}/>
+              {k}
+            </label>
+          ))}
+        </div>
+        <div className="m4-ctrl">
+          <div className="m4-ctrl-lbl"><span>x value</span><span className="m4-ctrl-val">{xVal.toFixed(2)}</span></div>
+          <input type="range" min={XMIN*10} max={XMAX*10} value={xVal*10} onChange={e=>setXVal(+e.target.value/10)}/>
+        </div>
+        <canvas ref={canRef} className="m4-canvas" height="260"/>
+        <div className="m4-stats-row" style={{marginTop:'0.5rem'}}>
+          <div className="m4-stat"><span className="m4-stat-l">f(x)</span><span className="m4-stat-v" style={{color:'var(--cyan)'}}>{fv}</span></div>
+          <div className="m4-stat"><span className="m4-stat-l">f'(x) = slope</span><span className="m4-stat-v" style={{color:'var(--violet)'}}>{slope}</span></div>
+          <div className="m4-stat"><span className="m4-stat-l">f'(x)=0?</span><span className="m4-stat-v" style={{color:Math.abs(+slope)<0.1?'var(--emerald)':'var(--rose)'}}>{Math.abs(+slope)<0.1?'≈ Critical':'No'}</span></div>
+        </div>
+        <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.78rem'}}>
+          <Tex src={fn.tex} /> &nbsp;&nbsp; <Tex src={fn.dtex} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Gradient Descent Visualizer ───────────────────────────────────────────────
+const GD_FNS = {
+  'x²−4x+3':  { f: x => x*x - 4*x + 3,            df: x => 2*x - 4,            xMin:-1, xMax:6 },
+  'Rayleigh':  { f: x => x*Math.exp(-x*x/2),        df: x => Math.exp(-x*x/2)*(1-x*x), xMin:-1, xMax:4 },
+  'Multimodal':{ f: x => Math.sin(2*x)*x + 0.5*x,  df: x => 2*Math.cos(2*x)*x + Math.sin(2*x) + 0.5, xMin:-3, xMax:5 },
+};
+
+function GradientDescentViz() {
+  const [fnKey, setFnKey] = useState('x²−4x+3');
+  const [alpha, setAlpha] = useState(0.2);
+  const [history, setHistory] = useState([]);
+  const [running, setRunning] = useState(false);
+  const [mode, setMode] = useState('descent');
+  const canRef = useRef(null);
+  const animRef = useRef(null);
+
+  const fn = GD_FNS[fnKey];
+  const { xMin, xMax } = fn;
+
+  const drawState = useCallback((hist) => {
+    const canvas = canRef.current;
+    if (!canvas) return;
+    const W = canvas.width = canvas.offsetWidth || 500;
+    const H = canvas.height = 280;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    const xs = Array.from({length:300}, (_,i) => xMin + i/(299)*(xMax-xMin));
+    const ys = xs.map(fn.f);
+    const yMinV = Math.min(...ys) - 0.5, yMaxV = Math.max(...ys) + 0.8;
+    const toX = x => (x-xMin)/(xMax-xMin)*W;
+    const toY = y => H - (y-yMinV)/(yMaxV-yMinV)*H;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(148,163,184,0.06)'; ctx.lineWidth = 1;
+    for (let g = Math.ceil(xMin); g <= xMax; g++) {
+      ctx.beginPath(); ctx.moveTo(toX(g),0); ctx.lineTo(toX(g),H); ctx.stroke();
+    }
+    // x-axis
+    if (yMinV < 0 && yMaxV > 0) {
+      const ay = toY(0);
+      ctx.strokeStyle = 'rgba(148,163,184,0.15)';
+      ctx.beginPath(); ctx.moveTo(0,ay); ctx.lineTo(W,ay); ctx.stroke();
+    }
+    // Curve
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2.5; ctx.beginPath();
+    xs.forEach((x,i) => { i===0?ctx.moveTo(toX(x),toY(fn.f(x))):ctx.lineTo(toX(x),toY(fn.f(x))); });
+    ctx.stroke();
+
+    // History path
+    if (hist.length > 1) {
+      ctx.strokeStyle = 'rgba(167,139,250,0.5)'; ctx.lineWidth = 1.5; ctx.beginPath();
+      hist.forEach(({x},i) => {
+        const px=toX(x), py=toY(fn.f(x));
+        i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+      });
+      ctx.stroke();
+    }
+
+    // Points
+    hist.forEach(({x}, i) => {
+      const px=toX(x), py=toY(fn.f(x));
+      const isLast = i === hist.length-1;
+      ctx.fillStyle = isLast ? '#fb7185' : 'rgba(167,139,250,0.4)';
+      ctx.beginPath(); ctx.arc(px, py, isLast?5:3, 0, 2*Math.PI); ctx.fill();
+    });
+
+    // Labels
+    ctx.fillStyle='rgba(148,163,184,0.5)'; ctx.font='9px monospace'; ctx.textAlign='center';
+    for (let g = Math.ceil(xMin); g <= xMax; g++) ctx.fillText(g, toX(g), H-3);
+  }, [fn, xMin, xMax]);
+
+  const start = useCallback(() => {
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    const x0 = xMin + Math.random()*(xMax-xMin);
+    const hist = [{x: x0}];
+    setHistory([...hist]);
+    setRunning(true);
+
+    const step = (prev) => {
+      const last = prev[prev.length-1];
+      const grad = fn.df(last.x);
+      const next = mode === 'descent' ? last.x - alpha*grad : last.x + alpha*grad;
+      const clamped = Math.max(xMin, Math.min(xMax, next));
+      const newHist = [...prev, {x: clamped}];
+      setHistory(newHist);
+      drawState(newHist);
+      if (newHist.length < 60 && Math.abs(grad) > 0.001) {
+        animRef.current = requestAnimationFrame(() => step(newHist));
+      } else {
+        setRunning(false);
+      }
+    };
+    drawState(hist);
+    animRef.current = requestAnimationFrame(() => step(hist));
+  }, [fn, alpha, xMin, xMax, mode, drawState]);
+
+  const reset = () => {
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    setHistory([]); setRunning(false);
+    const canvas = canRef.current;
+    if (canvas) { const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+    drawState([]);
+  };
+
+  useEffect(()=>{ drawState(history); },[fnKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{ drawState([]); }, [drawState]);
+
+  const last = history[history.length-1];
+
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Gradient Descent / Ascent</div>
+        <div className="m4-flabel">Update Rule</div>
+        <Tex src="\vec{x} \leftarrow \vec{x} - \alpha\,\nabla f(\vec{x})" block />
+        <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+          <strong>Sign of f'(x)</strong> gives direction. <strong>|f'(x)|</strong> gives step magnitude. <strong>α</strong> is the learning rate — scaling the step.
+        </div>
+        <div className="m4-hr"/>
+        <div className="m4-flabel">Newton-Raphson (optimisation)</div>
+        <Tex src="x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)}" block />
+        <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+          Uses curvature f''(x) to choose optimal step size. Solves quadratics in <strong>one step</strong>. Requires C² smoothness.
+        </div>
+        <div className="m4-hr"/>
+        <div className="m4-flabel">Smoothness Classes</div>
+        <table className="m4-rule-tbl">
+          <thead><tr><th>Class</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><Tex src="C^0" /></td><td>Continuous</td></tr>
+            <tr><td><Tex src="C^1" /></td><td>Continuously differentiable</td></tr>
+            <tr><td><Tex src="C^2" /></td><td>Twice differentiable (N-R requires this)</td></tr>
+            <tr><td><Tex src="C^\infty" /></td><td>Infinitely differentiable (e.g. eˣ)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive Gradient Search</div>
+        <div className="m4-radio-row" style={{flexWrap:'wrap',marginBottom:'0.5rem'}}>
+          {Object.keys(GD_FNS).map(k=>(
+            <label key={k} className={`m4-rpill ${fnKey===k?'m4-rpill--on':''}`}>
+              <input type="radio" checked={fnKey===k} onChange={()=>{setFnKey(k); reset();}} style={{display:'none'}}/>
+              {k}
+            </label>
+          ))}
+        </div>
+        <div className="m4-radio-row" style={{marginBottom:'0.5rem'}}>
+          {[['descent','Descent (min)'],['ascent','Ascent (max)']].map(([v,l])=>(
+            <label key={v} className={`m4-rpill ${mode===v?'m4-rpill--on':''}`}>
+              <input type="radio" checked={mode===v} onChange={()=>setMode(v)} style={{display:'none'}}/>
+              {l}
+            </label>
+          ))}
+        </div>
+        <div className="m4-ctrl">
+          <div className="m4-ctrl-lbl"><span>Learning rate α</span><span className="m4-ctrl-val">{alpha.toFixed(2)}</span></div>
+          <input type="range" min="1" max="50" value={alpha*100} onChange={e=>setAlpha(+e.target.value/100)}/>
+        </div>
+        <div className="m4-btn-row">
+          <button className="m4-btn m4-btn-p" onClick={start} disabled={running}>
+            {running ? '⏳ Running…' : '▶ Run'}
+          </button>
+          <button className="m4-btn m4-btn-g" onClick={reset}>Reset</button>
+        </div>
+        <canvas ref={canRef} className="m4-canvas" height="280"/>
+        {last && (
+          <div className="m4-stats-row">
+            <div className="m4-stat"><span className="m4-stat-l">Steps</span><span className="m4-stat-v" style={{color:'var(--cyan)'}}>{history.length}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">x</span><span className="m4-stat-v" style={{color:'var(--violet)'}}>{last.x.toFixed(3)}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">f(x)</span><span className="m4-stat-v" style={{color:'var(--amber)'}}>{fn.f(last.x).toFixed(3)}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">f'(x)</span><span className="m4-stat-v" style={{color:'var(--rose)'}}>{fn.df(last.x).toFixed(3)}</span></div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -666,12 +1032,19 @@ function QuizSection() {
   };
   const reset = () => { setAnswers({}); setShowScore(false); };
   const score = Object.values(answers).filter(a=>a.correct).length;
+  const total = QUIZ_DATA.length;
   const msgs = [
-    'Keep at it — revisit the LCG and JSSP sections.',
-    'A solid start. Review the theory panels and redo the visualizers.',
-    'Not bad! A couple more passes will cement these concepts.',
-    'Great work — just one slip. Nearly exam-ready!',
-    'Outstanding! Firm grasp of every core concept.',
+    'Keep at it — revisit the core sections and redo the visualizers.',
+    'A start. Work through the Calculus and Algorithms tabs.',
+    'Getting there. Focus on gradient methods and SA.',
+    'Solid — review the one or two you missed.',
+    'Good work! Almost exam-ready.',
+    'Great — just a couple to tighten up.',
+    'Very strong! Nearly flawless.',
+    'Excellent! Only a minor slip.',
+    'Outstanding — almost perfect.',
+    'Flawless! Comprehensive understanding across all topics.',
+    'Perfect score! You have a firm grasp of every concept.',
   ];
 
   return (
@@ -681,7 +1054,7 @@ function QuizSection() {
         return(
           <div key={qi} className="m4-qcard">
             <div className="m4-qhead">
-              <div className="m4-qnum">Question {qi+1} / {QUIZ_DATA.length}</div>
+              <div className="m4-qnum">Question {qi+1} / {total}</div>
               <div className="m4-qtext">{q.q}</div>
             </div>
             <div className="m4-qopts">
@@ -707,7 +1080,7 @@ function QuizSection() {
       })}
       {showScore&&(
         <div className="m4-score">
-          <div className="m4-score-ring" style={{color:score>=4?'var(--emerald)':score>=3?'var(--amber)':'var(--rose)'}}>{score}/5</div>
+          <div className="m4-score-ring" style={{color:score>=8?'var(--emerald)':score>=6?'var(--amber)':'var(--rose)'}}>{score}/{total}</div>
           <div className="m4-score-msg">{msgs[score]}</div>
           <button className="m4-btn m4-btn-p" onClick={reset}>Try Again</button>
         </div>
@@ -769,32 +1142,52 @@ function IntelligenceTab() {
 
       <div className="m4-two-col" style={{marginTop:'2rem'}}>
         <div className="m4-card">
-          <div className="m4-card-h">The Turing Test</div>
+          <div className="m4-card-h">The Turing Test & Intelligence Tests</div>
           <div className="m4-infobox">Alan Turing (1950): If a machine can engage in conversation indistinguishable from a human, it is intelligent. The ultimate <em>performative</em> test.</div>
           <ul className="m4-bullets">
-            <li>Most famous test for intelligence — but not the only one (chess, translation, driving)</li>
             <li>Modern LLMs arguably pass conversational Turing tests</li>
-            <li>But: is "passing for human" the right bar for intelligence?</li>
-            <li>McCarthy: "We relate intelligence to the ability to do certain things, independently of whether it is human, Martian, or a mechanism"</li>
+            <li>CNNs are named for "convolution" but actually use <strong>cross-correlation</strong> — the kernel is not flipped. An example of inconsistent AI terminology.</li>
+            <li>MoCA cognitive tests applied to LLMs: GPT-4 scored ~26 (MCI threshold). Are LLMs "intelligent"?</li>
+            <li>McCarthy: "Intelligence relates to the ability to do certain things, independently of whether the doer is human, Martian, or mechanism."</li>
           </ul>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Convolution vs Cross-Correlation</div>
+          <Tex src="(f * g)[n] = \sum_k f[k]\,g[n-k] \quad\text{(convolution — flips g)}" block />
+          <Tex src="(f \star g)[n] = \sum_k f[k]\,g[n+k] \quad\text{(cross-correlation — no flip)}" block />
           <div className="m4-warnbox">
-            <strong>Think:</strong> Are CNNs actually "neural"? Do they use "convolution"? LLMs — closer to glorified predictive text, or genuine reasoning? Is <em>internal consistency</em> a test for intelligence?
+            <strong>Think:</strong> Is "internal consistency" a valid test for intelligence? Google's Mayer: "brute force computation + data = <em>appear</em> intelligent" — note the word <em>appear</em>.
           </div>
         </div>
         <div className="m4-card">
-          <div className="m4-card-h">A Short History of AI</div>
+          <div className="m4-card-h">AGI Levels & A Short History</div>
+          <div style={{overflowX:'auto',marginBottom:'0.75rem'}}>
+            <table className="m4-rule-tbl">
+              <thead><tr><th>Level</th><th>Narrow</th><th>General (AGI)</th></tr></thead>
+              <tbody>
+                {[
+                  ['0 — No AI','Calculator, compiler','Amazon Mechanical Turk'],
+                  ['1 — Emerging','GOFAI, SHRDLU','ChatGPT, Claude, Gemini'],
+                  ['2 — Competent','Siri, Watson, PaLI','Not yet achieved'],
+                  ['3 — Expert','Grammarly, DALL-E 2','Not yet achieved'],
+                  ['4 — Virtuoso','Deep Blue, AlphaGo','Not yet achieved'],
+                  ['5 — Superhuman','AlphaFold, AlphaZero','ASI — not yet'],
+                ].map(([lvl,n,g])=>(
+                  <tr key={lvl}><td style={{fontSize:'0.72rem',color:'var(--text-2)'}}>{lvl}</td><td style={{fontSize:'0.72rem',color:'var(--text-2)'}}>{n}</td><td style={{fontSize:'0.72rem',color:'var(--cyan)'}}>{g}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {[
-            {yr:'1950', c:'var(--cyan)', ev:'Turing proposes the Imitation Game. Computing begins as a field.'},
-            {yr:'1956', c:'var(--violet)', ev:'Dartmouth Workshop — birth of "Artificial Intelligence". Symbolic AI & logic begin.'},
-            {yr:'1960s–70s', c:'var(--emerald)', ev:'Logical Theorist, symbolic reasoning. Herb Simon: "We solved the mind-body problem." (Spoiler: they didn\'t.)'},
-            {yr:'1980s', c:'var(--amber)', ev:'Expert Systems boom. Purportedly saved companies millions. Were set to change the white-collar workplace. (Sound familiar?)'},
-            {yr:'1990s', c:'var(--rose)', ev:'AI Winter thaws. Probabilistic methods. "Teaching computers to get better at learning from their experiences."'},
-            {yr:'2012+', c:'var(--cyan)', ev:'Deep Learning revolution (ImageNet). "Brute force + data = apparent intelligence." — Google.'},
-            {yr:'2022+', c:'var(--violet)', ev:'LLMs, GenAI. GPT-4, Claude, Gemini. Never been a more interesting time in AI from a public consciousness perspective!'},
+            {yr:'1950', c:'var(--cyan)', ev:'Turing proposes the Imitation Game.'},
+            {yr:'1956', c:'var(--violet)', ev:'Dartmouth Workshop — birth of "AI". Symbolic AI & logic begin.'},
+            {yr:'1980s', c:'var(--amber)', ev:'Expert Systems. "Purportedly saved millions." Sound familiar?'},
+            {yr:'1990s', c:'var(--emerald)', ev:'AI Winter. Probabilistic & statistical methods emerge.'},
+            {yr:'2012+', c:'var(--rose)', ev:'Deep Learning (ImageNet). Brute force + data = apparent intelligence.'},
+            {yr:'2022+', c:'var(--cyan)', ev:'LLMs, GenAI. GPT-4, Claude, Gemini — "Emerging AGI" level.'},
           ].map(({yr,c,ev})=>(
-            <div key={yr} style={{display:'flex',gap:'0.7rem',marginBottom:'0.7rem'}}>
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.7rem',color:c,fontWeight:700,minWidth:'60px',paddingTop:2}}>{yr}</div>
-              <div style={{fontSize:'0.8rem',color:'var(--text-2)',borderLeft:`2px solid ${c}`,paddingLeft:'0.7rem'}}>{ev}</div>
+            <div key={yr} style={{display:'flex',gap:'0.7rem',marginBottom:'0.5rem'}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.7rem',color:c,fontWeight:700,minWidth:'55px',paddingTop:2}}>{yr}</div>
+              <div style={{fontSize:'0.78rem',color:'var(--text-2)',borderLeft:`2px solid ${c}`,paddingLeft:'0.7rem'}}>{ev}</div>
             </div>
           ))}
         </div>
@@ -813,36 +1206,44 @@ function AdaptationTab() {
           <div className="m4-infobox">Traditional ("crisp") AI works great in well-defined artificial worlds — chess, logic puzzles, deterministic search. The real world is <em>messy</em>.</div>
           <div className="m4-strat" style={{'--sc':'var(--rose)'}}>
             <div className="m4-strat-h">Traditional AI requires:</div>
-            <div className="m4-strat-d">Well-described states · well-defined actions · goal state · utility function · deterministic search. Works great in games worlds, Shakey's world…</div>
+            <div className="m4-strat-d">Well-described states · well-defined actions · goal state · utility function · deterministic search</div>
           </div>
           <div className="m4-strat" style={{'--sc':'var(--emerald)','marginTop':'0.5rem'}}>
-            <div className="m4-strat-h">But the real world has:</div>
-            <div className="m4-strat-d">Uncertainty · ambiguity · unknowns · a changing environment · approximation · need for resilience · graceful degradation</div>
+            <div className="m4-strat-h">The real world has:</div>
+            <div className="m4-strat-d">Uncertainty · ambiguity · unknowns · changing environment · approximation · need for resilience · graceful degradation</div>
           </div>
           <div className="m4-hr"/>
-          <div className="m4-flabel">The Engineering View</div>
-          <p style={{fontSize:'0.82rem',color:'var(--text-2)'}}>
-            This unit takes an <em>engineering view</em>: the goal is to enable computers to do more things that are useful, beyond existing capabilities, and — importantly — really cool.
-          </p>
+          <div className="m4-flabel">The Key Claim</div>
+          <Tex src="\textbf{AI} = \textbf{optimisation}" block />
+          <p style={{fontSize:'0.82rem',color:'var(--text-2)'}}>Optimisation is the <em>engine</em> — "what makes it tick". Searching for the optimal hypothesis within a hypothesis space, evaluated by a metric.</p>
           <div className="m4-hr"/>
-          <p style={{fontSize:'0.82rem',color:'var(--text-2)',fontStyle:'italic'}}>
-            "Programming for intelligence refocused again, inventing ways to deal with the probabilities in the messy uncertain real world, and teaching computers to get much better at learning from their experiences."
-          </p>
+          <div className="m4-flabel">Computational Intelligence taxonomy</div>
+          {[
+            ['Neural Networks','Inspired by brain — weights, connections, backprop'],
+            ['Evolutionary Computing','Inspired by Darwinian evolution — selection, crossover, mutation'],
+            ['Swarm Intelligence','Inspired by collective behaviour — ants, bees, PSO'],
+            ['Fuzzy Logic','Inspired by vague human reasoning — degrees of truth'],
+          ].map(([t,d])=>(
+            <div key={t} style={{display:'flex',gap:'0.6rem',marginBottom:'0.4rem'}}>
+              <span style={{color:'var(--violet)',fontFamily:'var(--font-mono)',fontSize:'0.7rem',fontWeight:700,minWidth:8}}>▸</span>
+              <div><strong style={{fontSize:'0.8rem',color:'var(--text-1)'}}>{t}:</strong><span style={{fontSize:'0.78rem',color:'var(--text-2)'}}> {d}</span></div>
+            </div>
+          ))}
         </div>
         <div className="m4-card">
           <div className="m4-card-h">Inspiration from Nature</div>
-          <div className="m4-infobox">
-            <strong>Nature is very good</strong> at handling uncertainty, ambiguity, change, and approximation. Key trait: the ability to <strong>adapt</strong> to a changing, emergent environment.
-          </div>
+          <div className="m4-infobox">Nature handles uncertainty, ambiguity, change, and approximation. Key trait: ability to <strong>adapt</strong> to a changing environment.</div>
           <div className="m4-hr"/>
           {[
             { title:'Short-term (individual lifespan)', color:'var(--cyan)',
-              items:['Learning — acquisition of knowledge and skills within a lifetime','Physical adaptation — body responds to diet, training, environment','Humans extend learning beyond lifespans via language, writing, books, computers'] },
+              items:['Learning — knowledge acquisition within a lifetime','Physical adaptation — body responds to diet, training, environment','Humans extend learning across lifespans via language & writing'] },
             { title:'Long-term (population/species)', color:'var(--violet)',
-              items:['Evolution — genetic variation + natural selection over generations','Gradual adaptation across populations, not just individuals','Speciation when environments diverge significantly'] },
+              items:['Evolution — genetic variation + natural selection over millennia','Gradual adaptation across populations, not just individuals'] },
+            { title:'Short & long-term (collective)', color:'var(--emerald)',
+              items:['Emergent behaviour — division of labour, formation flying','Social behaviour that outlives individuals — culture, institutions'] },
           ].map(({title,color,items})=>(
-            <div key={title} style={{marginBottom:'1.25rem'}}>
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.7rem',color,fontWeight:700,letterSpacing:'0.08em',marginBottom:'0.4rem'}}>{title}</div>
+            <div key={title} style={{marginBottom:'1rem'}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.7rem',color,fontWeight:700,letterSpacing:'0.08em',marginBottom:'0.35rem'}}>{title}</div>
               <ul className="m4-bullets">{items.map(i=><li key={i}>{i}</li>)}</ul>
             </div>
           ))}
@@ -851,7 +1252,7 @@ function AdaptationTab() {
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem',marginTop:'0.4rem'}}>
             {[
               ['Antarctic fish','Antifreeze proteins in blood — genetic evolution'],
-              ['Cuttlefish','Real-time skin colour/texture camouflage — neural'],
+              ['Cuttlefish','Real-time camouflage — neural adaptation'],
               ['Kangaroo rats','Never drink water — metabolic adaptation'],
               ['Wood frogs','Freeze their bodies in winter — physiological'],
             ].map(([a,b])=>(
@@ -867,8 +1268,347 @@ function AdaptationTab() {
   );
 }
 
+// ── Optimisation Tab ──────────────────────────────────────────────────────────
+function OptimisationTab() {
+  return (
+    <div>
+      <div className="m4-ingred-grid">
+        {[
+          { num:'1', name:'Language', sub:'Representation', color:'var(--cyan)',
+            desc:'Defines the hypothesis space — what solutions look like. If you can\'t describe it, you can\'t model it! Mathematical equations, grammars, Gantt charts, programs, neural networks…' },
+          { num:'2', name:'Model', sub:'Instantiation / Candidate Solution', color:'var(--violet)',
+            desc:'One specific instance expressible in the chosen language. An hypothesis that attempts to describe how the real world works (or could work). May be executable or parameterised.' },
+          { num:'3', name:'Metric', sub:'Evaluation', color:'var(--emerald)',
+            desc:'A function f : H → ℝ measuring how "good" a hypothesis is. Aka cost function, fitness function, objective function, error function, loss function.' },
+        ].map(i=>(
+          <div key={i.num} className="m4-ingred" style={{'--ic':i.color}}>
+            <div className="m4-ingred-num">INGREDIENT {i.num}</div>
+            <div className="m4-ingred-name">{i.name}</div>
+            <div className="m4-ingred-sub">{i.sub}</div>
+            <div className="m4-ingred-desc">{i.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">Hypothesis Space & Metric</div>
+          <div className="m4-infobox">The hypothesis space H is the set of all models expressible in the chosen language. Changing the language changes H — more expressive languages give larger spaces.</div>
+          <div className="m4-flabel">Expressiveness</div>
+          <Tex src="A \supset B \Rightarrow \text{Language A is more expressive than B}" block />
+          <table className="m4-rule-tbl" style={{marginTop:'0.5rem'}}>
+            <thead><tr><th>More expressive</th><th>Less expressive</th></tr></thead>
+            <tbody>
+              <tr><td>Polynomial functions</td><td>Linear functions</td></tr>
+              <tr><td>Context-free grammars</td><td>Regular grammars</td></tr>
+              <tr><td>First-order logic</td><td>Propositional logic</td></tr>
+            </tbody>
+          </table>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Mean Squared Error (MSE)</div>
+          <Tex src="\text{MSE} = \frac{1}{N}\sum_{i=1}^{N}(f(x_i) - y_i)^2" block />
+          <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+            MSE is a "bowl" function — the friendliest hypothesis space. Gradient methods are guaranteed to converge to the global minimum!
+          </div>
+        </div>
+
+        <div className="m4-card">
+          <div className="m4-card-h">Optimisation — Formal Definitions</div>
+          <div className="m4-flabel">Ideal Definition</div>
+          <Tex src="\hat{h} = \underset{h \in H}{\arg\min}\;f(h)" block />
+          <div style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.75rem'}}>Find a model within the hypothesis space that is <em>closest</em> (minimal error) to the target.</div>
+          <div className="m4-flabel">Practical Definition (compute-bounded)</div>
+          <Tex src="\hat{h} = \underset{h \in H}{\arg\min}\;f(h) \quad \text{s.t. compute} \leq C_{\max}" block />
+          <div style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.75rem'}}>Find a model that is <em>as close as possible</em> within a specified amount of compute.</div>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Chomsky Hierarchy (language expressiveness)</div>
+          <Tex src="\text{Regular} \subset \text{Context-Free} \subset \text{Context-Sensitive} \subset \text{Recursively Enumerable}" block />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Online vs Offline</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
+            <div className="m4-strat" style={{'--sc':'var(--cyan)'}}>
+              <div className="m4-strat-h">Online</div>
+              <div className="m4-strat-d">Decisions made in real time as items arrive. Cannot look ahead. E.g. First Fit on conveyor belt.</div>
+            </div>
+            <div className="m4-strat" style={{'--sc':'var(--violet)'}}>
+              <div className="m4-strat-h">Offline</div>
+              <div className="m4-strat-d">All data known upfront. Better result justifies time cost. E.g. FFD pre-sorts all items.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Calculus Tab ──────────────────────────────────────────────────────────────
+function CalculusTab() {
+  return (
+    <div>
+      <DerivativeViz />
+      <div className="m4-two-col" style={{marginTop:'1.5rem'}}>
+        <div className="m4-card">
+          <div className="m4-card-h">Partial Derivatives</div>
+          <div className="m4-infobox">Derivative with respect to one variable, holding all others fixed.</div>
+          <div className="m4-flabel">Example: f(x₁, x₂) = x₁² + x₂²  (the "bowl")</div>
+          <Tex src="\frac{\partial}{\partial x_1}(x_1^2 + x_2^2) = 2x_1" block />
+          <Tex src="\frac{\partial}{\partial x_2}(x_1^2 + x_2^2) = 2x_2" block />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">The Gradient Vector</div>
+          <Tex src="\nabla f(\vec{x}) = \begin{bmatrix} \dfrac{\partial f}{\partial x_1} \\[8pt] \dfrac{\partial f}{\partial x_2} \\[4pt] \vdots \\[4pt] \dfrac{\partial f}{\partial x_n} \end{bmatrix}" block />
+          <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+            The gradient is a <strong>vector field</strong> that points in the direction of steepest ascent at every point. Gradient descent moves in the <em>opposite</em> direction (−∇f).
+          </div>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Example: Gradient of bowl function</div>
+          <Tex src="f(x_1, x_2) = x_1^2 + x_2^2 \;\Rightarrow\; \nabla f = \begin{bmatrix}2x_1 \\ 2x_2\end{bmatrix}" block />
+        </div>
+
+        <div className="m4-card">
+          <div className="m4-card-h">Vector Products</div>
+          <div className="m4-flabel">Euclidean Norm (L² norm)</div>
+          <Tex src="\|\vec{v}\| = \sqrt{v_1^2 + v_2^2 + \cdots + v_n^2}" block />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Dot Product (scalar result)</div>
+          <Tex src="\vec{v} \cdot \vec{w} = \sum_{i=1}^n v_i w_i = \vec{v}^\top \vec{w}" block />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Outer Product (tensor product)</div>
+          <Tex src="\vec{v} \otimes \vec{w} = \vec{v}\,\vec{w}^\top \quad \text{(gives a matrix)}" block />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Hadamard Product (element-wise)</div>
+          <Tex src="(\vec{v} \odot \vec{w})_i = v_i w_i" block />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Gradient Convergence Check</div>
+          <Tex src="\|\nabla f(\vec{x})\| < \epsilon \quad \Rightarrow \quad \text{converged}" block />
+          <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+            In practice we stop when the gradient norm is small (below tolerance ε), not exactly zero. This handles floating-point and near-flat regions.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Algorithms Tab ────────────────────────────────────────────────────────────
+function AlgorithmsTab() {
+  const [sec, setSec] = useState('gradient');
+
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['gradient', 'Gradient Methods'],
+          ['direct', 'Direct Methods'],
+          ['stochastic', 'Stochastic Methods'],
+        ].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {/* ── GRADIENT METHODS ── */}
+      {sec === 'gradient' && (
+        <div>
+          <GradientDescentViz />
+          <div className="m4-two-col" style={{marginTop:'1.5rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Gradient Descent with Restarts</div>
+              <div className="m4-pseudocode">
+                <span className="kw">Algorithm</span>: Gradient Ascent with Restarts{'\n'}
+                <span className="num"> 1:</span> x⃗  ← random initial value{'\n'}
+                <span className="num"> 2:</span> x⃗* ← x⃗  <span className="cm">▷ best so far</span>{'\n'}
+                <span className="num"> 3:</span> <span className="kw">repeat</span>{'\n'}
+                <span className="num"> 4:</span>   <span className="kw">repeat</span>{'\n'}
+                <span className="num"> 5:</span>     x⃗ ← x⃗ + α∇f(x⃗){'\n'}
+                <span className="num"> 6:</span>   <span className="kw">until</span> ‖∇f(x⃗)‖ {"<"} ε{'\n'}
+                <span className="num"> 7:</span>   <span className="kw">if</span> f(x⃗) {">"} f(x⃗*) <span className="kw">then</span> x⃗* ← x⃗{'\n'}
+                <span className="num"> 8:</span>   x⃗ ← random value{'\n'}
+                <span className="num"> 9:</span> <span className="kw">until</span> time exhausted{'\n'}
+                <span className="num">10:</span> <span className="kw">return</span> x⃗*
+              </div>
+              <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+                <strong>Why restarts?</strong> Gradient methods get stuck in local optima. Multiple random restarts explore different regions. Under bounded space + finite optima, this <em>eventually</em> finds the global optimum.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Pathological cases</div>
+              <ul className="m4-bullets">
+                <li><strong>Too small α:</strong> Slow convergence — tiny steps take forever</li>
+                <li><strong>Too large α:</strong> Overshoot — oscillates around minimum, may diverge</li>
+                <li><strong>Flat regions:</strong> f'(x) = 0 everywhere — no slope to follow</li>
+                <li><strong>Rayleigh-like:</strong> Steps grow approaching optimum — pathological!</li>
+              </ul>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Newton-Raphson Deep Dive</div>
+              <div className="m4-flabel">Root-finding form</div>
+              <Tex src="x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}" block />
+              <div className="m4-flabel">Optimisation form (zeros of f')</div>
+              <Tex src="x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)}" block />
+              <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+                <strong>Geometric intuition:</strong> Uses the tangent <em>line</em> to approximate f' — equivalent to fitting a local <em>quadratic</em> to f. Matches both value and curvature at the current point. Solves quadratics in exactly <strong>one step</strong>.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Gradient Ascent (general n-D)</div>
+              <Tex src="\vec{x} \leftarrow \vec{x} + \alpha \begin{bmatrix}\partial f/\partial x_1 \\ \vdots \\ \partial f/\partial x_n\end{bmatrix}" block />
+              <div className="m4-hr"/>
+              <div className="m4-warnbox">
+                <strong>Local optima problem:</strong> Gradient methods get stuck. No general algorithm guarantees finding the global optimum in non-finite domains. This motivates all the methods that follow!
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DIRECT METHODS ── */}
+      {sec === 'direct' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">What are Direct Methods?</div>
+              <div className="m4-infobox">
+                Gradient methods require derivatives — not always available! Direct methods rely solely on the <strong>objective function</strong> f(x). Used when the search space is a black box, non-differentiable, or not continuous.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-algo-card" style={{'--ac':'var(--cyan)'}}>
+                <div className="m4-algo-card-h">Cyclic Coordinate Search (CCS) <span className="m4-algo-card-badge">taxicab search</span></div>
+                <div className="m4-algo-card-desc">Optimise one variable at a time, cycling through all dimensions. Each step: line search in direction of current basis vector eᵢ.</div>
+                <Tex src="\vec{x}^{k+1} = \arg\min_{x_i}\, f(\ldots, x_i, \ldots)" block />
+                <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Stops when improvement per full cycle {"<"} ε. Can fail to find local optimum (diagonal valley problem).</div>
+              </div>
+              <div className="m4-algo-card" style={{'--ac':'var(--violet)'}}>
+                <div className="m4-algo-card-h">CCS with Acceleration Step</div>
+                <div className="m4-algo-card-desc">After one full cycle, take an additional line search in the net progress direction:</div>
+                <Tex src="\vec{u} = \vec{x}^n - \vec{x}^0 \quad \text{(net direction)}" block />
+                <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Faster traversal of diagonal valleys/ridges.</div>
+              </div>
+              <div className="m4-algo-card" style={{'--ac':'var(--emerald)'}}>
+                <div className="m4-algo-card-h">Powell's Method</div>
+                <div className="m4-algo-card-desc">Extends CCS by maintaining an adaptive queue of search directions, updated each cycle:</div>
+                <Tex src="\vec{u}_{n+1} = \vec{x}^n - \vec{x}^0 \;\;\text{replaces oldest direction}" block />
+                <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Risk: directions can become linearly dependent, losing span of ℝⁿ.</div>
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Pattern Search & Simplex</div>
+              <div className="m4-algo-card" style={{'--ac':'var(--amber)'}}>
+                <div className="m4-algo-card-h">Hooke-Jeeves (H-J)</div>
+                <div className="m4-algo-card-desc">Samples f(x ± α·eᵢ) in each dimension — directly approximating the slope. Requires 2n evaluations per step.</div>
+                <Tex src="\vec{x}^* = \arg\min\{f(\vec{x} \pm \alpha\vec{e}_i)\}" block />
+                <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>If no improvement: shrink step α ← γα. Converges to local minimum.</div>
+              </div>
+              <div className="m4-algo-card" style={{'--ac':'var(--rose)'}}>
+                <div className="m4-algo-card-h">Generalised Pattern Search (GPS)</div>
+                <div className="m4-algo-card-desc">Requires D to be a positive spanning set — guarantees at least one descent direction from any non-optimal point. Can use n+1 directions (vs H-J's 2n).</div>
+              </div>
+              <div className="m4-algo-card" style={{'--ac':'var(--cyan)'}}>
+                <div className="m4-algo-card-h">Nelder-Mead Simplex <span className="m4-algo-card-badge">population!</span></div>
+                <div className="m4-algo-card-desc">Maintains n+1 vertices forming a simplex. "Rolls downhill" via four operations:</div>
+                <Tex src="\text{Reflect:}\;\vec{x}_r = \bar{\vec{x}} + \alpha(\bar{\vec{x}} - \vec{x}_h)" block />
+                <Tex src="\text{Expand:}\;\vec{x}_e = \bar{\vec{x}} + \beta(\vec{x}_r - \bar{\vec{x}})" block />
+                <Tex src="\text{Contract:}\;\vec{x}_c = \bar{\vec{x}} + \gamma(\vec{x}_h - \bar{\vec{x}})" block />
+                <Tex src="\text{Shrink:}\;\vec{x}_i \leftarrow \vec{x}_l + \sigma(\vec{x}_i - \vec{x}_l)" block />
+                <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Typical: α=1, β=2, γ=0.5, σ=0.5. Convergence: variance of vertex values {"<"} ε.</div>
+              </div>
+              <div className="m4-warnbox" style={{marginTop:'0.5rem'}}>
+                <strong>Collective intelligence:</strong> Nelder-Mead maintains a <em>population</em> of candidates — no single point drives the search. This foreshadows population-based stochastic methods!
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── STOCHASTIC METHODS ── */}
+      {sec === 'stochastic' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Hill Climbing Family</div>
+              <div className="m4-infobox">
+                <strong>The Tweak heuristic:</strong> "It's easier to find a good solution by modifying a good-ish one you've already found by a small amount than by starting from scratch." — Luke (2016)
+              </div>
+              <div className="m4-pseudocode">
+                <span className="kw">Algorithm</span>: Hill Climbing (1+1){'\n'}
+                <span className="num">1:</span> S ← initial candidate{'\n'}
+                <span className="num">2:</span> <span className="kw">repeat</span>{'\n'}
+                <span className="num">3:</span>   R ← Tweak(Copy(S)){'\n'}
+                <span className="num">4:</span>   <span className="kw">if</span> Quality(R) {">"} Quality(S){'\n'}
+                <span className="num">5:</span>     S ← R{'\n'}
+                <span className="num">6:</span> <span className="kw">until</span> ideal or time up{'\n'}
+                <span className="num">7:</span> <span className="kw">return</span> S
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Nomenclature</div>
+              <table className="m4-rule-tbl">
+                <thead><tr><th>Algorithm</th><th>Notation</th><th>Select from</th></tr></thead>
+                <tbody>
+                  <tr><td>Hill Climbing</td><td>(1+1)</td><td>1 existing + 1 modified</td></tr>
+                  <tr><td>Steepest Ascent HC</td><td>(1+n)</td><td>1 existing + n modified</td></tr>
+                  <tr><td>SA HC w/ Replacement</td><td>(1,n)</td><td>n modified only</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Gaussian Tweak (non-uniform)</div>
+              <Tex src="n \sim \mathcal{N}(0, \sigma^2) \quad v_i \leftarrow v_i + n" block />
+              <div style={{fontSize:'0.79rem',color:'var(--text-2)'}}>σ directly controls exploration rate: large σ → more exploration; small σ → exploitation. Unlike bounded uniform, Gaussian allows arbitrarily large (but rare) jumps.</div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Exploration vs Exploitation</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem',marginTop:'0.4rem'}}>
+                <div className="m4-strat" style={{'--sc':'var(--cyan)'}}>
+                  <div className="m4-strat-h">Exploitation (small step)</div>
+                  <div className="m4-strat-d">Tiptoeing up the hill. Converges cleanly. Less likely to escape local optima.</div>
+                </div>
+                <div className="m4-strat" style={{'--sc':'var(--violet)'}}>
+                  <div className="m4-strat-h">Exploration (large step)</div>
+                  <div className="m4-strat-d">Leaps and bounds. Faster ascent. May overshoot. Can jump to better peaks.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Simulated Annealing & Tabu</div>
+              <div className="m4-flabel">SA Acceptance Probability</div>
+              <Tex src="P = e^{\,\dfrac{\text{Quality}(R) - \text{Quality}(S)}{t}}" block />
+              <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+                When Q(R) {"<"} Q(S): exponent is negative → 0 {"<"} P {"<"} 1. Higher temperature t → higher P (accept worse). As t → 0: pure hill climb. As t → ∞: random walk. Temperature decreases over time: <Tex src="t = \beta e^{-\alpha T}" />
+              </div>
+              <div className="m4-pseudocode" style={{fontSize:'0.7rem'}}>
+                <span className="kw">Algorithm</span>: Simulated Annealing{'\n'}
+                <span className="num"> 1:</span> t ← high initial temperature; S ← init{'\n'}
+                <span className="num"> 2:</span> <span className="kw">repeat</span>{'\n'}
+                <span className="num"> 3:</span>   R ← Tweak(Copy(S)){'\n'}
+                <span className="num"> 4:</span>   <span className="kw">if</span> Q(R){">"} Q(S) <span className="kw">or</span> rand {"<"} e^((Q(R)-Q(S))/t){'\n'}
+                <span className="num"> 5:</span>     S ← R{'\n'}
+                <span className="num"> 6:</span>   Decrease t; update Best{'\n'}
+                <span className="num"> 7:</span> <span className="kw">until</span> time up or t ≤ 0{'\n'}
+                <span className="num"> 8:</span> <span className="kw">return</span> Best
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-algo-card" style={{'--ac':'var(--amber)'}}>
+                <div className="m4-algo-card-h">Tabu Search <span className="m4-algo-card-badge">Glover, 1986</span></div>
+                <div className="m4-algo-card-desc">Maintains a FIFO queue of recently visited candidates (length l). Forbids revisiting — eventually escapes any local optimum. Trade-off: large l = better memory but slower lookup.</div>
+              </div>
+              <div className="m4-algo-card" style={{'--ac':'var(--emerald)'}}>
+                <div className="m4-algo-card-h">Iterated Local Search (ILS)</div>
+                <div className="m4-algo-card-desc">
+                  Clever restarts using a "home base" local optimum. <strong>Perturb(H)</strong> generates new start near home base. <strong>NewHomeBase(H,S)</strong> decides whether to adopt the new local optimum.
+                </div>
+                <Tex src="\text{NewHomeBase}(H,S) = \begin{cases} S & Q(S) \geq Q(H) \\ H & \text{otherwise} \end{cases}" block />
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-warnbox">
+                <strong>No Free Lunch Theorem</strong> (Wolpert &amp; Macready, 1997): Averaged across all possible problems, no algorithm outperforms any other. Performance gains on one class trade off against losses on another. Always choose algorithms informed by domain knowledge.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Labs','Quiz'];
+const MAIN_TABS = ['Overview','Intelligence','Adaptation','Optimisation','Calculus','Algorithms','Labs','Quiz'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4012() {
@@ -908,16 +1648,16 @@ export default function CITS4012() {
             <div className="m4-hero">
               <div className="m4-hero-lbl">// CITS4012 · UWA · Sem 1, 2025</div>
               <h1 className="m4-hero-title"><span style={{color:'var(--cyan)'}}>AI</span> &amp; Adaptive Systems</h1>
-              <p className="m4-hero-sub">Nature-inspired computing. How do we enable computers to handle the <em>messy</em> real world? Taking lessons from adaptation, evolution, and learning — and bringing them into computation.</p>
+              <p className="m4-hero-sub">Nature-inspired computing. From the definition of intelligence to calculus, gradient descent, and stochastic optimisation — building the full picture of how adaptive systems work.</p>
             </div>
             <div className="m4-topic-grid">
               {[
-                {code:'L2', title:'What is Intelligence?', color:'var(--cyan)', desc:'Four quadrants of AI, Turing Test, history from Symbolic AI to LLMs, and the ongoing debate about what "intelligent" means.', go:'Intelligence'},
-                {code:'L3', title:'Adaptation & Nature', color:'var(--violet)', desc:'Why traditional AI fails in the real world. How nature handles uncertainty via learning, physical adaptation, and evolution.', go:'Adaptation'},
-                {code:'LAB 1', title:'PRNG & LCG', color:'var(--emerald)', desc:'Pseudo-random number generation. The Linear Congruential Generator, Mersenne primes, equidistribution, and PCG-64.', go:'Labs'},
-                {code:'LAB 2', title:'Bin Packing', color:'var(--amber)', desc:'Heuristic strategies: First Fit, Next Fit, Best Fit, FFD. Online vs offline algorithms. The Crest Packing Problem.', go:'Labs'},
-                {code:'LAB 3–5', title:'Job Shop Scheduling', color:'var(--rose)', desc:'JSSP formulation, makespan minimisation, Gantt charts, feasibility checking (consistent vs satisfies), NP-hardness.', go:'Labs'},
-                {code:'LAB 4–5', title:'Solution Space', color:'var(--violet)', desc:'Combinatorial explosion: (n!)ᵐ. Why exhaustive search is infeasible and what motivates heuristic approaches.', go:'Labs'},
+                {code:'L1–2', title:'Intelligence & Adaptation', color:'var(--cyan)', desc:'Four quadrants of AI, Turing Test, history from Symbolic AI to LLMs. Why the real world is messy and how nature adapts.', go:'Intelligence'},
+                {code:'L3', title:'Optimisation Framework', color:'var(--violet)', desc:'Three ingredients: Language (representation), Model (hypothesis), Metric (evaluation). Hypothesis spaces, MSE, argmin, online vs offline.', go:'Optimisation'},
+                {code:'L5', title:'Vector Calculus', color:'var(--emerald)', desc:'Limit definition of derivatives, power/chain/product rules, partial derivatives, gradient vector ∇f, second derivative test.', go:'Calculus'},
+                {code:'L6–9', title:'Optimisation Algorithms', color:'var(--amber)', desc:'Gradient descent/ascent, Newton-Raphson, direct methods (CCS, Powell, H-J, Nelder-Mead), stochastic methods (HC, SA, Tabu, ILS), No Free Lunch.', go:'Algorithms'},
+                {code:'L4 + Labs', title:'Job Shop Scheduling', color:'var(--rose)', desc:'JSSP formulation, makespan minimisation (n!)ᵐ solution space, Gantt charts, NP-hardness, heuristic approaches.', go:'Labs'},
+                {code:'Labs 1–2', title:'PRNG & Bin Packing', color:'var(--violet)', desc:'LCG recurrence, Mersenne primes, full-period theorem. Bin packing heuristics: FF, NF, BF, FFD. Online vs offline algorithms.', go:'Labs'},
               ].map(item => (
                 <div key={item.code} className="m4-tcard" style={{'--tc':item.color}} onClick={() => setTab(item.go)}>
                   <div className="m4-tcard-code">{item.code}</div>
@@ -935,6 +1675,39 @@ export default function CITS4012() {
 
         {/* ── ADAPTATION ── */}
         {tab === 'Adaptation' && <AdaptationTab />}
+
+        {/* ── OPTIMISATION ── */}
+        {tab === 'Optimisation' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Optimisation Framework <span className="m4-badge">Lecture 3</span></h2>
+              <p className="m4-sec-sub">Three key ingredients underpin every optimisation problem: the language defining the hypothesis space, a model instantiating a candidate solution, and a metric evaluating quality.</p>
+            </div>
+            <OptimisationTab />
+          </>
+        )}
+
+        {/* ── CALCULUS ── */}
+        {tab === 'Calculus' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Vector Calculus Refresher <span className="m4-badge">Lecture 5</span></h2>
+              <p className="m4-sec-sub">The mathematical foundation for gradient methods. Drag the slider to explore how the tangent line (derivative) changes across any function.</p>
+            </div>
+            <CalculusTab />
+          </>
+        )}
+
+        {/* ── ALGORITHMS ── */}
+        {tab === 'Algorithms' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Optimisation Algorithms <span className="m4-badge">Lectures 6–9</span></h2>
+              <p className="m4-sec-sub">From gradient descent to Newton-Raphson, direct methods, and stochastic search. Each approach handles a different class of hypothesis space.</p>
+            </div>
+            <AlgorithmsTab />
+          </>
+        )}
 
         {/* ── LABS ── */}
         {tab === 'Labs' && (
@@ -982,8 +1755,8 @@ export default function CITS4012() {
         {/* ── QUIZ ── */}
         {tab === 'Quiz' && (<>
           <div className="m4-sec-hdr">
-            <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge">5 Questions</span></h2>
-            <p className="m4-sec-sub">Test your understanding of LCG, Bin Packing, JSSP, and Solution Space concepts. Detailed feedback on every answer.</p>
+            <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge">10 Questions</span></h2>
+            <p className="m4-sec-sub">Covering all lectures: LCG, Bin Packing, JSSP, Optimisation Framework, Calculus & Gradients, Algorithms. Detailed feedback on every answer.</p>
           </div>
           <QuizSection />
         </>)}

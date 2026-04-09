@@ -2289,3 +2289,146 @@ strong { color: var(--text-0); font-weight: 600; }
   .m4-quadrant { padding: 0.65rem 0.5rem; }
   .m4-q-label { font-size: 0.72rem; }
 }
+
+/* ── KaTeX display helpers ─────────────────────────────────────────────────── */
+.m4-tex-block {
+  display: block;
+  overflow-x: auto;
+  padding: 0.65rem 0;
+  text-align: center;
+}
+.m4-tex-inline { display: inline; }
+.m4-tex-block .katex { font-size: 1.05rem; }
+
+/* ── Optimisation ingredients grid ─────────────────────────────────────────── */
+.m4-ingred-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+@media (max-width: 600px) { .m4-ingred-grid { grid-template-columns: 1fr; } }
+.m4-ingred {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem;
+  border-top: 3px solid var(--ic);
+}
+.m4-ingred-num {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ic);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.3rem;
+}
+.m4-ingred-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-1);
+  margin-bottom: 0.2rem;
+}
+.m4-ingred-sub {
+  font-size: 0.75rem;
+  color: var(--ic);
+  font-family: var(--font-mono);
+  margin-bottom: 0.4rem;
+}
+.m4-ingred-desc { font-size: 0.78rem; color: var(--text-2); }
+
+/* ── Algorithm sub-tabs ─────────────────────────────────────────────────────── */
+.m4-algo-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.m4-algo-tab {
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: all 0.15s;
+}
+.m4-algo-tab:hover { color: var(--violet); border-color: var(--violet); }
+.m4-algo-tab--on {
+  background: rgba(167,139,250,0.15);
+  color: var(--violet);
+  border-color: rgba(167,139,250,0.5);
+}
+
+/* ── Derivative rule table ──────────────────────────────────────────────────── */
+.m4-rule-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin: 0.5rem 0;
+}
+.m4-rule-tbl th {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+.m4-rule-tbl td {
+  padding: 0.35rem 0.5rem;
+  color: var(--text-2);
+  border-bottom: 1px solid rgba(51,65,85,0.4);
+  vertical-align: middle;
+}
+.m4-rule-tbl tr:last-child td { border-bottom: none; }
+.m4-rule-tbl tr:hover td { background: rgba(167,139,250,0.04); }
+
+/* ── Algorithm step cards ───────────────────────────────────────────────────── */
+.m4-algo-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--ac);
+}
+.m4-algo-card-h {
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--text-1);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.m4-algo-card-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  background: rgba(167,139,250,0.12);
+  color: var(--violet);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.m4-algo-card-desc { font-size: 0.79rem; color: var(--text-2); }
+
+/* ── Code-style algorithm display ──────────────────────────────────────────── */
+.m4-pseudocode {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(51,65,85,0.8);
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-2);
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.6;
+  margin: 0.5rem 0;
+}
+.m4-pseudocode .kw { color: var(--violet); }
+.m4-pseudocode .cm { color: rgba(148,163,184,0.5); }
+.m4-pseudocode .num { color: var(--cyan); }
