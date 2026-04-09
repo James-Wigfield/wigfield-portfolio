@@ -14,6 +14,21 @@ function Tex({ src, block = false }) {
   return <span ref={ref} className={block ? 'm4-tex-block' : 'm4-tex-inline'} />;
 }
 
+// ── Variable Description Table ─────────────────────────────────────────────────
+// vars: array of [latexSymbol, plainTextDescription]
+function VarTable({ vars }) {
+  return (
+    <div className="m4-vartable">
+      {vars.map(([sym, desc]) => (
+        <div key={sym} className="m4-var-row">
+          <span className="m4-var-sym"><Tex src={sym} /></span>
+          <span className="m4-var-desc">{desc}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function factorial(n) {
   if (n <= 1) return 1;
@@ -209,6 +224,13 @@ function LCGVisualizer() {
         <div className="m4-card-h">Mathematical Foundation</div>
         <div className="m4-flabel">Core LCG Recurrence</div>
         <Tex src="X_{n+1} = (a \cdot X_n + c) \bmod m" block />
+        <VarTable vars={[
+          ['X_{n+1}', 'Next output value in the sequence'],
+          ['X_n', 'Current value (state of the generator)'],
+          ['a', 'Multiplier — scales the current state; must be chosen carefully to avoid short cycles'],
+          ['c', 'Increment (additive constant) — c = 0 gives a purely multiplicative generator'],
+          ['m', 'Modulus — sets the output range [0, m−1]; ideally a Mersenne prime'],
+        ]} />
         <table className="m4-ptable">
           <tbody>
             <tr><td className="pk">X₀</td><td>Seed — initial value; determines reproducibility</td></tr>
@@ -220,6 +242,10 @@ function LCGVisualizer() {
         <div className="m4-hr"/>
         <div className="m4-flabel">Mersenne Primes (ideal moduli)</div>
         <Tex src="m = 2^n - 1 \quad n \in \{3, 5, 7, 13, 17, \ldots\}" block />
+        <VarTable vars={[
+          ['m', 'Modulus — the resulting Mersenne prime (e.g., 7, 31, 127, 8191…)'],
+          ['n', 'Integer exponent — must itself be prime to guarantee a Mersenne prime'],
+        ]} />
         <div className="m4-infobox">
           <strong>Why Mersenne primes?</strong> A modulus with many factors (e.g. 12 = 2²×3) causes short cycles — poor <em>equidistribution</em>. Mersenne primes have very few factors, maximising the period.
         </div>
@@ -399,6 +425,11 @@ function BinPackingViz() {
         <div className="m4-hr"/>
         <div className="m4-flabel">Capacity Constraint</div>
         <Tex src="\sum_i s_i \leq C = 1.0 \quad \forall \text{ box } k" block />
+        <VarTable vars={[
+          ['s_i', 'Size of item i (value in [0.1, 1.0] for the Crest problem)'],
+          ['C', 'Bin capacity (= 1.0, i.e., each bin holds items whose total size ≤ 1)'],
+          ['k', 'Index over each bin — the constraint must hold for every bin'],
+        ]} />
       </div>
 
       <div className="m4-card">
@@ -537,6 +568,12 @@ function JSSPViz() {
         <div className="m4-infobox"><strong>JSSP:</strong> n jobs, m machines. Each job Jᵢ requires m operations in fixed order. Each operation O(j,k) runs on machine μ(j,k) for p(j,k) time units. Minimise makespan.</div>
         <div className="m4-flabel">Objective — Minimise Makespan</div>
         <Tex src="C_{\max} = \max_{i,j}\,(s_{ij} + p_{ij})" block />
+        <VarTable vars={[
+          ['C_{\\max}', 'Makespan — the total time from start to when the last operation finishes (to be minimised)'],
+          ['s_{ij}', 'Start time: the time at which job i begins its operation on machine j'],
+          ['p_{ij}', 'Processing time: how long job i takes on machine j (given, fixed)'],
+          ['\\max_{i,j}', 'Maximum taken over all jobs i and all machines j — the schedule ends when the last op ends'],
+        ]} />
         <div className="m4-hr"/>
         <div style={{fontSize:'0.82rem',fontWeight:700,color:'var(--text-1)',marginBottom:'0.5rem'}}>Feasibility Constraints</div>
         <ol style={{fontSize:'0.79rem',color:'var(--text-2)',paddingLeft:'1.2rem',display:'grid',gap:'0.35rem'}}>
@@ -548,6 +585,12 @@ function JSSPViz() {
         <div className="m4-hr"/>
         <div className="m4-flabel">Complexity</div>
         <Tex src="|H| \leq (n!)^m \quad \text{NP-hard even for } n=3,\,m=3" block />
+        <VarTable vars={[
+          ['|H|', 'Size of the hypothesis (solution) space — how many possible schedules exist'],
+          ['n', 'Number of jobs'],
+          ['m', 'Number of machines'],
+          ['n!', 'Factorial of n — the number of ways to order n jobs on one machine (e.g., 4! = 24)'],
+        ]} />
       </div>
 
       <div className="m4-card">
@@ -665,6 +708,11 @@ function SolutionSpaceViz() {
         <div className="m4-card-h">Combinatorial Explosion</div>
         <div className="m4-flabel">Solution Space Size</div>
         <Tex src="|H| = (n!)^m" block />
+        <VarTable vars={[
+          ['|H|', 'Number of distinct candidate schedules (the solution space size)'],
+          ['n!', 'Orderings of n jobs on a single machine — grows super-exponentially'],
+          ['m', 'Number of machines — each machine independently orders all n jobs, so we raise to the power m'],
+        ]} />
         <div className="m4-infobox"><strong>Key insight:</strong> Each of the m machines independently orders n jobs → n! orderings per machine. Across m machines: (n!)ᵐ total candidates. For ft10 (10×10): (10!)¹⁰ ≈ 3.6×10⁶⁵.</div>
         <div className="m4-ctrl" style={{marginTop:'1rem'}}>
           <div className="m4-ctrl-lbl"><span>Jobs (n) up to</span><span className="m4-ctrl-val">{maxN}</span></div>
@@ -681,6 +729,10 @@ function SolutionSpaceViz() {
         <div className="m4-card-h">Benchmark Instances</div>
         <div className="m4-flabel">Random Search Success Rate</div>
         <Tex src="P(\text{find optimal}) \approx \frac{1}{(n!)^m}" block />
+        <VarTable vars={[
+          ['P', 'Probability of hitting the optimal schedule with one random guess'],
+          ['(n!)^m', 'Total number of candidate schedules — the denominator grows astronomically fast'],
+        ]} />
         <table className="m4-bench-tbl">
           <thead><tr><th>Instance</th><th>n</th><th>m</th><th>|S| ≈</th></tr></thead>
           <tbody>
@@ -801,10 +853,20 @@ function DerivativeViz() {
         <div className="m4-hr"/>
         <div className="m4-flabel">Limit Definition</div>
         <Tex src="f'(x) = \lim_{\Delta x \to 0} \frac{f(x+\Delta x) - f(x)}{\Delta x}" block />
+        <VarTable vars={[
+          ["f'(x)", "Derivative of f at x — the instantaneous rate of change (slope of the tangent line)"],
+          ['\\Delta x', 'A tiny step in x — the derivative is what the slope approaches as this step → 0'],
+          ['f(x+\\Delta x) - f(x)', 'Change in y corresponding to the step Δx in x'],
+        ]} />
         <div className="m4-hr"/>
         <div className="m4-flabel">Second Derivative Test</div>
         <Tex src="f'(c)=0,\;f''(c)<0 \Rightarrow \text{local max}" block />
         <Tex src="f'(c)=0,\;f''(c)>0 \Rightarrow \text{local min}" block />
+        <VarTable vars={[
+          ['c', 'The critical point — a value of x where f\'(c) = 0 (slope is zero, so possibly a max or min)'],
+          ["f'(c)", "First derivative at c — must be 0 for c to be a candidate extremum"],
+          ["f''(c)", "Second derivative at c — measures curvature: negative → concave down (peak), positive → concave up (valley)"],
+        ]} />
         <div className="m4-warnbox" style={{marginTop:'0.5rem'}}>
           <strong>Key insight:</strong> Derivatives are the foundation of gradient methods. If we can compute f'(x), we know which way to step toward an optimum.
         </div>
@@ -954,12 +1016,21 @@ function GradientDescentViz() {
         <div className="m4-card-h">Gradient Descent / Ascent</div>
         <div className="m4-flabel">Update Rule</div>
         <Tex src="\vec{x} \leftarrow \vec{x} - \alpha\,\nabla f(\vec{x})" block />
-        <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
-          <strong>Sign of f'(x)</strong> gives direction. <strong>|f'(x)|</strong> gives step magnitude. <strong>α</strong> is the learning rate — scaling the step.
-        </div>
+        <VarTable vars={[
+          ['\\vec{x}', 'Current position in the search space — a vector of parameter values'],
+          ['\\alpha', 'Learning rate (step size) — scales how far we move each iteration; too large → overshoot, too small → slow convergence'],
+          ['\\nabla f(\\vec{x})', 'Gradient at the current position — points in the direction of steepest ascent'],
+          ['-\\,\\nabla f', 'Negative gradient — we subtract it to move downhill (descent); add it for ascent'],
+        ]} />
         <div className="m4-hr"/>
         <div className="m4-flabel">Newton-Raphson (optimisation)</div>
         <Tex src="x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)}" block />
+        <VarTable vars={[
+          ['x_n', 'Current estimate of the optimum'],
+          ['x_{n+1}', 'Updated (next) estimate after applying the N-R step'],
+          ["f'(x_n)", 'First derivative (slope) at the current point — numerator'],
+          ["f''(x_n)", 'Second derivative (curvature) at the current point — dividing by curvature makes the step adaptive: large curvature → small step, flat region → large step'],
+        ]} />
         <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
           Uses curvature f''(x) to choose optimal step size. Solves quadratics in <strong>one step</strong>. Requires C² smoothness.
         </div>
@@ -1307,6 +1378,13 @@ function OptimisationTab() {
           <div className="m4-hr"/>
           <div className="m4-flabel">Mean Squared Error (MSE)</div>
           <Tex src="\text{MSE} = \frac{1}{N}\sum_{i=1}^{N}(f(x_i) - y_i)^2" block />
+          <VarTable vars={[
+            ['N', 'Total number of data samples (training examples)'],
+            ['x_i', 'The i-th input (feature vector or scalar)'],
+            ['f(x_i)', "The model's predicted output for input x_i"],
+            ['y_i', 'The actual (target) output for input x_i'],
+            ['(f(x_i)-y_i)^2', 'Squared error for sample i — squaring makes all errors positive and penalises large errors more'],
+          ]} />
           <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
             MSE is a "bowl" function — the friendliest hypothesis space. Gradient methods are guaranteed to converge to the global minimum!
           </div>
@@ -1316,9 +1394,20 @@ function OptimisationTab() {
           <div className="m4-card-h">Optimisation — Formal Definitions</div>
           <div className="m4-flabel">Ideal Definition</div>
           <Tex src="\hat{h} = \underset{h \in H}{\arg\min}\;f(h)" block />
+          <VarTable vars={[
+            ['\\hat{h}', 'The best hypothesis found — the one that minimises the metric f'],
+            ['h', 'A candidate hypothesis (one specific model / candidate solution)'],
+            ['H', 'The hypothesis space — all possible models expressible in the chosen language'],
+            ['f(h)', 'The metric evaluated on h — measures how far h is from the target (lower = better)'],
+            ['\\arg\\min', 'Argument of the minimum — returns the h that makes f(h) smallest, not the value of f itself'],
+          ]} />
           <div style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.75rem'}}>Find a model within the hypothesis space that is <em>closest</em> (minimal error) to the target.</div>
           <div className="m4-flabel">Practical Definition (compute-bounded)</div>
           <Tex src="\hat{h} = \underset{h \in H}{\arg\min}\;f(h) \quad \text{s.t. compute} \leq C_{\max}" block />
+          <VarTable vars={[
+            ['C_{\\max}', 'Maximum allowed compute budget (time, memory, or number of evaluations)'],
+            ['\\text{s.t.}', '"Subject to" — an additional constraint that limits the search to what is computationally feasible'],
+          ]} />
           <div style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.75rem'}}>Find a model that is <em>as close as possible</em> within a specified amount of compute.</div>
           <div className="m4-hr"/>
           <div className="m4-flabel">Chomsky Hierarchy (language expressiveness)</div>
@@ -1356,6 +1445,12 @@ function CalculusTab() {
           <div className="m4-hr"/>
           <div className="m4-flabel">The Gradient Vector</div>
           <Tex src="\nabla f(\vec{x}) = \begin{bmatrix} \dfrac{\partial f}{\partial x_1} \\[8pt] \dfrac{\partial f}{\partial x_2} \\[4pt] \vdots \\[4pt] \dfrac{\partial f}{\partial x_n} \end{bmatrix}" block />
+          <VarTable vars={[
+            ['\\nabla f', 'Gradient of f (read "del f" or "nabla f") — a vector of all partial derivatives'],
+            ['\\vec{x}', 'Input vector (x₁, x₂, …, xₙ) — a point in the n-dimensional search space'],
+            ['\\partial f / \\partial x_i', 'Partial derivative of f with respect to xᵢ — rate of change in dimension i, all other variables held fixed'],
+            ['n', 'Number of dimensions (number of parameters in the model)'],
+          ]} />
           <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
             The gradient is a <strong>vector field</strong> that points in the direction of steepest ascent at every point. Gradient descent moves in the <em>opposite</em> direction (−∇f).
           </div>
@@ -1368,9 +1463,17 @@ function CalculusTab() {
           <div className="m4-card-h">Vector Products</div>
           <div className="m4-flabel">Euclidean Norm (L² norm)</div>
           <Tex src="\|\vec{v}\| = \sqrt{v_1^2 + v_2^2 + \cdots + v_n^2}" block />
+          <VarTable vars={[
+            ['\\|\\vec{v}\\|', 'Euclidean norm (length/magnitude) of vector v'],
+            ['v_i', 'The i-th component of vector v'],
+          ]} />
           <div className="m4-hr"/>
           <div className="m4-flabel">Dot Product (scalar result)</div>
           <Tex src="\vec{v} \cdot \vec{w} = \sum_{i=1}^n v_i w_i = \vec{v}^\top \vec{w}" block />
+          <VarTable vars={[
+            ['\\vec{v} \\cdot \\vec{w}', 'Dot product — multiplies corresponding elements and sums them, producing a single scalar'],
+            ['\\vec{v}^\\top \\vec{w}', 'Matrix notation: v transposed (row vector) times w (column vector) — same result'],
+          ]} />
           <div className="m4-hr"/>
           <div className="m4-flabel">Outer Product (tensor product)</div>
           <Tex src="\vec{v} \otimes \vec{w} = \vec{v}\,\vec{w}^\top \quad \text{(gives a matrix)}" block />
@@ -1380,11 +1483,195 @@ function CalculusTab() {
           <div className="m4-hr"/>
           <div className="m4-flabel">Gradient Convergence Check</div>
           <Tex src="\|\nabla f(\vec{x})\| < \epsilon \quad \Rightarrow \quad \text{converged}" block />
+          <VarTable vars={[
+            ['\\|\\nabla f(\\vec{x})\\|', 'Norm of the gradient — how large (steep) the gradient vector is; near zero means we\'re near a stationary point'],
+            ['\\epsilon', 'Epsilon — a small tolerance threshold (e.g., 0.001); once gradient norm drops below this, we declare convergence'],
+          ]} />
           <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
             In practice we stop when the gradient norm is small (below tolerance ε), not exactly zero. This handles floating-point and near-flat regions.
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Job Shop Tab ──────────────────────────────────────────────────────────────
+function JobShopTab() {
+  return (
+    <div>
+      {/* Problem Definition */}
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">Problem Definition</div>
+          <div className="m4-infobox">
+            The <strong>Job Shop Scheduling Problem (JSSP)</strong> is one of the most studied combinatorial optimisation problems. It is an NP-hard problem that appears in manufacturing, cloud computing, and project planning.
+          </div>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Formal Setup</div>
+          <ul className="m4-bullets">
+            <li><strong>n jobs</strong> — each job is an ordered sequence of operations</li>
+            <li><strong>m machines</strong> — each operation runs on a specific machine for a fixed duration</li>
+            <li><strong>Precedence constraint:</strong> operations within a job must run in order</li>
+            <li><strong>Disjunctive constraint:</strong> each machine handles at most one operation at a time</li>
+          </ul>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Makespan (Objective)</div>
+          <Tex src="C_{\max} = \max_i C_i" block />
+          <VarTable vars={[
+            ['C_{\\max}', 'Makespan — the total time from start to when the last operation finishes; this is what we want to minimise'],
+            ['C_i', 'Completion time of job i — when its final operation finishes'],
+            ['\\max_i C_i', 'Maximum over all jobs — the schedule is only complete when every job is done'],
+          ]} />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Solution Space Explosion</div>
+          <Tex src="|H| \leq (n!)^m" block />
+          <VarTable vars={[
+            ['|H|', 'Size of the hypothesis (solution) space — number of possible schedules to consider'],
+            ['n!', 'Factorial of number of jobs — one machine can order n jobs in n! ways'],
+            ['m', 'Number of machines — each machine independently orders all jobs, so we raise n! to the power m'],
+          ]} />
+          <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+            <strong>Example:</strong> n=6, m=6 → (6!)⁶ = 720⁶ ≈ 1.4 × 10¹⁷ possible schedules. Exhaustive search is infeasible — we need heuristics!
+          </div>
+        </div>
+
+        <div className="m4-card">
+          <div className="m4-card-h">Three Ingredients Applied to JSSP</div>
+          <div className="m4-algo-card" style={{'--ac':'var(--cyan)'}}>
+            <div className="m4-algo-card-h">Language (Representation)</div>
+            <div className="m4-algo-card-desc">
+              A <strong>permutation</strong> of jobs for each machine. Each machine has its own ordering of n jobs, defining which job goes first, second, etc. An alternative representation: operation lists (single permutation of all n×m operations).
+            </div>
+          </div>
+          <div className="m4-algo-card" style={{'--ac':'var(--violet)'}}>
+            <div className="m4-algo-card-h">Model (Hypothesis)</div>
+            <div className="m4-algo-card-desc">
+              A <strong>schedule</strong> — start times for every operation on every machine, respecting both precedence (job order) and disjunctive (machine capacity) constraints. Represented as a Gantt chart.
+            </div>
+          </div>
+          <div className="m4-algo-card" style={{'--ac':'var(--emerald)'}}>
+            <div className="m4-algo-card-h">Metric (Objective)</div>
+            <div className="m4-algo-card-desc">
+              <strong>Minimise makespan C_max</strong> — the time at which the last operation completes. Sometimes secondary objectives: total tardiness, machine utilisation.
+            </div>
+          </div>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">NP-Hardness</div>
+          <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+            JSSP is NP-hard even for 2 machines (except trivial cases). The classic 10×10 benchmark FT10 (Fisher & Thompson, 1963) remained unsolved for 26 years — solved exactly in 1989 by Carlier &amp; Pinson. This motivates the use of metaheuristic (approximate) algorithms.
+          </div>
+        </div>
+      </div>
+
+      {/* Dispatching Rules */}
+      <div className="m4-card" style={{marginTop:'1rem'}}>
+        <div className="m4-card-h">Dispatching Rules <span className="m4-algo-card-badge">greedy heuristics</span></div>
+        <div className="m4-infobox" style={{fontSize:'0.8rem',marginBottom:'0.75rem'}}>
+          Dispatching rules decide <em>which ready operation to schedule next</em> on a free machine. They are fast (O(n log n)) but give no optimality guarantee.
+        </div>
+        <table className="m4-dispatch-tbl">
+          <thead>
+            <tr>
+              <th>Rule</th>
+              <th>Full Name</th>
+              <th>Priority Criterion</th>
+              <th>Bias / Use Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['SPT','var(--cyan)', 'Shortest Processing Time', 'Smallest operation duration first', 'Exploitation — finishes short jobs quickly, minimises average completion time'],
+              ['LPT','var(--violet)', 'Longest Processing Time', 'Largest operation duration first', 'Gets long ops on machines early — can reduce idle time'],
+              ['EDD','var(--emerald)', 'Earliest Due Date', 'Job with earliest deadline first', 'Minimises tardiness (not makespan directly)'],
+              ['FIFO','var(--amber)', 'First In, First Out', 'Job that arrived (was released) first', 'Fair; easy to implement; common in queuing'],
+              ['LIFO','var(--rose)', 'Last In, First Out', 'Job that arrived last', 'Low-latency for newest arrivals (e.g. stack-based systems)'],
+              ['CR','var(--cyan)', 'Critical Ratio', '(Due date − now) / remaining processing time', 'Balances urgency and workload; CR < 1 means already late'],
+              ['MWKR','var(--violet)', 'Most Work Remaining', 'Job with most total remaining processing time', 'Prioritises "heavy" jobs to prevent idle machines at end'],
+            ].map(([rule, col, name, criterion, bias]) => (
+              <tr key={rule}>
+                <td style={{color:col, fontFamily:'var(--font-mono)', fontWeight:700}}>{rule}</td>
+                <td>{name}</td>
+                <td>{criterion}</td>
+                <td style={{fontSize:'0.73rem'}}>{bias}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Disjunctive Graph & Local Search */}
+      <div className="m4-two-col" style={{marginTop:'1rem'}}>
+        <div className="m4-card">
+          <div className="m4-card-h">Disjunctive Graph Model</div>
+          <div className="m4-infobox">
+            A JSSP instance can be modelled as a directed graph to reason about schedules mathematically.
+          </div>
+          <Tex src="G = (V,\; C \cup D)" block />
+          <VarTable vars={[
+            ['G', 'The disjunctive graph representing the JSSP instance'],
+            ['V', 'Vertices — one node per operation, plus a source (s) and sink (t) node'],
+            ['C', 'Conjunctive arcs — directed edges encoding job precedence (operation A must finish before B within the same job); arc weight = processing time of the source operation'],
+            ['D', 'Disjunctive arcs — undirected edges between operations competing for the same machine; choosing a direction fixes the machine order'],
+          ]} />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Makespan as Longest Path</div>
+          <Tex src="C_{\max} = \text{longest path from } s \text{ to } t \text{ in } G" block />
+          <div style={{fontSize:'0.79rem',color:'var(--text-2)'}}>
+            Fixing all disjunctive arc directions gives a DAG. The critical path (longest path) determines C_max. Minimising C_max = finding the orientation of D that minimises the longest path.
+          </div>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">N1 Neighbourhood (Local Search)</div>
+          <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
+            <strong>Critical path:</strong> The longest path from s to t. Operations on the critical path are the bottleneck — they directly determine C_max.<br/><br/>
+            <strong>N1 move:</strong> Swap two adjacent operations on the critical path that share the same machine. This is the smallest change that could reduce the critical path length. Only critical-path swaps matter — non-critical swaps cannot improve C_max.
+          </div>
+        </div>
+
+        <div className="m4-card">
+          <div className="m4-card-h">Benchmark Instances &amp; RPD Metric</div>
+          <table className="m4-rule-tbl">
+            <thead>
+              <tr><th>Instance</th><th>Size (n×m)</th><th>BKS C_max</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style={{color:'var(--cyan)'}}>FT06</td><td>6×6</td><td>55</td><td>Classic, solved optimally</td></tr>
+              <tr><td style={{color:'var(--cyan)'}}>FT10</td><td>10×10</td><td>930</td><td>Unsolved 26 yrs; solved 1989</td></tr>
+              <tr><td style={{color:'var(--cyan)'}}>FT20</td><td>20×5</td><td>1165</td><td>Fisher &amp; Thompson, 1963</td></tr>
+              <tr><td style={{color:'var(--violet)'}}>LA01–LA40</td><td>10×5 to 30×10</td><td>varies</td><td>Lawrence, 1984</td></tr>
+              <tr><td style={{color:'var(--emerald)'}}>ORB01–ORB10</td><td>10×10</td><td>varies</td><td>Applegate &amp; Cook, 1991</td></tr>
+              <tr><td style={{color:'var(--amber)'}}>TA01–TA80</td><td>15×15 to 100×20</td><td>varies</td><td>Taillard, 1993; hardest set</td></tr>
+            </tbody>
+          </table>
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Relative Percentage Deviation (RPD)</div>
+          <Tex src="\text{RPD} = \frac{C_{\max}^{\text{obtained}} - C_{\max}^{\text{BKS}}}{C_{\max}^{\text{BKS}}} \times 100\%" block />
+          <VarTable vars={[
+            ['\\text{RPD}', 'Relative Percentage Deviation — measures how much worse your solution is compared to the best known; lower is better (0% = matches BKS)'],
+            ['C_{\\max}^{\\text{obtained}}', 'Makespan produced by your algorithm on this instance'],
+            ['C_{\\max}^{\\text{BKS}}', 'Best Known Solution makespan — the best makespan ever found (may not be provably optimal)'],
+          ]} />
+          <div className="m4-hr"/>
+          <div className="m4-flabel">Exact vs Approximate Methods</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem',marginTop:'0.4rem'}}>
+            <div className="m4-strat" style={{'--sc':'var(--cyan)'}}>
+              <div className="m4-strat-h">Exact (Branch &amp; Bound)</div>
+              <div className="m4-strat-d">Guarantees optimal. Feasible only for small instances (n,m ≤ ~10). Exponential worst-case time.</div>
+            </div>
+            <div className="m4-strat" style={{'--sc':'var(--violet)'}}>
+              <div className="m4-strat-h">Approximate (Metaheuristics)</div>
+              <div className="m4-strat-d">No optimality guarantee but fast. SA, Tabu, GA, ILS all applied to JSSP. Practical for large instances.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Embed the interactive JSSP lab */}
+      <div className="m4-sec-hdr" style={{marginTop:'1.5rem'}}>
+        <h2 className="m4-sec-title">Interactive JSSP Scheduler <span className="m4-badge">Lab</span></h2>
+        <p className="m4-sec-sub">Edit the instance, run a greedy dispatching schedule, and inspect the Gantt chart.</p>
+      </div>
+      <JSSPViz />
     </div>
   );
 }
@@ -1444,12 +1731,26 @@ function AlgorithmsTab() {
               <Tex src="x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}" block />
               <div className="m4-flabel">Optimisation form (zeros of f')</div>
               <Tex src="x_{n+1} = x_n - \frac{f'(x_n)}{f''(x_n)}" block />
+              <VarTable vars={[
+                ['x_{n+1}', 'Next iterate — the improved estimate of the root/optimum after one N-R step'],
+                ['x_n', 'Current iterate — where we are right now'],
+                ['f(x_n)', 'Function value at current point (root-finding form: we want this to equal zero)'],
+                ["f'(x_n)", 'First derivative (slope) at current point — direction of the tangent line'],
+                ["f''(x_n)", 'Second derivative (curvature) at current point — used in optimisation form to auto-scale the step'],
+                ["f'(x_n)/f''(x_n)", 'Newton step — dividing slope by curvature automatically gives the right step size; large curvature → small step, flat region → large step'],
+              ]} />
               <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
                 <strong>Geometric intuition:</strong> Uses the tangent <em>line</em> to approximate f' — equivalent to fitting a local <em>quadratic</em> to f. Matches both value and curvature at the current point. Solves quadratics in exactly <strong>one step</strong>.
               </div>
               <div className="m4-hr"/>
               <div className="m4-flabel">Gradient Ascent (general n-D)</div>
               <Tex src="\vec{x} \leftarrow \vec{x} + \alpha \begin{bmatrix}\partial f/\partial x_1 \\ \vdots \\ \partial f/\partial x_n\end{bmatrix}" block />
+              <VarTable vars={[
+                ['\\vec{x}', 'Current position in the n-dimensional search space (a vector of n coordinates)'],
+                ['\\alpha', 'Learning rate (step size) — scales how far we move each iteration; use + for ascent, − for descent'],
+                ['\\partial f/\\partial x_i', 'Partial derivative with respect to dimension i — rate of change of f when only x_i varies'],
+                ['\\begin{bmatrix}\\partial f/\\partial x_1 \\\\ \\vdots \\\\ \\partial f/\\partial x_n\\end{bmatrix}', 'The gradient vector ∇f — each entry is the partial derivative in one dimension; points in the direction of steepest ascent'],
+              ]} />
               <div className="m4-hr"/>
               <div className="m4-warnbox">
                 <strong>Local optima problem:</strong> Gradient methods get stuck. No general algorithm guarantees finding the global optimum in non-finite domains. This motivates all the methods that follow!
@@ -1508,6 +1809,18 @@ function AlgorithmsTab() {
                 <Tex src="\text{Expand:}\;\vec{x}_e = \bar{\vec{x}} + \beta(\vec{x}_r - \bar{\vec{x}})" block />
                 <Tex src="\text{Contract:}\;\vec{x}_c = \bar{\vec{x}} + \gamma(\vec{x}_h - \bar{\vec{x}})" block />
                 <Tex src="\text{Shrink:}\;\vec{x}_i \leftarrow \vec{x}_l + \sigma(\vec{x}_i - \vec{x}_l)" block />
+                <VarTable vars={[
+                  ['\\bar{\\vec{x}}', 'Centroid of all simplex vertices except the worst (x_h) — the "centre of gravity" of the good points'],
+                  ['\\vec{x}_h', 'Worst vertex (highest value in minimisation) — the one being replaced or shrunk away from'],
+                  ['\\vec{x}_l', 'Best vertex (lowest value in minimisation) — the anchor for the shrink operation'],
+                  ['\\vec{x}_r', 'Reflected point — mirrors x_h through the centroid; tests the opposite side'],
+                  ['\\vec{x}_e', 'Expanded point — pushes further past the reflected point if reflection was good'],
+                  ['\\vec{x}_c', 'Contracted point — pulls back toward the centroid when reflection was bad'],
+                  ['\\alpha', 'Reflection coefficient (typically 1) — how far to reflect past the centroid'],
+                  ['\\beta', 'Expansion coefficient (typically 2) — how far to expand beyond the reflection'],
+                  ['\\gamma', 'Contraction coefficient (typically 0.5) — how far to contract toward the centroid'],
+                  ['\\sigma', 'Shrink coefficient (typically 0.5) — how much each vertex moves toward the best vertex x_l'],
+                ]} />
                 <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Typical: α=1, β=2, γ=0.5, σ=0.5. Convergence: variance of vertex values {"<"} ε.</div>
               </div>
               <div className="m4-warnbox" style={{marginTop:'0.5rem'}}>
@@ -1550,6 +1863,13 @@ function AlgorithmsTab() {
               <div className="m4-hr"/>
               <div className="m4-flabel">Gaussian Tweak (non-uniform)</div>
               <Tex src="n \sim \mathcal{N}(0, \sigma^2) \quad v_i \leftarrow v_i + n" block />
+              <VarTable vars={[
+                ['n', 'Random noise sample drawn from a Gaussian distribution with mean 0 and variance σ²'],
+                ['\\mathcal{N}(0, \\sigma^2)', 'Normal (Gaussian) distribution with mean μ=0 and variance σ²'],
+                ['\\sigma^2', 'Variance — controls the spread/size of noise; tuning this controls the exploration rate'],
+                ['\\sigma', 'Standard deviation — direct "exploration knob": large σ → big jumps (explore); small σ → tiny tweaks (exploit)'],
+                ['v_i', 'The i-th element of the candidate solution vector being perturbed'],
+              ]} />
               <div style={{fontSize:'0.79rem',color:'var(--text-2)'}}>σ directly controls exploration rate: large σ → more exploration; small σ → exploitation. Unlike bounded uniform, Gaussian allows arbitrarily large (but rare) jumps.</div>
               <div className="m4-hr"/>
               <div className="m4-flabel">Exploration vs Exploitation</div>
@@ -1569,6 +1889,14 @@ function AlgorithmsTab() {
               <div className="m4-card-h">Simulated Annealing & Tabu</div>
               <div className="m4-flabel">SA Acceptance Probability</div>
               <Tex src="P = e^{\,\dfrac{\text{Quality}(R) - \text{Quality}(S)}{t}}" block />
+              <VarTable vars={[
+                ['P', 'Acceptance probability — likelihood of replacing S with the worse candidate R'],
+                ['\\text{Quality}(R)', 'Quality (fitness) of the tweaked candidate R; less than Quality(S) when R is worse'],
+                ['\\text{Quality}(S)', 'Quality of the current solution S'],
+                ['\\text{Quality}(R) - \\text{Quality}(S)', 'Quality gap — negative when R is worse; larger (more negative) gap → smaller P'],
+                ['t', 'Temperature — a positive number that decreases over time (the "cooling schedule"); high t → accept almost anything; t→0 → pure hill climb'],
+                ['e', 'Euler\'s number (≈2.718); the natural exponential function ensures P is always between 0 and 1'],
+              ]} />
               <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
                 When Q(R) {"<"} Q(S): exponent is negative → 0 {"<"} P {"<"} 1. Higher temperature t → higher P (accept worse). As t → 0: pure hill climb. As t → ∞: random walk. Temperature decreases over time: <Tex src="t = \beta e^{-\alpha T}" />
               </div>
@@ -1594,6 +1922,13 @@ function AlgorithmsTab() {
                   Clever restarts using a "home base" local optimum. <strong>Perturb(H)</strong> generates new start near home base. <strong>NewHomeBase(H,S)</strong> decides whether to adopt the new local optimum.
                 </div>
                 <Tex src="\text{NewHomeBase}(H,S) = \begin{cases} S & Q(S) \geq Q(H) \\ H & \text{otherwise} \end{cases}" block />
+                <VarTable vars={[
+                  ['H', 'Home base — the local optimum whose neighbourhood we are exploring for better optima'],
+                  ['S', 'The newly found local optimum after the latest hill-climbing run'],
+                  ['Q(S)', 'Quality of the new local optimum S'],
+                  ['Q(H)', 'Quality of the current home base H'],
+                  ['\\text{NewHomeBase}(H,S)', 'Returns the new home base: adopt S if it\'s at least as good, otherwise stay at H ("hill climb of hill climbs")'],
+                ]} />
               </div>
               <div className="m4-hr"/>
               <div className="m4-warnbox">
@@ -1608,7 +1943,7 @@ function AlgorithmsTab() {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Optimisation','Calculus','Algorithms','Labs','Quiz'];
+const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Labs','Quiz'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4012() {
@@ -1656,7 +1991,7 @@ export default function CITS4012() {
                 {code:'L3', title:'Optimisation Framework', color:'var(--violet)', desc:'Three ingredients: Language (representation), Model (hypothesis), Metric (evaluation). Hypothesis spaces, MSE, argmin, online vs offline.', go:'Optimisation'},
                 {code:'L5', title:'Vector Calculus', color:'var(--emerald)', desc:'Limit definition of derivatives, power/chain/product rules, partial derivatives, gradient vector ∇f, second derivative test.', go:'Calculus'},
                 {code:'L6–9', title:'Optimisation Algorithms', color:'var(--amber)', desc:'Gradient descent/ascent, Newton-Raphson, direct methods (CCS, Powell, H-J, Nelder-Mead), stochastic methods (HC, SA, Tabu, ILS), No Free Lunch.', go:'Algorithms'},
-                {code:'L4 + Labs', title:'Job Shop Scheduling', color:'var(--rose)', desc:'JSSP formulation, makespan minimisation (n!)ᵐ solution space, Gantt charts, NP-hardness, heuristic approaches.', go:'Labs'},
+                {code:'L4', title:'Job Shop Scheduling', color:'var(--rose)', desc:'JSSP formulation, makespan minimisation (n!)ᵐ solution space, dispatching rules, disjunctive graph, N1 local search, benchmark instances, RPD metric.', go:'Job Shop'},
                 {code:'Labs 1–2', title:'PRNG & Bin Packing', color:'var(--violet)', desc:'LCG recurrence, Mersenne primes, full-period theorem. Bin packing heuristics: FF, NF, BF, FFD. Online vs offline algorithms.', go:'Labs'},
               ].map(item => (
                 <div key={item.code} className="m4-tcard" style={{'--tc':item.color}} onClick={() => setTab(item.go)}>
@@ -1675,6 +2010,17 @@ export default function CITS4012() {
 
         {/* ── ADAPTATION ── */}
         {tab === 'Adaptation' && <AdaptationTab />}
+
+        {/* ── JOB SHOP ── */}
+        {tab === 'Job Shop' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Job Shop Scheduling <span className="m4-badge" style={{background:'var(--rose-dim)',color:'var(--rose)',border:'1px solid rgba(251,113,133,0.3)'}}>Lecture 4</span></h2>
+              <p className="m4-sec-sub">From formal problem definition to NP-hardness, dispatching rules, the disjunctive graph model, and local search. One of the most studied combinatorial optimisation problems in CS.</p>
+            </div>
+            <JobShopTab />
+          </>
+        )}
 
         {/* ── OPTIMISATION ── */}
         {tab === 'Optimisation' && (
