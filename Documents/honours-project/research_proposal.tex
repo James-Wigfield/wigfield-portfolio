@@ -1,0 +1,154 @@
+\documentclass{article}
+\usepackage[nodayofweek]{datetime}
+\usepackage{graphicx}
+\usepackage{float}
+
+\title{Research Proposal: \\
+        Optimising PSMA PET Segmentation using the Mamba Architecture}
+\author{Author: James Wigfield (23334375)\\ 
+        Supervisor: Dr. Jake Kendrick \\ 
+        Co-supervisor: Dr. Mubashar Hassan \\ 
+        Degree: Bachelor of Advanced Computer Science (Honours)}
+\date{\monthname[\the\month] \the\year}
+
+% for creation of the timeline PDF from the mermaid markdown file
+%\immediate\write18{mmdc -i timeline.mmd -o timeline.pdf}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction and Background}
+\subsection{Clinical Context}
+Prostate cancer (PCa) is one of the most common cancers amongst men globally \cite{Bray2024GlobalCS}, however, 
+localised PCa is generally associated with high survival rates. Biochemical recurrence (BCR) following treatment
+frequently leads to metastatic prostate cancer (mPCa) which is why accurately detecting and localising mPCa 
+lesions is critical for guiding treatment decisions and improving patient outcomes. $[^{68}Ga]$Ga-PSMA-11 Positron 
+Emission Tomography (PET) allows clinicians to visualise and locate mPCa lesions throughout the body. However, 
+analysing and segmenting these whole-body scans manually carries a significant workload and is subject to inter-observer
+variability. Therefore, the need for a fully automated segmentation tool is evident.
+
+\subsection{Current Baseline}
+The current baseline for PSMA PET segmentation is the nnU-Net architecture which has achieved some very promising
+results in the field of medical image segmentation. This baseline model achieves a 94.5\% patient-level accuracy (121/128),
+and for lesion-level detection achieved an F1 score of 79.9\% which balances a high positive predictive value (PPV) of 88.2\% 
+against a slightly lower sensitivity of 73\% \cite{kendrick2022fully}. Additionally, applying a cascading 3D CNN to whole-body
+PSMA PET scans demands significant computational resources and latency during inference. The proposed 3D Mamba architecture 
+will aim to improve this F1 score while accelerating clinical inference times.
+
+
+\subsection{Computational Limits}
+Deep 3D convolutional neural networks (CNNs) face severe computational bottlenecks due to GPU memory constraints, forcing 
+practitioners to make trade-offs between patch size and batch size. This limitation becomes particularly critical when processing 
+whole-body imaging scans, where volumetric data exceeds typical GPU memory allocations. 
+
+\subsection{State Space Models (SSMs) and Mamba}
+3D CNNs such as the nnU-Net baseline achieve robust volumetric segmentation leveraging hierarchical encoder-decoder architectures. 
+However, 3D convolutions are computationally expensive, which forces restricted patch sizes that limit the model's global spatial 
+context \cite{isensee2021nnu}. Using Transformer-based models to capture these missing long-range dependencies is not viable due to 
+their quadratic scaling with respect to sequence length. To overcome these limitations, State Space Models (SSMs) present a promising
+alternative which scale linearly with sequence length. The Mamba architecture introduces a selection mechanism where the SSM parameters
+are generated based on the input, allowing the model to selectively filter out irrelevant information (such as healthy background tissue) 
+and remember relevant small features (such as small lesions) \cite{gu2023mamba}.
+
+\section{Problem Statement and Hypothesis}
+By leveraging the linear complexity and selective memory of State Space Models (SSMs), a 3D Mamba
+architecture can process whole-body PSMA PET scans with greater computational efficiency than the 
+existing baseline models. Additionally, optimising the model for lesion-level detection will result in
+a clinically actionable tool that can accurately identify metastatic lesions. 
+
+\section{Project Aims}
+The aims of this research project are as follows:
+
+\begin{enumerate}
+    \item Design a 3D Mamba-based architecture to specifically address the extreme volumetric disparity
+    between tiny metastatic lesions and vast healthy background tissue in PSMA PET scans.
+    \item Benchmark the proposed architecture against the rigorously configured nnU-Net baseline using 
+    a PSMA PET dataset. 
+    \item Evaluate using a dual-metric approach, prioritising lesion-level F1 score to ensure an optimal
+    balance between sensitivity and precision (PPV), alongside voxel-level Dice Similarity Coefficient (DSC) 
+    to ensure critical tumour detection.   
+\end{enumerate}
+
+% again, do not focus on sensitivity alone. also precision. F1 score should capture this.
+
+\section{Methodology}
+
+\subsection{Dataset and Preprocessing}
+The model will be trained and evaluated on the Sir Charles Gairdner Hospital (SCGH) dataset, which consists of whole-body PSMA PET 
+scans of around 300 patients \cite{mccarthy2019multicenter}. In addition to this dataset, an open source autoPET dataset will be used along with possibly other open
+source datasets to further augment the training data. 
+
+
+% there's another dataset that joel has, but mentioning SCGH dataset and opensource should be sufficient.
+
+\subsection{Model Architecture Design}
+The proposed architecture will use a hybrid CNN-Mamba design drawing inspiration from frameworks like U-Mamba \cite{ma2024umamba}. 
+This design will leverage the capabilities of convolutional layers for local feature extraction with the long-range dependency
+modelling capabilities of State Space Models (SSMs) to capture global context across the entire scan.
+
+The encoder will consist of convolutional residual blocks to capture local features. The resulting spatial features will be flattened
+into 1D sequences so the 3D volumetric PET scans can be processed by the Mamba blocks \cite{ma2024umamba}.
+
+To mitigate the loss of high-resolution spatial information, the architecture will incorporate skip connections between the encoder
+and decoder. 
+
+While the initial network will be based on a hybrid CNN-SSM design, experiments will also be conducted with pure 3D mamba blocks versus a hybrid
+CNN-Mamba design to evaluate the trade-offs between computational efficiency and segmentation performance.
+
+\subsection{Volumetric VRAM Mitigation}
+To tackle the GPU memory constraints that limit 3D CNN patch sizes, this methodology will explore Mamba's hardware-aware parallel scan
+algorithm. This algorithm allows the model to compute the sequence recurrence directly in SRAM and avoids materialising the entire
+sequence in VRAM, which drastically reduces the memory footprint and allows for processing larger volumetric data without sacrificing
+batch size \cite{gu2023mamba}.
+
+Since Mamba scales linearly, the training pipeline will be designed to process significantly larger volumetric patches than the baseline 
+nnU-Net. This will ensure the model retains vast spatial context across the whole-body scans which is required to map relationships between
+a primary prostate tumour and its metastatic lesions.
+
+In order to generate full-body segmentations during inference without triggering out-of-memory (OOM) errors, an overlap-tile approach will
+be implemented \cite{ronneberger2015unet} but with a 3D volumetric adaptation. To ensure prediction accuracy at the patch borders, the 
+model will extrapolate missing boundary context via mirror padding. 
+
+\subsection{Loss Function Formulation}
+In whole-body PSMA PET scans, healthy background voxels vastly outnumber the voxels of small metastatic lesions. Training with standard
+loss functions in this situation can lead to models that are biased towards high precision but low sensitivity. To mitigate this 
+imbalance, the training pipeline will investigate alternative loss functions such as the Tversky loss which is a generalisation of the 
+DSC and $F_\beta$ scores. The Tversky index introduces hyperparameters $\alpha$ and $\beta$ to control the trade-off between false positives 
+and false negatives \cite{salehi2017tversky}.
+
+In oncology, false negatives (missing a metastatic lesion) are generally more detrimental than false positives. Setting a higher $\beta$ value 
+in the Tversky loss will penalise false negatives more heavily, encouraging the model to prioritise sensitivity while still maintaining a 
+reasonable precision. This approach will directly target the 73\% sensitivity of the baseline nnU-Net model while maintaining or improving 
+the high PPV of 88.2\% \cite{kendrick2022fully}.
+
+While the Tversky loss will be the primary focus, the research will also experiment with alternative loss functions such as focal loss and dice 
+loss to evaluate their impact on the model's performance. 
+
+\section{Resources and Hardware}
+Model training will require a GPU with CUDA support with at least 16GB of VRAM. Primary training will be conducted on the SCGH Medical 
+Physics Department's High Performance Computing machines. 
+
+\vspace{0cm}
+\section{Timeline}
+\begin{figure}[H]
+    \centering
+    % It grabs the newly generated PDF and drops it in
+    \includegraphics[width=\textwidth,scale=1.2]{timeline.pdf}
+    %\caption{Project Timeline Gantt Chart}
+\end{figure}
+\vspace{0cm}
+
+\section{Statement of AI Use}
+The following AI tools were used in the preparation of this research proposal:
+
+\begin{itemize}
+    \item \textbf{Google Gemini 3.1} - Provided a rough structural outline of the research proposal and answered terminology questions relating to referenced research papers.
+    \item \textbf{Claude Haiku 4.5 (GitHub Copilot)} - Assisted with spelling checks, converting technical terms and mathematical parameters into LaTeX symbols, and general LaTeX formatting guidance.
+\end{itemize}
+ 
+
+\bibliography{references}
+\bibliographystyle{plain}
+\end{document}
+

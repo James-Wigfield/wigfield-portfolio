@@ -8,6 +8,7 @@ import cyberBar from '../assets/gifs/cyber_bar.gif';
 import redRainCity from '../assets/gifs/red_rain_city.gif';
 import soundWaves from '../assets/gifs/sound_waves.gif';
 import rooftopCar from '../assets/gifs/rooftop_flying_car.gif';
+import cyberPharmacy from '../assets/gifs/cyber_pharmacy.gif';
 
 // ── Change PIN here ───────────────────────────────────────────────
 const HUB_PIN = '6969';
@@ -31,6 +32,15 @@ const MODULES = [
     gif: cyberBar,
     color: 'violet',
     tag: 'ACTIVE',
+  },
+  {
+    id: 'honours',
+    code: 'CITS4010',
+    title: 'Honours Research',
+    description: 'Mamba SSM architecture · PSMA PET segmentation · 3D medical imaging · state space models · metastatic lesion detection.',
+    gif: cyberPharmacy,
+    color: 'rose',
+    tag: 'RESEARCH',
   },
 ];
 
