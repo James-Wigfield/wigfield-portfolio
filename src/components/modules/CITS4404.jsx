@@ -2619,9 +2619,18 @@ function PracticeExamTab() {
               <span className="m4-card-h" style={{ display: 'inline', fontSize: '1rem' }}>{q.topic}</span>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <span className="m4-badge" style={{ background: 'rgba(148,163,184,0.1)', color: 'var(--text-2)', border: '1px solid rgba(148,163,184,0.2)', fontSize: '0.72rem' }}>
-                {q.source}
-              </span>
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                color: 'var(--violet)',
+                background: 'rgba(167,139,250,0.12)',
+                border: '1px solid rgba(167,139,250,0.3)',
+                borderRadius: '0.3rem',
+                padding: '0.1rem 0.45rem',
+                fontFamily: 'monospace',
+                whiteSpace: 'nowrap',
+              }}>{q.source}</span>
               <span className="m4-badge" style={{ background: 'rgba(251,191,36,0.12)', color: 'var(--amber)', border: '1px solid rgba(251,191,36,0.25)', fontSize: '0.72rem' }}>
                 {'\u23f1'} {q.time}
               </span>
