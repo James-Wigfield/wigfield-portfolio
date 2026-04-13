@@ -1184,6 +1184,388 @@ function QuizSection() {
   );
 }
 
+// ── Nelder-Mead Simplex Visualizer ───────────────────────────────────────────
+const NM_FNS = {
+  'Bowl+Ridge':   (x,y) => 0.4*(x*x + y*y) + 1.2*Math.sin(x)*Math.cos(y),
+  'Elliptical':   (x,y) => 0.3*x*x + 1.2*y*y,
+  'Diagonal Valley': (x,y) => 0.05*(x+y)**2 + 2*(x-y)**2,
+};
+
+function NelderMeadViz() {
+  const [fnKey, setFnKey] = useState('Bowl+Ridge');
+  const [verts, setVerts] = useState([[2.5,2.5],[-2,1.5],[0.5,-2.5]]);
+  const [lastOp, setLastOp] = useState(null);
+  const [iters, setIters] = useState(0);
+  const [running, setRunning] = useState(false);
+  const canRef = useRef(null);
+  const vertsRef = useRef([[2.5,2.5],[-2,1.5],[0.5,-2.5]]);
+
+  const fn = NM_FNS[fnKey];
+  const XR = [-4,4], YR = [-4,4];
+
+  const drawCanvas = useCallback((v) => {
+    const canvas = canRef.current;
+    if (!canvas) return;
+    const W = canvas.width = canvas.offsetWidth || 500;
+    const H = canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const toX = x => (x-XR[0])/(XR[1]-XR[0])*W;
+    const toY = y => H-(y-YR[0])/(YR[1]-YR[0])*H;
+
+    // Heatmap
+    const RES = 60;
+    const cw = W/RES, ch = H/RES;
+    let minV=Infinity, maxV=-Infinity;
+    const grid = Array.from({length:RES},(_,i)=>Array.from({length:RES},(_,j)=>{
+      const x=XR[0]+(i+0.5)/RES*(XR[1]-XR[0]);
+      const y=YR[0]+(j+0.5)/RES*(YR[1]-YR[0]);
+      const val=fn(x,y);
+      if(val<minV) minV=val; if(val>maxV) maxV=val;
+      return val;
+    }));
+    const rng = maxV-minV||1;
+    for(let i=0;i<RES;i++) for(let j=0;j<RES;j++){
+      const t=(grid[i][j]-minV)/rng;
+      ctx.fillStyle=`rgba(${Math.floor(t*40)},${Math.floor(80+t*80)},${Math.floor(160-t*80)},0.4)`;
+      ctx.fillRect(i*cw, H-(j+1)*ch, cw, ch);
+    }
+
+    if(!v||v.length!==3) return;
+    const vals=v.map(([x,y])=>fn(x,y));
+    const sorted=[0,1,2].sort((a,b)=>vals[a]-vals[b]);
+    const LABELS=['','','']; LABELS[sorted[0]]='B'; LABELS[sorted[1]]='G'; LABELS[sorted[2]]='W';
+    const VCOL={B:'#34d399',G:'#fbbf24',W:'#fb7185'};
+
+    // Triangle fill
+    ctx.beginPath();
+    ctx.moveTo(toX(v[0][0]),toY(v[0][1]));
+    ctx.lineTo(toX(v[1][0]),toY(v[1][1]));
+    ctx.lineTo(toX(v[2][0]),toY(v[2][1]));
+    ctx.closePath();
+    ctx.fillStyle='rgba(167,139,250,0.18)'; ctx.fill();
+    ctx.strokeStyle='rgba(167,139,250,0.75)'; ctx.lineWidth=1.8; ctx.stroke();
+
+    v.forEach(([x,y],i)=>{
+      const lbl=LABELS[i], col=VCOL[lbl];
+      const px=toX(x), py=toY(y);
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+      ctx.fillText(lbl,px,py+4);
+    });
+  }, [fn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const nmStep = useCallback((v) => {
+    const vals=v.map(([x,y])=>fn(x,y));
+    const sorted=[0,1,2].sort((a,b)=>vals[a]-vals[b]);
+    const [bi,gi,wi]=sorted;
+    const cx=(v[bi][0]+v[gi][0])/2, cy=(v[bi][1]+v[gi][1])/2;
+    const rr=[cx+(cx-v[wi][0]), cy+(cy-v[wi][1])];
+    const fr=fn(rr[0],rr[1]);
+    let nv=v.map(p=>[...p]), op='';
+
+    if(fr<vals[bi]){
+      const ex=[cx+2*(rr[0]-cx), cy+2*(rr[1]-cy)];
+      if(fn(ex[0],ex[1])<fr){ nv[wi]=ex; op='Expand'; }
+      else{ nv[wi]=rr; op='Reflect'; }
+    } else if(fr<vals[gi]){
+      nv[wi]=rr; op='Reflect';
+    } else {
+      const cc=[cx+0.5*(v[wi][0]-cx), cy+0.5*(v[wi][1]-cy)];
+      if(fn(cc[0],cc[1])<vals[wi]){ nv[wi]=cc; op='Contract'; }
+      else{
+        nv=[ v[bi],
+          [v[bi][0]+0.5*(v[gi][0]-v[bi][0]), v[bi][1]+0.5*(v[gi][1]-v[bi][1])],
+          [v[bi][0]+0.5*(v[wi][0]-v[bi][0]), v[bi][1]+0.5*(v[wi][1]-v[bi][1])],
+        ]; op='Shrink';
+      }
+    }
+    return {nv, op};
+  }, [fn]);
+
+  const doStep = useCallback(() => {
+    const {nv, op} = nmStep(vertsRef.current);
+    vertsRef.current=nv; setVerts([...nv]); setLastOp(op); setIters(i=>i+1);
+    requestAnimationFrame(()=>drawCanvas(nv));
+  }, [nmStep, drawCanvas]);
+
+  const reset = useCallback(() => {
+    setRunning(false);
+    const init=[[2.5,2.5],[-2,1.5],[0.5,-2.5]];
+    vertsRef.current=init; setVerts(init); setLastOp(null); setIters(0);
+    requestAnimationFrame(()=>drawCanvas(init));
+  }, [drawCanvas]);
+
+  useEffect(()=>{ requestAnimationFrame(()=>drawCanvas(vertsRef.current)); }, [fnKey, drawCanvas]);
+  useEffect(()=>{ requestAnimationFrame(()=>drawCanvas(vertsRef.current)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(()=>{
+    if(!running) return;
+    const id=setInterval(()=>{ doStep(); }, 380);
+    return ()=>clearInterval(id);
+  }, [running, doStep]);
+
+  const opCol={Reflect:'var(--cyan)',Expand:'var(--emerald)',Contract:'var(--amber)',Shrink:'var(--rose)'};
+  const vals = verts.map(([x,y])=>fn(x,y));
+  const bestF = Math.min(...vals).toFixed(3);
+
+  return (
+    <div className="m4-two-col" style={{marginTop:'1.5rem'}}>
+      <div className="m4-card">
+        <div className="m4-card-h">Nelder-Mead Operations</div>
+        <div className="m4-infobox">The simplex (triangle in 2D, tetrahedron in 3D) "rolls downhill" via four operations. <strong>B</strong>=Best (lowest f), <strong>G</strong>=Good, <strong>W</strong>=Worst vertex.</div>
+        <table className="m4-rule-tbl" style={{marginTop:'0.5rem'}}>
+          <thead><tr><th>Op</th><th>Formula</th><th>Triggered when</th></tr></thead>
+          <tbody>
+            <tr><td style={{color:'var(--cyan)'}}>Reflect</td><td><Tex src="\vec{x}_r = \bar{x}+\alpha(\bar{x}-\vec{x}_W)" /></td><td>f(r) in [B, G]</td></tr>
+            <tr><td style={{color:'var(--emerald)'}}>Expand</td><td><Tex src="\vec{x}_e = \bar{x}+\beta(\vec{x}_r-\bar{x})" /></td><td>f(r) better than B</td></tr>
+            <tr><td style={{color:'var(--amber)'}}>Contract</td><td><Tex src="\vec{x}_c = \bar{x}+\gamma(\vec{x}_W-\bar{x})" /></td><td>f(r) worse than G</td></tr>
+            <tr><td style={{color:'var(--rose)'}}>Shrink</td><td><Tex src="\vec{x}_i \leftarrow \vec{x}_B+\sigma(\vec{x}_i-\vec{x}_B)" /></td><td>Contract also fails</td></tr>
+          </tbody>
+        </table>
+        <div style={{marginTop:'0.75rem',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.35rem'}}>
+          {[['α','Reflection','1'],['β','Expansion','2'],['γ','Contraction','0.5'],['σ','Shrink','0.5']].map(([sym,name,val])=>(
+            <div key={sym} style={{background:'var(--bg-2)',borderRadius:5,padding:'0.35rem 0.5rem',border:'1px solid var(--border)',fontSize:'0.75rem'}}>
+              <Tex src={sym} /> <span style={{color:'var(--text-2)'}}>{name}</span> <strong style={{color:'var(--cyan)',fontFamily:'monospace'}}>{val}</strong>
+            </div>
+          ))}
+        </div>
+        {lastOp && (
+          <div style={{marginTop:'0.75rem',padding:'0.45rem 0.75rem',background:'rgba(15,23,42,0.6)',borderRadius:6,border:`1px solid ${(opCol[lastOp]||'var(--violet)')}44`}}>
+            <span style={{fontSize:'0.72rem',color:'rgba(148,163,184,0.5)'}}>Last op: </span>
+            <strong style={{fontSize:'0.88rem',color:opCol[lastOp]||'var(--violet)',fontFamily:'monospace'}}>{lastOp}</strong>
+            <span style={{fontSize:'0.72rem',color:'rgba(148,163,184,0.4)',marginLeft:'0.75rem'}}>iter {iters} · best f≈{bestF}</span>
+          </div>
+        )}
+        <div className="m4-infobox" style={{marginTop:'0.75rem',fontSize:'0.79rem'}}>
+          <strong>Why no derivatives?</strong> NM only calls f(x) — it doesn't compute slopes. This makes it applicable to any evaluable function: discrete, noisy, or black-box. It "foreshadows" population-based methods — the group's combined state drives the search.
+        </div>
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Live Simplex — 2D Landscape</div>
+        <div className="m4-radio-row" style={{flexWrap:'wrap'}}>
+          {Object.keys(NM_FNS).map(k=>(
+            <label key={k} className={`m4-rpill ${fnKey===k?'m4-rpill--on':''}`}>
+              <input type="radio" checked={fnKey===k} onChange={()=>{setFnKey(k);reset();}} style={{display:'none'}}/>
+              {k}
+            </label>
+          ))}
+        </div>
+        <canvas ref={canRef} className="m4-canvas" height="300"/>
+        <div style={{display:'flex',gap:'1rem',marginTop:'0.4rem',flexWrap:'wrap'}}>
+          {[['#34d399','B = Best (lowest f)'],['#fbbf24','G = Good'],['#fb7185','W = Worst']].map(([c,l])=>(
+            <div key={l} style={{display:'flex',gap:'0.4rem',alignItems:'center',fontSize:'0.72rem',color:'var(--text-2)'}}>
+              <div style={{width:10,height:10,borderRadius:'50%',background:c}}/>{l}
+            </div>
+          ))}
+        </div>
+        <div className="m4-btn-row" style={{marginTop:'0.5rem'}}>
+          <button className="m4-btn m4-btn-g" onClick={doStep}>Step →</button>
+          <button className="m4-btn m4-btn-p" onClick={()=>setRunning(r=>!r)}>
+            {running?'⏸ Pause':'▶ Auto-run'}
+          </button>
+          <button className="m4-btn m4-btn-g" onClick={reset}>Reset</button>
+        </div>
+        <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.78rem'}}>
+          Try <strong>Diagonal Valley</strong> — watch CCS struggle but NM converges by adapting its shape to the valley geometry.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Simulated Annealing Interactive Visualizer ────────────────────────────────
+function SAViz() {
+  const XMIN=-5, XMAX=5;
+  const saFn = x => Math.sin(2*x) + 0.7*Math.sin(3.5*x) - 0.08*x;
+
+  const [tVal, setTVal] = useState(2.0);
+  const [pos, setPos] = useState(-4.0);
+  const [running, setRunning] = useState(false);
+  const [history, setHistory] = useState([{x:-4.0}]);
+  const [info, setInfo] = useState(null);
+  const canRef = useRef(null);
+  const posRef = useRef(-4.0);
+  const tRef = useRef(2.0);
+
+  const drawLandscape = useCallback((hist, cur) => {
+    const canvas = canRef.current;
+    if(!canvas) return;
+    const W = canvas.width = canvas.offsetWidth||500;
+    const H = canvas.height = 220;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+
+    const xs = Array.from({length:300},(_,i)=>XMIN+i/299*(XMAX-XMIN));
+    const ys = xs.map(saFn);
+    const yMin=Math.min(...ys)-0.4, yMax=Math.max(...ys)+0.4;
+    const toX = x=>(x-XMIN)/(XMAX-XMIN)*W;
+    const toY = y=>H-(y-yMin)/(yMax-yMin)*H;
+
+    ctx.strokeStyle='rgba(148,163,184,0.07)'; ctx.lineWidth=1;
+    for(let g=Math.ceil(XMIN);g<=XMAX;g++){
+      ctx.beginPath(); ctx.moveTo(toX(g),0); ctx.lineTo(toX(g),H); ctx.stroke();
+    }
+
+    // Gradient fill under curve
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'rgba(34,211,238,0.18)');
+    grad.addColorStop(1,'rgba(34,211,238,0.01)');
+    ctx.beginPath();
+    xs.forEach((x,i)=>i===0?ctx.moveTo(toX(x),toY(saFn(x))):ctx.lineTo(toX(x),toY(saFn(x))));
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fillStyle=grad; ctx.fill();
+
+    ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2.5; ctx.beginPath();
+    xs.forEach((x,i)=>i===0?ctx.moveTo(toX(x),toY(saFn(x))):ctx.lineTo(toX(x),toY(saFn(x))));
+    ctx.stroke();
+
+    // Trail
+    if(hist.length>1){
+      ctx.strokeStyle='rgba(167,139,250,0.35)'; ctx.lineWidth=1.5; ctx.beginPath();
+      hist.slice(-40).forEach(({x},i)=>i===0?ctx.moveTo(toX(x),toY(saFn(x))):ctx.lineTo(toX(x),toY(saFn(x))));
+      ctx.stroke();
+    }
+
+    // Current pos
+    if(cur!==undefined){
+      const cx=toX(cur), cy=toY(saFn(cur));
+      ctx.shadowColor='#fb7185'; ctx.shadowBlur=10;
+      ctx.fillStyle='#fb7185'; ctx.beginPath(); ctx.arc(cx,cy,7,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#fff'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+      ctx.fillText('S',cx,cy+3);
+    }
+    ctx.fillStyle='rgba(148,163,184,0.4)'; ctx.font='8px monospace'; ctx.textAlign='center';
+    for(let g=Math.ceil(XMIN);g<=XMAX;g++) ctx.fillText(g,toX(g),H-2);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(()=>{ drawLandscape(history, pos); }, [pos, history, drawLandscape]);
+  useEffect(()=>{ drawLandscape([{x:-4}],-4); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(()=>{
+    if(!running) return;
+    const id = setInterval(()=>{
+      const cur = posRef.current, t = tRef.current;
+      const step = (Math.random()-0.5)*2.5;
+      const next = Math.max(XMIN, Math.min(XMAX, cur+step));
+      const qCur=saFn(cur), qNext=saFn(next);
+      const p = Math.exp((qNext-qCur)/t);
+      const accepted = qNext>qCur || Math.random()<p;
+      const newPos = accepted?next:cur;
+      posRef.current=newPos; setPos(newPos);
+      setHistory(h=>[...h.slice(-60),{x:newPos}]);
+      setInfo({qCur:qCur.toFixed(3), qNext:qNext.toFixed(3),
+               p: Math.min(1,p).toFixed(3), accepted, better:qNext>qCur});
+      const newT = Math.max(0.01, t*0.985);
+      tRef.current=newT; setTVal(newT);
+    }, 140);
+    return ()=>clearInterval(id);
+  }, [running]);
+
+  const resetSA = () => {
+    setRunning(false);
+    posRef.current=-4; tRef.current=2;
+    setPos(-4); setHistory([{x:-4}]); setInfo(null); setTVal(2.0);
+  };
+
+  // P vs ΔQ curve points for SVG
+  const curvePts = Array.from({length:50},(_,i)=>{
+    const dq = -i/49*4;
+    const p = Math.min(1,Math.exp(dq/tVal));
+    const svgX = (1-i/49)*190+5;
+    const svgY = 5+(1-p)*80;
+    return `${svgX},${svgY}`;
+  }).join(' ');
+
+  return (
+    <div className="m4-two-col" style={{marginTop:'1.5rem'}}>
+      <div className="m4-card">
+        <div className="m4-card-h">Acceptance Probability Explorer</div>
+        <Tex src="P = e^{(Q(R)-Q(S))/t}" block />
+        <div className="m4-ctrl" style={{marginTop:'0.5rem'}}>
+          <div className="m4-ctrl-lbl">
+            <span>Temperature t</span>
+            <span className="m4-ctrl-val" style={{color:tVal>1?'var(--rose)':tVal>0.2?'var(--amber)':'var(--emerald)'}}>
+              {tVal.toFixed(3)}
+            </span>
+          </div>
+          <input type="range" min="1" max="500" value={Math.round(tVal*100)}
+            onChange={e=>{const v=+e.target.value/100; setTVal(v); tRef.current=v;}}/>
+        </div>
+        <div className="m4-flabel" style={{marginTop:'0.5rem'}}>P vs ΔQ = Q(R)−Q(S) (ΔQ ≤ 0 means R is worse)</div>
+        <div style={{background:'var(--bg-2)',borderRadius:6,padding:'0.5rem',border:'1px solid var(--border)',overflow:'hidden'}}>
+          <svg viewBox="0 0 200 95" style={{width:'100%',display:'block'}}>
+            <line x1="5" y1="5" x2="5" y2="85" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
+            <line x1="5" y1="85" x2="195" y2="85" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
+            {[0,0.25,0.5,0.75,1].map(p=>(
+              <g key={p}>
+                <line x1="5" y1={5+(1-p)*80} x2="195" y2={5+(1-p)*80} stroke="rgba(148,163,184,0.07)" strokeWidth="0.5"/>
+                <text x="3" y={5+(1-p)*80+3} fill="rgba(148,163,184,0.45)" fontSize="5" textAnchor="end">{p}</text>
+              </g>
+            ))}
+            {[0,-1,-2,-3,-4].map((dq,i)=>(
+              <text key={dq} x={5+i/4*190} y="93" fill="rgba(148,163,184,0.4)" fontSize="5" textAnchor="middle">ΔQ={dq}</text>
+            ))}
+            <polyline points={curvePts} fill="none" stroke="#22d3ee" strokeWidth="1.8"/>
+            <text x="110" y="14" fill="rgba(34,211,238,0.6)" fontSize="5.5">t={tVal.toFixed(2)}</text>
+          </svg>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.35rem',marginTop:'0.5rem'}}>
+          {[-0.5,-1,-2,-3].map(dq=>(
+            <div key={dq} style={{background:'var(--bg-2)',borderRadius:4,padding:'0.3rem 0.6rem',border:'1px solid var(--border)',fontSize:'0.75rem',display:'flex',justifyContent:'space-between'}}>
+              <span style={{color:'var(--rose)'}}>ΔQ={dq}</span>
+              <span style={{color:'var(--emerald)',fontWeight:700,fontFamily:'monospace'}}>{Math.min(1,Math.exp(dq/tVal)).toFixed(3)}</span>
+            </div>
+          ))}
+        </div>
+        <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.79rem'}}>
+          <strong>High t</strong> → curve flat → accepts almost any worse move → <em>random walk</em><br/>
+          <strong>Low t</strong> → curve steep → only near-equal accepted → <em>pure hill climb</em>
+        </div>
+      </div>
+
+      <div className="m4-card">
+        <div className="m4-card-h">SA Walker on Multimodal Landscape</div>
+        <p style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.4rem'}}>
+          f(x) = sin(2x) + 0.7sin(3.5x) − 0.08x · Maximising. Temperature auto-cools ×0.985 each step.
+        </p>
+        <canvas ref={canRef} className="m4-canvas" height="220"/>
+        {info && (
+          <div className="m4-stats-row" style={{marginTop:'0.4rem'}}>
+            <div className="m4-stat"><span className="m4-stat-l">Q(S)</span><span className="m4-stat-v" style={{color:'var(--cyan)'}}>{info.qCur}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">Q(R)</span><span className="m4-stat-v" style={{color:'var(--violet)'}}>{info.qNext}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">P</span><span className="m4-stat-v" style={{color:'var(--amber)'}}>{info.better?'—':info.p}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">Accept?</span>
+              <span className="m4-stat-v" style={{color:info.accepted?'var(--emerald)':'var(--rose)'}}>
+                {info.accepted?(info.better?'✓ Better':'✓ SA'):'✗ Reject'}
+              </span>
+            </div>
+          </div>
+        )}
+        <div style={{marginTop:'0.4rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
+          <span style={{fontSize:'0.75rem',color:'var(--text-2)'}}>t = </span>
+          <div style={{flex:1,height:6,background:'var(--bg-2)',borderRadius:3,overflow:'hidden',border:'1px solid var(--border)'}}>
+            <div style={{height:'100%',width:`${Math.min(100,(tVal/2)*100)}%`,
+              background:`linear-gradient(to right, var(--emerald), var(--amber), var(--rose))`,
+              borderRadius:3,transition:'width 0.2s'}}/>
+          </div>
+          <span style={{fontSize:'0.75rem',fontFamily:'monospace',color:tVal>1?'var(--rose)':tVal>0.2?'var(--amber)':'var(--emerald)',minWidth:45}}>{tVal.toFixed(3)}</span>
+        </div>
+        <div className="m4-btn-row" style={{marginTop:'0.5rem'}}>
+          <button className="m4-btn m4-btn-p" onClick={()=>setRunning(r=>!r)}>
+            {running?'⏸ Pause':'▶ Run SA'}
+          </button>
+          <button className="m4-btn m4-btn-g" onClick={resetSA}>Reset</button>
+        </div>
+        <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.78rem'}}>
+          Watch the walker <strong>escape local optima early</strong> (high t, accepts worse) then <strong>settle</strong> as it cools. The <span style={{color:'var(--rose)'}}>red dot</span> shows current S; the trail shows recent history.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Intelligence Tab ──────────────────────────────────────────────────────────
 function IntelligenceTab() {
   const [sel, setSel] = useState(null);
@@ -2183,6 +2565,57 @@ function AlgorithmsTab() {
               </div>
             </div>
           </div>
+          <div className="m4-sec-hdr" style={{marginTop:'1.5rem'}}>
+            <h2 className="m4-sec-title">Nelder-Mead Simplex <span className="m4-badge">Interactive</span></h2>
+            <p className="m4-sec-sub">Watch the simplex triangle morph and roll toward the minimum. Step through each operation manually or run automatically.</p>
+          </div>
+          <NelderMeadViz />
+          <div className="m4-card" style={{marginTop:'1.5rem'}}>
+            <div className="m4-card-h">CCS: The Diagonal Valley Problem</div>
+            <div className="m4-infobox">Cyclic Coordinate Search (CCS) can only take axis-aligned steps — horizontal or vertical. This causes a <strong>staircase path</strong> in diagonal valleys.</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginTop:'0.75rem'}}>
+              <div>
+                <div className="m4-flabel">CCS Path (staircase)</div>
+                <svg viewBox="0 0 120 100" style={{width:'100%',background:'var(--bg-2)',borderRadius:6,border:'1px solid var(--border)'}}>
+                  <line x1="10" y1="90" x2="110" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
+                  <line x1="10" y1="10" x2="10" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
+                  {/* Valley contours (diagonal ellipses approximated) */}
+                  {[30,45,60,75].map((r,i)=>(
+                    <ellipse key={i} cx="60" cy="50" rx={r*0.5} ry={r*0.2} transform="rotate(-35 60 50)"
+                      fill="none" stroke={`rgba(34,211,238,${0.15+i*0.05})`} strokeWidth="0.8"/>
+                  ))}
+                  {/* Staircase path */}
+                  <polyline points="90,20 90,38 68,38 68,50 53,50 53,58 45,58"
+                    fill="none" stroke="#fb7185" strokeWidth="1.5" strokeDasharray="3,2"/>
+                  <circle cx="90" cy="20" r="3" fill="#fb7185"/>
+                  <circle cx="45" cy="58" r="3" fill="#34d399"/>
+                  <text x="93" y="19" fill="rgba(251,113,133,0.8)" fontSize="7">start</text>
+                  <text x="32" y="62" fill="rgba(52,211,153,0.8)" fontSize="7">optimum</text>
+                </svg>
+              </div>
+              <div>
+                <div className="m4-flabel">Acceleration Step (net direction)</div>
+                <svg viewBox="0 0 120 100" style={{width:'100%',background:'var(--bg-2)',borderRadius:6,border:'1px solid var(--border)'}}>
+                  <line x1="10" y1="90" x2="110" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
+                  <line x1="10" y1="10" x2="10" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
+                  {[30,45,60,75].map((r,i)=>(
+                    <ellipse key={i} cx="60" cy="50" rx={r*0.5} ry={r*0.2} transform="rotate(-35 60 50)"
+                      fill="none" stroke={`rgba(34,211,238,${0.15+i*0.05})`} strokeWidth="0.8"/>
+                  ))}
+                  {/* Diagonal acceleration */}
+                  <line x1="90" y1="20" x2="45" y2="58" stroke="#a78bfa" strokeWidth="2"/>
+                  <circle cx="90" cy="20" r="3" fill="#fb7185"/>
+                  <circle cx="45" cy="58" r="3" fill="#34d399"/>
+                  <text x="60" y="34" fill="rgba(167,139,250,0.9)" fontSize="6.5">u = x^n − x^0</text>
+                  <text x="93" y="19" fill="rgba(251,113,133,0.8)" fontSize="7">x⁰</text>
+                  <text x="32" y="62" fill="rgba(52,211,153,0.8)" fontSize="7">x^n</text>
+                </svg>
+              </div>
+            </div>
+            <div className="m4-infobox" style={{marginTop:'0.75rem',fontSize:'0.79rem'}}>
+              <strong>Acceleration step:</strong> After one full coordinate cycle, compute the net displacement <Tex src="\vec{u} = \vec{x}^n - \vec{x}^0" /> and do one extra line search in that direction. This allows diagonal traversal — much faster convergence on ridges and valleys.
+            </div>
+          </div>
         </div>
       )}
 
@@ -2289,6 +2722,29 @@ function AlgorithmsTab() {
               <div className="m4-warnbox">
                 <strong>No Free Lunch Theorem</strong> (Wolpert &amp; Macready, 1997): Averaged across all possible problems, no algorithm outperforms any other. Performance gains on one class trade off against losses on another. Always choose algorithms informed by domain knowledge.
               </div>
+            </div>
+          </div>
+          <div className="m4-sec-hdr" style={{marginTop:'1.5rem'}}>
+            <h2 className="m4-sec-title">Simulated Annealing <span className="m4-badge">Interactive</span></h2>
+            <p className="m4-sec-sub">Drag the temperature slider to see how P = e^(ΔQ/t) changes, then run SA on a multimodal landscape and watch it escape local optima.</p>
+          </div>
+          <SAViz />
+          <div className="m4-card" style={{marginTop:'1.5rem'}}>
+            <div className="m4-card-h">HC Family Comparison</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.6rem',marginTop:'0.4rem'}}>
+              {[
+                {label:'(1+1) Hill Climbing',col:'var(--cyan)',desc:'Generate 1 tweak. Accept only if better. Simple but greedy — follows first improvement.'},
+                {label:'(1+n) Steepest Ascent',col:'var(--violet)',desc:'Generate n tweaks, take best. More compute per step but more deliberate direction. Approximates gradient.'},
+                {label:'(1,n) SA w/ Replacement',col:'var(--amber)',desc:'Generate n tweaks, take best, always replace S. No memory of old S — more exploratory but can lose progress.'},
+                {label:'ILS: Clever Restarts',col:'var(--emerald)',desc:'Keep a "home base" H. Perturb from H → hill-climb → compare to H. "Hill climb of hill climbs." Smarter than random restarts.'},
+                {label:'Tabu Search',col:'var(--rose)',desc:'FIFO tabu list of length l forbids revisiting recent solutions. Always moves to best non-tabu neighbour — eventually escapes any local optimum.'},
+                {label:'SA: Annealing',col:'var(--cyan)',desc:'Accept worse solutions with P = e^(ΔQ/t). High t = exploration. t→0 = pure HC. The cooling schedule controls the transition.'},
+              ].map(({label,col,desc})=>(
+                <div key={label} style={{background:'var(--bg-2)',borderRadius:7,padding:'0.6rem 0.75rem',border:`1px solid ${col}33`}}>
+                  <div style={{fontSize:'0.75rem',fontWeight:700,color:col,marginBottom:'0.3rem',fontFamily:'monospace'}}>{label}</div>
+                  <div style={{fontSize:'0.72rem',color:'var(--text-2)',lineHeight:1.55}}>{desc}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -2597,13 +3053,244 @@ const PRACTICE_QUESTIONS = [
   },
 ];
 
+// ── All Possible Questions ────────────────────────────────────────────────────
+const EXAM_ATLAS = [
+  {
+    lec: 'L1–2', title: 'Intelligence & Adaptation', color: 'var(--cyan)',
+    know: [
+      'Four quadrants of AI (Russell & Norvig): Think/Act × Humanly/Rationally — give one example per quadrant',
+      'Turing Test: definition, modern relevance (LLMs), limitations ("internal consistency" argument)',
+      'Symbolic vs sub-symbolic AI — 2 examples each; why called "religious wars"',
+      'Morris et al. AGI levels (0–5): classify ChatGPT, AlphaGo, AlphaFold, Grammarly',
+      'Why the real world needs adaptive AI — traditional AI requirements vs real-world messiness',
+      'Nature\'s adaptation: short/long term × individual/population — 1 example each quadrant',
+      'Computational intelligence taxonomy: neural nets, evolutionary, swarm, fuzzy logic',
+    ],
+    qs: ['Define and classify AI systems into the four-quadrant model', 'Compare symbolic and sub-symbolic AI', 'Classify given systems in the AGI table', 'Explain AI = optimisation claim'],
+    formula: null,
+  },
+  {
+    lec: 'L3', title: 'Optimisation Framework', color: 'var(--violet)',
+    know: [
+      'Three ingredients: Language (representation), Model (hypothesis), Metric (evaluation/fitness/cost/loss)',
+      'Ideal definition: ĥ = argmin_{h∈H} f(h)',
+      'Practical definition: add compute constraint ≤ C_max',
+      'Expressiveness: A ⊃ B means A is more expressive — Chomsky hierarchy example + function example',
+      'Hypothesis space H: all valid models in the chosen language',
+      'MSE formula and why it creates a "bowl" (convex) — guaranteed global minimum',
+      'Online vs offline: online = immediate placement, offline = all data known upfront (e.g. FFD)',
+      'argmin vs argmax: argmin returns the h, not the value f(h)',
+    ],
+    qs: ['Name and describe the three ingredients', 'Write the ideal and practical optimisation definitions', 'Define expressiveness and give examples from Chomsky hierarchy and functions', 'Derive MSE and explain its properties'],
+    formula: '\\hat{h} = \\underset{h \\in H}{\\arg\\min}\\, f(h)',
+  },
+  {
+    lec: 'L4', title: 'Job Shop Scheduling (JSSP)', color: 'var(--rose)',
+    know: [
+      'JSSP: n jobs, m machines, fixed operation order per job, minimise makespan C_max',
+      'Solution space: |H| ≤ (n!)^m — calculate for given n, m',
+      'Dispatching rules: SPT, LPT, EDD, FIFO, CR, MWKR — criterion + use case for each',
+      'Disjunctive graph G = (V, C ∪ D): C = conjunctive (job precedence), D = disjunctive (machine competition)',
+      'C_max = longest path from s to t in G',
+      'N1 neighbourhood: swap adjacent operations on the critical path on the same machine',
+      'RPD = (C_obtained − C_BKS) / C_BKS × 100% — why used instead of raw makespan',
+      'Benchmark instances: FT06, FT10 (unsolved 26 years), FT20, LA, ORB, TA series',
+      'Exact (B&B) vs approximate (metaheuristics): exact only feasible for small instances',
+    ],
+    qs: ['Define JSSP and compute solution space size for given n, m', 'List dispatching rules with criteria', 'Explain the disjunctive graph model', 'Define RPD and explain why it\'s used', 'Describe N1 neighbourhood and why only critical-path swaps matter'],
+    formula: 'C_{\\max} = \\max_i C_i \\quad |H| \\leq (n!)^m',
+  },
+  {
+    lec: 'L5', title: 'Vector Calculus', color: 'var(--emerald)',
+    know: [
+      'Limit definition of derivative: f\'(x) = lim_{Δx→0} [f(x+Δx)−f(x)]/Δx — apply to f(x)=x²',
+      'Derivative rules: power, constant multiple, sum, product, chain',
+      'Second derivative test: f\'\'(c)>0 → local min, f\'\'(c)<0 → local max, f\'\'(c)=0 → inconclusive',
+      'Partial derivative: differentiate w.r.t. one variable, hold others constant',
+      'Gradient ∇f = [∂f/∂x₁, ..., ∂f/∂xₙ]ᵀ — direction of steepest ascent',
+      'Gradient convergence: ‖∇f‖ < ε → stationary point',
+      'Dot product: v·w = Σvᵢwᵢ = |v||w|cos(θ) — measures similarity/alignment',
+      'Outer product: v⊗w = vwᵀ — produces matrix, rank-1',
+      'Hadamard product: v⊙w — element-wise, same shape, no sum',
+      'Euclidean norm: ‖v‖ = √(Σvᵢ²)',
+    ],
+    qs: ['Derive derivative from limit definition', 'Find and classify critical points of a given polynomial', 'Apply chain rule', 'Compute gradient of a given multivariate function', 'Explain gradient direction for ascent vs descent'],
+    formula: '\\nabla f(\\vec{x}) = \\begin{bmatrix}\\partial f/\\partial x_1\\\\ \\vdots\\\\ \\partial f/\\partial x_n\\end{bmatrix}',
+  },
+  {
+    lec: 'L6', title: 'Gradient Methods', color: 'var(--amber)',
+    know: [
+      'Gradient descent update: x ← x − α f\'(x); ascent: x ← x + α f\'(x)',
+      'α (learning rate): too small → slow convergence; too large → overshoot/oscillate',
+      'Convergence criterion: |f\'(x)| < ε',
+      'Newton-Raphson (optimisation): x_{n+1} = x_n − f\'(x_n)/f\'\'(x_n)',
+      'N-R auto-scales step: large curvature → small step; flat region → large step',
+      'N-R solves quadratics in ONE step — show this for f(x) = ax²+b',
+      'N-R requires C² smoothness; gradient descent requires C¹',
+      'Gradient ascent with restarts: guarantees global optimum only for bounded space + finite optima',
+      'Smoothness classes: C⁰ (continuous), C¹ (differentiable), C² (twice differentiable), C∞',
+    ],
+    qs: ['Write gradient descent with stopping criteria; analyse role of α', 'Derive N-R update; show it solves a quadratic in one step', 'Write gradient ascent with restarts; state conditions for global optimum guarantee', 'Write multivariate gradient update using ∇f; compute ∇f for a given function'],
+    formula: 'x_{n+1} = x_n - \\frac{f\'(x_n)}{f\'\'(x_n)}',
+  },
+  {
+    lec: 'L7', title: 'Direct Methods', color: 'var(--violet)',
+    know: [
+      'When to use direct methods: non-differentiable, black-box, discontinuous spaces',
+      'CCS: optimise one variable at a time; staircase problem in diagonal valleys',
+      'CCS acceleration step: u = x^n − x^0; extra line search in diagonal direction',
+      'Powell\'s method: replaces oldest direction with net displacement; risk of linear dependence',
+      'Hooke-Jeeves: sample f(x±αeᵢ) in all 2n directions; shrink α if no improvement',
+      'Nelder-Mead: maintain n+1 vertices (simplex); Reflect, Expand, Contract, Shrink',
+      'NM parameters: α=1, β=2, γ=0.5, σ=0.5; convergence when variance of f values < ε',
+      'NM "foreshadows populations" — group\'s combined state drives search, not one candidate',
+    ],
+    qs: ['Distinguish direct from gradient methods; give 2 situations requiring direct methods', 'Describe CCS and the diagonal valley problem; explain acceleration step', 'Explain all 5 NM operations with formulas and when each triggers', 'Why does NM "foreshadow population-based methods"?'],
+    formula: '\\vec{x}_r = \\bar{x} + \\alpha(\\bar{x} - \\vec{x}_W)',
+  },
+  {
+    lec: 'L8', title: 'Stochastic Methods & PRNGs', color: 'var(--rose)',
+    know: [
+      'HC (1+1): Tweak(Copy(S)), accept if better',
+      'Nomenclature: (1+n) steepest ascent, (1,n) SA with replacement',
+      'Gaussian tweak: n~N(0,σ²); σ = exploration knob; allows arbitrarily large (rare) jumps',
+      'Bounded uniform convolution: parameters p (which elements to tweak) and r (max tweak size)',
+      'Exploration vs exploitation trade-off — how α, σ, n, r each control it',
+      'LCG: X_{n+1} = (aXₙ + c) mod m',
+      'Hull-Dobell full-period theorem: period = m iff gcd(c,m)=1, (a−1) divisible by all prime factors of m',
+      'Mersenne primes: m = 2^n − 1; why ideal (few factors → long period)',
+      'No Free Lunch Theorem: no algorithm universally outperforms all others; choose based on domain knowledge',
+      'Bin packing: NF O(n), FF/BF O(n²), FFD O(n log n); FF/NF/BF are online, FFD is offline',
+    ],
+    qs: ['Write HC pseudocode; explain (1+1), (1+n), (1,n) notation', 'Describe Gaussian vs bounded uniform tweak; how does σ vs r control exploration?', 'State No Free Lunch theorem and its implications', 'Apply LCG formula; check full-period conditions'],
+    formula: 'X_{n+1} = (a \\cdot X_n + c) \\bmod m',
+  },
+  {
+    lec: 'L9', title: 'Global Optimisation: SA, Tabu, ILS', color: 'var(--cyan)',
+    know: [
+      'SA acceptance: P = e^((Q(R)−Q(S))/t) — derive what happens at t→∞, t→0, large gap',
+      'Cooling schedule: t = β·e^{-αT}; controls exploration→exploitation transition',
+      'SA pseudocode (Algorithm 13): maintain Best separately from current S',
+      'Tabu search: FIFO list length l; forbids revisiting — always escapes local optima',
+      'Tabu trade-off: large l = better memory but slower lookup; small l = may revisit',
+      'ILS: home base H + Perturb(H) + NewHomeBase(H,S)',
+      'NewHomeBase: adopt S if Q(S)≥Q(H), otherwise stay at H ("hill climb of hill climbs")',
+      'Random walk of hill climbs: always adopt S regardless of quality (wider exploration)',
+    ],
+    qs: ['Write and analyse SA acceptance probability at extreme temperatures and large gap', 'Write full SA algorithm; what is the role of the cooling schedule?', 'Explain Tabu search mechanism; what trade-off does list length create?', 'Explain ILS; write NewHomeBase for hill climb vs random walk variants'],
+    formula: 'P = e^{\\,(Q(R)-Q(S))\\,/\\,t}',
+  },
+];
+
+function AllPossibleQuestions() {
+  const [active, setActive] = useState(null);
+  const [filter, setFilter] = useState('');
+
+  const filtered = EXAM_ATLAS.filter(t =>
+    !filter || t.title.toLowerCase().includes(filter.toLowerCase()) ||
+    t.know.some(k=>k.toLowerCase().includes(filter.toLowerCase())) ||
+    t.qs.some(q=>q.toLowerCase().includes(filter.toLowerCase()))
+  );
+
+  return (
+    <div>
+      <div className="m4-infobox" style={{marginBottom:'1rem'}}>
+        <strong>Exam Topic Atlas</strong> — every topic that could appear on a test, organised by lecture. Click any card for full "Know how to" breakdown and typical question patterns.
+      </div>
+      <div style={{marginBottom:'1rem'}}>
+        <input
+          type="text"
+          placeholder="Search topics, formulas, or keywords…"
+          value={filter}
+          onChange={e=>setFilter(e.target.value)}
+          style={{
+            width:'100%', background:'var(--bg-2)', border:'1px solid var(--border)',
+            color:'var(--text-0)', borderRadius:'0.5rem', padding:'0.5rem 0.75rem',
+            fontSize:'0.85rem', fontFamily:'inherit', outline:'none',
+          }}
+        />
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'0.85rem'}}>
+        {filtered.map(t=>{
+          const isOpen = active===t.lec;
+          return (
+            <div key={t.lec}
+              style={{
+                background:'var(--bg-1)',borderRadius:10,border:`1px solid ${t.color}44`,
+                cursor:'pointer',transition:'border-color 0.15s',
+                borderColor: isOpen ? t.color : `${t.color}44`,
+              }}
+              onClick={()=>setActive(isOpen?null:t.lec)}
+            >
+              <div style={{padding:'0.75rem 1rem',borderBottom:isOpen?`1px solid ${t.color}33`:'none'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.3rem'}}>
+                  <span style={{fontSize:'0.68rem',fontWeight:700,fontFamily:'monospace',color:t.color,
+                    background:`${t.color}18`,border:`1px solid ${t.color}33`,borderRadius:4,padding:'0.1rem 0.4rem'}}>
+                    {t.lec}
+                  </span>
+                  <span style={{fontSize:'0.72rem',color:'rgba(148,163,184,0.4)'}}>{isOpen?'▲':'▼'}</span>
+                </div>
+                <div style={{fontSize:'0.92rem',fontWeight:700,color:'var(--text-0)',marginBottom:'0.25rem'}}>{t.title}</div>
+                <div style={{fontSize:'0.72rem',color:'var(--text-2)'}}>{t.know.length} key points · {t.qs.length} question types</div>
+              </div>
+
+              {isOpen && (
+                <div style={{padding:'0.75rem 1rem'}}>
+                  {t.formula && (
+                    <div style={{marginBottom:'0.6rem',textAlign:'center'}}>
+                      <Tex src={t.formula} block />
+                    </div>
+                  )}
+                  <div style={{fontSize:'0.72rem',fontWeight:700,color:t.color,letterSpacing:'0.07em',marginBottom:'0.4rem'}}>KNOW HOW TO / DEFINE:</div>
+                  <ul style={{margin:0,padding:'0 0 0 1rem',display:'grid',gap:'0.3rem'}}>
+                    {t.know.map((k,i)=>(
+                      <li key={i} style={{fontSize:'0.78rem',color:'var(--text-2)',lineHeight:1.55}}>{k}</li>
+                    ))}
+                  </ul>
+                  <div style={{height:'1px',background:'var(--border)',margin:'0.65rem 0'}}/>
+                  <div style={{fontSize:'0.72rem',fontWeight:700,color:'rgba(148,163,184,0.5)',letterSpacing:'0.07em',marginBottom:'0.4rem'}}>TYPICAL QUESTION PATTERNS:</div>
+                  {t.qs.map((q,i)=>(
+                    <div key={i} style={{
+                      display:'flex',gap:'0.5rem',alignItems:'flex-start',marginBottom:'0.3rem',
+                      fontSize:'0.77rem',color:'var(--text-1)',
+                    }}>
+                      <span style={{color:t.color,fontWeight:700,fontFamily:'monospace',marginTop:1}}>Q{i+1}</span>
+                      <span>{q}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {filtered.length===0 && (
+        <div style={{textAlign:'center',color:'var(--text-2)',padding:'2rem',fontSize:'0.85rem'}}>
+          No topics match "{filter}"
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Practice Exam Tab ─────────────────────────────────────────────────────────
 function PracticeExamTab() {
   const [open, setOpen] = useState({});
   const toggleSolution = (id) => setOpen(prev => ({ ...prev, [id]: !prev[id] }));
 
+  const [subTab, setSubTab] = useState('questions');
+
   return (
     <div>
+      <div className="m4-algo-tabs" style={{marginBottom:'1.25rem'}}>
+        {[['questions','Practice Questions'],['atlas','All Possible Questions']].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${subTab===v?'m4-algo-tab--on':''}`} onClick={()=>setSubTab(v)}>{l}</button>
+        ))}
+      </div>
+
+      {subTab === 'atlas' && <AllPossibleQuestions />}
+
+      {subTab === 'questions' && <>
       <div className="m4-infobox" style={{ marginBottom: '1.5rem' }}>
         <strong>How to use:</strong> Read each question and write your answer on paper or in a text editor — then click <strong>Show Solution</strong> to compare. Estimated times are per question; total ≈ 2.5–3 hrs for all 18 questions (full exam simulation).
       </div>
@@ -2692,6 +3379,7 @@ function PracticeExamTab() {
           </div>
         </div>
       ))}
+      </>}
     </div>
   );
 }
