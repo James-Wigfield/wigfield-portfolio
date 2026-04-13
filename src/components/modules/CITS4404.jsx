@@ -1184,6 +1184,285 @@ function QuizSection() {
   );
 }
 
+// ── Cyclic Coordinate Search Visualizer ──────────────────────────────────────
+const CCS_FN = (x, y) => 2 * Math.pow(y - 0.8 * x, 2) + 0.1 * x * x;
+const CCS_INIT = [3.5, -2.0];
+const CCS_XR = [-4, 4];
+const CCS_YR = [-4, 4];
+
+function ccsLineSearch(p, dim) {
+  let best = [...p], bestVal = CCS_FN(p[0], p[1]);
+  for (let i = 0; i <= 500; i++) {
+    const t = CCS_XR[0] + (CCS_XR[1] - CCS_XR[0]) * i / 500;
+    const cand = [...p]; cand[dim] = t;
+    const v = CCS_FN(cand[0], cand[1]);
+    if (v < bestVal) { bestVal = v; best = [...cand]; }
+  }
+  return best;
+}
+
+function ccsLineSearchDir(p, u) {
+  const len = Math.sqrt(u[0]*u[0] + u[1]*u[1]);
+  if (len < 1e-10) return [...p];
+  let best = [...p], bestVal = CCS_FN(p[0], p[1]);
+  for (let t = -4; t <= 4; t += 0.005) {
+    const cand = [p[0] + t*u[0], p[1] + t*u[1]];
+    if (cand[0] < CCS_XR[0] || cand[0] > CCS_XR[1] || cand[1] < CCS_YR[0] || cand[1] > CCS_YR[1]) continue;
+    const v = CCS_FN(cand[0], cand[1]);
+    if (v < bestVal) { bestVal = v; best = [...cand]; }
+  }
+  return best;
+}
+
+function CCSViz() {
+  // All mutable algorithm state lives in one ref so the interval callback never goes stale
+  const sRef = useRef({
+    pos: [...CCS_INIT],
+    hist: [{ pos: [...CCS_INIT], type: 'start' }],
+    cycleStart: [...CCS_INIT],   // x^0: position at start of current cycle
+    dim: 0,                       // which coordinate is being searched next (0=x₁, 1=x₂)
+    awaitingAccel: false,         // true after a full cycle, before the accel step
+    cycleEnd: null,               // x^n: position at end of cycle (used for u = x^n - x^0)
+    cycleCount: 0,
+    iters: 0,
+    accelEnabled: true,
+  });
+  const [tick, setTick] = useState(0); // just triggers re-render to sync display with sRef
+  const [running, setRunning] = useState(false);
+  const canRef = useRef(null);
+
+  const drawCanvas = useCallback(() => {
+    const canvas = canRef.current;
+    if (!canvas) return;
+    const W = canvas.width = canvas.offsetWidth || 500;
+    const H = canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const toX = x => (x - CCS_XR[0]) / (CCS_XR[1] - CCS_XR[0]) * W;
+    const toY = y => H - (y - CCS_YR[0]) / (CCS_YR[1] - CCS_YR[0]) * H;
+
+    // Heatmap
+    const RES = 60;
+    const cw = W/RES, ch = H/RES;
+    let minV = Infinity, maxV = -Infinity;
+    const grid = [];
+    for (let i = 0; i < RES; i++) {
+      grid[i] = [];
+      for (let j = 0; j < RES; j++) {
+        const x = CCS_XR[0] + (i+0.5)/RES*(CCS_XR[1]-CCS_XR[0]);
+        const y = CCS_YR[0] + (j+0.5)/RES*(CCS_YR[1]-CCS_YR[0]);
+        const v = CCS_FN(x, y);
+        grid[i][j] = v;
+        if (v < minV) minV = v; if (v > maxV) maxV = v;
+      }
+    }
+    const rng = maxV - minV || 1;
+    for (let i = 0; i < RES; i++) for (let j = 0; j < RES; j++) {
+      const t = (grid[i][j] - minV) / rng;
+      ctx.fillStyle = `rgba(${Math.floor(t*40)},${Math.floor(80+t*80)},${Math.floor(160-t*80)},0.45)`;
+      ctx.fillRect(i*cw, H-(j+1)*ch, cw, ch);
+    }
+
+    // Axis guide lines
+    ctx.strokeStyle = 'rgba(148,163,184,0.1)'; ctx.lineWidth = 0.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(0, toY(0)); ctx.lineTo(W, toY(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(0), 0); ctx.lineTo(toX(0), H); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Minimum crosshair at origin
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(toX(0)-10,toY(0)); ctx.lineTo(toX(0)+10,toY(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(0),toY(0)-10); ctx.lineTo(toX(0),toY(0)+10); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='8px monospace'; ctx.textAlign='left';
+    ctx.fillText('min',toX(0)+4,toY(0)-5);
+
+    // History path
+    const s = sRef.current;
+    for (let i = 1; i < s.hist.length; i++) {
+      const from = s.hist[i].from || s.hist[i-1].pos;
+      const to   = s.hist[i].pos;
+      const type = s.hist[i].type;
+      ctx.beginPath(); ctx.moveTo(toX(from[0]),toY(from[1])); ctx.lineTo(toX(to[0]),toY(to[1]));
+      if (type === 'accel') {
+        ctx.strokeStyle='#a78bfa'; ctx.lineWidth=3; ctx.setLineDash([]);
+      } else if (type === 'dim0') {
+        ctx.strokeStyle='#fb7185'; ctx.lineWidth=2; ctx.setLineDash([3,2]);
+      } else {
+        ctx.strokeStyle='#34d399'; ctx.lineWidth=2; ctx.setLineDash([3,2]);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // Cycle-start marker (x⁰)
+    const cs = s.cycleStart;
+    ctx.beginPath(); ctx.arc(toX(cs[0]),toY(cs[1]),5,0,Math.PI*2);
+    ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='rgba(251,191,36,0.15)'; ctx.fill();
+    ctx.fillStyle='#fbbf24'; ctx.font='bold 8px monospace'; ctx.textAlign='left';
+    ctx.fillText('x⁰',toX(cs[0])+7,toY(cs[1])+3);
+
+    // Current position
+    const p = s.pos;
+    ctx.beginPath(); ctx.arc(toX(p[0]),toY(p[1]),7,0,Math.PI*2);
+    ctx.fillStyle='#fbbf24'; ctx.fill();
+    ctx.fillStyle='#000'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+    ctx.fillText('x',toX(p[0]),toY(p[1])+3);
+
+    // Show predicted u direction when awaiting accel
+    if (s.awaitingAccel && s.cycleEnd) {
+      const u = [s.cycleEnd[0]-s.cycleStart[0], s.cycleEnd[1]-s.cycleStart[1]];
+      ctx.beginPath();
+      ctx.moveTo(toX(s.cycleEnd[0]),toY(s.cycleEnd[1]));
+      ctx.lineTo(toX(s.cycleEnd[0]+u[0]*1.5),toY(s.cycleEnd[1]+u[1]*1.5));
+      ctx.strokeStyle='rgba(167,139,250,0.6)'; ctx.lineWidth=2; ctx.setLineDash([4,2]);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#a78bfa'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+      ctx.fillText('u',toX(s.cycleEnd[0]+u[0]*0.75),toY(s.cycleEnd[1]+u[1]*0.75)-6);
+    }
+  }, []); // reads sRef directly — stable, no deps needed
+
+  const doStep = useCallback(() => {
+    const s = sRef.current;
+    if (s.awaitingAccel) {
+      // Acceleration: line search in direction u = x^n − x^0
+      const u = [s.cycleEnd[0]-s.cycleStart[0], s.cycleEnd[1]-s.cycleStart[1]];
+      const newPos = ccsLineSearchDir(s.cycleEnd, u);
+      s.hist = [...s.hist, { pos: newPos, type: 'accel', from: [...s.cycleEnd] }];
+      s.pos = newPos; s.cycleStart = [...newPos]; s.awaitingAccel = false;
+      s.cycleEnd = null; s.dim = 0; s.cycleCount++; s.iters++;
+    } else {
+      // Coordinate line search in dimension s.dim
+      const newPos = ccsLineSearch(s.pos, s.dim);
+      const type = s.dim === 0 ? 'dim0' : 'dim1';
+      s.hist = [...s.hist, { pos: newPos, type, from: [...s.pos] }];
+      s.pos = newPos; s.iters++;
+      const nextDim = 1 - s.dim; s.dim = nextDim;
+      if (nextDim === 0) {
+        // Completed a full cycle
+        s.cycleEnd = [...newPos];
+        if (s.accelEnabled) { s.awaitingAccel = true; }
+        else { s.cycleStart = [...newPos]; s.cycleCount++; }
+      }
+    }
+    setTick(t => t+1);
+    requestAnimationFrame(drawCanvas);
+  }, [drawCanvas]);
+
+  const reset = useCallback(() => {
+    setRunning(false);
+    const s = sRef.current;
+    s.pos = [...CCS_INIT]; s.hist = [{pos:[...CCS_INIT],type:'start'}];
+    s.cycleStart = [...CCS_INIT]; s.dim = 0; s.awaitingAccel = false;
+    s.cycleEnd = null; s.cycleCount = 0; s.iters = 0;
+    setTick(t => t+1);
+    requestAnimationFrame(drawCanvas);
+  }, [drawCanvas]);
+
+  useEffect(() => { requestAnimationFrame(drawCanvas); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(doStep, 500);
+    return () => clearInterval(id);
+  }, [running, doStep]);
+
+  const s = sRef.current;
+  const curF = CCS_FN(s.pos[0], s.pos[1]).toFixed(4);
+  const nextName = s.awaitingAccel ? '→ Acceleration (u = xⁿ − x⁰)' : s.dim === 0 ? '→ x₁ line search (horizontal ↔)' : '→ x₂ line search (vertical ↕)';
+  const nextCol  = s.awaitingAccel ? 'var(--violet)' : s.dim === 0 ? 'var(--rose)' : 'var(--emerald)';
+
+  return (
+    <div className="m4-two-col" style={{marginTop:'1.5rem'}}>
+      {/* ── Left: algorithm state + equation explainer ── */}
+      <div className="m4-card">
+        <div className="m4-card-h">CCS Algorithm State</div>
+
+        {/* Live variable readout */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem',marginBottom:'0.75rem'}}>
+          {[
+            ['x (position)',    `[${s.pos[0].toFixed(2)}, ${s.pos[1].toFixed(2)}]`],
+            ['f(x)',            curF],
+            ['x⁰ (cycle start)',`[${s.cycleStart[0].toFixed(2)}, ${s.cycleStart[1].toFixed(2)}]`],
+            ['Cycle',           s.cycleCount + (s.awaitingAccel ? ' → accel!' : '')],
+          ].map(([lbl,val])=>(
+            <div key={lbl} style={{background:'var(--bg-2)',borderRadius:5,padding:'0.35rem 0.5rem',border:'1px solid var(--border)',fontSize:'0.74rem'}}>
+              <div style={{color:'var(--text-2)',marginBottom:2}}>{lbl}</div>
+              <strong style={{color:'var(--cyan)',fontFamily:'monospace'}}>{val}</strong>
+            </div>
+          ))}
+        </div>
+
+        {/* Next step indicator */}
+        <div style={{padding:'0.45rem 0.7rem',background:'rgba(15,23,42,0.6)',borderRadius:6,border:`1px solid ${nextCol}55`,marginBottom:'0.75rem'}}>
+          <span style={{fontSize:'0.7rem',color:'var(--text-2)'}}>Next: </span>
+          <span style={{fontSize:'0.84rem',color:nextCol,fontWeight:700,fontFamily:'monospace'}}>{nextName}</span>
+        </div>
+
+        {/* Contextual equation + variable explanations */}
+        {!s.awaitingAccel ? (
+          <>
+            <div className="m4-flabel">Active equation</div>
+            <Tex src={`\\vec{x}^{${s.iters+1}} = \\arg\\min_{x_${s.dim+1}}\\, f(x_1, x_2)`} block />
+            <VarTable vars={[
+              [`\\vec{x}^{${s.iters+1}}`, `New position — only x${s.dim+1} will move; the other coordinate stays locked`],
+              [`x_${s.dim+1}`, `Coordinate being optimised — we sweep along the ${s.dim===0?'horizontal (x₁ axis)':'vertical (x₂ axis)'}`],
+              [`x_${s.dim===0?2:1}`, `Fixed coordinate — held at ${(s.dim===0?s.pos[1]:s.pos[0]).toFixed(3)} for this step`],
+              [`\\arg\\min`, `"The value that minimises f" — found by sampling 500 candidate values along the axis`],
+              [`f`, `Objective function: f(x₁,x₂) = 2(x₂ − 0.8·x₁)² + 0.1·x₁² — minimum at origin`],
+            ]} />
+          </>
+        ) : (
+          <>
+            <div className="m4-flabel">Acceleration equation</div>
+            <Tex src={`\\vec{u} = \\vec{x}^n - \\vec{x}^0`} block />
+            <VarTable vars={[
+              [`\\vec{u}`, `Net direction: [${s.cycleEnd ? ((s.cycleEnd[0]-s.cycleStart[0]).toFixed(2)+', '+(s.cycleEnd[1]-s.cycleStart[1]).toFixed(2)) : '…'}] — the diagonal CCS actually traveled`],
+              [`\\vec{x}^0`, `Cycle start (recorded before the first search): [${s.cycleStart[0].toFixed(2)}, ${s.cycleStart[1].toFixed(2)}]`],
+              [`\\vec{x}^n`, `Cycle end (after both x₁ and x₂ searches): [${s.cycleEnd ? s.cycleEnd[0].toFixed(2) : '…'}, ${s.cycleEnd ? s.cycleEnd[1].toFixed(2) : '…'}]`],
+              [`n`, `Number of dimensions = 2 (both x₁ and x₂ were searched this cycle)`],
+            ]} />
+            <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.78rem'}}>
+              The next line search will travel along <strong>u</strong> — pointing diagonally toward the valley floor instead of zig-zagging axis by axis.
+            </div>
+          </>
+        )}
+
+        {/* Acceleration toggle */}
+        <label style={{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer',marginTop:'0.75rem',fontSize:'0.8rem'}}>
+          <input type="checkbox" checked={s.accelEnabled}
+            onChange={e => { sRef.current.accelEnabled = e.target.checked; reset(); }} />
+          <span style={{color:s.accelEnabled?'var(--violet)':'var(--text-2)'}}>Enable acceleration step</span>
+        </label>
+      </div>
+
+      {/* ── Right: canvas + controls ── */}
+      <div className="m4-card">
+        <div className="m4-card-h">Live Landscape — Diagonal Valley</div>
+        <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.4rem'}}>
+          f(x₁, x₂) = 2(x₂ − 0.8·x₁)² + 0.1·x₁² &nbsp;·&nbsp; minimum at origin ✕
+        </div>
+        <canvas ref={canRef} className="m4-canvas" height="300"/>
+        <div style={{display:'flex',gap:'0.75rem',marginTop:'0.4rem',flexWrap:'wrap'}}>
+          {[['#fb7185','x₁ search (horizontal)'],['#34d399','x₂ search (vertical)'],['#a78bfa','Acceleration (diagonal)'],['#fbbf24','Current position / x⁰']].map(([c,l])=>(
+            <div key={l} style={{display:'flex',gap:'0.35rem',alignItems:'center',fontSize:'0.72rem',color:'var(--text-2)'}}>
+              <div style={{width:10,height:10,borderRadius:'50%',background:c}}/>{l}
+            </div>
+          ))}
+        </div>
+        <div className="m4-btn-row" style={{marginTop:'0.5rem'}}>
+          <button className="m4-btn m4-btn-g" onClick={doStep}>Step →</button>
+          <button className="m4-btn m4-btn-p" onClick={()=>setRunning(r=>!r)}>
+            {running?'⏸ Pause':'▶ Auto-run'}
+          </button>
+          <button className="m4-btn m4-btn-g" onClick={reset}>Reset</button>
+        </div>
+        <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.78rem'}}>
+          <strong>Without acceleration:</strong> watch the staircase zig-zag never leave the valley floor. <strong>Toggle acceleration on</strong> — after each full cycle, u = xⁿ − x⁰ points diagonally and escapes in one step.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Nelder-Mead Simplex Visualizer ───────────────────────────────────────────
 const NM_FNS = {
   'Bowl+Ridge':   (x,y) => 0.4*(x*x + y*y) + 1.2*Math.sin(x)*Math.cos(y),
@@ -2511,18 +2790,36 @@ function AlgorithmsTab() {
                 <div className="m4-algo-card-h">Cyclic Coordinate Search (CCS) <span className="m4-algo-card-badge">taxicab search</span></div>
                 <div className="m4-algo-card-desc">Optimise one variable at a time, cycling through all dimensions. Each step: line search in direction of current basis vector eᵢ.</div>
                 <Tex src="\vec{x}^{k+1} = \arg\min_{x_i}\, f(\ldots, x_i, \ldots)" block />
+                <VarTable vars={[
+                  ['\\vec{x}^{k+1}', 'New position after this step — only the one coordinate xᵢ changes; all others stay fixed'],
+                  ['k', 'Step counter — increments each time one coordinate is searched'],
+                  ['x_i', 'The single coordinate being optimised this step (e.g. x₁, then x₂, then back to x₁ …)'],
+                  ['f(\\ldots, x_i, \\ldots)', 'Objective function evaluated while xᵢ varies and every other xⱼ is locked'],
+                  ['\\arg\\min_{x_i}', '"The value of xᵢ that gives the lowest f" — found by a line search along that axis'],
+                ]} />
                 <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Stops when improvement per full cycle {"<"} ε. Can fail to find local optimum (diagonal valley problem).</div>
               </div>
               <div className="m4-algo-card" style={{'--ac':'var(--violet)'}}>
                 <div className="m4-algo-card-h">CCS with Acceleration Step</div>
                 <div className="m4-algo-card-desc">After one full cycle, take an additional line search in the net progress direction:</div>
                 <Tex src="\vec{u} = \vec{x}^n - \vec{x}^0 \quad \text{(net direction)}" block />
+                <VarTable vars={[
+                  ['\\vec{u}', 'Net displacement — the actual diagonal direction CCS traveled across the whole cycle'],
+                  ['\\vec{x}^0', 'Start-of-cycle position — recorded before the first coordinate search of this cycle'],
+                  ['\\vec{x}^n', 'End-of-cycle position — after all n coordinate line searches have been completed'],
+                  ['n', 'Number of dimensions (= 2 for 2D, 3 for 3D, etc.)'],
+                ]} />
                 <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Faster traversal of diagonal valleys/ridges.</div>
               </div>
               <div className="m4-algo-card" style={{'--ac':'var(--emerald)'}}>
                 <div className="m4-algo-card-h">Powell's Method</div>
                 <div className="m4-algo-card-desc">Extends CCS by maintaining an adaptive queue of search directions, updated each cycle:</div>
                 <Tex src="\vec{u}_{n+1} = \vec{x}^n - \vec{x}^0 \;\;\text{replaces oldest direction}" block />
+                <VarTable vars={[
+                  ['\\vec{u}_{n+1}', 'New search direction added to the queue — the net progress direction from this cycle'],
+                  ['\\vec{x}^0', 'Start-of-cycle position (same as in the acceleration step)'],
+                  ['\\vec{x}^n', 'End-of-cycle position — the direction they span is more aligned with the landscape than the original axes'],
+                ]} />
                 <div style={{fontSize:'0.74rem',color:'var(--text-2)'}}>Risk: directions can become linearly dependent, losing span of ℝⁿ.</div>
               </div>
             </div>
@@ -2570,52 +2867,11 @@ function AlgorithmsTab() {
             <p className="m4-sec-sub">Watch the simplex triangle morph and roll toward the minimum. Step through each operation manually or run automatically.</p>
           </div>
           <NelderMeadViz />
-          <div className="m4-card" style={{marginTop:'1.5rem'}}>
-            <div className="m4-card-h">CCS: The Diagonal Valley Problem</div>
-            <div className="m4-infobox">Cyclic Coordinate Search (CCS) can only take axis-aligned steps — horizontal or vertical. This causes a <strong>staircase path</strong> in diagonal valleys.</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginTop:'0.75rem'}}>
-              <div>
-                <div className="m4-flabel">CCS Path (staircase)</div>
-                <svg viewBox="0 0 120 100" style={{width:'100%',background:'var(--bg-2)',borderRadius:6,border:'1px solid var(--border)'}}>
-                  <line x1="10" y1="90" x2="110" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
-                  <line x1="10" y1="10" x2="10" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
-                  {/* Valley contours (diagonal ellipses approximated) */}
-                  {[30,45,60,75].map((r,i)=>(
-                    <ellipse key={i} cx="60" cy="50" rx={r*0.5} ry={r*0.2} transform="rotate(-35 60 50)"
-                      fill="none" stroke={`rgba(34,211,238,${0.15+i*0.05})`} strokeWidth="0.8"/>
-                  ))}
-                  {/* Staircase path */}
-                  <polyline points="90,20 90,38 68,38 68,50 53,50 53,58 45,58"
-                    fill="none" stroke="#fb7185" strokeWidth="1.5" strokeDasharray="3,2"/>
-                  <circle cx="90" cy="20" r="3" fill="#fb7185"/>
-                  <circle cx="45" cy="58" r="3" fill="#34d399"/>
-                  <text x="93" y="19" fill="rgba(251,113,133,0.8)" fontSize="7">start</text>
-                  <text x="32" y="62" fill="rgba(52,211,153,0.8)" fontSize="7">optimum</text>
-                </svg>
-              </div>
-              <div>
-                <div className="m4-flabel">Acceleration Step (net direction)</div>
-                <svg viewBox="0 0 120 100" style={{width:'100%',background:'var(--bg-2)',borderRadius:6,border:'1px solid var(--border)'}}>
-                  <line x1="10" y1="90" x2="110" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
-                  <line x1="10" y1="10" x2="10" y2="90" stroke="rgba(148,163,184,0.2)" strokeWidth="0.5"/>
-                  {[30,45,60,75].map((r,i)=>(
-                    <ellipse key={i} cx="60" cy="50" rx={r*0.5} ry={r*0.2} transform="rotate(-35 60 50)"
-                      fill="none" stroke={`rgba(34,211,238,${0.15+i*0.05})`} strokeWidth="0.8"/>
-                  ))}
-                  {/* Diagonal acceleration */}
-                  <line x1="90" y1="20" x2="45" y2="58" stroke="#a78bfa" strokeWidth="2"/>
-                  <circle cx="90" cy="20" r="3" fill="#fb7185"/>
-                  <circle cx="45" cy="58" r="3" fill="#34d399"/>
-                  <text x="60" y="34" fill="rgba(167,139,250,0.9)" fontSize="6.5">u = x^n − x^0</text>
-                  <text x="93" y="19" fill="rgba(251,113,133,0.8)" fontSize="7">x⁰</text>
-                  <text x="32" y="62" fill="rgba(52,211,153,0.8)" fontSize="7">x^n</text>
-                </svg>
-              </div>
-            </div>
-            <div className="m4-infobox" style={{marginTop:'0.75rem',fontSize:'0.79rem'}}>
-              <strong>Acceleration step:</strong> After one full coordinate cycle, compute the net displacement <Tex src="\vec{u} = \vec{x}^n - \vec{x}^0" /> and do one extra line search in that direction. This allows diagonal traversal — much faster convergence on ridges and valleys.
-            </div>
+          <div className="m4-sec-hdr" style={{marginTop:'1.5rem'}}>
+            <h2 className="m4-sec-title">CCS: Diagonal Valley Problem <span className="m4-badge">Interactive</span></h2>
+            <p className="m4-sec-sub">Step through CCS on a real diagonal valley. Watch the staircase form, then toggle the acceleration step to see how u = xⁿ − x⁰ escapes it.</p>
           </div>
+          <CCSViz />
         </div>
       )}
 
