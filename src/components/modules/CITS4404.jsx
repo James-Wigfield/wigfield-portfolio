@@ -2512,10 +2512,313 @@ function CalculusTab() {
   );
 }
 
-// ── Job Shop Tab ──────────────────────────────────────────────────────────────
-function JobShopTab() {
+// ── JSSP Summary Components ──────────────────────────────────────────────────
+
+function SolutionSpaceCalc() {
+  const [n, setN] = useState(4);
+  const [m, setM] = useState(3);
+  const fact = x => { let r=1; for(let i=2;i<=x;i++) r*=i; return r; };
+  const size = Math.pow(fact(n), m);
+  const log10 = size > 0 ? Math.log10(size) : 0;
+  const getScale = () => {
+    if(log10 < 5) return {label:'Feasible ✓',col:'#34d399'};
+    if(log10 < 15) return {label:'Hard',col:'#fbbf24'};
+    if(log10 < 40) return {label:'Intractable ✗',col:'#fb7185'};
+    return {label:'Astronomical',col:'#fb7185'};
+  };
+  const sc = getScale();
+  const fmt = s => {
+    if(s < 1e6) return s.toLocaleString();
+    const exp = Math.floor(Math.log10(s));
+    return `${(s/Math.pow(10,exp)).toFixed(2)} × 10^${exp}`;
+  };
+  const comps = [
+    {label:'Grains of sand on Earth', clog: Math.log10(7.5e18)},
+    {label:'Seconds since Big Bang',  clog: Math.log10(4.3e17)},
+    {label:'Atoms in universe',       clog: 80},
+  ];
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Solution Space Explosion <span className="m4-algo-card-badge">interactive</span></div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
+        <div>
+          {[{key:'n',label:'Jobs (n)',min:2,max:9,val:n,set:setN},{key:'m',label:'Machines (m)',min:2,max:7,val:m,set:setM}].map(({key,label,min,max,val,set})=>(
+            <div className="m4-ctrl" key={key}>
+              <div className="m4-ctrl-lbl"><span>{label}</span><span className="m4-ctrl-val">{val}</span></div>
+              <input type="range" min={min} max={max} value={val} onChange={e=>set(+e.target.value)}/>
+            </div>
+          ))}
+          <div style={{marginTop:'0.7rem',padding:'0.7rem',background:'var(--bg-2)',borderRadius:8,border:`1px solid ${sc.col}44`}}>
+            <div style={{fontSize:'0.66rem',color:'var(--text-2)',fontFamily:'monospace',marginBottom:'0.25rem'}}>|H| ≤ ({n}!)^{m} = {fact(n)}^{m}</div>
+            <div style={{fontSize:'1.25rem',fontWeight:800,color:sc.col,fontFamily:'monospace',wordBreak:'break-all',lineHeight:1.2}}>{fmt(size)}</div>
+            <div style={{marginTop:'0.4rem',display:'flex',gap:'0.5rem',alignItems:'center'}}>
+              <span style={{fontSize:'0.68rem',fontWeight:700,color:sc.col,background:`${sc.col}22`,padding:'2px 8px',borderRadius:4}}>{sc.label}</span>
+              <span style={{fontSize:'0.65rem',color:'var(--text-3)'}}>log₁₀ ≈ {log10.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:'0.7rem',color:'var(--text-2)',marginBottom:'0.5rem'}}>Scale vs known quantities</div>
+          {comps.map(({label,clog})=>{
+            const bigger = log10 > clog;
+            const pct = Math.min(100,(Math.min(log10,clog)/Math.max(log10,clog,1))*100);
+            return (
+              <div key={label} style={{marginBottom:'0.4rem'}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.67rem',marginBottom:2}}>
+                  <span style={{color:'var(--text-2)'}}>{label}</span>
+                  <span style={{color:bigger?'#fb7185':'#34d399',fontFamily:'monospace',fontWeight:700,fontSize:'0.65rem'}}>{bigger?'EXCEEDS ▲':'Below ▼'}</span>
+                </div>
+                <div style={{height:6,background:'var(--bg-3)',borderRadius:3,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${pct}%`,background:bigger?'#fb7185':'#34d399',transition:'width 0.3s',borderRadius:3}}/>
+                </div>
+              </div>
+            );
+          })}
+          <div className="m4-infobox" style={{marginTop:'0.6rem',fontSize:'0.7rem'}}>
+            <strong>FT10</strong> (10×10): (10!)^10 ≈ 3.6×10^65. Unsolved 26 years!
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JSSPFlipCards() {
+  const [flipped, setFlipped] = useState({});
+  const CARDS = [
+    {icon:'📐',front:'JSSP Definition',  fq:'Formal components of the problem?',back:'n jobs × m machines. Each job has m ops in fixed order. Op O(i,j) on machine μ(i,j) for p(i,j) time. No preemption. Minimise makespan C_max.'},
+    {icon:'⏱', front:'Makespan C_max',  fq:'How do we measure quality?',        back:'C_max = max_i C_i — when the LAST job finishes. Must satisfy all constraints. This is the single objective to minimise.'},
+    {icon:'⛓', front:'Two Constraints', fq:'What constrains a valid schedule?', back:'1. PRECEDENCE: ops within a job run in fixed order.\n2. DISJUNCTIVE: each machine handles ≤ 1 op at a time (no overlap).'},
+    {icon:'🔴', front:'Critical Path',   fq:'Why does the critical path matter?',back:'Longest path s→t in disjunctive graph G=(V, C∪D). Its length = C_max. Fixing D arc directions gives a DAG; minimising C_max = shortening this path.'},
+    {icon:'🔄', front:'N1 Neighbourhood',fq:'What is an N1 local search move?', back:'Swap 2 ADJACENT ops on the critical path that share the same machine. ONLY these swaps can reduce C_max — all other swaps are wasted compute.'},
+    {icon:'📊', front:'RPD Metric',       fq:'How do we compare algorithms?',    back:'RPD = (C_max^obtained − C_max^BKS) / C_max^BKS × 100%.\n0% = matches Best Known Solution.\nLower = better quality algorithm.'},
+  ];
+  const toggle = i => setFlipped(f=>({...f,[i]:!f[i]}));
   return (
     <div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.5rem'}}>
+        {CARDS.map((c,i)=>(
+          <div key={i} onClick={()=>toggle(i)} style={{cursor:'pointer',perspective:700,height:120}}>
+            <div style={{position:'relative',width:'100%',height:'100%',transformStyle:'preserve-3d',transition:'transform 0.42s cubic-bezier(0.4,0,0.2,1)',transform:flipped[i]?'rotateY(180deg)':'rotateY(0deg)'}}>
+              <div style={{position:'absolute',inset:0,backfaceVisibility:'hidden',WebkitBackfaceVisibility:'hidden',background:'var(--bg-2)',borderRadius:9,border:'1px solid rgba(167,139,250,0.22)',padding:'0.5rem',display:'flex',flexDirection:'column',justifyContent:'space-between'}}>
+                <div style={{fontSize:'0.61rem',fontWeight:700,color:'var(--violet)',textTransform:'uppercase',letterSpacing:'0.07em'}}>{c.front}</div>
+                <div style={{fontSize:'1.35rem',textAlign:'center'}}>{c.icon}</div>
+                <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.35}}>{c.fq}</div>
+                <div style={{fontSize:'0.56rem',color:'var(--text-3)',textAlign:'right'}}>tap →</div>
+              </div>
+              <div style={{position:'absolute',inset:0,backfaceVisibility:'hidden',WebkitBackfaceVisibility:'hidden',transform:'rotateY(180deg)',background:'rgba(167,139,250,0.09)',borderRadius:9,border:'1px solid rgba(167,139,250,0.35)',padding:'0.5rem',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <div style={{fontSize:'0.67rem',color:'var(--text-1)',lineHeight:1.5,whiteSpace:'pre-line'}}>{c.back}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{fontSize:'0.62rem',color:'var(--text-3)',textAlign:'center',marginTop:'0.3rem'}}>{Object.values(flipped).filter(Boolean).length}/{CARDS.length} revealed — click any card to flip</div>
+    </div>
+  );
+}
+
+function CriticalPathGantt() {
+  const cvRef = useRef(null);
+  const [showCrit, setShowCrit] = useState(true);
+  // Valid 3×3 schedule: M0 order J0,J1,J2 | M1 order J1,J0,J2 | M2 order J2,J0,J1
+  // J0:(M0,3)→(M1,2)→(M2,2) | J1:(M1,4)→(M0,1)→(M2,3) | J2:(M2,2)→(M1,3)→(M0,2)
+  const OPS = [
+    {job:0,mach:0,s:0,d:3,id:'J0-M0'},{job:0,mach:1,s:4,d:2,id:'J0-M1'},{job:0,mach:2,s:6,d:2,id:'J0-M2'},
+    {job:1,mach:1,s:0,d:4,id:'J1-M1'},{job:1,mach:0,s:4,d:1,id:'J1-M0'},{job:1,mach:2,s:8,d:3,id:'J1-M2'},
+    {job:2,mach:2,s:0,d:2,id:'J2-M2'},{job:2,mach:1,s:6,d:3,id:'J2-M1'},{job:2,mach:0,s:9,d:2,id:'J2-M0'},
+  ];
+  // Two parallel critical paths (both length 11):
+  //   A: J1-M1→J0-M1→J0-M2→J1-M2   B: J1-M1→J0-M1→J2-M1→J2-M0
+  const CRIT = new Set(['J1-M1','J0-M1','J0-M2','J1-M2','J2-M1','J2-M0']);
+  const MAKESPAN = 11;
+  const CP_COLS = ['#22d3ee','#a78bfa','#34d399'];
+  useEffect(()=>{
+    const cv = cvRef.current; if(!cv) return;
+    const W = cv.width = cv.offsetWidth||480;
+    const H = cv.height = 185;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const PL=42,PT=28,RH=40,BH=26;
+    const TW = (W-PL-14)/MAKESPAN;
+    ['M0','M1','M2'].forEach((lbl,i)=>{
+      ctx.fillStyle='rgba(148,163,184,0.65)';ctx.font='11px monospace';ctx.textAlign='right';
+      ctx.fillText(lbl,PL-5,PT+i*RH+BH/2+4);
+    });
+    for(let t=0;t<=MAKESPAN;t++){
+      const x=PL+t*TW;
+      ctx.fillStyle='rgba(100,116,139,0.15)';ctx.fillRect(x,PT-4,1,3*RH+4);
+      if(t%2===0||t===MAKESPAN){
+        ctx.fillStyle='rgba(148,163,184,0.5)';ctx.font='8px monospace';ctx.textAlign='center';
+        ctx.fillText(t,x,PT+3*RH+13);
+      }
+    }
+    const msX=PL+MAKESPAN*TW;
+    ctx.strokeStyle='rgba(251,113,133,0.7)';ctx.setLineDash([3,3]);ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(msX,PT-10);ctx.lineTo(msX,PT+3*RH+5);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(251,113,133,0.9)';ctx.font='bold 9px monospace';ctx.textAlign='center';
+    ctx.fillText('C_max='+MAKESPAN,msX,PT-14);
+    OPS.forEach(({job,mach,s,d,id})=>{
+      const x=PL+s*TW+1,y=PT+mach*RH+(RH-BH)/2,w=d*TW-2;
+      const isCrit=showCrit&&CRIT.has(id);
+      const col=CP_COLS[job];
+      ctx.fillStyle=isCrit?col:col+'55';
+      ctx.beginPath();ctx.rect(x,y,w,BH);ctx.fill();
+      if(isCrit){ctx.strokeStyle='#fb7185';ctx.lineWidth=2;ctx.beginPath();ctx.rect(x+1,y+1,w-2,BH-2);ctx.stroke();}
+      if(w>16){
+        ctx.fillStyle=isCrit?'#fff':'rgba(255,255,255,0.65)';
+        ctx.font=`${isCrit?'bold ':''}9px monospace`;ctx.textAlign='center';
+        ctx.fillText('J'+job,x+w/2,y+BH/2+3);
+      }
+    });
+    if(showCrit){
+      ctx.fillStyle='rgba(251,113,133,0.75)';ctx.font='bold 8px monospace';ctx.textAlign='left';
+      ctx.fillText('▶ critical path (highlighted)',PL,PT-4);
+    }
+  },[showCrit]);
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Critical Path Gantt Chart</div>
+      <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.4rem',flexWrap:'wrap'}}>
+        <button className="m4-preset-btn"
+          style={showCrit?{background:'rgba(251,113,133,0.12)',borderColor:'rgba(251,113,133,0.5)',color:'#fb7185'}:{}}
+          onClick={()=>setShowCrit(v=>!v)}>
+          {showCrit?'🔴 Critical path ON':'⬜ Show critical path'}
+        </button>
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          {['J0','J1','J2'].map((j,i)=>(
+            <div key={j} style={{display:'flex',alignItems:'center',gap:4,fontSize:'0.67rem',color:'var(--text-2)'}}>
+              <div style={{width:10,height:10,borderRadius:2,background:CP_COLS[i]}}/>
+              {j}
+            </div>
+          ))}
+        </div>
+      </div>
+      <canvas ref={cvRef} className="m4-canvas" height="185" style={{width:'100%'}}/>
+      <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.72rem'}}>
+        <strong>N1 Rule:</strong> Only swap adjacent ops on the <span style={{color:'#fb7185',fontWeight:700}}>critical path</span> sharing a machine. Highlighted = bottleneck ops. Swapping elsewhere cannot improve C_max.
+      </div>
+    </div>
+  );
+}
+
+function DispatchingViz() {
+  const [rule,setRule] = useState('SPT');
+  const JOBS = [
+    {id:'J1',pt:5,dd:10,arr:0,rem:8, col:'#22d3ee'},
+    {id:'J2',pt:2,dd:4, arr:1,rem:12,col:'#a78bfa'},
+    {id:'J3',pt:8,dd:15,arr:0,rem:5, col:'#34d399'},
+    {id:'J4',pt:1,dd:8, arr:2,rem:3, col:'#fb7185'},
+  ];
+  const RULES = {
+    SPT: {label:'Shortest Processing Time',fn:j=>j.pt,   asc:true},
+    LPT: {label:'Longest Processing Time', fn:j=>j.pt,   asc:false},
+    EDD: {label:'Earliest Due Date',       fn:j=>j.dd,   asc:true},
+    FIFO:{label:'First In, First Out',     fn:j=>j.arr,  asc:true},
+    MWKR:{label:'Most Work Remaining',    fn:j=>j.rem,  asc:false},
+    CR:  {label:'Critical Ratio (dd/pt)',  fn:j=>(j.dd/(j.pt||1)),asc:true},
+  };
+  const {label,fn,asc} = RULES[rule];
+  const sorted = [...JOBS].sort((a,b)=>asc?fn(a)-fn(b):fn(b)-fn(a));
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Dispatching Rules Visualizer</div>
+      <div className="m4-preset-row" style={{flexWrap:'wrap',gap:'0.3rem',marginBottom:'0.5rem'}}>
+        {Object.keys(RULES).map(r=>(
+          <button key={r} className="m4-preset-btn"
+            style={rule===r?{background:'rgba(167,139,250,0.18)',borderColor:'var(--violet)',color:'var(--violet)'}:{}}
+            onClick={()=>setRule(r)}>{r}</button>
+        ))}
+      </div>
+      <div style={{fontSize:'0.71rem',color:'var(--text-2)',marginBottom:'0.55rem'}}>
+        <strong style={{color:'var(--violet)'}}>{rule}:</strong> {label} — {asc?'ascending ↑ (smallest first)':'descending ↓ (largest first)'}
+      </div>
+      <div style={{display:'flex',gap:'0.4rem'}}>
+        {sorted.map((j,pos)=>(
+          <div key={j.id} style={{flex:1,background:`${j.col}18`,border:`2px solid ${j.col}88`,borderRadius:8,padding:'0.45rem 0.15rem',textAlign:'center',transition:'all 0.3s'}}>
+            <div style={{fontSize:'0.82rem',fontWeight:800,color:j.col,fontFamily:'monospace'}}>{j.id}</div>
+            <div style={{fontSize:'0.57rem',color:'var(--text-3)',marginTop:2}}>pt={j.pt} dd={j.dd}</div>
+            <div style={{fontSize:'0.57rem',color:'var(--text-3)'}}>rem={j.rem}</div>
+            <div style={{fontSize:'0.63rem',fontWeight:700,color:'var(--text-1)',background:'var(--bg-3)',borderRadius:4,padding:'1px 3px',marginTop:3}}>
+              {(()=>{const v=fn(j);return typeof v==='number'&&v%1!==0?v.toFixed(1):v;})()}
+            </div>
+            {pos===0&&<div style={{width:6,height:6,borderRadius:'50%',background:j.col,margin:'3px auto 0',boxShadow:`0 0 7px ${j.col}`}}/>}
+          </div>
+        ))}
+      </div>
+      <div style={{fontSize:'0.62rem',color:'var(--text-3)',marginTop:'0.4rem',textAlign:'center'}}>
+        Left = dispatched first. Number = priority key for <strong>{rule}</strong>. Glowing dot = highest priority.
+      </div>
+    </div>
+  );
+}
+
+function JSSPSummaryPanel() {
+  return (
+    <div>
+      {/* Quick-reference banner */}
+      <div style={{background:'linear-gradient(135deg,rgba(251,113,133,0.07) 0%,rgba(167,139,250,0.07) 100%)',border:'1px solid rgba(251,113,133,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+        {[['NP-hard','Even 2 machines is hard','#fb7185'],['(n!)^m','Solution space size','#fbbf24'],['C_max','max_i C_i = makespan','#22d3ee'],['Disjunctive Graph','G = (V, C∪D)','#a78bfa'],['N1 Move','Swap on critical path','#34d399'],['RPD','0% = matches BKS','#06b6d4']].map(([k,v,col])=>(
+          <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+            <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+            <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Row 1: Solution space calc + flip cards */}
+      <div className="m4-two-col">
+        <SolutionSpaceCalc />
+        <div className="m4-card">
+          <div className="m4-card-h">Concept Flashcards <span className="m4-algo-card-badge">flip to reveal</span></div>
+          <JSSPFlipCards />
+        </div>
+      </div>
+
+      {/* Row 2: Critical path Gantt + dispatching viz */}
+      <div className="m4-two-col" style={{marginTop:'1rem'}}>
+        <CriticalPathGantt />
+        <DispatchingViz />
+      </div>
+
+      {/* Row 3: Cheat sheet */}
+      <div className="m4-card" style={{marginTop:'1rem'}}>
+        <div className="m4-card-h">JSSP Cheat Sheet — Exam Ready</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.55rem'}}>
+          {[
+            {title:'Setup',    col:'#fb7185',items:['n jobs, m machines','Fixed op order per job','Op = (machine, duration)','No preemption allowed']},
+            {title:'Constraints',col:'#fbbf24',items:['Precedence: ops in job ordered','Disjunctive: machine ≤1 op/time','Start time s_ij ≥ 0','Completion = start + dur']},
+            {title:'Objective', col:'#22d3ee',items:['Minimise C_max = max_i C_i','|H| ≤ (n!)^m schedules','C_max = critical path length','NP-hard for m ≥ 2']},
+            {title:'Solving',   col:'#a78bfa',items:['Exact: B&B (tiny instances)','Greedy: SPT/LPT/EDD/MWKR','Local search: N1 on crit path','Meta: SA/Tabu/GA (large)']},
+          ].map(({title,col,items})=>(
+            <div key={title} style={{background:'var(--bg-2)',borderRadius:8,padding:'0.55rem',border:`1px solid ${col}33`}}>
+              <div style={{fontSize:'0.66rem',fontWeight:700,color:col,marginBottom:'0.4rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>{title}</div>
+              {items.map((item,i)=>(
+                <div key={i} style={{display:'flex',gap:'0.3rem',marginBottom:'0.22rem',alignItems:'flex-start'}}>
+                  <span style={{color:col,fontSize:'0.58rem',flexShrink:0,marginTop:'0.14rem'}}>▸</span>
+                  <span style={{fontSize:'0.68rem',color:'var(--text-2)',lineHeight:1.4}}>{item}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Job Shop Tab ──────────────────────────────────────────────────────────────
+function JobShopTab() {
+  const [view, setView] = useState('summary');
+  return (
+    <div>
+      <div className="m4-algo-tabs" style={{marginBottom:'1.25rem'}}>
+        {[['summary','⚡ Quick Summary'],['full','📖 Full Notes']].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${view===v?'m4-algo-tab--on':''}`} onClick={()=>setView(v)}>{l}</button>
+        ))}
+      </div>
+      {view === 'summary' && <JSSPSummaryPanel />}
+      {view === 'full' && <div>
       {/* Problem Definition */}
       <div className="m4-two-col">
         <div className="m4-card">
@@ -2688,6 +2991,166 @@ function JobShopTab() {
         <p className="m4-sec-sub">Edit the instance, run a greedy dispatching schedule, and inspect the Gantt chart.</p>
       </div>
       <JSSPViz />
+      </div>}
+    </div>
+  );
+}
+
+// ── Stochastic Summary Components ─────────────────────────────────────────────
+
+function SAProbCalc() {
+  const [dQ, setDQ] = useState(-5);
+  const [temp, setTemp] = useState(10);
+  const P = Math.exp(dQ / temp);
+  const regime = temp >= 30 ? {label:'Exploration (hot)',col:'#fb7185'} : temp >= 8 ? {label:'Balanced',col:'#fbbf24'} : {label:'Exploitation (cold)',col:'#34d399'};
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">SA Acceptance Probability <span className="m4-algo-card-badge">interactive</span></div>
+      <div style={{textAlign:'center',marginBottom:'0.5rem'}}>
+        <Tex src={`P = e^{\\Delta Q/t} = e^{${dQ}/${temp}} \\approx ${P.toFixed(4)}`} block />
+      </div>
+      <div className="m4-ctrl">
+        <div className="m4-ctrl-lbl"><span>ΔQ — quality gap (negative = worse solution)</span><span className="m4-ctrl-val">{dQ}</span></div>
+        <input type="range" min={-30} max={-1} value={dQ} onChange={e=>setDQ(+e.target.value)}/>
+      </div>
+      <div className="m4-ctrl">
+        <div className="m4-ctrl-lbl"><span>Temperature t (cooling decreases this)</span><span className="m4-ctrl-val">{temp}</span></div>
+        <input type="range" min={1} max={50} value={temp} onChange={e=>setTemp(+e.target.value)}/>
+      </div>
+      <div style={{background:'var(--bg-2)',borderRadius:8,padding:'0.6rem',border:`1px solid rgba(167,139,250,0.2)`,marginTop:'0.4rem'}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.3rem'}}>
+          <span style={{fontSize:'0.7rem',color:'var(--text-2)'}}>Acceptance probability P</span>
+          <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
+            <span style={{fontSize:'0.68rem',color:regime.col,fontWeight:700}}>{regime.label}</span>
+            <span style={{fontSize:'0.82rem',fontWeight:800,color:'var(--violet)',fontFamily:'monospace'}}>{(P*100).toFixed(1)}%</span>
+          </div>
+        </div>
+        <div style={{height:14,background:'var(--bg-3)',borderRadius:7,overflow:'hidden',position:'relative'}}>
+          <div style={{height:'100%',width:`${Math.min(100,P*100)}%`,background:`linear-gradient(90deg,#34d399,#fbbf24,#fb7185)`,borderRadius:7,transition:'width 0.15s'}}/>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.63rem',color:'var(--text-3)',marginTop:4}}>
+          <span>0% — never accept</span><span>100% — always accept</span>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem',marginTop:'0.5rem'}}>
+        <div className="m4-infobox" style={{fontSize:'0.7rem'}}>t → 0: P → 0 → <strong>pure hill climb</strong></div>
+        <div className="m4-infobox" style={{fontSize:'0.7rem'}}>t → ∞: P → 1 → <strong>random walk</strong></div>
+      </div>
+    </div>
+  );
+}
+
+function AlgoCompMatrix() {
+  const ALGOS = [
+    {code:'HC',  col:'#22d3ee',name:'Hill Climbing',       worse:'✗ Never',     mem:'✗',    restart:'✗',   insight:'Greedy uphill only — gets trapped at local optima'},
+    {code:'SA',  col:'#fbbf24',name:'Simulated Annealing', worse:'✓ P=e^(ΔQ/t)',mem:'✗',    restart:'✗',   insight:'Temperature controls acceptance of worse solutions'},
+    {code:'TS',  col:'#a78bfa',name:'Tabu Search',         worse:'✓ (forced)',  mem:'✓ FIFO',restart:'✗',   insight:'Forbidden list prevents revisiting recent solutions'},
+    {code:'ILS', col:'#34d399',name:'Iterated Local Search',worse:'✗',          mem:'✓ home',restart:'✓ smart','insight':'HC of HCs — perturb from best local opt'},
+  ];
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Algorithm Comparison Matrix</div>
+      <div style={{overflowX:'auto'}}>
+        <table className="m4-rule-tbl" style={{minWidth:460}}>
+          <thead>
+            <tr>
+              <th>Algorithm</th><th>Accept worse?</th><th>Memory?</th><th>Restarts?</th><th>Key insight</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ALGOS.map(a=>(
+              <tr key={a.code}>
+                <td style={{color:a.col,fontFamily:'var(--font-mono)',fontWeight:700}}>{a.code}</td>
+                <td style={{color:a.worse.startsWith('✓')?'#34d399':'#fb7185',fontSize:'0.72rem'}}>{a.worse}</td>
+                <td style={{color:a.mem.startsWith('✓')?'#34d399':'#fb7185',fontSize:'0.72rem'}}>{a.mem}</td>
+                <td style={{color:a.restart.startsWith('✓')?'#34d399':'#fb7185',fontSize:'0.72rem'}}>{a.restart}</td>
+                <td style={{fontSize:'0.7rem',color:'var(--text-2)'}}>{a.insight}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="m4-warnbox" style={{marginTop:'0.75rem',fontSize:'0.72rem'}}>
+        <strong>No Free Lunch (NFL)</strong> — Wolpert &amp; Macready 1997: Averaged across ALL problems, every algorithm performs equally. Gain on one class = loss on another. Choose by domain knowledge.
+      </div>
+    </div>
+  );
+}
+
+function StochasticSummaryPanel() {
+  return (
+    <div>
+      {/* Quick-reference banner */}
+      <div style={{background:'linear-gradient(135deg,rgba(34,211,238,0.07) 0%,rgba(167,139,250,0.07) 100%)',border:'1px solid rgba(34,211,238,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+        {[['HC (1+1)','Greedy hill climb','#22d3ee'],['SA','P=e^(ΔQ/t)','#fbbf24'],['Tabu','FIFO forbidden list','#a78bfa'],['ILS','HC of HCs','#34d399'],['Tweak','Perturbation op','#06b6d4'],['NFL','No free lunch','#fb7185']].map(([k,v,col])=>(
+          <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+            <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+            <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Row 1: SA probability calc + comparison matrix */}
+      <div className="m4-two-col">
+        <SAProbCalc />
+        <AlgoCompMatrix />
+      </div>
+
+      {/* Row 2: Algorithm concept cards */}
+      <div style={{marginTop:'1rem',display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.55rem'}}>
+        {[
+          {code:'HC',col:'#22d3ee',name:'Hill Climbing',
+           analogy:'🏔 Blindfolded climber — only moves uphill. Gets stuck at any summit it reaches.',
+           key:'(1+1): 1 tweak, keep if better\n(1+n): n tweaks, keep best\n(1,n): n tweaks, always replace',
+           flaw:'Stuck at local optima'},
+          {code:'SA',col:'#fbbf24',name:'Simulated Annealing',
+           analogy:'🌡 Cooling metal — hot = chaotic jumps, cold = stable. Acceptance P = e^(ΔQ/t) decreases over time.',
+           key:'Accept worse with P=e^(ΔQ/t)\nHigh t → exploration\nLow t → exploitation\nCooling: t = βe^(-αT)',
+           flaw:'Sensitive to cooling schedule'},
+          {code:'TS',col:'#a78bfa',name:'Tabu Search',
+           analogy:"📋 Memory of forbidden moves — always picks best non-tabu neighbour. Can't revisit recent states.",
+           key:'FIFO queue of length l\nAlways move (even if worse)\nForget after l steps\nEscape any local optimum',
+           flaw:'Memory cost; needs l-tuning'},
+          {code:'ILS',col:'#34d399',name:'Iterated Local Search',
+           analogy:"🗺 Base-camp explorer — hill climb to peak, perturb to new region, repeat from best.",
+           key:'H = home base (local opt)\nPerturb(H) → new start\nHill climb → local opt S\nNewHomeBase(H,S) = best of H,S',
+           flaw:'Perturbation design is critical'},
+        ].map(({code,col,name,analogy,key,flaw})=>(
+          <div key={code} style={{background:'var(--bg-2)',borderRadius:10,padding:'0.7rem',border:`1px solid ${col}33`}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.45rem',alignItems:'center'}}>
+              <span style={{fontSize:'0.78rem',fontWeight:800,color:col,fontFamily:'monospace'}}>{code}</span>
+              <span style={{fontSize:'0.62rem',color:'var(--text-2)'}}>{name}</span>
+            </div>
+            <div style={{fontSize:'0.69rem',color:'var(--text-1)',marginBottom:'0.45rem',lineHeight:1.45}}>{analogy}</div>
+            <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.38rem 0.48rem',fontFamily:'monospace',fontSize:'0.63rem',color:'var(--text-2)',whiteSpace:'pre-line',marginBottom:'0.38rem'}}>{key}</div>
+            <div style={{fontSize:'0.65rem',color:'#fb7185',display:'flex',alignItems:'flex-start',gap:'0.3rem'}}>
+              <span style={{flexShrink:0}}>⚠</span><span>{flaw}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Stochastic cheat sheet */}
+      <div className="m4-card" style={{marginTop:'1rem'}}>
+        <div className="m4-card-h">Stochastic Methods Cheat Sheet</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.55rem'}}>
+          {[
+            {title:'Core Idea',col:'#22d3ee',items:['Start from a candidate solution S','Tweak S to get R (perturbation)','Keep R if better (or maybe if worse)','Repeat until time/quality budget hit']},
+            {title:'Key Formulas',col:'#a78bfa',items:['SA acceptance: P = e^(ΔQ/t)','Gaussian tweak: v_i += N(0,σ²)','ILS: NewHomeBase = max(H,S)','Tabu: keep FIFO list of length l']},
+            {title:'Exploration vs Exploit',col:'#34d399',items:['Large σ / high t → exploration','Small σ / low t → exploitation','SA cools over time (both phases)','ILS: perturb=explore, HC=exploit']},
+          ].map(({title,col,items})=>(
+            <div key={title} style={{background:'var(--bg-2)',borderRadius:8,padding:'0.55rem',border:`1px solid ${col}33`}}>
+              <div style={{fontSize:'0.66rem',fontWeight:700,color:col,marginBottom:'0.4rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>{title}</div>
+              {items.map((item,i)=>(
+                <div key={i} style={{display:'flex',gap:'0.3rem',marginBottom:'0.22rem',alignItems:'flex-start'}}>
+                  <span style={{color:col,fontSize:'0.58rem',flexShrink:0,marginTop:'0.14rem'}}>▸</span>
+                  <span style={{fontSize:'0.68rem',color:'var(--text-2)',lineHeight:1.4}}>{item}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -2695,6 +3158,7 @@ function JobShopTab() {
 // ── Algorithms Tab ────────────────────────────────────────────────────────────
 function AlgorithmsTab() {
   const [sec, setSec] = useState('gradient');
+  const [stoView, setStoView] = useState('summary');
 
   return (
     <div>
@@ -2878,6 +3342,13 @@ function AlgorithmsTab() {
       {/* ── STOCHASTIC METHODS ── */}
       {sec === 'stochastic' && (
         <div>
+          <div className="m4-algo-tabs" style={{marginBottom:'1.25rem'}}>
+            {[['summary','⚡ Quick Summary'],['full','📖 Full Notes']].map(([v,l])=>(
+              <button key={v} className={`m4-algo-tab ${stoView===v?'m4-algo-tab--on':''}`} onClick={()=>setStoView(v)}>{l}</button>
+            ))}
+          </div>
+          {stoView === 'summary' && <StochasticSummaryPanel />}
+          {stoView === 'full' && <div>
           <div className="m4-two-col">
             <div className="m4-card">
               <div className="m4-card-h">Hill Climbing Family</div>
@@ -3003,6 +3474,7 @@ function AlgorithmsTab() {
               ))}
             </div>
           </div>
+          </div>}
         </div>
       )}
     </div>
