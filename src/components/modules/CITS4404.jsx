@@ -3096,38 +3096,131 @@ function StochasticSummaryPanel() {
         <AlgoCompMatrix />
       </div>
 
-      {/* Row 2: Algorithm concept cards */}
-      <div style={{marginTop:'1rem',display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.55rem'}}>
-        {[
-          {code:'HC',col:'#22d3ee',name:'Hill Climbing',
-           analogy:'🏔 Blindfolded climber — only moves uphill. Gets stuck at any summit it reaches.',
-           key:'(1+1): 1 tweak, keep if better\n(1+n): n tweaks, keep best\n(1,n): n tweaks, always replace',
-           flaw:'Stuck at local optima'},
-          {code:'SA',col:'#fbbf24',name:'Simulated Annealing',
-           analogy:'🌡 Cooling metal — hot = chaotic jumps, cold = stable. Acceptance P = e^(ΔQ/t) decreases over time.',
-           key:'Accept worse with P=e^(ΔQ/t)\nHigh t → exploration\nLow t → exploitation\nCooling: t = βe^(-αT)',
-           flaw:'Sensitive to cooling schedule'},
-          {code:'TS',col:'#a78bfa',name:'Tabu Search',
-           analogy:"📋 Memory of forbidden moves — always picks best non-tabu neighbour. Can't revisit recent states.",
-           key:'FIFO queue of length l\nAlways move (even if worse)\nForget after l steps\nEscape any local optimum',
-           flaw:'Memory cost; needs l-tuning'},
-          {code:'ILS',col:'#34d399',name:'Iterated Local Search',
-           analogy:"🗺 Base-camp explorer — hill climb to peak, perturb to new region, repeat from best.",
-           key:'H = home base (local opt)\nPerturb(H) → new start\nHill climb → local opt S\nNewHomeBase(H,S) = best of H,S',
-           flaw:'Perturbation design is critical'},
-        ].map(({code,col,name,analogy,key,flaw})=>(
-          <div key={code} style={{background:'var(--bg-2)',borderRadius:10,padding:'0.7rem',border:`1px solid ${col}33`}}>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.45rem',alignItems:'center'}}>
-              <span style={{fontSize:'0.78rem',fontWeight:800,color:col,fontFamily:'monospace'}}>{code}</span>
-              <span style={{fontSize:'0.62rem',color:'var(--text-2)'}}>{name}</span>
+      {/* Why stochastic? intro */}
+      <div className="m4-card" style={{marginTop:'1rem',background:'linear-gradient(135deg,rgba(34,211,238,0.05) 0%,rgba(167,139,250,0.05) 100%)'}}>
+        <div className="m4-card-h">Why do we even need these algorithms?</div>
+        <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.7}}>
+          <p style={{marginBottom:'0.6rem'}}>Imagine you're trying to find the tallest mountain in a huge mountain range, but there's thick fog — you can only see a few metres around you. You can't look at a map (there's no formula telling you which direction is globally best). All you can do is <strong>take steps and measure your height</strong>.</p>
+          <p style={{marginBottom:'0.6rem'}}>That's every hard real-world optimisation problem: too many possible solutions to check them all, no gradient to follow, and lots of "local peaks" that look great until you realise there's a bigger mountain somewhere else. These algorithms are strategies for exploring a foggy landscape.</p>
+          <p style={{marginBottom:'0.5rem'}}><strong>This course covers exactly 4 stochastic single-state methods</strong> (HC, SA, Tabu, ILS). Each makes a different trade-off across three tensions:</p>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.45rem'}}>
+            {[['Explore vs. Exploit','Wander to find new peaks (explore) vs. climb the known best (exploit)','#22d3ee'],['Accept worse moves?','Sometimes you must walk downhill to reach a taller mountain on the other side','#fbbf24'],['Use memory?','Remembering where you have been stops you going in circles','#a78bfa']].map(([t,d,col])=>(
+              <div key={t} style={{background:`${col}11`,border:`1px solid ${col}33`,borderRadius:8,padding:'0.55rem'}}>
+                <div style={{fontSize:'0.68rem',fontWeight:700,color:col,marginBottom:'0.25rem'}}>{t}</div>
+                <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.5}}>{d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Algorithm concept cards — expanded */}
+      <div style={{marginTop:'0.75rem',display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.75rem'}}>
+
+        {/* HC */}
+        <div style={{background:'var(--bg-2)',borderRadius:10,padding:'0.9rem',border:'1px solid #22d3ee33'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.5rem',alignItems:'center'}}>
+            <span style={{fontSize:'0.85rem',fontWeight:800,color:'#22d3ee',fontFamily:'monospace'}}>HC — Hill Climbing</span>
+            <span style={{fontSize:'0.62rem',color:'#22d3ee',background:'#22d3ee18',padding:'2px 7px',borderRadius:5}}>simplest</span>
+          </div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-1)',lineHeight:1.65,marginBottom:'0.55rem'}}>
+            <strong>The idea in plain English:</strong> You are blindfolded on a mountain range trying to find the peak. You take one random step. If you are now higher than before, stay there. If you are lower, step back. Repeat indefinitely.
+          </div>
+          <div style={{background:'#22d3ee0d',borderRadius:7,padding:'0.5rem 0.65rem',marginBottom:'0.55rem'}}>
+            <div style={{fontSize:'0.67rem',fontWeight:700,color:'#22d3ee',marginBottom:'0.25rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>Real-world analogy</div>
+            <div style={{fontSize:'0.72rem',color:'var(--text-2)',lineHeight:1.55}}>You are tuning a car engine by turning knobs one at a time. Make a small adjustment, test it, and only keep the change if the engine runs better. You never deliberately make it worse — that means you get stuck the moment you reach any local peak.</div>
+          </div>
+          <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.4rem 0.55rem',fontFamily:'monospace',fontSize:'0.64rem',color:'var(--text-2)',whiteSpace:'pre-line',marginBottom:'0.5rem'}}>{'Variants:\n(1+1)  — 1 tweak, keep if better            [basic]\n(1+n)  — try n tweaks, keep the single best  [more deliberate]\n(1,n)  — try n tweaks, always replace S      [more exploratory]'}</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem'}}>
+            <div style={{background:'#22d3ee0d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#22d3ee',marginBottom:'0.2rem'}}>When it works well</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>Problems where any improvement genuinely is a step toward the global best — no "must get worse first" traps.</div>
             </div>
-            <div style={{fontSize:'0.69rem',color:'var(--text-1)',marginBottom:'0.45rem',lineHeight:1.45}}>{analogy}</div>
-            <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.38rem 0.48rem',fontFamily:'monospace',fontSize:'0.63rem',color:'var(--text-2)',whiteSpace:'pre-line',marginBottom:'0.38rem'}}>{key}</div>
-            <div style={{fontSize:'0.65rem',color:'#fb7185',display:'flex',alignItems:'flex-start',gap:'0.3rem'}}>
-              <span style={{flexShrink:0}}>⚠</span><span>{flaw}</span>
+            <div style={{background:'#fb71850d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#fb7185',marginBottom:'0.2rem'}}>Fatal flaw</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>Gets permanently stuck on the first local peak it finds — a hill that looks locally best, but may be nowhere near the global best.</div>
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* SA */}
+        <div style={{background:'var(--bg-2)',borderRadius:10,padding:'0.9rem',border:'1px solid #fbbf2433'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.5rem',alignItems:'center'}}>
+            <span style={{fontSize:'0.85rem',fontWeight:800,color:'#fbbf24',fontFamily:'monospace'}}>SA — Simulated Annealing</span>
+            <span style={{fontSize:'0.62rem',color:'#fbbf24',background:'#fbbf2418',padding:'2px 7px',borderRadius:5}}>accepts worse</span>
+          </div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-1)',lineHeight:1.65,marginBottom:'0.55rem'}}>
+            <strong>The idea in plain English:</strong> Like Hill Climbing, but early on you are allowed to take steps downhill. Over time you become more and more picky, accepting fewer and fewer bad moves. By the end it behaves almost like a normal hill climber.
+          </div>
+          <div style={{background:'#fbbf240d',borderRadius:7,padding:'0.5rem 0.65rem',marginBottom:'0.55rem'}}>
+            <div style={{fontSize:'0.67rem',fontWeight:700,color:'#fbbf24',marginBottom:'0.25rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>Where the name comes from</div>
+            <div style={{fontSize:'0.72rem',color:'var(--text-2)',lineHeight:1.55}}>When you heat metal and slowly cool it, atoms start out moving wildly (exploring every arrangement) and gradually settle into a stable crystal structure. Hot = chaotic exploration. Cold = locked-in exploitation. The algorithm mirrors this: "temperature" t starts high and is slowly reduced by a cooling schedule.</div>
+          </div>
+          <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.4rem 0.55rem',fontFamily:'monospace',fontSize:'0.64rem',color:'var(--text-2)',whiteSpace:'pre-line',marginBottom:'0.5rem'}}>{'Acceptance rule  P = e^(ΔQ / t):\n  Better solution  → always accept (P = 1)\n  Worse solution   → accept with probability P\n  High t (hot)     → P stays near 1  → accept almost anything\n  Low t (cold)     → P → 0           → only accept improvements'}</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem'}}>
+            <div style={{background:'#fbbf240d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#fbbf24',marginBottom:'0.2rem'}}>Why this beats HC</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>By accepting worse solutions early, it can walk down off a local peak and find a path to a much taller mountain on the other side.</div>
+            </div>
+            <div style={{background:'#fb71850d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#fb7185',marginBottom:'0.2rem'}}>Fatal flaw</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>You must carefully design the cooling schedule — cool too fast and it behaves like HC; too slow and it wastes time randomly wandering with no progress.</div>
+            </div>
+          </div>
+        </div>
+
+        {/* TS */}
+        <div style={{background:'var(--bg-2)',borderRadius:10,padding:'0.9rem',border:'1px solid #a78bfa33'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.5rem',alignItems:'center'}}>
+            <span style={{fontSize:'0.85rem',fontWeight:800,color:'#a78bfa',fontFamily:'monospace'}}>TS — Tabu Search</span>
+            <span style={{fontSize:'0.62rem',color:'#a78bfa',background:'#a78bfa18',padding:'2px 7px',borderRadius:5}}>uses memory</span>
+          </div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-1)',lineHeight:1.65,marginBottom:'0.55rem'}}>
+            <strong>The idea in plain English:</strong> Like Hill Climbing, but you keep a short "banned list" of places you have recently visited. You always move to the best available neighbour — even if it is worse than where you currently are — as long as it is not on the banned list.
+          </div>
+          <div style={{background:'#a78bfa0d',borderRadius:7,padding:'0.5rem 0.65rem',marginBottom:'0.55rem'}}>
+            <div style={{fontSize:'0.67rem',fontWeight:700,color:'#a78bfa',marginBottom:'0.25rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>Real-world analogy</div>
+            <div style={{fontSize:'0.72rem',color:'var(--text-2)',lineHeight:1.55}}>You are solving a maze. Basic hill climbing keeps walking back and forth between the same two dead ends forever. Tabu Search says: "I just came from that cell — it is temporarily banned." This forces you to keep moving forward instead of oscillating in circles. After enough steps the ban lifts and you could revisit, but by then you have already moved on.</div>
+          </div>
+          <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.4rem 0.55rem',fontFamily:'monospace',fontSize:'0.64rem',color:'var(--text-2)',whiteSpace:'pre-line',marginBottom:'0.5rem'}}>{'FIFO banned list of length l:\n  Always move to best non-tabu neighbour\n  Even if that neighbour is worse than current position\n  After l steps, oldest entry expires and is forgotten\n  l controls memory depth: large l = safer but slower'}</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem'}}>
+            <div style={{background:'#a78bfa0d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#a78bfa',marginBottom:'0.2rem'}}>Why this beats HC</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>Memory prevents cycling — the algorithm is guaranteed to escape any local optimum because it literally cannot revisit recent states.</div>
+            </div>
+            <div style={{background:'#fb71850d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#fb7185',marginBottom:'0.2rem'}}>Fatal flaw</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>You need to pick the right list length l. Too short: still cycles. Too long: bans good solutions unnecessarily, wasting time avoiding places that would have been fine.</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ILS */}
+        <div style={{background:'var(--bg-2)',borderRadius:10,padding:'0.9rem',border:'1px solid #34d39933'}}>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'0.5rem',alignItems:'center'}}>
+            <span style={{fontSize:'0.85rem',fontWeight:800,color:'#34d399',fontFamily:'monospace'}}>ILS — Iterated Local Search</span>
+            <span style={{fontSize:'0.62rem',color:'#34d399',background:'#34d39918',padding:'2px 7px',borderRadius:5}}>HC of HCs</span>
+          </div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-1)',lineHeight:1.65,marginBottom:'0.55rem'}}>
+            <strong>The idea in plain English:</strong> Run Hill Climbing until you get stuck at a local peak. Remember where you ended up (your "home base"). Jump to a new nearby starting point and hill-climb from there. If the new peak is better than home base, it becomes the new home base. Repeat.
+          </div>
+          <div style={{background:'#34d3990d',borderRadius:7,padding:'0.5rem 0.65rem',marginBottom:'0.55rem'}}>
+            <div style={{fontSize:'0.67rem',fontWeight:700,color:'#34d399',marginBottom:'0.25rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>Real-world analogy</div>
+            <div style={{fontSize:'0.72rem',color:'var(--text-2)',lineHeight:1.55}}>You are a hiking expedition leader. You climb to the nearest peak and mark it on your map (home base). Then you fly a helicopter to a new drop-off point that is somewhat near your home base — not random, not the same place, but strategically different. You climb again. If you found a better peak, that becomes the new home base for the next expedition. This is smarter than pure random restarts because each expedition begins near known-good territory.</div>
+          </div>
+          <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.4rem 0.55rem',fontFamily:'monospace',fontSize:'0.64rem',color:'var(--text-2)',whiteSpace:'pre-line',marginBottom:'0.5rem'}}>{'H = current home base (best local optimum found so far)\nLoop:\n  R ← Perturb(H)         // jump near H but to a different region\n  S ← HillClimb(R)       // climb to local optimum from R\n  H ← NewHomeBase(H, S)  // keep whichever of H or S is better'}</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem'}}>
+            <div style={{background:'#34d3990d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#34d399',marginBottom:'0.2rem'}}>Why this beats random restarts</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>Each new start is guided by your current best — you explore the neighbourhood of good solutions rather than starting completely blind every time.</div>
+            </div>
+            <div style={{background:'#fb71850d',borderRadius:6,padding:'0.38rem 0.5rem'}}>
+              <div style={{fontSize:'0.64rem',fontWeight:700,color:'#fb7185',marginBottom:'0.2rem'}}>Fatal flaw</div>
+              <div style={{fontSize:'0.67rem',color:'var(--text-2)',lineHeight:1.45}}>The perturbation step is critical and hard to design — too small and you re-find the same peak; too large and you are effectively just doing random restarts.</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Stochastic cheat sheet */}
