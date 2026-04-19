@@ -4205,8 +4205,725 @@ function PracticeExamTab() {
   );
 }
 
+// ── Group Project Tab ─────────────────────────────────────────────────────────
+const TODAY = new Date('2026-04-19');
+const D1_DATE = new Date('2026-04-24');
+const D2_DATE = new Date('2026-05-24');
+const PROJECT_START = new Date('2026-03-01');
+
+function daysUntil(date) {
+  return Math.ceil((date - TODAY) / 86400000);
+}
+function timelinePercent(date) {
+  const total = D2_DATE - PROJECT_START;
+  return Math.min(100, Math.max(0, ((date - PROJECT_START) / total) * 100));
+}
+
+const TASK_KEY = 'cits4404_project_tasks';
+const DEFAULT_TASKS = [
+  { id:1, part:1, label:'Choose algorithm for synopsis', done:false },
+  { id:2, part:1, label:'Read & annotate algorithm paper', done:false },
+  { id:3, part:1, label:'Write synopsis — Q1: What problem does this solve?', done:false },
+  { id:4, part:1, label:'Write synopsis — Q2: Why did previous approaches fail?', done:false },
+  { id:5, part:1, label:'Write synopsis — Q3: What is the novel idea?', done:false },
+  { id:6, part:1, label:'Write synopsis — Q4: How is it demonstrated?', done:false },
+  { id:7, part:1, label:'Write synopsis — Q5: What are the results?', done:false },
+  { id:8, part:1, label:'Write synopsis — Q6: Your personal assessment', done:false },
+  { id:9, part:1, label:'Team comparative conclusion drafted (1–2 pages)', done:false },
+  { id:10, part:1, label:'Deliverable 1 submitted by Fri 24 Apr 11:59pm', done:false },
+  { id:11, part:2, label:'Download BTC/USDT OHLCV dataset (Kaggle)', done:false },
+  { id:12, part:2, label:'Implement pad() and wma() convolution framework', done:false },
+  { id:13, part:2, label:'Implement sma_filter, lma_filter, ema_filter', done:false },
+  { id:14, part:2, label:'Implement crossover signal & sign-change detection', done:false },
+  { id:15, part:2, label:'Implement back-tester (fitness = final cash balance)', done:false },
+  { id:16, part:2, label:'Implement chosen nature-inspired algorithm(s)', done:false },
+  { id:17, part:2, label:'Run optimisation on training data (pre-2020)', done:false },
+  { id:18, part:2, label:'Evaluate on held-out test set (2020 onwards)', done:false },
+  { id:19, part:2, label:'Compare algorithms — vary population size, report findings', done:false },
+  { id:20, part:2, label:'Record & edit video presentation (≤25 min)', done:false },
+  { id:21, part:2, label:'Write report (≤3,000 words, PDF, IEEE refs)', done:false },
+  { id:22, part:2, label:'Clean Jupyter notebook + README with run instructions', done:false },
+  { id:23, part:2, label:'Deliverable 2 submitted by Sun 24 May 11:59pm', done:false },
+];
+
+const GP_VIEWS = ['Tracker', 'Part 1 — Synopses', 'Bot Signals', 'Optimisation & Eval', 'Deliverables', 'Course Links'];
+
+function GroupProjectTab({ setTab }) {
+  const [view, setView] = useState('Tracker');
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem(TASK_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_TASKS;
+    } catch { return DEFAULT_TASKS; }
+  });
+
+  function toggleTask(id) {
+    setTasks(prev => {
+      const next = prev.map(t => t.id === id ? { ...t, done: !t.done } : t);
+      localStorage.setItem(TASK_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const p1Tasks = tasks.filter(t => t.part === 1);
+  const p2Tasks = tasks.filter(t => t.part === 2);
+  const d1Days = daysUntil(D1_DATE);
+  const d2Days = daysUntil(D2_DATE);
+  const nowPct = timelinePercent(TODAY);
+  const d1Pct  = timelinePercent(D1_DATE);
+  const d2Pct  = timelinePercent(D2_DATE);
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+
+      {/* ── Sub-nav ── */}
+      <div className="m4-labtabs">
+        {GP_VIEWS.map(v => (
+          <button key={v} className={`m4-labtab ${view===v?'m4-labtab--on':''}`} onClick={() => setView(v)}>{v}</button>
+        ))}
+      </div>
+
+      {/* ════════════════ TRACKER ════════════════ */}
+      {view === 'Tracker' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+
+          {/* Timeline */}
+          <div className="m4-card" style={{padding:'1.5rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'1.25rem'}}>Project Timeline</div>
+            <div style={{position:'relative',height:'60px',marginBottom:'0.5rem'}}>
+              <div style={{position:'absolute',top:'30px',left:'0',right:'0',height:'4px',background:'rgba(255,255,255,0.08)',borderRadius:'2px'}} />
+              <div style={{position:'absolute',top:'30px',left:'0',width:`${nowPct}%`,height:'4px',background:'linear-gradient(90deg,var(--violet),var(--cyan))',borderRadius:'2px'}} />
+              {/* Today */}
+              <div style={{position:'absolute',left:`${nowPct}%`,top:'18px',transform:'translateX(-50%)',display:'flex',flexDirection:'column',alignItems:'center'}}>
+                <div style={{width:'12px',height:'12px',borderRadius:'50%',background:'var(--cyan)',boxShadow:'0 0 10px var(--cyan)',border:'2px solid var(--bg)'}} />
+                <div style={{fontSize:'0.62rem',color:'var(--cyan)',marginTop:'4px',whiteSpace:'nowrap',fontWeight:700}}>Today</div>
+              </div>
+              {/* D1 */}
+              <div style={{position:'absolute',left:`${d1Pct}%`,top:'8px',transform:'translateX(-50%)',display:'flex',flexDirection:'column',alignItems:'center'}}>
+                <div style={{fontSize:'0.6rem',color:d1Days<=3?'var(--rose)':'var(--amber)',whiteSpace:'nowrap',marginBottom:'2px',fontWeight:700}}>
+                  {d1Days > 0 ? `${d1Days}d` : d1Days === 0 ? 'TODAY' : 'LATE'}
+                </div>
+                <div style={{width:'13px',height:'13px',borderRadius:'3px',background:d1Days<=3?'var(--rose)':'var(--amber)',border:'2px solid var(--bg)',transform:'rotate(45deg)'}} />
+                <div style={{fontSize:'0.58rem',color:'var(--fg-dim)',marginTop:'5px',whiteSpace:'nowrap'}}>D1 Apr 24</div>
+              </div>
+              {/* D2 */}
+              <div style={{position:'absolute',left:`${d2Pct}%`,top:'8px',transform:'translateX(-50%)',display:'flex',flexDirection:'column',alignItems:'center'}}>
+                <div style={{fontSize:'0.6rem',color:'var(--violet)',whiteSpace:'nowrap',marginBottom:'2px',fontWeight:700}}>{d2Days}d</div>
+                <div style={{width:'13px',height:'13px',borderRadius:'3px',background:'var(--violet)',border:'2px solid var(--bg)',transform:'rotate(45deg)'}} />
+                <div style={{fontSize:'0.58rem',color:'var(--fg-dim)',marginTop:'5px',whiteSpace:'nowrap'}}>D2 May 24</div>
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginTop:'1rem'}}>
+              {[
+                { label:'Deliverable 1 — Synopses', date:'Fri 24 Apr, 11:59pm AWST', days:d1Days, color:d1Days<=3?'var(--rose)':d1Days<=7?'var(--amber)':'var(--emerald)', detail:'1–1.5 page synopsis per member + 1–2 page comparative conclusion' },
+                { label:'Deliverable 2 — Full Project', date:'Sun 24 May, 11:59pm AWST', days:d2Days, color:d2Days<=7?'var(--amber)':'var(--violet)', detail:'Video (≤25 min) + Report (≤3,000 words) + Jupyter notebook' },
+              ].map(d => (
+                <div key={d.label} style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${d.color}44`,borderRadius:'8px',padding:'1rem'}}>
+                  <div style={{fontSize:'0.68rem',color:d.color,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.35rem'}}>{d.label}</div>
+                  <div style={{fontSize:'1.7rem',fontWeight:800,color:d.color,lineHeight:1}}>{d.days > 0 ? d.days : '!!'} <span style={{fontSize:'0.72rem',fontWeight:500,color:'var(--fg-dim)'}}>days</span></div>
+                  <div style={{fontSize:'0.68rem',color:'var(--fg-dim)',marginTop:'0.4rem'}}>{d.date}</div>
+                  <div style={{fontSize:'0.66rem',color:'var(--fg-dim)',marginTop:'0.35rem',lineHeight:1.4}}>{d.detail}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:'0.75rem',fontSize:'0.66rem',color:'rgba(255,255,255,0.25)'}}>
+              Late penalty: 5% per day after 48-hour grace period. Not accepted after 7 days.
+            </div>
+          </div>
+
+          {/* Checklists */}
+          <div className="m4-two-col">
+            {[
+              { label:'Part 1 — Literature Review', color:'var(--amber)', tasks:p1Tasks, note:'One synopsis per team member. Answer 6 structured questions. Comparative conclusion.' },
+              { label:'Part 2 — AI Trading Bot', color:'var(--violet)', tasks:p2Tasks, note:'Build & back-test a WMA crossover bot. Optimise with nature-inspired algorithm(s).' },
+            ].map(sec => {
+              const done = sec.tasks.filter(t => t.done).length;
+              const total = sec.tasks.length;
+              return (
+                <div key={sec.label} className="m4-card" style={{padding:'1.25rem'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'0.75rem'}}>
+                    <div className="m4-card-h" style={{color:sec.color,margin:0}}>{sec.label}</div>
+                    <span className="m4-badge" style={{background:`${sec.color}22`,color:sec.color,border:`1px solid ${sec.color}44`,flexShrink:0}}>{done}/{total}</span>
+                  </div>
+                  <div style={{height:'3px',background:'rgba(255,255,255,0.08)',borderRadius:'2px',marginBottom:'0.85rem'}}>
+                    <div style={{height:'3px',width:`${(done/total)*100}%`,background:sec.color,borderRadius:'2px',transition:'width 0.3s'}} />
+                  </div>
+                  <p style={{fontSize:'0.71rem',color:'var(--fg-dim)',marginBottom:'0.85rem',lineHeight:1.5}}>{sec.note}</p>
+                  <div style={{display:'flex',flexDirection:'column',gap:'0.4rem'}}>
+                    {sec.tasks.map(t => (
+                      <label key={t.id} style={{display:'flex',alignItems:'center',gap:'0.55rem',cursor:'pointer',padding:'0.35rem 0.45rem',borderRadius:'5px',background:t.done?'rgba(52,211,153,0.06)':'transparent',transition:'background 0.15s'}}>
+                        <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)}
+                          style={{accentColor:sec.color,width:'14px',height:'14px',flexShrink:0,cursor:'pointer'}} />
+                        <span style={{fontSize:'0.76rem',color:t.done?'var(--fg-dim)':'var(--fg)',textDecoration:t.done?'line-through':'none',transition:'all 0.15s',lineHeight:1.4}}>{t.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════ PART 1 — SYNOPSES ════════════════ */}
+      {view === 'Part 1 — Synopses' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+          <div className="m4-infobox">
+            <strong>Goal:</strong> Each team member writes a <strong>1–1.5 page synopsis</strong> covering a different population-based nature-inspired optimisation algorithm (not ML/neural networks). Then the team writes a <strong>1–2 page comparative conclusion</strong>.
+            Source: Tzanetos et al. Mendeley Data repository (~300 algorithms as of Jan 2021).
+          </div>
+
+          {/* Algorithm constraints */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'1rem'}}>Algorithm Selection Constraints</div>
+            <div className="m4-two-col">
+              <div>
+                <div style={{fontSize:'0.72rem',fontWeight:700,color:'var(--emerald)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'0.6rem'}}>Must Be</div>
+                <ul className="m4-bullets">
+                  <li><strong>Optimisation algorithm</strong> — not a learning/classification algorithm</li>
+                  <li><strong>Population-based</strong> — maintains a collection of candidate solutions simultaneously (not a single-state method)</li>
+                  <li><strong>Nature-inspired</strong> — draws metaphor from biology, physics, or natural systems</li>
+                  <li>From the Tzanetos et al. Mendeley Data repository</li>
+                </ul>
+              </div>
+              <div>
+                <div style={{fontSize:'0.72rem',fontWeight:700,color:'var(--rose)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'0.6rem'}}>Must Not Be</div>
+                <ul className="m4-bullets">
+                  <li>Neural networks or deep learning</li>
+                  <li>Any form of ML model (SVM, decision tree, etc.)</li>
+                  <li>Single-state methods (hill climbing, SA alone — these can appear as a <em>baseline</em> in Part 2 only)</li>
+                </ul>
+                <div className="m4-warnbox" style={{marginTop:'0.75rem'}}>
+                  When comparing single-state vs population-based in Part 2, fix the <strong>number of evaluations</strong> (not generations) as the budget.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6 questions */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'1rem'}}>The 6 Synopsis Questions — Answer All of These</div>
+            <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+              {[
+                { q:'Q1', col:'var(--cyan)', title:'What problem with existing algorithms does this new algorithm solve?',
+                  hint:'Identify the specific gap or limitation in the prior art that motivated this new algorithm. Be precise — "existing algorithms are slow" is not enough; name the specific failure mode.' },
+                { q:'Q2', col:'var(--violet)', title:'Why have previous approaches failed — what deficiency motivated this work?',
+                  hint:'Dig deeper than Q1. What is the underlying theoretical or practical reason the old approaches fall short? Is it premature convergence, poor diversity, high parameter sensitivity, scalability?' },
+                { q:'Q3', col:'var(--emerald)', title:'What is the novel idea presented in the paper?',
+                  hint:'Describe the core mechanism. What is the metaphor? How does it explore the search space differently? Be specific about the operators (e.g., "uses a levy-flight step instead of Gaussian perturbation").' },
+                { q:'Q4', col:'var(--amber)', title:'How is the approach demonstrated — implementation, proof, user studies?',
+                  hint:'What benchmark functions or problems were used? Was it tested on CEC benchmark suites, engineering problems, real datasets? Was there a theoretical proof of convergence?' },
+                { q:'Q5', col:'var(--rose)', title:'What are the results, and how are they validated/benchmarked?',
+                  hint:'Report the key quantitative findings. What comparison algorithms were used? Were results statistically significant? Does the paper use standard benchmarks (e.g., 100-Digit Challenge)?' },
+                { q:'Q6', col:'var(--cyan)', title:'What is your assessment — are the conclusions justified? Would you choose this algorithm?',
+                  hint:'This is your opinion. Is the paper well-structured? Are the claims supported by evidence? Are there obvious weaknesses or biases in the evaluation? Would you use this for the trading bot — why or why not?' },
+              ].map(({q,col,title,hint}) => (
+                <div key={q} style={{background:'rgba(255,255,255,0.02)',border:`1px solid rgba(255,255,255,0.07)`,borderLeft:`3px solid ${col}`,borderRadius:'0 6px 6px 0',padding:'0.85rem 1rem'}}>
+                  <div style={{display:'flex',gap:'0.75rem',alignItems:'flex-start',marginBottom:'0.4rem'}}>
+                    <span style={{flexShrink:0,fontSize:'0.7rem',fontWeight:800,color:col,background:`${col}22`,border:`1px solid ${col}44`,borderRadius:'4px',padding:'0.15rem 0.45rem'}}>{q}</span>
+                    <span style={{fontSize:'0.82rem',color:'var(--fg)',fontWeight:600,lineHeight:1.4}}>{title}</span>
+                  </div>
+                  <div style={{fontSize:'0.75rem',color:'var(--fg-dim)',lineHeight:1.55,paddingLeft:'2.2rem'}}>{hint}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Comparative conclusion */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'1rem'}}>Comparative Conclusion (1–2 pages — team effort)</div>
+            <ul className="m4-bullets">
+              <li>Which algorithms were chosen by each team member, and why those specifically?</li>
+              <li>Are they variants on a theme (same Category in the taxonomy) or from very different categories?</li>
+              <li>Is there a relevant chronology — did one algorithm inspire the next?</li>
+              <li>Is there a meaningful taxonomy — swarm intelligence vs evolutionary vs physics-inspired?</li>
+              <li>Diagrams are <strong>encouraged</strong> — a taxonomy tree or timeline is ideal here.</li>
+            </ul>
+            <div className="m4-infobox" style={{marginTop:'0.75rem'}}>
+              Think of this as the "meta-analysis" of all your synopses. A reader who has read all four synopses separately should read the conclusion and understand how the algorithms relate to each other and to the field.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════ BOT SIGNALS ════════════════ */}
+      {view === 'Bot Signals' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+          <div className="m4-infobox">
+            All bots are built from <strong>Weighted Moving Average (WMA) filter units</strong> applied via convolution to a price time-series. Technical Analysis (TA) uses price/volume history — not fundamentals — to predict direction.
+          </div>
+
+          {/* OHLCV */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>OHLCV Data — What Each Candle Contains</div>
+            <div style={{overflowX:'auto'}}>
+              <table className="m4-ptable" style={{width:'100%'}}>
+                <thead><tr><th>Field</th><th>Meaning</th><th>Notes</th></tr></thead>
+                <tbody>
+                  {[
+                    ['O','Open price','Price at start of the time period'],
+                    ['H','High price','Intra-period maximum'],
+                    ['L','Low price','Intra-period minimum'],
+                    ['C','Close price','Price at end of the time period — typically used as P'],
+                    ['V','Volume','Number/value of transactions in the period'],
+                  ].map(([f,m,n])=>(
+                    <tr key={f}><td style={{color:'var(--cyan)',fontWeight:700,fontFamily:'monospace'}}>{f}</td><td>{m}</td><td style={{color:'var(--fg-dim)',fontSize:'0.75rem'}}>{n}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{marginTop:'0.75rem',fontSize:'0.75rem',color:'var(--fg-dim)'}}>
+              Data source: Kaggle Bitcoin Historical Dataset. Daily (~2,652 pts), hourly, or per-minute (~600k pts/year). Live data: Kraken exchange via <code style={{color:'var(--cyan)'}}>ccxt</code> library. Training split: <strong>pre-2020</strong>. Test (held-out): <strong>2020 onwards</strong>.
+            </div>
+          </div>
+
+          {/* Convolution framework */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Core Convolution Framework</div>
+            <p style={{fontSize:'0.78rem',color:'var(--fg-dim)',marginBottom:'0.75rem',lineHeight:1.6}}>
+              All WMA filters are implemented the same way — as a kernel (weight array) convolved with the price series. The <code style={{color:'var(--cyan)'}}>pad()</code> function flip-pads the signal so the window is fully populated at t=0.
+            </p>
+            <div className="m4-pseudocode">{
+`def pad(P, N):
+    padding = -np.flip(P[1:N])    # mirror the opening values
+    return np.append(padding, P)
+
+def wma(P, N, kernel):
+    return np.convolve(pad(P, N), kernel, 'valid')
+
+# Usage:  wma(P, N, some_filter(N))`
+            }</div>
+            <div className="m4-infobox">
+              The <strong>kernel</strong> (filter) defines how much weight each past price gets. Swap the kernel to switch between SMA, LMA, EMA, or any custom filter — the <code>wma()</code> function stays the same.
+            </div>
+          </div>
+
+          {/* Three filters */}
+          <div className="m4-two-col">
+            {/* SMA */}
+            <div className="m4-card" style={{padding:'1.25rem'}}>
+              <div className="m4-card-h">Simple Moving Average (SMA)</div>
+              <div className="m4-flabel">Definition</div>
+              <Tex src="\text{SMA}_n = \frac{1}{N}\sum_{k=0}^{N-1} p_{n-k}" block />
+              <div className="m4-flabel">Kernel (boxcar)</div>
+              <Tex src="K_\text{SMA}[k] = \frac{1}{N}, \quad 0 \le k < N" block />
+              <div className="m4-pseudocode">{`def sma_filter(N):
+    return np.ones(N) / N`}</div>
+              <VarTable vars={[
+                ['N','Window size — number of past prices averaged'],
+                ['p_{n-k}','Price k periods ago (k=0 is most recent)'],
+              ]} />
+              <ul className="m4-bullets">
+                <li>Uniform weights across the entire window</li>
+                <li>Most smoothing, most lag</li>
+                <li>Lag grows linearly with N</li>
+              </ul>
+            </div>
+            {/* LMA */}
+            <div className="m4-card" style={{padding:'1.25rem'}}>
+              <div className="m4-card-h">Linear-Weighted MA (LMA)</div>
+              <div className="m4-flabel">Kernel (triangular)</div>
+              <Tex src="K_\text{LMA}[k] = \frac{2}{N+1}\!\left(1 - \frac{k}{N}\right),\; 0 \le k < N" block />
+              <div className="m4-pseudocode">{`def lma_filter(N):
+    weights = np.array([1 - k/N for k in range(N)])
+    return weights * (2 / (N + 1))`}</div>
+              <VarTable vars={[
+                ['k','Lag index — 0 = most recent, N-1 = oldest'],
+                ['\\frac{2}{N+1}','Normalisation so all weights sum to 1'],
+              ]} />
+              <ul className="m4-bullets">
+                <li>Linearly decaying weights — recent prices weighted more</li>
+                <li>Faster response and less smoothing than SMA</li>
+                <li>Medium lag</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* EMA */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h">Exponential Moving Average (EMA)</div>
+            <div className="m4-two-col">
+              <div>
+                <div className="m4-flabel">Kernel (exponential decay)</div>
+                <Tex src="K_\text{EMA}[k] = \alpha(1-\alpha)^k, \quad 0 \le k < N" block />
+                <Tex src="\text{Normalise: } K \leftarrow K\,/\,\sum K" block />
+                <div className="m4-pseudocode">{`def ema_filter(N, alpha):
+    weights = np.array(
+        [alpha * (1-alpha)**k for k in range(N)])
+    return weights / weights.sum()`}</div>
+              </div>
+              <div>
+                <VarTable vars={[
+                  ['\\alpha','Smoothing factor / decay rate (0 < α < 1). Higher α = more weight on recent prices.'],
+                  ['N','Window size — truncates the infinite EMA series'],
+                  ['(1-\\alpha)^k','Weight of price k periods ago decays exponentially'],
+                ]} />
+                <ul className="m4-bullets">
+                  <li>Two tunable parameters: N and α — more expressive than SMA/LMA</li>
+                  <li>Fastest response, least lag</li>
+                  <li>Approximates the true infinite-horizon EMA over a fixed window</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter comparison */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Filter Comparison</div>
+            <table className="m4-ptable" style={{width:'100%'}}>
+              <thead><tr><th>Filter</th><th>Recency Bias</th><th>Smoothing</th><th>Lag</th><th>Extra Params</th></tr></thead>
+              <tbody>
+                <tr><td style={{color:'var(--cyan)',fontWeight:600}}>SMA</td><td>None (uniform)</td><td style={{color:'var(--rose)'}}>Most</td><td style={{color:'var(--rose)'}}>Most</td><td>—</td></tr>
+                <tr><td style={{color:'var(--violet)',fontWeight:600}}>LMA</td><td>Linear</td><td style={{color:'var(--amber)'}}>Medium</td><td style={{color:'var(--amber)'}}>Medium</td><td>—</td></tr>
+                <tr><td style={{color:'var(--emerald)',fontWeight:600}}>EMA</td><td>Exponential</td><td style={{color:'var(--emerald)'}}>Least</td><td style={{color:'var(--emerald)'}}>Least</td><td>α (decay rate)</td></tr>
+              </tbody>
+            </table>
+            <div style={{marginTop:'0.75rem',fontSize:'0.75rem',color:'var(--fg-dim)'}}>
+              <strong style={{color:'var(--fg)'}}>Tunable for all filters:</strong> window size N (responsiveness vs. smoothing tradeoff) and timeframe (minutes/hours/days — also optimisable).
+            </div>
+          </div>
+
+          {/* Custom filters */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Custom / Free-Weight Filters</div>
+            <Tex src="\text{WMA}_n = \frac{\sum_{k=0}^{N-1} w_k \cdot p_{n-k}}{\sum_{k=0}^{N-1} w_k}" block />
+            <div className="m4-warnbox">
+              Free weights = <strong>N free parameters per filter</strong>. Maximum expressiveness, but greatly enlarges the hypothesis space. This is a design choice for your optimiser — more parameters means harder search.
+            </div>
+          </div>
+
+          {/* Crossover signals */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Crossover Strategy — Core Trading Logic</div>
+            <div className="m4-two-col">
+              <div>
+                <p style={{fontSize:'0.78rem',color:'var(--fg-dim)',lineHeight:1.6,marginBottom:'0.75rem'}}>
+                  Use <strong>two WMA signals</strong> of different frequencies. When the faster (short-term) WMA crosses the slower (long-term) WMA, a trade is triggered.
+                </p>
+                <div style={{display:'flex',flexDirection:'column',gap:'0.5rem',marginBottom:'0.75rem'}}>
+                  <div style={{padding:'0.6rem 0.85rem',background:'rgba(52,211,153,0.08)',border:'1px solid rgba(52,211,153,0.3)',borderRadius:'6px',fontSize:'0.78rem'}}>
+                    <span style={{color:'var(--emerald)',fontWeight:700}}>Golden Cross</span> — short-term WMA crosses <em>above</em> long-term → <strong style={{color:'var(--emerald)'}}>BUY</strong>
+                  </div>
+                  <div style={{padding:'0.6rem 0.85rem',background:'rgba(251,113,133,0.08)',border:'1px solid rgba(251,113,133,0.3)',borderRadius:'6px',fontSize:'0.78rem'}}>
+                    <span style={{color:'var(--rose)',fontWeight:700}}>Death Cross</span> — short-term WMA crosses <em>below</em> long-term → <strong style={{color:'var(--rose)'}}>SELL</strong>
+                  </div>
+                </div>
+                <div style={{fontSize:'0.72rem',color:'var(--fg-dim)',lineHeight:1.5}}>
+                  Two approaches: (1) same filter type, different window sizes; (2) different filter types (e.g. EMA short, SMA long).
+                </div>
+              </div>
+              <div>
+                <div className="m4-flabel">Difference signal</div>
+                <div className="m4-pseudocode">{`diff = short_wma - long_wma
+# positive → hold/buy zone
+# negative → sell zone`}</div>
+                <div className="m4-flabel">Sign-change detection kernel</div>
+                <Tex src="K_\text{cross} = \tfrac{1}{2}[1,\,-1]" block />
+                <div className="m4-pseudocode">{`def crossover_filter():
+    return np.array([0.5, -0.5])
+
+signs = wma(np.sign(diff), 2, crossover_filter())
+buy  = signs >  0.5   # positive zero-crossing
+sell = signs < -0.5   # negative zero-crossing`}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* MACD */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>MACD — More Elaborate Signal</div>
+            <p style={{fontSize:'0.78rem',color:'var(--fg-dim)',lineHeight:1.6,marginBottom:'0.75rem'}}>
+              Standard MACD(12, 26, 9): a difference of two EMAs, then a moving average of that difference. This introduces a third WMA layer. Two trigger options: MACD-vs-Signal crossover, or MACD-vs-zero crossover.
+            </p>
+            <div className="m4-two-col">
+              <div>
+                <div className="m4-flabel">MACD computation</div>
+                <div className="m4-pseudocode">{`macd_line   = EMA(12) − EMA(26)
+signal_line = EMA(9) of MACD line
+diff        = macd_line − signal_line
+
+# Buy  → macd crosses above signal
+# Sell → macd crosses below signal`}</div>
+              </div>
+              <div>
+                <div className="m4-flabel">In code</div>
+                <div className="m4-pseudocode">{`macd = (wma(P, 12, ema_filter(12, α))
+      - wma(P, 26, ema_filter(26, α)))
+sig  = wma(macd, 9, ema_filter(9, α))
+diff = macd - sig`}</div>
+                <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.75rem'}}>
+                  MACD pushes the search space to <strong>21-D</strong> (3 signal components × 7 params each). More expressive but much harder to optimise.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════ OPTIMISATION & EVAL ════════════════ */}
+      {view === 'Optimisation & Eval' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+
+          {/* Generalised bot */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Generalised Bot — Parameterised Signal Components</div>
+            <p style={{fontSize:'0.78rem',color:'var(--fg-dim)',lineHeight:1.6,marginBottom:'0.75rem'}}>
+              Instead of a single fixed filter, replace each signal component with a <strong>weighted combination</strong> of all three filter types. The optimiser then decides how much of each filter to use.
+            </p>
+            <Tex src="\text{HIGH} = \frac{w_1 \cdot \text{SMA}(d_1) + w_2 \cdot \text{LMA}(d_2) + w_3 \cdot \text{EMA}(d_3,\,\alpha_3)}{\sum_i w_i}" block />
+            <VarTable vars={[
+              ['w_1, w_2, w_3','Mixing weights — how much of each filter type to include'],
+              ['d_1, d_2, d_3','Window sizes for SMA, LMA, EMA respectively'],
+              ['\\alpha_3','EMA smoothing/decay rate'],
+            ]} />
+          </div>
+
+          {/* Search space */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Search Space Dimensionality</div>
+            <table className="m4-ptable" style={{width:'100%'}}>
+              <thead><tr><th>Configuration</th><th>Parameters</th><th>Dimensions</th></tr></thead>
+              <tbody>
+                {[
+                  ['Single HIGH signal','[w₁, w₂, w₃, d₁, d₂, d₃, α₃]','7-D','var(--emerald)'],
+                  ['HIGH + LOW signals','above × 2','14-D','var(--amber)'],
+                  ['MACD (+ smoothing signal)','above × 3','21-D','var(--rose)'],
+                  ['Free filter weights (N per filter)','N per WMA component','N × (num filters)-D','var(--violet)'],
+                ].map(([cfg,params,dim,col])=>(
+                  <tr key={cfg}>
+                    <td>{cfg}</td>
+                    <td style={{fontFamily:'monospace',fontSize:'0.75rem',color:'var(--fg-dim)'}}>{params}</td>
+                    <td style={{color:col,fontWeight:700,fontFamily:'monospace'}}>{dim}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="m4-infobox" style={{marginTop:'0.75rem'}}>
+              <strong>Key tension:</strong> More parameters = richer hypothesis space = potentially better solutions, but also a harder search problem. This trade-off is the central question of the project.
+            </div>
+            <div style={{marginTop:'0.75rem',fontSize:'0.75rem',color:'var(--fg-dim)',lineHeight:1.6}}>
+              <strong style={{color:'var(--fg)'}}>Design space options:</strong> (1) tune WMA parameters N/w/α; (2) choose filter type combinations; (3) free per-tap weights; (4) structural optimisation — which components to include (introduces discontinuities in the fitness landscape).
+            </div>
+          </div>
+
+          {/* Back-testing */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Back-Testing Setup — Fitness Evaluation</div>
+            <div className="m4-two-col">
+              <div>
+                <table className="m4-ptable" style={{width:'100%'}}>
+                  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                  <tbody>
+                    {[
+                      ['Starting capital','$1,000 USD'],
+                      ['Starting BTC','0 BTC'],
+                      ['Transaction fee','3% per trade'],
+                      ['Buy rule','Spend all cash (minus fee) on BTC at current price'],
+                      ['Sell rule','Sell all BTC for cash (minus fee) at current price'],
+                      ['End condition','Sell any remaining BTC at final price'],
+                      ['Fitness','Final cash balance (maximise this)'],
+                    ].map(([p,v])=>(
+                      <tr key={p}><td>{p}</td><td style={{color:'var(--cyan)',fontWeight:600}}>{v}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <div style={{fontSize:'0.72rem',fontWeight:700,color:'var(--violet)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'0.5rem'}}>Data Split</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'0.5rem',marginBottom:'0.75rem'}}>
+                  <div style={{padding:'0.6rem 0.85rem',background:'rgba(167,139,250,0.08)',border:'1px solid rgba(167,139,250,0.25)',borderRadius:'6px',fontSize:'0.78rem'}}>
+                    <div style={{color:'var(--violet)',fontWeight:700,marginBottom:'0.2rem'}}>Training Set</div>
+                    <div style={{color:'var(--fg-dim)'}}>All data <strong>before 2020</strong> — use this to optimise bot parameters</div>
+                  </div>
+                  <div style={{padding:'0.6rem 0.85rem',background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.25)',borderRadius:'6px',fontSize:'0.78rem'}}>
+                    <div style={{color:'var(--cyan)',fontWeight:700,marginBottom:'0.2rem'}}>Test Set (held-out)</div>
+                    <div style={{color:'var(--fg-dim)'}}>Data from <strong>2020 onwards</strong> — treat as "future" data; only evaluate here at the very end</div>
+                  </div>
+                </div>
+                <div className="m4-warnbox">
+                  Evaluation is <strong>deterministic</strong> — same parameters always produce the same fitness. Never optimise on the test set. "Treat the project as if it is the start of 2020."
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Algorithm requirements */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Algorithm Requirements for Part 2</div>
+            <div className="m4-two-col">
+              <div>
+                <ul className="m4-bullets">
+                  <li>Use <strong>one or more nature-inspired algorithms</strong> from your Part 1 review</li>
+                  <li>Algorithms must be <strong>population-based</strong></li>
+                  <li>Optionally add a <strong>single-state baseline</strong> (e.g., stochastic hill-climbing) for comparison</li>
+                  <li>When comparing single-state vs population, fix the <strong>number of evaluations</strong> as budget (not generations)</li>
+                </ul>
+              </div>
+              <div>
+                <div className="m4-flabel">What to compare and report</div>
+                <ul className="m4-bullets">
+                  <li>Convergence curves — how fast does fitness improve?</li>
+                  <li>Solution quality — final fitness on training vs test</li>
+                  <li>Robustness — does varying population size change results significantly?</li>
+                  <li>Look for meaningful differences, not just "algorithm X got a higher number"</li>
+                </ul>
+              </div>
+            </div>
+            <div className="m4-infobox" style={{marginTop:'0.75rem'}}>
+              <strong>Rules of engagement:</strong> No external bot code — all bot logic must be written by the team. No optimisation libraries — implement the algorithms yourselves. You <em>may</em> adapt published algorithm code but must acknowledge the source.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════ DELIVERABLES ════════════════ */}
+      {view === 'Deliverables' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+          <div className="m4-two-col">
+            {/* D1 */}
+            <div className="m4-card" style={{padding:'1.25rem',borderColor:d1Days<=5?'rgba(251,191,36,0.4)':'undefined'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
+                <div className="m4-card-h" style={{margin:0}}>Deliverable 1 — Synopses</div>
+                <span className="m4-badge" style={{background:'rgba(251,191,36,0.15)',color:'var(--amber)',border:'1px solid rgba(251,191,36,0.3)'}}>
+                  {d1Days > 0 ? `${d1Days}d left` : 'DUE'}
+                </span>
+              </div>
+              <div style={{fontSize:'0.7rem',color:'var(--amber)',fontWeight:700,marginBottom:'0.85rem'}}>Fri 24 Apr 2026, 11:59pm AWST</div>
+              <ul className="m4-bullets">
+                <li><strong>One synopsis per team member</strong> — 1 to 1.5 pages each</li>
+                <li>Answers all 6 structured questions for their chosen algorithm</li>
+                <li><strong>One comparative conclusion</strong> — 1 to 2 pages, written as a team</li>
+                <li>Covers taxonomy, chronology, algorithm selection rationale</li>
+                <li>Diagrams encouraged in the conclusion</li>
+              </ul>
+              <div className="m4-warnbox" style={{marginTop:'0.75rem'}}>
+                Late penalty: 5% per day after a 48-hour grace period. Not accepted after 7 days late.
+              </div>
+            </div>
+            {/* D2 */}
+            <div className="m4-card" style={{padding:'1.25rem'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
+                <div className="m4-card-h" style={{margin:0}}>Deliverable 2 — Full Project</div>
+                <span className="m4-badge" style={{background:'rgba(167,139,250,0.15)',color:'var(--violet)',border:'1px solid rgba(167,139,250,0.3)'}}>
+                  {d2Days}d left
+                </span>
+              </div>
+              <div style={{fontSize:'0.7rem',color:'var(--violet)',fontWeight:700,marginBottom:'0.85rem'}}>Sun 24 May 2026, 11:59pm AWST</div>
+              <ul className="m4-bullets">
+                <li><strong>Video presentation</strong> — ≤25 minutes (see sections below)</li>
+                <li><strong>Written report</strong> — ≤3,000 words excluding diagrams and references</li>
+                <li><strong>Code repository</strong> — Jupyter notebook (.ipynb) + README</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Video sections */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'1rem'}}>Video Presentation — Required Sections (≤25 min)</div>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.65rem'}}>
+              {[
+                ['1','Algorithms Investigated','var(--cyan)','Overview, categorisation, distinguishing features of each algorithm reviewed in Part 1'],
+                ['2','Bot Design & Parameterisation','var(--violet)','Configuration choices made, hypothesis space, dimensionality — how many parameters and why'],
+                ['3','Algorithm Selection','var(--emerald)','Rationale for choosing which algorithm(s) to optimise with. High-level explanation + pseudocode/diagrams'],
+                ['4','Experiments & Evaluation','var(--amber)','Testing regime, data used, trade-offs considered. How were parameters varied?'],
+                ['5','Results','var(--rose)','Visual representations preferred — charts, tables, animations. Show convergence curves.'],
+                ['6','Conclusions','var(--cyan)','What was learnt, not just whether the bot "won". Limitations, surprising findings, what you would do differently.'],
+              ].map(([n,title,col,desc])=>(
+                <div key={n} style={{display:'flex',gap:'0.75rem',alignItems:'flex-start',padding:'0.65rem 0.85rem',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderLeft:`3px solid ${col}`,borderRadius:'0 6px 6px 0'}}>
+                  <span style={{flexShrink:0,fontWeight:800,color:col,fontSize:'0.8rem',minWidth:'1.2rem'}}>{n}.</span>
+                  <div>
+                    <div style={{fontSize:'0.8rem',fontWeight:700,color:'var(--fg)',marginBottom:'0.2rem'}}>{title}</div>
+                    <div style={{fontSize:'0.74rem',color:'var(--fg-dim)',lineHeight:1.5}}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:'0.75rem',fontSize:'0.72rem',color:'var(--fg-dim)'}}>
+              Format: MP4, or link to YouTube/Google Drive (set to "Anyone with the link can view").
+            </div>
+          </div>
+
+          {/* Report */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Written Report — Requirements</div>
+            <div className="m4-two-col">
+              <ul className="m4-bullets">
+                <li>≤3,000 words — excluding diagrams and references</li>
+                <li>Submit as <strong>PDF</strong></li>
+                <li><strong>IEEE referencing style</strong></li>
+                <li>Title page: word count, team number, names and student IDs</li>
+                <li>Complements the video — does not repeat it</li>
+              </ul>
+              <ul className="m4-bullets">
+                <li>May include additional results, references, pseudocode</li>
+                <li><strong>Must not</strong> include source code — refer to repo instead</li>
+                <li>Does <strong>not</strong> need to re-explain the project spec or standard TA/lecture concepts</li>
+                <li>Focus on your specific design decisions and findings</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Code */}
+          <div className="m4-card" style={{padding:'1.25rem'}}>
+            <div className="m4-card-h" style={{marginBottom:'0.75rem'}}>Code Repository</div>
+            <ul className="m4-bullets">
+              <li>Submit as <strong>.ipynb</strong> (Jupyter Notebook)</li>
+              <li>Must reproduce all results reported in the video and report</li>
+              <li>Include a <strong>README</strong> with brief run instructions</li>
+              <li>Code is not directly marked, but results must be reproducible</li>
+            </ul>
+            <div className="m4-infobox" style={{marginTop:'0.75rem'}}>
+              One member submits on behalf of the group. Submission = declaration that all work is the team's own (except as referenced).
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════ COURSE LINKS ════════════════ */}
+      {view === 'Course Links' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+          <div className="m4-infobox">
+            Each card below links directly to the relevant section of this interactive learning hub. Click any card to navigate there.
+          </div>
+          <div className="m4-topic-grid">
+            {[
+              { title:'Nature-Inspired Algorithms', color:'var(--violet)', tab:'Algorithms', badge:'L6–9',
+                desc:'Population-based metaheuristics (hill-climbing, SA, Tabu, ILS and more) are the core of Part 1 and the optimisation engine for Part 2. The Stochastic Methods section is most directly relevant.',
+                why:'You need to understand these deeply to write your synopsis and implement one for Part 2.' },
+              { title:'Optimisation Framework', color:'var(--cyan)', tab:'Optimisation', badge:'L3',
+                desc:'The 3-ingredient framework — representation language, hypothesis space, evaluation metric — maps directly to your bot: the encoding is the WMA parameter vector; the metric is final cash balance.',
+                why:'Defines how to think about your bot as an optimisation problem.' },
+              { title:'Solution Space Analysis', color:'var(--rose)', tab:'Labs', badge:'Labs 4–5',
+                desc:'Understand the combinatorial explosion before choosing your configuration. A 14-D or 21-D continuous search space is a very different beast from a discrete JSSP space.',
+                why:'Motivates why gradient descent fails here and why population-based search is needed.' },
+              { title:'Stochastic Methods & PRNG', color:'var(--amber)', tab:'Labs', badge:'Lab 1',
+                desc:'All population-based algorithms need reliable random number generation. Understanding LCG properties, period length, and seed selection is essential for reproducible experiments.',
+                why:'Reproducibility is required — same seed must produce same results for marker verification.' },
+              { title:'Job Shop Scheduling', color:'var(--emerald)', tab:'Job Shop', badge:'L4',
+                desc:'JSSP is the canonical hard combinatorial problem used throughout the course. The same GA, SA, and Tabu algorithms you apply to bot optimisation were originally studied on scheduling. Use it to build intuition.',
+                why:'Builds intuition for how metaheuristics navigate large search spaces.' },
+              { title:'Vector Calculus & Gradients', color:'var(--cyan)', tab:'Calculus', badge:'L5',
+                desc:'Gradient-based methods are not applicable to this project (noisy, discrete, non-differentiable fitness landscape). Understanding why gradient descent fails here clarifies why population search is the right choice.',
+                why:'Negative reason — understanding what NOT to use and why is exam-relevant and report-worthy.' },
+            ].map(c => (
+              <div key={c.title} className="m4-tcard" style={{'--tc':c.color}} onClick={() => setTab(c.tab)}>
+                <div className="m4-tcard-code">{c.badge}</div>
+                <div className="m4-tcard-title">{c.title}</div>
+                <div className="m4-tcard-desc">{c.desc}</div>
+                <div style={{fontSize:'0.7rem',color:c.color,marginTop:'0.4rem',fontStyle:'italic',lineHeight:1.4}}>Why: {c.why}</div>
+                <div className="m4-tcard-cta">Go to {c.tab} →</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Labs','Quiz','Practice Exam'];
+const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Labs','Quiz','Practice Exam','Group Project'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4404() {
@@ -4377,6 +5094,15 @@ export default function CITS4404() {
             <p className="m4-sec-sub">Full exam-style questions covering every topic. Write your answer before revealing the solution. Includes 3 questions from the 2026 practice exam and 15 questions derived from lecture content.</p>
           </div>
           <PracticeExamTab />
+        </>)}
+
+        {/* ── GROUP PROJECT ── */}
+        {tab === 'Group Project' && (<>
+          <div className="m4-sec-hdr">
+            <h2 className="m4-sec-title">Group Project <span className="m4-badge" style={{background:'rgba(167,139,250,0.12)',color:'var(--violet)',border:'1px solid rgba(167,139,250,0.3)'}}>BTC Trading Bot</span></h2>
+            <p className="m4-sec-sub">Build and optimise an AI trading bot for Bitcoin using nature-inspired metaheuristics. Track deadlines, manage tasks, and navigate directly to the relevant course content.</p>
+          </div>
+          <GroupProjectTab setTab={setTab} />
         </>)}
 
       </main>
