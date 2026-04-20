@@ -165,6 +165,32 @@ const QUIZ_DATA = [
     ok: 'NFL: any performance gain on one class of problems comes at the cost of worse performance on another. "The average performance of any pair of algorithms across all possible problems is identical." Algorithm selection must be informed by domain knowledge.',
     ng: 'NFL theorem: no universal champion. Performance gains on one problem class trade off against losses on others. Always choose algorithms informed by knowledge of your specific problem domain.',
   },
+  {
+    lec: 'Lec 10 · Population-based Methods',
+    q: 'In a (μ, λ) Evolution Strategy, what is the key distinction compared to (μ + λ)?',
+    opts: [
+      'In (μ, λ), parents and offspring compete — only the best μ across both survive',
+      'In (μ, λ), offspring replace parents entirely — parents never survive into the next generation',
+      'In (μ, λ), λ offspring are produced but only one parent is used',
+      'In (μ, λ), μ is always larger than λ',
+    ],
+    ans: 1,
+    ok: 'In (μ, λ), Join() replaces parents with children — the μ best of the λ new offspring become the next generation. In (μ + λ), parents compete with offspring and can survive, making it more exploitative but risking premature convergence.',
+    ng: '(μ, λ): offspring-only competition — the λ children form the candidate pool and only μ survive. (μ + λ): parents join the pool, so a good parent can persist indefinitely.',
+  },
+  {
+    lec: 'Lec 10 · Population-based Methods',
+    q: "Rechenberg's One-Fifth Rule says: if the fraction of children fitter than their parents pₛ > 1/5, you should:",
+    opts: [
+      'Decrease σ² to exploit the current region more',
+      'Increase σ² to explore more broadly',
+      'Reset the population to avoid premature convergence',
+      'Switch from (μ, λ) to (μ + λ)',
+    ],
+    ans: 1,
+    ok: 'pₛ > 1/5 means children are frequently beating parents — the mutation step is too small and you are over-exploiting a local region. Increase σ² to explore more. Conversely, pₛ < 1/5 → decrease σ² to exploit more.',
+    ng: "One-Fifth Rule: pₛ > 1/5 → increase σ² (explore); pₛ < 1/5 → decrease σ² (exploit). Think of it as: if you're finding improvements easily, take bigger jumps to search further.",
+  },
 ];
 
 // ── LCG Visualizer ────────────────────────────────────────────────────────────
@@ -4922,8 +4948,487 @@ diff = macd - sig`}</div>
   );
 }
 
+// ── Population-based Methods Tab ──────────────────────────────────────────────
+function PopulationTab() {
+  const [sec, setSec] = useState('overview');
+
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['overview',        'Overview'],
+          ['evolution',       'Evolution & EC'],
+          ['algorithms',      'ES Algorithms'],
+          ['mutation',        'Adaptive Mutation'],
+          ['generalisations', 'Generalisations'],
+        ].map(([v,l]) => (
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={() => setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {/* ── OVERVIEW ── */}
+      {sec === 'overview' && (
+        <div>
+          {/* Quick-reference banner */}
+          <div style={{background:'linear-gradient(135deg,rgba(34,211,238,0.07) 0%,rgba(167,139,250,0.07) 100%)',border:'1px solid rgba(34,211,238,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+            {[['Population','Many candidates at once','#22d3ee'],['Fitness','Quality function','#34d399'],['Selection','Pick the fittest','#a78bfa'],['Mutation','Tweak individuals','#fbbf24'],['Recombination','Crossover parents','#fb7185'],['Diversity','Avoid premature conv.','#06b6d4']].map(([k,v,col]) => (
+              <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+                <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+                <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Roadmap + Key Question */}
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Where Population Methods Fit</div>
+              <div className="m4-pseudocode">
+                {'Optimisation\n├── Deterministic\n│   └── (...)\n└── Stochastic  ← global\n    ├── Single-state\n    │   ├── Hill climbing with restarts\n    │   ├── Simulated Annealing\n    │   ├── Tabu Search\n    │   └── ILS\n    └── Population-based  ◄── THIS MODULE\n            └── Evolutionary Strategies\n                Genetic Algorithms\n                Swarm Intelligence\n                ...'}
+              </div>
+              <div className="m4-infobox" style={{marginTop:'0.75rem',fontSize:'0.78rem'}}>
+                <strong>Why population-based?</strong> Single-state methods maintain one candidate and move it around the space. Population methods maintain <em>many</em> candidates simultaneously — the collection carries information about the landscape that no individual point could provide alone.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">The Core Problem</div>
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.7,marginBottom:'0.65rem'}}>
+                We face search spaces that are:
+              </div>
+              <ul className="m4-bullets">
+                <li><strong>Highly modal</strong> — enormous numbers of local optima (e.g. Rastrigin function). Hill climbing fails catastrophically.</li>
+                <li><strong>Black-box</strong> — no gradient, no formula, just an input-output oracle.</li>
+                <li><strong>High-dimensional</strong> — brute-force grid search is infeasible.</li>
+                <li><strong>Expensive to evaluate</strong> — each sample may require a full simulation (e.g. tuning a numerical weather model with dozens of parameters).</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div style={{background:'rgba(34,211,238,0.08)',borderRadius:8,padding:'0.65rem',border:'1px solid rgba(34,211,238,0.25)',fontSize:'0.78rem',lineHeight:1.65}}>
+                <strong style={{color:'#22d3ee'}}>The fundamental question:</strong><br/>
+                Can a <em>collection</em> of points tell us more together than each individual on its own? Can the whole tell you more than the sum of the parts?
+              </div>
+              <div className="m4-warnbox" style={{marginTop:'0.65rem',fontSize:'0.75rem'}}>
+                <strong>Every evaluation is precious.</strong> We want to extract maximum information from each sample — what does the space look like? Where should we look next?
+              </div>
+            </div>
+          </div>
+
+          {/* Why it works — plain English */}
+          <div className="m4-card" style={{marginTop:'0.75rem',background:'linear-gradient(135deg,rgba(34,211,238,0.05) 0%,rgba(167,139,250,0.05) 100%)'}}>
+            <div className="m4-card-h">Why Population Methods Beat Single-State — Plain English</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.55rem',marginTop:'0.5rem'}}>
+              {[
+                ['Spatial Coverage','#22d3ee','A single search point is like sending one scout into unknown terrain. A population is like sending fifty scouts in different directions at once — you learn about the whole landscape in parallel, not just one path.'],
+                ['Collective Learning','#a78bfa','When scouts report back, you can compare their findings. A region with three scouts all doing well is far more informative than any single report — the population collectively "votes" on where the good regions are.'],
+                ['Diversity → Convergence','#34d399',"Early on, spread candidates wide to explore. Over time, let fitter individuals dominate to exploit good regions. This is the explore/exploit trade-off managed naturally — you start broad and converge, rather than getting stuck immediately."],
+              ].map(([t,col,desc]) => (
+                <div key={t} style={{background:`${col}11`,border:`1px solid ${col}33`,borderRadius:8,padding:'0.6rem'}}>
+                  <div style={{fontSize:'0.68rem',fontWeight:700,color:col,marginBottom:'0.3rem'}}>{t}</div>
+                  <div style={{fontSize:'0.68rem',color:'var(--text-2)',lineHeight:1.5}}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Connection to single-state */}
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Population Methods Generalise Single-State Methods</div>
+            <p style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.65rem'}}>Single-state methods are just degenerate cases of population-based ES — they use a population of size 1:</p>
+            <table className="m4-ptable">
+              <thead><tr><th>Single-State Method</th><th>ES Equivalent</th><th>Interpretation</th></tr></thead>
+              <tbody>
+                <tr><td>Hill Climb (basic)</td><td className="pk">(1+1)</td><td>1 parent, 1 child; keep the better one</td></tr>
+                <tr><td>Steepest Ascent Hill Climb</td><td className="pk">(1+n)</td><td>1 parent, n children; keep the single best across both</td></tr>
+                <tr><td>Steepest Ascent with Replacement</td><td className="pk">(1, n)</td><td>1 parent, n children; best child always replaces parent</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── EVOLUTION & EC ── */}
+      {sec === 'evolution' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Inspiration — Why Biology?</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                What other system do we know of that: optimises performance within some environment using many trials? <strong>Natural/biological systems!</strong> Evolution is perhaps the most fundamental mechanism.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Why evolution is a great algorithm</div>
+              <table className="m4-ptable">
+                <tbody>
+                  <tr><td className="pk">General</td><td>Works in vastly different environments — no problem-specific assumptions required</td></tr>
+                  <tr><td className="pk">Population</td><td>Maintains many candidate solutions simultaneously — natural parallelism</td></tr>
+                  <tr><td className="pk">Fitness</td><td>Seeks to optimise performance — fitness-driven selection pressure</td></tr>
+                  <tr><td className="pk">Iterative</td><td>Improves solutions across generations — each cycle exploits prior information</td></tr>
+                  <tr><td className="pk">Meta-learning</td><td>Collectively "learns" about the environment — capabilities stored in the genome</td></tr>
+                  <tr><td className="pk">Sharing</td><td>Information passes within generations (social) and between generations (heredity)</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-hr"/>
+              <div className="m4-warnbox" style={{fontSize:'0.75rem'}}>
+                <strong>Important:</strong> Algorithmic "evolution" does not need to follow biological evolution precisely — we borrow inspiration, not a blueprint. There is no strict agreement on algorithm names or terminology in this field.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Lamarck vs Darwin vs Epigenetics</div>
+              <table className="m4-ptable" style={{marginBottom:'0.75rem'}}>
+                <thead><tr><th>Theorist</th><th>Year</th><th>Proposal</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">Lamarck</td><td>1809</td><td>Adaptations acquired during an individual's lifetime <em>can be passed on</em> to offspring</td></tr>
+                  <tr><td className="pk">Darwin</td><td>1858–59</td><td>Natural selection is the primary mechanism. But Darwin did not fully rule out Lamarckism (pangenesis: gemmules carry environmental info to germ cells)</td></tr>
+                  <tr><td className="pk">Weismann</td><td>1892</td><td>Germ-plasm theory: information flows one way — germ cells → somatic cells, never back. The "Weismann barrier". Cut off mice tails 19 generations: offspring still had tails → Lamarckism "refuted".</td></tr>
+                </tbody>
+              </table>
+              <div style={{background:'rgba(167,139,250,0.08)',borderRadius:8,padding:'0.6rem',border:'1px solid rgba(167,139,250,0.25)',fontSize:'0.75rem',lineHeight:1.65}}>
+                <strong style={{color:'#a78bfa'}}>Lamarck's Last Laugh — Epigenetics:</strong><br/>
+                Signals from the environment can alter <em>gene expression</em> via the epigenome (epigenetic tags) without changing DNA. About <strong>1% of genes escape epigenetic reprogramming</strong> through imprinting — passed to the next generation. A partial vindication of Lamarck.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Relevance to EC algorithms</div>
+              <div style={{fontSize:'0.75rem',color:'var(--text-2)',lineHeight:1.6}}>
+                In EC we are free to implement Lamarckian-style learning — an individual's locally learned improvements can be encoded directly into its genome before breeding. This is called a <strong>Memetic Algorithm</strong> and can significantly accelerate convergence.
+              </div>
+            </div>
+          </div>
+
+          {/* EC Terminology */}
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Evolutionary Computation — Common Terms (Luke, 2016)</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.45rem',marginTop:'0.5rem'}}>
+              {[
+                ['individual','A single candidate solution in the population'],
+                ['population','The full set of current candidate solutions'],
+                ['fitness','Quality of an individual — computed by the fitness assessment function'],
+                ['fitness landscape','The quality function viewed as a surface over the search space'],
+                ['selection','Choosing individuals based on their fitness to act as parents'],
+                ['mutation','Tweaking an individual — "asexual" breeding; produces one child from one parent'],
+                ['recombination / crossover','Combining two parents, swapping sections to produce (usually two) children — "sexual" breeding'],
+                ['breeding','Producing children from a population via iterated selection and tweaking'],
+                ['genotype / genome','An individual\'s data structure as used during breeding (what is stored and manipulated)'],
+                ['chromosome','A genotype in the form of a fixed-length vector'],
+                ['gene','A particular slot position in a chromosome'],
+                ['allele','A particular setting (value) of a gene'],
+                ['phenotype','How the individual behaves during fitness assessment — may differ from genotype'],
+                ['generation','One full cycle: fitness assessment → breeding → population re-assembly'],
+                ['parent / child','Parent: the individual being copied and tweaked. Child: the resulting tweaked copy'],
+              ].map(([term, def]) => (
+                <div key={term} style={{display:'flex',gap:'0.5rem',padding:'0.35rem 0.5rem',background:'var(--bg-2)',borderRadius:6,alignItems:'flex-start'}}>
+                  <span style={{fontFamily:'monospace',fontSize:'0.69rem',fontWeight:700,color:'#22d3ee',flexShrink:0,minWidth:'9rem'}}>{term}</span>
+                  <span style={{fontSize:'0.69rem',color:'var(--text-2)',lineHeight:1.45}}>{def}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Abstract EA */}
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Abstract Generational Evolutionary Algorithm (Algorithm 17)</div>
+            <div className="m4-two-col">
+              <div>
+                <div className="m4-pseudocode">
+                  <span className="kw">Algorithm</span> 17: Abstract Generational EA{'\n'}
+                  {' '}P ← BuildInitialPopulation(){'\n'}
+                  {' '}Best ← ∅              <span className="cm">▷ nobody yet</span>{'\n'}
+                  {' '}<span className="kw">repeat</span>{'\n'}
+                  {' '}  AssessFitness(P){'\n'}
+                  {' '}  <span className="kw">for each</span> Pᵢ ∈ P <span className="kw">do</span>{'\n'}
+                  {' '}    <span className="kw">if</span> Best = ∅ <span className="kw">or</span> Fitness(Pᵢ) {'>'} Fitness(Best){'\n'}
+                  {' '}      Best ← Pᵢ{'\n'}
+                  {' '}  P ← Join(P, Breed(P)){'\n'}
+                  {' '}<span className="kw">until</span> ideal or time exhausted{'\n'}
+                  {' '}<span className="kw">return</span> Best
+                </div>
+              </div>
+              <div>
+                <div className="m4-flabel">Notes on each step</div>
+                <ul className="m4-bullets">
+                  <li><strong>AssessFitness()</strong> — involves evaluation; can be very expensive. This is the bottleneck.</li>
+                  <li><strong>Breed()</strong> — typically selection + mutation and/or recombination</li>
+                  <li><strong>Join()</strong> — replace parents entirely, OR keep fitter parents (elitism)</li>
+                  <li><strong>BuildInitialPopulation()</strong> — random (uniform or Gaussian) or biased. Biased gives a head start but risks narrowing the initial search.</li>
+                </ul>
+                <div className="m4-warnbox" style={{fontSize:'0.74rem'}}>
+                  Gaussian initialisation: where do you centre it? Does that bias the results? Uniform requires a bounded space.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ES ALGORITHMS ── */}
+      {sec === 'algorithms' && (
+        <div>
+          {/* (μ, λ) */}
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">The (μ, λ) Evolution Strategy</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                Dates back to <strong>Rechenberg and Schwefel, 1960s</strong>. Uses <strong>truncation selection</strong> — keep only the μ fittest — and <strong>mutation</strong> as the primary tweak operator.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Steps</div>
+              <ol style={{paddingLeft:'1.2rem',fontSize:'0.77rem',color:'var(--text-1)',lineHeight:1.75,marginBottom:'0.65rem'}}>
+                <li>Randomly initialise <strong>λ</strong> individuals</li>
+                <li>Evaluate and keep the <strong>μ</strong> fittest (truncation selection)</li>
+                <li>Mutate each of the μ parents <strong>λ/μ times</strong> to produce λ children</li>
+                <li>Replace parents with children — repeat</li>
+              </ol>
+              <div className="m4-flabel">Parameters</div>
+              <VarTable vars={[
+                ['\\mu', 'Number of parents selected (survivors) — controls selectivity; low μ → high exploitation'],
+                ['\\lambda', 'Total offspring produced each generation — larger λ → better coverage but more evaluations'],
+                ['\\lambda / \\mu', 'Children per parent — each surviving parent spawns this many mutated copies'],
+              ]} />
+              <div className="m4-pseudocode" style={{marginTop:'0.65rem'}}>
+                <span className="kw">Algorithm</span> 18: (μ, λ) ES{'\n'}
+                {' '}P ← {} {'\n'}
+                {' '}<span className="kw">for</span> λ times: P ← P ∪ {'{'}random individual{'}'}{'\n'}
+                {' '}Best ← ∅{'\n'}
+                {' '}<span className="kw">repeat</span>{'\n'}
+                {' '}  AssessFitness(P){'\n'}
+                {' '}  <span className="kw">for each</span> Pᵢ: update Best{'\n'}
+                {' '}  Q ← μ individuals with greatest Fitness()   <span className="cm">▷ truncation</span>{'\n'}
+                {' '}  P ← {'{}'}{'\n'}
+                {' '}  <span className="kw">for each</span> Qⱼ: <span className="kw">for</span> λ/μ times: P ← P ∪ {'{'}Mutate(Copy(Qⱼ)){'}'}{'\n'}
+                {' '}<span className="kw">until</span> ideal or time exhausted{'\n'}
+                {' '}<span className="kw">return</span> Best
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">The (μ + λ) Evolution Strategy</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                <strong>Only one difference from (μ, λ):</strong> in Join(), <em>offspring compete with parents</em> for a place in the next generation. A good parent can survive indefinitely.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-pseudocode">
+                <span className="kw">Algorithm</span> 19: (μ + λ) ES{'\n'}
+                {' '}<span className="cm">▷ same initialisation as (μ,λ) ...</span>{'\n'}
+                {' '}<span className="kw">repeat</span>{'\n'}
+                {' '}  AssessFitness(P){'\n'}
+                {' '}  <span className="kw">for each</span> Pᵢ: update Best{'\n'}
+                {' '}  Q ← μ best from P{'\n'}
+                {' '}  P ← Q              <span className="cm">▷ KEY: parents survive into P</span>{'\n'}
+                {' '}  <span className="kw">for each</span> Qⱼ: <span className="kw">for</span> λ/μ times: P ← P ∪ {'{'}Mutate(Copy(Qⱼ)){'}'}{'\n'}
+                {' '}<span className="kw">until</span> ideal or time exhausted{'\n'}
+                {' '}<span className="kw">return</span> Best
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Comparison</div>
+              <table className="m4-ptable">
+                <thead><tr><th>Property</th><th>(μ, λ)</th><th>(μ + λ)</th></tr></thead>
+                <tbody>
+                  <tr><td>Parents compete with offspring?</td><td>No</td><td className="pk">Yes</td></tr>
+                  <tr><td>Exploitation tendency</td><td>Moderate</td><td className="pk">Higher</td></tr>
+                  <tr><td>Risk of losing good solutions</td><td className="pk">Higher</td><td>Lower</td></tr>
+                  <tr><td>Risk of premature convergence</td><td>Lower</td><td className="pk">Higher</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-warnbox" style={{fontSize:'0.74rem',marginTop:'0.65rem'}}>
+                <strong>Premature convergence</strong> = too much loss of diversity too soon. The population collapses onto a local optimum before adequately exploring the space. Cf. SA's cooling schedule — the same exploration/exploitation tension in a different form.
+              </div>
+            </div>
+          </div>
+
+          {/* Tuning knobs + visualisation */}
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Tuning Knobs of (μ, λ)</div>
+            <div className="m4-two-col">
+              <table className="m4-ptable">
+                <thead><tr><th>Parameter</th><th>Role</th><th>Effect</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td className="pk">λ</td>
+                    <td>Population / sampling size — analogous to n in steepest ascent</td>
+                    <td>Bigger λ → better coverage; λ → ∞ → random search (pure exploration)</td>
+                  </tr>
+                  <tr>
+                    <td className="pk">μ</td>
+                    <td>Selectivity — how many parents survive</td>
+                    <td>Low μ → strong selection pressure → more exploitation</td>
+                  </tr>
+                  <tr>
+                    <td className="pk">Mutate()</td>
+                    <td>Probability and degree of mutation</td>
+                    <td>Governs the exploration/exploitation balance on each generation</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div>
+                <div className="m4-flabel">ES Variants — Visualised</div>
+                <div style={{fontFamily:'monospace',fontSize:'0.71rem',color:'var(--text-1)',lineHeight:2.1,background:'var(--bg-2)',borderRadius:8,padding:'0.65rem 0.85rem',border:'1px solid rgba(34,211,238,0.15)'}}>
+                  <div><span style={{color:'#22d3ee'}}>(1, 2) ES</span>{'  '}● ──► ◇ ◇{'  '}<span style={{color:'var(--text-3)',fontSize:'0.65rem'}}>1 parent → 2 children; parent discarded</span></div>
+                  <div><span style={{color:'#a78bfa'}}>(1, 8) ES</span>{'  '}● ──► ◇ ◇ ◇ ◇ ◇ ◇ ◇ ◇{'  '}<span style={{color:'var(--text-3)',fontSize:'0.65rem'}}>1 parent → 8 children; wider exploration</span></div>
+                  <div><span style={{color:'#34d399'}}>(4, 8) ES</span>{'  '}<span style={{color:'#34d399'}}>● ● ● ●</span>{' ──► '}◇ ◇ ◇ ◇ ◇ ◇ ◇ ◇{'  '}<span style={{color:'var(--text-3)',fontSize:'0.65rem'}}>4 survive, each produces 2 children</span></div>
+                  <div style={{marginTop:'0.4rem',fontSize:'0.67rem',color:'var(--text-3)'}}>
+                    Legend: <span style={{color:'#34d399'}}>●</span> = selected to breed{'  '}◇ = not selected (offspring pool)
+                  </div>
+                </div>
+                <div className="m4-infobox" style={{marginTop:'0.65rem',fontSize:'0.75rem'}}>
+                  <strong>Q:</strong> What does (4,8) give you that 4 restarts of a single-state method would not?<br/>
+                  <strong>A:</strong> The 4 surviving parents carry spatial information about <em>different regions</em> simultaneously. Their relative fitness reveals landscape structure — independent restarts cannot exploit this collective knowledge.
+                </div>
+                <div style={{fontSize:'0.72rem',color:'var(--text-2)',lineHeight:1.55,marginTop:'0.5rem'}}>
+                  <strong>Note:</strong> Parameters are not independent — highly random mutation with small μ is still effectively a random walk.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADAPTIVE MUTATION ── */}
+      {sec === 'mutation' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Adaptive Mutation Rate</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                Typical ES: fixed-length real-valued chromosome, mutation via <strong>Gaussian Convolution</strong>, controlled by σ² (the mutation rate / step size). How should we choose σ²?
+              </div>
+              <div className="m4-hr"/>
+              <table className="m4-ptable" style={{marginBottom:'0.75rem'}}>
+                <thead><tr><th>Strategy</th><th>Notes</th></tr></thead>
+                <tbody>
+                  <tr><td>Guess</td><td>Simple but unlikely to be optimal for the specific problem</td></tr>
+                  <tr><td>Run experiments</td><td>Find a good value — works but expensive and problem-specific</td></tr>
+                  <tr><td>Meta-optimisation</td><td>Run an optimiser <em>over</em> the mutation rate itself</td></tr>
+                  <tr><td>Decrease over time</td><td>Analogous to SA's cooling schedule</td></tr>
+                  <tr><td className="pk">Adaptive</td><td><strong>Change based on runtime statistics of the system — most principled</strong></td></tr>
+                </tbody>
+              </table>
+              <div className="m4-flabel">Rechenberg's One-Fifth Rule</div>
+              <div style={{fontSize:'0.75rem',color:'var(--text-2)',lineHeight:1.65,marginBottom:'0.55rem'}}>
+                Let <em>p</em><sub>s</sub> = fraction of children that are fitter than their parent:
+              </div>
+              <Tex src="p_s > \tfrac{1}{5} \;\Rightarrow\; \text{increase } \sigma^2 \quad\text{(exploiting local region — explore more)}" block />
+              <Tex src="p_s < \tfrac{1}{5} \;\Rightarrow\; \text{decrease } \sigma^2 \quad\text{(exploring too much — exploit more)}" block />
+              <Tex src="p_s = \tfrac{1}{5} \;\Rightarrow\; \sigma^2 \text{ unchanged}" block />
+              <div className="m4-warnbox" style={{marginTop:'0.65rem',fontSize:'0.74rem'}}>
+                Derived on simple test problems — your problem may have a very different ideal ratio. Treat as a heuristic starting point, not a law.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Self-Adaptive Mutation</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                Takes adaptive mutation one step further: different regions of the search space have different characteristics. Settings optimal for one region may be suboptimal for another.
+              </div>
+              <div className="m4-hr"/>
+              <div style={{background:'rgba(167,139,250,0.08)',borderRadius:8,padding:'0.65rem',border:'1px solid rgba(167,139,250,0.25)',marginBottom:'0.65rem'}}>
+                <div style={{fontSize:'0.7rem',fontWeight:700,color:'#a78bfa',marginBottom:'0.3rem',textTransform:'uppercase',letterSpacing:'0.05em'}}>Key Idea</div>
+                <div style={{fontSize:'0.77rem',color:'var(--text-1)',lineHeight:1.65}}>
+                  Each individual carries its own σ (or full covariance matrix <strong>Σ</strong>) as part of its genome. The mutation operator itself can mutate — σ evolves alongside the solution.
+                </div>
+              </div>
+              <Tex src="\text{Genome: } (\vec{x},\, \sigma) \;\text{ or }\; (\vec{x},\, \boldsymbol{\Sigma})" block />
+              <div className="m4-flabel" style={{marginTop:'0.65rem'}}>Design principles</div>
+              <ul className="m4-bullets">
+                <li>Your imagination is the limit — but choices <strong>must be justified</strong></li>
+                <li>Occam's Razor: complexity for its own sake is poor practice</li>
+                <li>Must <strong>empirically demonstrate</strong> that the added complexity actually helps</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Motivating example — Rosenbrock's function</div>
+              <div style={{background:'var(--bg-3)',borderRadius:6,padding:'0.45rem 0.6rem',fontFamily:'monospace',fontSize:'0.68rem',color:'var(--text-2)',marginBottom:'0.5rem'}}>
+                {'f(x,y) = (1−x)² + 100(y−x²)²\nGlobal minimum at (1,1) with f=0\nNarrow, curved parabolic valley — fixed σ is inefficient\nOptimal step direction and scale change across the space'}
+              </div>
+              <div style={{fontSize:'0.73rem',color:'var(--text-2)',lineHeight:1.6}}>
+                A fixed σ that works well in the flat outer region is far too large for navigating the narrow valley — and vice versa. Self-adaptive σ lets the genome "learn" the local scale automatically.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GENERALISATIONS ── */}
+      {sec === 'generalisations' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Evolutionary Programming — Beyond Real Vectors</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                ES ideas generalise beyond real-valued chromosomes to <strong>any</strong> representation. The core loop (breed → assess → select) is representation-agnostic.
+              </div>
+              <div className="m4-hr"/>
+              <table className="m4-ptable">
+                <thead><tr><th>Representation</th><th>Application</th></tr></thead>
+                <tbody>
+                  <tr><td>Real-valued vectors</td><td>Continuous optimisation — the classic ES</td></tr>
+                  <tr><td className="pk">Finite-state automata</td><td>Fogel (1964) — original Evolutionary Programming</td></tr>
+                  <tr><td>Trees</td><td>Symbolic regression, rule systems — Genetic Programming</td></tr>
+                  <tr><td>Graphs</td><td>Network topology optimisation</td></tr>
+                  <tr><td>Programs</td><td>Genetic Programming (GP)</td></tr>
+                  <tr><td>Neural network structure</td><td>Neuroevolution — e.g. NEAT algorithm</td></tr>
+                  <tr><td>Permutations</td><td>TSP, job shop scheduling — requires order-preserving crossover</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-warnbox" style={{marginTop:'0.65rem',fontSize:'0.74rem'}}>
+                Extra constraints are often needed to ensure individuals remain <strong>viable solutions</strong> after mutation/crossover — e.g. trees must remain syntactically valid programs; permutations must remain valid permutations.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">The EC Family — Key Sub-fields</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr',gap:'0.45rem',marginTop:'0.25rem'}}>
+                {[
+                  ['Genetic Algorithms (GA)','#22d3ee','Binary/integer chromosomes, emphasise crossover as the primary operator. Introduced by Holland (1975).'],
+                  ['Evolution Strategies (ES)','#a78bfa','Real-valued vectors, emphasise mutation (Gaussian convolution). Rechenberg & Schwefel (1960s).'],
+                  ['Genetic Programming (GP)','#34d399','Evolve programs / expression trees. Koza (1992). Representation is a tree; crossover swaps subtrees.'],
+                  ['Swarm Intelligence','#fbbf24','Inspired by collective behaviour of social insects (ants, bees) or birds (PSO). No explicit individual fitness — emergent optimisation from local rules.'],
+                  ['Ant Colony Optimisation','#fb7185','Ants deposit pheromone trails; paths with higher fitness get reinforced — positive feedback loop for graph problems.'],
+                  ['Memetic Algorithms','#06b6d4','Hybrid: local search (Lamarckian learning) applied to each individual before breeding. Best of single-state and population methods.'],
+                  ['Co-evolution','#ec4899','Multiple interacting populations that provide each other\'s fitness function — no fixed target, fitness is relative.'],
+                ].map(([name,col,desc]) => (
+                  <div key={name} style={{background:`${col}0d`,border:`1px solid ${col}28`,borderRadius:7,padding:'0.45rem 0.6rem',display:'flex',gap:'0.5rem',alignItems:'flex-start'}}>
+                    <span style={{fontFamily:'monospace',fontSize:'0.68rem',fontWeight:700,color:col,minWidth:'11rem',flexShrink:0,lineHeight:1.5}}>{name}</span>
+                    <span style={{fontSize:'0.68rem',color:'var(--text-2)',lineHeight:1.5}}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Summary card */}
+          <div className="m4-card" style={{marginTop:'0.75rem',background:'linear-gradient(135deg,rgba(34,211,238,0.05) 0%,rgba(167,139,250,0.05) 100%)'}}>
+            <div className="m4-card-h">Population Methods — Lecture Summary</div>
+            <div style={{fontFamily:'monospace',fontSize:'0.73rem',color:'var(--text-1)',lineHeight:1.9,whiteSpace:'pre-wrap',background:'var(--bg-2)',borderRadius:8,padding:'0.75rem 1rem',border:'1px solid rgba(34,211,238,0.15)'}}>
+              {`Population-based Methods
+│
+├── Core Idea: maintain multiple candidate solutions simultaneously
+│             to extract collective information about the search space
+│
+├── Key Concepts
+│   ├── Fitness (quality), Selection, Mutation, Recombination
+│   ├── Exploration vs Exploitation trade-off
+│   └── Diversity maintenance vs Convergence
+│
+├── Evolutionary Strategies
+│   ├── (μ, λ) — offspring only; parents always replaced
+│   └── (μ+λ) — offspring compete with parents (more exploitative)
+│
+├── Adaptive / Self-Adaptive Mutation
+│   ├── One-Fifth Rule (Rechenberg): pₛ > 1/5 → increase σ²
+│   └── Per-individual σ (or Σ) that itself evolves with the solution
+│
+└── Generalisations
+    ├── Single-state ≡ degenerate ES: HC=(1+1), SA≈(1+1) with acceptance
+    └── Representations: vectors, trees, graphs, programs, FSAs, NNs`}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Labs','Quiz','Practice Exam','Group Project'];
+const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Labs','Quiz','Practice Exam','Group Project'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4404() {
@@ -5032,6 +5537,17 @@ export default function CITS4404() {
               <p className="m4-sec-sub">From gradient descent to Newton-Raphson, direct methods, and stochastic search. Each approach handles a different class of hypothesis space.</p>
             </div>
             <AlgorithmsTab />
+          </>
+        )}
+
+        {/* ── POPULATION ── */}
+        {tab === 'Population' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Population-based Methods <span className="m4-badge">Lecture 10</span></h2>
+              <p className="m4-sec-sub">Maintain many candidate solutions simultaneously. Evolution Strategies, adaptive mutation, and the full Evolutionary Computation family — from (μ,λ) ES to Genetic Programming and Swarm Intelligence.</p>
+            </div>
+            <PopulationTab />
           </>
         )}
 
