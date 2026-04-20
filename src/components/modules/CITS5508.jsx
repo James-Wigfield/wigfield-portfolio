@@ -319,6 +319,45 @@ const QUIZ_DATA = [
     ok: 'SVC complexity is O(m²n) to O(m³n). At m=500,000: 500,000² = 2.5×10¹¹ operations — completely infeasible. LinearSVC and SGDClassifier are O(m×n) = 2.5×10⁷ — manageable. For large m, always prefer LinearSVC or SGDClassifier.',
     ng: 'The table: LinearSVC = O(m×n), SGDClassifier = O(m×n), SVC = O(m²n)–O(m³n). At 500k instances SVC requires hundreds of billions of operations. Only O(m×n) methods are feasible at this scale.',
   },
+  {
+    lec: 'Lec 6 · Decision Trees',
+    q: 'A node has 80 instances: 60 class A, 20 class B. What is its Gini impurity?',
+    opts: [
+      'G = 1 − (60/80)² − (20/80)² = 0.375',
+      'G = 1 − (60/80) − (20/80) = 0',
+      'G = −(60/80)log₂(60/80) − (20/80)log₂(20/80) ≈ 0.811',
+      'G = (60 + 20) / 80 = 1.0',
+    ],
+    ans: 0,
+    ok: 'Gini: G = 1 − Σ p² = 1 − (0.75² + 0.25²) = 1 − (0.5625 + 0.0625) = 1 − 0.625 = 0.375. A pure node (all one class) has G = 0; perfectly mixed (50/50) has G = 0.5.',
+    ng: 'Formula: G_i = 1 − Σ p²_{i,k}. Compute p_A = 60/80 = 0.75 and p_B = 20/80 = 0.25. Then G = 1 − (0.75² + 0.25²) = 1 − 0.625 = 0.375.',
+  },
+  {
+    lec: 'Lec 6 · CART Training',
+    q: "The CART algorithm is described as 'greedy' and 'top-down'. What does this mean?",
+    opts: [
+      'It tries every possible tree globally and picks the overall best; it grows from leaf to root',
+      'At each node it picks the locally best split (greedy); it starts at the root and works downward (top-down). Globally optimal DTs are NP-hard.',
+      'It uses gradient descent to minimise the cost function from the top of the tree',
+      'It builds the full tree first and then prunes greedily from the top',
+    ],
+    ans: 1,
+    ok: 'Greedy = locally optimal decisions at each split without backtracking. Top-down = starts at root, recurses down. The globally optimal tree is NP-hard so CART settles for a locally good solution at each step.',
+    ng: 'CART is greedy (best local split, no backtracking) and top-down (root first). Finding the globally optimal tree is NP-hard — greedy is a practical compromise.',
+  },
+  {
+    lec: 'Lec 6 · Regularisation & Pruning',
+    q: 'In cost-complexity pruning, you grow a full tree T₀ and then minimise: RSS + α|T|. What happens as α increases?',
+    opts: [
+      'The tree grows larger — more leaf nodes are added to reduce training RSS',
+      'α has no effect on tree structure, only on the pruning speed',
+      'Smaller subtrees are favoured — nodes are pruned to reduce complexity, trading slightly higher bias for lower variance',
+      'The tree switches from regression to classification mode',
+    ],
+    ans: 2,
+    ok: 'α penalises complexity (|T| = leaf count). At α = 0 you recover the full tree T₀. As α increases, the cost of each extra leaf grows, so subtrees that do not reduce RSS enough get pruned. Select α via k-fold cross-validation.',
+    ng: 'Cost-complexity: minimise RSS + α|T|. Larger α → larger penalty per leaf → fewer leaves. α = 0 gives full tree; α → ∞ gives single-node tree. Cross-validate to find the best α.',
+  },
 ];
 
 // ── Mitchell's E/T/P Explorer ─────────────────────────────────────────────────
@@ -3146,7 +3185,8 @@ function Asgn1Sec5_Linear() {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Assignment 1', 'Quiz'];
+const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Assignment 1', 'Quiz'];
+const L6_TABS = ['Overview & CART', 'Impurity Measures', 'Regularisation', 'Regression Trees', 'Limitations'];
 const L1_TABS = ['Mitchell\'s Definition', 'ML System Types', 'Challenges & Testing'];
 const L2_TABS = ['Formal Model', 'Project Workflow', 'Performance Measures', 'Classification Eval'];
 const L3_TABS = ['Linear Regression', 'Gradient Descent', 'Polynomial Regression', 'Logistic Regression'];
@@ -3163,6 +3203,7 @@ export default function CITS5508() {
   const [l3Tab, setL3Tab] = useState('Linear Regression');
   const [l4Tab, setL4Tab] = useState('Bias & Variance');
   const [l5Tab, setL5Tab] = useState('Linear SVM');
+  const [l6Tab, setL6Tab] = useState('Overview & CART');
 
   useEffect(() => {
     document.title = 'CITS5508 — Learning Hub';
@@ -3222,6 +3263,11 @@ export default function CITS5508() {
                 { code: 'A1', title: 'Softmax Implementation', color: 'var(--violet)', desc: 'Method-by-method walkthrough of SoftmaxRegression class: _add_bias, _softmax (numerically stable), _one_hot, _cross_entropy, fit, predict.', go: 'Assignment 1', sub: 'Softmax from Scratch' },
                 { code: 'A1', title: 'sklearn Comparison', color: 'var(--emerald)', desc: 'L-BFGS vs mini-batch GD. Interactive confusion matrices and classification report — hard pairs 4↔9, 3↔8 highlighted.', go: 'Assignment 1', sub: 'sklearn Comparison' },
                 { code: 'A1', title: 'Linear vs Non-Linear', color: 'var(--amber)', desc: 'Why linear classifiers plateau at ~92% on MNIST. Hyperplane limitations in 784D pixel space. Bridge to neural networks and kernel SVMs.', go: 'Assignment 1', sub: 'Linear vs Non-Linear' },
+                { code: 'L6', title: 'CART Algorithm', color: 'var(--emerald)', desc: 'Recursive binary splitting. Greedy top-down tree building. Gini impurity cost function. The Guess Who analogy for understanding information gain.', go: 'Decision Trees', sub: 'Overview & CART' },
+                { code: 'L6', title: 'Gini Impurity & Entropy', color: 'var(--violet)', desc: 'Gini: G = 1 − Σp². Entropy: H = −Σp log₂p. Both measure node purity. Class probability estimation from leaf value arrays.', go: 'Decision Trees', sub: 'Impurity Measures' },
+                { code: 'L6', title: 'Regularisation & Pruning', color: 'var(--rose)', desc: 'max_depth, min_samples_leaf, max_leaf_nodes. Cost-complexity pruning with α penalty. MSE vs tree size curves.', go: 'Decision Trees', sub: 'Regularisation' },
+                { code: 'L6', title: 'Regression Trees', color: 'var(--cyan)', desc: 'Predict the mean response per region. MSE-based CART cost. Hitters baseball example: Years/Hits → log(Salary). Depth controls step-function resolution.', go: 'Decision Trees', sub: 'Regression Trees' },
+                { code: 'L6', title: 'DT Limitations', color: 'var(--amber)', desc: 'High variance, axis-aligned splits only, sensitivity to rotation. Mitigations: PCA for rotation, Random Forests for variance.', go: 'Decision Trees', sub: 'Limitations' },
               ].map(item => (
                 <div
                   key={item.title}
@@ -3235,6 +3281,7 @@ export default function CITS5508() {
                       else if (item.go === 'Regression') setL3Tab(item.sub);
                       else if (item.go === 'Reg. & kNN') setL4Tab(item.sub);
                       else if (item.go === 'SVMs') setL5Tab(item.sub);
+                      else if (item.go === 'Decision Trees') setL6Tab(item.sub);
                       else if (item.go === 'Assignment 1') setAsgn1Tab(item.sub);
                     }
                   }}
@@ -3642,6 +3689,453 @@ export default function CITS5508() {
           </div>
         )}
 
+        {/* ── DECISION TREES (L6) ── */}
+        {tab === 'Decision Trees' && (
+          <div>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Decision Trees <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>Lecture 6</span></h2>
+              <p className="m4-sec-sub">Versatile white-box models for classification and regression. CART recursively partitions the feature space into axis-aligned regions. The fundamental building block of Random Forests.</p>
+            </div>
+            <div className="m4-labtabs">
+              {L6_TABS.map(lt => (
+                <button key={lt} className={`m4-labtab ${l6Tab === lt ? 'm4-labtab--on' : ''}`} onClick={() => setL6Tab(lt)}>{lt}</button>
+              ))}
+            </div>
+
+            {/* ── Overview & CART ── */}
+            {l6Tab === 'Overview & CART' && (
+              <div>
+                <p className="m4-sec-sub">The Guess Who analogy motivates why we ask the most informative questions first. CART formalises this as a greedy, top-down recursive split.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">The Guess Who Analogy</div>
+                    <div className="m4-infobox" style={{ fontSize: '0.78rem' }}>
+                      One player picks a character; the other guesses using yes/no questions. To win efficiently, ask the <strong>most informative</strong> questions first — the same goal as DT training.
+                    </div>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Dataset</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Man</th><th>Long Hair</th><th>Glasses</th><th>Name</th></tr></thead>
+                      <tbody>
+                        <tr><td>Yes</td><td>No</td><td>Yes</td><td className="pk">Brian</td></tr>
+                        <tr><td>Yes</td><td>No</td><td>No</td><td className="pk">John</td></tr>
+                        <tr><td>No</td><td>Yes</td><td>No</td><td className="pk">Aphra</td></tr>
+                        <tr><td>No</td><td>No</td><td>No</td><td className="pk">Aoife</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-hr" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <div style={{ background: 'var(--bg-3)', borderRadius: 7, padding: '0.55rem', border: '1px solid rgba(251,113,133,0.25)' }}>
+                        <div style={{ fontSize: '0.67rem', fontWeight: 700, color: '#fb7185', marginBottom: '0.3rem' }}>Strategy A — Glasses first</div>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.63rem', color: 'var(--text-2)', lineHeight: 1.7, whiteSpace: 'pre' }}>{`Glasses?\n├─Yes→ Brian   (1Q)\n└─No → Man?\n       ├─Yes→ John  (2Q)\n       └─No → Hair?\n              ├─Yes→ Aphra (3Q)\n              └─No → Aoife (3Q)`}</div>
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.68rem', color: '#fb7185' }}>Avg = (1+2+3+3)/4 = 2.25 questions</div>
+                      </div>
+                      <div style={{ background: 'var(--bg-3)', borderRadius: 7, padding: '0.55rem', border: '1px solid rgba(52,211,153,0.25)' }}>
+                        <div style={{ fontSize: '0.67rem', fontWeight: 700, color: '#34d399', marginBottom: '0.3rem' }}>Strategy B — Man first ✓</div>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.63rem', color: 'var(--text-2)', lineHeight: 1.7, whiteSpace: 'pre' }}>{`Man?\n├─Yes→ Glasses?\n│      ├─Yes→ Brian  (2Q)\n│      └─No → John   (2Q)\n└─No → Hair?\n       ├─Yes→ Aphra  (2Q)\n       └─No → Aoife   (2Q)`}</div>
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.68rem', color: '#34d399' }}>Avg = (2+2+2+2)/4 = 2.0 questions</div>
+                      </div>
+                    </div>
+                    <div className="m4-infobox" style={{ marginTop: '0.6rem', fontSize: '0.75rem' }}>
+                      "Is it a man?" is more informative because it splits the group into two perfectly equal halves — maximising information gain per question.
+                    </div>
+                  </div>
+
+                  <div className="m4-card">
+                    <div className="m4-card-h">DT Terminology</div>
+                    <table className="m4-ptable" style={{ marginBottom: '0.7rem' }}>
+                      <tbody>
+                        <tr><td className="pk">Root node</td><td>Topmost split — the first question asked</td></tr>
+                        <tr><td className="pk">Split / internal node</td><td>Non-leaf node with a split condition X_j ≤ t_j. Left branch = True (≤), right = False ({'>'}).</td></tr>
+                        <tr><td className="pk">Branch</td><td>Edge connecting parent to child node</td></tr>
+                        <tr><td className="pk">Leaf / terminal node</td><td>End node — contains the prediction (class or value)</td></tr>
+                        <tr><td className="pk">samples</td><td>Number of training instances reaching this node</td></tr>
+                        <tr><td className="pk">value</td><td>Count of training instances per class at this node</td></tr>
+                        <tr><td className="pk">gini</td><td>Impurity measure for this node (0 = pure)</td></tr>
+                        <tr><td className="pk">class</td><td>Majority class at this node (classification)</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-flabel">Making Predictions</div>
+                    <ol style={{ paddingLeft: '1.2rem', fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.75 }}>
+                      <li>Start at the root node</li>
+                      <li>At each split node, go <strong>left</strong> if condition is True, <strong>right</strong> if False</li>
+                      <li>The class (or value) of the reached leaf node is the prediction</li>
+                    </ol>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Iris DT (depth=2) — node structure</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.63rem', color: 'var(--text-1)', lineHeight: 1.85, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', border: '1px solid rgba(34,211,238,0.12)' }}>
+                      {`[petal length ≤ 2.45]  gini=0.667  n=150\n├─True → setosa   gini=0.0  n=50  ← LEAF\n└─False→ [petal width ≤ 1.75]  gini=0.5  n=100\n         ├─True → versicolor gini=0.168  n=54  ← LEAF\n         └─False→ virginica  gini=0.043  n=46  ← LEAF`}
+                    </div>
+                    <div className="m4-infobox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+                      <strong>White-box model:</strong> Follow the path from root to leaf — every prediction is fully human-readable. Contrast with Random Forests and Neural Networks (black boxes).
+                    </div>
+                  </div>
+                </div>
+
+                <div className="m4-card" style={{ marginTop: '0.75rem' }}>
+                  <div className="m4-card-h">The CART Training Algorithm</div>
+                  <div className="m4-two-col">
+                    <div>
+                      <div className="m4-infobox" style={{ marginBottom: '0.65rem', fontSize: '0.78rem' }}>
+                        <strong>CART</strong> = Classification And Regression Trees. Recursively divides the feature space into <em>J</em> distinct non-overlapping rectangular regions R₁ … R_J.
+                      </div>
+                      <table className="m4-ptable" style={{ marginBottom: '0.6rem' }}>
+                        <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+                        <tbody>
+                          <tr><td className="pk">Top-down</td><td>Starts at root; recurses downward into children</td></tr>
+                          <tr><td className="pk">Greedy</td><td>Each split is locally optimal; globally optimal tree is NP-hard</td></tr>
+                          <tr><td className="pk">Binary splits</td><td>Each node always splits into exactly 2 children</td></tr>
+                          <tr><td className="pk">Axis-aligned</td><td>Splits are always of the form X_j ≤ t_j</td></tr>
+                        </tbody>
+                      </table>
+                      <div className="m4-flabel">CART Cost — Classification</div>
+                      <Tex src="J(X_j, t_j) = \frac{m_\text{left}}{m} G_\text{left} + \frac{m_\text{right}}{m} G_\text{right}" block />
+                      <VarTable vars={[
+                        ['m_\\text{left},\\ m_\\text{right}', 'Number of instances in the left and right subsets after splitting'],
+                        ['m', 'Total instances at the current node'],
+                        ['G_\\text{left},\\ G_\\text{right}', 'Gini impurity of each subset'],
+                        ['J(X_j, t_j)', 'Weighted impurity cost for feature X_j at threshold t_j — minimise this to find the best split'],
+                      ]} />
+                    </div>
+                    <div>
+                      <div className="m4-flabel">Algorithm Steps</div>
+                      <div className="m4-pseudocode">
+                        <span className="kw">At current node with data subset S:</span>{'\n'}
+                        <span className="num"> 1.</span> <span className="kw">for</span> each feature Xⱼ and threshold tⱼ:{'\n'}
+                        <span className="num">   </span>   S_left  = {'{'} x∈S | Xⱼ ≤ tⱼ {'}'}{'\n'}
+                        <span className="num">   </span>   S_right = {'{'} x∈S | Xⱼ {'>'} tⱼ {'}'}{'\n'}
+                        <span className="num">   </span>   compute cost J(Xⱼ, tⱼ){'\n'}
+                        <span className="num"> 2.</span> choose (Xⱼ, tⱼ) that <span className="kw">minimises</span> J{'\n'}
+                        <span className="num"> 3.</span> create left child with S_left{'\n'}
+                        <span className="num">   </span> create right child with S_right{'\n'}
+                        <span className="num"> 4.</span> <span className="kw">recurse</span> on each child{'\n'}
+                        <span className="num"> 5.</span> <span className="kw">stop when:</span>{'\n'}
+                        <span className="num">   </span>   − cannot reduce impurity further, OR{'\n'}
+                        <span className="num">   </span>   − stopping condition met (e.g. max_depth)
+                      </div>
+                      <div className="m4-hr" />
+                      <div className="m4-flabel">Computational Complexity</div>
+                      <table className="m4-ptable">
+                        <thead><tr><th>Operation</th><th>Complexity</th><th>Notes</th></tr></thead>
+                        <tbody>
+                          <tr><td className="pk">Prediction</td><td>O(log₂ m)</td><td>Traverse root-to-leaf; independent of n features</td></tr>
+                          <tr><td className="pk">Training</td><td>O(nm log₂ m)</td><td>All n features × m samples at each level</td></tr>
+                        </tbody>
+                      </table>
+                      <div className="m4-infobox" style={{ marginTop: '0.5rem', fontSize: '0.74rem' }}>
+                        Predictions are very fast even on large datasets. Training is the expensive part — sorting each feature at each level.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Impurity Measures ── */}
+            {l6Tab === 'Impurity Measures' && (
+              <div>
+                <p className="m4-sec-sub">Gini impurity and entropy both measure how mixed a node's class distribution is. Either can be used as the CART cost criterion.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Gini Impurity</div>
+                    <Tex src="G_i = 1 - \sum_{k=1}^{n} p_{i,k}^2" block />
+                    <VarTable vars={[
+                      ['G_i', 'Gini impurity of node i — ranges from 0 (pure) to 0.5 (perfectly mixed, 2 classes)'],
+                      ['p_{i,k}', 'Fraction of class k instances among all training instances at node i'],
+                      ['n', 'Number of classes'],
+                    ]} />
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Worked examples</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Node composition</th><th>Calculation</th><th>G</th></tr></thead>
+                      <tbody>
+                        <tr><td>100% one class</td><td>1 − 1² = 0</td><td className="pk">0.0 (pure)</td></tr>
+                        <tr><td>50/50 two classes</td><td>1 − (0.5² + 0.5²)</td><td className="pk">0.5 (max)</td></tr>
+                        <tr><td>49/54 vs 5/54 (Iris example)</td><td>1 − (0.907² + 0.093²)</td><td className="pk">0.168</td></tr>
+                        <tr><td>0/50 vs 50/50 (setosa leaf)</td><td>1 − (1.0²)</td><td className="pk">0.0</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Estimating class probabilities</div>
+                    <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.65, marginBottom: '0.5rem' }}>
+                      Leaf <code>value</code> arrays give class counts, normalised to probabilities.
+                    </div>
+                    <div style={{ background: 'var(--bg-3)', borderRadius: 6, padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.67rem', color: 'var(--text-2)', marginBottom: '0.5rem' }}>
+                      {'Leaf: value = [0, 49, 5],  samples = 54\nP(setosa)     = 0/54 = 0.000\nP(versicolor) = 49/54 = 0.907\nP(virginica)  = 5/54  = 0.093\n→ predict: versicolor'}
+                    </div>
+                    <div style={{ background: 'var(--bg-3)', borderRadius: 6, padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.67rem', color: 'var(--text-2)' }}>
+                      {'>>> tree_clf.predict_proba([[5, 1.5]])\narray([[ 0., 0.9074, 0.0926 ]])\n>>> tree_clf.predict([[5, 1.5]])\narray([1])   # 1 = versicolor'}
+                    </div>
+                  </div>
+
+                  <div className="m4-card">
+                    <div className="m4-card-h">Entropy</div>
+                    <Tex src="H_i = -\sum_{\substack{k=1 \\ p_{i,k} \neq 0}}^{n} p_{i,k} \log_2(p_{i,k})" block />
+                    <VarTable vars={[
+                      ['H_i', 'Entropy of node i — 0 when pure, log₂(n) at maximum disorder (uniform distribution)'],
+                      ['p_{i,k}', 'Fraction of class k instances at node i'],
+                      ['\\log_2(p_{i,k})', 'Log base 2 — gives entropy in bits; p log p excluded when p=0 (defined as 0 by continuity)'],
+                    ]} />
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Iris depth-2 left node — entropy calculation</div>
+                    <Tex src="H = -\tfrac{49}{54}\log_2\!\left(\tfrac{49}{54}\right) - \tfrac{5}{54}\log_2\!\left(\tfrac{5}{54}\right) \approx 0.445" block />
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Gini vs Entropy Comparison</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Criterion</th><th>Speed</th><th>Tree Shape</th><th>Use Case</th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td className="pk">Gini (default)</td>
+                          <td>Faster</td>
+                          <td>Tends to isolate most frequent class in its own branch</td>
+                          <td>Good default; use most of the time</td>
+                        </tr>
+                        <tr>
+                          <td className="pk">Entropy</td>
+                          <td>Slightly slower</td>
+                          <td>Produces more balanced trees</td>
+                          <td>When tree balance matters</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.65rem', fontSize: '0.75rem' }}>
+                      In practice they produce <strong>very similar</strong> trees — the choice rarely makes a significant difference to model quality. Set with: <code>DecisionTreeClassifier(criterion="entropy")</code>
+                    </div>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Decision boundaries (Iris, depth=2)</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.62rem', color: 'var(--text-1)', lineHeight: 1.85, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', border: '1px solid rgba(34,211,238,0.12)' }}>
+                      {`Petal width (cm)\n3.0 |[ setosa   ]|[     virginica              ]\n    |            |                   :\n1.75|            |-------------------:-------  ← Depth=1\n    |            |[  versicolor      :       ]\n0.0 |            |                   :\n    +─────────────┼───────────────────:───────\n    0            2.45               5.0\n              ↑ Depth=0         (Depth=2)\n          petal length (cm)`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Regularisation ── */}
+            {l6Tab === 'Regularisation' && (
+              <div>
+                <p className="m4-sec-sub">Decision Trees are nonparametric models prone to overfitting. Regularisation hyperparameters control tree complexity. Cost-complexity pruning offers a principled post-training approach.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Regularisation Hyperparameters</div>
+                    <div className="m4-infobox" style={{ marginBottom: '0.65rem', fontSize: '0.78rem' }}>
+                      DTs are <strong>nonparametric models</strong> — they make few assumptions and adapt freely. Without constraints they perfectly memorise training data. A smaller tree has higher bias but lower variance and usually generalises better.
+                    </div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Hyperparameter</th><th>Effect</th><th>Direction</th></tr></thead>
+                      <tbody>
+                        <tr><td className="pk">max_depth</td><td>Maximum depth of the tree</td><td>↓ reduces overfitting</td></tr>
+                        <tr><td className="pk">min_samples_split</td><td>Min samples required to split a node</td><td>↑ reduces overfitting</td></tr>
+                        <tr><td className="pk">min_samples_leaf</td><td>Min samples required at a leaf node</td><td>↑ reduces overfitting</td></tr>
+                        <tr><td className="pk">min_weight_fraction_leaf</td><td>Min weighted fraction at a leaf</td><td>↑ reduces overfitting</td></tr>
+                        <tr><td className="pk">max_leaf_nodes</td><td>Maximum number of leaf nodes</td><td>↓ reduces overfitting</td></tr>
+                        <tr><td className="pk">max_features</td><td>Features considered per split</td><td>↓ reduces overfitting</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.65rem', fontSize: '0.75rem' }}>
+                      <strong>Rule of thumb:</strong> Increasing <code>min_*</code> or decreasing <code>max_*</code> hyperparameters <em>regularises</em> the model — restricts the tree's freedom to memorise.
+                    </div>
+                  </div>
+
+                  <div className="m4-card">
+                    <div className="m4-card-h">Cost-Complexity Pruning</div>
+                    <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.65, marginBottom: '0.6rem' }}>
+                      Grow a full tree T₀, then prune to find the optimal subtree. For tuning parameter α ≥ 0, minimise:
+                    </div>
+                    <Tex src="\sum_{l=1}^{|T|} \sum_{x_i \in R_l} (y_i - \hat{y}_{R_l})^2 + \alpha |T|" block />
+                    <VarTable vars={[
+                      ['|T|', 'Number of terminal (leaf) nodes — the complexity penalty term'],
+                      ['R_l', 'The rectangular region for the l-th leaf node'],
+                      ['\\hat{y}_{R_l}', 'Mean response of training instances in region R_l'],
+                      ['\\alpha', 'Complexity penalty — larger α favours simpler (smaller) trees'],
+                    ]} />
+                    <div className="m4-hr" />
+                    <table className="m4-ptable" style={{ marginBottom: '0.6rem' }}>
+                      <thead><tr><th>α value</th><th>Effect</th></tr></thead>
+                      <tbody>
+                        <tr><td className="pk">α = 0</td><td>T = T₀ — no penalty, full training error minimisation</td></tr>
+                        <tr><td className="pk">α increasing</td><td>Penalises complexity → smaller subtrees preferred</td></tr>
+                        <tr><td className="pk">α → ∞</td><td>Single-node tree (just the root)</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-flabel">Pruning steps</div>
+                    <ol style={{ paddingLeft: '1.2rem', fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.75 }}>
+                      <li>Build full regression tree T₀ on training data</li>
+                      <li>Vary α to generate subtrees with decreasing |T|</li>
+                      <li>Use k-fold cross-validation to estimate validation error per α</li>
+                      <li>Select α that minimises average CV error</li>
+                      <li>Return the corresponding subtree</li>
+                    </ol>
+                    <div className="m4-warnbox" style={{ marginTop: '0.65rem', fontSize: '0.74rem' }}>
+                      The cross-validation error is often minimised at surprisingly small trees — the bias/variance trade-off strongly favours simpler models on unseen data.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="m4-card" style={{ marginTop: '0.75rem' }}>
+                  <div className="m4-card-h">Baseball Example — Unpruned vs Pruned</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <div className="m4-flabel">Unpruned tree (12 leaf nodes)</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.62rem', color: 'var(--text-1)', lineHeight: 1.8, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', border: '1px solid rgba(251,113,133,0.2)' }}>
+                        {`Years < 4.5\n├─ RBI < 60.5\n│  ├─ Putouts < 82\n│  │  ├─ 5.487\n│  │  └─ Years < 3.5\n│  │     ├─ 4.622\n│  │     └─ 5.183\n│  └─ Years < 3.5\n│     ├─ 5.394\n│     └─ 6.189\n└─ Hits < 117.5\n   ├─ Walks < 43.5\n   │  ├─ Runs < 47.5\n   │  │  ├─ 6.015  └─ 5.571\n   │  └─ 6.407\n   └─ Walks < 52.5\n      ├─ 6.549\n      └─ ...`}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="m4-flabel">Pruned tree (3 leaf nodes) ← CV-optimal</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.67rem', color: 'var(--text-1)', lineHeight: 1.9, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', border: '1px solid rgba(52,211,153,0.2)' }}>
+                        {`Years < 4.5\n├─ 5.11   ← Inexperienced\n└─ Hits < 117.5\n   ├─ 6.00  ← Exp, avg hitter\n   └─ 6.74  ← Exp, good hitter`}
+                      </div>
+                      <div className="m4-infobox" style={{ marginTop: '0.5rem', fontSize: '0.74rem' }}>
+                        CV error bottoms out at ~3 leaves. The unpruned 12-leaf tree overfits — the extra splits capture noise, not signal.
+                      </div>
+                      <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Predictions (back from log scale)</div>
+                      <table className="m4-ptable">
+                        <tbody>
+                          <tr><td className="pk">R1 (inexperienced)</td><td>log=5.11 → ~$165k/yr</td></tr>
+                          <tr><td className="pk">R2 (exp, avg)</td><td>log=6.00 → ~$403k/yr</td></tr>
+                          <tr><td className="pk">R3 (exp, good)</td><td>log=6.74 → ~$845k/yr</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Regression Trees ── */}
+            {l6Tab === 'Regression Trees' && (
+              <div>
+                <p className="m4-sec-sub">Decision Trees extend naturally to regression by predicting the mean response in each region. CART minimises a weighted MSE cost instead of Gini impurity.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">CART Cost — Regression</div>
+                    <Tex src="J(X_j, t_j) = \frac{m_\text{left}}{m} \text{MSE}_\text{left} + \frac{m_\text{right}}{m} \text{MSE}_\text{right}" block />
+                    <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Node MSE and prediction</div>
+                    <Tex src="\text{MSE}_\text{node} = \frac{1}{m_\text{node}} \sum_{i \in \text{node}} \left(\hat{y}_\text{node} - y^{(i)}\right)^2" block />
+                    <Tex src="\hat{y}_\text{node} = \frac{1}{m_\text{node}} \sum_{i \in \text{node}} y^{(i)}" block />
+                    <VarTable vars={[
+                      ['\\hat{y}_\\text{node}', 'Predicted value for this node — the mean of all training targets in this region'],
+                      ['y^{(i)}', 'Actual target value for training instance i'],
+                      ['m_\\text{node}', 'Number of training instances in this node'],
+                      ['\\text{MSE}_\\text{node}', 'Mean squared error of the node\'s constant prediction against all instances in it'],
+                    ]} />
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Effect of depth on regression</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>max_depth</th><th>Step resolution</th><th>Tendency</th></tr></thead>
+                      <tbody>
+                        <tr><td className="pk">2</td><td>3–4 coarse steps</td><td>Underfitting</td></tr>
+                        <tr><td className="pk">3</td><td>7–8 finer steps</td><td>Better fit</td></tr>
+                        <tr><td className="pk">None</td><td>Memorises every point</td><td>Overfitting</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.5rem', fontSize: '0.74rem' }}>
+                      Training objective: <strong>minimise MSE across all leaf nodes</strong>. The tree produces a piecewise-constant step function over the feature space.
+                    </div>
+                  </div>
+
+                  <div className="m4-card">
+                    <div className="m4-card-h">Hitters Dataset — Baseball Example</div>
+                    <div className="m4-infobox" style={{ fontSize: '0.77rem', marginBottom: '0.6rem' }}>
+                      <strong>Task:</strong> Predict log(Salary) from <em>Years</em> (years in major leagues) and <em>Hits</em> (hits in 1986). MLB data, 1986–1987 seasons.
+                    </div>
+                    <div className="m4-flabel">Tree structure (depth=2)</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.63rem', color: 'var(--text-1)', lineHeight: 1.85, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', marginBottom: '0.6rem', border: '1px solid rgba(34,211,238,0.12)' }}>
+                      {`              [Years < 4.5]\n             /             \\\n          5.11          [Hits < 117.5]\n        (leaf: R1)       /             \\\n                      6.00            6.74\n                    (leaf: R2)      (leaf: R3)`}
+                    </div>
+                    <div className="m4-flabel">Feature space partition</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.61rem', color: 'var(--text-1)', lineHeight: 1.8, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', marginBottom: '0.6rem', border: '1px solid rgba(167,139,250,0.12)' }}>
+                      {`Hits (y-axis)\n238 |──────────┬──────────────────────────\n    |    R1    |           R3\n    |          |\n117.5|          |──────────────────────────\n    |          |           R2\n  1 |──────────┴──────────────────────────\n    1         4.5                        24\n                       Years (x-axis)`}
+                    </div>
+                    <div className="m4-flabel">Interpretation</div>
+                    <table className="m4-ptable">
+                      <tbody>
+                        <tr><td className="pk">R1</td><td>Years {'<'} 4.5 — <strong>Inexperienced</strong> players</td></tr>
+                        <tr><td className="pk">R2</td><td>Years ≥ 4.5 AND Hits {'<'} 117.5 — experienced, average hitters</td></tr>
+                        <tr><td className="pk">R3</td><td>Years ≥ 4.5 AND Hits ≥ 117.5 — experienced, good hitters</td></tr>
+                      </tbody>
+                    </table>
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <div style={{ background: 'var(--bg-3)', borderRadius: 6, padding: '0.45rem 0.6rem', fontFamily: 'monospace', fontSize: '0.66rem', color: 'var(--text-2)' }}>
+                        {'from sklearn.tree import DecisionTreeRegressor\ntree_reg = DecisionTreeRegressor(max_depth=2)\ntree_reg.fit(X, y)  # X = [[Years, Hits]], y = log(Salary)'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Limitations ── */}
+            {l6Tab === 'Limitations' && (
+              <div>
+                <p className="m4-sec-sub">Decision Trees have three key limitations. Understanding them motivates the mitigations and the move to ensemble methods like Random Forests.</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  {[
+                    {
+                      title: '1. Prone to Overfitting',
+                      col: '#fb7185',
+                      problem: 'Without regularisation, DTs perfectly memorise training data — creating highly jagged, complex step functions that fit training noise.',
+                      analogy: 'Like a student who memorises every past exam question verbatim but cannot apply the underlying concept to a slightly different problem.',
+                      fix: 'Regularisation hyperparameters (max_depth, min_samples_leaf, etc.) or cost-complexity pruning with cross-validated α.',
+                    },
+                    {
+                      title: '2. Sensitivity to Rotation',
+                      col: '#fbbf24',
+                      problem: 'DTs only create axis-aligned splits (X_j ≤ t_j). They cannot represent diagonal boundaries naturally — rotating the training data produces a very different tree.',
+                      analogy: 'Cutting a diagonal sandwich with only horizontal and vertical cuts — you need many jagged steps to approximate a diagonal line.',
+                      fix: 'Apply PCA before fitting to align features with the most informative axes. This can simplify the resulting tree dramatically.',
+                    },
+                    {
+                      title: '3. High Variance',
+                      col: '#a78bfa',
+                      problem: 'Small changes to hyperparameters or re-training with a different random seed → very different tree structure. The model is unstable.',
+                      analogy: 'Two people playing the same game of Guess Who might choose completely different optimal question sequences — both are locally reasonable but globally diverge.',
+                      fix: 'Random Forests: average many trees trained on bootstrap samples and random feature subsets. Variance averages out; bias stays low.',
+                    },
+                  ].map(({ title, col, problem, analogy, fix }) => (
+                    <div key={title} style={{ background: 'var(--bg-2)', borderRadius: 10, padding: '0.9rem', border: `1px solid ${col}33` }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: col, marginBottom: '0.5rem', fontFamily: 'monospace' }}>{title}</div>
+                      <div style={{ fontSize: '0.73rem', color: 'var(--text-1)', lineHeight: 1.6, marginBottom: '0.45rem' }}>{problem}</div>
+                      <div style={{ background: `${col}0d`, borderRadius: 6, padding: '0.4rem 0.55rem', marginBottom: '0.45rem' }}>
+                        <div style={{ fontSize: '0.63rem', fontWeight: 700, color: col, marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Analogy</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-2)', lineHeight: 1.5 }}>{analogy}</div>
+                      </div>
+                      <div style={{ background: 'rgba(52,211,153,0.08)', borderRadius: 6, padding: '0.4rem 0.55rem', border: '1px solid rgba(52,211,153,0.2)' }}>
+                        <div style={{ fontSize: '0.63rem', fontWeight: 700, color: '#34d399', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mitigation</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-2)', lineHeight: 1.5 }}>{fix}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="m4-card">
+                  <div className="m4-card-h">Decision Trees vs Linear Models</div>
+                  <div className="m4-two-col">
+                    <div>
+                      <table className="m4-ptable">
+                        <thead><tr><th>Scenario</th><th>Better model</th></tr></thead>
+                        <tbody>
+                          <tr><td>Relationship between features and target is approximately <strong>linear</strong></td><td className="pk">Linear regression / logistic regression</td></tr>
+                          <tr><td>Relationship is <strong>non-linear or complex</strong></td><td className="pk">Decision Tree (or ensemble)</td></tr>
+                          <tr><td>Feature interpretability and explainability required</td><td className="pk">Decision Tree (white box)</td></tr>
+                          <tr><td>Low variance / high stability required</td><td className="pk">Random Forest (ensemble of trees)</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div>
+                      <div className="m4-flabel">Decision Trees — Summary</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.63rem', color: 'var(--text-1)', lineHeight: 1.9, background: 'var(--bg-3)', borderRadius: 6, padding: '0.6rem 0.75rem', border: '1px solid rgba(34,211,238,0.12)' }}>
+                        {`Decision Trees\n│\n├── CART: greedy, top-down, binary, axis-aligned\n│   ├── Classification cost: weighted Gini (or entropy)\n│   └── Regression cost:     weighted MSE\n│\n├── Gini: G = 1 − Σp²         (default)\n│   Entropy: H = −Σp log₂(p)   (balanced)\n│\n├── Complexity\n│   ├── Predict: O(log₂ m) ← very fast\n│   └── Train:  O(nm log₂ m)\n│\n├── Regularise: max_depth, min_samples_leaf,\n│   max_leaf_nodes, cost-complexity α\n│\n└── Limits: overfitting, rotation sensitivity,\n    high variance → mitigate with Random Forests`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── ASSIGNMENT 1 ── */}
         {tab === 'Assignment 1' && (
           <div>
@@ -3666,7 +4160,7 @@ export default function CITS5508() {
         {tab === 'Quiz' && (
           <div>
             <div className="m4-sec-hdr">
-              <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>17 Questions · Lectures 1–5</span></h2>
+              <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>20 Questions · Lectures 1–6</span></h2>
               <p className="m4-sec-sub">Covering: Mitchell's E/T/P, supervised/unsupervised, bias trick, MSE vs MAE, confusion matrix, Normal Equation, gradient descent variants, logistic regression, Ridge/Lasso, kNN, and SVMs. Detailed feedback on every answer.</p>
             </div>
             <QuizSection />
