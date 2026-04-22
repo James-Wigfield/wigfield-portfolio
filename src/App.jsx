@@ -13,6 +13,7 @@ import UniversityModule from './components/UniversityModule';
 import CITS4404 from './components/modules/CITS4404';
 import CITS5508 from './components/modules/CITS5508';
 import Honours from './components/modules/HONOURS';
+import ImposterGame from './components/games/ImposterGame';
 
 function Portfolio() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/hub/honours" element={<Honours />} />
       <Route path="/hub/:moduleId" element={<UniversityModule />} />
       <Route path="/games" element={<Games />} />
+      <Route path="/games/imposter" element={<ImposterGame />} />
     </Routes>
   );
 }

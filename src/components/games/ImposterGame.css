@@ -1,0 +1,406 @@
+/* ── Word Imposter Game ──────────────────────────────────────────────────────── */
+
+.ig-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+}
+
+/* ── Banner ────────────────────────────────────────────────────────────────── */
+.ig-banner {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ig-banner-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+.ig-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(2, 8, 23, 0.35) 0%,
+    rgba(2, 8, 23, 0.65) 100%
+  );
+}
+
+.ig-banner-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.08) 3px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+}
+
+.ig-banner-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.ig-back-btn {
+  position: absolute;
+  top: 0.75rem;
+  left: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--text-1);
+  background: rgba(2, 8, 23, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  backdrop-filter: blur(8px);
+}
+.ig-back-btn:hover { color: var(--amber); border-color: rgba(251,191,36,0.4); }
+
+/* ── Body ──────────────────────────────────────────────────────────────────── */
+.ig-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.75rem 1.25rem 3rem;
+}
+
+.ig-screen {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* ── Typography ────────────────────────────────────────────────────────────── */
+.ig-logo {
+  font-family: var(--font-mono);
+  text-align: center;
+  font-size: 1.15rem;
+  color: var(--amber);
+  letter-spacing: 0.2em;
+  text-shadow: var(--glow-amber);
+}
+
+.ig-tagline {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+.ig-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  backdrop-filter: blur(12px);
+}
+
+/* ── Form elements ─────────────────────────────────────────────────────────── */
+.ig-label {
+  display: block;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  letter-spacing: 0.14em;
+  margin-bottom: 0.4rem;
+}
+
+.ig-input {
+  width: 100%;
+  background: rgba(7, 16, 31, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  padding: 0.65rem 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 1.25rem;
+}
+.ig-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34,211,238,0.08); }
+
+.ig-input--code {
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
+
+.ig-select {
+  width: 100%;
+  background: rgba(7, 16, 31, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  padding-right: 2.2rem;
+}
+.ig-select:focus { border-color: var(--violet); }
+.ig-select option { background: #07101f; }
+
+.ig-error {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--rose);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.ig-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  padding: 0.75rem 1.25rem;
+  transition: opacity 0.2s, transform 0.12s, box-shadow 0.2s;
+}
+.ig-btn:hover  { opacity: 0.88; }
+.ig-btn:active { transform: scale(0.98); }
+.ig-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+.ig-btn--amber  { background: var(--amber);  color: #020817; box-shadow: 0 0 18px rgba(251,191,36,0.25); }
+.ig-btn--cyan   { background: var(--cyan);   color: #020817; box-shadow: 0 0 18px rgba(34,211,238,0.25); }
+.ig-btn--rose   { background: var(--rose);   color: #020817; box-shadow: 0 0 18px rgba(251,113,133,0.25); }
+.ig-btn--violet { background: var(--violet); color: #020817; box-shadow: 0 0 18px rgba(167,139,250,0.25); }
+.ig-btn--ghost  {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-1);
+}
+.ig-btn--ghost:hover { border-color: rgba(148,163,184,0.3); }
+
+.ig-host-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ── Divider ───────────────────────────────────────────────────────────────── */
+.ig-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: var(--text-2);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.ig-divider::before,
+.ig-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Lobby ─────────────────────────────────────────────────────────────────── */
+.ig-room-code {
+  font-family: var(--font-mono);
+  letter-spacing: 0.5em;
+  font-size: 2.75rem;
+  color: var(--amber);
+  text-align: center;
+  margin: 0.75rem 0 1.5rem;
+  text-shadow: var(--glow-amber);
+}
+
+.ig-hint {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-2);
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+/* ── Config block ──────────────────────────────────────────────────────────── */
+.ig-config {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: rgba(7, 16, 31, 0.4);
+}
+
+.ig-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ig-config-row + .ig-config-row {
+  margin-top: 0.75rem;
+}
+
+.ig-config-row .ig-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ig-config-row .ig-select {
+  width: auto;
+  flex: 1;
+  max-width: 180px;
+  margin-bottom: 0;
+}
+
+.ig-config-val {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--violet);
+  letter-spacing: 0.08em;
+}
+
+/* ── Player list ───────────────────────────────────────────────────────────── */
+.ig-player-list {
+  list-style: none;
+  margin-bottom: 1.25rem;
+}
+
+.ig-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.ig-player:last-child { border-bottom: none; }
+
+.ig-player-name {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-0);
+}
+
+.ig-badge {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+}
+.ig-badge--host { background: rgba(251,191,36,0.12);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.25); }
+.ig-badge--you  { background: rgba(34,211,238,0.10);  color: var(--cyan);   border: 1px solid rgba(34,211,238,0.2); }
+
+/* ── Role card ─────────────────────────────────────────────────────────────── */
+.ig-role-card {
+  text-align: center;
+  padding: 2.25rem 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ig-role-card--player {
+  border-color: rgba(52, 211, 153, 0.25);
+  background: linear-gradient(135deg, rgba(52,211,153,0.05) 0%, var(--surface) 100%);
+}
+
+.ig-role-card--imposter {
+  border-color: rgba(251, 113, 133, 0.25);
+  background: linear-gradient(135deg, rgba(251,113,133,0.06) 0%, var(--surface) 100%);
+}
+
+.ig-role-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.012) 2px,
+    rgba(255,255,255,0.012) 4px
+  );
+  pointer-events: none;
+}
+
+.ig-role-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  padding: 0.3rem 0.85rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+}
+.ig-role-tag--player   { background: rgba(52,211,153,0.1);  color: var(--emerald); border: 1px solid rgba(52,211,153,0.3); }
+.ig-role-tag--imposter { background: rgba(251,113,133,0.1); color: var(--rose);    border: 1px solid rgba(251,113,133,0.3); }
+
+.ig-role-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-0);
+  margin-bottom: 0.4rem;
+}
+.ig-role-title--imposter { color: var(--rose); }
+
+.ig-role-word {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  color: var(--cyan);
+  letter-spacing: 0.04em;
+  margin: 0.5rem 0;
+  text-shadow: var(--glow-cyan);
+}
+
+.ig-role-cat {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--violet);
+  letter-spacing: 0.14em;
+  margin-top: 0.5rem;
+  opacity: 0.85;
+}
+
+.ig-role-fellows {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--rose);
+  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
+  opacity: 0.9;
+}
+
+.ig-role-hint {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}

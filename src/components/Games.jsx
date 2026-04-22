@@ -15,6 +15,15 @@ const GAMES_PIN = '6969';
 // ── Game registry — add entries here to expand the arcade ─────────
 const GAMES = [
   {
+    id: 'imposter',
+    title: 'Word Imposter',
+    description: 'Real-time multiplayer. One player doesn\'t know the secret word — discuss, deduce, and expose them.',
+    gif: arcadeGif,
+    color: 'rose',
+    tag: 'MULTIPLAYER',
+    comingSoon: false,
+  },
+  {
     id: 'snake',
     title: 'Snake',
     description: 'Classic arcade snake. Navigate the grid, collect pixels, grow longer, avoid the walls.',
