@@ -5427,8 +5427,633 @@ function PopulationTab() {
   );
 }
 
+// ── Dragonfly Algorithm Tab ───────────────────────────────────────────────────
+
+const LEVY_SIGMA = 0.6966;
+
+function ackley2D(x, y) {
+  return -20 * Math.exp(-0.2 * Math.sqrt(0.5 * (x * x + y * y)))
+       - Math.exp(0.5 * (Math.cos(2 * Math.PI * x) + Math.cos(2 * Math.PI * y)))
+       + Math.E + 20;
+}
+
+function levyStep() {
+  const r1 = Math.random() + 1e-9;
+  const r2 = Math.random() + 1e-9;
+  return 0.01 * (r1 * LEVY_SIGMA) / Math.pow(Math.abs(r2), 1 / 1.5);
+}
+
+function initDASim(n) {
+  const agents = Array.from({ length: n }, () => {
+    const pos = [-5 + Math.random() * 10, -5 + Math.random() * 10];
+    return { pos, vel: [(Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5], trail: [], fitness: 0 };
+  });
+  agents.forEach(a => { a.fitness = ackley2D(a.pos[0], a.pos[1]); });
+  let fi = 0, ei = 0;
+  agents.forEach((a, i) => {
+    if (a.fitness < agents[fi].fitness) fi = i;
+    if (a.fitness > agents[ei].fitness) ei = i;
+  });
+  return { agents, iter: 0, foodIdx: fi, enemyIdx: ei, divHist: [], fitHist: [], r: 0.5 };
+}
+
+function stepDA(sim) {
+  const { agents } = sim;
+  const n = agents.length;
+  const t = sim.iter;
+  const r = 0.5 + (t / 200) * 4.5;
+  const w = 0.9 - 0.7 * (t / 200);
+  const a = 0.1 + 0.3 * (t / 200);
+  const c = 0.7 - 0.4 * (t / 200);
+  const food = agents[sim.foodIdx].pos;
+  const enemy = agents[sim.enemyIdx].pos;
+
+  const next = agents.map((ag, i) => {
+    const nbrs = agents.filter((o, j) => {
+      if (i === j) return false;
+      const dx = o.pos[0] - ag.pos[0], dy = o.pos[1] - ag.pos[1];
+      return Math.sqrt(dx * dx + dy * dy) <= r;
+    });
+    if (nbrs.length > 0) {
+      const N = nbrs.length;
+      const S = nbrs.reduce((acc, o) => [acc[0] - (ag.pos[0] - o.pos[0]), acc[1] - (ag.pos[1] - o.pos[1])], [0, 0]);
+      const A = nbrs.reduce((acc, o) => [acc[0] + o.vel[0], acc[1] + o.vel[1]], [0, 0]).map(v => v / N);
+      const C = [nbrs.reduce((s, o) => s + o.pos[0], 0) / N - ag.pos[0], nbrs.reduce((s, o) => s + o.pos[1], 0) / N - ag.pos[1]];
+      const F = [food[0] - ag.pos[0], food[1] - ag.pos[1]];
+      const E = [enemy[0] + ag.pos[0], enemy[1] + ag.pos[1]];
+      const clamp = v => Math.max(-0.5, Math.min(0.5, v));
+      const nv = [clamp(0.1*S[0]+a*A[0]+c*C[0]+F[0]+E[0]+w*ag.vel[0]), clamp(0.1*S[1]+a*A[1]+c*C[1]+F[1]+E[1]+w*ag.vel[1])];
+      const np = [ag.pos[0]+nv[0], ag.pos[1]+nv[1]].map(v => Math.max(-5, Math.min(5, v)));
+      return { pos: np, vel: nv };
+    } else {
+      const lx = levyStep(), ly = levyStep();
+      const np = [ag.pos[0] + lx * ag.pos[0], ag.pos[1] + ly * ag.pos[1]].map(v => Math.max(-5, Math.min(5, v)));
+      return { pos: np, vel: [lx * ag.pos[0], ly * ag.pos[1]] };
+    }
+  });
+
+  agents.forEach((ag, i) => {
+    ag.trail.push([...ag.pos]);
+    if (ag.trail.length > 10) ag.trail.shift();
+    ag.pos = next[i].pos;
+    ag.vel = next[i].vel;
+    ag.fitness = ackley2D(ag.pos[0], ag.pos[1]);
+  });
+
+  let fi = 0, ei = 0;
+  agents.forEach((ag, i) => {
+    if (ag.fitness < agents[fi].fitness) fi = i;
+    if (ag.fitness > agents[ei].fitness) ei = i;
+  });
+  sim.foodIdx = fi; sim.enemyIdx = ei; sim.r = r; sim.iter++;
+
+  let tot = 0, pairs = 0;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const dx = agents[i].pos[0] - agents[j].pos[0], dy = agents[i].pos[1] - agents[j].pos[1];
+    tot += Math.sqrt(dx * dx + dy * dy); pairs++;
+  }
+  sim.divHist.push(pairs > 0 ? tot / pairs : 0);
+  sim.fitHist.push(agents[fi].fitness);
+  return { w, s: 0.1, a, c, f: 1, e: 1, r };
+}
+
+function DragonflySimPanel() {
+  const bgRef = useRef(null);
+  const fgRef = useRef(null);
+  const chartRef = useRef(null);
+  const simRef = useRef(null);
+  const animRef = useRef(null);
+  const lastTRef = useRef(0);
+  const runRef = useRef(false);
+
+  const [running, setRunning] = useState(false);
+  const [popSize, setPopSize] = useState(20);
+  const [speed, setSpeed] = useState(120);
+  const [exEx, setExEx] = useState(0.0);
+  const [info, setInfo] = useState({ iter:0, bestFit:null, worstFit:null, bestPos:null, r:0.5, w:0.9, s:0.1, a:0.1, c:0.7, f:1, e:1 });
+
+  runRef.current = running;
+
+  const CW = 560, CH = 380;
+
+  const drawBg = useCallback(() => {
+    const canvas = bgRef.current;
+    if (!canvas) return;
+    canvas.width = CW; canvas.height = CH;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(CW, CH);
+    let minV = Infinity, maxV = -Infinity;
+    const grid = new Float32Array(CW * CH);
+    for (let py = 0; py < CH; py++) {
+      for (let px = 0; px < CW; px++) {
+        const x = -5 + (px / CW) * 10;
+        const y = 5 - (py / CH) * 10;
+        const v = ackley2D(x, y);
+        grid[py * CW + px] = v;
+        if (v < minV) minV = v; if (v > maxV) maxV = v;
+      }
+    }
+    const range = maxV - minV;
+    for (let i = 0; i < grid.length; i++) {
+      const t = (grid[i] - minV) / range;
+      img.data[i*4]   = Math.round(10 + t * 100);
+      img.data[i*4+1] = Math.round((1-t) * 25);
+      img.data[i*4+2] = Math.round(30 + (1-t) * 60);
+      img.data[i*4+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  }, [CW, CH]);
+
+  const drawFg = useCallback(() => {
+    const canvas = fgRef.current;
+    const sim = simRef.current;
+    if (!canvas || !sim) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, CW, CH);
+    const { agents, foodIdx, enemyIdx, r } = sim;
+    const toC = (x, y) => [(x + 5) / 10 * CW, (5 - y) / 10 * CH];
+    const rPx = r / 10 * CW;
+
+    ctx.strokeStyle = 'rgba(148,163,184,0.05)'; ctx.lineWidth = 1;
+    agents.forEach(ag => {
+      const [cx, cy] = toC(ag.pos[0], ag.pos[1]);
+      ctx.beginPath(); ctx.arc(cx, cy, rPx, 0, Math.PI * 2); ctx.stroke();
+    });
+
+    agents.forEach((ag, i) => {
+      const col = CYBER_COLS[i % CYBER_COLS.length];
+      for (let ti = 1; ti < ag.trail.length; ti++) {
+        const alpha = Math.round((ti / ag.trail.length) * 55).toString(16).padStart(2,'0');
+        const [x0, y0] = toC(ag.trail[ti-1][0], ag.trail[ti-1][1]);
+        const [x1, y1] = toC(ag.trail[ti][0], ag.trail[ti][1]);
+        ctx.strokeStyle = col + alpha; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+    });
+
+    const [fx, fy] = toC(agents[foodIdx].pos[0], agents[foodIdx].pos[1]);
+    const p1 = 2 * Math.sin(Date.now() / 380);
+    ctx.save(); ctx.shadowColor = '#4caf50'; ctx.shadowBlur = 12 + p1;
+    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(fx, fy, 7, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('F', fx, fy + 3);
+
+    const [ex2, ey] = toC(agents[enemyIdx].pos[0], agents[enemyIdx].pos[1]);
+    const p2 = 2 * Math.sin(Date.now() / 380 + Math.PI);
+    ctx.save(); ctx.shadowColor = '#e57373'; ctx.shadowBlur = 12 + p2;
+    ctx.fillStyle = '#e57373'; ctx.beginPath(); ctx.arc(ex2, ey, 7, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    ctx.fillText('E', ex2, ey + 3);
+
+    agents.forEach((ag, i) => {
+      if (i === foodIdx || i === enemyIdx) return;
+      const [cx, cy] = toC(ag.pos[0], ag.pos[1]);
+      const ang = Math.atan2(-ag.vel[1], ag.vel[0]);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+      ctx.fillStyle = CYBER_COLS[i % CYBER_COLS.length];
+      ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, 4); ctx.lineTo(-3, 0); ctx.lineTo(-5, -4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+  }, [CW, CH]);
+
+  const drawChart = useCallback(() => {
+    const canvas = chartRef.current;
+    const sim = simRef.current;
+    if (!canvas || !sim || sim.divHist.length < 2) return;
+    const W = canvas.width = canvas.offsetWidth || 560;
+    const H = canvas.height = 90;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const PAD = { l: 30, r: 10, t: 6, b: 20 };
+    const iW = W - PAD.l - PAD.r, iH = H - PAD.t - PAD.b;
+    ctx.strokeStyle = 'rgba(148,163,184,0.06)'; ctx.lineWidth = 1;
+    for (let g = 0; g <= 3; g++) {
+      const y = PAD.t + g/3 * iH;
+      ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(PAD.l+iW, y); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(148,163,184,0.4)'; ctx.font = '7px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('0', PAD.l, PAD.t+iH+12); ctx.fillText('200', PAD.l+iW, PAD.t+iH+12);
+    const plotLine = (data, maxV, col) => {
+      if (data.length < 2) return;
+      ctx.beginPath(); ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      data.forEach((v, i) => {
+        const x = PAD.l + (i / 199) * iW, y = PAD.t + (1 - Math.min(v/maxV,1)) * iH;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    };
+    const maxD = Math.max(...sim.divHist, 0.001);
+    const maxF = Math.max(...sim.fitHist, 0.001);
+    plotLine(sim.divHist, maxD, '#6c8ebf');
+    plotLine(sim.fitHist, maxF, '#fbbf24');
+  }, []);
+
+  const doStep = useCallback(() => {
+    const sim = simRef.current;
+    if (!sim || sim.iter >= 200) return;
+    const wts = stepDA(sim);
+    drawFg(); drawChart();
+    setInfo({
+      iter: sim.iter, bestFit: sim.agents[sim.foodIdx].fitness,
+      worstFit: sim.agents[sim.enemyIdx].fitness,
+      bestPos: [...sim.agents[sim.foodIdx].pos],
+      r: wts.r, w: wts.w, s: wts.s, a: wts.a, c: wts.c, f: wts.f, e: wts.e,
+    });
+  }, [drawFg, drawChart]);
+
+  const animate = useCallback(() => {
+    if (!runRef.current) return;
+    const now = Date.now();
+    if (now - lastTRef.current >= speed) {
+      const sim = simRef.current;
+      if (sim && sim.iter < 200) { doStep(); lastTRef.current = now; }
+      else { setRunning(false); }
+    }
+    animRef.current = requestAnimationFrame(animate);
+  }, [speed, doStep]);
+
+  useEffect(() => {
+    if (running) {
+      lastTRef.current = 0;
+      animRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    }
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
+  }, [running, animate]);
+
+  const doReset = useCallback((n) => {
+    setRunning(false);
+    runRef.current = false;
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    simRef.current = initDASim(n ?? popSize);
+    setInfo({ iter:0, bestFit:null, worstFit:null, bestPos:null, r:0.5, w:0.9, s:0.1, a:0.1, c:0.7, f:1, e:1 });
+    requestAnimationFrame(() => { drawFg(); drawChart(); });
+  }, [popSize, drawFg, drawChart]);
+
+  useEffect(() => {
+    if (fgRef.current) { fgRef.current.width = CW; fgRef.current.height = CH; }
+    drawBg();
+    doReset();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const aEff = (0.1 + exEx * 0.3).toFixed(2);
+  const cEff = (0.7 - exEx * 0.4).toFixed(2);
+
+  return (
+    <div>
+      <div className="m4-card" style={{marginBottom:'1rem'}}>
+        <div className="m4-card-h">EXPLORATION ←→ EXPLOITATION WEIGHT VISUALISER</div>
+        <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'0.4rem'}}>
+          <span style={{fontSize:'0.72rem',color:'var(--text-2)',whiteSpace:'nowrap'}}>← Exploration</span>
+          <input type="range" min={0} max={1} step={0.01} value={exEx} onChange={e=>setExEx(+e.target.value)} style={{flex:1}} />
+          <span style={{fontSize:'0.72rem',color:'var(--text-2)',whiteSpace:'nowrap'}}>Exploitation →</span>
+        </div>
+        <div style={{fontFamily:'monospace',fontSize:'0.75rem',color:'var(--text-1)',background:'rgba(34,211,238,0.05)',border:'1px solid rgba(34,211,238,0.15)',borderRadius:4,padding:'0.45rem 0.75rem',lineHeight:2.1}}>
+          ΔX(t+1) = (<span style={{color:'#e57373'}}>0.10</span>·Sᵢ + <span style={{color:'#6c8ebf',fontWeight:700}}>{aEff}</span>·Aᵢ + <span style={{color:'#a78bfa',fontWeight:700}}>{cEff}</span>·Cᵢ + <span style={{color:'#4caf50'}}>1.00</span>·Fᵢ + <span style={{color:'#fbbf24'}}>1.00</span>·Eᵢ) + w·ΔX(t)
+          <br/>
+          <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>
+            alignment a={aEff} {exEx < 0.5 ? '(low — fragmented exploration, static swarm mode)' : '(higher — coordinated movement, dynamic swarm mode)'}
+            &nbsp;·&nbsp;cohesion c={cEff} {exEx < 0.5 ? '(high — stays grouped over local area)' : '(lower — spreads toward optimum)'}
+          </span>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 210px',gap:'1rem',alignItems:'start',marginBottom:'1rem'}}>
+        <div>
+          <div style={{position:'relative',lineHeight:0,borderRadius:8,overflow:'hidden',border:'1px solid rgba(34,211,238,0.15)'}}>
+            <canvas ref={bgRef} style={{display:'block'}} />
+            <canvas ref={fgRef} style={{position:'absolute',top:0,left:0}} width={CW} height={CH} />
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginTop:'0.6rem',alignItems:'center'}}>
+            <button className="m4-algo-tab" style={{padding:'3px 12px'}} onClick={()=>setRunning(r=>!r)}>
+              {running ? '⏸ Pause' : '▶ Run'}
+            </button>
+            <button className="m4-algo-tab" style={{padding:'3px 12px'}} onClick={()=>doReset()}>↺ Reset</button>
+            <button className="m4-algo-tab" style={{padding:'3px 12px'}} onClick={()=>{if(!running)doStep();}}>⏭ Step</button>
+            <span style={{marginLeft:'auto',fontFamily:'monospace',fontSize:'0.72rem',color:'var(--text-2)'}}>
+              Iter: <span style={{color:'var(--cyan)'}}>{info.iter}</span> / 200
+            </span>
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginTop:'0.4rem',alignItems:'center'}}>
+            <span style={{fontSize:'0.7rem',color:'var(--text-2)'}}>Speed:</span>
+            <input type="range" min={30} max={500} value={speed} onChange={e=>setSpeed(+e.target.value)} style={{width:90}} />
+            <span style={{fontSize:'0.7rem',color:'var(--text-2)',fontFamily:'monospace',minWidth:55}}>{speed}ms/step</span>
+            <span style={{fontSize:'0.7rem',color:'var(--text-2)',marginLeft:'0.5rem'}}>Pop:</span>
+            <input type="range" min={5} max={40} value={popSize} onChange={e=>{const n=+e.target.value;setPopSize(n);doReset(n);}} style={{width:70}} />
+            <span style={{fontSize:'0.7rem',color:'var(--cyan)',fontFamily:'monospace'}}>{popSize}</span>
+          </div>
+        </div>
+
+        <div className="m4-card" style={{margin:0,padding:'0.85rem',fontSize:'0.72rem'}}>
+          <div className="m4-card-h" style={{fontSize:'0.64rem',marginBottom:'0.55rem'}}>LIVE STATE</div>
+          {[['Best fitness', info.bestFit!=null?info.bestFit.toFixed(4):'—','var(--emerald)'],
+            ['Worst fitness', info.worstFit!=null?info.worstFit.toFixed(4):'—','var(--rose)'],
+            ['Best (x,y)', info.bestPos?`${info.bestPos[0].toFixed(2)},${info.bestPos[1].toFixed(2)}`:'—','var(--cyan)'],
+            ['Radius r', info.r.toFixed(3),'var(--violet)'],
+          ].map(([l,v,col])=>(
+            <div key={l} style={{display:'flex',justifyContent:'space-between',marginBottom:'0.3rem',gap:'0.25rem'}}>
+              <span style={{color:'var(--text-2)',fontSize:'0.67rem'}}>{l}</span>
+              <span style={{color:col,fontFamily:'monospace',fontSize:'0.67rem'}}>{v}</span>
+            </div>
+          ))}
+          <div style={{borderTop:'1px solid var(--border)',marginTop:'0.5rem',paddingTop:'0.45rem'}}>
+            <div style={{fontSize:'0.62rem',color:'var(--text-2)',fontFamily:'monospace',letterSpacing:'0.09em',marginBottom:'0.3rem'}}>WEIGHTS</div>
+            {[['w (inertia)',info.w,'var(--text-1)'],['s (sep)',info.s,'#e57373'],['a (align)',info.a,'#6c8ebf'],['c (cohes)',info.c,'#a78bfa'],['f (food)',info.f,'#4caf50'],['e (enemy)',info.e,'#fbbf24']].map(([l,v,col])=>(
+              <div key={l} style={{display:'flex',justifyContent:'space-between',marginBottom:'0.2rem'}}>
+                <span style={{color:'var(--text-2)',fontSize:'0.63rem'}}>{l}</span>
+                <span style={{color:col,fontFamily:'monospace',fontSize:'0.63rem'}}>{v!=null?v.toFixed(3):'—'}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{borderTop:'1px solid var(--border)',marginTop:'0.5rem',paddingTop:'0.45rem',display:'flex',flexDirection:'column',gap:'0.18rem'}}>
+            <span style={{fontSize:'0.63rem',color:'#4caf50'}}>● Food — global best</span>
+            <span style={{fontSize:'0.63rem',color:'#e57373'}}>● Enemy — global worst</span>
+            <span style={{fontSize:'0.63rem',color:'rgba(34,211,238,0.7)'}}>▶ Dragonfly agents</span>
+            <span style={{fontSize:'0.63rem',color:'rgba(148,163,184,0.4)'}}>○ Neighbourhood r</span>
+            <span style={{fontSize:'0.63rem',color:'rgba(148,163,184,0.3)'}}>━ Trail (last 10 steps)</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="m4-card">
+        <div className="m4-card-h">DIVERSITY VS CONVERGENCE OVER TIME</div>
+        <div style={{display:'flex',gap:'1.25rem',marginBottom:'0.3rem',fontSize:'0.7rem'}}>
+          <span style={{color:'#6c8ebf'}}>■ Avg agent spread (diversity)</span>
+          <span style={{color:'#fbbf24'}}>■ Best fitness (convergence)</span>
+        </div>
+        <canvas ref={chartRef} className="m4-canvas" height="90" />
+      </div>
+    </div>
+  );
+}
+
+function DragonflyTab() {
+  const [sec, setSec] = useState('explainer');
+
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[['explainer','How It Works'],['simulation','Live Simulation'],['qa','Synopsis Q&A'],['paper','Paper Structure']].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sec === 'explainer' && (
+        <div>
+          <div className="m4-card">
+            <div className="m4-card-h">BIOLOGICAL INSPIRATION — TWO SWARMING MODES</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'0.9rem'}}>
+              <div style={{background:'rgba(108,142,191,0.08)',border:'1px solid rgba(108,142,191,0.25)',borderRadius:8,padding:'0.85rem'}}>
+                <div style={{fontSize:'0.72rem',fontFamily:'monospace',color:'#6c8ebf',fontWeight:700,letterSpacing:'0.1em',marginBottom:'0.4rem'}}>STATIC SWARM — Hunting</div>
+                <div style={{fontFamily:'monospace',fontSize:'0.88rem',color:'rgba(148,163,184,0.5)',lineHeight:1.85,marginBottom:'0.5rem',whiteSpace:'pre'}}>{'  ✦    ✦\n✦   ✦    ✦\n  ✦    ✦\n✦   ✦    ✦'}</div>
+                <div style={{fontSize:'0.76rem',color:'var(--text-1)',marginBottom:'0.4rem'}}>Small groups flying back-and-forth over a small area to hunt prey</div>
+                <div style={{fontSize:'0.72rem',color:'#6c8ebf',fontWeight:600}}>→ Maps to EXPLORATION in optimisation</div>
+              </div>
+              <div style={{background:'rgba(76,175,80,0.08)',border:'1px solid rgba(76,175,80,0.25)',borderRadius:8,padding:'0.85rem'}}>
+                <div style={{fontSize:'0.72rem',fontFamily:'monospace',color:'#4caf50',fontWeight:700,letterSpacing:'0.1em',marginBottom:'0.4rem'}}>DYNAMIC SWARM — Migration</div>
+                <div style={{fontFamily:'monospace',fontSize:'0.88rem',color:'rgba(148,163,184,0.5)',lineHeight:1.85,marginBottom:'0.5rem',whiteSpace:'pre'}}>{'✦ ✦ ✦ ✦ ✦ ✦ →\n ✦ ✦ ✦ ✦ ✦  →\n✦ ✦ ✦ ✦ ✦ ✦ →'}</div>
+                <div style={{fontSize:'0.76rem',color:'var(--text-1)',marginBottom:'0.4rem'}}>Massive group flying in one direction over long distances</div>
+                <div style={{fontSize:'0.72rem',color:'#4caf50',fontWeight:600}}>→ Maps to EXPLOITATION in optimisation</div>
+              </div>
+            </div>
+            <div className="m4-infobox">
+              Unlike PSO which blurs these phases, DA explicitly switches between them by adjusting <strong>alignment weight</strong> (high → more coordinated, exploitation) and <strong>cohesion weight</strong> (high → tighter grouping) as the neighbourhood radius grows over iterations.
+            </div>
+          </div>
+
+          <div className="m4-card">
+            <div className="m4-card-h">THE FIVE BEHAVIOURAL OPERATORS</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.65rem',marginBottom:'0.85rem'}}>
+              {[
+                {n:'1',name:'Separation',col:'#e57373',formula:'Sᵢ = −∑(X − Xⱼ)',plain:'Push away from neighbours to avoid crowding',role:'Maintains diversity'},
+                {n:'2',name:'Alignment',col:'#6c8ebf',formula:'Aᵢ = (∑Vⱼ) / N',plain:'Match the velocity of nearby dragonflies',role:'Coordinates movement'},
+                {n:'3',name:'Cohesion',col:'#a78bfa',formula:'Cᵢ = (∑Xⱼ)/N − X',plain:'Move toward the neighbourhood centre of mass',role:'Groups the swarm'},
+                {n:'4',name:'Food Attraction',col:'#4caf50',formula:'Fᵢ = X⁺ − X',plain:'Steer toward the best solution found so far',role:'Exploitation pull'},
+                {n:'5',name:'Enemy Distraction',col:'#fbbf24',formula:'Eᵢ = X⁻ + X',plain:'Steer away from the worst solution found so far',role:'Avoids bad regions'},
+              ].map(op=>(
+                <div key={op.n} style={{background:'var(--bg-2)',border:`1px solid ${op.col}33`,borderRadius:7,padding:'0.75rem',borderLeft:`3px solid ${op.col}`}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'0.4rem',marginBottom:'0.35rem'}}>
+                    <span style={{fontFamily:'monospace',fontSize:'0.65rem',fontWeight:700,color:op.col,background:`${op.col}22`,borderRadius:12,padding:'1px 6px'}}>{op.n}</span>
+                    <span style={{fontWeight:700,fontSize:'0.78rem',color:'var(--text-0)'}}>{op.name}</span>
+                  </div>
+                  <div style={{fontFamily:'monospace',fontSize:'0.73rem',color:op.col,marginBottom:'0.35rem',background:`${op.col}0f`,padding:'3px 6px',borderRadius:3}}>{op.formula}</div>
+                  <div style={{fontSize:'0.73rem',color:'var(--text-1)',marginBottom:'0.3rem'}}>{op.plain}</div>
+                  <div style={{fontSize:'0.67rem',color:'var(--text-2)',fontStyle:'italic'}}>Role: {op.role}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:'rgba(34,211,238,0.05)',border:'1px solid rgba(34,211,238,0.18)',borderRadius:5,padding:'0.65rem 0.9rem',fontFamily:'monospace',fontSize:'0.76rem',color:'var(--text-1)',lineHeight:2}}>
+              <span style={{color:'var(--text-2)'}}>{'// Combined step update (Eq. 3.6 / 3.7):'}</span><br/>
+              ΔX(t+1) = (<span style={{color:'#e57373'}}>s</span>·Sᵢ + <span style={{color:'#6c8ebf'}}>a</span>·Aᵢ + <span style={{color:'#a78bfa'}}>c</span>·Cᵢ + <span style={{color:'#4caf50'}}>f</span>·Fᵢ + <span style={{color:'#fbbf24'}}>e</span>·Eᵢ) + <span style={{color:'var(--cyan)'}}>w</span>·ΔX(t)<br/>
+              X(t+1) = X(t) + ΔX(t+1)<br/>
+              <span style={{fontSize:'0.68rem',color:'var(--text-2)'}}>w decays 0.9→0.2 over iterations &nbsp;|&nbsp; Isolated agents: X(t+1) = X(t) + Lévy(d)·X(t)</span>
+            </div>
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">ADAPTIVE WEIGHT SCHEDULE</div>
+              <div style={{fontFamily:'monospace',fontSize:'0.75rem',color:'var(--text-1)',lineHeight:2.1,background:'rgba(34,211,238,0.04)',borderRadius:5,padding:'0.6rem 0.9rem',border:'1px solid rgba(34,211,238,0.12)'}}>
+                <span style={{color:'var(--text-2)'}}>{'// Linear schedules, t ∈ [0, 200]'}</span><br/>
+                <span style={{color:'var(--cyan)'}}>w</span> = 0.9 − 0.7·(t/200) <span style={{color:'var(--text-2)'}}>→ 0.9→0.2</span><br/>
+                <span style={{color:'#6c8ebf'}}>a</span> = 0.1 + 0.3·(t/200) <span style={{color:'var(--text-2)'}}>→ 0.1→0.4 (alignment)</span><br/>
+                <span style={{color:'#a78bfa'}}>c</span> = 0.7 − 0.4·(t/200) <span style={{color:'var(--text-2)'}}>→ 0.7→0.3 (cohesion)</span><br/>
+                <span style={{color:'#e57373'}}>s</span> = 0.1 <span style={{color:'var(--text-2)'}}>constant (separation)</span><br/>
+                <span style={{color:'#4caf50'}}>f</span> = 1.0 <span style={{color:'var(--text-2)'}}>constant (food)</span><br/>
+                <span style={{color:'#fbbf24'}}>e</span> = 1.0 <span style={{color:'var(--text-2)'}}>constant (enemy)</span>
+              </div>
+              <div className="m4-infobox" style={{marginTop:'0.75rem',fontSize:'0.77rem'}}>
+                Neighbourhood radius grows 0.5→5.0 simultaneously, transitioning the swarm from fragmented local search to cohesive convergence toward the global optimum.
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">ALGORITHM PSEUDOCODE</div>
+              <div className="m4-pseudocode">{`Initialize X_i, ΔX_i (i = 1..N)
+
+while iter < max_iter:
+  Evaluate fitness(X_i) for all i
+  Update food (best) and enemy (worst)
+  Update w, s, a, c, f, e
+  Update neighbourhood radius r
+
+  for each dragonfly i:
+    Find neighbours within radius r
+
+    if neighbours ≥ 1:
+      Compute S, A, C, F, E
+      ΔX ← s·S + a·A + c·C + f·F + e·E + w·ΔX
+      X  ← X + ΔX
+    else:
+      X  ← X + Levy(d)·X   [random walk]
+
+    Clamp X to [lower, upper]`}</div>
+            </div>
+          </div>
+
+          <div className="m4-card">
+            <div className="m4-card-h">VARIANTS</div>
+            {[
+              {title:'Binary DA (BDA)', col:'#6c8ebf', body:<div style={{fontSize:'0.77rem',color:'var(--text-1)',lineHeight:1.75}}>
+                <p><strong>Problem:</strong> Positions can only be 0 or 1 — step vectors cannot be added directly.</p>
+                <p><strong>Solution:</strong> V-shaped transfer function converts step value → flip probability:</p>
+                <div style={{fontFamily:'monospace',fontSize:'0.75rem',color:'#6c8ebf',background:'rgba(108,142,191,0.08)',padding:'0.35rem 0.65rem',borderRadius:4,margin:'0.35rem 0'}}>T(Δx) = |Δx / √(Δx² + 1)|</div>
+                <p>V-shaped (not S-shaped) avoids forcing convergence to 0 or 1 extremes. <em style={{color:'var(--text-2)'}}>Use case: feature selection, binary combinatorial problems.</em></p>
+              </div>},
+              {title:'Multi-Objective DA (MODA)', col:'#4caf50', body:<div style={{fontSize:'0.77rem',color:'var(--text-1)',lineHeight:1.75}}>
+                <p><strong>Problem:</strong> Multiple conflicting objectives → Pareto front needed instead of a single best.</p>
+                <p><strong>Addition:</strong> Pareto archive stores all non-dominated solutions. A hypersphere grid partitions objective space:</p>
+                <ul style={{paddingLeft:'1.2rem',margin:'0.3rem 0'}}>
+                  <li>Food selected from <em>least populated</em> segment → improves Pareto front coverage</li>
+                  <li>Enemy selected from <em>most populated</em> segment → avoids revisiting dense regions</li>
+                </ul>
+                <p style={{color:'var(--text-2)',fontSize:'0.73rem'}}>Outperforms NSGA-II; applied to 20-variable submarine propeller design (61 Pareto solutions).</p>
+              </div>},
+              {title:'Lévy Flight', col:'#fbbf24', body:<div style={{fontSize:'0.77rem',color:'var(--text-1)',lineHeight:1.75}}>
+                <p><strong>Purpose:</strong> Isolated dragonflies (no neighbours) use a heavy-tailed random walk instead of swarm rules.</p>
+                <div style={{fontFamily:'monospace',fontSize:'0.74rem',color:'#fbbf24',background:'rgba(251,191,36,0.08)',padding:'0.35rem 0.65rem',borderRadius:4,margin:'0.35rem 0'}}>
+                  Levy(λ) = 0.01 × r₁·σ / |r₂|^(1/β) &nbsp; β=1.5, σ=0.6966
+                </div>
+                <p>Heavy tails → occasional large jumps prevent stagnation during early fragmented exploration when neighbourhood radius is still small.</p>
+              </div>},
+            ].map(v=>(
+              <details key={v.title} style={{borderBottom:'1px solid var(--border)',paddingBottom:'0.4rem',marginBottom:'0.35rem'}}>
+                <summary style={{cursor:'pointer',fontWeight:700,fontSize:'0.79rem',color:v.col,padding:'0.45rem 0',userSelect:'none'}}>▶ {v.title}</summary>
+                <div style={{paddingTop:'0.4rem',paddingLeft:'0.5rem'}}>{v.body}</div>
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sec === 'simulation' && (
+        <div>
+          <div className="m4-sec-hdr" style={{marginBottom:'1rem'}}>
+            <h2 className="m4-sec-title" style={{fontSize:'1rem'}}>Live 2D Simulation <span className="m4-badge">Ackley Function Landscape</span></h2>
+            <p className="m4-sec-sub">20 dragonflies searching the Ackley function (global minimum at origin). Dark = low fitness (good). Watch the swarm transition from fragmented exploration to cohesive convergence as the neighbourhood radius grows.</p>
+          </div>
+          <DragonflySimPanel />
+        </div>
+      )}
+
+      {sec === 'qa' && (
+        <div>
+          <div className="m4-card" style={{background:'rgba(108,142,191,0.06)',border:'1px solid rgba(108,142,191,0.2)',marginBottom:'1rem'}}>
+            <div style={{fontSize:'0.78rem',color:'var(--text-2)'}}>Six standard review questions from the CITS4404 Part 1 assignment synopsis, answered with reference to the paper. Each answer is drawn directly from the paper content.</div>
+          </div>
+          {[
+            {n:'1',col:'#6c8ebf',q:'What problem with existing algorithms is the new algorithm attempting to solve?',
+             a:`The Dragonfly Algorithm targets continuous, binary, and multi-objective optimisation. Its motivation is twofold. First, despite an extensive body of SI research (PSO, ACO, ABC), the swarming behaviour of dragonflies had never been computationally modelled — a gap in the literature representing a potential source of novel algorithmic behaviour. Second, the No Free Lunch theorem guarantees that no single algorithm is universally optimal, so a genuinely distinct algorithm can outperform existing ones on classes of problems where they are weak. The paper positions DA not as a replacement for PSO but as a complementary tool in the optimisation toolkit.`,
+             ref:'Section 1 (Introduction) and Section 1.3 (Motivation for the Dragonfly Algorithm)'},
+            {n:'2',col:'#8e6cbf',q:'Why, or in what respect, have previous attempts failed?',
+             a:`Existing SI algorithms each capture only a subset of the behavioural repertoire relevant to swarm survival. PSO tracks only personal and global bests (analogous to food attraction and a weak form of cohesion). Several improved PSO variants added separation, alignment, or cohesion operators individually but none unified all five survival behaviours. More critically, no prior algorithm formally distinguished between the two qualitatively different modes of dragonfly swarming: static hunting swarms (small, back-and-forth — mapping to exploration) and dynamic migratory swarms (large, unidirectional — mapping to exploitation). This distinction allows DA to adapt its exploration/exploitation balance more explicitly than PSO's single velocity update rule permits. The absence of an enemy mechanism in standard PSO also means agents are pulled toward good regions but never explicitly pushed away from bad ones.`,
+             ref:'Section 1.1 (Existing SI Algorithms) and Section 1.2 (Advantages of SI-based Algorithms)'},
+            {n:'3',col:'#4caf50',q:'What is the new idea presented in this paper?',
+             a:`DA introduces five behavioural operators — separation, alignment, cohesion, food attraction, and enemy distraction — combined into a single step vector update. The key novelties are: (1) the explicit enemy operator that steers agents away from the current worst solution, which has no direct equivalent in PSO; (2) the distinction between static and dynamic swarming modes, implemented by adaptively tuning alignment weight (high → exploitation) and cohesion weight while growing the neighbourhood radius over time; and (3) Lévy flight as a fallback for isolated agents, giving heavy-tailed random steps to avoid stagnation. Two variants extend DA: the Binary DA (BDA) uses a v-shaped transfer function to handle binary search spaces, and the Multi-Objective DA (MODA) adds a Pareto archive with a hypersphere grid selection mechanism that balances convergence and coverage.`,
+             ref:'Section 2 (Inspiration), Section 3.1–3.5 (Mathematical models), Section 3.7 (BDA), Section 3.8 (MODA)'},
+            {n:'4',col:'#ff9800',q:'How is the new approach demonstrated?',
+             a:`The paper demonstrates DA through three experiment sets. For the continuous DA, 19 benchmark functions are used: 7 unimodal (testing convergence/exploitation), 6 multimodal (testing exploration/local-optima avoidance), and 6 composite (shifted, rotated, combined functions that mimic real search spaces). Each is evaluated with 30 agents over 500 iterations, repeated 30 times, with PSO and GA as baselines. Statistical significance is assessed via the Wilcoxon rank-sum test. For BDA, the same 13 functions are encoded into 75 binary variables and compared against BPSO and BGSA. For MODA, five ZDT benchmark functions plus a real 20-variable submarine propeller design problem are solved and compared against MOPSO and NSGA-II using Inverse Generalised Distance (IGD). The paper provides full pseudocode, parameter values, and benchmark definitions in appendices, and source code is publicly available — sufficient for replication.`,
+             ref:'Section 4.1 (DA results setup), Section 4.2 (BDA setup), Section 4.3 (MODA setup), Section 4.4 (propeller case study), Appendices 1–2'},
+            {n:'5',col:'#e57373',q:'What are the results or outcomes and how are they validated?',
+             a:`DA achieves the best or joint-best result on 13 of 19 single-objective benchmark functions. Against GA, differences are statistically significant on nearly all functions. Against PSO, DA is superior on most unimodal functions but the advantage is not significant on several multimodal cases, suggesting comparable exploration ability. A notable exception is TF8 (Schwefel function) where PSO strongly outperforms DA — the only systematic weakness identified. On composite functions the advantage over PSO is inconsistent. BDA outperforms BPSO and BGSA on 11 of 13 binary functions with strong statistical significance. MODA consistently beats NSGA-II by a large margin and outperforms MOPSO on ZDT3 and the three-objective test case. The submarine propeller problem yielded 61 well-distributed Pareto optimal solutions. Four behavioural diagnostics (search history, trajectory, average fitness, convergence curve) provide qualitative confirmation of the algorithm's convergence properties.`,
+             ref:'Section 4.1 (Tables 1–2), Section 4.2 (Tables 3–4), Section 4.3 (Tables 5–9), Section 4.4 (propeller results)'},
+            {n:'6',col:'#78909c',q:'What is your assessment of the conclusions?',
+             a:`The core claims — that DA is a competitive single-objective optimiser and that BDA and MODA outperform their respective comparators — are largely substantiated. The methodology is sound: multiple runs, statistical testing, and diverse benchmark coverage all follow standard practice. However, three caveats limit the strength of the claims. First, the comparison set is narrow: only PSO and GA are used as single-objective baselines, omitting contemporary algorithms like Differential Evolution or Grey Wolf Optimiser. Second, DA's advantage over PSO on composite functions is modest and statistically insignificant in several cases, which matters given that composite functions best resemble real-world landscapes. Third, the propeller design case study cannot be verified against a known Pareto front. Overall the conclusions are justified within the scope of the experiments, but the paper would benefit from a wider baseline comparison. For this assignment, DA is a strong candidate for Part 2: the explicit food/enemy mechanism and five-operator framework translate naturally to continuous parameter search, and the algorithm is straightforward to implement from the pseudocode.`,
+             ref:'Section 4 (Discussion throughout), Section 5 (Conclusion), Section 1.3 (NFL motivation)'},
+          ].map(card=>(
+            <details key={card.n} open style={{marginBottom:'0.75rem',background:'var(--surface)',border:`1px solid ${card.col}33`,borderRadius:8,overflow:'hidden',borderLeft:`4px solid ${card.col}`}}>
+              <summary style={{cursor:'pointer',padding:'0.85rem 1.1rem',display:'flex',alignItems:'flex-start',gap:'0.65rem',userSelect:'none'}}>
+                <span style={{flexShrink:0,width:22,height:22,borderRadius:'50%',background:card.col,color:'#fff',fontFamily:'monospace',fontWeight:700,fontSize:'0.72rem',display:'flex',alignItems:'center',justifyContent:'center'}}>{card.n}</span>
+                <span style={{fontWeight:700,fontSize:'0.82rem',color:'var(--text-0)',lineHeight:1.4}}>{card.q}</span>
+              </summary>
+              <div style={{padding:'0 1.1rem 1rem 1.1rem'}}>
+                <p style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.75,margin:'0 0 0.65rem 0'}}>{card.a}</p>
+                <div style={{fontSize:'0.69rem',color:card.col,fontFamily:'monospace',background:`${card.col}12`,display:'inline-block',padding:'2px 8px',borderRadius:4}}>📄 {card.ref}</div>
+              </div>
+            </details>
+          ))}
+        </div>
+      )}
+
+      {sec === 'paper' && (
+        <div>
+          <div className="m4-card">
+            <div className="m4-card-h">PAPER STRUCTURE MAP</div>
+            <div style={{fontSize:'0.76rem',color:'var(--text-2)',marginBottom:'0.85rem'}}>
+              Mirjalili, S. (2016). Dragonfly algorithm: a new meta-heuristic optimization technique. <em>Neural Computing and Applications</em>, 27, 1053–1073. DOI: 10.1007/s00521-015-1920-1
+            </div>
+            <div style={{overflowX:'auto'}}>
+              <table className="m4-rule-tbl" style={{fontSize:'0.75rem',width:'100%'}}>
+                <thead>
+                  <tr><th style={{width:'14%'}}>Section</th><th style={{width:'24%'}}>Title</th><th>Contents</th></tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['1','Introduction','Motivation, existing SI algorithms (ACO, PSO, ABC), No Free Lunch theorem'],
+                    ['2','Inspiration','Dragonfly biology, static vs dynamic swarming, mapping to exploration/exploitation'],
+                    ['3.1–3.5','DA — Operators','Five operators (S,A,C,F,E), step/position equations, adaptive weights, Lévy flight'],
+                    ['3.6','DA Pseudocode','Full algorithm with neighbourhood radius logic and boundary clamping'],
+                    ['3.7','Binary DA (BDA)','V-shaped transfer function, binary position update rule, neighbourhood handling'],
+                    ['3.8','MODA','Pareto archive, hypersphere grid, food/enemy selection probabilities, archive management rules'],
+                    ['4.1','DA Results','19 benchmark functions (7 unimodal + 6 multimodal + 6 composite) vs PSO and GA'],
+                    ['4.2','BDA Results','13 binary benchmark functions vs BPSO and BGSA — Wilcoxon rank-sum test'],
+                    ['4.3','MODA Results','5 ZDT functions vs MOPSO and NSGA-II — IGD metric, qualitative Pareto fronts'],
+                    ['4.4','Real Case Study','Submarine propeller design: 20 variables, 2 objectives, 61 Pareto solutions'],
+                    ['5','Conclusions','Summary of findings, convergence observations, future research directions'],
+                    ['App. 1','Benchmark Definitions','Formulas for all 19 single-objective test functions'],
+                    ['App. 2','ZDT Definitions','Formulas for all 5 multi-objective ZDT test functions'],
+                  ].map(([s,t,c])=>(
+                    <tr key={s}>
+                      <td><span style={{fontFamily:'monospace',color:'var(--cyan)',fontWeight:600}}>{s}</span></td>
+                      <td style={{fontWeight:600,color:'var(--text-0)'}}>{t}</td>
+                      <td style={{color:'var(--text-2)'}}>{c}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">BENCHMARK RESULTS SUMMARY</div>
+              <table className="m4-rule-tbl" style={{fontSize:'0.74rem',width:'100%'}}>
+                <thead><tr><th>Setting</th><th>Comparators</th><th>DA Outcome</th></tr></thead>
+                <tbody>
+                  <tr><td>Continuous (19 fns)</td><td>PSO, GA</td><td style={{color:'var(--emerald)'}}>Best on 13 / 19</td></tr>
+                  <tr><td>Binary (13 fns)</td><td>BPSO, BGSA</td><td style={{color:'var(--emerald)'}}>Best on 11 / 13</td></tr>
+                  <tr><td>Multi-objective (5 ZDT)</td><td>MOPSO, NSGA-II</td><td style={{color:'var(--emerald)'}}>Beats NSGA-II; comp. vs MOPSO</td></tr>
+                  <tr><td>Propeller design</td><td>—</td><td style={{color:'var(--cyan)'}}>61 Pareto solutions</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-infobox" style={{marginTop:'0.75rem',fontSize:'0.76rem'}}>
+                <strong>Notable exception:</strong> TF8 (Schwefel function) — PSO strongly outperforms DA. The only systematic weakness, consistent with the No Free Lunch theorem.
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">CRITICAL ASSESSMENT</div>
+              <ul className="m4-bullets">
+                <li><strong>Strengths:</strong> Sound methodology — 30 runs, Wilcoxon testing, diverse benchmarks, public source code, three fully developed variants.</li>
+                <li><strong>Limitation 1:</strong> Narrow baseline — only PSO and GA for continuous DA; no Differential Evolution or Grey Wolf Optimiser.</li>
+                <li><strong>Limitation 2:</strong> Composite function advantage over PSO is modest and often statistically insignificant.</li>
+                <li><strong>Limitation 3:</strong> Propeller design has no known true Pareto front for independent verification.</li>
+                <li><strong>Verdict:</strong> Claims justified within experimental scope. Strong Part 2 candidate — food/enemy mechanism translates naturally to trading bot weight optimisation.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:6,padding:'0.7rem 1rem',fontSize:'0.71rem',color:'var(--text-2)',fontFamily:'monospace',lineHeight:2}}>
+            Paper: Mirjalili, S. (2016). Dragonfly algorithm. Neural Computing and Applications, 27, 1053–1073.<br/>
+            Source code: http://www.alimirjalili.com/DA.html &nbsp;|&nbsp; Built for CITS4404 — University of Western Australia, 2026
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Labs','Quiz','Practice Exam','Group Project'];
+const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4404() {
@@ -5478,6 +6103,7 @@ export default function CITS4404() {
                 {code:'L6–9', title:'Optimisation Algorithms', color:'var(--amber)', desc:'Gradient descent/ascent, Newton-Raphson, direct methods (CCS, Powell, H-J, Nelder-Mead), stochastic methods (HC, SA, Tabu, ILS), No Free Lunch.', go:'Algorithms'},
                 {code:'L4', title:'Job Shop Scheduling', color:'var(--rose)', desc:'JSSP formulation, makespan minimisation (n!)ᵐ solution space, dispatching rules, disjunctive graph, N1 local search, benchmark instances, RPD metric.', go:'Job Shop'},
                 {code:'Labs 1–2', title:'PRNG & Bin Packing', color:'var(--violet)', desc:'LCG recurrence, Mersenne primes, full-period theorem. Bin packing heuristics: FF, NF, BF, FFD. Online vs offline algorithms.', go:'Labs'},
+                {code:'Paper', title:'Dragonfly Algorithm', color:'var(--cyan)', desc:'Swarm intelligence metaheuristic (Mirjalili, 2016). Five behavioural operators, live 2D simulation on Ackley function, literature review Q&A with paper references.', go:'Dragonfly Algorithm'},
               ].map(item => (
                 <div key={item.code} className="m4-tcard" style={{'--tc':item.color}} onClick={() => setTab(item.go)}>
                   <div className="m4-tcard-code">{item.code}</div>
@@ -5619,6 +6245,15 @@ export default function CITS4404() {
             <p className="m4-sec-sub">Build and optimise an AI trading bot for Bitcoin using nature-inspired metaheuristics. Track deadlines, manage tasks, and navigate directly to the relevant course content.</p>
           </div>
           <GroupProjectTab setTab={setTab} />
+        </>)}
+
+        {/* ── DRAGONFLY ALGORITHM ── */}
+        {tab === 'Dragonfly Algorithm' && (<>
+          <div className="m4-sec-hdr">
+            <h2 className="m4-sec-title">Dragonfly Algorithm <span className="m4-badge" style={{background:'rgba(34,211,238,0.12)',color:'var(--cyan)',border:'1px solid rgba(34,211,238,0.3)'}}>Mirjalili, 2016</span></h2>
+            <p className="m4-sec-sub">A swarm intelligence metaheuristic inspired by dragonfly swarming behaviour. Combines five behavioural operators with an adaptive neighbourhood radius to balance exploration and exploitation. Includes a live 2D simulation and literature review synopsis.</p>
+          </div>
+          <DragonflyTab />
         </>)}
 
       </main>
