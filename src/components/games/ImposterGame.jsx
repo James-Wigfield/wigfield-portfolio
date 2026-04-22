@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import arcadeOutside from '../../assets/gifs/arcade_outside.gif';
 import './ImposterGame.css';
 
-const WS_BASE = import.meta.env.VITE_IMPOSTER_WS_URL ?? 'wss://imposter-game-worker.YOUR_SUBDOMAIN.workers.dev/ws';
+const WS_BASE = import.meta.env.VITE_IMPOSTER_WS_URL ?? 'wss://imposter-game-worker.jameswigfield1.workers.dev/ws';
 
 const CATEGORIES = ['Animals', 'Food', 'Places', 'Movies', 'Sports', 'Objects', 'Professions', 'Sci-Fi'];
 
@@ -302,6 +302,7 @@ export default function ImposterGame() {
     wsRef.current = ws;
 
     ws.onmessage = (e) => {
+      connected = true;
       let data;
       try { data = JSON.parse(e.data); } catch { return; }
       if (data.type === 'state') {
@@ -310,15 +311,19 @@ export default function ImposterGame() {
       }
     };
 
+    let connected = false;
+
     ws.onclose = () => {
       if (wsRef.current === ws) {
         wsRef.current = null;
         setScreen('entry');
-        setConnError('Disconnected from server.');
+        if (connected) setConnError('Disconnected from server.');
       }
     };
 
-    ws.onerror = () => setConnError('Could not connect. Check the Worker URL.');
+    ws.onerror = () => {
+      setConnError('Could not connect to the game server. Check the Worker is deployed.');
+    };
   }, []);
 
   const sendMsg = useCallback((msg) => {
