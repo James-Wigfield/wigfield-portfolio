@@ -102,6 +102,8 @@ function EntryScreen({ onConnect, onLeave, connError }) {
 // ── Lobby screen ──────────────────────────────────────────────────────────────
 function LobbyScreen({ state, onStart, onConfig, onLeave }) {
   const playerCount = state.players.length;
+  const configCategory = state.config?.category ?? 'random';
+  const configImposters = state.config?.imposters ?? 'random';
 
   const imposterOptions = [
     { value: 'random', label: 'RANDOM' },
@@ -140,7 +142,7 @@ function LobbyScreen({ state, onStart, onConfig, onLeave }) {
                 <select
                   id="ig-cat"
                   className="ig-select"
-                  value={state.config.category}
+                  value={configCategory}
                   onChange={handleCategory}
                 >
                   <option value="random">RANDOM</option>
@@ -150,7 +152,7 @@ function LobbyScreen({ state, onStart, onConfig, onLeave }) {
                 </select>
               ) : (
                 <p className="ig-config-val">
-                  {state.config.category === 'random' ? 'RANDOM' : state.config.category.toUpperCase()}
+                  {configCategory === 'random' ? 'RANDOM' : configCategory.toUpperCase()}
                 </p>
               )}
             </div>
@@ -161,7 +163,7 @@ function LobbyScreen({ state, onStart, onConfig, onLeave }) {
                 <select
                   id="ig-imp"
                   className="ig-select"
-                  value={state.config.imposters}
+                  value={configImposters}
                   onChange={handleImposters}
                 >
                   {imposterOptions.map(o => (
@@ -170,7 +172,7 @@ function LobbyScreen({ state, onStart, onConfig, onLeave }) {
                 </select>
               ) : (
                 <p className="ig-config-val">
-                  {state.config.imposters === 'random' ? 'RANDOM' : state.config.imposters}
+                  {configImposters === 'random' ? 'RANDOM' : configImposters}
                 </p>
               )}
             </div>
@@ -270,11 +272,13 @@ function GameScreen({ state, onNextRound, onBackToLobby, onLeave }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function ImposterGame() {
-  const navigate              = useNavigate();
-  const wsRef                 = useRef(null);
-  const [screen, setScreen]   = useState('entry');
+  const navigate                  = useNavigate();
+  const wsRef                     = useRef(null);
+  // gameState is the single source of truth for which screen to show.
+  // null = entry/connecting, populated = lobby or game based on phase.
   const [gameState, setGameState] = useState(null);
   const [connError, setConnError] = useState('');
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     document.title = 'Word Imposter';
@@ -302,27 +306,27 @@ export default function ImposterGame() {
     wsRef.current = ws;
 
     ws.onmessage = (e) => {
-      connected = true;
       let data;
       try { data = JSON.parse(e.data); } catch { return; }
       if (data.type === 'state') {
+        setConnected(true);
         setGameState(data);
-        setScreen(data.phase === 'game' ? 'game' : 'lobby');
       }
     };
-
-    let connected = false;
 
     ws.onclose = () => {
       if (wsRef.current === ws) {
         wsRef.current = null;
-        setScreen('entry');
-        if (connected) setConnError('Disconnected from server.');
+        setConnected(prev => {
+          if (prev) setConnError('Disconnected from server.');
+          return false;
+        });
+        setGameState(null);
       }
     };
 
     ws.onerror = () => {
-      setConnError('Could not connect to the game server. Check the Worker is deployed.');
+      setConnError('Could not connect to the game server. Is the Worker deployed?');
     };
   }, []);
 
@@ -330,28 +334,9 @@ export default function ImposterGame() {
     wsRef.current?.send(JSON.stringify(msg));
   }, []);
 
-  if (screen === 'entry') {
-    return (
-      <EntryScreen
-        onConnect={connect}
-        onLeave={leaveToArcade}
-        connError={connError}
-      />
-    );
-  }
-
-  if (screen === 'lobby' && gameState) {
-    return (
-      <LobbyScreen
-        state={gameState}
-        onStart={() => sendMsg({ type: 'start' })}
-        onConfig={(patch) => sendMsg({ type: 'config', ...patch })}
-        onLeave={leaveToArcade}
-      />
-    );
-  }
-
-  if (screen === 'game' && gameState) {
+  // Derive current screen purely from gameState — no separate screen state
+  // that could get out of sync with gameState.
+  if (connected && gameState?.phase === 'game') {
     return (
       <GameScreen
         state={gameState}
@@ -362,5 +347,22 @@ export default function ImposterGame() {
     );
   }
 
-  return null;
+  if (connected && gameState?.phase === 'lobby') {
+    return (
+      <LobbyScreen
+        state={gameState}
+        onStart={() => sendMsg({ type: 'start' })}
+        onConfig={(patch) => sendMsg({ type: 'config', ...patch })}
+        onLeave={leaveToArcade}
+      />
+    );
+  }
+
+  return (
+    <EntryScreen
+      onConnect={connect}
+      onLeave={leaveToArcade}
+      connError={connError}
+    />
+  );
 }
