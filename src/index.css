@@ -1414,6 +1414,342 @@ strong { color: var(--text-0); font-weight: 600; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   ARCADE VAULT — /games route   (games- / game-card prefix)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── PIN Gate ────────────────────────────────────────────────── */
+.games-gate {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.games-gate__bg {
+  position: absolute;
+  inset: 0;
+}
+.games-gate__gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.4;
+  filter: saturate(0.7);
+}
+.games-gate__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--bg-0) 0%, rgba(2,8,23,0.5) 50%, var(--bg-0) 100%);
+}
+.games-gate__scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  pointer-events: none;
+}
+.games-gate__box {
+  position: relative;
+  z-index: 1;
+  background: rgba(7, 16, 31, 0.88);
+  border: 1px solid var(--amber);
+  box-shadow: var(--glow-amber), inset 0 0 40px rgba(251,191,36,0.04);
+  border-radius: 12px;
+  padding: 3rem 3.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  backdrop-filter: blur(20px);
+}
+@keyframes games-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-10px); }
+  40%       { transform: translateX(10px); }
+  60%       { transform: translateX(-7px); }
+  80%       { transform: translateX(7px); }
+}
+.games-gate__box--shake { animation: games-shake 0.5s var(--ease); }
+.games-gate__logo {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  color: var(--text-0);
+}
+.games-gate__label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: var(--text-2);
+}
+.games-gate__inputs {
+  display: flex;
+  gap: 1rem;
+}
+.games-gate__digit {
+  width: 3rem;
+  height: 3.5rem;
+  background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: 6px;
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  text-align: center;
+  caret-color: transparent;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.games-gate__digit:focus {
+  border-color: var(--amber);
+  box-shadow: var(--glow-amber);
+}
+.games-gate__digit--error {
+  border-color: var(--rose);
+  color: var(--rose);
+  box-shadow: var(--glow-rose);
+}
+.games-gate__error {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--rose);
+  letter-spacing: 0.15em;
+}
+
+/* ── Games Dashboard ─────────────────────────────────────────── */
+.games {
+  min-height: 100vh;
+  background: var(--bg-0);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ambient side gifs */
+.games__ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.games__ambient-gif {
+  position: absolute;
+  top: 0;
+  height: 100vh;
+  width: 220px;
+  object-fit: cover;
+  opacity: 0.15;
+  filter: saturate(0.5) brightness(0.65);
+}
+.games__ambient-gif--left  { left: 0;  mask-image: linear-gradient(to right, black 60%, transparent); }
+.games__ambient-gif--right { right: 0; mask-image: linear-gradient(to left,  black 60%, transparent); }
+
+.games__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: clamp(3rem, 8vw, 6rem) 1.5rem;
+}
+
+/* Banner */
+.games__banner {
+  position: relative;
+  width: 100%;
+  height: clamp(200px, 30vw, 300px);
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(251,191,36,0.25);
+  margin-bottom: 2.5rem;
+  box-shadow: var(--glow-amber);
+}
+.games__banner-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.75) brightness(0.75);
+}
+.games__banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(2,8,23,0.2) 0%,
+    rgba(2,8,23,0.1) 40%,
+    rgba(2,8,23,0.75) 100%
+  );
+}
+.games__banner-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.12) 3px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+}
+.games__banner-content {
+  position: absolute;
+  bottom: 1.75rem;
+  left: 2rem;
+}
+.games__banner-sys {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: rgba(251,191,36,0.6);
+  margin-bottom: 0.3rem;
+}
+.games__banner-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.8);
+}
+.games__banner-sub {
+  margin-top: 0.5rem;
+  color: var(--text-1);
+  font-size: 0.9rem;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+}
+
+/* Stats bar */
+.games__stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+  margin-bottom: 3rem;
+}
+.games__stat-val { font-weight: 700; }
+.games__stat-divider { opacity: 0.4; }
+
+/* Game grid */
+.games__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Game card */
+.game-card {
+  background: var(--surface);
+  border: 1px solid var(--card-border, var(--amber));
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  outline: none;
+}
+.game-card--soon { cursor: default; }
+.game-card:not(.game-card--soon):hover,
+.game-card:not(.game-card--soon):focus-visible {
+  transform: translateY(-4px);
+  box-shadow: var(--card-glow);
+}
+.game-card--soon:hover {
+  box-shadow: 0 0 10px rgba(251,191,36,0.08);
+}
+.game-card__gif-wrap {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+}
+.game-card__gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.6) brightness(0.72);
+  transition: filter 0.3s;
+}
+.game-card:not(.game-card--soon):hover .game-card__gif { filter: saturate(0.9) brightness(0.9); }
+.game-card__gif-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, var(--bg-0) 100%);
+}
+.game-card__scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.1) 3px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+  pointer-events: none;
+}
+.game-card__tag {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--card-text, var(--amber));
+  background: var(--card-dim, var(--amber-dim));
+  border: 1px solid var(--card-border, var(--amber));
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.game-card__body {
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+.game-card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-0);
+  margin-bottom: 0.6rem;
+}
+.game-card__desc {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+.game-card__enter {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--card-text, var(--amber));
+  letter-spacing: 0.1em;
+}
+.game-card--soon .game-card__enter { opacity: 0.5; }
+
+/* Games footer */
+.games__footer {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+}
+
+/* ── Games responsive ────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .games__ambient { display: none; }
+  .games-gate__box { padding: 2rem 1.5rem; }
+  .games__banner-content { left: 1.25rem; bottom: 1.25rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    CITS4404 — AI & Adaptive Systems module   (m4- prefix)
    ═══════════════════════════════════════════════════════════════ */
 

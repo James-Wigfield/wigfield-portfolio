@@ -8,6 +8,7 @@ import Skills from './components/Skills';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import Hub from './components/Hub';
+import Games from './components/Games';
 import UniversityModule from './components/UniversityModule';
 import CITS4404 from './components/modules/CITS4404';
 import CITS5508 from './components/modules/CITS5508';
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/hub/cits5508" element={<CITS5508 />} />
       <Route path="/hub/honours" element={<Honours />} />
       <Route path="/hub/:moduleId" element={<UniversityModule />} />
+      <Route path="/games" element={<Games />} />
     </Routes>
   );
 }
