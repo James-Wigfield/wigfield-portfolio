@@ -24,6 +24,15 @@ const GAMES = [
     comingSoon: false,
   },
   {
+    id: 'campfire',
+    title: 'Campfire Legends',
+    description: 'Pass-and-play storytelling. Draw a prompt, spin a spooky legend in 90 seconds, and earn embers from your crew.',
+    gif: smokingCity,
+    color: 'amber',
+    tag: 'PASS & PLAY',
+    comingSoon: false,
+  },
+  {
     id: 'snake',
     title: 'Snake',
     description: 'Classic arcade snake. Navigate the grid, collect pixels, grow longer, avoid the walls.',
