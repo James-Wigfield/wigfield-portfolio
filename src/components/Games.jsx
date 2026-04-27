@@ -33,6 +33,15 @@ const GAMES = [
     comingSoon: false,
   },
   {
+    id: 'artemis2',
+    title: 'Artemis 2 Mission Viz',
+    description: '3D interactive visualization of NASA\'s first crewed lunar flyby. Explore the trajectory, crew, and all mission phases.',
+    gif: arcade2Gif,
+    color: 'cyan',
+    tag: 'INTERACTIVE',
+    comingSoon: false,
+  },
+  {
     id: 'snake',
     title: 'Snake',
     description: 'Classic arcade snake. Navigate the grid, collect pixels, grow longer, avoid the walls.',
