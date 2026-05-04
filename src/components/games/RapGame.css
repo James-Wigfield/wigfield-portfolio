@@ -1,0 +1,435 @@
+@import './_game-shared.css';
+
+/* ── Freestyle Lab — game-specific styles ────────────────────────────────── */
+
+.rg-banner-gif { object-position: center 35%; }
+
+.rg-logo {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--rose);
+  letter-spacing: 0.22em;
+  text-shadow: var(--glow-rose);
+  text-align: center;
+}
+.rg-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-2);
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ── Setup ────────────────────────────────────────────────────────────────── */
+.rg-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--text-0);
+  letter-spacing: 0.18em;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+.rg-section-sub {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-2);
+  text-align: center;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.rg-tempo-grid {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.rg-tempo-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+}
+.rg-tempo-btn:hover { border-color: rgba(251, 113, 133, 0.4); color: var(--rose); }
+.rg-tempo-btn--on {
+  border-color: var(--rose);
+  color: var(--rose);
+  box-shadow: var(--glow-rose);
+  background: rgba(251, 113, 133, 0.08);
+}
+
+.rg-label {
+  display: block;
+  font-size: 0.66rem;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  letter-spacing: 0.15em;
+}
+
+.rg-how-to {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.rg-how-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--rose);
+  letter-spacing: 0.18em;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+.rg-how-list {
+  list-style: decimal;
+  padding-left: 1.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-2);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+.rg-how-list li::marker { color: var(--rose); }
+.rg-hi         { color: var(--rose); }
+.rg-hi--violet { color: var(--violet); }
+
+/* ── Play screen ──────────────────────────────────────────────────────────── */
+.rg-play { max-width: 640px; }
+
+.rg-status {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.rg-status-pill {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+}
+.rg-status-pill--violet {
+  color: var(--violet);
+  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(167, 139, 250, 0.25);
+}
+.rg-status-pill--rose {
+  color: var(--rose);
+  background: rgba(251, 113, 133, 0.08);
+  border-color: rgba(251, 113, 133, 0.25);
+}
+
+/* Stage that holds ball + blocks */
+.rg-stage {
+  background: linear-gradient(180deg, rgba(15,23,42,0.7) 0%, rgba(2,8,23,0.85) 100%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2.5rem 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 0 40px rgba(251, 113, 133, 0.08) inset;
+  overflow: hidden;
+  position: relative;
+}
+.rg-stage::before {
+  /* subtle vinyl-style scanlines */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
+  pointer-events: none;
+}
+
+.rg-track {
+  position: relative;
+  height: 130px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+  gap: 0.6rem;
+}
+
+.rg-ball {
+  position: absolute;
+  bottom: 95px;
+  left: 12.5%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, var(--rose) 55%, #7a1c2c 100%);
+  box-shadow:
+    0 0 12px rgba(251, 113, 133, 0.9),
+    0 0 28px rgba(251, 113, 133, 0.55),
+    0 0 50px rgba(251, 113, 133, 0.25);
+  transform: translate(-50%, 0);
+  z-index: 5;
+  pointer-events: none;
+}
+/* Ball trail/shadow on the floor */
+.rg-ball::after {
+  content: '';
+  position: absolute;
+  bottom: -90px;
+  left: 50%;
+  width: 30px;
+  height: 6px;
+  background: rgba(251, 113, 133, 0.5);
+  filter: blur(4px);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.rg-block {
+  height: 80px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.rg-block--hidden {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(167, 139, 250, 0.08),
+    rgba(167, 139, 250, 0.08) 6px,
+    rgba(15, 23, 42, 0.7) 6px,
+    rgba(15, 23, 42, 0.7) 12px
+  );
+  border-color: rgba(167, 139, 250, 0.18);
+}
+.rg-block--hidden .rg-block-glyph {
+  color: rgba(167, 139, 250, 0.35);
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+}
+
+.rg-block--target {
+  border-color: var(--rose);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(251, 113, 133, 0.18) 0%, transparent 70%),
+    rgba(15, 23, 42, 0.85);
+  box-shadow: 0 0 22px rgba(251, 113, 133, 0.3);
+}
+.rg-block-label {
+  font-size: 0.55rem;
+  letter-spacing: 0.22em;
+  color: var(--rose);
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+.rg-block-word {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-0);
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 14px rgba(251, 113, 133, 0.5);
+}
+
+/* Highlight the block the ball is currently over */
+.rg-track[data-active="0"] .rg-block[data-idx="0"],
+.rg-track[data-active="1"] .rg-block[data-idx="1"],
+.rg-track[data-active="2"] .rg-block[data-idx="2"],
+.rg-track[data-active="3"] .rg-block[data-idx="3"] {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.rg-track[data-active="3"] .rg-block--target {
+  box-shadow: 0 0 32px rgba(251, 113, 133, 0.65);
+}
+
+/* ── Rhyme bank ───────────────────────────────────────────────────────────── */
+.rg-bank { padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+.rg-bank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.7rem;
+}
+.rg-bank-hint {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.rg-bank-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+}
+.rg-bank-chip {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-1);
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.rg-bank-chip:hover { color: var(--violet); border-color: var(--violet); }
+
+/* ── Tempo slider card ────────────────────────────────────────────────────── */
+.rg-tempo-card {
+  padding: 1rem 1.25rem 1.1rem;
+  margin-bottom: 1rem;
+}
+.rg-tempo-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.7rem;
+}
+.rg-tempo-readout {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--rose);
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 14px rgba(251, 113, 133, 0.45);
+}
+.rg-tempo-unit {
+  font-size: 0.7rem;
+  color: var(--text-2);
+  letter-spacing: 0.18em;
+  margin-left: 0.2rem;
+}
+
+.rg-tempo-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.5), rgba(251, 113, 133, 0.7));
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.rg-tempo-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, var(--rose) 60%, #7a1c2c 100%);
+  border: 2px solid rgba(251, 113, 133, 0.8);
+  box-shadow: 0 0 12px rgba(251, 113, 133, 0.7);
+  cursor: grab;
+  transition: transform 0.1s;
+}
+.rg-tempo-slider::-webkit-slider-thumb:active { transform: scale(1.15); cursor: grabbing; }
+.rg-tempo-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, var(--rose) 60%, #7a1c2c 100%);
+  border: 2px solid rgba(251, 113, 133, 0.8);
+  box-shadow: 0 0 12px rgba(251, 113, 133, 0.7);
+  cursor: grab;
+}
+.rg-tempo-slider::-moz-range-track {
+  height: 6px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.5), rgba(251, 113, 133, 0.7));
+  border-radius: 999px;
+}
+
+.rg-tempo-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+.rg-tempo-scale-mid { color: var(--text-2); }
+
+.rg-tempo-nudge {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+.rg-nudge-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--text-1);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.rg-nudge-btn:hover {
+  color: var(--rose);
+  border-color: rgba(251, 113, 133, 0.4);
+  background: rgba(251, 113, 133, 0.08);
+}
+.rg-nudge-btn:active { transform: scale(0.97); }
+
+.rg-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.rg-controls--three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.rg-paused-banner {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--cyan);
+  letter-spacing: 0.18em;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+  padding: 0.5rem;
+  border: 1px dashed rgba(34, 211, 238, 0.4);
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.05);
+}
+
+.rg-foot-hint {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* Slightly taller/wider track on small screens */
+@media (max-width: 480px) {
+  .rg-block-word { font-size: 0.95rem; }
+  .rg-block-label { font-size: 0.5rem; }
+  .rg-track { gap: 0.3rem; height: 120px; }
+  .rg-stage { padding: 2rem 0.6rem 1rem; }
+  .rg-controls,
+  .rg-controls--three { grid-template-columns: 1fr; }
+}

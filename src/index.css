@@ -3006,6 +3006,30 @@ strong { color: var(--text-0); font-weight: 600; }
 .ho-ms-task { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8rem; color: var(--text-1); line-height: 1.4; }
 .ho-milestone--upcoming .ho-ms-body { opacity: 0.6; }
 
+/* ── Research Papers ─────────────────────────────────────────────────────── */
+.ho-paper-hero { margin-bottom: 1.75rem; padding: 1.75rem; background: linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(34,211,238,0.03) 100%); border: 1px solid rgba(139,92,246,0.22); border-radius: 10px; }
+.ho-paper-venue { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; font-weight: 700; color: var(--violet); background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); padding: 0.18em 0.6em; border-radius: 3px; display: inline-block; margin-bottom: 0.65rem; }
+.ho-paper-title { font-size: 1.6rem; font-weight: 700; color: var(--text-0); margin: 0 0 0.2rem; }
+.ho-paper-subtitle { font-size: 0.9rem; color: var(--text-1); margin: 0 0 0.35rem; }
+.ho-paper-authors { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-2); margin: 0; }
+
+/* ── CMMB mode toggle ────────────────────────────────────────────────────── */
+.ho-mode-toggle { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.ho-mode-label { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.08em; color: var(--text-2); }
+.ho-simple-badge { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; font-weight: 700; padding: 0.15em 0.55em; border-radius: 3px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: var(--emerald); display: inline-block; }
+.ho-tech-badge { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; font-weight: 700; padding: 0.15em 0.55em; border-radius: 3px; background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: var(--cyan); display: inline-block; }
+
+/* ── ToM Visualizer ──────────────────────────────────────────────────────── */
+.ho-tom-row { display: grid; grid-template-columns: 180px 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+@media (max-width: 640px) { .ho-tom-row { grid-template-columns: 1fr; } }
+.ho-tom-box { border: 1.5px solid; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; background: var(--surface); }
+.ho-tom-dir-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; margin: 0; text-align: center; }
+.ho-tom-dir-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; max-width: 120px; }
+.ho-tom-cell { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; text-align: center; background: rgba(255,255,255,0.04); border-radius: 4px; padding: 0.25rem; line-height: 1; }
+.ho-tom-axis-note { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-2); margin: 0; text-align: center; }
+.ho-tom-descs { display: flex; flex-direction: column; gap: 0.75rem; }
+.ho-tom-formula-row { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; margin-top: 0.75rem; }
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ho-hero-title { font-size: 1.3rem; }

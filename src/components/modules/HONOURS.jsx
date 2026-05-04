@@ -1027,9 +1027,558 @@ function TabRoadmap() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  RESEARCH PAPERS — SegResMamba
+// ─────────────────────────────────────────────────────────────────────────────
+const CMMB_BLOCKS = [
+  {
+    id: 'conv5a', label: 'Conv 5×5×5', dims: 'Coarse-grained feature extraction',
+    color: C.cyan,
+    technical: 'A 3D convolution with a large 5×5×5 kernel. The wide receptive field extracts coarse structural features in one step — capturing high-level patterns like organ boundaries or tumour regions across a large 3D neighbourhood.',
+    simple: 'Like a wide-angle lens: this big filter looks at a large 3D region at once, spotting rough outlines of important structures — the shape of an organ, or whether a region might be a tumour.',
+    code: `# Input X: (B, C, D, H, W)
+F1 = Conv3d(in_ch, hidden_ch, kernel_size=5, padding=2)(X)
+# Larger kernel = bigger 3D "view" at each voxel position`,
+  },
+  {
+    id: 'conv3a', label: 'Conv 3×3×3', dims: 'Local detail refinement',
+    color: C.rose,
+    technical: 'A smaller 3×3×3 convolution refines the coarse features — capturing fine-grained local spatial relationships such as sharp edges and texture patterns between adjacent voxels.',
+    simple: 'Now a zoom-in lens: this narrower filter sharpens the picture, picking out fine details like the precise edge between a tumour and healthy tissue, or subtle texture differences.',
+    code: `F2 = Conv3d(hidden_ch, hidden_ch, kernel_size=3, padding=1)(F1)
+# Refines local edges and textures after coarse extraction`,
+  },
+  {
+    id: 'tom1', label: 'ToM — 1st scan', dims: 'Tri-oriented Mamba (global context)',
+    color: C.violet,
+    technical: 'Tri-oriented Mamba flattens the 3D feature map into sequences in three directions — forward-z, reverse-z, and inter-slice — running an independent Mamba SSM on each. Outputs are summed. This captures long-range dependencies across the full 3D volume that convolutions miss.',
+    simple: 'Imagine reading a 3D book in 3 different ways: front-to-back, back-to-front, and jumping across all slices column by column. SegResMamba reads the scan all three ways so distant features can "talk" — a top lesion can connect with a bottom one.',
+    code: `# Flatten 3D volume → three 1D sequences, Mamba on each
+z_f = flatten_z_forward(F2)     # z=0 → z=D (front→back)
+z_r = flatten_z_reverse(F2)     # z=D → z=0 (back→front)
+z_s = flatten_interslice(F2)    # column-wise across slices
+F3 = Mamba(z_f) + Mamba(z_r) + Mamba(z_s)  # sum directions
+F3 = reshape_to_3d(F3)`,
+  },
+  {
+    id: 'conv3b', label: 'Conv 3×3×3', dims: 'Spatial structure recovery',
+    color: C.amber,
+    technical: 'Restores local spatial structure lost when the feature map was flattened to sequences for ToM. Prepares spatially coherent features for the transposed convolution upsampling step.',
+    simple: 'After the global scan, we "re-anchor" where things are in 3D space — moving from abstract long-range connections back to a concrete spatial map of the volume.',
+    code: `F4 = Conv3d(hidden_ch, hidden_ch, kernel_size=3, padding=1)(F3)
+# Re-anchors spatial layout after global SSM scan`,
+  },
+  {
+    id: 'convt5', label: 'ConvT 5×5×5', dims: 'Spatial resolution recovery',
+    color: C.emerald,
+    technical: 'Transposed convolution with 5×5×5 kernel reverses the spatial compression of the initial Conv 5×5×5, restoring the feature map to the original block input resolution.',
+    simple: 'The "zoom out" — we reverse the initial compression, expanding back to full size while keeping all the rich features discovered during processing.',
+    code: `F5 = ConvTranspose3d(hidden_ch, in_ch, kernel_size=5, padding=2)(F4)
+# Mirrors Conv5×5×5 — restores original spatial dimensions`,
+  },
+  {
+    id: 'residual', label: '⊕ Residual', dims: 'Skip: F5 + original input X',
+    color: C.cyan,
+    technical: 'A residual (skip) connection adds the original block input X back to F5. Prevents vanishing gradients and lets the block learn residual corrections rather than full mappings. Essential for stable training of deep networks.',
+    simple: 'Like keeping your original notes while also writing new ones — no matter how much we transform the data, we add the raw input back so nothing valuable is lost. This also stops training from "forgetting" earlier features.',
+    code: `F6 = F5 + X   # residual skip connection
+# Model learns to correct, not rewrite, the input features`,
+  },
+  {
+    id: 'tom2', label: 'ToM — 2nd scan', dims: 'Final global context pass',
+    color: C.violet,
+    technical: 'A second Tri-oriented Mamba scan on F6 = F5 + X. Because F6 combines high-level processed features (F5) with the original low-level input (X), this final SSM pass operates on a richer, multi-scale representation.',
+    simple: 'One last global sweep — now with the full picture: original raw data AND everything learned so far. This is where the model builds its most complete, long-range understanding of the entire 3D volume.',
+    code: `F_out = ToM(F6)
+# Second pass: global context over enriched (conv + original) features`,
+  },
+];
+
+function CMMBDiagram() {
+  const [active, setActive] = useState('tom1');
+  const [mode, setMode] = useState('simple');
+  const block = CMMB_BLOCKS.find(b => b.id === active);
+
+  return (
+    <div>
+      <div className="ho-mode-toggle">
+        <span className="ho-mode-label">Explanation mode:</span>
+        {[['simple', '☁ PLAIN ENGLISH'], ['technical', '</> TECHNICAL']].map(([m, lbl]) => (
+          <button
+            key={m}
+            className={`ho-view-btn${mode === m ? ' ho-view-btn--on' : ''}`}
+            onClick={() => setMode(m)}
+          >{lbl}</button>
+        ))}
+      </div>
+
+      <div className="ho-arch">
+        <div className="ho-arch-flow">
+          <div className="ho-arch-io">
+            <span style={{ color: 'var(--text-2)' }}>Input X</span>
+            <span className="ho-arch-dims">(B, C, D, H, W)</span>
+          </div>
+          <div className="ho-arch-connector" />
+          {CMMB_BLOCKS.map((b, i) => (
+            <div key={b.id}>
+              <button
+                className={`ho-arch-box${active === b.id ? ' ho-arch-box--active' : ''}`}
+                style={{ '--box-color': b.color }}
+                onClick={() => setActive(b.id)}
+              >
+                <span className="ho-arch-box-label">{b.label}</span>
+                <span className="ho-arch-box-dims">{b.dims}</span>
+              </button>
+              {i < CMMB_BLOCKS.length - 1 && <div className="ho-arch-connector" />}
+            </div>
+          ))}
+          <div className="ho-arch-connector" />
+          <div className="ho-arch-io">
+            <span style={{ color: 'var(--text-2)' }}>F_out</span>
+            <span className="ho-arch-dims">(B, C, D, H, W)</span>
+          </div>
+        </div>
+
+        <div className="ho-arch-detail">
+          <p className="ho-arch-detail-name" style={{ color: block.color }}>{block.label}</p>
+          <p className="ho-arch-detail-dims">{block.dims}</p>
+          {mode === 'simple' ? (
+            <div>
+              <span className="ho-simple-badge">☁ PLAIN ENGLISH</span>
+              <p className="ho-arch-detail-desc" style={{ marginTop: '0.5rem' }}>{block.simple}</p>
+            </div>
+          ) : (
+            <div>
+              <span className="ho-tech-badge">&lt;/&gt; TECHNICAL</span>
+              <p className="ho-arch-detail-desc" style={{ marginTop: '0.5rem' }}>{block.technical}</p>
+            </div>
+          )}
+          <Code code={block.code} />
+          <p className="ho-arch-hint">// click any block to inspect</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToMVisualizer() {
+  const [active, setActive] = useState(0);
+  const dirs = [
+    {
+      id: 'zf', label: 'z_f', full: 'Forward  (front → back)',
+      color: C.rose,
+      grid: [['→','→','→'],['→','→','→'],['→','→','→']],
+      axisNote: 'z = 0 (front) → z = D (back)',
+      techDesc: 'The 3D volume is flattened slice by slice from z=0 to z=D. The Mamba SSM processes these in sequence, building a hidden state h_t that accumulates information from all previous slices — capturing long-range front-to-back dependencies.',
+      simpleDesc: 'Like reading a stack of scan slices front-to-back: each slice can recall everything it "saw" in all earlier slices. A deep lesion can inform our understanding of a shallow one.',
+    },
+    {
+      id: 'zr', label: 'z_r', full: 'Reverse  (back → front)',
+      color: C.cyan,
+      grid: [['←','←','←'],['←','←','←'],['←','←','←']],
+      axisNote: 'z = D (back) → z = 0 (front)',
+      techDesc: 'Same volume, reversed z-order. Paired with the forward scan, every voxel now has access to both past (z < t) and future (z > t) context — equivalent to a bidirectional SSM along the z-axis.',
+      simpleDesc: 'Reading the same slices backwards — each slice also knows what comes after it. Together, forward + reverse means every slice is fully informed about the whole depth of the volume.',
+    },
+    {
+      id: 'zs', label: 'z_s', full: 'Inter-slice  (columns)',
+      color: C.violet,
+      grid: [['↕','↕','↕'],['↕','↕','↕'],['↕','↕','↕']],
+      axisNote: 'column-wise: same (x,y) across all z',
+      techDesc: 'Instead of scanning along z for each (x,y) position, this direction traverses column-first: for each (x,y) column, all z values are read in sequence. Captures vertical cross-slice correlations missed by z-only scanning.',
+      simpleDesc: 'Instead of reading page by page, read each column straight down through all pages. This links the same (x,y) position across every depth — perfect for tracing a structure that spans many slices.',
+    },
+  ];
+
+  const d = dirs[active];
+
+  return (
+    <div>
+      <div className="ho-view-btns">
+        {dirs.map((dir, i) => (
+          <button
+            key={dir.id}
+            className={`ho-view-btn${active === i ? ' ho-view-btn--on' : ''}`}
+            style={active === i ? { color: dir.color, borderColor: dir.color, background: `${dir.color}18` } : {}}
+            onClick={() => setActive(i)}
+          >
+            <code style={{ fontFamily: 'var(--font-mono)' }}>{dir.label}</code>
+            &nbsp;— {dir.full.split('(')[0].trim()}
+          </button>
+        ))}
+      </div>
+
+      <div className="ho-tom-row">
+        <div className="ho-tom-box" style={{ borderColor: d.color }}>
+          <p className="ho-tom-dir-label" style={{ color: d.color }}>{d.full}</p>
+          <div className="ho-tom-dir-grid">
+            {d.grid.map((row, r) => row.map((cell, c) => (
+              <span key={`${r}-${c}`} className="ho-tom-cell" style={{ color: d.color }}>{cell}</span>
+            )))}
+          </div>
+          <p className="ho-tom-axis-note">{d.axisNote}</p>
+        </div>
+
+        <div className="ho-tom-descs">
+          <div className="ho-infobox" style={{ borderLeftColor: 'var(--border)', margin: 0 }}>
+            <span className="ho-simple-badge">☁ PLAIN ENGLISH</span>
+            <p style={{ marginTop: '0.4rem', fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.6 }}>{d.simpleDesc}</p>
+          </div>
+          <div className="ho-infobox" style={{ borderLeftColor: d.color, margin: 0 }}>
+            <span className="ho-tech-badge" style={{ color: d.color, borderColor: d.color }}>&lt;/&gt; TECHNICAL</span>
+            <p style={{ marginTop: '0.4rem', fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.6 }}>{d.techDesc}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="ho-tom-formula-row">
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-2)' }}>ToM(F) =</span>
+        <span className="ho-eq" style={{ color: C.rose }}>Mamba(z_f)</span>
+        <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)', padding: '0 0.4rem' }}>+</span>
+        <span className="ho-eq" style={{ color: C.cyan }}>Mamba(z_r)</span>
+        <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)', padding: '0 0.4rem' }}>+</span>
+        <span className="ho-eq" style={{ color: C.violet }}>Mamba(z_s)</span>
+      </div>
+    </div>
+  );
+}
+
+function PaperSegResMamba() {
+  const [section, setSection] = useState('keypoints');
+
+  return (
+    <div>
+      <div className="ho-paper-hero">
+        <span className="ho-paper-venue">MIDL 2025 · Accepted</span>
+        <h2 className="ho-paper-title">SegResMamba</h2>
+        <p className="ho-paper-subtitle">An Efficient Architecture for 3D Medical Image Segmentation</p>
+        <p className="ho-paper-authors">Das, Singh, Islam, Zhao, Maier · Siemens Healthineers &amp; FAU Erlangen-Nuremberg</p>
+        <div className="ho-tags" style={{ marginTop: '0.75rem' }}>
+          {['MAMBA SSM','3D SEGMENTATION','HYBRID CNN-MAMBA','MEMORY EFFICIENT','TRI-ORIENTED MAMBA'].map(t => (
+            <span key={t} className="ho-tag">{t}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="ho-view-btns">
+        {[['keypoints','Key Points'],['architecture','Architecture'],['results','Results']].map(([k, lbl]) => (
+          <button
+            key={k}
+            className={`ho-view-btn${section === k ? ' ho-view-btn--on' : ''}`}
+            onClick={() => setSection(k)}
+          >{lbl.toUpperCase()}</button>
+        ))}
+      </div>
+
+      {section === 'keypoints' && (
+        <div>
+          <SH color={C.violet}>TL;DR</SH>
+          <InfoBox color={C.violet}>
+            SegResMamba achieves <strong>comparable accuracy to heavy Transformer models</strong> while using
+            <strong> less than half their training memory</strong>. It combines local CNN feature extraction with
+            global Mamba SSM context modelling, designed specifically for resource-constrained clinical settings.
+          </InfoBox>
+
+          <div className="ho-stat-grid">
+            {[
+              { val: '4.78 GB', lbl: 'BraTS Training Memory', sub: 'vs 13.44 GB for SegMamba', color: C.emerald },
+              { val: '340 G', lbl: 'MACs (BraTS)', sub: 'vs 1575 G for SegMamba', color: C.cyan },
+              { val: '0.9147', lbl: 'Dice — Spleen', sub: '#1 rank on spleen dataset', color: C.rose },
+              { val: '0.8839', lbl: 'Mean Dice — BraTS', sub: '−0.24% vs SegMamba, 3.6× less memory', color: C.amber },
+            ].map(s => (
+              <div key={s.lbl} className="ho-stat-card" style={{ borderColor: s.color }}>
+                <p className="ho-stat-val" style={{ color: s.color }}>{s.val}</p>
+                <p className="ho-stat-lbl">{s.lbl}</p>
+                <p className="ho-stat-sub">{s.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          <SH color={C.cyan}>5 Key Innovations</SH>
+          <div className="ho-aims">
+            {[
+              {
+                n: '01', title: 'Convolution Mamba Mixed Block (CMMB)',
+                desc: 'A novel block interleaving multi-scale convolutions (5×5×5 → 3×3×3) with two Tri-oriented Mamba scans and a residual connection. Captures both local texture and global long-range context in one efficient unit.',
+                color: C.violet,
+              },
+              {
+                n: '02', title: 'Tri-oriented Mamba (ToM)',
+                desc: 'Mamba is applied independently in three directions — forward-z, reverse-z, and inter-slice — and outputs are summed. Full 3D long-range coverage without the quadratic cost of 3D self-attention.',
+                color: C.rose,
+              },
+              {
+                n: '03', title: 'Lightweight Decoder with Additive Skip Connections',
+                desc: 'Rather than concatenating skip connections (which doubles channels), SegResMamba sums encoder and decoder features. The encoder bears the representational load; the decoder stays slim and memory-efficient.',
+                color: C.amber,
+              },
+              {
+                n: '04', title: 'Training Memory < Half of SegMamba',
+                desc: 'SegResMamba uses 4.78 GB vs SegMamba\'s 13.44 GB on BraTS. This enables deployment on single-GPU clinical workstations that cannot run SwinUNETR or SegMamba.',
+                color: C.emerald,
+              },
+              {
+                n: '05', title: 'CO₂ Efficiency',
+                desc: '267 s/epoch vs 321 s for SwinUNETR — ~16% fewer emissions per 5-fold cross-validation. SegResMamba sits at the "efficiency frontier" of the accuracy vs CO₂ trade-off curve.',
+                color: C.cyan,
+              },
+            ].map(a => (
+              <div key={a.n} className="ho-aim">
+                <span className="ho-aim-num" style={{ color: a.color }}>{a.n}</span>
+                <div>
+                  <p className="ho-aim-title">{a.title}</p>
+                  <p className="ho-aim-desc">{a.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <SH color={C.rose}>Relevance to This Honours Project</SH>
+          <InfoBox color={C.rose}>
+            SegResMamba's <strong>Tri-oriented Mamba (ToM)</strong> is a strong candidate to replace or augment the 6-directional scan
+            used in U-Mamba for whole-body PSMA PET — potentially fewer parameters with equivalent 3D coverage. The
+            <strong> memory efficiency</strong> (under 5 GB) is critical for the SCGH HPC environment. The lightweight
+            <strong> additive decoder</strong> also reduces VRAM during training on large whole-body volumes.
+          </InfoBox>
+        </div>
+      )}
+
+      {section === 'architecture' && (
+        <div>
+          <SH color={C.cyan}>Overall U-Net Shape</SH>
+          <InfoBox color={C.cyan}>
+            SegResMamba follows a U-shaped encoder-decoder design. The <strong>encoder</strong> uses a 7×7×7 initial
+            downsampling layer followed by 3 stages of 2×2×2 conv + CMMB blocks to build a rich feature hierarchy.
+            The <strong>decoder</strong> is intentionally lightweight — 3 upsampling stages with additive skip connections via MLP layers.
+          </InfoBox>
+          <div className="ho-card">
+            <p className="ho-card-h" style={{ color: C.cyan }}>// SegResMamba Encoder-Decoder</p>
+            <div className="ho-arch-sketch">
+              {[
+                { l: 'Input (B, C, D, H, W)', c: C.cyan, dim: 'e.g. 4 MRI modalities' },
+                { l: 'Conv3D 7×7×7, stride 2', c: C.cyan, dim: '(B, 32, D/2, H/2, W/2)', arrow: '↓' },
+                { l: 'CMMB Block', c: C.violet, dim: 'local + global context' },
+                { l: 'Conv3D 2×2×2 + CMMB  ×3', c: C.violet, dim: '×3 stages, ×2 downsample', arrow: '↓ + skip₁,₂,₃' },
+                { l: 'Bottleneck', c: C.rose, dim: '(B, 768, D/16, ...)' },
+                { l: 'MLP + Upsample ×3', c: C.amber, dim: '⊕ additive skip connections', arrow: '↑' },
+                { l: 'Conv 1×1×1  Output Head', c: C.emerald, dim: '(B, n_classes, D, H, W)' },
+              ].map((r, i) => (
+                <div key={i} className="ho-sketch-row">
+                  {r.arrow && <span className="ho-sketch-arrow">{r.arrow}</span>}
+                  <div className="ho-sketch-box" style={{ borderColor: r.c }}>
+                    <span className="ho-sketch-lbl" style={{ color: r.c }}>{r.l}</span>
+                    <span className="ho-sketch-dim">{r.dim}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <SH color={C.violet}>Convolution Mamba Mixed Block (CMMB) — Interactive</SH>
+          <InfoBox color={C.violet}>
+            Click each layer in the diagram to see what it does. Toggle between <strong>Plain English</strong> and
+            <strong> Technical</strong> explanations. The CMMB is the heart of SegResMamba — it uniquely combines
+            multi-scale convolutions with two Tri-oriented Mamba scans and a residual connection.
+          </InfoBox>
+          <CMMBDiagram />
+
+          <SH color={C.rose}>Tri-oriented Mamba (ToM) — Interactive</SH>
+          <InfoBox color={C.rose}>
+            ToM is SegResMamba's mechanism for full 3D long-range context. Rather than a single scan direction
+            (which misses cross-axis dependencies), ToM applies Mamba in 3 complementary directions and sums the results.
+            Select a direction below to understand how each one works.
+          </InfoBox>
+          <div className="ho-card">
+            <p className="ho-card-h" style={{ color: C.rose }}>// Three Mamba scan directions, summed</p>
+            <ToMVisualizer />
+          </div>
+        </div>
+      )}
+
+      {section === 'results' && (
+        <div>
+          <SH color={C.amber}>Performance vs Compute Trade-off</SH>
+          <InfoBox color={C.amber}>
+            SegResMamba sits at the <strong>"efficiency frontier"</strong> — competitive Dice scores at significantly lower
+            memory and compute than SwinUNETR and SegMamba. The key design insight:
+            <em> a powerful encoder can offset a deliberately lightweight decoder</em>.
+          </InfoBox>
+
+          <div className="ho-card">
+            <p className="ho-card-h" style={{ color: C.cyan }}>// BTCV Multi-organ Segmentation (13 organs, 30 volumes)</p>
+            <table className="ho-table">
+              <thead><tr><th>Model</th><th>MACs</th><th>Inference (s)</th><th>Avg Dice</th></tr></thead>
+              <tbody>
+                {[
+                  ['UNETR','196 G','0.053','0.8027',false],
+                  ['SegMamba','1555 G','0.169','0.8430',false],
+                  ['SwinUNETR','784 G','0.134','0.8389',false],
+                  ['nnUNet','1068 G','0.167','0.8316',false],
+                  ['SegResMamba','336 G','0.084','0.8361',true],
+                ].map(([m,mac,inf,dice,hl]) => (
+                  <tr key={m} style={hl ? { background: 'rgba(139,92,246,0.08)' } : {}}>
+                    <td className="ho-td-key" style={hl ? { color: C.violet } : {}}>{m}</td>
+                    <td>{mac}</td><td>{inf}</td>
+                    <td style={hl ? { color: C.violet, fontWeight: 700 } : {}}>{dice}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="ho-two-col">
+            <div className="ho-card">
+              <p className="ho-card-h" style={{ color: C.rose }}>// BraTS 2021 Brain Tumour (5-fold)</p>
+              <table className="ho-table">
+                <thead><tr><th>Model</th><th>MACs</th><th>Mean Dice</th></tr></thead>
+                <tbody>
+                  {[
+                    ['UNETR','203 G','0.8617',false],
+                    ['SegMamba','1575 G','0.8863',false],
+                    ['SwinUNETR','792 G','0.8861',false],
+                    ['SegResMamba','341 G','0.8839',true],
+                  ].map(([m,mac,dice,hl]) => (
+                    <tr key={m} style={hl ? { background: 'rgba(139,92,246,0.08)' } : {}}>
+                      <td className="ho-td-key" style={hl ? { color: C.violet } : {}}>{m}</td>
+                      <td>{mac}</td>
+                      <td style={hl ? { color: C.violet, fontWeight: 700 } : {}}>{dice}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="ho-card">
+              <p className="ho-card-h" style={{ color: C.emerald }}>// Spleen Segmentation</p>
+              <table className="ho-table">
+                <thead><tr><th>Model</th><th>MACs</th><th>Avg Dice</th></tr></thead>
+                <tbody>
+                  {[
+                    ['UNET','12 G','0.8195',false],
+                    ['UNETR','83 G','0.8642',false],
+                    ['SegMamba','655 G','0.9004',false],
+                    ['SwinUNETR','329 G','0.9126',false],
+                    ['SegResMamba','138 G','0.9147 ★',true],
+                  ].map(([m,mac,dice,hl]) => (
+                    <tr key={m} style={hl ? { background: 'rgba(52,211,153,0.08)' } : {}}>
+                      <td className="ho-td-key" style={hl ? { color: C.emerald } : {}}>{m}</td>
+                      <td>{mac}</td>
+                      <td style={hl ? { color: C.emerald, fontWeight: 700 } : {}}>{dice}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <SH color={C.emerald}>Memory Efficiency</SH>
+          <div className="ho-card">
+            <p className="ho-card-h" style={{ color: C.emerald }}>// Training memory (GB) — batch size 1</p>
+            <table className="ho-table">
+              <thead><tr><th>Model</th><th>BTCV (128³)</th><th>Spleen (96³)</th><th>BraTS (128³)</th></tr></thead>
+              <tbody>
+                {[
+                  ['UNET','1.42','0.48','1.13',false],
+                  ['UNETR','3.08','0.14','3.02',false],
+                  ['SwinUNETR','7.77','3.21','7.68',false],
+                  ['SegMamba','13.51','5.68','13.44',false],
+                  ['SegResMamba','5.10','2.22','4.78',true],
+                ].map(([m,b,s,br,hl]) => (
+                  <tr key={m} style={hl ? { background: 'rgba(52,211,153,0.08)' } : {}}>
+                    <td className="ho-td-key" style={hl ? { color: C.emerald } : {}}>{m}</td>
+                    {[b,s,br].map((v,i) => (
+                      <td key={i} style={hl ? { color: C.emerald, fontWeight: 700 } : {}}>{v} GB</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <SH color={C.rose}>Ablation — What Actually Helps?</SH>
+          <div className="ho-two-col">
+            <div className="ho-card">
+              <p className="ho-card-h" style={{ color: C.rose }}>// Architecture ablation (BTCV)</p>
+              <table className="ho-table">
+                <thead><tr><th>Setup</th><th>Avg Dice</th><th>Δ</th></tr></thead>
+                <tbody>
+                  {[
+                    ['SegMamba encoder + ResNet decoder','0.8164','—'],
+                    ['+ CMMB block','0.8279','+1.15%'],
+                    ['+ Conv before downsampling','0.8361','+0.82%'],
+                  ].map(([s,d,delta]) => (
+                    <tr key={s}>
+                      <td className="ho-td-key" style={{ fontSize: '0.68rem' }}>{s}</td>
+                      <td style={s.includes('downsampling') ? { color: C.violet, fontWeight: 700 } : {}}>{d}</td>
+                      <td style={{ color: C.emerald, fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>{delta}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="ho-card">
+              <p className="ho-card-h" style={{ color: C.violet }}>// ToM ablation (BTCV)</p>
+              <table className="ho-table">
+                <thead><tr><th>Variant</th><th>Avg Dice</th></tr></thead>
+                <tbody>
+                  {[
+                    ['Without ToM','0.8234',false],
+                    ['With ToM (SegResMamba)','0.8361',true],
+                  ].map(([v,d,hl]) => (
+                    <tr key={v} style={hl ? { background: 'rgba(139,92,246,0.08)' } : {}}>
+                      <td className="ho-td-key" style={hl ? { color: C.violet } : {}}>{v}</td>
+                      <td style={hl ? { color: C.violet, fontWeight: 700 } : {}}>{d}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p style={{ fontSize: '0.72rem', color: C.emerald, fontFamily: 'var(--font-mono)', marginTop: '0.5rem' }}>
+                +1.27% Dice — tri-directional scan vs no ToM
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TabResearchPapers() {
+  const papers = [
+    { id: 'seg-res-mamba', label: 'SegResMamba', venue: 'MIDL 2025', color: C.violet },
+  ];
+  const [paper, setPaper] = useState('seg-res-mamba');
+
+  return (
+    <div>
+      <SH color={C.violet}>Research Papers</SH>
+      <InfoBox color={C.violet}>
+        Papers reviewed as part of the Honours research program. Each entry includes an interactive breakdown of
+        the architecture and key findings — with both <strong>plain English</strong> and <strong>technical</strong> explanations.
+      </InfoBox>
+
+      <div className="ho-view-btns">
+        {papers.map(p => (
+          <button
+            key={p.id}
+            className={`ho-view-btn${paper === p.id ? ' ho-view-btn--on' : ''}`}
+            style={paper === p.id ? { color: p.color, borderColor: p.color, background: `${p.color}18` } : {}}
+            onClick={() => setPaper(p.id)}
+          >
+            {p.label}
+            <span style={{ opacity: 0.6, fontSize: '0.7em', marginLeft: '0.4em' }}>{p.venue}</span>
+          </button>
+        ))}
+      </div>
+
+      {paper === 'seg-res-mamba' && <PaperSegResMamba />}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-const TABS = ['OVERVIEW', 'ARCHITECTURE', '3D ADAPTATION', 'DATA PIPELINE', 'IMPLEMENTATION', 'ROADMAP'];
+const TABS = ['OVERVIEW', 'ARCHITECTURE', '3D ADAPTATION', 'DATA PIPELINE', 'IMPLEMENTATION', 'ROADMAP', 'RESEARCH PAPERS'];
 
 export default function Honours() {
   const [tab, setTab] = useState('OVERVIEW');
@@ -1063,12 +1612,13 @@ export default function Honours() {
 
       {/* Main content */}
       <main className="ho-main">
-        {tab === 'OVERVIEW'       && <TabOverview />}
-        {tab === 'ARCHITECTURE'   && <TabArchitecture />}
-        {tab === '3D ADAPTATION'  && <TabAdaptation />}
-        {tab === 'DATA PIPELINE'  && <TabPipeline />}
-        {tab === 'IMPLEMENTATION' && <TabImplementation />}
-        {tab === 'ROADMAP'        && <TabRoadmap />}
+        {tab === 'OVERVIEW'         && <TabOverview />}
+        {tab === 'ARCHITECTURE'     && <TabArchitecture />}
+        {tab === '3D ADAPTATION'    && <TabAdaptation />}
+        {tab === 'DATA PIPELINE'    && <TabPipeline />}
+        {tab === 'IMPLEMENTATION'   && <TabImplementation />}
+        {tab === 'ROADMAP'          && <TabRoadmap />}
+        {tab === 'RESEARCH PAPERS'  && <TabResearchPapers />}
       </main>
     </div>
   );

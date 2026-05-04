@@ -8,6 +8,7 @@ import cyberKiller  from '../assets/gifs/cyber_killer.gif';
 import smokingCity  from '../assets/gifs/smoking_city.gif';
 import girRoom      from '../assets/gifs/gir_room.gif';
 import cyberBand    from '../assets/gifs/cyber_band.gif';
+import soundWaves   from '../assets/gifs/sound_waves.gif';
 
 // ── PIN (same as Hub) ─────────────────────────────────────────────
 const GAMES_PIN = '6969';
@@ -39,6 +40,15 @@ const GAMES = [
     gif: arcade2Gif,
     color: 'cyan',
     tag: 'INTERACTIVE',
+    comingSoon: false,
+  },
+  {
+    id: 'freestyle',
+    title: 'Freestyle Lab',
+    description: 'Drop the beat and follow the bouncing ball. Hidden blocks are yours to fill — land each line on the highlighted rhyme target.',
+    gif: soundWaves,
+    color: 'rose',
+    tag: 'SOLO',
     comingSoon: false,
   },
   {

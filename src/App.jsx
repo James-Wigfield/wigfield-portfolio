@@ -16,6 +16,7 @@ import Honours from './components/modules/HONOURS';
 import ImposterGame from './components/games/ImposterGame';
 import CampfireGame from './components/games/CampfireGame';
 import Artemis2 from './components/games/Artemis2';
+import RapGame from './components/games/RapGame';
 
 function Portfolio() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/games/imposter" element={<ImposterGame />} />
       <Route path="/games/campfire" element={<CampfireGame />} />
       <Route path="/games/artemis2" element={<Artemis2 />} />
+      <Route path="/games/freestyle" element={<RapGame />} />
     </Routes>
   );
 }
