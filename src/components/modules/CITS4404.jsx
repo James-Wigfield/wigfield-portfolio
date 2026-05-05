@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -6052,8 +6052,1363 @@ while iter < max_iter:
   );
 }
 
+// ── Genetic Algorithms (Lecture 11) ───────────────────────────────────────────
+
+function randBits(n) {
+  return Array.from({ length: n }, () => Math.random() < 0.5 ? 1 : 0);
+}
+
+function CrossoverCell({ v, swapped, parent }) {
+  return (
+    <div style={{
+      width: 22, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 700,
+      color: swapped ? (parent === 'A' ? '#22d3ee' : '#fb7185') : 'var(--text-1)',
+      background: swapped ? (parent === 'A' ? 'rgba(34,211,238,0.18)' : 'rgba(251,113,133,0.18)') : 'var(--bg-2)',
+      border: `1px solid ${swapped ? (parent === 'A' ? 'rgba(34,211,238,0.5)' : 'rgba(251,113,133,0.5)') : 'rgba(148,163,184,0.18)'}`,
+      borderRadius: 4, margin: 1,
+    }}>{v}</div>
+  );
+}
+
+function CrossoverRow({ label, bits, mask, parent, color }) {
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.4rem'}}>
+      <span style={{fontFamily:'monospace',fontSize:'0.7rem',color,minWidth:60,fontWeight:700}}>{label}</span>
+      <div style={{display:'flex'}}>
+        {bits.map((v, i) => <CrossoverCell key={i} v={v} swapped={mask[i]} parent={parent} />)}
+      </div>
+    </div>
+  );
+}
+
+function CrossoverViz() {
+  const L = 16;
+  const [type, setType] = useState('one');
+  const [c, setC] = useState(6);
+  const [d, setD] = useState(12);
+  const [pUnif, setPUnif] = useState(0.5);
+  const [a, setA] = useState(() => Array(L).fill(1));
+  const [b, setB] = useState(() => Array(L).fill(0));
+  const [tick, setTick] = useState(0);
+
+  const swapMask = (() => {
+    const m = Array(L).fill(false);
+    if (type === 'one') {
+      for (let i = c; i < L; i++) m[i] = true;
+    } else if (type === 'two') {
+      const lo = Math.min(c, d), hi = Math.max(c, d);
+      for (let i = lo; i < hi; i++) m[i] = true;
+    } else {
+      const seed = tick;
+      let r = seed * 9301 + 49297;
+      for (let i = 0; i < L; i++) {
+        r = (r * 9301 + 49297) % 233280;
+        m[i] = (r / 233280) < pUnif;
+      }
+    }
+    return m;
+  })();
+
+  const childA = a.map((v, i) => swapMask[i] ? b[i] : v);
+  const childB = b.map((v, i) => swapMask[i] ? a[i] : v);
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">CROSSOVER VISUALISER — Algorithms 23, 24, 25</div>
+      <div style={{display:'flex',gap:'0.4rem',marginBottom:'0.7rem',flexWrap:'wrap'}}>
+        {[['one','One-Point'],['two','Two-Point'],['unif','Uniform']].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${type===v?'m4-algo-tab--on':''}`} onClick={()=>setType(v)} style={{padding:'4px 14px'}}>{l}</button>
+        ))}
+        <button className="m4-algo-tab" style={{padding:'4px 14px',marginLeft:'auto'}} onClick={()=>{setA(randBits(L));setB(randBits(L));setTick(t=>t+1);}}>↺ Randomise Parents</button>
+      </div>
+
+      {type === 'one' && (
+        <div style={{display:'flex',alignItems:'center',gap:'0.6rem',marginBottom:'0.7rem'}}>
+          <span style={{fontSize:'0.72rem',color:'var(--text-2)'}}>Cut point c:</span>
+          <input type="range" min={1} max={L-1} value={c} onChange={e=>setC(+e.target.value)} style={{flex:1}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.72rem',color:'var(--cyan)',minWidth:30}}>{c}</span>
+        </div>
+      )}
+      {type === 'two' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'0.4rem',marginBottom:'0.7rem'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'0.6rem'}}>
+            <span style={{fontSize:'0.72rem',color:'var(--text-2)',minWidth:60}}>Cut c:</span>
+            <input type="range" min={1} max={L-1} value={c} onChange={e=>setC(+e.target.value)} style={{flex:1}} />
+            <span style={{fontFamily:'monospace',fontSize:'0.72rem',color:'var(--cyan)',minWidth:30}}>{c}</span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'0.6rem'}}>
+            <span style={{fontSize:'0.72rem',color:'var(--text-2)',minWidth:60}}>Cut d:</span>
+            <input type="range" min={1} max={L-1} value={d} onChange={e=>setD(+e.target.value)} style={{flex:1}} />
+            <span style={{fontFamily:'monospace',fontSize:'0.72rem',color:'var(--violet)',minWidth:30}}>{d}</span>
+          </div>
+        </div>
+      )}
+      {type === 'unif' && (
+        <div style={{display:'flex',alignItems:'center',gap:'0.6rem',marginBottom:'0.7rem'}}>
+          <span style={{fontSize:'0.72rem',color:'var(--text-2)'}}>Swap prob p:</span>
+          <input type="range" min={0} max={0.5} step={0.05} value={pUnif} onChange={e=>setPUnif(+e.target.value)} style={{flex:1}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.72rem',color:'var(--emerald)',minWidth:36}}>{pUnif.toFixed(2)}</span>
+          <button className="m4-algo-tab" style={{padding:'2px 10px',fontSize:'0.7rem'}} onClick={()=>setTick(t=>t+1)}>Re-roll</button>
+        </div>
+      )}
+
+      <div style={{background:'var(--bg-2)',borderRadius:6,padding:'0.7rem',border:'1px solid rgba(148,163,184,0.12)'}}>
+        <CrossoverRow label="Parent A" bits={a} mask={Array(L).fill(false)} parent="A" color="#22d3ee" />
+        <CrossoverRow label="Parent B" bits={b} mask={Array(L).fill(false)} parent="B" color="#fb7185" />
+        <div style={{height:1,background:'rgba(148,163,184,0.2)',margin:'0.55rem 0'}} />
+        <CrossoverRow label="Child A'" bits={childA} mask={swapMask} parent="B" color="var(--text-0)" />
+        <CrossoverRow label="Child B'" bits={childB} mask={swapMask} parent="A" color="var(--text-0)" />
+      </div>
+
+      <div className="m4-infobox" style={{marginTop:'0.7rem',fontSize:'0.74rem'}}>
+        {type === 'one' && <>
+          <strong>One-Point disadvantage:</strong> v₁ and v_L are separated with probability <Tex src="(L-1)/L" />.
+          Adjacent genes survive together with probability <Tex src="1/L" />. Linkage favours nearby genes.
+        </>}
+        {type === 'two' && <>
+          <strong>Two-Point intuition (ring view):</strong> equivalent to swapping the outside arc when the chromosome is drawn as a ring — v₁ and v_L become "adjacent" again, removing position-specific bias.
+        </>}
+        {type === 'unif' && <>
+          <strong>Uniform crossover:</strong> each gene independently swapped with probability p. Distance-independent — but disrupts building blocks more aggressively. Typically <Tex src="p \le 0.5" />.
+        </>}
+      </div>
+    </div>
+  );
+}
+
+function SelectionViz() {
+  const [mode, setMode] = useState('roulette');
+  const [tSize, setTSize] = useState(3);
+  const [pop, setPop] = useState(() => Array.from({length:8},(_,i)=>({id:i+1,fit:Math.round((Math.random()*0.85+0.1)*100)/100})));
+  const [highlight, setHighlight] = useState([]);
+  const [history, setHistory] = useState([]);
+
+  const total = pop.reduce((s,p)=>s+p.fit,0);
+  const cdf = pop.reduce((acc,p)=>{ acc.push((acc.length?acc[acc.length-1]:0)+p.fit); return acc; }, []);
+
+  const doSelect = () => {
+    if (mode === 'roulette') {
+      const r = Math.random() * total;
+      const idx = cdf.findIndex(c => r <= c);
+      setHighlight([idx]);
+      setHistory(h => [{ mode:'Roulette', winners:[pop[idx].id], detail:`r=${r.toFixed(2)} hit slot ${idx+1}` }, ...h].slice(0,6));
+    } else if (mode === 'sus') {
+      const n = 4;
+      const stride = total / n;
+      const start = Math.random() * stride;
+      const winners = [];
+      for (let i = 0; i < n; i++) {
+        const target = start + i * stride;
+        const idx = cdf.findIndex(c => target <= c);
+        winners.push(idx);
+      }
+      setHighlight(winners);
+      setHistory(h => [{ mode:'SUS (n=4)', winners:winners.map(i=>pop[i].id), detail:`stride=${stride.toFixed(2)}, start=${start.toFixed(2)}` }, ...h].slice(0,6));
+    } else {
+      const picks = Array.from({length:tSize},()=>Math.floor(Math.random()*pop.length));
+      let best = picks[0];
+      for (const p of picks) if (pop[p].fit > pop[best].fit) best = p;
+      setHighlight([best]);
+      setHistory(h => [{ mode:`Tournament t=${tSize}`, winners:[pop[best].id], detail:`competitors: ${picks.map(p=>pop[p].id).join(',')}` }, ...h].slice(0,6));
+    }
+  };
+
+  const maxFit = Math.max(...pop.map(p=>p.fit));
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">SELECTION MECHANISM — Algorithms 30, 31, 32</div>
+      <div style={{display:'flex',gap:'0.4rem',marginBottom:'0.75rem',flexWrap:'wrap'}}>
+        {[['roulette','Fitness-Proportionate (Roulette)'],['sus','Stochastic Universal Sampling'],['tour','Tournament']].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${mode===v?'m4-algo-tab--on':''}`} onClick={()=>{setMode(v);setHighlight([]);}} style={{padding:'4px 12px'}}>{l}</button>
+        ))}
+      </div>
+
+      {mode === 'tour' && (
+        <div style={{display:'flex',alignItems:'center',gap:'0.6rem',marginBottom:'0.7rem'}}>
+          <span style={{fontSize:'0.72rem',color:'var(--text-2)'}}>Tournament size t:</span>
+          <input type="range" min={1} max={pop.length} value={tSize} onChange={e=>setTSize(+e.target.value)} style={{flex:1}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.72rem',color:'var(--amber)',minWidth:24}}>{tSize}</span>
+        </div>
+      )}
+
+      <div style={{background:'var(--bg-2)',borderRadius:6,padding:'0.7rem',border:'1px solid rgba(148,163,184,0.12)',marginBottom:'0.7rem'}}>
+        <div style={{fontSize:'0.7rem',color:'var(--text-2)',marginBottom:'0.45rem',fontFamily:'monospace'}}>Population — fitness bars (sum = {total.toFixed(2)})</div>
+        {pop.map((p, i) => (
+          <div key={p.id} style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.25rem'}}>
+            <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:'var(--text-2)',width:28}}>P{p.id}</span>
+            <div style={{flex:1,height:14,background:'rgba(15,23,42,0.6)',borderRadius:3,overflow:'hidden',position:'relative'}}>
+              <div style={{
+                width:`${(p.fit/maxFit)*100}%`,height:'100%',
+                background: highlight.includes(i) ? 'linear-gradient(90deg,#34d399,#22d3ee)' : 'rgba(167,139,250,0.55)',
+                transition:'background 0.3s, width 0.2s',
+                boxShadow: highlight.includes(i) ? '0 0 12px rgba(52,211,153,0.6)' : 'none',
+              }} />
+            </div>
+            <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:highlight.includes(i)?'var(--emerald)':'var(--text-1)',width:42,textAlign:'right'}}>{p.fit.toFixed(2)}</span>
+          </div>
+        ))}
+        {(mode === 'roulette' || mode === 'sus') && (
+          <div style={{marginTop:'0.65rem'}}>
+            <div style={{fontSize:'0.66rem',color:'var(--text-2)',fontFamily:'monospace',marginBottom:'0.2rem'}}>Stacked CDF — wheel slots</div>
+            <div style={{display:'flex',height:18,borderRadius:3,overflow:'hidden'}}>
+              {pop.map((p,i)=>(
+                <div key={p.id} title={`P${p.id}: ${p.fit}`} style={{
+                  width:`${(p.fit/total)*100}%`,
+                  background: highlight.includes(i) ? '#34d399' : CYBER_COLS[i%CYBER_COLS.length]+'88',
+                  borderRight:'1px solid rgba(2,8,23,0.4)',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontFamily:'monospace',fontSize:'0.6rem',color:'#fff',fontWeight:700,
+                }}>P{p.id}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{display:'flex',gap:'0.4rem',marginBottom:'0.7rem'}}>
+        <button className="m4-algo-tab" style={{padding:'5px 16px'}} onClick={doSelect}>▶ Run Selection</button>
+        <button className="m4-algo-tab" style={{padding:'5px 16px'}} onClick={()=>{
+          setPop(p=>p.map(x=>({...x,fit:Math.round((Math.random()*0.85+0.1)*100)/100})));
+          setHighlight([]); setHistory([]);
+        }}>↺ New Population</button>
+      </div>
+
+      <div style={{maxHeight:120,overflowY:'auto'}}>
+        {history.length === 0 && <div style={{fontSize:'0.7rem',color:'var(--text-2)',fontStyle:'italic'}}>Run selection — last 6 outcomes will appear here.</div>}
+        {history.map((h,i)=>(
+          <div key={i} style={{fontFamily:'monospace',fontSize:'0.69rem',color:'var(--text-1)',padding:'2px 0'}}>
+            <span style={{color:'var(--violet)'}}>[{h.mode}]</span> winners: <span style={{color:'var(--emerald)'}}>{h.winners.map(w=>'P'+w).join(', ')}</span> <span style={{color:'var(--text-2)'}}>— {h.detail}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="m4-infobox" style={{marginTop:'0.7rem',fontSize:'0.74rem'}}>
+        {mode === 'roulette' && <>Roulette samples one r ∈ [0, s] and finds the slot it lands in. <strong>Issue:</strong> requires meaningful absolute fitness; near-equal fitnesses → near-uniform random.</>}
+        {mode === 'sus' && <>SUS draws n equally-spaced pointers from one shared start. <strong>Property:</strong> any individual with fitness ≥ s/n is guaranteed to be chosen. Lower variance than n independent roulette spins.</>}
+        {mode === 'tour' && <>Tournament picks t individuals uniformly at random and returns the fittest. <strong>Tuneable:</strong> t=1 → random; t≫popsize → truncation. Non-parametric: ignores fitness magnitudes — only ranks matter.</>}
+      </div>
+    </div>
+  );
+}
+
+const GA_TARGET = 'GENETIC';
+const GA_L = GA_TARGET.length;
+const GA_ALPHABET = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function gaFitness(s) {
+  let f = 0;
+  for (let i = 0; i < GA_L; i++) if (s[i] === GA_TARGET[i]) f++;
+  return f;
+}
+function gaRandIndividual() {
+  return Array.from({length:GA_L},()=>GA_ALPHABET[Math.floor(Math.random()*GA_ALPHABET.length)]).join('');
+}
+function gaInitPop(n) {
+  return Array.from({length:n},()=>{ const g = gaRandIndividual(); return { g, f: gaFitness(g) }; });
+}
+function gaCrossover(a, b, xType) {
+  const av = a.split(''), bv = b.split('');
+  if (xType === 'one') {
+    const c = 1 + Math.floor(Math.random()*(GA_L-1));
+    return [av.slice(0,c).concat(bv.slice(c)).join(''), bv.slice(0,c).concat(av.slice(c)).join('')];
+  } else if (xType === 'two') {
+    let c = Math.floor(Math.random()*GA_L), d = Math.floor(Math.random()*GA_L);
+    if (c > d) [c,d] = [d,c];
+    const ca = av.slice(0,c).concat(bv.slice(c,d), av.slice(d)).join('');
+    const cb = bv.slice(0,c).concat(av.slice(c,d), bv.slice(d)).join('');
+    return [ca, cb];
+  } else {
+    const ca = []; const cb = [];
+    for (let i = 0; i < GA_L; i++) {
+      if (Math.random() < 0.5) { ca.push(av[i]); cb.push(bv[i]); }
+      else { ca.push(bv[i]); cb.push(av[i]); }
+    }
+    return [ca.join(''), cb.join('')];
+  }
+}
+function gaMutate(s, pMut) {
+  return s.split('').map(c => Math.random() < pMut ? GA_ALPHABET[Math.floor(Math.random()*GA_ALPHABET.length)] : c).join('');
+}
+function gaSelectOne(p, selMode, tSize) {
+  if (selMode === 'tour') {
+    let best = p[Math.floor(Math.random()*p.length)];
+    for (let k = 1; k < tSize; k++) {
+      const c = p[Math.floor(Math.random()*p.length)];
+      if (c.f > best.f) best = c;
+    }
+    return best;
+  }
+  const total = p.reduce((s,x)=>s+x.f,0) || p.length;
+  let r = Math.random() * total;
+  for (const x of p) { r -= (x.f || 1); if (r <= 0) return x; }
+  return p[p.length-1];
+}
+
+function GAEvolutionSim() {
+  const [popSize, setPopSize] = useState(40);
+  const [pMut, setPMut] = useState(0.05);
+  const [xType, setXType] = useState('one');
+  const [selMode, setSelMode] = useState('tour');
+  const [tSize, setTSize] = useState(3);
+  const [elite, setElite] = useState(2);
+  const [running, setRunning] = useState(false);
+  const [gen, setGen] = useState(0);
+  const [pop, setPop] = useState(() => gaInitPop(40));
+  const [hist, setHist] = useState([]);
+  const runRef = useRef(false);
+  runRef.current = running;
+
+  const step = useCallback(() => {
+    setPop(curr => {
+      const sorted = [...curr].sort((a,b)=>b.f-a.f);
+      const newPop = sorted.slice(0, elite).map(x => ({...x}));
+      while (newPop.length < curr.length) {
+        const pa = gaSelectOne(curr, selMode, tSize).g;
+        const pb = gaSelectOne(curr, selMode, tSize).g;
+        const [ca, cb] = gaCrossover(pa, pb, xType);
+        const ma = gaMutate(ca, pMut), mb = gaMutate(cb, pMut);
+        newPop.push({ g: ma, f: gaFitness(ma) });
+        if (newPop.length < curr.length) newPop.push({ g: mb, f: gaFitness(mb) });
+      }
+      const best = newPop.reduce((b,x)=>x.f>b.f?x:b, newPop[0]);
+      const avg = newPop.reduce((s,x)=>s+x.f,0)/newPop.length;
+      setHist(h => [...h, { gen: h.length, best: best.f, avg }].slice(-120));
+      return newPop;
+    });
+    setGen(g => g + 1);
+  }, [elite, pMut, xType, selMode, tSize]);
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      if (!runRef.current) return;
+      step();
+    }, 80);
+    return () => clearInterval(id);
+  }, [running, step]);
+
+  const reset = () => {
+    setRunning(false); setGen(0); setHist([]); setPop(gaInitPop(popSize));
+  };
+
+  const best = pop.reduce((b,x)=>x.f>b.f?x:b, pop[0] || {g:'',f:0});
+  const top = [...pop].sort((a,b)=>b.f-a.f).slice(0,6);
+  const found = best.g === GA_TARGET;
+
+  const chartRef = useRef(null);
+  useEffect(() => {
+    const c = chartRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 400; const H = c.height = 110;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    if (hist.length < 2) return;
+    const PAD = {l:24,r:8,t:6,b:14}; const iW = W-PAD.l-PAD.r; const iH = H-PAD.t-PAD.b;
+    ctx.strokeStyle='rgba(148,163,184,0.08)';
+    for (let g=0; g<=4; g++) { const y=PAD.t+g/4*iH; ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(PAD.l+iW,y); ctx.stroke(); }
+    const draw = (key, col) => {
+      ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=1.6;
+      hist.forEach((h,i)=>{
+        const x = PAD.l + (i/(hist.length-1))*iW;
+        const y = PAD.t + (1 - h[key]/GA_L)*iH;
+        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    };
+    draw('best', '#34d399');
+    draw('avg', '#a78bfa');
+    ctx.fillStyle='rgba(148,163,184,0.6)'; ctx.font='8px monospace';
+    ctx.fillText(`${GA_L}`, 4, PAD.t+6); ctx.fillText('0', 4, PAD.t+iH);
+  }, [hist]);
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">EVOLVE A STRING — Full GA with elitism (Algorithm 33)</div>
+      <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.7rem'}}>
+        Target: <span style={{fontFamily:'monospace',color:'var(--cyan)',fontWeight:700,letterSpacing:'0.2em'}}>{GA_TARGET}</span> &middot; Alphabet: 27 chars (A–Z + space) &middot; Fitness = correct positions ∈ [0, {GA_L}]
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:'0.55rem',marginBottom:'0.75rem'}}>
+        <div>
+          <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:2}}>Population</div>
+          <input type="range" min={10} max={120} step={10} value={popSize} onChange={e=>{setPopSize(+e.target.value);}} style={{width:'100%'}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:'var(--cyan)'}}>{popSize}</span>
+        </div>
+        <div>
+          <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:2}}>Mutation prob</div>
+          <input type="range" min={0} max={0.3} step={0.01} value={pMut} onChange={e=>setPMut(+e.target.value)} style={{width:'100%'}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:'var(--amber)'}}>{pMut.toFixed(2)}</span>
+        </div>
+        <div>
+          <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:2}}>Elites</div>
+          <input type="range" min={0} max={10} value={elite} onChange={e=>setElite(+e.target.value)} style={{width:'100%'}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:'var(--emerald)'}}>{elite}</span>
+        </div>
+        <div>
+          <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:2}}>Crossover</div>
+          <select value={xType} onChange={e=>setXType(e.target.value)} style={{width:'100%',background:'var(--bg-2)',color:'var(--text-1)',border:'1px solid var(--border)',padding:'2px',fontSize:'0.7rem',fontFamily:'monospace'}}>
+            <option value="one">One-Point</option>
+            <option value="two">Two-Point</option>
+            <option value="unif">Uniform</option>
+          </select>
+        </div>
+        <div>
+          <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:2}}>Selection</div>
+          <select value={selMode} onChange={e=>setSelMode(e.target.value)} style={{width:'100%',background:'var(--bg-2)',color:'var(--text-1)',border:'1px solid var(--border)',padding:'2px',fontSize:'0.7rem',fontFamily:'monospace'}}>
+            <option value="tour">Tournament</option>
+            <option value="rou">Roulette</option>
+          </select>
+        </div>
+        {selMode === 'tour' && (
+          <div>
+            <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:2}}>Tour size</div>
+            <input type="range" min={1} max={8} value={tSize} onChange={e=>setTSize(+e.target.value)} style={{width:'100%'}} />
+            <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:'var(--violet)'}}>{tSize}</span>
+          </div>
+        )}
+      </div>
+
+      <div style={{display:'flex',gap:'0.4rem',alignItems:'center',marginBottom:'0.7rem',flexWrap:'wrap'}}>
+        <button className="m4-algo-tab" style={{padding:'4px 14px'}} onClick={()=>setRunning(r=>!r)}>{running ? '⏸ Pause' : '▶ Run'}</button>
+        <button className="m4-algo-tab" style={{padding:'4px 14px'}} onClick={step} disabled={running}>⏭ Step</button>
+        <button className="m4-algo-tab" style={{padding:'4px 14px'}} onClick={reset}>↺ Reset</button>
+        <span style={{fontFamily:'monospace',fontSize:'0.72rem',color:'var(--text-2)',marginLeft:'auto'}}>Generation <span style={{color:'var(--cyan)'}}>{gen}</span></span>
+      </div>
+
+      <div style={{background:'var(--bg-2)',borderRadius:6,padding:'0.7rem',border:'1px solid rgba(148,163,184,0.12)',marginBottom:'0.6rem'}}>
+        <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:'0.3rem',fontFamily:'monospace'}}>BEST INDIVIDUAL</div>
+        <div style={{fontFamily:'monospace',fontSize:'1.05rem',letterSpacing:'0.3em',color:found?'var(--emerald)':'var(--text-0)',marginBottom:'0.4rem',textShadow:found?'0 0 8px rgba(52,211,153,0.5)':'none'}}>
+          {(best.g||'').split('').map((c,i)=>(
+            <span key={i} style={{color:c===GA_TARGET[i]?'var(--emerald)':'var(--rose)'}}>{c}</span>
+          ))}
+        </div>
+        <div style={{fontSize:'0.7rem',color:'var(--text-2)'}}>Fitness <span style={{color:'var(--cyan)',fontWeight:700}}>{best.f}/{GA_L}</span> {found && <span style={{color:'var(--emerald)'}}>· ★ TARGET REACHED ★</span>}</div>
+      </div>
+
+      <div className="m4-two-col" style={{gap:'0.7rem'}}>
+        <div>
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:'0.3rem',fontFamily:'monospace'}}>TOP 6 OF POPULATION</div>
+          <div style={{background:'var(--bg-2)',borderRadius:5,padding:'0.4rem',border:'1px solid rgba(148,163,184,0.1)'}}>
+            {top.map((x,i)=>(
+              <div key={i} style={{fontFamily:'monospace',fontSize:'0.72rem',padding:'1px 0',display:'flex',justifyContent:'space-between'}}>
+                <span style={{letterSpacing:'0.15em'}}>{x.g.split('').map((c,k)=>(
+                  <span key={k} style={{color:c===GA_TARGET[k]?'var(--emerald)':'var(--text-2)'}}>{c}</span>
+                ))}</span>
+                <span style={{color:'var(--cyan)'}}>{x.f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:'0.3rem',fontFamily:'monospace'}}>FITNESS OVER GENERATIONS</div>
+          <canvas ref={chartRef} className="m4-canvas" height="110" />
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginTop:'0.3rem'}}>
+            <span style={{color:'#34d399'}}>━ Best</span> &nbsp; <span style={{color:'#a78bfa'}}>━ Average</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GeneticAlgorithmsTab() {
+  const [sec, setSec] = useState('overview');
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['overview','Overview & GA Loop'],
+          ['crossover','Crossover'],
+          ['selection','Selection'],
+          ['elitism','Elitism & Convergence'],
+          ['simulator','GA Simulator'],
+          ['gp','Genetic Programming'],
+        ].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sec === 'overview' && (
+        <div>
+          <div style={{background:'linear-gradient(135deg,rgba(167,139,250,0.07) 0%,rgba(34,211,238,0.07) 100%)',border:'1px solid rgba(167,139,250,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+            {[['Holland 1970s','Origin','#22d3ee'],['Chromosome','Binary genome','#a78bfa'],['Crossover','Primary operator','#34d399'],['Mutation','Bit-flip','#fbbf24'],['Selection','Many flavours','#fb7185'],['Building blocks','Schema theory','#06b6d4']].map(([k,v,col])=>(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+                <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+                <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">GA vs (μ, λ) Evolution Strategy</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                Genetic Algorithms (Holland, 1970s) emerged in parallel with ES but with different emphases. Same evolutionary skeleton — different choices on every dial.
+              </div>
+              <div className="m4-hr"/>
+              <table className="m4-ptable">
+                <thead><tr><th>Aspect</th><th>(μ, λ) ES</th><th>GA</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">Encoding</td><td>Real-valued vector</td><td>Binary chromosome (traditionally)</td></tr>
+                  <tr><td className="pk">Primary tweak</td><td>Gaussian mutation</td><td>Crossover (recombination)</td></tr>
+                  <tr><td className="pk">Selection</td><td>Truncation (top μ)</td><td>Roulette / SUS / Tournament</td></tr>
+                  <tr><td className="pk">Mutation rate</td><td>Often σ (adaptive)</td><td>Per-bit p ≈ 1/L</td></tr>
+                  <tr><td className="pk">Inspiration</td><td>Engineering optimisation</td><td>Darwin + Mendelian genetics</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Algorithm 20 — The Genetic Algorithm</div>
+              <div className="m4-pseudocode">{`popsize ← desired population size      ▷ make it even
+P ← {}
+for popsize times:
+  P ← P ∪ {new random individual}
+Best ← ∅
+repeat
+  for each Pᵢ ∈ P:
+    AssessFitness(Pᵢ)
+    if Best=∅ or Fitness(Pᵢ)>Fitness(Best):
+      Best ← Pᵢ
+  Q ← {}                              ▷ deviation from (μ,λ)
+  for popsize/2 times:
+    Pₐ ← SelectWithReplacement(P)
+    P_b ← SelectWithReplacement(P)
+    Cₐ, C_b ← Crossover(Copy(Pₐ), Copy(P_b))
+    Q ← Q ∪ {Mutate(Cₐ), Mutate(C_b)}
+  P ← Q
+until ideal or out of time
+return Best`}</div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Why Crossover? The Building-Block Hypothesis</div>
+            <div className="m4-two-col">
+              <div>
+                <ul className="m4-bullets">
+                  <li>Highly fit individuals tend to share <strong>common traits</strong> (substrings).</li>
+                  <li>These traits — <em>building blocks</em> — get spread through the population by crossover.</li>
+                  <li>Theoretical formalisation: <strong>schema theory</strong> (Holland). Complex and not entirely satisfactory, but motivating.</li>
+                  <li>Effectiveness depends on <strong>epistasis</strong> (gene interaction) and <strong>linkage</strong> (probability genes survive crossover together).</li>
+                </ul>
+              </div>
+              <div className="m4-warnbox" style={{fontSize:'0.76rem'}}>
+                <strong>Crossover ≠ global mutation.</strong> If every individual shares a gene value, the population sits on one face of the binary hypercube. Crossover can only produce children inside that hypercube — it can <em>never</em> restore lost diversity. Once collapsed, that dimension is gone forever (cf. premature convergence). Only mutation can climb out.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Many Faces of Evolution — Theorists Compared</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Theorist</th><th>Mechanism</th><th>EC analogue</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Lamarck</td><td>Use/disuse → adaptive inherited change. Acquired traits pass on.</td><td>Memetic algorithms — local search "writes back" into the genome.</td></tr>
+                <tr><td className="pk">Baldwin</td><td>Learning shifts the selection landscape over generations.</td><td>Hybrid: lifetime improvement affects fitness only, not genome.</td></tr>
+                <tr><td className="pk">Waddington</td><td>Environmental shock → genetic assimilation.</td><td>Stress-driven mutation rate spikes.</td></tr>
+                <tr><td className="pk">Darwin</td><td>Existing variation + natural selection.</td><td>The standard GA loop: mutation supplies variation, selection filters.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sec === 'crossover' && (
+        <div>
+          <CrossoverViz />
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Linkage — Why Position Matters</div>
+            <div className="m4-two-col">
+              <div>
+                <div className="m4-flabel">Probability genes are separated</div>
+                <table className="m4-ptable">
+                  <thead><tr><th>Operator</th><th>v₁ &amp; v_L</th><th>vᵢ &amp; vᵢ₊₁</th><th>vᵢ &amp; vᵢ₊_L/₂</th></tr></thead>
+                  <tbody>
+                    <tr><td className="pk">One-Point</td><td><Tex src="\tfrac{L-1}{L}" /></td><td><Tex src="\tfrac{1}{L}" /></td><td><Tex src="\approx \tfrac{1}{2}" /></td></tr>
+                    <tr><td className="pk">Two-Point</td><td><Tex src="\tfrac{2}{L}" /></td><td><Tex src="\tfrac{2}{L}" /></td><td><Tex src="\approx \tfrac{1}{2}" /></td></tr>
+                    <tr><td className="pk">Uniform</td><td>2p(1−p)</td><td>2p(1−p)</td><td>2p(1−p)</td></tr>
+                  </tbody>
+                </table>
+                <div className="m4-infobox" style={{marginTop:'0.65rem',fontSize:'0.74rem'}}>
+                  Two-point crossover is best understood by drawing the chromosome as a <strong>ring</strong>: cuts c and d split the ring into two arcs; one arc gets swapped. v₁ and v_L become topologically adjacent — distance, not position, determines linkage.
+                </div>
+              </div>
+              <div>
+                <div className="m4-flabel">Bit-Flip Mutation (Algorithm 22)</div>
+                <div className="m4-pseudocode">{`p ← prob of flipping a bit  ▷ often 1/L
+v⃗ ← boolean vector to mutate
+for i from 1 to L:
+  if p ≥ U(0,1):
+    v_i ← ¬v_i
+return v⃗`}</div>
+                <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.5rem',lineHeight:1.65}}>
+                  With <Tex src="p = 1/L" />, the expected number of flips per individual is exactly 1 — the canonical balance between disturbing and preserving the genome.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'selection' && (
+        <div>
+          <SelectionViz />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Algorithm 30 — Fitness-Proportionate (Roulette)</div>
+              <div className="m4-pseudocode">{`Once per generation:
+  global p⃗ ← population
+  global f⃗ ← fitnesses (≥ 0)
+  if all zero: set all to 1
+  for i from 2 to L: f_i ← f_i + f_{i-1}   ▷ CDF
+
+Each call:
+  n ← U(0, f_L)
+  for i from 2 to L:
+    if f_{i-1} < n ≤ f_i: return p_i
+  return p_1`}</div>
+              <div className="m4-warnbox" style={{fontSize:'0.74rem',marginTop:'0.5rem'}}>
+                Assumes <strong>absolute</strong> fitness is meaningful. Many fitness measures (MSE, RSS) are only relatively comparable.
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Algorithm 32 — Tournament Selection</div>
+              <div className="m4-pseudocode">{`P ← population
+t ← tournament size, t ≥ 1
+
+Best ← random pick from P
+for i from 2 to t:
+  Next ← random pick from P
+  if Fitness(Next) > Fitness(Best):
+    Best ← Next
+return Best`}</div>
+              <ul className="m4-bullets" style={{marginTop:'0.5rem'}}>
+                <li><strong>Non-parametric:</strong> only rank order matters — fitness magnitudes are irrelevant.</li>
+                <li><strong>Tuneable</strong> via t: t=1 → uniform random; t≫popsize → truncation.</li>
+                <li>Trivially parallel — each tournament is independent.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'elitism' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Elitism — Preserve the Fittest</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                The n fittest individuals are <strong>copied unchanged</strong> into the next generation — the <em>elite group</em>. Equivalent in spirit to (μ + λ): once you find a great solution, you don't lose it.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Trade-offs</div>
+              <table className="m4-ptable">
+                <tbody>
+                  <tr><td className="pk">Pro</td><td>Best solution monotonically improves — never goes backwards.</td></tr>
+                  <tr><td className="pk">Con</td><td>Risks <strong>premature convergence</strong> — elites flood the gene pool.</td></tr>
+                  <tr><td className="pk">Mitigation</td><td>Increase mutation rate; breed external diversity in; reduce elite count.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Algorithm 33 — GA with Elitism</div>
+              <div className="m4-pseudocode">{`popsize ← desired pop size
+n ← number of elite           ▷ popsize − n must be even
+
+P ← {popsize random individuals}
+Best ← ∅
+repeat
+  for each Pᵢ: AssessFitness; update Best
+  Q ← n fittest in P (ties broken at random)
+  for (popsize − n)/2 times:
+    Pₐ ← Select(P);  P_b ← Select(P)
+    Cₐ, C_b ← Crossover(Copy(Pₐ), Copy(P_b))
+    Q ← Q ∪ {Mutate(Cₐ), Mutate(C_b)}
+  P ← Q
+until ideal or out of time
+return Best`}</div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Hypercube View — Why Diversity Cannot Recover</div>
+            <div className="m4-two-col">
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.7}}>
+                <p>Binary vectors of length L sit on the corners of an L-dimensional hypercube. Crossover only produces children on corners of the <strong>same</strong> hypercube — it cannot invent a new value at any position.</p>
+                <p>If every parent shares the same value at gene i, the hypercube <strong>collapses</strong> in dimension i — and crossover can never restore it. Only mutation can.</p>
+              </div>
+              <div style={{background:'var(--bg-2)',border:'1px solid rgba(148,163,184,0.15)',borderRadius:8,padding:'0.7rem',fontFamily:'monospace',fontSize:'0.7rem',color:'var(--text-1)',lineHeight:1.7}}>
+                <div style={{color:'var(--text-2)'}}>{'// All parents agree on gene 3:'}</div>
+                <div>P1: 1 0 1 <span style={{color:'var(--rose)'}}>0</span> 1 1</div>
+                <div>P2: 0 1 0 <span style={{color:'var(--rose)'}}>0</span> 1 0</div>
+                <div>P3: 1 1 1 <span style={{color:'var(--rose)'}}>0</span> 0 1</div>
+                <div>P4: 0 0 0 <span style={{color:'var(--rose)'}}>0</span> 1 1</div>
+                <div style={{color:'var(--text-2)',marginTop:'0.4rem'}}>Any child will also have 0 at position 3.</div>
+                <div style={{color:'var(--emerald)',marginTop:'0.4rem'}}>{'→ dimension collapsed; only mutation can re-open it.'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'simulator' && (
+        <div>
+          <GAEvolutionSim />
+          <div className="m4-card" style={{marginTop:'0.75rem',background:'linear-gradient(135deg,rgba(34,211,238,0.05) 0%,rgba(167,139,250,0.05) 100%)'}}>
+            <div className="m4-card-h">Things to Try</div>
+            <ul className="m4-bullets" style={{fontSize:'0.78rem'}}>
+              <li>Set <strong>elites = 0</strong> and watch fitness occasionally <em>drop</em> between generations — the best can be lost.</li>
+              <li>Push <strong>mutation</strong> to 0.30 — the GA becomes a random walk, can't lock in good solutions.</li>
+              <li>Set <strong>mutation = 0</strong> and selection to roulette — early diversity is everything; the run usually stalls before reaching the target.</li>
+              <li>Compare <strong>tournament t=1</strong> (random — drift) vs <strong>t=8</strong> (truncation — premature convergence).</li>
+              <li>Try <strong>uniform crossover</strong> with low mutation — disrupts building blocks aggressively but explores broadly.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {sec === 'gp' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Tree-Style Genetic Programming</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                Evolve <strong>computer programs</strong> instead of bit strings. Individuals are expression trees built from operators (+, ·, sin, cos, √) and operands (variables, constants).
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Operators on trees</div>
+              <ul className="m4-bullets">
+                <li><strong>Mutation:</strong> replace a subtree with a freshly-generated subtree (e.g. constant 0.981 → expression x + y).</li>
+                <li><strong>Crossover:</strong> swap subtrees between two parent program trees.</li>
+                <li>Constraint: children must remain syntactically valid programs — type-aware operators or grammar-guided GP.</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Tree Crossover — Worked Example</div>
+              <div style={{fontFamily:'monospace',fontSize:'0.74rem',color:'var(--text-1)',background:'var(--bg-2)',border:'1px solid rgba(148,163,184,0.15)',borderRadius:8,padding:'0.75rem',lineHeight:1.7}}>
+                <div style={{color:'var(--text-2)'}}>// Parent A: f(x,y) = (x + y) · sin(x)</div>
+                <div>{'      ·'}</div>
+                <div>{'     / \\'}</div>
+                <div>{'    +   sin'}</div>
+                <div>{'   / \\   |'}</div>
+                <div>{'  x   y  x'}</div>
+                <div style={{marginTop:'0.5rem',color:'var(--text-2)'}}>// Parent B: g(x) = √(x² + 1)</div>
+                <div>{'      √'}</div>
+                <div>{'      |'}</div>
+                <div>{'      +'}</div>
+                <div>{'     / \\'}</div>
+                <div>{'    ²   1'}</div>
+                <div>{'    |'}</div>
+                <div>{'    x'}</div>
+                <div style={{marginTop:'0.5rem',color:'var(--emerald)'}}>{'→ Swap subtree (x+y) with (x²+1):'}</div>
+                <div style={{color:'var(--cyan)'}}>{'   Child: ((x²+1)) · sin(x)'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Representation Beyond Bit Strings</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Representation</th><th>Domain</th><th>Operator constraint</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Bit vectors</td><td>Boolean functions, feature selection</td><td>Free — any flip/swap is valid</td></tr>
+                <tr><td className="pk">Real vectors</td><td>Continuous optimisation (ES territory)</td><td>None — Gaussian convolution natural</td></tr>
+                <tr><td className="pk">Trees</td><td>Symbolic regression, controllers (GP)</td><td>Syntactic validity (type-checking)</td></tr>
+                <tr><td className="pk">Permutations</td><td>TSP, JSSP scheduling</td><td>Must remain a valid permutation — special crossovers (PMX, OX, CX)</td></tr>
+                <tr><td className="pk">Graphs</td><td>NN topology (NEAT)</td><td>Connectivity constraints, no orphan nodes</td></tr>
+                <tr><td className="pk">Molecules</td><td>Drug design</td><td>Chemical valence, stability</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Emergent Behaviour & Hybrid Algorithms (Lecture 12) ───────────────────────
+
+function PSOSimPanel() {
+  const W = 480, H = 320;
+  const [running, setRunning] = useState(false);
+  const [n, setN] = useState(20);
+  const [alpha, setAlpha] = useState(0.6);
+  const [beta, setBeta] = useState(1.5);
+  const [gamma, setGamma] = useState(0.0);
+  const [delta, setDelta] = useState(1.5);
+  const [eps, setEps] = useState(0.7);
+  const [iter, setIter] = useState(0);
+  const [bestFit, setBestFit] = useState(null);
+  const simRef = useRef(null);
+  const bgRef = useRef(null);
+  const fgRef = useRef(null);
+  const animRef = useRef(null);
+  const runRef = useRef(false);
+  runRef.current = running;
+
+  const eval2D = (x, y) => -20 * Math.exp(-0.2*Math.sqrt(0.5*(x*x+y*y)))
+                          - Math.exp(0.5*(Math.cos(2*Math.PI*x)+Math.cos(2*Math.PI*y)))
+                          + Math.E + 20;
+
+  const init = useCallback((cnt) => {
+    const particles = Array.from({length:cnt}, () => {
+      const pos = [(Math.random()-0.5)*8, (Math.random()-0.5)*8];
+      return { pos, vel:[(Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5], best:[...pos], bestFit:eval2D(pos[0],pos[1]), trail:[] };
+    });
+    let gBest = particles[0].best.slice();
+    let gBestFit = particles[0].bestFit;
+    particles.forEach(p => { if (p.bestFit < gBestFit) { gBest = p.best.slice(); gBestFit = p.bestFit; } });
+    return { particles, gBest, gBestFit };
+  }, []);
+
+  const drawBg = useCallback(() => {
+    const c = bgRef.current; if (!c) return;
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(W,H);
+    let mn=Infinity,mx=-Infinity; const grid = new Float32Array(W*H);
+    for (let py=0; py<H; py++) for (let px=0; px<W; px++) {
+      const x = -5 + (px/W)*10, y = 5 - (py/H)*10;
+      const v = eval2D(x,y); grid[py*W+px]=v;
+      if (v<mn) mn=v; if (v>mx) mx=v;
+    }
+    const rng = mx-mn;
+    for (let i=0;i<grid.length;i++) {
+      const t = (grid[i]-mn)/rng;
+      img.data[i*4]   = Math.round(15 + t*90);
+      img.data[i*4+1] = Math.round((1-t)*30);
+      img.data[i*4+2] = Math.round(40 + (1-t)*70);
+      img.data[i*4+3] = 255;
+    }
+    ctx.putImageData(img,0,0);
+  }, []);
+
+  const drawFg = useCallback(() => {
+    const c = fgRef.current; const sim = simRef.current;
+    if (!c || !sim) return;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const toC = (x,y) => [(x+5)/10*W, (5-y)/10*H];
+    sim.particles.forEach((p,i)=>{
+      const col = CYBER_COLS[i%CYBER_COLS.length];
+      for (let ti=1; ti<p.trail.length; ti++) {
+        const a = Math.round((ti/p.trail.length)*60).toString(16).padStart(2,'0');
+        const [x0,y0] = toC(p.trail[ti-1][0],p.trail[ti-1][1]);
+        const [x1,y1] = toC(p.trail[ti][0],p.trail[ti][1]);
+        ctx.strokeStyle = col+a; ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+      }
+    });
+    sim.particles.forEach((p,i)=>{
+      const [cx,cy] = toC(p.pos[0],p.pos[1]);
+      ctx.fillStyle = CYBER_COLS[i%CYBER_COLS.length];
+      ctx.beginPath(); ctx.arc(cx,cy,3.5,0,Math.PI*2); ctx.fill();
+    });
+    const [gx,gy] = toC(sim.gBest[0], sim.gBest[1]);
+    ctx.save(); ctx.shadowColor='#34d399'; ctx.shadowBlur=14;
+    ctx.strokeStyle='#34d399'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(gx-7,gy); ctx.lineTo(gx+7,gy); ctx.moveTo(gx,gy-7); ctx.lineTo(gx,gy+7); ctx.stroke();
+    ctx.restore();
+  }, []);
+
+  const step = useCallback(() => {
+    const sim = simRef.current; if (!sim) return;
+    sim.particles.forEach(p => {
+      for (let i = 0; i < 2; i++) {
+        const b = Math.random()*beta, d = Math.random()*delta;
+        p.vel[i] = alpha*p.vel[i] + b*(p.best[i]-p.pos[i]) + d*(sim.gBest[i]-p.pos[i]);
+      }
+    });
+    sim.particles.forEach(p => {
+      p.trail.push([p.pos[0], p.pos[1]]); if (p.trail.length > 16) p.trail.shift();
+      p.pos[0] = Math.max(-5, Math.min(5, p.pos[0] + eps*p.vel[0]));
+      p.pos[1] = Math.max(-5, Math.min(5, p.pos[1] + eps*p.vel[1]));
+      const f = eval2D(p.pos[0],p.pos[1]);
+      if (f < p.bestFit) { p.bestFit = f; p.best = [p.pos[0], p.pos[1]]; }
+      if (f < sim.gBestFit) { sim.gBestFit = f; sim.gBest = [p.pos[0], p.pos[1]]; }
+    });
+    sim.iter++;
+    setIter(sim.iter); setBestFit(sim.gBestFit);
+    drawFg();
+  }, [alpha, beta, delta, eps, drawFg]);
+
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
+  useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled || !runRef.current) return;
+      stepRef.current();
+      animRef.current = setTimeout(tick, 80);
+    };
+    tick();
+    return () => { cancelled = true; if (animRef.current) clearTimeout(animRef.current); };
+  }, [running]);
+
+  const reset = (cnt) => {
+    setRunning(false); runRef.current = false;
+    const s = init(cnt ?? n);
+    s.iter = 0;
+    simRef.current = s;
+    setIter(0); setBestFit(s.gBestFit);
+    requestAnimationFrame(drawFg);
+  };
+
+  useEffect(() => { drawBg(); reset(n); }, []); // eslint-disable-line
+
+  return (
+    <div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 220px',gap:'1rem',alignItems:'start',marginBottom:'0.75rem'}}>
+        <div>
+          <div style={{position:'relative',lineHeight:0,borderRadius:8,overflow:'hidden',border:'1px solid rgba(34,211,238,0.18)'}}>
+            <canvas ref={bgRef} style={{display:'block',width:W,height:H}} />
+            <canvas ref={fgRef} style={{position:'absolute',top:0,left:0,width:W,height:H}} width={W} height={H} />
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginTop:'0.5rem',alignItems:'center'}}>
+            <button className="m4-algo-tab" style={{padding:'3px 12px'}} onClick={()=>setRunning(r=>!r)}>{running ? '⏸ Pause' : '▶ Run'}</button>
+            <button className="m4-algo-tab" style={{padding:'3px 12px'}} onClick={()=>{if(!running)step();}}>⏭ Step</button>
+            <button className="m4-algo-tab" style={{padding:'3px 12px'}} onClick={()=>reset()}>↺ Reset</button>
+            <span style={{marginLeft:'auto',fontFamily:'monospace',fontSize:'0.71rem',color:'var(--text-2)'}}>iter <span style={{color:'var(--cyan)'}}>{iter}</span></span>
+          </div>
+        </div>
+        <div className="m4-card" style={{margin:0,padding:'0.7rem',fontSize:'0.7rem'}}>
+          <div className="m4-card-h" style={{fontSize:'0.62rem',marginBottom:'0.5rem'}}>HYPER-PARAMETERS</div>
+          {[
+            ['α inertia', alpha, 0, 1, 0.05, setAlpha, '#22d3ee'],
+            ['β cognitive (x*)', beta, 0, 3, 0.1, setBeta, '#a78bfa'],
+            ['γ informants (x⁺)', gamma, 0, 3, 0.1, setGamma, '#34d399'],
+            ['δ social (x!)', delta, 0, 3, 0.1, setDelta, '#fbbf24'],
+            ['ε step', eps, 0, 1.5, 0.05, setEps, '#fb7185'],
+          ].map(([l,v,mn,mx,st,fn,col])=>(
+            <div key={l} style={{marginBottom:'0.4rem'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:1}}>
+                <span style={{color:'var(--text-2)',fontSize:'0.65rem'}}>{l}</span>
+                <span style={{fontFamily:'monospace',fontSize:'0.65rem',color:col}}>{v.toFixed(2)}</span>
+              </div>
+              <input type="range" min={mn} max={mx} step={st} value={v} onChange={e=>fn(+e.target.value)} style={{width:'100%'}} />
+            </div>
+          ))}
+          <div style={{borderTop:'1px solid var(--border)',marginTop:'0.4rem',paddingTop:'0.4rem'}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:1}}>
+              <span style={{color:'var(--text-2)',fontSize:'0.65rem'}}>swarm size</span>
+              <span style={{fontFamily:'monospace',fontSize:'0.65rem',color:'var(--cyan)'}}>{n}</span>
+            </div>
+            <input type="range" min={5} max={50} value={n} onChange={e=>{setN(+e.target.value); reset(+e.target.value);}} style={{width:'100%'}} />
+            <div style={{marginTop:'0.45rem',fontFamily:'monospace',fontSize:'0.65rem',color:'var(--emerald)'}}>best f = {bestFit!=null?bestFit.toFixed(4):'—'}</div>
+            <div style={{marginTop:'0.3rem',fontSize:'0.62rem',color:'var(--text-2)'}}><span style={{color:'#34d399'}}>+</span> global best (target = origin)</div>
+          </div>
+        </div>
+      </div>
+      <div className="m4-infobox" style={{fontSize:'0.74rem'}}>
+        <strong>Try:</strong> set α high and δ=0 → pure inertia, particles drift past optima. Set α=0, δ high → particles snap to global best instantly (premature convergence). Balance both for the classic spiral-and-converge behaviour.
+      </div>
+    </div>
+  );
+}
+
+function DEMutationViz() {
+  const [pts, setPts] = useState(() => Array.from({length:6},()=>[Math.random()*8-4, Math.random()*8-4]));
+  const [a, setA] = useState(0);
+  const [b, setB] = useState(1);
+  const [c, setC] = useState(2);
+  const [F, setF] = useState(1.0);
+  const canvasRef = useRef(null);
+
+  const child = useMemo(
+    () => [pts[a][0] + F*(pts[b][0]-pts[c][0]), pts[a][1] + F*(pts[b][1]-pts[c][1])],
+    [pts, a, b, c, F]
+  );
+
+  useEffect(() => {
+    const cv = canvasRef.current; if (!cv) return;
+    const W = cv.width = cv.offsetWidth || 420; const H = cv.height = 280;
+    const ctx = cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const PAD = 26;
+    const toC = (x,y) => [PAD + (x+5)/10*(W-2*PAD), H-PAD - (y+5)/10*(H-2*PAD)];
+
+    ctx.fillStyle = '#0d1a30'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)'; ctx.lineWidth = 1;
+    for (let g=-5; g<=5; g++) {
+      const [gx0,gy0] = toC(g,-5), [gx1,gy1] = toC(g,5);
+      const [hx0,hy0] = toC(-5,g), [hx1,hy1] = toC(5,g);
+      ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hx0,hy0); ctx.lineTo(hx1,hy1); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
+    const [ox0,oy0] = toC(-5,0), [ox1,oy1] = toC(5,0);
+    const [ax0,ay0] = toC(0,-5), [ax1,ay1] = toC(0,5);
+    ctx.beginPath(); ctx.moveTo(ox0,oy0); ctx.lineTo(ox1,oy1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ax0,ay0); ctx.lineTo(ax1,ay1); ctx.stroke();
+
+    pts.forEach((p,i) => {
+      const [px,py] = toC(p[0],p[1]);
+      ctx.fillStyle = (i===a||i===b||i===c) ? 'rgba(148,163,184,0.4)' : 'rgba(148,163,184,0.7)';
+      ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='var(--text-2)'; ctx.font='9px monospace';
+      ctx.fillText(`#${i+1}`, px+6, py-6);
+    });
+
+    const drawArrow = (from, to, col, label) => {
+      const [fx,fy] = toC(from[0], from[1]);
+      const [tx,ty] = toC(to[0], to[1]);
+      ctx.strokeStyle = col; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(tx,ty); ctx.stroke();
+      const ang = Math.atan2(ty-fy, tx-fx);
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - 8*Math.cos(ang-0.4), ty - 8*Math.sin(ang-0.4));
+      ctx.lineTo(tx - 8*Math.cos(ang+0.4), ty - 8*Math.sin(ang+0.4));
+      ctx.closePath();
+      ctx.fillStyle = col; ctx.fill();
+      if (label) {
+        ctx.fillStyle = col; ctx.font = '10px monospace';
+        ctx.fillText(label, (fx+tx)/2 + 6, (fy+ty)/2 - 4);
+      }
+    };
+
+    drawArrow(pts[c], pts[b], '#a78bfa', 'B − C');
+
+    const stagedTo = [pts[a][0] + (pts[b][0]-pts[c][0]), pts[a][1] + (pts[b][1]-pts[c][1])];
+    drawArrow(pts[a], child, '#34d399', `+ F·(B−C)`);
+
+    [['A',pts[a],'#22d3ee'],['B',pts[b],'#fb7185'],['C',pts[c],'#fbbf24']].forEach(([l,p,col])=>{
+      const [px,py] = toC(p[0],p[1]);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(px,py,6,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+      ctx.fillText(l, px, py+3); ctx.textAlign='left';
+    });
+    void stagedTo;
+
+    const [chx,chy] = toC(child[0], child[1]);
+    ctx.save(); ctx.shadowColor='#34d399'; ctx.shadowBlur=12;
+    ctx.fillStyle='#34d399';
+    ctx.beginPath(); ctx.arc(chx,chy,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#0d1a30'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+    ctx.fillText('★', chx, chy+3); ctx.textAlign='left';
+    ctx.restore();
+  }, [pts, a, b, c, F, child]);
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">DIFFERENTIAL EVOLUTION — Mutation Operator</div>
+      <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.6rem'}}>
+        Pick three distinct individuals A, B, C from the population. The child is <Tex src="\text{child} = A + F\cdot(B - C)" />. The bigger the population spread, the bigger the step — <strong>adaptive mutation</strong> for free.
+      </div>
+      <canvas ref={canvasRef} style={{width:'100%',height:280,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:'0.5rem',marginTop:'0.7rem'}}>
+        {[['A',a,setA,'#22d3ee'],['B',b,setB,'#fb7185'],['C',c,setC,'#fbbf24']].map(([l,v,fn,col])=>(
+          <div key={l}>
+            <div style={{fontSize:'0.65rem',color:col,fontFamily:'monospace',fontWeight:700}}>Pick {l}</div>
+            <select value={v} onChange={e=>fn(+e.target.value)} style={{width:'100%',background:'var(--bg-2)',color:'var(--text-1)',border:`1px solid ${col}55`,padding:'2px',fontFamily:'monospace',fontSize:'0.7rem'}}>
+              {pts.map((_,i)=><option key={i} value={i} disabled={i!==v && [a,b,c].includes(i)}>#{i+1}</option>)}
+            </select>
+          </div>
+        ))}
+        <div>
+          <div style={{fontSize:'0.65rem',color:'#34d399',fontFamily:'monospace',fontWeight:700}}>F (scale)</div>
+          <input type="range" min={0.1} max={2} step={0.1} value={F} onChange={e=>setF(+e.target.value)} style={{width:'100%'}} />
+          <span style={{fontFamily:'monospace',fontSize:'0.7rem',color:'#34d399'}}>{F.toFixed(1)}</span>
+        </div>
+        <div style={{display:'flex',alignItems:'flex-end'}}>
+          <button className="m4-algo-tab" style={{padding:'4px 14px',fontSize:'0.7rem'}} onClick={()=>setPts(Array.from({length:6},()=>[Math.random()*8-4, Math.random()*8-4]))}>↺ New population</button>
+        </div>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.7rem',fontSize:'0.74rem'}}>
+        <strong>Self-tuning step:</strong> when the population is spread out (early), B−C is large and steps are big. As individuals converge, B−C shrinks and steps shrink with them — automatic exploitation. Closely related to Nelder-Mead reflection moves.
+      </div>
+    </div>
+  );
+}
+
+function EmergentTab() {
+  const [sec, setSec] = useState('overview');
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['overview','Overview'],
+          ['pso','Particle Swarm'],
+          ['de','Differential Evolution'],
+          ['hybrid','Hybrid & Memetic'],
+          ['roadmap','Roadmap'],
+        ].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sec === 'overview' && (
+        <div>
+          <div style={{background:'linear-gradient(135deg,rgba(52,211,153,0.07) 0%,rgba(34,211,238,0.07) 100%)',border:'1px solid rgba(52,211,153,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+            {[['Emergence','Whole > sum of parts','#22d3ee'],['PSO','Swarm intelligence','#a78bfa'],['DE','Adaptive vector mutation','#34d399'],['Hybrid','Local + global','#fbbf24'],['Memetic','Lamarckian learning','#fb7185'],['Co-evolution','Relative fitness','#06b6d4']].map(([k,v,col])=>(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+                <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+                <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Emergent Behaviour — The Idea</div>
+              <div className="m4-infobox" style={{fontSize:'0.78rem'}}>
+                A flock of seagulls fishing — each bird makes a private decision (where I caught fish, where the biggest catch is, where most birds are diving). Globally, the flock <em>converges</em> on the best feeding ground. Nobody planned it.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Each individual chooses among</div>
+              <ul className="m4-bullets">
+                <li>Where <strong>I</strong> have found fish so far (personal best).</li>
+                <li>Where the <strong>biggest catch</strong> has been seen by anyone (global best).</li>
+                <li>Where my <strong>nearest neighbours</strong> are doing well (informants' best).</li>
+                <li>Some random <strong>combination</strong> of all of the above.</li>
+              </ul>
+              <div style={{background:'rgba(52,211,153,0.08)',border:'1px solid rgba(52,211,153,0.25)',borderRadius:8,padding:'0.6rem',marginTop:'0.5rem',fontSize:'0.76rem',lineHeight:1.6}}>
+                <strong style={{color:'#34d399'}}>Collective behaviour</strong> drives <em>exploitation</em> — particles converge on the best.<br/>
+                <strong style={{color:'#22d3ee'}}>Individual momentum</strong> drives <em>exploration</em> — particles overshoot and find new regions.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Laws of Motion — Physical Analogy</div>
+              <table className="m4-ptable">
+                <thead><tr><th>Force</th><th>Effect</th><th>Tendency</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">Momentum</td><td>Particle keeps moving in its current direction</td><td style={{color:'var(--cyan)'}}>Exploration</td></tr>
+                  <tr><td className="pk">Personal pull</td><td>Gravitational pull to <Tex src="\vec{x}^*" /> (own best)</td><td style={{color:'var(--emerald)'}}>Exploitation</td></tr>
+                  <tr><td className="pk">Local pull</td><td>Pull to <Tex src="\vec{x}^+" /> (informants' best)</td><td style={{color:'var(--emerald)'}}>Exploitation</td></tr>
+                  <tr><td className="pk">Global pull</td><td>Pull to <Tex src="\vec{x}^!" /> (anyone's best ever)</td><td style={{color:'var(--emerald)'}}>Exploitation</td></tr>
+                  <tr><td className="pk">Friction (α)</td><td>Decays velocity over time</td><td style={{color:'var(--emerald)'}}>Exploitation</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Velocity update</div>
+              <Tex src="v_i \leftarrow \alpha\, v_i + b(x_i^* - x_i) + c(x_i^+ - x_i) + d(x_i^! - x_i)" block />
+              <Tex src="x_i \leftarrow x_i + \varepsilon\, v_i" block />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'pso' && (
+        <div>
+          <div className="m4-card">
+            <div className="m4-card-h">PARTICLE SWARM OPTIMISATION — Live Simulation (Ackley)</div>
+            <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.6rem'}}>
+              Particles search the Ackley function (global minimum at the origin, marked +). Adjust hyper-parameters and watch how the balance of momentum and pulls shifts the exploration/exploitation behaviour.
+            </div>
+            <PSOSimPanel />
+          </div>
+
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Algorithm 39 — PSO</div>
+              <div className="m4-pseudocode">{`swarmsize, α, β, γ, δ, ε ← chosen
+P ← {swarmsize random particles
+     each with random initial velocity}
+Best ← ∅
+
+repeat
+  for each x ∈ P:
+    AssessFitness(x)
+    update Best
+
+  for each x ∈ P:
+    x*  ← own previous best
+    x⁺  ← informants' best (incl. self)
+    x!  ← global best ever
+    for each dimension i:
+      b ← U(0, β)
+      c ← U(0, γ)
+      d ← U(0, δ)
+      v_i ← α·v_i
+            + b·(x_i* − x_i)
+            + c·(x_i⁺ − x_i)
+            + d·(x_i! − x_i)
+
+  for each x ∈ P:
+    x ← x + ε·v
+until ideal or out of time
+return Best`}</div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Hyper-parameters &amp; Their Effects</div>
+              <table className="m4-ptable">
+                <thead><tr><th>Symbol</th><th>Meaning</th><th>Push toward</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">α</td><td>Inertia / momentum retention</td><td>Exploration</td></tr>
+                  <tr><td className="pk">β</td><td>Pull toward personal best <Tex src="\vec{x}^*" /></td><td>Mild exploitation</td></tr>
+                  <tr><td className="pk">γ</td><td>Pull toward informants' best <Tex src="\vec{x}^+" /></td><td>Local exploitation</td></tr>
+                  <tr><td className="pk">δ</td><td>Pull toward global best <Tex src="\vec{x}^!" /></td><td>Strong exploitation</td></tr>
+                  <tr><td className="pk">ε</td><td>Step-size scalar (cf. learning rate)</td><td>Both — bigger jumps</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Two equivalent decompositions</div>
+              <div style={{background:'var(--bg-2)',padding:'0.55rem 0.7rem',borderRadius:5,fontSize:'0.74rem',lineHeight:1.7,fontFamily:'monospace',color:'var(--text-1)'}}>
+                <span style={{color:'var(--text-2)'}}>{'// Personal vs Social'}</span><br/>
+                v ← <span style={{color:'#22d3ee'}}>v</span> + <span style={{color:'#a78bfa'}}>c₁r₁(pBest − x)</span> + <span style={{color:'#34d399'}}>c₂r₂(gBest − x)</span><br/>
+                <span style={{color:'var(--text-2)'}}>{'// Cognitive vs Social (same eq.)'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Definitions Recap</div>
+            <table className="m4-ptable">
+              <tbody>
+                <tr><td className="pk"><Tex src="\vec{x} = (x_1,\, x_2, \dots)" /></td><td>Particle's location in search space</td></tr>
+                <tr><td className="pk"><Tex src="\vec{v}" /></td><td>Particle's velocity vector</td></tr>
+                <tr><td className="pk"><Tex src="\vec{v}^t = \vec{x}^t - \vec{x}^{t-1}" /></td><td>Discretised "velocity" between iterations</td></tr>
+                <tr><td className="pk"><Tex src="\vec{a}^t = \vec{v}^t - \vec{v}^{t-1}" /></td><td>Discretised "acceleration"</td></tr>
+                <tr><td className="pk"><Tex src="\vec{x}^*" /></td><td>Fittest location <em>this</em> particle has visited</td></tr>
+                <tr><td className="pk"><Tex src="\vec{x}^+" /></td><td>Fittest location among the particle's <em>informants</em></td></tr>
+                <tr><td className="pk"><Tex src="\vec{x}^!" /></td><td>Fittest location <em>any</em> particle has discovered</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sec === 'de' && (
+        <div>
+          <DEMutationViz />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Differential Evolution — Properties</div>
+              <ul className="m4-bullets">
+                <li>Primarily for <strong>multi-dimensional real-valued</strong> spaces (like PSO).</li>
+                <li>Children compete <strong>directly against their immediate parent</strong> — only fitter children survive (one-to-one tournament).</li>
+                <li>Step size is set by the current population spread — <strong>adaptive mutation</strong> with no separate learning-rate parameter.</li>
+                <li>Reminiscent of <strong>Nelder-Mead</strong> simplex moves: reflection, expansion, contraction. Population is a kind of distributed simplex.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-warnbox" style={{fontSize:'0.74rem'}}>
+                When the population converges, B − C → 0 and so do the steps. Diversity loss is irreversible without an explicit re-injection mechanism — same trap as crossover-only GAs.
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">DE Step (sketch)</div>
+              <div className="m4-pseudocode">{`for each individual A in population:
+  pick B, C ≠ A, B ≠ C uniformly
+  trial ← A + F·(B − C)         ▷ mutate
+  trial ← Crossover(A, trial)   ▷ optional
+  if Fitness(trial) > Fitness(A):
+    replace A with trial
+end for`}</div>
+              <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.5rem',lineHeight:1.6}}>
+                Typical scale factor <Tex src="F \in [0.4, 1.0]" />. The "DE/rand/1/bin" naming convention encodes the mutation base, number of difference vectors, and crossover scheme.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'hybrid' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Why Hybridise?</div>
+              <table className="m4-ptable">
+                <tbody>
+                  <tr><td className="pk">Single-state</td><td>Hill climb, SA → very efficient at <strong>local</strong> optima</td></tr>
+                  <tr><td className="pk">Population</td><td>EA, GA, PSO → much better at <strong>global</strong> exploration</td></tr>
+                  <tr><td className="pk" style={{color:'var(--emerald)'}}>Hybrid</td><td>EA discovers promising regions; HC polishes each candidate to its local best</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.76rem'}}>
+                Simplest hybrid strategy: <strong>after each generation, hill-climb every individual for t steps</strong> before breeding. Replace the population members with their improved versions.
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Algorithm 36 — Hybrid EA + Hill-Climb</div>
+              <div className="m4-pseudocode">{`t ← number of HC iterations per individual
+
+P ← BuildInitialPopulation()
+Best ← ∅
+repeat
+  AssessFitness(P)
+  for each Pᵢ ∈ P:
+    Pᵢ ← HillClimb(Pᵢ) for t iterations
+    if Best=∅ or Fit(Pᵢ) > Fit(Best):
+      Best ← Pᵢ
+  P ← Join(P, Breed(P))
+until ideal or out of time
+return Best`}</div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Memetic Algorithms — Lamarck's Last Laugh</div>
+            <div className="m4-two-col">
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.7}}>
+                <p>A <strong>meme</strong> is the social analogue of a gene — a unit of behaviour that spreads, replicates, and influences fitness. Memes propagate <em>within</em> a generation through learning.</p>
+                <p>In a memetic algorithm, the <strong>improvement found by hill-climbing is written back into the genome</strong> — the individual that breeds is the post-HC version. This is genuine Lamarckian inheritance: acquired improvements are passed to offspring.</p>
+                <p>It works because algorithms aren't bound by biology. The Weismann barrier is a physical constraint on cells, not on data structures.</p>
+              </div>
+              <div style={{background:'rgba(167,139,250,0.06)',border:'1px solid rgba(167,139,250,0.25)',borderRadius:8,padding:'0.7rem',fontSize:'0.74rem',lineHeight:1.65}}>
+                <strong style={{color:'#a78bfa'}}>Open question (Luke):</strong> can memes be passed <em>between</em> generations as well as within? In algorithms, this is just <strong>caching</strong> a population's lifetime improvements as the seed for the next round. Easy. In biology — that's the epigenetics question.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'roadmap' && (
+        <div>
+          <div className="m4-card">
+            <div className="m4-card-h">Optimisation Roadmap — The Whole Course in One Tree</div>
+            <div className="m4-pseudocode" style={{fontSize:'0.72rem'}}>{`Optimisation
+├── Deterministic
+│   ├── Gradient methods (Lec 6)
+│   │   ├── Gradient descent / ascent
+│   │   └── Newton-Raphson
+│   └── Direct methods (Lec 7)
+│       ├── CCS / Powell / Hooke-Jeeves
+│       └── Nelder-Mead simplex
+└── Stochastic
+    ├── Single-state (Lec 9)
+    │   ├── Hill Climbing + restarts
+    │   ├── Simulated Annealing
+    │   ├── Tabu Search
+    │   └── Iterated Local Search
+    └── Population-based (Lec 10–12)
+        ├── EA / ES / EC / EP   ◄── Lec 10
+        ├── Genetic Algorithms  ◄── Lec 11
+        │   ├── Crossover (1pt, 2pt, uniform)
+        │   ├── Selection (roulette, SUS, tournament)
+        │   ├── Elitism
+        │   └── Genetic Programming (trees)
+        └── Emergent / Swarm    ◄── Lec 12
+            ├── Particle Swarm Optimisation
+            ├── Differential Evolution
+            ├── Ant Colony, Dragonfly
+            └── Hybrid / Memetic
+                (single-state ⇄ population)`}</div>
+          </div>
+          <div className="m4-card" style={{marginTop:'0.75rem',background:'linear-gradient(135deg,rgba(34,211,238,0.05) 0%,rgba(167,139,250,0.05) 100%)'}}>
+            <div className="m4-card-h">The Three Big Tensions</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.55rem',marginTop:'0.4rem'}}>
+              {[
+                ['Exploration ⇄ Exploitation','#22d3ee','Every algorithm tunes this. SA cools temperature; ES tunes σ; PSO balances α vs δ; GA balances mutation vs elitism.'],
+                ['Diversity ⇄ Convergence','#a78bfa','Diversity is the fuel for finding global optima. Once lost, only mutation can rebuild it. Memetic algorithms accelerate convergence at the cost of diversity.'],
+                ['Information ⇄ Noise','#34d399','More candidates give more landscape information per generation, but each evaluation costs the same. The art is extracting the most information per evaluation.'],
+              ].map(([t,col,d])=>(
+                <div key={t} style={{background:`${col}11`,border:`1px solid ${col}33`,borderRadius:8,padding:'0.6rem'}}>
+                  <div style={{fontSize:'0.72rem',fontWeight:700,color:col,marginBottom:'0.3rem'}}>{t}</div>
+                  <div style={{fontSize:'0.7rem',color:'var(--text-2)',lineHeight:1.55}}>{d}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
+const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Genetic Algorithms','Emergent','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4404() {
@@ -6103,6 +7458,8 @@ export default function CITS4404() {
                 {code:'L6–9', title:'Optimisation Algorithms', color:'var(--amber)', desc:'Gradient descent/ascent, Newton-Raphson, direct methods (CCS, Powell, H-J, Nelder-Mead), stochastic methods (HC, SA, Tabu, ILS), No Free Lunch.', go:'Algorithms'},
                 {code:'L4', title:'Job Shop Scheduling', color:'var(--rose)', desc:'JSSP formulation, makespan minimisation (n!)ᵐ solution space, dispatching rules, disjunctive graph, N1 local search, benchmark instances, RPD metric.', go:'Job Shop'},
                 {code:'Labs 1–2', title:'PRNG & Bin Packing', color:'var(--violet)', desc:'LCG recurrence, Mersenne primes, full-period theorem. Bin packing heuristics: FF, NF, BF, FFD. Online vs offline algorithms.', go:'Labs'},
+                {code:'L11', title:'Genetic Algorithms', color:'var(--emerald)', desc:'Holland\'s GA: binary chromosomes, crossover (1pt/2pt/uniform), selection (roulette, SUS, tournament), elitism. Live crossover & selection visualisers plus a full GA simulator that evolves a target string.', go:'Genetic Algorithms'},
+                {code:'L12', title:'Emergent & Hybrid', color:'var(--cyan)', desc:'Particle Swarm Optimisation, Differential Evolution, hybrid/memetic algorithms. Live PSO simulation on the Ackley landscape and an interactive DE mutation visualiser.', go:'Emergent'},
                 {code:'Paper', title:'Dragonfly Algorithm', color:'var(--cyan)', desc:'Swarm intelligence metaheuristic (Mirjalili, 2016). Five behavioural operators, live 2D simulation on Ackley function, literature review Q&A with paper references.', go:'Dragonfly Algorithm'},
               ].map(item => (
                 <div key={item.code} className="m4-tcard" style={{'--tc':item.color}} onClick={() => setTab(item.go)}>
@@ -6174,6 +7531,28 @@ export default function CITS4404() {
               <p className="m4-sec-sub">Maintain many candidate solutions simultaneously. Evolution Strategies, adaptive mutation, and the full Evolutionary Computation family — from (μ,λ) ES to Genetic Programming and Swarm Intelligence.</p>
             </div>
             <PopulationTab />
+          </>
+        )}
+
+        {/* ── GENETIC ALGORITHMS ── */}
+        {tab === 'Genetic Algorithms' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Genetic Algorithms <span className="m4-badge" style={{background:'var(--emerald-dim)',color:'var(--emerald)',border:'1px solid rgba(52,211,153,0.3)'}}>Lecture 11</span></h2>
+              <p className="m4-sec-sub">Holland's evolutionary computing classic. Binary chromosomes, crossover as the primary operator, multiple selection strategies, and elitism. Interact with crossover and selection mechanics, then evolve a target string with the full GA simulator.</p>
+            </div>
+            <GeneticAlgorithmsTab />
+          </>
+        )}
+
+        {/* ── EMERGENT ── */}
+        {tab === 'Emergent' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Emergent Behaviour &amp; Hybrid Algorithms <span className="m4-badge" style={{background:'rgba(34,211,238,0.12)',color:'var(--cyan)',border:'1px solid rgba(34,211,238,0.3)'}}>Lecture 12</span></h2>
+              <p className="m4-sec-sub">When the whole becomes greater than the sum of the parts. Particle Swarm Optimisation and Differential Evolution as continuous-space metaheuristics, and the bridge to memetic / hybrid algorithms that combine local and global search.</p>
+            </div>
+            <EmergentTab />
           </>
         )}
 
