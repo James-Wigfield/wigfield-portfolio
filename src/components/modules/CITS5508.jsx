@@ -358,6 +358,84 @@ const QUIZ_DATA = [
     ok: 'α penalises complexity (|T| = leaf count). At α = 0 you recover the full tree T₀. As α increases, the cost of each extra leaf grows, so subtrees that do not reduce RSS enough get pruned. Select α via k-fold cross-validation.',
     ng: 'Cost-complexity: minimise RSS + α|T|. Larger α → larger penalty per leaf → fewer leaves. α = 0 gives full tree; α → ∞ gives single-node tree. Cross-validate to find the best α.',
   },
+  {
+    lec: 'Lec 7 · Hard vs Soft Voting',
+    q: "Three classifiers output P(class A) = [0.51, 0.49, 0.95]. What does hard voting predict, what does soft voting predict, and why might soft voting be preferred?",
+    opts: [
+      'Both predict A; soft voting is just slower so hard voting is preferred',
+      'Hard voting → A (2 vs 1). Soft voting → A (avg = 0.65). Soft voting weights confident predictions more heavily, often outperforming hard voting',
+      'Hard voting → B (the 0.49 outranks the others). Soft voting → A. They disagree because soft voting is wrong',
+      'Hard voting is undefined with three classifiers; soft voting picks B',
+    ],
+    ans: 1,
+    ok: 'Hard vote: thresholding at 0.5 gives [A, B, A] — A wins 2:1. Soft vote: avg(0.51, 0.49, 0.95) = 0.65 — A wins. Soft voting carries the 0.95 confidence into the aggregate; hard voting throws it away (it counts the same as a 0.51).',
+    ng: 'Soft voting averages the probabilities so highly confident classifiers exert more influence. Hard voting is binary majority — it loses the magnitude of confidence. With well-calibrated probabilities, soft voting usually wins.',
+  },
+  {
+    lec: 'Lec 7 · Bagging & OOB',
+    q: 'Bagging samples m instances with replacement from a training set of size m. What fraction of unique instances ends up in the bag, and what is the rest called?',
+    opts: [
+      '~50% are sampled; the rest are called the validation set',
+      '~63.2% are sampled (1 − 1/e); the remaining ~36.8% are out-of-bag (OOB) instances and act as a free validation set',
+      '100% are sampled — every instance must appear at least once with replacement',
+      '~80% are sampled; the rest are reserved for early stopping',
+    ],
+    ans: 1,
+    ok: 'P(instance never picked in m draws with replacement) = (1 − 1/m)^m → 1/e ≈ 0.368 as m → ∞. So ≈ 63.2% appear in the bag (with multiplicity) and ≈ 36.8% are OOB. Each predictor gets its own OOB set used to compute oob_score_ — no extra holdout needed.',
+    ng: 'OOB ratio comes from (1 − 1/m)^m → 1/e ≈ 0.368. The unsampled instances form a per-predictor validation set; sklearn computes oob_score_ when you set oob_score=True.',
+  },
+  {
+    lec: 'Lec 7 · Random Forest vs Bagging',
+    q: 'A `RandomForestClassifier(max_features=2)` and a `BaggingClassifier(DecisionTreeClassifier(), max_features=2)` both restrict each tree to 2 features. What is the key difference?',
+    opts: [
+      'They are identical — RandomForest is a wrapper around BaggingClassifier with the same behaviour',
+      'BaggingClassifier picks 2 features once and fixes them per tree; RandomForestClassifier picks a fresh random subset of 2 features at every node split — much greater diversity',
+      'RandomForest does not bootstrap samples; BaggingClassifier does',
+      'BaggingClassifier uses entropy by default; RandomForest uses Gini',
+    ],
+    ans: 1,
+    ok: 'Bagging fixes the same feature subset for an entire tree (`estimators_features_`). Random Forest re-samples max_features at every node split, so different splits in the same tree see different features — yielding much greater tree diversity, the variance-reduction engine of RFs.',
+    ng: 'Random Forest = bagging + per-split feature randomisation. The default max_features=√n at every node means each split chooses among different candidate features, decorrelating trees more than plain bagging.',
+  },
+  {
+    lec: 'Lec 7 · AdaBoost',
+    q: 'In AdaBoost, after a predictor with weighted error r is trained, the weight of each misclassified instance is multiplied by exp(α) where α = η log((1−r)/r). What does this achieve?',
+    opts: [
+      'It downweights misclassified instances so they are ignored next round',
+      'It boosts the relative weight of misclassified instances so the next predictor focuses on the hard cases. r < 0.5 → α > 0 → multiplier > 1',
+      'It is purely a normalisation step with no effect on which instances are emphasised',
+      'It increases the learning rate when accuracy is high',
+    ],
+    ans: 1,
+    ok: 'For r < 0.5, α > 0 and exp(α) > 1, so misclassified weights grow. Correctly-classified weights stay the same. After normalisation, the next predictor sees a distribution that emphasises previous errors — the core idea of boosting.',
+    ng: 'Misclassified instances get their weights multiplied by exp(α) > 1 (when r < 0.5), then all weights renormalise to sum to 1. The next predictor concentrates on the cases the ensemble currently gets wrong.',
+  },
+  {
+    lec: 'Lec 7 · AdaBoost vs Gradient Boosting',
+    q: 'AdaBoost and Gradient Boosting are both sequential ensembles. What is the fundamental difference in how each iteration is built?',
+    opts: [
+      'AdaBoost re-weights instances after each iteration; Gradient Boosting fits the next predictor directly to the residual errors of the previous ensemble',
+      'They are mathematically identical — only the loss function differs',
+      'AdaBoost uses regression trees; Gradient Boosting uses classifiers',
+      'Gradient Boosting can be parallelised across machines; AdaBoost cannot',
+    ],
+    ans: 0,
+    ok: 'AdaBoost re-weights instances based on errors. Gradient Boosting fits each new predictor to the *residuals* (regression) or negative log-loss gradient (classification) of the cumulative ensemble. Both are sequential and cannot parallelise across predictors.',
+    ng: 'Key distinction: AdaBoost manipulates instance weights; GBRT fits successive trees to the residual errors. GBRT also typically restricts the base learner to decision trees, while AdaBoost can use any base estimator.',
+  },
+  {
+    lec: 'Lec 7 · Stacking',
+    q: 'Stacking trains a "blender" model on top of base predictors. Why is the blender trained on out-of-fold (cross-validated) predictions instead of in-sample base predictions?',
+    opts: [
+      'It is faster — cross-validation reduces training time',
+      'In-sample predictions are over-optimistic (the base models have seen those exact instances). Out-of-fold predictions simulate how the base models will perform on unseen data, so the blender learns a realistic aggregation rule',
+      'Out-of-fold predictions provide more training data for the blender',
+      'Cross-validation is required by sklearn — there is no statistical reason',
+    ],
+    ans: 1,
+    ok: 'If the blender saw base predictions on the training data the bases were fit on, those predictions would be unrealistically good (data leakage). Out-of-fold predictions simulate "the base model on data it has not seen" — exactly what happens at inference time — so the blender learns an honest aggregation.',
+    ng: 'Out-of-fold predictions avoid leakage. Base models always see novel data at inference; using their CV predictions to train the blender keeps the blender from learning to trust overfit base predictions.',
+  },
 ];
 
 // ── Mitchell's E/T/P Explorer ─────────────────────────────────────────────────
@@ -3184,9 +3262,469 @@ function Asgn1Sec5_Linear() {
   );
 }
 
+// ── L7: Wisdom of the Crowd ───────────────────────────────────────────────────
+function EnsembleProbViz() {
+  const [p, setP] = useState(0.55);
+  const Ns = [1, 3, 5, 11, 25, 51, 101, 201];
+  const binomMaj = (nn, pp) => {
+    let total = 0;
+    const half = Math.floor(nn / 2) + 1;
+    for (let k = half; k <= nn; k++) {
+      let c = 1;
+      for (let i = 0; i < k; i++) c = (c * (nn - i)) / (i + 1);
+      total += c * Math.pow(pp, k) * Math.pow(1 - pp, nn - k);
+    }
+    return total;
+  };
+  const points = Ns.map(nn => ({ n: nn, p: binomMaj(nn, p) }));
+  const W = 360, H = 190, padL = 40, padB = 28, padT = 8, padR = 10;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Wisdom of the Crowd — The Math</div>
+      <div className="m4-infobox" style={{ fontSize: '0.78rem', marginBottom: '0.6rem' }}>
+        Even <em>weak</em> classifiers (accuracy slightly &gt; 0.5) form a strong ensemble when their errors are independent.
+        For binary classification with N predictors of accuracy p, P(majority correct) is the binomial tail and approaches 1 as N → ∞ (whenever p &gt; 0.5).
+      </div>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 200px' }}>
+          <div className="m4-flabel">Per-classifier accuracy p</div>
+          <input type="range" min="0.40" max="0.90" step="0.01" value={p} onChange={e => setP(+e.target.value)} style={{ width: '100%' }} />
+          <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-2)' }}>p = {p.toFixed(2)}</div>
+          <div style={{ marginTop: '0.7rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+            {[
+              { lbl: 'N = 11', v: binomMaj(11, p) },
+              { lbl: 'N = 101', v: binomMaj(101, p) },
+            ].map(b => (
+              <div key={b.lbl} style={{ padding: '0.45rem 0.55rem', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 6 }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase' }}>{b.lbl}</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '1.05rem', color: 'var(--emerald)' }}>{(b.v * 100).toFixed(1)}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <svg width={W} height={H} style={{ background: 'var(--bg-3)', borderRadius: 6 }}>
+          <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="rgba(148,163,184,0.4)" />
+          <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="rgba(148,163,184,0.4)" />
+          <line x1={padL} y1={padT + (H - padB - padT) * 0.5} x2={W - padR} y2={padT + (H - padB - padT) * 0.5} stroke="rgba(251,113,133,0.5)" strokeDasharray="4 3" />
+          <text x={padL - 4} y={padT + (H - padB - padT) * 0.5 + 3} textAnchor="end" fill="rgba(251,113,133,0.7)" fontSize="9" fontFamily="monospace">0.5</text>
+          <text x={padL - 4} y={padT + 4} textAnchor="end" fill="var(--text-2)" fontSize="9" fontFamily="monospace">1.0</text>
+          <text x={padL - 4} y={H - padB + 3} textAnchor="end" fill="var(--text-2)" fontSize="9" fontFamily="monospace">0.0</text>
+          <polyline fill="none" stroke="var(--cyan)" strokeWidth="2.2"
+            points={points.map((pt, i) => {
+              const x = padL + (i / (points.length - 1)) * (W - padL - padR);
+              const y = padT + (1 - pt.p) * (H - padB - padT);
+              return `${x},${y}`;
+            }).join(' ')} />
+          {points.map((pt, i) => {
+            const x = padL + (i / (points.length - 1)) * (W - padL - padR);
+            const y = padT + (1 - pt.p) * (H - padB - padT);
+            return <g key={i}>
+              <circle cx={x} cy={y} r={3.5} fill="var(--cyan)" />
+              <text x={x} y={H - 8} textAnchor="middle" fill="var(--text-2)" fontSize="9" fontFamily="monospace">{pt.n}</text>
+            </g>;
+          })}
+          <text x={(padL + W - padR) / 2} y={H + 0} textAnchor="middle" fill="var(--text-2)" fontSize="9" fontFamily="monospace">N classifiers</text>
+        </svg>
+      </div>
+      <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+        <strong>Critical assumption:</strong> classifier errors must be approximately <em>independent</em>. If all predictors fail on the same instances, the ensemble fails too. Diversity (different algorithms, different training subsets, different features) is what makes ensembles work.
+      </div>
+    </div>
+  );
+}
+
+// ── L7: Voting Classifier Demo ────────────────────────────────────────────────
+function VotingClassifierDemo() {
+  const [pa1, setPa1] = useState(0.55);
+  const [pa2, setPa2] = useState(0.62);
+  const [pa3, setPa3] = useState(0.49);
+  const probs = [pa1, pa2, pa3];
+  const setters = [setPa1, setPa2, setPa3];
+  const labels = ['LogReg', 'Random Forest', 'SVC'];
+  const colors = ['var(--cyan)', 'var(--violet)', 'var(--emerald)'];
+
+  const hardVotes = probs.map(pr => pr > 0.5 ? 'A' : 'B');
+  const aCount = hardVotes.filter(v => v === 'A').length;
+  const hardWinner = aCount >= 2 ? 'A' : 'B';
+  const avgPA = probs.reduce((s, pr) => s + pr, 0) / 3;
+  const softWinner = avgPA > 0.5 ? 'A' : 'B';
+  const agree = hardWinner === softWinner;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Voting Classifier — Hard vs Soft Vote (Interactive)</div>
+      <div className="m4-infobox" style={{ marginBottom: '0.7rem', fontSize: '0.77rem' }}>
+        Three classifiers each output P(class A). Drag the sliders. <strong>Hard vote</strong> takes the majority of the discrete labels (P &gt; 0.5 → A). <strong>Soft vote</strong> averages the probabilities and picks the class with the highest average.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        {labels.map((lbl, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 90px 60px', gap: '0.6rem', alignItems: 'center' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 700, color: colors[i] }}>{lbl}</div>
+            <input type="range" min="0" max="1" step="0.01" value={probs[i]} onChange={e => setters[i](+e.target.value)} />
+            <div style={{ fontFamily: 'monospace', fontSize: '0.74rem', color: 'var(--text-2)' }}>P(A)={probs[i].toFixed(2)}</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 700, color: hardVotes[i] === 'A' ? 'var(--cyan)' : 'var(--rose)' }}>→ {hardVotes[i]}</div>
+          </div>
+        ))}
+      </div>
+      <div className="m4-hr" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.7rem' }}>
+        <div style={{ background: hardWinner === 'A' ? 'rgba(34,211,238,0.08)' : 'rgba(251,113,133,0.08)', border: `1px solid ${hardWinner === 'A' ? 'rgba(34,211,238,0.3)' : 'rgba(251,113,133,0.3)'}`, borderRadius: 7, padding: '0.7rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.05em' }}>Hard Vote</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '0.74rem', color: 'var(--text-2)' }}>A: {aCount}/3 · B: {3 - aCount}/3</div>
+          <div style={{ fontSize: '1.4rem', fontFamily: 'monospace', fontWeight: 700, color: hardWinner === 'A' ? 'var(--cyan)' : 'var(--rose)', marginTop: '0.3rem' }}>Predict: {hardWinner}</div>
+        </div>
+        <div style={{ background: softWinner === 'A' ? 'rgba(34,211,238,0.08)' : 'rgba(251,113,133,0.08)', border: `1px solid ${softWinner === 'A' ? 'rgba(34,211,238,0.3)' : 'rgba(251,113,133,0.3)'}`, borderRadius: 7, padding: '0.7rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.05em' }}>Soft Vote</div>
+          <div style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--text-2)' }}>avg = ({pa1.toFixed(2)} + {pa2.toFixed(2)} + {pa3.toFixed(2)})/3 = {avgPA.toFixed(3)}</div>
+          <div style={{ fontSize: '1.4rem', fontFamily: 'monospace', fontWeight: 700, color: softWinner === 'A' ? 'var(--cyan)' : 'var(--rose)', marginTop: '0.3rem' }}>Predict: {softWinner}</div>
+        </div>
+      </div>
+      {!agree && (
+        <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+          <strong>Disagreement!</strong> Hard and soft votes differ here. Soft voting carried a high-confidence vote into the aggregate that hard voting flattened to a 1-of-3. With <em>well-calibrated</em> probabilities, this usually favours soft voting.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── L7: Bootstrap Visualizer ──────────────────────────────────────────────────
+function BootstrapVisualizer() {
+  const M = 30;
+  const [run, setRun] = useState(1);
+  const [history, setHistory] = useState([]);
+
+  const samples = (() => {
+    const rand = makePRNG(run * 137 + 41);
+    return Array.from({ length: M }, () => Math.floor(rand() * M));
+  })();
+  const counts = Array(M).fill(0);
+  samples.forEach(i => counts[i]++);
+  const sampledCount = counts.filter(c => c > 0).length;
+  const oobCount = M - sampledCount;
+  const oobRatio = oobCount / M;
+  const allRatios = [...history, oobRatio];
+  const avgOOB = allRatios.reduce((s, x) => s + x, 0) / allRatios.length;
+
+  const next = () => { setHistory(h => [...h, oobRatio]); setRun(r => r + 1); };
+  const reset = () => { setHistory([]); setRun(1); };
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Bootstrap Sampling — OOB Visualizer</div>
+      <div className="m4-infobox" style={{ marginBottom: '0.7rem', fontSize: '0.77rem' }}>
+        Sample <Tex src="m=30" /> indices <strong>with replacement</strong> from a training set of size <Tex src="m=30" />. Some are picked multiple times; others are never picked. As <Tex src="m \to \infty" />, the unpicked fraction tends to <Tex src="(1 - 1/m)^m \to 1/e \approx 0.368" /> — these are the <strong>out-of-bag</strong> instances and act as a free per-predictor validation set.
+      </div>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 360px' }}>
+          <div className="m4-flabel">Training set (each cell = one instance)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '4px' }}>
+            {Array.from({ length: M }, (_, i) => {
+              const c = counts[i];
+              const isOOB = c === 0;
+              const tints = ['rgba(15,23,42,0.4)', 'rgba(34,211,238,0.45)', 'rgba(34,211,238,0.7)', 'rgba(34,211,238,0.9)', 'rgba(34,211,238,1)'];
+              const bg = isOOB ? 'rgba(251,113,133,0.18)' : tints[Math.min(c, tints.length - 1)];
+              const border = isOOB ? '1px solid rgba(251,113,133,0.6)' : '1px solid rgba(34,211,238,0.4)';
+              return (
+                <div key={i} style={{ aspectRatio: '1', background: bg, borderRadius: 4, border, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: '0.72rem', fontWeight: 700, color: isOOB ? '#fb7185' : 'white' }}>
+                  {isOOB ? '×' : c}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: '0.7rem', alignItems: 'center', marginTop: '0.6rem', fontSize: '0.7rem', color: 'var(--text-2)', flexWrap: 'wrap' }}>
+            <span><span style={{ display: 'inline-block', width: 12, height: 12, background: 'rgba(34,211,238,0.7)', borderRadius: 3, verticalAlign: 'middle', marginRight: 4 }} /> Sampled (number = times picked)</span>
+            <span><span style={{ display: 'inline-block', width: 12, height: 12, background: 'rgba(251,113,133,0.18)', border: '1px solid rgba(251,113,133,0.6)', borderRadius: 3, verticalAlign: 'middle', marginRight: 4 }} /> OOB (×)</span>
+          </div>
+        </div>
+        <div style={{ flex: '0 0 200px' }}>
+          <div style={{ background: 'var(--bg-3)', borderRadius: 7, padding: '0.7rem', border: '1px solid rgba(34,211,238,0.2)' }}>
+            <div className="m4-flabel">This run</div>
+            <table className="m4-ptable" style={{ fontSize: '0.72rem' }}>
+              <tbody>
+                <tr><td>Unique sampled</td><td className="pk">{sampledCount} / {M}</td></tr>
+                <tr><td>OOB count</td><td className="pk">{oobCount} / {M}</td></tr>
+                <tr><td>OOB ratio</td><td className="pk">{(oobRatio * 100).toFixed(1)}%</td></tr>
+              </tbody>
+            </table>
+            <div className="m4-hr" />
+            <div className="m4-flabel">Across {allRatios.length} runs</div>
+            <div style={{ fontSize: '1.6rem', fontFamily: 'monospace', fontWeight: 700, color: 'var(--emerald)', textAlign: 'center' }}>{(avgOOB * 100).toFixed(1)}%</div>
+            <div style={{ fontSize: '0.66rem', color: 'var(--text-2)', textAlign: 'center', marginBottom: '0.5rem' }}>average OOB → 36.8%</div>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button className="m4-btn m4-btn-p" onClick={next} style={{ flex: 1 }}>Resample</button>
+              <button className="m4-btn" onClick={reset}>Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── L7: AdaBoost α(r) Calculator ──────────────────────────────────────────────
+function AdaBoostCalc() {
+  const [r, setR] = useState(0.30);
+  const [eta, setEta] = useState(1.00);
+  const alpha = eta * Math.log((1 - r) / r);
+  const wMul = Math.exp(alpha);
+  const W = 360, H = 200, padL = 36, padB = 26, padT = 8, padR = 10;
+  const rs = Array.from({ length: 99 }, (_, i) => 0.01 + i * 0.01);
+  const aMax = 4;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">AdaBoost — Predictor Weight α(r) Calculator</div>
+      <div className="m4-infobox" style={{ marginBottom: '0.7rem', fontSize: '0.77rem' }}>
+        Each AdaBoost iteration measures the <strong>weighted error</strong> <Tex src="r_j" /> of the j-th predictor on the current weighted training set, computes the predictor weight <Tex src="\alpha_j = \eta \log((1-r_j)/r_j)" />, then multiplies <em>misclassified</em> instances' weights by <Tex src="\exp(\alpha_j)" /> before renormalising.
+      </div>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 220px' }}>
+          <div className="m4-flabel">Weighted error r</div>
+          <input type="range" min="0.01" max="0.99" step="0.01" value={r} onChange={e => setR(+e.target.value)} style={{ width: '100%' }} />
+          <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-2)' }}>r = {r.toFixed(2)}</div>
+          <div className="m4-flabel" style={{ marginTop: '0.5rem' }}>Learning rate η</div>
+          <input type="range" min="0.05" max="1.50" step="0.05" value={eta} onChange={e => setEta(+e.target.value)} style={{ width: '100%' }} />
+          <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-2)' }}>η = {eta.toFixed(2)}</div>
+          <div style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+            <Tex src={`\\alpha = ${eta.toFixed(2)} \\cdot \\log\\!\\left(\\tfrac{1 - ${r.toFixed(2)}}{${r.toFixed(2)}}\\right) = ${alpha.toFixed(3)}`} block />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.5rem' }}>
+            <div style={{ padding: '0.45rem 0.55rem', background: alpha > 0 ? 'rgba(52,211,153,0.08)' : 'rgba(251,113,133,0.08)', borderRadius: 6, border: `1px solid ${alpha > 0 ? 'rgba(52,211,153,0.3)' : 'rgba(251,113,133,0.3)'}` }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase' }}>α</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '1.05rem', color: alpha > 0 ? 'var(--emerald)' : 'var(--rose)' }}>{alpha.toFixed(3)}</div>
+            </div>
+            <div style={{ padding: '0.45rem 0.55rem', background: 'rgba(167,139,250,0.08)', borderRadius: 6, border: '1px solid rgba(167,139,250,0.3)' }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase' }}>weight × (mis)</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '1.05rem', color: 'var(--violet)' }}>{wMul.toFixed(2)}×</div>
+            </div>
+          </div>
+        </div>
+        <svg width={W} height={H} style={{ background: 'var(--bg-3)', borderRadius: 6 }}>
+          <line x1={padL} y1={padT + (H - padB - padT) / 2} x2={W - padR} y2={padT + (H - padB - padT) / 2} stroke="rgba(148,163,184,0.5)" />
+          <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="rgba(148,163,184,0.4)" />
+          <line x1={padL + ((0.5 - 0.01) / 0.98) * (W - padL - padR)} y1={padT} x2={padL + ((0.5 - 0.01) / 0.98) * (W - padL - padR)} y2={H - padB} stroke="rgba(251,113,133,0.5)" strokeDasharray="3 3" />
+          <text x={padL - 4} y={padT + (H - padB - padT) / 2 + 3} textAnchor="end" fill="var(--text-2)" fontSize="9" fontFamily="monospace">α=0</text>
+          <polyline fill="none" stroke="var(--cyan)" strokeWidth="2"
+            points={rs.map(rr => {
+              const aa = Math.max(-aMax, Math.min(aMax, eta * Math.log((1 - rr) / rr)));
+              const x = padL + ((rr - 0.01) / 0.98) * (W - padL - padR);
+              const y = padT + (1 - (aa + aMax) / (2 * aMax)) * (H - padB - padT);
+              return `${x},${y}`;
+            }).join(' ')} />
+          {(() => {
+            const aa = Math.max(-aMax, Math.min(aMax, alpha));
+            const x = padL + ((r - 0.01) / 0.98) * (W - padL - padR);
+            const y = padT + (1 - (aa + aMax) / (2 * aMax)) * (H - padB - padT);
+            return <g>
+              <line x1={x} y1={padT} x2={x} y2={H - padB} stroke="var(--amber)" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+              <circle cx={x} cy={y} r={5} fill="var(--amber)" stroke="white" strokeWidth="1.5" />
+            </g>;
+          })()}
+          <text x={(padL + W - padR) / 2} y={H - 6} textAnchor="middle" fill="var(--text-2)" fontSize="10" fontFamily="monospace">weighted error r</text>
+          <text x={padL + ((0.5 - 0.01) / 0.98) * (W - padL - padR) + 3} y={padT + 10} fill="rgba(251,113,133,0.7)" fontSize="9" fontFamily="monospace">r=0.5</text>
+        </svg>
+      </div>
+      <table className="m4-ptable" style={{ marginTop: '0.6rem', fontSize: '0.72rem' }}>
+        <thead><tr><th>r</th><th>α</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td>r &lt; 0.5</td><td className="pk">α &gt; 0</td><td>Better than chance — boost misclassified weights; predictor counts positively in vote.</td></tr>
+          <tr><td>r = 0.5</td><td className="pk">α = 0</td><td>Coin-flip — predictor ignored, weights unchanged.</td></tr>
+          <tr><td>r &gt; 0.5</td><td className="pk">α &lt; 0</td><td>Worse than chance — its vote is reversed in the ensemble.</td></tr>
+          <tr><td>r → 0</td><td className="pk">α → ∞</td><td>Perfect predictor — its single vote can dominate.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── L7: Mini regression-tree builder for GBRT viz ─────────────────────────────
+function buildRegressionTree(xs, ys, depth) {
+  const m = xs.length;
+  if (depth === 0 || m < 2) {
+    const mean = m === 0 ? 0 : ys.reduce((s, y) => s + y, 0) / m;
+    return { leaf: true, value: mean };
+  }
+  let best = null;
+  for (let i = 1; i < m; i++) {
+    const lY = ys.slice(0, i), rY = ys.slice(i);
+    const ml = lY.reduce((s, y) => s + y, 0) / lY.length;
+    const mr = rY.reduce((s, y) => s + y, 0) / rY.length;
+    const sl = lY.reduce((s, y) => s + (y - ml) ** 2, 0);
+    const sr = rY.reduce((s, y) => s + (y - mr) ** 2, 0);
+    const cost = sl + sr;
+    if (!best || cost < best.cost) best = { cost, t: (xs[i - 1] + xs[i]) / 2, i };
+  }
+  if (!best) return { leaf: true, value: ys.reduce((s, y) => s + y, 0) / m };
+  return {
+    leaf: false,
+    t: best.t,
+    left: buildRegressionTree(xs.slice(0, best.i), ys.slice(0, best.i), depth - 1),
+    right: buildRegressionTree(xs.slice(best.i), ys.slice(best.i), depth - 1),
+  };
+}
+function predictRegressionTree(tree, x) {
+  return tree.leaf ? tree.value : (x <= tree.t ? predictRegressionTree(tree.left, x) : predictRegressionTree(tree.right, x));
+}
+
+const GBRT_DATA = (() => {
+  const rand = makePRNG(7);
+  const xs = Array.from({ length: 30 }, (_, i) => -1 + (i * 2) / 29);
+  const ys = xs.map(x => 3 * x * x + gaussianNoise(rand, 0.45));
+  return { xs, ys };
+})();
+
+// ── L7: Gradient Boosting Live Stepper ────────────────────────────────────────
+function GradientBoostStepper() {
+  const [n, setN] = useState(3);
+  const [lr, setLr] = useState(1.0);
+  const { xs, ys } = GBRT_DATA;
+
+  const trees = (() => {
+    const out = [];
+    let resid = [...ys];
+    for (let i = 0; i < n; i++) {
+      const t = buildRegressionTree(xs, resid, 2);
+      out.push(t);
+      resid = resid.map((rv, j) => rv - lr * predictRegressionTree(t, xs[j]));
+    }
+    return out;
+  })();
+
+  const xGrid = Array.from({ length: 200 }, (_, i) => -1 + (i * 2) / 199);
+  const cumPred = xGrid.map(x => trees.reduce((s, t) => s + lr * predictRegressionTree(t, x), 0));
+  const yTrue = xGrid.map(x => 3 * x * x);
+  const yPredTrain = xs.map(x => trees.reduce((s, t) => s + lr * predictRegressionTree(t, x), 0));
+  const mse = yPredTrain.reduce((s, p, i) => s + (p - ys[i]) ** 2, 0) / xs.length;
+
+  const W = 460, H = 240, padL = 35, padB = 26, padT = 12, padR = 10;
+  const xMin = -1, xMax = 1, yMin = -1.5, yMax = 4.5;
+  const xToPx = x => padL + ((x - xMin) / (xMax - xMin)) * (W - padL - padR);
+  const yToPx = y => padT + (1 - (y - yMin) / (yMax - yMin)) * (H - padB - padT);
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Gradient Boosting — Live Residual Fitting (max_depth=2)</div>
+      <div className="m4-infobox" style={{ marginBottom: '0.7rem', fontSize: '0.77rem' }}>
+        Tree 1 fits the data; tree 2 fits the residuals of tree 1 (shrunk by η); tree 3 fits the residuals of (tree 1 + tree 2) — and so on. The cumulative sum is the GBRT prediction on a noisy <Tex src="y = 3x^2 + \varepsilon" /> dataset (30 points). Step through to watch the fit improve.
+      </div>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: '0 0 200px' }}>
+          <div className="m4-flabel">n_estimators</div>
+          <input type="range" min="1" max="25" step="1" value={n} onChange={e => setN(+e.target.value)} style={{ width: '100%' }} />
+          <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-2)' }}>n = {n}</div>
+          <div className="m4-flabel" style={{ marginTop: '0.5rem' }}>Learning rate η</div>
+          <input type="range" min="0.10" max="1.50" step="0.05" value={lr} onChange={e => setLr(+e.target.value)} style={{ width: '100%' }} />
+          <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-2)' }}>η = {lr.toFixed(2)}</div>
+          <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.65rem', background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 6 }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase' }}>Training MSE</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '1.15rem', color: 'var(--violet)' }}>{mse.toFixed(3)}</div>
+          </div>
+          <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.7rem' }}>
+            Try <code>η=0.10, n=25</code> vs <code>η=1.50, n=3</code>. Small η + many trees = smoother, better-generalising fit. Large η + few trees = blocky and underfit (or overfit at extremes).
+          </div>
+        </div>
+        <svg width={W} height={H} style={{ background: 'var(--bg-3)', borderRadius: 6 }}>
+          <line x1={padL} y1={yToPx(0)} x2={W - padR} y2={yToPx(0)} stroke="rgba(148,163,184,0.25)" />
+          <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="rgba(148,163,184,0.4)" />
+          <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="rgba(148,163,184,0.4)" />
+          <polyline fill="none" stroke="rgba(52,211,153,0.55)" strokeWidth="2" strokeDasharray="4 3"
+            points={xGrid.map((x, i) => `${xToPx(x)},${yToPx(yTrue[i])}`).join(' ')} />
+          <polyline fill="none" stroke="var(--cyan)" strokeWidth="2"
+            points={xGrid.map((x, i) => `${xToPx(x)},${yToPx(cumPred[i])}`).join(' ')} />
+          {xs.map((x, i) => <circle key={i} cx={xToPx(x)} cy={yToPx(ys[i])} r={2.8} fill="var(--amber)" stroke="white" strokeWidth="0.5" />)}
+          <g fontFamily="monospace" fontSize="9" fill="var(--text-2)">
+            <text x={W - padR - 4} y={padT + 12} textAnchor="end"><tspan fill="var(--cyan)">━ GBRT</tspan></text>
+            <text x={W - padR - 4} y={padT + 24} textAnchor="end"><tspan fill="rgba(52,211,153,0.7)">┄ true 3x²</tspan></text>
+            <text x={W - padR - 4} y={padT + 36} textAnchor="end"><tspan fill="var(--amber)">● train</tspan></text>
+          </g>
+          <text x={padL - 4} y={yToPx(0) + 3} textAnchor="end" fill="var(--text-2)" fontSize="9" fontFamily="monospace">0</text>
+          <text x={padL - 4} y={yToPx(3)} textAnchor="end" fill="var(--text-2)" fontSize="9" fontFamily="monospace">3</text>
+          <text x={(padL + W - padR) / 2} y={H - 6} textAnchor="middle" fill="var(--text-2)" fontSize="10" fontFamily="monospace">x</text>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ── L7: Ensemble Method Matcher ───────────────────────────────────────────────
+const ENS_SCENARIOS = [
+  { scenario: 'You have 3 wildly different classifiers (an SVM, a kNN, and a logistic regression) and want a single more reliable prediction by combining them.', methods: ['Voting', 'Bagging', 'AdaBoost', 'Stacking'], correct: 0,
+    fb: 'Voting (hard or soft) classically combines diverse algorithms with a fixed aggregation rule. Stacking would also work but adds a learned blender; voting is the simplest correct answer.' },
+  { scenario: 'You want to reduce the high variance of a single deep decision tree without changing the algorithm itself.', methods: ['Bagging', 'AdaBoost', 'Gradient Boosting', 'Stacking'], correct: 0,
+    fb: 'Bagging trains many copies of the same algorithm on bootstrap samples and averages — directly attacks variance, leaves bias roughly unchanged. Random Forests extend this with per-split feature randomisation.' },
+  { scenario: 'Your high-dimensional dataset has thousands of features per instance (e.g. images) and you want each base estimator to look at different feature subsets.', methods: ['Random Patches', 'AdaBoost', 'Stacking', 'Voting'], correct: 0,
+    fb: 'Random Patches samples both instances and features (set bootstrap_features=True, max_features<1.0). Random Subspaces sample features only — both reduce variance further on high-dimensional data.' },
+  { scenario: 'Each predictor should focus on the mistakes of the previous one; the predictors are trained sequentially.', methods: ['Voting', 'Bagging', 'AdaBoost', 'Random Forest'], correct: 2,
+    fb: 'AdaBoost re-weights misclassified instances after every iteration so the next predictor concentrates on hard cases. Sequential — cannot parallelise across predictors.' },
+  { scenario: 'You want each new tree to fit the residual errors of the cumulative ensemble, with optional shrinkage and early stopping.', methods: ['Gradient Boosting', 'AdaBoost', 'Bagging', 'Stacking'], correct: 0,
+    fb: 'GBRT fits each new tree to the residual of the cumulative ensemble. Use small learning_rate + large n_estimators + n_iter_no_change for best generalisation.' },
+  { scenario: 'You want the meta-learner to *learn* how to combine base predictions instead of using a fixed rule like majority vote.', methods: ['Stacking', 'Voting', 'Bagging', 'Extra-Trees'], correct: 0,
+    fb: 'Stacking trains a final estimator (the "blender") on the out-of-fold predictions of the base models. The blender learns the optimal aggregation function rather than using a fixed rule.' },
+  { scenario: 'You want even more tree diversity than a Random Forest and faster training, accepting slightly higher bias.', methods: ['Extra-Trees', 'Bagging', 'AdaBoost', 'Stacking'], correct: 0,
+    fb: 'Extra-Trees use random thresholds (instead of optimal ones) for each candidate feature — faster training, more bias, less variance than a regular Random Forest.' },
+];
+
+function EnsembleMatcher() {
+  const [picks, setPicks] = useState({});
+  const [revealed, setRevealed] = useState({});
+  const choose = (qi, mi) => {
+    if (revealed[qi]) return;
+    setPicks(p => ({ ...p, [qi]: mi }));
+    setRevealed(r => ({ ...r, [qi]: true }));
+  };
+  const reset = () => { setPicks({}); setRevealed({}); };
+  const score = ENS_SCENARIOS.filter((s, i) => picks[i] === s.correct).length;
+  const answered = Object.keys(revealed).length;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Ensemble Method Matcher — Pick the Right Tool</div>
+      <div className="m4-infobox" style={{ marginBottom: '0.8rem', fontSize: '0.77rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <span style={{ flex: 1 }}>For each scenario, pick the most appropriate ensemble method. Each pick reveals feedback.</span>
+        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: score >= 5 ? 'var(--emerald)' : score >= 3 ? 'var(--amber)' : 'var(--rose)', fontSize: '1rem' }}>{score}/{answered}</span>
+        {answered === ENS_SCENARIOS.length && <button className="m4-btn" onClick={reset}>Reset</button>}
+      </div>
+      {ENS_SCENARIOS.map((s, i) => {
+        const done = revealed[i];
+        const pick = picks[i];
+        return (
+          <div key={i} style={{ background: 'var(--bg-3)', borderRadius: 7, padding: '0.7rem', marginBottom: '0.6rem', border: '1px solid rgba(148,163,184,0.15)' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-1)', marginBottom: '0.5rem', lineHeight: 1.55 }}>
+              <span style={{ color: 'var(--cyan)', fontWeight: 700, marginRight: '0.4rem', fontFamily: 'monospace' }}>{i + 1}.</span>{s.scenario}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {s.methods.map((m, mi) => {
+                const isPick = pick === mi;
+                const isCorrect = mi === s.correct;
+                const bg = !done ? 'var(--bg-2)' : (isCorrect ? 'rgba(52,211,153,0.15)' : (isPick ? 'rgba(251,113,133,0.15)' : 'var(--bg-2)'));
+                const bd = !done ? '1px solid rgba(148,163,184,0.25)' : (isCorrect ? '1px solid rgba(52,211,153,0.5)' : (isPick ? '1px solid rgba(251,113,133,0.5)' : '1px solid rgba(148,163,184,0.15)'));
+                const col = !done ? 'var(--text-1)' : (isCorrect ? 'var(--emerald)' : (isPick ? 'var(--rose)' : 'var(--text-2)'));
+                return (
+                  <button key={mi} onClick={() => choose(i, mi)} disabled={done}
+                    style={{ background: bg, border: bd, color: col, padding: '0.4rem 0.75rem', fontSize: '0.74rem', fontFamily: 'monospace', borderRadius: 5, cursor: done ? 'default' : 'pointer', fontWeight: 600 }}>
+                    {m}{done && isCorrect ? ' ✓' : ''}{done && isPick && !isCorrect ? ' ✗' : ''}
+                  </button>
+                );
+              })}
+            </div>
+            {done && (
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-2)', marginTop: '0.5rem', padding: '0.45rem 0.6rem', background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.2)', borderRadius: 5, lineHeight: 1.55 }}>
+                {s.fb}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Assignment 1', 'Quiz'];
+const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Assignment 1', 'Quiz'];
 const L6_TABS = ['Overview & CART', 'Impurity Measures', 'Regularisation', 'Regression Trees', 'Limitations'];
+const L7_TABS = ['Ensemble Basics', 'Bagging & OOB', 'Random Forests', 'Boosting', 'Stacking & Summary'];
 const L1_TABS = ['Mitchell\'s Definition', 'ML System Types', 'Challenges & Testing'];
 const L2_TABS = ['Formal Model', 'Project Workflow', 'Performance Measures', 'Classification Eval'];
 const L3_TABS = ['Linear Regression', 'Gradient Descent', 'Polynomial Regression', 'Logistic Regression'];
@@ -3204,6 +3742,7 @@ export default function CITS5508() {
   const [l4Tab, setL4Tab] = useState('Bias & Variance');
   const [l5Tab, setL5Tab] = useState('Linear SVM');
   const [l6Tab, setL6Tab] = useState('Overview & CART');
+  const [l7Tab, setL7Tab] = useState('Ensemble Basics');
 
   useEffect(() => {
     document.title = 'CITS5508 — Learning Hub';
@@ -3238,8 +3777,8 @@ export default function CITS5508() {
               <div className="m4-hero-lbl" style={{ color: 'var(--cyan)' }}>// CITS5508 · UWA · Sem 1, 2026</div>
               <h1 className="m4-hero-title"><span style={{ color: 'var(--cyan)' }}>Machine</span> Learning</h1>
               <p className="m4-hero-sub">
-                From Mitchell's formal definition of learning through regression, regularisation, kNN, and Support Vector Machines — covering all core concepts with interactive visualisations.
-                This module covers Lectures 1–5.
+                From Mitchell's formal definition of learning through regression, regularisation, kNN, SVMs, decision trees, and ensemble methods — covering all core concepts with interactive visualisations.
+                This module covers Lectures 1–7.
               </p>
             </div>
             <div className="m4-topic-grid">
@@ -3268,6 +3807,11 @@ export default function CITS5508() {
                 { code: 'L6', title: 'Regularisation & Pruning', color: 'var(--rose)', desc: 'max_depth, min_samples_leaf, max_leaf_nodes. Cost-complexity pruning with α penalty. MSE vs tree size curves.', go: 'Decision Trees', sub: 'Regularisation' },
                 { code: 'L6', title: 'Regression Trees', color: 'var(--cyan)', desc: 'Predict the mean response per region. MSE-based CART cost. Hitters baseball example: Years/Hits → log(Salary). Depth controls step-function resolution.', go: 'Decision Trees', sub: 'Regression Trees' },
                 { code: 'L6', title: 'DT Limitations', color: 'var(--amber)', desc: 'High variance, axis-aligned splits only, sensitivity to rotation. Mitigations: PCA for rotation, Random Forests for variance.', go: 'Decision Trees', sub: 'Limitations' },
+                { code: 'L7', title: 'Ensembles & Voting', color: 'var(--cyan)', desc: 'Wisdom of the crowd. Hard vs soft voting. Interactive binomial visualiser and 3-classifier voting demo.', go: 'Ensembles', sub: 'Ensemble Basics' },
+                { code: 'L7', title: 'Bagging, Pasting & OOB', color: 'var(--violet)', desc: 'Bootstrap aggregating, sampling with/without replacement, ~36.8% out-of-bag instances as a free validation set. Interactive resampler.', go: 'Ensembles', sub: 'Bagging & OOB' },
+                { code: 'L7', title: 'Random Forests & Extra-Trees', color: 'var(--emerald)', desc: 'RF = bagging + per-split feature randomisation (√n). Extra-Trees use random thresholds. Feature importance via mean impurity decrease.', go: 'Ensembles', sub: 'Random Forests' },
+                { code: 'L7', title: 'AdaBoost & Gradient Boosting', color: 'var(--rose)', desc: 'Sequential boosting. AdaBoost α(r) calculator. Live GBRT residual-fitting visualisation on noisy y = 3x² data.', go: 'Ensembles', sub: 'Boosting' },
+                { code: 'L7', title: 'Stacking & Method Matcher', color: 'var(--amber)', desc: 'Learn the blender from out-of-fold predictions. Summary table of all ensemble methods. Interactive scenario→method quiz.', go: 'Ensembles', sub: 'Stacking & Summary' },
               ].map(item => (
                 <div
                   key={item.title}
@@ -3282,6 +3826,7 @@ export default function CITS5508() {
                       else if (item.go === 'Reg. & kNN') setL4Tab(item.sub);
                       else if (item.go === 'SVMs') setL5Tab(item.sub);
                       else if (item.go === 'Decision Trees') setL6Tab(item.sub);
+                      else if (item.go === 'Ensembles') setL7Tab(item.sub);
                       else if (item.go === 'Assignment 1') setAsgn1Tab(item.sub);
                     }
                   }}
@@ -4136,6 +4681,567 @@ export default function CITS5508() {
           </div>
         )}
 
+        {/* ── ENSEMBLES (L7) ── */}
+        {tab === 'Ensembles' && (
+          <div>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Ensemble Learning &amp; Random Forests <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>Lecture 7</span></h2>
+              <p className="m4-sec-sub">"Wisdom of the crowd" applied to ML: combine many predictors to get one stronger model. From simple voting through bagging, random forests, boosting, and stacking — the foundation of nearly every winning Kaggle submission.</p>
+            </div>
+            <div className="m4-labtabs">
+              {L7_TABS.map(lt => (
+                <button key={lt} className={`m4-labtab ${l7Tab === lt ? 'm4-labtab--on' : ''}`} onClick={() => setL7Tab(lt)}>{lt}</button>
+              ))}
+            </div>
+
+            {/* ── Ensemble Basics ── */}
+            {l7Tab === 'Ensemble Basics' && (
+              <div>
+                <p className="m4-sec-sub">An <em>ensemble</em> is a group of predictors whose predictions are aggregated (vote, average, or learned blender). Why does aggregating weak predictors beat a single strong one? Because of the wisdom of the crowd.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Core Concept</div>
+                    <ul className="m4-bullets">
+                      <li><strong>Wisdom of the crowd:</strong> aggregating many predictions often beats a single expert.</li>
+                      <li>An <strong>ensemble</strong> = group of predictors (classifiers or regressors).</li>
+                      <li>An <strong>ensemble method</strong> combines their predictions into a single, typically stronger model.</li>
+                      <li>Canonical example: a <strong>Random Forest</strong> = ensemble of Decision Trees, each trained on a different random subset; majority vote = the ensemble's prediction.</li>
+                    </ul>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Bias / Variance Background</div>
+                    <table className="m4-ptable">
+                      <tbody>
+                        <tr><td className="pk">Training error</td><td>Average error on training data</td></tr>
+                        <tr><td className="pk">Test error</td><td>Average error on unseen test data</td></tr>
+                        <tr><td className="pk">Goal</td><td>Low test error AND low variance</td></tr>
+                        <tr><td className="pk">Decision Trees</td><td>High variance (different splits → very different trees) — perfect candidate for variance-reduction ensembles</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.65rem', fontSize: '0.74rem' }}>
+                      Bagging and Random Forests are <strong>variance-reduction</strong> ensembles. Boosting is a <strong>bias-reduction</strong> ensemble. Stacking is a <strong>learned aggregation</strong>.
+                    </div>
+                  </div>
+                  <EnsembleProbViz />
+                </div>
+
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Hard Voting</div>
+                    <ul className="m4-bullets">
+                      <li>Each classifier outputs a discrete label; the ensemble predicts the <strong>majority class</strong>.</li>
+                      <li>Even if each classifier is a <strong>weak learner</strong>, the ensemble can be a <strong>strong learner</strong> when:</li>
+                      <li style={{ marginLeft: '1.2rem' }}>1. There are enough classifiers, AND</li>
+                      <li style={{ marginLeft: '1.2rem' }}>2. They are sufficiently <strong>diverse</strong> (independent — make different errors).</li>
+                      <li>One way to achieve diversity: train using <em>very different</em> algorithms (LogReg + RF + SVC).</li>
+                    </ul>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Example results — moons dataset</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Classifier</th><th>Accuracy</th></tr></thead>
+                      <tbody>
+                        <tr><td>LogisticRegression</td><td>0.864</td></tr>
+                        <tr><td>RandomForestClassifier</td><td>0.896</td></tr>
+                        <tr><td>SVC</td><td>0.896</td></tr>
+                        <tr><td className="pk">Hard-voting ensemble</td><td className="pk">0.912</td></tr>
+                        <tr><td className="pk">Soft-voting ensemble</td><td className="pk">0.920</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">Soft Voting</div>
+                    <ul className="m4-bullets">
+                      <li>Each classifier outputs class <strong>probabilities</strong> via <code>predict_proba()</code>.</li>
+                      <li>The ensemble averages the probabilities and picks the class with the highest <strong>average probability</strong>.</li>
+                      <li>Often outperforms hard voting because <strong>high-confidence votes are weighted more</strong>.</li>
+                      <li>Requires every base classifier to expose calibrated probabilities (set <code>probability=True</code> for SVC).</li>
+                    </ul>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Implementation — scikit-learn</div>
+                    <div className="m4-pseudocode">
+                      <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> VotingClassifier{'\n'}
+                      <span className="kw">from</span> sklearn.linear_model <span className="kw">import</span> LogisticRegression{'\n'}
+                      <span className="kw">from</span> sklearn.svm <span className="kw">import</span> SVC{'\n'}
+                      {'\n'}
+                      voting_clf = VotingClassifier({'\n'}
+                      {'    '}estimators=[{'\n'}
+                      {'        '}(<span className="cm">'lr'</span>,  LogisticRegression()),{'\n'}
+                      {'        '}(<span className="cm">'rf'</span>,  RandomForestClassifier()),{'\n'}
+                      {'        '}(<span className="cm">'svc'</span>, SVC(probability=<span className="kw">True</span>))]){'\n'}
+                      {'\n'}
+                      voting_clf.voting = <span className="cm">"soft"</span>   <span className="cm"># swap to soft</span>{'\n'}
+                      voting_clf.fit(X_train, y_train)
+                    </div>
+                  </div>
+                </div>
+
+                <VotingClassifierDemo />
+              </div>
+            )}
+
+            {/* ── Bagging & OOB ── */}
+            {l7Tab === 'Bagging & OOB' && (
+              <div>
+                <p className="m4-sec-sub">Same algorithm trained on <strong>different random subsets</strong> of the training set, then aggregated. Bootstrap aggregating (bagging) and pasting differ only in whether sampling is with or without replacement.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Bagging vs Pasting</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Method</th><th>Sampling</th><th>Settings</th></tr></thead>
+                      <tbody>
+                        <tr><td className="pk">Bagging</td><td>With replacement (bootstrap)</td><td><code>bootstrap=True</code> (default)</td></tr>
+                        <tr><td className="pk">Pasting</td><td>Without replacement</td><td><code>bootstrap=False</code></td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Bootstrapping procedure (per predictor)</div>
+                    <ol style={{ paddingLeft: '1.2rem', fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.7 }}>
+                      <li>Randomly select <Tex src="m" /> observations <strong>with replacement</strong> from the training set (m = training-set size).</li>
+                      <li>Fit the model on this bootstrap sample.</li>
+                      <li>Repeat <Tex src="B" /> times (one bootstrap sample per predictor).</li>
+                      <li>Aggregate the predictions of all <Tex src="B" /> predictors.</li>
+                    </ol>
+                    <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Aggregation function</div>
+                    <table className="m4-ptable">
+                      <tbody>
+                        <tr><td className="pk">Classification</td><td>Statistical mode (majority vote)</td></tr>
+                        <tr><td className="pk">Regression</td><td>Average of all B predictions</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.6rem', fontSize: '0.75rem' }}>
+                      <strong>Net effect:</strong> the ensemble has similar (or lower) bias but <strong>much lower variance</strong> than a single predictor trained on the full set. This is exactly why bagged deep trees are powerful — deep trees are low-bias, high-variance; averaging averages out the variance.
+                    </div>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">Bagged Decision Trees + Implementation</div>
+                    <div className="m4-flabel">Bagged DT procedure</div>
+                    <ol style={{ paddingLeft: '1.2rem', fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.7 }}>
+                      <li>Create <Tex src="B" /> bootstrapped training sets.</li>
+                      <li>Fit a deep, <strong>unpruned</strong> tree on each (high variance, low bias).</li>
+                      <li>For each test instance, get predictions from all <Tex src="B" /> trees.</li>
+                      <li>Aggregate (mean for regression, mode for classification).</li>
+                    </ol>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Implementation</div>
+                    <div className="m4-pseudocode">
+                      <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> BaggingClassifier{'\n'}
+                      <span className="kw">from</span> sklearn.tree <span className="kw">import</span> DecisionTreeClassifier{'\n'}
+                      {'\n'}
+                      bag_clf = BaggingClassifier({'\n'}
+                      {'    '}DecisionTreeClassifier(),{'\n'}
+                      {'    '}n_estimators=<span className="num">500</span>,{'\n'}
+                      {'    '}max_samples=<span className="num">100</span>,{'\n'}
+                      {'    '}n_jobs=-<span className="num">1</span>,{'\n'}
+                      {'    '}random_state=<span className="num">42</span>){'\n'}
+                      bag_clf.fit(X_train, y_train)
+                    </div>
+                    <div className="m4-infobox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+                      BaggingClassifier auto-applies <strong>soft voting</strong> when the base classifier supports <code>predict_proba()</code> — no extra config needed.
+                    </div>
+                  </div>
+                </div>
+
+                <BootstrapVisualizer />
+
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Out-of-Bag (OOB) Evaluation</div>
+                    <ul className="m4-bullets">
+                      <li>With bootstrapping, on average ≈ <strong>2/3</strong> of training instances appear in each bag; the remaining ≈ <strong>1/3</strong> are <strong>OOB instances</strong> for that predictor.</li>
+                      <li>Different OOB sets per predictor (each bootstrap leaves out different points).</li>
+                      <li>For each instance, predict using only the trees for which it was OOB → average / vote → single OOB prediction.</li>
+                      <li>Aggregate over all <Tex src="m" /> instances → <strong>OOB MSE</strong> or <strong>OOB classification error</strong> (a free validation set).</li>
+                    </ul>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Implementation</div>
+                    <div className="m4-pseudocode">
+                      bag_clf = BaggingClassifier({'\n'}
+                      {'    '}DecisionTreeClassifier(),{'\n'}
+                      {'    '}n_estimators=<span className="num">500</span>,{'\n'}
+                      {'    '}<span className="kw">oob_score</span>=<span className="kw">True</span>,{'\n'}
+                      {'    '}n_jobs=-<span className="num">1</span>, random_state=<span className="num">42</span>){'\n'}
+                      bag_clf.fit(X_train, y_train){'\n'}
+                      {'\n'}
+                      bag_clf.oob_score_                  <span className="cm"># 0.896</span>{'\n'}
+                      bag_clf.oob_decision_function_[:<span className="num">3</span>]  <span className="cm"># OOB probas</span>
+                    </div>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">Random Patches &amp; Random Subspaces</div>
+                    <div className="m4-infobox" style={{ marginBottom: '0.6rem', fontSize: '0.76rem' }}>
+                      <code>BaggingClassifier</code> also supports <strong>feature sampling</strong> via <code>max_features</code> and <code>bootstrap_features</code> — useful for high-dimensional data such as images.
+                    </div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Method</th><th>Sample Instances</th><th>Sample Features</th></tr></thead>
+                      <tbody>
+                        <tr>
+                          <td className="pk">Random Patches</td>
+                          <td>Yes</td>
+                          <td>Yes</td>
+                        </tr>
+                        <tr>
+                          <td className="pk">Random Subspaces</td>
+                          <td>No (use all)</td>
+                          <td>Yes</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-flabel" style={{ marginTop: '0.5rem' }}>Settings</div>
+                    <div style={{ background: 'var(--bg-3)', borderRadius: 6, padding: '0.5rem 0.65rem', fontFamily: 'monospace', fontSize: '0.66rem', color: 'var(--text-2)', lineHeight: 1.65 }}>
+                      {'Random Patches:  bootstrap=True,  max_samples<1.0,\n                 bootstrap_features=True, max_features<1.0\n\nRandom Subspaces: bootstrap=False, max_samples=1.0,\n                 bootstrap_features=True, max_features<1.0'}
+                    </div>
+                    <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.73rem' }}>
+                      <strong>Important:</strong> in a <code>BaggingClassifier</code>, each base estimator only sees the features assigned to it during training. The bagging classifier stores <code>estimators_features_</code> and routes the same features at inference.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Random Forests ── */}
+            {l7Tab === 'Random Forests' && (
+              <div>
+                <p className="m4-sec-sub">A <strong>Random Forest</strong> = ensemble of Decision Trees trained via bagging, with one extra layer of randomness: at each node split, only a random <strong>subset</strong> of features is considered.</p>
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Random Forest — Key Distinction</div>
+                    <div className="m4-infobox" style={{ marginBottom: '0.6rem', fontSize: '0.78rem' }}>
+                      When splitting a node, an RF searches for the best feature among a <strong>random subset of features</strong> (default = <Tex src="\sqrt{n}" /> for classification), introducing extra randomness on top of bagging.
+                    </div>
+                    <div className="m4-flabel">Implementation</div>
+                    <div className="m4-pseudocode">
+                      <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> RandomForestClassifier{'\n'}
+                      {'\n'}
+                      RF_clf = RandomForestClassifier({'\n'}
+                      {'    '}n_estimators=<span className="num">5</span>,{'\n'}
+                      {'    '}max_features=<span className="num">2</span>,{'\n'}
+                      {'    '}max_depth=<span className="num">4</span>,{'\n'}
+                      {'    '}n_jobs=-<span className="num">1</span>, random_state=<span className="num">42</span>){'\n'}
+                      RF_clf.fit(iris.data, iris.target){'\n'}
+                      {'\n'}
+                      <span className="cm"># inspect bootstrap samples for tree 0</span>{'\n'}
+                      tree0 = RF_clf.estimators_samples_[<span className="num">0</span>]{'\n'}
+                      len(tree0)            <span className="cm"># 150 (with bootstrapping)</span>{'\n'}
+                      len(np.unique(tree0)) <span className="cm"># ~101 unique (≈ 2/3 of m)</span>
+                    </div>
+                    <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+                      <strong>Compared to BaggingClassifier(max_features=2):</strong> Bagging fixes the same 2 features <em>per tree</em>. RandomForest resamples 2 features <em>at every node split</em> — much greater tree diversity.
+                    </div>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">Extra-Trees (Extremely Randomised)</div>
+                    <ul className="m4-bullets">
+                      <li>Like RF, but uses <strong>random thresholds</strong> for each candidate feature when splitting (instead of searching for the optimal threshold).</li>
+                      <li>More bias, less variance, <strong>much faster</strong> to train than a regular RF.</li>
+                      <li>Classes: <code>ExtraTreesClassifier</code>, <code>ExtraTreesRegressor</code>.</li>
+                    </ul>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Diversity Sources Compared</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>Method</th><th>Sample rows</th><th>Sample features</th><th>Threshold</th></tr></thead>
+                      <tbody>
+                        <tr><td>Bagging(DT)</td><td>Bootstrap</td><td>Per-tree</td><td className="pk">Optimal</td></tr>
+                        <tr><td>Random Forest</td><td>Bootstrap</td><td className="pk">Per-split</td><td className="pk">Optimal</td></tr>
+                        <tr><td>Extra-Trees</td><td>Bootstrap</td><td className="pk">Per-split</td><td className="pk">Random</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+                      It's hard to know in advance whether ET will outperform RF — try both and cross-validate.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="m4-card">
+                  <div className="m4-card-h">Feature Importance</div>
+                  <div className="m4-two-col">
+                    <div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-1)', lineHeight: 1.6, marginBottom: '0.5rem' }}>
+                        For each feature <Tex src="x_i" />, importance is the <strong>average total decrease in impurity</strong> (weighted by node sample count) across <em>all nodes in all trees</em> that split on <Tex src="x_i" />.
+                      </div>
+                      <table className="m4-ptable">
+                        <thead><tr><th>Tree type</th><th>Impurity reduction measured by</th></tr></thead>
+                        <tbody>
+                          <tr><td className="pk">Classification trees</td><td>Decrease in <strong>Gini</strong> index (or entropy)</td></tr>
+                          <tr><td className="pk">Regression trees</td><td>Decrease in <strong>MSE</strong></td></tr>
+                        </tbody>
+                      </table>
+                      <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>scikit-learn computation</div>
+                      <ol style={{ paddingLeft: '1.2rem', fontSize: '0.75rem', color: 'var(--text-1)', lineHeight: 1.7 }}>
+                        <li>Collect all nodes (across all trees) that split on <Tex src="x_i" />.</li>
+                        <li>Compute impurity reduction at each, weighted by number of training instances at that node.</li>
+                        <li>Average over those nodes.</li>
+                        <li>Normalise so importances sum to 1.</li>
+                      </ol>
+                      <div className="m4-infobox" style={{ marginTop: '0.5rem', fontSize: '0.74rem' }}>
+                        Access via <code>model.feature_importances_</code> after fitting.
+                      </div>
+                    </div>
+                    <div>
+                      <div className="m4-flabel">Iris example — RandomForestClassifier(n_estimators=500)</div>
+                      <table className="m4-ptable">
+                        <thead><tr><th>Feature</th><th>Importance</th><th>Bar</th></tr></thead>
+                        <tbody>
+                          {[
+                            { f: 'sepal length', v: 0.11 },
+                            { f: 'sepal width',  v: 0.02 },
+                            { f: 'petal length', v: 0.44 },
+                            { f: 'petal width',  v: 0.42 },
+                          ].map(r => (
+                            <tr key={r.f}>
+                              <td>{r.f}</td>
+                              <td className="pk">{r.v.toFixed(2)}</td>
+                              <td>
+                                <div style={{ height: 8, width: '100%', background: 'rgba(34,211,238,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                                  <div style={{ width: `${r.v * 100 * 2}%`, height: '100%', background: 'var(--cyan)', borderRadius: 4 }} />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.73rem' }}>
+                        Petal length and petal width together contribute <strong>86%</strong> of the predictive power. Sepal width contributes almost nothing. Use this for feature selection — drop low-importance features for a leaner model.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Boosting ── */}
+            {l7Tab === 'Boosting' && (
+              <div>
+                <p className="m4-sec-sub">Train predictors <strong>sequentially</strong>, each correcting its predecessor. Combines weak learners into a strong learner. Most popular: AdaBoost (re-weights instances) and Gradient Boosting (fits residuals).</p>
+
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">AdaBoost — Algorithm</div>
+                    <div className="m4-flabel">Weighted error rate of predictor j</div>
+                    <Tex src="r_j = \sum_{\substack{i=1 \\ \hat{y}_j^{(i)} \neq y^{(i)}}}^{m} w^{(i)}" block />
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-2)', marginBottom: '0.4rem' }}>(initial weights <Tex src="w^{(i)} = 1/m" />)</div>
+                    <div className="m4-flabel">Predictor weight</div>
+                    <Tex src="\alpha_j = \eta \log\!\left(\frac{1 - r_j}{r_j}\right)" block />
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-2)', marginBottom: '0.4rem' }}>where <Tex src="\eta" /> is the learning rate (default 1). More accurate predictor → larger <Tex src="\alpha_j" />.</div>
+                    <div className="m4-flabel">Instance weight update (boost misclassified)</div>
+                    <Tex src="w^{(i)} \leftarrow \begin{cases} w^{(i)} & \text{if } \hat{y}_j^{(i)} = y^{(i)} \\ w^{(i)} \exp(\alpha_j) & \text{if } \hat{y}_j^{(i)} \neq y^{(i)} \end{cases}" block />
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-2)' }}>Then <strong>normalise</strong>: <Tex src="w^{(i)} \leftarrow w^{(i)} / \sum_i w^{(i)}" />, used by predictor j+1.</div>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">AdaBoost — Final Prediction (N estimators)</div>
+                    <div className="m4-flabel">Regression</div>
+                    <Tex src="\hat{y}(\mathbf{x}) = \frac{\sum_{j=1}^{N} \alpha_j \, \hat{y}_j(\mathbf{x})}{\sum_{j=1}^{N} \alpha_j}" block />
+                    <div className="m4-flabel">Classification — weight per class k</div>
+                    <Tex src="\text{weight}(k) = \sum_{\substack{j=1 \\ \hat{y}_j(\mathbf{x}) = k}}^{N} \alpha_j" block />
+                    <Tex src="\hat{y}(\mathbf{x}) = \arg\max_{k} \text{weight}(k)" block />
+                    <div className="m4-hr" />
+                    <table className="m4-ptable">
+                      <tbody>
+                        <tr><td className="pk">estimator_weights_</td><td>Array of <Tex src="\alpha_j" /> values</td></tr>
+                        <tr><td className="pk">estimator_errors_</td><td>Array of <Tex src="r_j" /> values</td></tr>
+                        <tr><td className="pk">Decision Stump</td><td>DT with max_depth=1 — the default base estimator</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.74rem' }}>
+                      <strong>Sequential</strong> nature → cannot parallelise across machines. Overfit? Reduce <code>n_estimators</code> or regularise the base estimator more.
+                    </div>
+                  </div>
+                </div>
+
+                <AdaBoostCalc />
+
+                <div className="m4-card" style={{ marginTop: '0.75rem' }}>
+                  <div className="m4-card-h">AdaBoost — Implementation Examples</div>
+                  <div className="m4-two-col">
+                    <div>
+                      <div className="m4-flabel">Example 1 — SVC base estimators</div>
+                      <div className="m4-pseudocode">
+                        <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> AdaBoostClassifier{'\n'}
+                        {'\n'}
+                        ada_clf = AdaBoostClassifier({'\n'}
+                        {'    '}SVC(C=<span className="num">0.2</span>, gamma=<span className="num">0.6</span>,{'\n'}
+                        {'        '}probability=<span className="kw">True</span>),{'\n'}
+                        {'    '}learning_rate=<span className="num">0.05</span>,{'\n'}
+                        {'    '}n_estimators=<span className="num">50</span>,{'\n'}
+                        {'    '}random_state=<span className="num">42</span>){'\n'}
+                        ada_clf.fit(X_train, y_train){'\n'}
+                        <span className="cm"># train acc = 0.933, test acc = 0.888</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="m4-flabel">Example 2 — 30 Decision Stumps (the default)</div>
+                      <div className="m4-pseudocode">
+                        ada_clf = AdaBoostClassifier({'\n'}
+                        {'    '}DecisionTreeClassifier(max_depth=<span className="num">1</span>),{'\n'}
+                        {'    '}n_estimators=<span className="num">30</span>,{'\n'}
+                        {'    '}learning_rate=<span className="num">0.5</span>,{'\n'}
+                        {'    '}random_state=<span className="num">42</span>){'\n'}
+                        <span className="cm"># train acc = 0.941, test acc = 0.904</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="m4-two-col" style={{ marginTop: '0.75rem' }}>
+                  <div className="m4-card">
+                    <div className="m4-card-h">Gradient Boosting — Concept</div>
+                    <ul className="m4-bullets">
+                      <li>Sequentially fit each new predictor to the <strong>residual errors</strong> of the previous ensemble (not instance weights).</li>
+                      <li>With Decision Trees as base predictors → <strong>Gradient Boosted Regression Trees (GBRT)</strong>.</li>
+                      <li>For classification: loss is <strong>log loss</strong> (binary cross-entropy or multiclass log loss) and the new tree fits the <em>negative gradient</em> of the loss.</li>
+                    </ul>
+                    <div className="m4-hr" />
+                    <div className="m4-flabel">Manual GBRT construction (regression)</div>
+                    <div className="m4-pseudocode">
+                      <span className="cm"># y = 3x² + Gaussian noise</span>{'\n'}
+                      tree_reg1 = DecisionTreeRegressor(max_depth=<span className="num">2</span>){'\n'}
+                      tree_reg1.fit(X, y){'\n'}
+                      {'\n'}
+                      y2 = y - tree_reg1.predict(X){'\n'}
+                      tree_reg2 = DecisionTreeRegressor(max_depth=<span className="num">2</span>){'\n'}
+                      tree_reg2.fit(X, y2){'\n'}
+                      {'\n'}
+                      y3 = y2 - tree_reg2.predict(X){'\n'}
+                      tree_reg3 = DecisionTreeRegressor(max_depth=<span className="num">2</span>){'\n'}
+                      tree_reg3.fit(X, y3){'\n'}
+                      {'\n'}
+                      <span className="cm"># ensemble = sum of all tree predictions</span>{'\n'}
+                      y_pred = sum(tree.predict(X_new){'\n'}
+                      {'    '}<span className="kw">for</span> tree <span className="kw">in</span> (tree_reg1, tree_reg2, tree_reg3))
+                    </div>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">GBRT — Built-in &amp; Regularisation</div>
+                    <div className="m4-flabel">Built-in class</div>
+                    <div className="m4-pseudocode">
+                      <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> GradientBoostingRegressor{'\n'}
+                      {'\n'}
+                      gbrt = GradientBoostingRegressor({'\n'}
+                      {'    '}max_depth=<span className="num">2</span>,{'\n'}
+                      {'    '}n_estimators=<span className="num">3</span>,{'\n'}
+                      {'    '}learning_rate=<span className="num">1.0</span>){'\n'}
+                      gbrt.fit(X, y)
+                    </div>
+                    <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Shrinkage (Regularisation)</div>
+                    <ul className="m4-bullets">
+                      <li><strong>Low</strong> <code>learning_rate</code> (e.g. 0.05) + <strong>more trees</strong> → better generalisation.</li>
+                      <li><strong>High</strong> <code>learning_rate</code> + few trees → underfitting risk.</li>
+                    </ul>
+                    <div className="m4-flabel" style={{ marginTop: '0.55rem' }}>Early stopping</div>
+                    <div className="m4-pseudocode">
+                      gbrt_best = GradientBoostingRegressor({'\n'}
+                      {'    '}max_depth=<span className="num">2</span>,{'\n'}
+                      {'    '}learning_rate=<span className="num">0.05</span>,{'\n'}
+                      {'    '}n_estimators=<span className="num">500</span>,{'\n'}
+                      {'    '}n_iter_no_change=<span className="num">10</span>){'\n'}
+                      gbrt_best.fit(X, y){'\n'}
+                      gbrt_best.n_estimators_   <span className="cm"># e.g. 92</span>
+                    </div>
+                    <div className="m4-warnbox" style={{ marginTop: '0.6rem', fontSize: '0.73rem' }}>
+                      <code>n_iter_no_change</code> too low → underfit; too high → overfit. Recommended: small <code>learning_rate</code>, large <code>n_estimators</code>, with early stopping.
+                    </div>
+                  </div>
+                </div>
+
+                <GradientBoostStepper />
+
+                <div className="m4-card" style={{ marginTop: '0.75rem' }}>
+                  <div className="m4-card-h">Gradient Boosting for Classification</div>
+                  <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.6, marginBottom: '0.5rem' }}>
+                    Same idea — sequential trees fitting the negative gradient of the loss — but the loss is <strong>log loss</strong> (binary cross-entropy for binary classification; multiclass log loss for K classes) instead of MSE residuals.
+                  </div>
+                  <div className="m4-pseudocode">
+                    <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> GradientBoostingClassifier{'\n'}
+                    {'\n'}
+                    gb_clf = GradientBoostingClassifier({'\n'}
+                    {'    '}n_estimators=<span className="num">30</span>,{'\n'}
+                    {'    '}max_depth=<span className="num">1</span>,{'\n'}
+                    {'    '}learning_rate=<span className="num">0.5</span>){'\n'}
+                    gb_clf.fit(X_train, y_train){'\n'}
+                    <span className="cm"># train acc ≈ 0.939, test acc ≈ 0.904</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Stacking & Summary ── */}
+            {l7Tab === 'Stacking & Summary' && (
+              <div>
+                <p className="m4-sec-sub">Instead of a fixed aggregation rule (majority vote, average), train a model — the <strong>blender</strong> — to learn the optimal way to combine base predictions.</p>
+
+                <div className="m4-two-col">
+                  <div className="m4-card">
+                    <div className="m4-card-h">Stacked Generalization</div>
+                    <div className="m4-infobox" style={{ marginBottom: '0.6rem', fontSize: '0.78rem' }}>
+                      Each base predictor outputs a number for a new instance; the blender consumes those numbers as <em>input features</em> and outputs the final prediction.
+                    </div>
+                    <div className="m4-flabel">Architecture</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.66rem', color: 'var(--text-1)', lineHeight: 1.85, background: 'var(--bg-3)', borderRadius: 6, padding: '0.55rem 0.7rem', border: '1px solid rgba(34,211,238,0.12)' }}>
+                      {`X (new instance)\n   │\n   ├─→ Predictor 1  ── 3.1 ─┐\n   ├─→ Predictor 2  ── 2.7 ─┤── Blender ── 3.0 (final)\n   └─→ Predictor 3  ── 2.9 ─┘`}
+                    </div>
+                    <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Algorithm — main steps</div>
+                    <ol style={{ paddingLeft: '1.2rem', fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.7 }}>
+                      <li><strong>Train base predictors</strong> using k-fold cross-validation on the training set.</li>
+                      <li><strong>Generate cross-validated predictions</strong> for each instance (out-of-fold predictions — predictions on data the base never saw during fitting).</li>
+                      <li><strong>Build a blending training set</strong>: input features = base predictors' out-of-fold predictions; targets = original labels.</li>
+                      <li><strong>Train the blender</strong> on this dataset to learn the aggregation.</li>
+                      <li>After the blender is trained, <strong>retrain base predictors on the full original training set</strong>.</li>
+                    </ol>
+                  </div>
+                  <div className="m4-card">
+                    <div className="m4-card-h">Blending Training Set + Implementation</div>
+                    <div className="m4-flabel">Blender input rows (3 base predictors)</div>
+                    <table className="m4-ptable">
+                      <thead><tr><th>P1 output</th><th>P2 output</th><th>P3 output</th><th>ground truth</th></tr></thead>
+                      <tbody>
+                        <tr><td>3.1</td><td>2.7</td><td>2.9</td><td className="pk">3.0</td></tr>
+                        <tr><td>1.5</td><td>1.7</td><td>1.4</td><td className="pk">1.6</td></tr>
+                        <tr><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+                      </tbody>
+                    </table>
+                    <div className="m4-infobox" style={{ marginTop: '0.5rem', fontSize: '0.73rem' }}>
+                      With 5-fold CV, each estimator trains on 4 folds and predicts on 1; concatenating the 5 prediction sets gives the full blender input.
+                    </div>
+                    <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Implementation</div>
+                    <div className="m4-pseudocode">
+                      <span className="kw">from</span> sklearn.ensemble <span className="kw">import</span> StackingClassifier{'\n'}
+                      {'\n'}
+                      stacking_clf = StackingClassifier({'\n'}
+                      {'    '}estimators=[{'\n'}
+                      {'        '}(<span className="cm">'lr'</span>,  LogisticRegression()),{'\n'}
+                      {'        '}(<span className="cm">'rf'</span>,  RandomForestClassifier()),{'\n'}
+                      {'        '}(<span className="cm">'svc'</span>, SVC(probability=<span className="kw">True</span>))],{'\n'}
+                      {'    '}final_estimator=RandomForestClassifier(),{'\n'}
+                      {'    '}cv=<span className="num">5</span>){'\n'}
+                      stacking_clf.fit(X_train, y_train)
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-2)', marginTop: '0.5rem' }}>Also available: <code>StackingRegressor</code>.</div>
+                  </div>
+                </div>
+
+                <div className="m4-card" style={{ marginTop: '0.75rem' }}>
+                  <div className="m4-card-h">Ensemble Methods — Master Summary Table</div>
+                  <table className="m4-ptable">
+                    <thead><tr><th>Method</th><th>Base Estimators</th><th>Diversity Source</th><th>Training</th><th>Notes</th></tr></thead>
+                    <tbody>
+                      <tr><td className="pk">Voting</td><td>Different (diverse)</td><td>Different algorithms</td><td>Parallel</td><td>Hard or soft voting</td></tr>
+                      <tr><td className="pk">Bagging / Pasting</td><td>Same</td><td>Different data subsets (with/without replacement); optionally feature subsets</td><td>Parallel</td><td>Reduces variance</td></tr>
+                      <tr><td className="pk">Random Forest</td><td>Decision Trees</td><td>Bootstrap + random feature subset (<Tex src="\sqrt{n}" />) at each split</td><td>Parallel</td><td>Default ensemble of trees</td></tr>
+                      <tr><td className="pk">Extra-Trees</td><td>Decision Trees</td><td>RF + random split thresholds</td><td>Parallel</td><td>Faster than RF; more bias, less variance</td></tr>
+                      <tr><td className="pk">AdaBoost</td><td>Any</td><td>Reweighting misclassified instances</td><td><strong>Sequential</strong></td><td>Cannot parallelise across machines</td></tr>
+                      <tr><td className="pk">Gradient Boosting</td><td><strong>Decision Trees only</strong></td><td>Fits residual errors / log-loss gradient</td><td><strong>Sequential</strong></td><td>Use shrinkage + early stopping</td></tr>
+                      <tr><td className="pk">Stacking</td><td>Any (diverse)</td><td>Trained blender aggregates predictions</td><td>Parallel base + blender</td><td>Blender trained on out-of-fold predictions</td></tr>
+                    </tbody>
+                  </table>
+                  <div className="m4-infobox" style={{ marginTop: '0.7rem', fontSize: '0.76rem' }}>
+                    <strong>Rules of thumb:</strong> Use <strong>Random Forest</strong> as a strong default. Use <strong>Gradient Boosting</strong> when you can afford careful tuning of <code>learning_rate</code>, <code>n_estimators</code>, and early stopping (XGBoost/LightGBM win most tabular Kaggle competitions). Use <strong>Voting</strong> for a quick win with diverse already-trained models. Use <strong>Stacking</strong> when you have time for a learned blender.
+                  </div>
+                </div>
+
+                <EnsembleMatcher />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── ASSIGNMENT 1 ── */}
         {tab === 'Assignment 1' && (
           <div>
@@ -4160,8 +5266,8 @@ export default function CITS5508() {
         {tab === 'Quiz' && (
           <div>
             <div className="m4-sec-hdr">
-              <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>20 Questions · Lectures 1–6</span></h2>
-              <p className="m4-sec-sub">Covering: Mitchell's E/T/P, supervised/unsupervised, bias trick, MSE vs MAE, confusion matrix, Normal Equation, gradient descent variants, logistic regression, Ridge/Lasso, kNN, and SVMs. Detailed feedback on every answer.</p>
+              <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>26 Questions · Lectures 1–7</span></h2>
+              <p className="m4-sec-sub">Covering: Mitchell's E/T/P, supervised/unsupervised, bias trick, MSE vs MAE, confusion matrix, Normal Equation, gradient descent variants, logistic regression, Ridge/Lasso, kNN, SVMs, decision trees, and ensemble methods (voting, bagging/OOB, random forests, AdaBoost, gradient boosting, stacking). Detailed feedback on every answer.</p>
             </div>
             <QuizSection />
           </div>
