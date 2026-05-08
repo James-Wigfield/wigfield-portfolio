@@ -9,6 +9,7 @@ import smokingCity  from '../assets/gifs/smoking_city.gif';
 import girRoom      from '../assets/gifs/gir_room.gif';
 import cyberBand    from '../assets/gifs/cyber_band.gif';
 import soundWaves   from '../assets/gifs/sound_waves.gif';
+import cyberStation from '../assets/gifs/cyber_station.gif';
 
 // ── PIN (same as Hub) ─────────────────────────────────────────────
 const GAMES_PIN = '6969';
@@ -49,6 +50,15 @@ const GAMES = [
     gif: soundWaves,
     color: 'rose',
     tag: 'SOLO',
+    comingSoon: false,
+  },
+  {
+    id: 'chaos',
+    title: 'Chaos Reactor',
+    description: '8-track step sequencer, live drum pads, synth keyboard, and an FX rack — forge insane beats in real time. Plays from any keyboard or touchscreen.',
+    gif: cyberStation,
+    color: 'violet',
+    tag: 'BEAT LAB',
     comingSoon: false,
   },
   {
