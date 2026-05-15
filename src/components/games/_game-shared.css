@@ -110,10 +110,11 @@
 .game-btn:active { transform: scale(0.98); }
 .game-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
 
-.game-btn--amber  { background: var(--amber);  color: #020817; box-shadow: 0 0 18px rgba(251,191,36,0.25); }
-.game-btn--rose   { background: var(--rose);   color: #020817; box-shadow: 0 0 18px rgba(251,113,133,0.25); }
-.game-btn--cyan   { background: var(--cyan);   color: #020817; box-shadow: 0 0 18px rgba(34,211,238,0.25); }
-.game-btn--violet { background: var(--violet); color: #020817; box-shadow: 0 0 18px rgba(167,139,250,0.25); }
+.game-btn--amber   { background: var(--amber);   color: #020817; box-shadow: 0 0 18px rgba(251,191,36,0.25);  }
+.game-btn--rose    { background: var(--rose);    color: #020817; box-shadow: 0 0 18px rgba(251,113,133,0.25); }
+.game-btn--cyan    { background: var(--cyan);    color: #020817; box-shadow: 0 0 18px rgba(34,211,238,0.25);  }
+.game-btn--violet  { background: var(--violet);  color: #020817; box-shadow: 0 0 18px rgba(167,139,250,0.25); }
+.game-btn--emerald { background: var(--emerald); color: #020817; box-shadow: 0 0 18px rgba(52,211,153,0.25);  }
 .game-btn--ghost  {
   background: transparent;
   border: 1px solid var(--border);

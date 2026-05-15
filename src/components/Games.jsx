@@ -10,6 +10,7 @@ import girRoom      from '../assets/gifs/gir_room.gif';
 import cyberBand    from '../assets/gifs/cyber_band.gif';
 import soundWaves   from '../assets/gifs/sound_waves.gif';
 import cyberStation from '../assets/gifs/cyber_station.gif';
+import redRainCity  from '../assets/gifs/red_rain_city.gif';
 
 // ── PIN (same as Hub) ─────────────────────────────────────────────
 const GAMES_PIN = '6969';
@@ -23,6 +24,15 @@ const GAMES = [
     gif: arcadeGif,
     color: 'rose',
     tag: 'MULTIPLAYER',
+    comingSoon: false,
+  },
+  {
+    id: 'party-imposter',
+    title: 'Party Imposter',
+    description: 'Pass-and-play, no servers. Four modes (classic, mirror, inquiry, chameleon) plus a blind toggle where no one knows who the imposter is.',
+    gif: redRainCity,
+    color: 'rose',
+    tag: 'PASS & PLAY',
     comingSoon: false,
   },
   {

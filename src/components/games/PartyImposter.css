@@ -1,0 +1,756 @@
+@import './_game-shared.css';
+
+/* ── Party Imposter ──────────────────────────────────────────────────────── */
+
+.pi-banner-gif {
+  object-position: center 40%;
+}
+
+.pi-logo {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--rose);
+  letter-spacing: 0.2em;
+  text-shadow: var(--glow-rose);
+  text-align: center;
+}
+
+.pi-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-2);
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+
+/* ── Layout helpers ──────────────────────────────────────────────────────── */
+.pi-screen-wide {
+  max-width: 520px;
+}
+
+.pi-card-gap {
+  margin-top: 1rem;
+}
+
+.pi-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-0);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.pi-section-sub {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-2);
+  text-align: center;
+  letter-spacing: 0.04em;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.pi-label {
+  display: block;
+  font-size: 0.66rem;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  letter-spacing: 0.14em;
+  margin-bottom: 0.55rem;
+}
+
+.pi-hint {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-2);
+  text-align: center;
+  letter-spacing: 0.04em;
+  line-height: 1.55;
+}
+
+.pi-error {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--rose);
+  margin: 0.6rem 0 0;
+  text-align: center;
+}
+
+/* ── Mode grid ───────────────────────────────────────────────────────────── */
+.pi-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.pi-mode-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: rgba(7, 16, 31, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, transform 0.12s, box-shadow 0.2s;
+  color: var(--text-1);
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+.pi-mode-card:hover  { border-color: rgba(148,163,184,0.3); }
+.pi-mode-card:active { transform: scale(0.985); }
+
+.pi-mode-card--active {
+  background: rgba(7, 16, 31, 0.85);
+}
+
+.pi-mode-card--rose.pi-mode-card--active    { border-color: var(--rose);    box-shadow: 0 0 22px rgba(251,113,133,0.18); }
+.pi-mode-card--amber.pi-mode-card--active   { border-color: var(--amber);   box-shadow: 0 0 22px rgba(251,191,36,0.18);  }
+.pi-mode-card--cyan.pi-mode-card--active    { border-color: var(--cyan);    box-shadow: 0 0 22px rgba(34,211,238,0.18);  }
+.pi-mode-card--violet.pi-mode-card--active  { border-color: var(--violet);  box-shadow: 0 0 22px rgba(167,139,250,0.18); }
+.pi-mode-card--emerald.pi-mode-card--active { border-color: var(--emerald); box-shadow: 0 0 22px rgba(52,211,153,0.18);  }
+
+.pi-mode-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.pi-mode-card--rose    .pi-mode-label { color: var(--rose);    }
+.pi-mode-card--amber   .pi-mode-label { color: var(--amber);   }
+.pi-mode-card--cyan    .pi-mode-label { color: var(--cyan);    }
+.pi-mode-card--violet  .pi-mode-label { color: var(--violet);  }
+.pi-mode-card--emerald .pi-mode-label { color: var(--emerald); }
+
+.pi-mode-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-2);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.45rem;
+}
+
+.pi-mode-desc {
+  font-size: 0.72rem;
+  color: var(--text-1);
+  line-height: 1.45;
+}
+
+/* ── Settings ────────────────────────────────────────────────────────────── */
+.pi-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+.pi-setting-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.pi-setting-row .pi-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.pi-select {
+  flex: 1;
+  max-width: 180px;
+  background: rgba(7, 16, 31, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 0.9rem;
+  padding-right: 2.2rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  transition: border-color 0.2s;
+}
+.pi-select:focus { border-color: var(--cyan); }
+.pi-select option { background: #07101f; }
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.pi-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.pi-toggle-label {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  color: var(--text-0);
+  margin-bottom: 0.25rem;
+}
+
+.pi-toggle-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--rose);
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.pi-toggle-desc {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+.pi-toggle {
+  flex-shrink: 0;
+  width: 46px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(7, 16, 31, 0.9);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.pi-toggle--on {
+  background: rgba(251, 113, 133, 0.22);
+  border-color: var(--rose);
+  box-shadow: 0 0 16px rgba(251,113,133,0.25);
+}
+.pi-toggle--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pi-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: transform 0.18s, background 0.18s;
+}
+.pi-toggle--on .pi-toggle-thumb {
+  transform: translateX(22px);
+  background: var(--rose);
+}
+
+/* ── Players setup ───────────────────────────────────────────────────────── */
+.pi-player-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.pi-player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pi-player-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+  width: 1.4rem;
+  text-align: center;
+}
+
+.pi-input {
+  flex: 1;
+  background: rgba(7, 16, 31, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.pi-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34,211,238,0.08); }
+
+.pi-remove-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: color 0.2s, border-color 0.2s;
+}
+.pi-remove-btn:hover { color: var(--rose); border-color: rgba(251,113,133,0.4); }
+
+/* ── Pass prompt + role reveal ───────────────────────────────────────────── */
+.pi-card-night {
+  text-align: center;
+  border-color: rgba(167, 139, 250, 0.18);
+  background: linear-gradient(135deg, rgba(167,139,250,0.04) 0%, var(--surface) 100%);
+}
+
+.pi-round-badge,
+.pi-voter-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--text-2);
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.18);
+  border-radius: 20px;
+  padding: 0.22rem 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pi-pass-title {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  color: var(--text-2);
+  margin-bottom: 0.5rem;
+}
+
+.pi-big-name {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  text-shadow: var(--glow-amber);
+  margin-bottom: 0.4rem;
+  word-break: break-word;
+}
+
+/* ── Role card ───────────────────────────────────────────────────────────── */
+.pi-role {
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.pi-role::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.012) 2px,
+    rgba(255,255,255,0.012) 4px
+  );
+  pointer-events: none;
+}
+
+.pi-role--crew {
+  border-color: rgba(52, 211, 153, 0.25);
+  background: linear-gradient(135deg, rgba(52,211,153,0.05) 0%, var(--surface) 100%);
+}
+
+.pi-role--imposter {
+  border-color: rgba(251, 113, 133, 0.28);
+  background: linear-gradient(135deg, rgba(251,113,133,0.07) 0%, var(--surface) 100%);
+}
+
+.pi-role--blind {
+  border-color: rgba(167, 139, 250, 0.28);
+  background: linear-gradient(135deg, rgba(167,139,250,0.07) 0%, var(--surface) 100%);
+}
+
+.pi-role-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  padding: 0.28rem 0.85rem;
+  border-radius: 6px;
+  margin-bottom: 1.15rem;
+}
+.pi-role-tag--crew     { background: rgba(52,211,153,0.1);  color: var(--emerald); border: 1px solid rgba(52,211,153,0.3);  }
+.pi-role-tag--imposter { background: rgba(251,113,133,0.12); color: var(--rose);    border: 1px solid rgba(251,113,133,0.35); }
+.pi-role-tag--blind    { background: rgba(167,139,250,0.12); color: var(--violet);  border: 1px solid rgba(167,139,250,0.35); }
+
+.pi-role-title {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 0.5rem;
+}
+
+.pi-role-title--imposter {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--rose);
+}
+
+.pi-role-word {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  color: var(--cyan);
+  letter-spacing: 0.03em;
+  margin: 0.3rem 0 0.6rem;
+  text-shadow: var(--glow-cyan);
+  word-break: break-word;
+}
+
+.pi-role-word--imposter {
+  color: var(--rose);
+  text-shadow: var(--glow-rose);
+}
+
+.pi-role-word--blank {
+  color: var(--violet);
+  text-shadow: var(--glow-violet);
+  letter-spacing: 0.3em;
+}
+
+.pi-role-question {
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--text-0);
+  line-height: 1.5;
+  margin: 0.6rem 0;
+  padding: 0.5rem 0.3rem;
+}
+
+.pi-role-cat {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--violet);
+  letter-spacing: 0.16em;
+  margin-top: 0.6rem;
+  opacity: 0.9;
+}
+
+.pi-role-hint {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin-top: 0.85rem;
+  line-height: 1.55;
+  padding: 0 0.5rem;
+}
+
+.pi-role-fellows {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--rose);
+  letter-spacing: 0.1em;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(251,113,133,0.07);
+  border: 1px solid rgba(251,113,133,0.18);
+  display: inline-block;
+}
+
+/* ── Chameleon grid ──────────────────────────────────────────────────────── */
+.pi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.35rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.pi-grid-cell {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.3rem;
+  border-radius: 6px;
+  background: rgba(7, 16, 31, 0.7);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pi-grid-cell--target {
+  background: rgba(34, 211, 238, 0.14);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 12px rgba(34,211,238,0.25);
+}
+
+/* ── Discussion ──────────────────────────────────────────────────────────── */
+.pi-card-discuss {
+  text-align: center;
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+.pi-card-urgent {
+  border-color: rgba(251, 113, 133, 0.32);
+  background: linear-gradient(135deg, rgba(251,113,133,0.06) 0%, var(--surface) 100%);
+}
+
+.pi-timer {
+  font-family: var(--font-mono);
+  font-size: 3.4rem;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  margin: 0.3rem 0;
+  text-shadow: var(--glow-amber);
+}
+.pi-timer--urgent { color: var(--rose); text-shadow: var(--glow-rose); }
+
+.pi-timer-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(7,16,31,0.8);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.pi-timer-bar {
+  height: 100%;
+  transition: width 1s linear, background 0.3s;
+}
+
+.pi-urgent {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--rose);
+  letter-spacing: 0.14em;
+  margin-top: 0.65rem;
+}
+
+.pi-speaking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pi-speaking-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.pi-speaking-row:last-child { border-bottom: none; }
+
+.pi-speaking-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-2);
+  width: 1.2rem;
+  text-align: center;
+}
+
+.pi-speaking-name {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-0);
+}
+
+/* ── Voting ──────────────────────────────────────────────────────────────── */
+.pi-vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pi-vote-option {
+  width: 100%;
+  background: rgba(7, 16, 31, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.12s;
+}
+.pi-vote-option:hover  { border-color: rgba(251,113,133,0.4); color: var(--rose); }
+.pi-vote-option:active { transform: scale(0.985); }
+
+.pi-vote-option--selected {
+  border-color: var(--rose);
+  background: rgba(251, 113, 133, 0.12);
+  color: var(--rose);
+  box-shadow: 0 0 16px rgba(251,113,133,0.18);
+}
+
+/* ── Result ──────────────────────────────────────────────────────────────── */
+.pi-card-result {
+  text-align: center;
+  padding: 2rem 1.5rem;
+}
+
+.pi-card-result--crew {
+  border-color: rgba(52, 211, 153, 0.32);
+  background: linear-gradient(135deg, rgba(52,211,153,0.07) 0%, var(--surface) 100%);
+}
+
+.pi-card-result--imposter {
+  border-color: rgba(251, 113, 133, 0.32);
+  background: linear-gradient(135deg, rgba(251,113,133,0.08) 0%, var(--surface) 100%);
+}
+
+.pi-result-banner {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  margin: 0.4rem 0 1.25rem;
+}
+
+.pi-result-banner--crew     { color: var(--emerald); text-shadow: var(--glow-emerald); }
+.pi-result-banner--imposter { color: var(--rose);    text-shadow: var(--glow-rose); }
+
+.pi-result-info {
+  margin: 0.75rem 0;
+}
+
+.pi-imposter-name {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  color: var(--rose);
+  letter-spacing: 0.06em;
+}
+
+.pi-result-word {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  letter-spacing: 0.03em;
+  color: var(--cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+.pi-result-word--imposter {
+  color: var(--rose);
+  text-shadow: var(--glow-rose);
+}
+
+.pi-result-question {
+  font-size: 0.92rem;
+  font-style: italic;
+  color: var(--text-0);
+  padding: 0 0.5rem;
+  line-height: 1.45;
+}
+.pi-result-question--imposter { color: var(--rose); }
+
+/* ── Tally lists ─────────────────────────────────────────────────────────── */
+.pi-tally-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pi-tally-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.pi-tally-row:last-child { border-bottom: none; }
+
+.pi-tally-row--top {
+  background: rgba(251, 113, 133, 0.08);
+  border-radius: 6px;
+  border-bottom: 1px solid rgba(251,113,133,0.18);
+}
+
+.pi-tally-name {
+  color: var(--text-0);
+}
+
+.pi-tally-mark {
+  color: var(--rose);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  margin-left: 0.4rem;
+}
+
+.pi-tally-count {
+  color: var(--amber);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+}
+
+.pi-result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+/* ── Wildcard mission box ───────────────────────────────────────────────── */
+.pi-mission-box {
+  margin: 1rem 0 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px dashed rgba(52, 211, 153, 0.4);
+  text-align: center;
+}
+
+.pi-mission-box .pi-label {
+  color: var(--emerald);
+  margin-bottom: 0.4rem;
+}
+
+.pi-mission-text {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  color: var(--text-0);
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+
+/* ── Manual verdict row ─────────────────────────────────────────────────── */
+.pi-verdict-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+/* ── Small screens ──────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .pi-mode-grid {
+    grid-template-columns: 1fr;
+  }
+  .pi-grid-cell {
+    font-size: 0.62rem;
+  }
+  .pi-verdict-row {
+    grid-template-columns: 1fr;
+  }
+}
