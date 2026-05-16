@@ -11,6 +11,7 @@ import cyberBand    from '../assets/gifs/cyber_band.gif';
 import soundWaves   from '../assets/gifs/sound_waves.gif';
 import cyberStation from '../assets/gifs/cyber_station.gif';
 import redRainCity  from '../assets/gifs/red_rain_city.gif';
+import palmsRain    from '../assets/gifs/palms_rain.gif';
 
 // ── PIN (same as Hub) ─────────────────────────────────────────────
 const GAMES_PIN = '6969';
@@ -42,6 +43,15 @@ const GAMES = [
     gif: smokingCity,
     color: 'amber',
     tag: 'PASS & PLAY',
+    comingSoon: false,
+  },
+  {
+    id: 'twin-flames',
+    title: 'Twin Flames',
+    description: 'Two minds, one phone, around the fire. Secretly type the word that bridges two seeds — match your partner on the 3-2-1 reveal. Chains, echoes, and visions for the chosen.',
+    gif: palmsRain,
+    color: 'violet',
+    tag: '2-PLAYER',
     comingSoon: false,
   },
   {

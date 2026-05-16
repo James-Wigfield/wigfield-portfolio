@@ -19,6 +19,7 @@ import CampfireGame from './components/games/CampfireGame';
 import Artemis2 from './components/games/Artemis2';
 import RapGame from './components/games/RapGame';
 import ChaosReactor from './components/games/ChaosReactor';
+import TwinFlames from './components/games/TwinFlames';
 
 function Portfolio() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
       <Route path="/games/artemis2" element={<Artemis2 />} />
       <Route path="/games/freestyle" element={<RapGame />} />
       <Route path="/games/chaos" element={<ChaosReactor />} />
+      <Route path="/games/twin-flames" element={<TwinFlames />} />
     </Routes>
   );
 }
