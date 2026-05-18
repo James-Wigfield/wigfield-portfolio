@@ -7407,8 +7407,5447 @@ return Best`}</div>
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Perceptrons & 1-D Classifiers (Lecture 13) ────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+const ESC_VELS = [1, 5, 3, 2, 2.5, 2.2];
+const ESC_YS   = [0, 1, 1, 0, 1, 0];
+const TRUE_ESC_VEL = 2.38;
+
+function sig(z) { return 1 / (1 + Math.exp(-z)); }
+
+// === Step Function vs Logistic Sigmoid playground ============================
+function StepVsSigmoidViz() {
+  const [w, setW] = useState(2.0);
+  const [b, setB] = useState(-5.0);
+  const [showDeriv, setShowDeriv] = useState(true);
+  const [showStep, setShowStep] = useState(true);
+  const canRef = useRef(null);
+
+  useEffect(() => {
+    const c = canRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 520;
+    const H = c.height = 320;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const xMin = -1, xMax = 7;
+    const PAD_L = 36, PAD_R = 16, PAD_T = 16, PAD_B = 32;
+    const toX = x => PAD_L + (x-xMin)/(xMax-xMin)*(W-PAD_L-PAD_R);
+    const toY = y => H-PAD_B - y*(H-PAD_T-PAD_B);
+
+    ctx.strokeStyle = 'rgba(148,163,184,0.07)'; ctx.lineWidth = 1;
+    for (let g=xMin; g<=xMax; g++) {
+      ctx.beginPath(); ctx.moveTo(toX(g),PAD_T); ctx.lineTo(toX(g),H-PAD_B); ctx.stroke();
+    }
+    for (let g=0; g<=1; g+=0.25) {
+      ctx.beginPath(); ctx.moveTo(PAD_L,toY(g)); ctx.lineTo(W-PAD_R,toY(g)); ctx.stroke();
+    }
+
+    ctx.strokeStyle = 'rgba(251,191,36,0.5)'; ctx.setLineDash([5,5]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PAD_L,toY(0.5)); ctx.lineTo(W-PAD_R,toY(0.5)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const bdry = -b/w;
+    if (bdry >= xMin && bdry <= xMax) {
+      ctx.strokeStyle='rgba(52,211,153,0.55)'; ctx.setLineDash([3,6]); ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(toX(bdry),PAD_T); ctx.lineTo(toX(bdry),H-PAD_B); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if (showStep) {
+      ctx.strokeStyle='#fb7185'; ctx.lineWidth=2; ctx.beginPath();
+      ctx.moveTo(toX(xMin),toY(w>0?0:1));
+      ctx.lineTo(toX(bdry),toY(w>0?0:1));
+      ctx.moveTo(toX(bdry),toY(w>0?1:0));
+      ctx.lineTo(toX(xMax),toY(w>0?1:0));
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2.6; ctx.beginPath();
+    for (let i=0;i<=400;i++) {
+      const x = xMin + i/400*(xMax-xMin);
+      const y = sig(w*x + b);
+      i===0?ctx.moveTo(toX(x),toY(y)):ctx.lineTo(toX(x),toY(y));
+    }
+    ctx.stroke();
+
+    if (showDeriv) {
+      ctx.strokeStyle='rgba(167,139,250,0.75)'; ctx.lineWidth=1.6; ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      const peak = Math.abs(w)*0.25;
+      for (let i=0;i<=400;i++) {
+        const x = xMin + i/400*(xMax-xMin);
+        const s = sig(w*x + b);
+        const ds = Math.abs(w) * s * (1-s) / Math.max(peak, 0.1);
+        i===0?ctx.moveTo(toX(x),toY(ds)):ctx.lineTo(toX(x),toY(ds));
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    ESC_VELS.forEach((vel,i) => {
+      if (vel < xMin || vel > xMax) return;
+      const y = ESC_YS[i];
+      ctx.fillStyle = y===1 ? '#34d399' : '#fb7185';
+      ctx.beginPath(); ctx.arc(toX(vel), toY(y), 6.5, 0, 2*Math.PI); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.lineWidth=1.4; ctx.stroke();
+      ctx.fillStyle='rgba(13,26,48,0.95)'; ctx.font='bold 8.5px monospace'; ctx.textAlign='center';
+      ctx.fillText(y===1?'YES':'no', toX(vel), toY(y)+3);
+    });
+
+    ctx.fillStyle='rgba(148,163,184,0.7)'; ctx.font='9.5px monospace'; ctx.textAlign='right';
+    [0,0.25,0.5,0.75,1].forEach(v => ctx.fillText(v.toFixed(2), PAD_L-4, toY(v)+3));
+    ctx.textAlign='center';
+    for (let g=xMin; g<=xMax; g++) ctx.fillText(g.toString(), toX(g), H-PAD_B+14);
+
+    ctx.fillStyle='#fbbf24'; ctx.font='10.5px monospace'; ctx.textAlign='left';
+    ctx.fillText('decision = 0.5', toX(xMin)+6, toY(0.5)-5);
+    if (bdry >= xMin && bdry <= xMax) {
+      ctx.fillStyle='#34d399';
+      ctx.fillText(`x = ${bdry.toFixed(2)}`, toX(bdry)+4, PAD_T+14);
+    }
+
+    ctx.fillStyle='rgba(34,211,238,0.9)'; ctx.fillText('— sigmoid σ(wx+b)', W-150, PAD_T+12);
+    if (showStep) { ctx.fillStyle='rgba(251,113,133,0.9)'; ctx.fillText('— step', W-150, PAD_T+26); }
+    if (showDeriv) { ctx.fillStyle='rgba(167,139,250,0.9)'; ctx.fillText('---- σ′ (norm.)', W-150, PAD_T+40); }
+  }, [w, b, showDeriv, showStep]);
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Step Function vs Logistic Sigmoid — Live</div>
+      <div style={{fontSize:'0.76rem',color:'var(--text-2)',marginBottom:'0.6rem',lineHeight:1.6}}>
+        Scrub <strong style={{color:'#22d3ee'}}>w</strong> (steepness) and <strong style={{color:'#fbbf24'}}>b</strong> (bias). The sigmoid approaches a perfect step as <Tex src="w \to \infty" />. The decision boundary sits at <Tex src="x = -b/w" />.
+      </div>
+      <canvas ref={canRef} style={{width:'100%',height:320,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.6rem',marginTop:'0.65rem'}}>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.7rem'}}>
+            <span style={{color:'var(--text-2)'}}>weight w</span>
+            <span style={{fontFamily:'monospace',color:'#22d3ee'}}>{w.toFixed(2)}</span>
+          </div>
+          <input type="range" min={0.1} max={20} step={0.1} value={w} onChange={e=>setW(+e.target.value)} style={{width:'100%'}} />
+        </div>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.7rem'}}>
+            <span style={{color:'var(--text-2)'}}>bias b</span>
+            <span style={{fontFamily:'monospace',color:'#fbbf24'}}>{b.toFixed(2)}</span>
+          </div>
+          <input type="range" min={-15} max={5} step={0.05} value={b} onChange={e=>setB(+e.target.value)} style={{width:'100%'}} />
+        </div>
+      </div>
+      <div style={{display:'flex',gap:'0.55rem',marginTop:'0.55rem',flexWrap:'wrap'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>setShowStep(s=>!s)}>{showStep?'☑':'☐'} step</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>setShowDeriv(s=>!s)}>{showDeriv?'☑':'☐'} σ′ derivative</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>{setW(20); setB(-50);}}>Approach step</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>{setW(2); setB(-5);}}>Gentle σ</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>{setW(1.745); setB(-4.339);}}>Trained (Lec 13)</button>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.7rem',fontSize:'0.74rem'}}>
+        <strong>Memorise:</strong> &nbsp;σ(z) = 1/(1+e<sup>-z</sup>) &nbsp;|&nbsp; σ&#x2032;(z) = σ(z)(1−σ(z)) &nbsp;|&nbsp; max σ&#x2032; = 0.25 at z=0 &nbsp;|&nbsp; bounded in (0,1).
+      </div>
+    </div>
+  );
+}
+
+// === Live 1-D Gradient Descent on Escape Velocity ============================
+function GradientDescent1DLive() {
+  const [b, setB] = useState(-5);
+  const [alpha, setAlpha] = useState(10);
+  const [running, setRunning] = useState(false);
+  const [iter, setIter] = useState(0);
+  const [hist, setHist] = useState([]);
+  const runRef = useRef(false);
+  const bRef = useRef(b);
+  bRef.current = b;
+  runRef.current = running;
+  const canA = useRef(null);
+  const canB = useRef(null);
+
+  const cost = useCallback((bv) => {
+    let s = 0;
+    for (let i = 0; i < ESC_VELS.length; i++) {
+      const a = sig(ESC_VELS[i] + bv);
+      const r = ESC_YS[i] - a;
+      s += r*r;
+    }
+    return s / (2*ESC_VELS.length);
+  }, []);
+
+  const dC = useCallback((bv) => {
+    let s = 0;
+    for (let i = 0; i < ESC_VELS.length; i++) {
+      const a = sig(ESC_VELS[i] + bv);
+      s += (ESC_YS[i] - a) * a * (1-a);
+    }
+    return -s / ESC_VELS.length;
+  }, []);
+
+  const drawCostCurve = useCallback(() => {
+    const c = canA.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 380;
+    const H = c.height = 250;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const bMin = -8, bMax = 1;
+    const cMax = 0.18, cMin = 0;
+    const PAD = 32;
+    const toX = bv => PAD + (bv-bMin)/(bMax-bMin)*(W-PAD-12);
+    const toY = cv => H-PAD - (cv-cMin)/(cMax-cMin)*(H-PAD-12);
+
+    ctx.strokeStyle='rgba(148,163,184,0.07)'; ctx.lineWidth=1;
+    for (let g=bMin; g<=bMax; g++) {
+      ctx.beginPath(); ctx.moveTo(toX(g),12); ctx.lineTo(toX(g),H-PAD); ctx.stroke();
+    }
+    for (let g=0; g<=cMax; g+=0.04) {
+      ctx.beginPath(); ctx.moveTo(PAD,toY(g)); ctx.lineTo(W-12,toY(g)); ctx.stroke();
+    }
+
+    ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2; ctx.beginPath();
+    for (let i=0;i<=200;i++) {
+      const bv = bMin + i/200*(bMax-bMin);
+      const cv = cost(bv);
+      i===0?ctx.moveTo(toX(bv),toY(cv)):ctx.lineTo(toX(bv),toY(cv));
+    }
+    ctx.stroke();
+
+    if (hist.length > 1) {
+      ctx.strokeStyle='rgba(251,191,36,0.55)'; ctx.lineWidth=1.4;
+      ctx.beginPath();
+      hist.forEach((h,i)=>{
+        i===0?ctx.moveTo(toX(h.b),toY(h.c)):ctx.lineTo(toX(h.b),toY(h.c));
+      });
+      ctx.stroke();
+    }
+    hist.forEach((h,i) => {
+      const last = i === hist.length-1;
+      ctx.fillStyle = last ? '#fb7185' : 'rgba(251,191,36,0.6)';
+      ctx.beginPath(); ctx.arc(toX(h.b), toY(h.c), last?5:2.8, 0, 2*Math.PI); ctx.fill();
+    });
+
+    ctx.fillStyle='rgba(148,163,184,0.7)'; ctx.font='9.5px monospace'; ctx.textAlign='right';
+    [0,0.04,0.08,0.12,0.16].forEach(v=>ctx.fillText(v.toFixed(2), PAD-3, toY(v)+3));
+    ctx.textAlign='center';
+    for (let g=bMin; g<=bMax; g+=1) ctx.fillText(g.toString(), toX(g), H-PAD+14);
+
+    ctx.fillStyle='var(--text-2)'; ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('b', W/2, H-6);
+    ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('C(b)', 0, 0); ctx.restore();
+  }, [hist, cost]);
+
+  const drawDataFit = useCallback(() => {
+    const c = canB.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 380;
+    const H = c.height = 250;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const xMin = -1, xMax = 7;
+    const PAD = 30;
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-PAD-12);
+    const toY = y => H-PAD - y*(H-PAD-12);
+
+    ctx.strokeStyle='rgba(148,163,184,0.07)';
+    for (let g=xMin; g<=xMax; g++) { ctx.beginPath(); ctx.moveTo(toX(g),12); ctx.lineTo(toX(g),H-PAD); ctx.stroke(); }
+    for (let g=0; g<=1; g+=0.25) { ctx.beginPath(); ctx.moveTo(PAD,toY(g)); ctx.lineTo(W-12,toY(g)); ctx.stroke(); }
+
+    ctx.strokeStyle='rgba(251,191,36,0.4)'; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(PAD,toY(0.5)); ctx.lineTo(W-12,toY(0.5)); ctx.stroke(); ctx.setLineDash([]);
+
+    const bdry = -b;
+    if (bdry >= xMin && bdry <= xMax) {
+      ctx.strokeStyle='#34d399'; ctx.setLineDash([3,5]);
+      ctx.beginPath(); ctx.moveTo(toX(bdry),12); ctx.lineTo(toX(bdry),H-PAD); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    const trueB = toX(TRUE_ESC_VEL);
+    ctx.strokeStyle='rgba(167,139,250,0.6)'; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(trueB,12); ctx.lineTo(trueB,H-PAD); ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2.4; ctx.beginPath();
+    for (let i=0;i<=300;i++) {
+      const x = xMin + i/300*(xMax-xMin);
+      const y = sig(x + b);
+      i===0?ctx.moveTo(toX(x),toY(y)):ctx.lineTo(toX(x),toY(y));
+    }
+    ctx.stroke();
+
+    ESC_VELS.forEach((vel,i) => {
+      const y = ESC_YS[i];
+      const a = sig(vel + b);
+      const correct = (a > 0.5) === (y === 1);
+      ctx.strokeStyle = correct ? 'rgba(52,211,153,0.5)' : 'rgba(251,113,133,0.7)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(toX(vel), toY(y)); ctx.lineTo(toX(vel), toY(a)); ctx.stroke();
+      ctx.fillStyle = y===1 ? '#34d399' : '#fb7185';
+      ctx.beginPath(); ctx.arc(toX(vel), toY(y), 5.5, 0, 2*Math.PI); ctx.fill();
+    });
+
+    ctx.fillStyle='rgba(148,163,184,0.7)'; ctx.font='9.5px monospace'; ctx.textAlign='right';
+    [0,0.5,1].forEach(v=>ctx.fillText(v.toFixed(1), PAD-3, toY(v)+3));
+    ctx.textAlign='center';
+    for (let g=xMin; g<=xMax; g++) ctx.fillText(g.toString(), toX(g), H-PAD+14);
+
+    ctx.fillStyle='#a78bfa'; ctx.font='9.5px monospace'; ctx.textAlign='left';
+    ctx.fillText('true (2.38)', trueB+3, 24);
+    if (bdry >= xMin && bdry <= xMax) {
+      ctx.fillStyle='#34d399';
+      ctx.fillText(`learned: ${bdry.toFixed(2)}`, toX(bdry)+3, 38);
+    }
+  }, [b]);
+
+  useEffect(()=>{ drawCostCurve(); drawDataFit(); }, [b, hist, drawCostCurve, drawDataFit]);
+
+  const reset = useCallback((nb) => {
+    runRef.current = false; setRunning(false);
+    const initB = nb !== undefined ? nb : -10 * Math.random();
+    setB(initB);
+    setIter(0);
+    setHist([{b: initB, c: cost(initB)}]);
+  }, [cost]);
+
+  useEffect(()=>{ reset(-5); }, []); // eslint-disable-line
+
+  const step = useCallback(() => {
+    const cur = bRef.current;
+    const grad = dC(cur);
+    const next = cur - alpha * grad;
+    setB(next);
+    setIter(it => it+1);
+    setHist(h => {
+      const nh = [...h, {b:next, c:cost(next)}];
+      return nh.length > 200 ? nh.slice(-200) : nh;
+    });
+    return next;
+  }, [alpha, cost, dC]);
+
+  useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    let last = bRef.current;
+    const tick = () => {
+      if (cancelled || !runRef.current) return;
+      const nxt = step();
+      if (Math.abs(nxt - last) < 1e-7) { runRef.current=false; setRunning(false); return; }
+      last = nxt;
+      setTimeout(tick, 50);
+    };
+    tick();
+    return () => { cancelled = true; };
+  }, [running, step]);
+
+  const grad = dC(b);
+  const correct = ESC_VELS.filter((v,i)=>(sig(v+b)>0.5)===(ESC_YS[i]===1)).length;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">1-D Gradient Descent — Live on Escape Velocity</div>
+      <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.6}}>
+        Optimise <strong>only b</strong> in <Tex src="a(b,x) = \sigma(x+b)" />. The model has <strong>one degree of freedom</strong> — the threshold. Watch how the cost rolls toward its minimum near b ≈ −2.50.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.6rem'}}>
+        <div>
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:3,fontFamily:'monospace'}}>Cost surface C(b) — orange = trail, red = current</div>
+          <canvas ref={canA} style={{width:'100%',height:250,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+        </div>
+        <div>
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:3,fontFamily:'monospace'}}>Data + sigmoid fit — residuals shown vertically</div>
+          <canvas ref={canB} style={{width:'100%',height:250,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.55rem',marginTop:'0.55rem'}}>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.7rem'}}>
+            <span style={{color:'var(--text-2)'}}>learning rate α</span>
+            <span style={{fontFamily:'monospace',color:'#22d3ee'}}>{alpha.toFixed(1)}</span>
+          </div>
+          <input type="range" min={0.1} max={50} step={0.1} value={alpha} onChange={e=>setAlpha(+e.target.value)} style={{width:'100%'}} />
+        </div>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.7rem'}}>
+            <span style={{color:'var(--text-2)'}}>current b</span>
+            <span style={{fontFamily:'monospace',color:'#fbbf24'}}>{b.toFixed(4)}</span>
+          </div>
+          <input type="range" min={-10} max={1} step={0.01} value={b} onChange={e=>{
+            const nb = +e.target.value;
+            setB(nb); setIter(0); setHist([{b:nb, c:cost(nb)}]);
+          }} style={{width:'100%'}} />
+        </div>
+      </div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginTop:'0.55rem'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>setRunning(r=>!r)}>{running?'⏸ Pause':'▶ Run'}</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>{if(!running) step();}}>⏭ Step</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>reset()}>↺ Random restart</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>reset(-9)}>b=-9</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>reset(0)}>b=0</button>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.4rem',marginTop:'0.55rem',fontFamily:'monospace',fontSize:'0.72rem'}}>
+        <div style={{background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.25)',borderRadius:6,padding:'0.35rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.62rem'}}>iter</div>
+          <div style={{color:'#22d3ee'}}>{iter}</div>
+        </div>
+        <div style={{background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:6,padding:'0.35rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.62rem'}}>cost C(b)</div>
+          <div style={{color:'#fbbf24'}}>{cost(b).toFixed(5)}</div>
+        </div>
+        <div style={{background:'rgba(167,139,250,0.08)',border:'1px solid rgba(167,139,250,0.25)',borderRadius:6,padding:'0.35rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.62rem'}}>gradient dC/db</div>
+          <div style={{color:'#a78bfa'}}>{grad.toFixed(5)}</div>
+        </div>
+        <div style={{background:'rgba(52,211,153,0.08)',border:'1px solid rgba(52,211,153,0.25)',borderRadius:6,padding:'0.35rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.62rem'}}>correct / 6</div>
+          <div style={{color:'#34d399'}}>{correct}/6</div>
+        </div>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+        Convergence reliably finds <strong>b ≈ −2.5028</strong> → decision boundary x ≈ 2.50 km/s. True moon escape velocity is 2.38 km/s — the sample at x=2.5 is misclassified because the 1-parameter model <em>cannot</em> resolve it.
+      </div>
+    </div>
+  );
+}
+
+// === Live 2-D Gradient Descent with Divergence Demo ==========================
+function GradientDescent2DLive() {
+  const [w, setW] = useState(0.8);
+  const [b, setB] = useState(-1.8);
+  const [alpha, setAlpha] = useState(8);
+  const [running, setRunning] = useState(false);
+  const [iter, setIter] = useState(0);
+  const [trace, setTrace] = useState([]);
+  const [autoStop, setAutoStop] = useState(true);
+  const runRef = useRef(false);
+  const stateRef = useRef({w:0.8, b:-1.8});
+  stateRef.current = {w, b};
+  runRef.current = running;
+  const canRef = useRef(null);
+  const traceRef = useRef(null);
+
+  const cost = useCallback((wv, bv) => {
+    let s = 0;
+    for (let i = 0; i < ESC_VELS.length; i++) {
+      const a = sig(wv*ESC_VELS[i] + bv);
+      const r = ESC_YS[i] - a;
+      s += r*r;
+    }
+    return s / (2*ESC_VELS.length);
+  }, []);
+
+  const grad = useCallback((wv, bv) => {
+    let dw=0, db=0;
+    for (let i = 0; i < ESC_VELS.length; i++) {
+      const x = ESC_VELS[i];
+      const a = sig(wv*x + bv);
+      const e = (ESC_YS[i] - a) * a * (1-a);
+      dw += x * e;
+      db += e;
+    }
+    return [-dw/ESC_VELS.length, -db/ESC_VELS.length];
+  }, []);
+
+  const drawFit = useCallback(() => {
+    const c = canRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 380;
+    const H = c.height = 230;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const xMin = -1, xMax = 7;
+    const PAD = 30;
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-PAD-12);
+    const toY = y => H-PAD - y*(H-PAD-12);
+
+    ctx.strokeStyle='rgba(148,163,184,0.07)';
+    for (let g=xMin; g<=xMax; g++) { ctx.beginPath(); ctx.moveTo(toX(g),12); ctx.lineTo(toX(g),H-PAD); ctx.stroke(); }
+    for (let g=0; g<=1; g+=0.25) { ctx.beginPath(); ctx.moveTo(PAD,toY(g)); ctx.lineTo(W-12,toY(g)); ctx.stroke(); }
+
+    ctx.strokeStyle='rgba(251,191,36,0.4)'; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(PAD,toY(0.5)); ctx.lineTo(W-12,toY(0.5)); ctx.stroke(); ctx.setLineDash([]);
+
+    const bdry = -b/w;
+    if (bdry >= xMin && bdry <= xMax) {
+      ctx.strokeStyle='#34d399'; ctx.setLineDash([3,5]);
+      ctx.beginPath(); ctx.moveTo(toX(bdry),12); ctx.lineTo(toX(bdry),H-PAD); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.strokeStyle='rgba(167,139,250,0.6)'; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(toX(TRUE_ESC_VEL),12); ctx.lineTo(toX(TRUE_ESC_VEL),H-PAD); ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2.4; ctx.beginPath();
+    for (let i=0;i<=300;i++) {
+      const x = xMin + i/300*(xMax-xMin);
+      const y = sig(w*x + b);
+      i===0?ctx.moveTo(toX(x),toY(y)):ctx.lineTo(toX(x),toY(y));
+    }
+    ctx.stroke();
+
+    ESC_VELS.forEach((vel,i) => {
+      const y = ESC_YS[i];
+      const a = sig(w*vel + b);
+      const correct = (a > 0.5) === (y === 1);
+      ctx.strokeStyle = correct ? 'rgba(52,211,153,0.4)' : 'rgba(251,113,133,0.7)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(toX(vel), toY(y)); ctx.lineTo(toX(vel), toY(a)); ctx.stroke();
+      ctx.fillStyle = y===1 ? '#34d399' : '#fb7185';
+      ctx.beginPath(); ctx.arc(toX(vel), toY(y), 5.5, 0, 2*Math.PI); ctx.fill();
+    });
+
+    ctx.fillStyle='rgba(148,163,184,0.7)'; ctx.font='9px monospace'; ctx.textAlign='right';
+    [0,0.5,1].forEach(v=>ctx.fillText(v.toFixed(1), PAD-3, toY(v)+3));
+    ctx.textAlign='center';
+    for (let g=xMin; g<=xMax; g++) ctx.fillText(g.toString(), toX(g), H-PAD+12);
+  }, [w, b]);
+
+  const drawTrace = useCallback(() => {
+    const c = traceRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 380;
+    const H = c.height = 230;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const wMin = -1, wMax = Math.max(8, ...trace.map(t=>t.w), w) + 1;
+    const bMin = Math.min(-10, ...trace.map(t=>t.b), b) - 1;
+    const bMax = 2;
+    const PAD = 30;
+    const toX = wv => PAD + (wv-wMin)/(wMax-wMin)*(W-PAD-12);
+    const toY = bv => H-PAD - (bv-bMin)/(bMax-bMin)*(H-PAD-12);
+
+    ctx.strokeStyle='rgba(148,163,184,0.05)';
+    for (let g=0; g<Math.ceil(wMax); g++) { ctx.beginPath(); ctx.moveTo(toX(g),12); ctx.lineTo(toX(g),H-PAD); ctx.stroke(); }
+    for (let g=Math.ceil(bMin); g<=bMax; g++) { ctx.beginPath(); ctx.moveTo(PAD,toY(g)); ctx.lineTo(W-12,toY(g)); ctx.stroke(); }
+
+    const NX = 80, NY = 50;
+    let mn=Infinity, mx=-Infinity;
+    const grid = new Float32Array(NX*NY);
+    for (let yi=0; yi<NY; yi++) for (let xi=0; xi<NX; xi++) {
+      const wv = wMin + (xi/(NX-1))*(wMax-wMin);
+      const bv = bMin + (yi/(NY-1))*(bMax-bMin);
+      const v = cost(wv, bv); grid[yi*NX+xi]=v;
+      if (v<mn) mn=v; if (v>mx) mx=v;
+    }
+    const cellW = (W-PAD-12)/NX, cellH = (H-PAD-12)/NY;
+    for (let yi=0; yi<NY; yi++) for (let xi=0; xi<NX; xi++) {
+      const t = (grid[yi*NX+xi] - mn)/Math.max(1e-6, mx-mn);
+      const r = Math.round(15 + t*60);
+      const g = Math.round((1-t)*100 + 20);
+      const b2 = Math.round(40 + (1-t)*70);
+      ctx.fillStyle = `rgba(${r},${g},${b2},0.65)`;
+      ctx.fillRect(PAD + xi*cellW, H-PAD - (yi+1)*cellH, cellW+0.5, cellH+0.5);
+    }
+
+    if (trace.length > 1) {
+      ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.6;
+      ctx.beginPath();
+      trace.forEach((t,i)=>{
+        i===0?ctx.moveTo(toX(t.w),toY(t.b)):ctx.lineTo(toX(t.w),toY(t.b));
+      });
+      ctx.stroke();
+    }
+    if (trace.length > 0) {
+      ctx.fillStyle='#fb7185';
+      ctx.beginPath(); ctx.arc(toX(w),toY(b), 4.5, 0, 2*Math.PI); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.6)'; ctx.lineWidth=1; ctx.stroke();
+    }
+
+    ctx.fillStyle='rgba(148,163,184,0.7)'; ctx.font='9px monospace';
+    ctx.textAlign='right';
+    for (let g=Math.ceil(bMin); g<=bMax; g+=2) ctx.fillText(g.toString(), PAD-3, toY(g)+3);
+    ctx.textAlign='center';
+    for (let g=0; g<Math.ceil(wMax); g+=2) ctx.fillText(g.toString(), toX(g), H-PAD+12);
+    ctx.fillStyle='var(--text-2)'; ctx.textAlign='center';
+    ctx.fillText('w →', W/2, H-4);
+    ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('b →', 0, 0); ctx.restore();
+  }, [trace, w, b, cost]);
+
+  useEffect(()=>{ drawFit(); drawTrace(); }, [w, b, trace, drawFit, drawTrace]);
+
+  const reset = useCallback((preset) => {
+    runRef.current=false; setRunning(false); setIter(0);
+    let nw, nb;
+    if (preset === 'a') { nw=1.7457; nb=-4.3394; }
+    else if (preset === 'b') { nw=2.0014; nb=-4.8778; }
+    else if (preset === 'c') { nw=0.6797; nb=-1.4958; }
+    else if (preset === 'happy') { nw=1.5886; nb=-1.6249; }
+    else if (preset === 'plateau') { nw=4; nb=-1; }
+    else { nw=2*Math.random(); nb=-8*Math.random(); }
+    setW(nw); setB(nb);
+    setTrace([{w:nw, b:nb}]);
+  }, []);
+
+  useEffect(()=>{ reset('happy'); }, []); // eslint-disable-line
+
+  const step = useCallback(() => {
+    const {w:cw, b:cb} = stateRef.current;
+    const [dw, db] = grad(cw, cb);
+    const nw = cw - alpha*dw;
+    const nb = cb - alpha*db;
+    setW(nw); setB(nb); setIter(it=>it+1);
+    setTrace(tr => {
+      const nt = [...tr, {w:nw, b:nb}];
+      return nt.length > 2000 ? nt.slice(-2000) : nt;
+    });
+    return {nw, nb};
+  }, [alpha, grad]);
+
+  useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled || !runRef.current) return;
+      const {nw, nb} = step();
+      const allRight = ESC_VELS.every((v,i)=>(sig(nw*v+nb)>0.5)===(ESC_YS[i]===1));
+      if (autoStop && allRight && Math.abs(stateRef.current.w) > 0.1) {
+        runRef.current=false; setRunning(false); return;
+      }
+      setTimeout(tick, 30);
+    };
+    tick();
+    return () => { cancelled = true; };
+  }, [running, step, autoStop]);
+
+  const correct = ESC_VELS.filter((v,i)=>(sig(w*v+b)>0.5)===(ESC_YS[i]===1)).length;
+  const bdry = -b/w;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">2-D Gradient Descent — w and b together</div>
+      <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.6}}>
+        Adds a weight: <Tex src="a(w,b,x) = \sigma(wx + b)" />. Cost surface is now over (w, b). Watch the trajectory wind down to a basin near w≈1.7, b≈−4.3. Disable auto-stop and run forever to see the <strong>hidden divergence</strong>: w → ∞ and b → −∞.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.6rem'}}>
+        <div>
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:3,fontFamily:'monospace'}}>Data + fitted sigmoid σ(wx+b)</div>
+          <canvas ref={canRef} style={{width:'100%',height:230,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+        </div>
+        <div>
+          <div style={{fontSize:'0.66rem',color:'var(--text-2)',marginBottom:3,fontFamily:'monospace'}}>(w,b) trajectory on cost landscape</div>
+          <canvas ref={traceRef} style={{width:'100%',height:230,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'0.5rem',marginTop:'0.55rem'}}>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.68rem'}}><span style={{color:'var(--text-2)'}}>α</span><span style={{fontFamily:'monospace',color:'#22d3ee'}}>{alpha.toFixed(1)}</span></div>
+          <input type="range" min={0.5} max={30} step={0.5} value={alpha} onChange={e=>setAlpha(+e.target.value)} style={{width:'100%'}} />
+        </div>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.68rem'}}><span style={{color:'var(--text-2)'}}>w</span><span style={{fontFamily:'monospace',color:'#fbbf24'}}>{w.toFixed(3)}</span></div>
+          <input type="range" min={-2} max={10} step={0.01} value={w} onChange={e=>{const nw=+e.target.value; setW(nw); setIter(0); setTrace([{w:nw,b}]);}} style={{width:'100%'}} />
+        </div>
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.68rem'}}><span style={{color:'var(--text-2)'}}>b</span><span style={{fontFamily:'monospace',color:'#a78bfa'}}>{b.toFixed(3)}</span></div>
+          <input type="range" min={-20} max={2} step={0.01} value={b} onChange={e=>{const nb=+e.target.value; setB(nb); setIter(0); setTrace([{w,b:nb}]);}} style={{width:'100%'}} />
+        </div>
+      </div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginTop:'0.5rem'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>setRunning(r=>!r)}>{running?'⏸ Pause':'▶ Run'}</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>step()}>⏭ Step</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>reset()}>↺ Random</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>reset('happy')}>Happy</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>reset('plateau')}>Plateau</button>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>setAutoStop(a=>!a)}>{autoStop?'☑':'☐'} auto-stop when correct</button>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'0.4rem',marginTop:'0.55rem',fontFamily:'monospace',fontSize:'0.7rem'}}>
+        <div style={{background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.25)',borderRadius:6,padding:'0.3rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.6rem'}}>iter</div><div style={{color:'#22d3ee'}}>{iter}</div>
+        </div>
+        <div style={{background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:6,padding:'0.3rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.6rem'}}>cost</div><div style={{color:'#fbbf24'}}>{cost(w,b).toFixed(5)}</div>
+        </div>
+        <div style={{background:'rgba(167,139,250,0.08)',border:'1px solid rgba(167,139,250,0.25)',borderRadius:6,padding:'0.3rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.6rem'}}>−b/w</div><div style={{color:'#a78bfa'}}>{isFinite(bdry)?bdry.toFixed(3):'∞'}</div>
+        </div>
+        <div style={{background:'rgba(52,211,153,0.08)',border:'1px solid rgba(52,211,153,0.25)',borderRadius:6,padding:'0.3rem 0.5rem'}}>
+          <div style={{color:'var(--text-2)',fontSize:'0.6rem'}}>correct</div><div style={{color:'#34d399'}}>{correct}/6</div>
+        </div>
+      </div>
+      <div className="m4-warnbox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+        <strong>Try "Plateau" then disable auto-stop and run for 1000+ iterations:</strong> w and b appear stable for ~80 iters, then collapse to opposite infinities. The ratio −b/w stays near 2.4 (correct decision boundary), but the parameters never converge. Cause: MSE with a logistic is minimised by an arbitrarily steep sigmoid.
+      </div>
+    </div>
+  );
+}
+
+// === Chain Rule Derivation (step-by-step reveal) =============================
+function ChainRuleDerivation() {
+  const [step, setStep] = useState(0);
+  const steps = [
+    {
+      title:'1. Start: the cost function',
+      tex:'C(b) = \\frac{1}{2n}\\sum_x \\big(y(x) - a(b,x)\\big)^2',
+      note:'Mean squared error between target y(x) and predicted activation a(b,x). The 1/2 is a notational convenience — it cancels with the chain-rule "2" that appears in the next step.',
+    },
+    {
+      title:'2. Sigmoid activation',
+      tex:'a(b,x) = \\sigma(x+b) = \\frac{1}{1+e^{-(x+b)}}',
+      note:'Choosing the logistic sigmoid as our continuously-differentiable replacement for the step function.',
+    },
+    {
+      title:'3. Outer derivative — apply chain rule to the squared residual',
+      tex:'\\frac{d}{db}\\,\\tfrac{1}{2}\\big(y - a\\big)^2 = -\\big(y - a\\big)\\cdot \\frac{d a}{d b}',
+      note:'The 2 from the square cancels with the 1/2 from the cost. The minus sign appears because da/d(y−a) = −da/da.',
+    },
+    {
+      title:'4. Compute da/db directly',
+      tex:'\\frac{d a}{d b} = \\frac{e^{-(x+b)}}{\\big(1+e^{-(x+b)}\\big)^{2}}',
+      note:'Quotient rule on 1/(1+e^{-(x+b)}), or recognise it as the derivative of the sigmoid in z evaluated at z = x+b.',
+    },
+    {
+      title:'5. Recognise the sigmoid identity',
+      tex:'\\sigma′(z) = \\sigma(z)\\,\\big(1 - \\sigma(z)\\big)',
+      note:'Beautiful: the derivative of σ is expressible in terms of σ itself. No new evaluations needed during back-prop later.',
+    },
+    {
+      title:'6. Substitute — full per-example gradient',
+      tex:'-\\big(y - a\\big)\\cdot a\\cdot(1-a)',
+      note:'Compact form. Three factors: (i) signed residual, (ii) sigmoid output, (iii) one minus sigmoid output.',
+    },
+    {
+      title:'7. Average over n samples — final result',
+      tex:'\\boxed{\\;\\frac{d}{db}C(b) = -\\frac{1}{n}\\sum_x \\big(y(x) - a(b,x)\\big)\\cdot a(b,x)\\cdot \\big(1 - a(b,x)\\big)\\;}',
+      note:'This is the gradient used by 1-D gradient descent above. It is also the foundation of every back-propagation step in modern neural networks.',
+    },
+  ];
+  const cur = steps[step];
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Chain Rule Derivation — Step Through</div>
+      <div style={{display:'flex',gap:'0.4rem',marginBottom:'0.6rem',flexWrap:'wrap'}}>
+        {steps.map((_,i)=>(
+          <button key={i} className="m4-algo-tab" style={{padding:'2px 11px',fontSize:'0.7rem',background:step===i?'rgba(34,211,238,0.18)':'',borderColor:step===i?'var(--cyan)':''}} onClick={()=>setStep(i)}>{i+1}</button>
+        ))}
+        <button className="m4-algo-tab" style={{padding:'2px 11px',fontSize:'0.7rem'}} onClick={()=>setStep(s=>(s+1)%steps.length)}>Next →</button>
+      </div>
+      <div style={{background:'var(--bg-2)',border:'1px solid rgba(148,163,184,0.15)',borderRadius:8,padding:'1rem',marginBottom:'0.6rem'}}>
+        <div style={{fontSize:'0.85rem',color:'var(--cyan)',marginBottom:'0.6rem',fontWeight:600}}>{cur.title}</div>
+        <div style={{textAlign:'center',padding:'0.5rem 0'}}>
+          <Tex src={cur.tex} block />
+        </div>
+        <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.55rem',lineHeight:1.6}}>{cur.note}</div>
+      </div>
+    </div>
+  );
+}
+
+function PerceptronTab() {
+  const [sec, setSec] = useState('overview');
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['overview','Overview & Concept'],
+          ['sigmoid','Step → Sigmoid'],
+          ['math','Chain Rule Math'],
+          ['1d','1-D Live Trainer'],
+          ['2d','2-D Live Trainer'],
+          ['code','Python Code'],
+          ['discuss','Discussion & Limits'],
+        ].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sec === 'overview' && (
+        <div>
+          <div style={{background:'linear-gradient(135deg,rgba(34,211,238,0.07) 0%,rgba(167,139,250,0.07) 100%)',border:'1px solid rgba(34,211,238,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+            {[['Classifier','f: x → {0,1}','#22d3ee'],['Bias trick','threshold T → b','#a78bfa'],['σ','logistic activation','#34d399'],['MSE','cost function','#fbbf24'],['1 param','only b','#fb7185'],['Chain rule','for dC/db','#06b6d4']].map(([k,v,col])=>(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+                <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+                <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">The Moon Escape Velocity Problem</div>
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+                <strong>Goal:</strong> learn — by trial and error — the speed at which a rocket can leave the moon's surface. Train a binary classifier f(x) that returns 1 (leave) or 0 (stay).
+              </div>
+              <div className="m4-hr"/>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <thead><tr><th>Trial</th><th>Speed (km/s) = x</th><th>Success</th><th>y</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">1</td><td>1</td><td>no</td><td>0</td></tr>
+                  <tr><td className="pk">2</td><td>5</td><td>yes</td><td>1</td></tr>
+                  <tr><td className="pk">3</td><td>3</td><td>yes</td><td>1</td></tr>
+                  <tr><td className="pk">4</td><td>2</td><td>no</td><td>0</td></tr>
+                  <tr><td className="pk">5</td><td>2.5</td><td>yes</td><td>1</td></tr>
+                  <tr><td className="pk">6</td><td>2.2</td><td>no</td><td>0</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.74rem'}}>
+                True escape velocity of the moon = <strong>2.38 km/s</strong>. The trial at x=2.5 (y=1) lies <em>very</em> close to the boundary — keep it in mind, the 1-parameter model can't resolve it.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">From Perceptron to Logistic Neuron</div>
+              <div className="m4-flabel">Perceptron — threshold T</div>
+              <Tex src="f(x) = \begin{cases} 1, & x > T \\ 0, & x \leq T \end{cases}" block />
+              <div className="m4-flabel" style={{marginTop:'0.5rem'}}>Bias trick: let b = −T</div>
+              <Tex src="f(b,x) = \begin{cases} 1, & x + b > 0 \\ 0, & x + b \leq 0 \end{cases}" block />
+              <div className="m4-flabel" style={{marginTop:'0.5rem'}}>Replace step with logistic</div>
+              <Tex src="a(b,x) = \sigma(x+b) = \dfrac{1}{1+e^{-(x+b)}}" block />
+              <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.73rem'}}>
+                Both perceptron and logistic neuron <strong>classify identically</strong> (a &gt; 0.5). The difference: the logistic is differentiable, so we can train it with gradient methods.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">The Three Choices We Made</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Component</th><th>Choice</th><th>Why</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Language</td><td>logistic σ with parameter b (later +w)</td><td>Smooth, differentiable, bounded in (0,1), good probabilistic interpretation</td></tr>
+                <tr><td className="pk">Error metric</td><td>Mean squared error, <Tex src="C(b) = \tfrac{1}{2n}\sum_x (y - a)^2" /></td><td>Differentiable, classical regression metric</td></tr>
+                <tr><td className="pk">Algorithm</td><td>Gradient descent on b (later (w,b))</td><td>1st-order, generic, works on any differentiable f</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Biological Analogy — Neuron Anatomy</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Biological term</th><th>Artificial-neuron analogue</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Dendrites</td><td>Input signal x (multiple in higher-dim case)</td></tr>
+                <tr><td className="pk">Synapse</td><td>Weight w on each input</td></tr>
+                <tr><td className="pk">Cell body</td><td>Summing junction + activation σ(·)</td></tr>
+                <tr><td className="pk">Action potential</td><td>Step output crossing 0.5 threshold</td></tr>
+                <tr><td className="pk">Resting threshold</td><td>Bias b</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sec === 'sigmoid' && (
+        <div>
+          <StepVsSigmoidViz />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Properties of Sigmoids</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+                <li>Monotonically increasing — never bends back.</li>
+                <li>Bounded by two horizontal asymptotes (here 0 and 1).</li>
+                <li>First derivative is <strong>bell-shaped</strong> (a "squished" probability density).</li>
+                <li>Continuously differentiable to all orders → safe for gradient methods.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Common sigmoid functions</div>
+              <ul style={{listStyle:'none',padding:0,margin:0,fontSize:'0.76rem',lineHeight:2}}>
+                <li><Tex src="\tfrac{x}{\sqrt{1+x^2}}" /> — algebraic</li>
+                <li><Tex src="\tanh(x)" /> — hyperbolic, ranges (−1,1)</li>
+                <li><Tex src="\tfrac{2}{\pi}\arctan\!\left(\tfrac{\pi}{2}x\right)" /></li>
+                <li><Tex src="\operatorname{erf}\!\left(\tfrac{\sqrt{\pi}}{2}x\right)" /> — Gauss error fn</li>
+                <li><strong style={{color:'var(--cyan)'}}>Logistic σ(z) = 1/(1+e<sup>−z</sup>)</strong> — the canonical choice</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Why The Logistic Wins</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+                <li><strong>Self-derivative identity</strong>: σ′(z) = σ(z)(1 − σ(z)) — once you know σ, the gradient is free.</li>
+                <li>Output already lives in (0,1) → readable as a probability.</li>
+                <li>Bounded → no exploding outputs even for extreme z.</li>
+                <li>Symmetric about 0.5 → natural decision threshold.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">σ′ derivative — the gradient envelope</div>
+              <div className="m4-pseudocode">{`σ(0) = 0.5    max derivative
+σ(±2) ≈ 0.12 (deriv ≈ 0.105)
+σ(±5) ≈ 0.007 (deriv ≈ 0.007)
+σ(±10) ≈ 0   (vanishing gradient zone)`}</div>
+              <div className="m4-warnbox" style={{marginTop:'0.5rem',fontSize:'0.72rem'}}>
+                <strong>Saturation:</strong> when |z| is large, σ′ ≈ 0 → gradients vanish → learning stalls. This is the classic motivation for ReLU in deep networks.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'math' && (
+        <div>
+          <ChainRuleDerivation />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Verbal Recipe — Remember This</div>
+              <ol style={{paddingLeft:'1.1rem',margin:0,fontSize:'0.78rem',lineHeight:1.85,color:'var(--text-1)'}}>
+                <li>Take the <em>signed</em> residual <Tex src="(y - a)" />.</li>
+                <li>Multiply by the sigmoid output <Tex src="a" />.</li>
+                <li>Multiply by <Tex src="(1-a)" />.</li>
+                <li>Average over all <Tex src="n" /> training examples.</li>
+                <li>Negate (because cost is being minimised).</li>
+              </ol>
+              <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.73rem'}}>
+                For the <strong>2-D</strong> version with weight w, add an extra factor of x:<br/>
+                <Tex src="\partial C/\partial w = -\tfrac{1}{n}\sum x\,(y-a)\,a\,(1-a)" />
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Why The Sigmoid Identity Matters</div>
+              <Tex src="\sigma′(z) = \sigma(z)\,(1 - \sigma(z))" block />
+              <ul className="m4-bullets" style={{fontSize:'0.75rem',marginTop:'0.5rem'}}>
+                <li>Computing σ during the <strong>forward pass</strong> automatically gives you the derivative for the <strong>backward pass</strong>.</li>
+                <li>No extra exponentials in the gradient computation — purely arithmetic.</li>
+                <li>Forms the basis of efficient back-propagation in multi-layer networks.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Quick proof</div>
+              <div className="m4-pseudocode" style={{fontSize:'0.7rem'}}>{`σ(z) = 1/(1+e^-z)
+σ'(z) = e^-z / (1+e^-z)²
+     = (1/(1+e^-z)) · (e^-z/(1+e^-z))
+     = σ(z) · (1 − σ(z))   ▢`}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === '1d' && (
+        <div>
+          <GradientDescent1DLive />
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Algorithm 1 — 1-D Gradient Descent</div>
+            <div className="m4-pseudocode">{`1: b ← random initial value (uniform in [-10, 0])
+2: c ← cost(b)
+3: last_c ← ∞
+4: while |c − last_c| > ε do
+5:     b ← b − α · dC/db
+6:     last_c ← c
+7:     c ← cost(b)
+8: return b`}</div>
+            <div className="m4-two-col" style={{marginTop:'0.6rem'}}>
+              <div>
+                <div className="m4-flabel">Convergence (multiple runs)</div>
+                <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                  <thead><tr><th>Trial</th><th>Final b</th><th>Final cost</th></tr></thead>
+                  <tbody>
+                    <tr><td className="pk">1</td><td>−2.5028</td><td>0.06293</td></tr>
+                    <tr><td className="pk">2</td><td>−2.5028</td><td>0.06293</td></tr>
+                    <tr><td className="pk">3</td><td>−2.5028</td><td>0.06293</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <div className="m4-flabel">Classification result</div>
+                <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                  <thead><tr><th>x</th><th>y</th><th>OK?</th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>0</td><td style={{color:'#34d399'}}>✔</td></tr>
+                    <tr><td>2</td><td>0</td><td style={{color:'#34d399'}}>✔</td></tr>
+                    <tr><td>2.2</td><td>0</td><td style={{color:'#34d399'}}>✔</td></tr>
+                    <tr><td>2.5</td><td>1</td><td style={{color:'#fb7185'}}>✘</td></tr>
+                    <tr><td>3</td><td>1</td><td style={{color:'#34d399'}}>✔</td></tr>
+                    <tr><td>5</td><td>1</td><td style={{color:'#34d399'}}>✔</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="m4-warnbox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+              <strong>Question:</strong> Is the model "wrong"? <em>No</em> — gradient descent found the global minimum of <Tex src="C(b)" />. The hypothesis space (single threshold parameter) is just not <em>expressive enough</em> to perfectly separate this dataset. The fix is to add a degree of freedom (w).
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === '2d' && (
+        <div>
+          <GradientDescent2DLive />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Intuitive Effects of w</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+                <li>Acts as a <strong>scaling/transformation on the x-axis</strong> — multiplies the slope of σ at the boundary.</li>
+                <li>Increasing w → steeper sigmoid → closer to a perfect step function.</li>
+                <li>w controls <strong>sharpness</strong>; b controls <strong>position</strong>; decision boundary at <Tex src="x = -b/w" />.</li>
+                <li>Very large w makes the model brittle — saturated outputs, vanishing gradients elsewhere.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Partial derivatives (memorise)</div>
+              <Tex src="\partial C/\partial w = -\tfrac{1}{n}\sum_x x\,(y-a)\,a\,(1-a)" block/>
+              <Tex src="\partial C/\partial b = -\tfrac{1}{n}\sum_x (y-a)\,a\,(1-a)" block/>
+              <div style={{fontSize:'0.72rem',color:'var(--text-2)',marginTop:'0.3rem'}}>
+                Difference: ∂/∂w has an extra factor of x (the input).
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Sample 2-D Results from Lecture</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <thead><tr><th>Run</th><th>[w, b]</th><th>−b/w</th><th>Cost</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">A</td><td>[1.7457, −4.3394]</td><td>2.486</td><td>0.0471</td></tr>
+                  <tr><td className="pk">B</td><td>[2.0014, −4.8778]</td><td>2.437</td><td>0.0430</td></tr>
+                  <tr><td className="pk">C</td><td>[0.6797, −1.4958]</td><td>2.201</td><td>0.0762</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.72rem'}}>
+                All three find a boundary in the neighbourhood of <strong>2.38 km/s</strong>. Steeper sigmoids (larger w) give boundaries closer to the truth. <strong>All 6 training points are now classified correctly.</strong>
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Dual stopping criterion</div>
+              <div className="m4-pseudocode" style={{fontSize:'0.7rem'}}>{`while  |cost − last_cost| > ε
+   AND  not all_correctly_classified`}</div>
+              <div style={{fontSize:'0.72rem',color:'var(--text-2)',marginTop:'0.3rem',lineHeight:1.55}}>
+                Cost-change alone is insufficient — without the correctness check, gradient descent keeps refining forever (see Divergence demo).
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'code' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">1-D Python Implementation</div>
+              <div className="m4-pseudocode" style={{fontSize:'0.72rem'}}>{`import numpy as np
+rng = np.random.default_rng()
+
+def logistic(z):
+    return 1 / (1 + np.exp(-z))
+
+def activation(b, xs):
+    return logistic(xs + b)
+
+def residuals(b, xs, ys):
+    return np.abs(ys - activation(b, xs))
+
+def cost(b, xs, ys):
+    return 0.5 * np.mean(np.square(
+        residuals(b, xs, ys)))
+
+def d_C(b, xs, ys):
+    a = activation(b, xs)
+    return -np.mean(
+        (ys - a) * a * (1 - a))
+
+def gradient_descent(alpha, epsilon, xs, ys):
+    b = -10 * rng.random()   # random in [-10, 0]
+    c = cost(b, xs, ys)
+    last_c = np.inf
+    while np.abs(c - last_c) > epsilon:
+        b = b - alpha * d_C(b, xs, ys)
+        last_c = c
+        c = cost(b, xs, ys)
+    return b
+
+Velocities = np.array([1, 5, 3, 2, 2.5, 2.2])
+Escape     = np.array([0, 1, 1, 0, 1, 0])
+gradient_descent(10, 1e-9, Velocities, Escape)
+# → b ≈ -2.5028, cost ≈ 0.0629`}</div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">2-D Python Implementation</div>
+              <div className="m4-pseudocode" style={{fontSize:'0.72rem'}}>{`def activation_2d(params, xs):
+    # params = [w, b]
+    return logistic(params[0]*xs + params[1])
+
+def cost_2d(params, xs, ys):
+    return 0.5 * np.mean(np.square(
+        np.abs(ys - activation_2d(params, xs))))
+
+def d_C_2d(params, xs, ys):
+    a = activation_2d(params, xs)
+    d_Cw = -np.mean(xs * (ys - a) * a * (1 - a))
+    d_Cb = -np.mean(     (ys - a) * a * (1 - a))
+    return np.array([d_Cw, d_Cb]).T
+
+def gradient_descent_2d(alpha, epsilon, xs, ys):
+    b = -8 * rng.random()    # in [-8, 0]
+    w =  2 * rng.random()    # in [0, 2]
+    params = np.array([w, b]).T
+    c = cost_2d(params, xs, ys)
+    last_c = np.inf
+    while (np.abs(c - last_c) > epsilon
+       and not np.allclose(
+           np.round(activation_2d(params, xs)),
+           ys)):
+        params = params - alpha * d_C_2d(params, xs, ys)
+        last_c = c
+        c = cost_2d(params, xs, ys)
+    return params
+
+# → params ≈ [1.7457, -4.3394]
+# boundary ≈ 2.486 km/s
+# all 6 correctly classified`}</div>
+            </div>
+          </div>
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Generic Multi-D Gradient Descent</div>
+            <div className="m4-pseudocode" style={{fontSize:'0.72rem'}}>{`Algorithm — Gradient Descent
+1: x⃗ ← random initial vector
+2: repeat
+3:     x⃗ ← x⃗ − α · ∇f(x⃗)
+4: until stopping criterion reached
+5: return x⃗
+
+∇f = [ ∂f/∂x₁,  ∂f/∂x₂,  …,  ∂f/∂xₙ ]ᵀ`}</div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'discuss' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Why The Divergence Happens</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+                <li>The logistic only asymptotically reaches 0 and 1 — never <em>exactly</em>.</li>
+                <li>To drive MSE all the way to zero, the network keeps <strong>sharpening the sigmoid</strong> by growing |w|.</li>
+                <li>As w → ∞, σ approaches a perfect step → residuals shrink toward 0 → cost shrinks toward 0.</li>
+                <li>Ratio −b/w stays roughly constant (decision boundary in the right place); only magnitudes diverge.</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Is The Divergence A Problem?</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <tbody>
+                  <tr><td className="pk">Classification</td><td>Still correct — boundary stable</td></tr>
+                  <tr><td className="pk">Numerical stability</td><td>Overflow, NaN, exp(−1000)</td></tr>
+                  <tr><td className="pk">Saturation</td><td>σ′ → 0 everywhere except at boundary → vanishing gradients</td></tr>
+                  <tr><td className="pk">Generalisation</td><td>Brittle — tiny noise pushes near-boundary points to wrong side</td></tr>
+                  <tr><td className="pk">Composition</td><td>Saturated neurons stop teaching downstream layers</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Fixes (Preview of Real Networks)</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Idea</th><th>What it does</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Dual stopping criterion</td><td>Halt when all examples classified correctly (no further refinement)</td></tr>
+                <tr><td className="pk">Weight regularisation (L2)</td><td>Add λ||w||² to cost → penalises large weights → boundary stays at finite w</td></tr>
+                <tr><td className="pk">Cross-entropy loss</td><td>Replace MSE — gradient does not vanish when σ saturates correctly</td></tr>
+                <tr><td className="pk">Number-correctly-classified</td><td>Perfect stopping signal but <strong>non-differentiable</strong>, piecewise-constant — incompatible with gradient descent</td></tr>
+                <tr><td className="pk">More parameters</td><td>Add a second neuron / layer — the path to Lecture 14 (Neuron Logic) and beyond</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Five Discussion Questions From The Lecture</div>
+            <ol style={{paddingLeft:'1.1rem',margin:0,fontSize:'0.78rem',lineHeight:1.9,color:'var(--text-1)'}}>
+              <li>Why does 1-D gradient descent always stop at b ≈ −2.5027?</li>
+              <li>Is the model "wrong"?</li>
+              <li>How could this be improved without new data?</li>
+              <li>What is the trade-off between expressiveness and over-fit?</li>
+              <li>Does this reveal limits of the <strong>expressiveness of the hypothesis space</strong>?</li>
+            </ol>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem',background:'linear-gradient(135deg,rgba(34,211,238,0.06) 0%,rgba(167,139,250,0.06) 100%)'}}>
+            <div className="m4-card-h">Bridge to Lecture 14</div>
+            <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+              The 1-D classifier splits the real line at <Tex src="x = -b/w" />. A 2-input neuron splits the plane with a <strong>line</strong>; a 3-input neuron splits 3-D space with a <strong>plane</strong>. In general, an n-input neuron splits <Tex src="\mathbb{R}^n" /> with a <strong>hyperplane</strong> — but a single such partition cannot solve every problem (preview: XOR). That's where Lecture 14 begins.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Neurons to Logic: n-d Classifiers (Lecture 14) ────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+const SEG_DIGITS = {
+  0: [1,1,1,1,1,1,0],
+  1: [0,1,1,0,0,0,0],
+  2: [1,1,0,1,1,0,1],
+  3: [1,1,1,1,0,0,1],
+  4: [0,1,1,0,0,1,1],
+  5: [1,0,1,1,0,1,1],
+  6: [1,0,1,1,1,1,1],
+  7: [1,1,1,0,0,0,0],
+  8: [1,1,1,1,1,1,1],
+  9: [1,1,1,1,0,1,1],
+};
+
+// === 7-Segment Digit Renderer ================================================
+function SevenSegDigit({ segs, size = 60, glow = false }) {
+  const W = size, H = size * 1.6;
+  const t = size * 0.13;
+  const off = '#1f2937';
+  const on  = glow ? '#34d399' : '#fbbf24';
+  const onShadow = glow ? 'drop-shadow(0 0 6px #34d399)' : 'drop-shadow(0 0 4px #fbbf24)';
+  const seg = (active, points) => (
+    <polygon points={points} fill={active ? on : off} style={{filter: active ? onShadow : 'none', transition:'fill 0.25s'}} />
+  );
+  const pad = t/2;
+  const x0 = pad, x1 = W-pad;
+  const y0 = pad, yMid = H/2, y1 = H-pad;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{display:'block'}}>
+      {/* a — top */}
+      {seg(segs[0], `${x0+t},${y0} ${x1-t},${y0} ${x1-t-t/2},${y0+t} ${x0+t+t/2},${y0+t}`)}
+      {/* b — top right */}
+      {seg(segs[1], `${x1},${y0+t} ${x1},${yMid-t/2} ${x1-t},${yMid-t} ${x1-t},${y0+t+t/2}`)}
+      {/* c — bottom right */}
+      {seg(segs[2], `${x1},${yMid+t/2} ${x1},${y1-t} ${x1-t},${y1-t-t/2} ${x1-t},${yMid+t}`)}
+      {/* d — bottom */}
+      {seg(segs[3], `${x0+t},${y1} ${x1-t},${y1} ${x1-t-t/2},${y1-t} ${x0+t+t/2},${y1-t}`)}
+      {/* e — bottom left */}
+      {seg(segs[4], `${x0},${yMid+t/2} ${x0},${y1-t} ${x0+t},${y1-t-t/2} ${x0+t},${yMid+t}`)}
+      {/* f — top left */}
+      {seg(segs[5], `${x0},${y0+t} ${x0},${yMid-t/2} ${x0+t},${yMid-t} ${x0+t},${y0+t+t/2}`)}
+      {/* g — middle */}
+      {seg(segs[6], `${x0+t+t/2},${yMid-t/2} ${x1-t-t/2},${yMid-t/2} ${x1-t},${yMid} ${x1-t-t/2},${yMid+t/2} ${x0+t+t/2},${yMid+t/2} ${x0+t},${yMid}`)}
+    </svg>
+  );
+}
+
+// === 7-Segment Trainer =======================================================
+function SevenSegmentTrainer() {
+  const [target, setTarget] = useState(1);
+  const [weights, setWeights] = useState(() => Array(7).fill(0).map(()=>Math.random()*0.6-0.3));
+  const [bias, setBias] = useState(()=>Math.random()*0.6-0.3);
+  const [alpha, setAlpha] = useState(2.0);
+  const [iter, setIter] = useState(0);
+  const [running, setRunning] = useState(false);
+  const runRef = useRef(false);
+  runRef.current = running;
+  const stateRef = useRef({weights, bias});
+  stateRef.current = {weights, bias};
+
+  const ys = useMemo(() => Object.keys(SEG_DIGITS).map(k => +k === target ? 1 : 0), [target]);
+  const xs = useMemo(() => Object.keys(SEG_DIGITS).map(k => SEG_DIGITS[k]), []);
+
+  const activations = useMemo(() => {
+    return xs.map(x => {
+      let s = bias;
+      for (let i = 0; i < 7; i++) s += weights[i] * x[i];
+      return sig(s);
+    });
+  }, [xs, weights, bias]);
+
+  const cost = useMemo(() => {
+    let s = 0;
+    for (let i = 0; i < 10; i++) {
+      const r = ys[i] - activations[i];
+      s += r*r;
+    }
+    return s / 20;
+  }, [ys, activations]);
+
+  const correct = useMemo(() => {
+    return activations.filter((a,i)=>(a>0.5)===(ys[i]===1)).length;
+  }, [activations, ys]);
+
+  const reset = useCallback((preset) => {
+    runRef.current=false; setRunning(false); setIter(0);
+    if (preset === 'hit') {
+      const w = SEG_DIGITS[target].map(s => s ? 1 : -1);
+      const onCount = SEG_DIGITS[target].reduce((a,b)=>a+b,0);
+      setWeights(w);
+      setBias(-(onCount - 0.5));
+    } else if (preset === 'zero') {
+      setWeights(Array(7).fill(0));
+      setBias(0);
+    } else {
+      setWeights(Array(7).fill(0).map(()=>Math.random()*0.6-0.3));
+      setBias(Math.random()*0.6-0.3);
+    }
+  }, [target]);
+
+  const step = useCallback(() => {
+    const {weights: w, bias: bv} = stateRef.current;
+    let dB = 0;
+    const dW = Array(7).fill(0);
+    for (let i = 0; i < 10; i++) {
+      const x = xs[i];
+      let z = bv;
+      for (let j = 0; j < 7; j++) z += w[j] * x[j];
+      const a = sig(z);
+      const e = (ys[i] - a) * a * (1-a);
+      dB += e;
+      for (let j = 0; j < 7; j++) dW[j] += x[j] * e;
+    }
+    const nw = w.map((wj,j) => wj + alpha * dW[j] / 10);
+    const nb = bv + alpha * dB / 10;
+    setWeights(nw); setBias(nb); setIter(it=>it+1);
+  }, [xs, ys, alpha]);
+
+  useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled || !runRef.current) return;
+      step();
+      setTimeout(tick, 25);
+    };
+    tick();
+    return () => { cancelled = true; };
+  }, [running, step]);
+
+  useEffect(()=>{ reset(); }, [target]); // eslint-disable-line
+
+  const labels = ['a','b','c','d','e','f','g'];
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">7-Segment Digit Classifier — Train A Single Neuron</div>
+      <div style={{fontSize:'0.75rem',color:'var(--text-2)',marginBottom:'0.6rem',lineHeight:1.6}}>
+        Pick a target digit. Train one neuron (7 inputs + bias) to output &gt; 0.5 <em>only</em> for that digit. Easy digits like '1' converge fast; '7' is famously hard.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(10,1fr)',gap:'0.35rem',marginBottom:'0.6rem'}}>
+        {Object.keys(SEG_DIGITS).map(k => {
+          const isTarget = +k === target;
+          const segs = SEG_DIGITS[+k];
+          const a = activations[+k];
+          const correctHere = (a > 0.5) === (+k === target);
+          return (
+            <button key={k} onClick={()=>setTarget(+k)}
+              style={{background:isTarget?'rgba(34,211,238,0.18)':'rgba(15,23,42,0.6)',
+                      border:`1px solid ${isTarget?'#22d3ee':correctHere?'rgba(52,211,153,0.4)':'rgba(251,113,133,0.4)'}`,
+                      borderRadius:8,padding:'0.5rem 0.3rem',cursor:'pointer'}}>
+              <div style={{display:'flex',justifyContent:'center'}}>
+                <SevenSegDigit segs={segs} size={32} glow={isTarget} />
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:'0.62rem',color:isTarget?'#22d3ee':'var(--text-2)',marginTop:'0.3rem',textAlign:'center'}}>
+                a={a.toFixed(2)}
+              </div>
+              <div style={{fontSize:'0.55rem',color:correctHere?'#34d399':'#fb7185',textAlign:'center'}}>
+                {correctHere?'✓':'✗'} {(+k===target)?'TARGET':'reject'}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr) 1.2fr',gap:'0.3rem',marginBottom:'0.5rem'}}>
+        {labels.map((lab,i) => (
+          <div key={lab} style={{background:'rgba(167,139,250,0.07)',border:'1px solid rgba(167,139,250,0.2)',borderRadius:6,padding:'0.35rem'}}>
+            <div style={{fontSize:'0.6rem',color:'var(--text-2)',textAlign:'center',fontFamily:'monospace'}}>w<sub>{lab}</sub></div>
+            <div style={{fontSize:'0.7rem',color:weights[i]>0?'#34d399':weights[i]<0?'#fb7185':'var(--text-2)',textAlign:'center',fontFamily:'monospace',fontWeight:700}}>
+              {weights[i].toFixed(2)}
+            </div>
+            <input type="range" min={-3} max={3} step={0.01} value={weights[i]}
+              onChange={e=>{const nw=[...weights]; nw[i]=+e.target.value; setWeights(nw);}}
+              style={{width:'100%'}} />
+          </div>
+        ))}
+        <div style={{background:'rgba(251,191,36,0.07)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:6,padding:'0.35rem'}}>
+          <div style={{fontSize:'0.6rem',color:'var(--text-2)',textAlign:'center',fontFamily:'monospace'}}>bias b</div>
+          <div style={{fontSize:'0.7rem',color:'#fbbf24',textAlign:'center',fontFamily:'monospace',fontWeight:700}}>{bias.toFixed(2)}</div>
+          <input type="range" min={-5} max={2} step={0.01} value={bias} onChange={e=>setBias(+e.target.value)} style={{width:'100%'}} />
+        </div>
+      </div>
+
+      <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginBottom:'0.5rem',alignItems:'center'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>setRunning(r=>!r)}>{running?'⏸ Pause':'▶ Train'}</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>step()}>⏭ Step</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>reset()}>↺ Random</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>reset('hit')}>Hit-counting solution</button>
+        <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.72rem'}} onClick={()=>reset('zero')}>Zero weights</button>
+        <span style={{marginLeft:'auto',fontFamily:'monospace',fontSize:'0.7rem',display:'flex',gap:'0.7rem'}}>
+          <span>α=<span style={{color:'#22d3ee'}}>{alpha.toFixed(1)}</span></span>
+          <span>iter <span style={{color:'#22d3ee'}}>{iter}</span></span>
+          <span>cost <span style={{color:'#fbbf24'}}>{cost.toFixed(4)}</span></span>
+          <span>correct <span style={{color:correct===10?'#34d399':'#fb7185'}}>{correct}/10</span></span>
+        </span>
+      </div>
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.68rem'}}><span style={{color:'var(--text-2)'}}>learning rate α</span></div>
+        <input type="range" min={0.1} max={10} step={0.1} value={alpha} onChange={e=>setAlpha(+e.target.value)} style={{width:'100%'}} />
+      </div>
+
+      <div className="m4-warnbox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+        <strong>Try target=1 first</strong> (converges in ~20 iter). <strong>Then try target=7</strong> — often gets stuck near cost 0.04, '7' activation plateaus ≈ 0.4 (a local minimum). Why? '1's segments {`{b,c}`} ⊂ '7's segments {`{a,b,c}`}.
+        <br/><strong>Hit-counting solution</strong> manually constructs w<sub>i</sub> = +1 if segment is on, −1 if off, b = −(on count − 0.5). Works for <em>any</em> single digit.
+      </div>
+    </div>
+  );
+}
+
+// === Hyperplane Visualizer (2-D neuron) ======================================
+function Hyperplane2DViz() {
+  const [w1, setW1] = useState(1);
+  const [w2, setW2] = useState(1);
+  const [b, setB] = useState(-1.5);
+  const [pts, setPts] = useState([
+    {x:0,y:0,label:0,name:'A'},
+    {x:1,y:0,label:0,name:'B'},
+    {x:0,y:1,label:0,name:'C'},
+    {x:1,y:1,label:1,name:'D'},
+  ]);
+  const canRef = useRef(null);
+  const [drag, setDrag] = useState(null);
+
+  useEffect(() => {
+    const c = canRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 380;
+    const H = c.height = 340;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const xMin = -0.5, xMax = 1.5;
+    const PAD = 36;
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-PAD-12);
+    const toY = y => H-PAD - (y-xMin)/(xMax-xMin)*(H-PAD-12);
+
+    const NX = 60, NY = 60;
+    const cellW = (W-PAD-12)/NX, cellH = (H-PAD-12)/NY;
+    for (let yi=0; yi<NY; yi++) for (let xi=0; xi<NX; xi++) {
+      const x = xMin + (xi/(NX-1))*(xMax-xMin);
+      const y = xMin + (yi/(NY-1))*(xMax-xMin);
+      const a = sig(w1*x + w2*y + b);
+      const r = Math.round(a*150 + 20);
+      const g = Math.round((1-a)*100 + 30);
+      const bb= Math.round((1-a)*70 + 50);
+      ctx.fillStyle = `rgba(${r},${g},${bb},0.45)`;
+      ctx.fillRect(PAD + xi*cellW, H-PAD - (yi+1)*cellH, cellW+0.5, cellH+0.5);
+    }
+
+    if (Math.abs(w2) > 1e-6) {
+      const slope = -w1/w2;
+      const yint = -b/w2;
+      const xMinV = xMin, xMaxV = xMax;
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(toX(xMinV), toY(slope*xMinV + yint));
+      ctx.lineTo(toX(xMaxV), toY(slope*xMaxV + yint));
+      ctx.stroke();
+    } else if (Math.abs(w1) > 1e-6) {
+      const xv = -b/w1;
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(toX(xv), toY(xMin)); ctx.lineTo(toX(xv), toY(xMax)); ctx.stroke();
+    }
+
+    ctx.strokeStyle = 'rgba(148,163,184,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(toX(xMin), toY(0)); ctx.lineTo(toX(xMax), toY(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(0), toY(xMin)); ctx.lineTo(toX(0), toY(xMax)); ctx.stroke();
+
+    pts.forEach((p) => {
+      const px = toX(p.x), py = toY(p.y);
+      const a = sig(w1*p.x + w2*p.y + b);
+      const predict = a > 0.5 ? 1 : 0;
+      const correct = predict === p.label;
+      ctx.fillStyle = p.label === 1 ? '#34d399' : '#fb7185';
+      ctx.beginPath(); ctx.arc(px, py, 11, 0, 2*Math.PI); ctx.fill();
+      ctx.strokeStyle = correct ? 'rgba(255,255,255,0.85)' : '#ec4899'; ctx.lineWidth = correct ? 1.3 : 2.5;
+      ctx.stroke();
+      ctx.fillStyle = '#0d1a30'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(p.name, px, py+4);
+      ctx.fillStyle = 'rgba(148,163,184,0.85)'; ctx.font = '9.5px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(`(${p.x},${p.y}) a=${a.toFixed(2)}`, px+14, py-7);
+    });
+
+    ctx.fillStyle = 'rgba(148,163,184,0.6)'; ctx.font = '9.5px monospace'; ctx.textAlign = 'right';
+    [0,1].forEach(v=>ctx.fillText(v.toString(), PAD-3, toY(v)+3));
+    ctx.textAlign='center';
+    [0,1].forEach(v=>ctx.fillText(v.toString(), toX(v), H-PAD+12));
+    ctx.fillStyle='var(--text-2)'; ctx.textAlign='center';
+    ctx.fillText('x₁', W/2, H-4);
+    ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('x₂', 0, 0); ctx.restore();
+  }, [w1, w2, b, pts]);
+
+  const handleMouseDown = (e) => {
+    const c = canRef.current; const rect = c.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    const PAD = 36, W = c.width, H = c.height;
+    const xMin = -0.5, xMax = 1.5;
+    const fromX = px => xMin + (px-PAD)/(W-PAD-12)*(xMax-xMin);
+    const fromY = py => xMin + (H-PAD-py)/(H-PAD-12)*(xMax-xMin);
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-PAD-12);
+    const toY = y => H-PAD - (y-xMin)/(xMax-xMin)*(H-PAD-12);
+    let nearest = null, minD = 18;
+    pts.forEach((p,i) => {
+      const d = Math.hypot(toX(p.x)-cx, toY(p.y)-cy);
+      if (d < minD) { minD = d; nearest = i; }
+    });
+    if (nearest != null) setDrag({i:nearest, fromX, fromY});
+  };
+  const handleMouseMove = (e) => {
+    if (!drag) return;
+    const rect = canRef.current.getBoundingClientRect();
+    const nx = drag.fromX(e.clientX - rect.left);
+    const ny = drag.fromY(e.clientY - rect.top);
+    setPts(ps => ps.map((p,i) => i===drag.i ? {...p, x:Math.round(nx), y:Math.round(ny)} : p));
+  };
+  const handleMouseUp = () => setDrag(null);
+  const toggleLabel = (i) => setPts(ps => ps.map((p,j) => j===i ? {...p, label:1-p.label} : p));
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">2-Input Neuron — Hyperplane Visualiser</div>
+      <div style={{fontSize:'0.75rem',color:'var(--text-2)',marginBottom:'0.5rem',lineHeight:1.55}}>
+        A 2-input neuron splits the plane along a <strong>line</strong>: <Tex src="w_1 x_1 + w_2 x_2 + b = 0" />. Drag corner points; click a point's label below to flip its class.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 220px',gap:'0.7rem'}}>
+        <canvas ref={canRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                style={{width:'100%',height:340,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)',cursor:drag?'grabbing':'grab'}} />
+        <div className="m4-card" style={{margin:0,padding:'0.6rem'}}>
+          <div className="m4-card-h" style={{fontSize:'0.62rem',marginBottom:'0.5rem'}}>PARAMETERS</div>
+          {[['w₁',w1,setW1,'#22d3ee',-5,5],['w₂',w2,setW2,'#a78bfa',-5,5],['b',b,setB,'#fbbf24',-5,5]].map(([lab,v,fn,col,mn,mx]) => (
+            <div key={lab} style={{marginBottom:'0.5rem'}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.66rem'}}>
+                <span style={{color:'var(--text-2)'}}>{lab}</span><span style={{fontFamily:'monospace',color:col}}>{v.toFixed(2)}</span>
+              </div>
+              <input type="range" min={mn} max={mx} step={0.05} value={v} onChange={e=>fn(+e.target.value)} style={{width:'100%'}} />
+            </div>
+          ))}
+          <div style={{borderTop:'1px solid rgba(148,163,184,0.15)',marginTop:'0.5rem',paddingTop:'0.5rem'}}>
+            <div className="m4-card-h" style={{fontSize:'0.62rem',marginBottom:'0.4rem'}}>FLIP POINT LABEL</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.3rem'}}>
+              {pts.map((p,i)=>(
+                <button key={p.name} onClick={()=>toggleLabel(i)} style={{
+                  background: p.label===1?'rgba(52,211,153,0.15)':'rgba(251,113,133,0.15)',
+                  border: `1px solid ${p.label===1?'#34d399':'#fb7185'}`,
+                  color:'var(--text-1)', borderRadius:6, fontSize:'0.65rem',
+                  padding:'3px 4px', cursor:'pointer', fontFamily:'monospace'}}>
+                  {p.name}=({p.x},{p.y})→{p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.6rem',fontSize:'0.72rem'}}>
+        <strong>Threshold line equation:</strong>{' '}<Tex src="x_2 = -\tfrac{w_1}{w_2}x_1 - \tfrac{b}{w_2}" />.{' '}
+        Intercepts: <Tex src="-b/w_1" /> on x₁ axis, <Tex src="-b/w_2" /> on x₂ axis. Try setting up <strong>XOR</strong> (D=A=label 1; B=C=label 0) — no line can separate them. That's the lesson of Lecture 14.
+      </div>
+    </div>
+  );
+}
+
+// === Logic Gate Playground (2-input neuron, presets, truth table) ============
+function LogicGatePlayground() {
+  const [w1, setW1] = useState(1);
+  const [w2, setW2] = useState(1);
+  const [b, setB] = useState(-1.5);
+
+  const truth = [[0,0],[0,1],[1,0],[1,1]].map(([x1,x2]) => {
+    const a = sig(w1*x1 + w2*x2 + b);
+    return {x1,x2,a,bit:a>0.5?1:0};
+  });
+
+  const identify = () => {
+    const bits = truth.map(t=>t.bit).join('');
+    const gates = {
+      '0001':'AND','0111':'OR','1110':'NAND','1000':'NOR','0110':'XOR','1001':'XNOR',
+      '0011':'x₂ (pass-through)','0101':'x₁ (pass-through)','1100':'¬x₂','1010':'¬x₁',
+      '0000':'FALSE','1111':'TRUE',
+    };
+    return gates[bits] || 'mixed';
+  };
+
+  const presets = {
+    AND:  [1, 1, -1.5],
+    OR:   [1, 1, -0.5],
+    NAND: [-1, -1, 1.5],
+    NOR:  [-1, -1, 0.5],
+    'NOT x₁': [-1, 0, 0.5],
+    'NOT x₂': [0, -1, 0.5],
+    'XOR — fail!': [1, 1, -0.5],
+  };
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Neuron as a Logic Gate — Live Truth Table</div>
+      <div style={{fontSize:'0.75rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.55}}>
+        A 2-input neuron with the right weights and bias implements an entire logic gate. Set the sliders or click a preset.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.7rem',alignItems:'start'}}>
+        <div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:'0.35rem',marginBottom:'0.55rem'}}>
+            {Object.keys(presets).map(g => (
+              <button key={g} className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}}
+                onClick={()=>{const [a,b2,c]=presets[g]; setW1(a); setW2(b2); setB(c);}}>{g}</button>
+            ))}
+          </div>
+          {[['w₁',w1,setW1,'#22d3ee'],['w₂',w2,setW2,'#a78bfa'],['b',b,setB,'#fbbf24']].map(([lab,v,fn,col])=>(
+            <div key={lab} style={{marginBottom:'0.45rem'}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.7rem'}}>
+                <span style={{color:'var(--text-2)'}}>{lab}</span><span style={{fontFamily:'monospace',color:col}}>{v.toFixed(2)}</span>
+              </div>
+              <input type="range" min={-3} max={3} step={0.05} value={v} onChange={e=>fn(+e.target.value)} style={{width:'100%'}} />
+            </div>
+          ))}
+          <div style={{textAlign:'center',marginTop:'0.6rem',padding:'0.6rem',background:'linear-gradient(135deg,rgba(34,211,238,0.08),rgba(167,139,250,0.08))',border:'1px solid rgba(34,211,238,0.3)',borderRadius:8}}>
+            <div style={{fontSize:'0.65rem',color:'var(--text-2)',marginBottom:3,letterSpacing:'0.05em'}}>IDENTIFIED GATE</div>
+            <div style={{fontSize:'1.2rem',fontWeight:700,color:'#22d3ee',fontFamily:'monospace'}}>{identify()}</div>
+          </div>
+        </div>
+        <div>
+          <table className="m4-ptable" style={{fontSize:'0.78rem'}}>
+            <thead><tr><th>x₁</th><th>x₂</th><th>z = w·x + b</th><th>σ(z)</th><th>bit</th></tr></thead>
+            <tbody>
+              {truth.map((r,i) => {
+                const z = w1*r.x1 + w2*r.x2 + b;
+                return (
+                  <tr key={i}>
+                    <td className="pk">{r.x1}</td>
+                    <td className="pk">{r.x2}</td>
+                    <td style={{fontFamily:'monospace'}}>{z.toFixed(2)}</td>
+                    <td style={{fontFamily:'monospace',color:r.bit?'#34d399':'#fb7185'}}>{r.a.toFixed(3)}</td>
+                    <td style={{fontWeight:700,color:r.bit?'#34d399':'#fb7185'}}>{r.bit}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="m4-infobox" style={{marginTop:'0.6rem',fontSize:'0.72rem'}}>
+            <strong>Exercise:</strong> Find weights for NOR and NAND yourself before clicking the presets! The pattern is <em>flip the signs</em>.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === XOR Problem Visualizer ==================================================
+function XORProblemViz() {
+  const [w1, setW1] = useState(1);
+  const [w2, setW2] = useState(1);
+  const [b, setB] = useState(-0.5);
+  const [showAttempts, setShowAttempts] = useState(false);
+  const canRef = useRef(null);
+
+  const pts = [
+    {x:0,y:0,label:0,name:'(0,0)'},
+    {x:1,y:0,label:1,name:'(1,0)'},
+    {x:0,y:1,label:1,name:'(0,1)'},
+    {x:1,y:1,label:0,name:'(1,1)'},
+  ];
+
+  useEffect(() => {
+    const c = canRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 380;
+    const H = c.height = 340;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+    const xMin = -0.5, xMax = 1.5;
+    const PAD = 36;
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-PAD-12);
+    const toY = y => H-PAD - (y-xMin)/(xMax-xMin)*(H-PAD-12);
+
+    const NX = 80, NY = 80;
+    const cellW = (W-PAD-12)/NX, cellH = (H-PAD-12)/NY;
+    for (let yi=0; yi<NY; yi++) for (let xi=0; xi<NX; xi++) {
+      const x = xMin + (xi/(NX-1))*(xMax-xMin);
+      const y = xMin + (yi/(NY-1))*(xMax-xMin);
+      const a = sig(w1*x + w2*y + b);
+      const r = Math.round(a*180);
+      const g = Math.round((1-a)*120);
+      const bb = Math.round(60);
+      ctx.fillStyle = `rgba(${r},${g},${bb},0.4)`;
+      ctx.fillRect(PAD + xi*cellW, H-PAD - (yi+1)*cellH, cellW+0.5, cellH+0.5);
+    }
+
+    if (showAttempts) {
+      const tries = [
+        [1, 1, -0.5, '#fb7185'],
+        [-1, -1, 1.5, '#a78bfa'],
+        [1, -1, -0.3, '#fbbf24'],
+        [-1, 1, -0.3, '#06b6d4'],
+      ];
+      tries.forEach(([wa,wb,ba,col]) => {
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+        if (Math.abs(wb) > 1e-6) {
+          const slope = -wa/wb, yint = -ba/wb;
+          ctx.beginPath();
+          ctx.moveTo(toX(xMin), toY(slope*xMin + yint));
+          ctx.lineTo(toX(xMax), toY(slope*xMax + yint));
+          ctx.stroke();
+        }
+      });
+      ctx.setLineDash([]);
+    }
+
+    if (Math.abs(w2) > 1e-6) {
+      const slope = -w1/w2, yint = -b/w2;
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(toX(xMin), toY(slope*xMin + yint));
+      ctx.lineTo(toX(xMax), toY(slope*xMax + yint));
+      ctx.stroke();
+    }
+
+    pts.forEach(p => {
+      const px = toX(p.x), py = toY(p.y);
+      const a = sig(w1*p.x + w2*p.y + b);
+      const ok = (a>0.5) === (p.label===1);
+      ctx.fillStyle = p.label === 1 ? '#34d399' : '#fb7185';
+      ctx.beginPath(); ctx.arc(px, py, 14, 0, 2*Math.PI); ctx.fill();
+      ctx.strokeStyle = ok ? 'rgba(255,255,255,0.85)' : '#ec4899';
+      ctx.lineWidth = ok ? 1.5 : 3; ctx.stroke();
+      ctx.fillStyle = '#0d1a30'; ctx.font = 'bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText(p.label, px, py+4);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font='10px monospace';
+      ctx.textAlign = p.x===0?'right':'left';
+      ctx.fillText(`${p.name} → ${p.label}`, px + (p.x===0?-18:18), py+4);
+    });
+
+    ctx.fillStyle = 'rgba(148,163,184,0.6)'; ctx.font = '9.5px monospace'; ctx.textAlign = 'right';
+    [0,1].forEach(v=>ctx.fillText(v.toString(), PAD-3, toY(v)+3));
+    ctx.textAlign='center';
+    [0,1].forEach(v=>ctx.fillText(v.toString(), toX(v), H-PAD+12));
+    ctx.fillStyle='var(--text-2)';
+    ctx.fillText('x₁', W/2, H-4);
+    ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('x₂', 0, 0); ctx.restore();
+  }, [w1, w2, b, showAttempts, pts]);
+
+  const correct = pts.filter(p => (sig(w1*p.x + w2*p.y + b) > 0.5) === (p.label === 1)).length;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">The XOR Problem — Why A Single Neuron Fails</div>
+      <div style={{fontSize:'0.75rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.55}}>
+        <strong>Try to separate</strong> the green points (XOR = 1) from the red ones (XOR = 0) with a single line. You can't — they sit on opposite diagonals.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 220px',gap:'0.7rem'}}>
+        <canvas ref={canRef} style={{width:'100%',height:340,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+        <div className="m4-card" style={{margin:0,padding:'0.6rem'}}>
+          <div className="m4-card-h" style={{fontSize:'0.62rem',marginBottom:'0.5rem'}}>YOUR ATTEMPT</div>
+          {[['w₁',w1,setW1,'#22d3ee'],['w₂',w2,setW2,'#a78bfa'],['b',b,setB,'#fbbf24']].map(([lab,v,fn,col]) => (
+            <div key={lab} style={{marginBottom:'0.45rem'}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.66rem'}}>
+                <span style={{color:'var(--text-2)'}}>{lab}</span><span style={{fontFamily:'monospace',color:col}}>{v.toFixed(2)}</span>
+              </div>
+              <input type="range" min={-3} max={3} step={0.05} value={v} onChange={e=>fn(+e.target.value)} style={{width:'100%'}} />
+            </div>
+          ))}
+          <button className="m4-algo-tab" style={{padding:'3px 12px',fontSize:'0.7rem',width:'100%',marginTop:'0.4rem'}}
+            onClick={()=>setShowAttempts(s=>!s)}>{showAttempts?'☑':'☐'} Show many failed lines</button>
+          <div style={{textAlign:'center',marginTop:'0.5rem',padding:'0.5rem',background:correct===4?'rgba(52,211,153,0.12)':'rgba(251,113,133,0.1)',border:`1px solid ${correct===4?'#34d399':'#fb7185'}`,borderRadius:6}}>
+            <div style={{fontSize:'0.6rem',color:'var(--text-2)'}}>SCORE (max 4)</div>
+            <div style={{fontSize:'1.1rem',fontWeight:700,color:correct===4?'#34d399':'#fb7185',fontFamily:'monospace'}}>{correct}/4</div>
+            {correct<4 && <div style={{fontSize:'0.62rem',color:'#fb7185',marginTop:3}}>impossible with one line</div>}
+          </div>
+        </div>
+      </div>
+      <div className="m4-warnbox" style={{marginTop:'0.6rem',fontSize:'0.72rem'}}>
+        <strong>Historical impact:</strong> Minsky &amp; Papert's 1969 book <em>Perceptrons</em> highlighted this limitation. Combined with limited compute, it contributed to the funding decline known as the "AI Winter".
+      </div>
+    </div>
+  );
+}
+
+// === Multi-Layer XOR Solution =================================================
+function MultiLayerXORViz() {
+  const [x1, setX1] = useState(0);
+  const [x2, setX2] = useState(0);
+
+  // Hidden layer
+  const z1 = -1*x1 + -1*x2 + 1.5;
+  const a1 = sig(8*z1); // sharpen
+  const z2 = 1*x1 + 1*x2 - 0.5;
+  const a2 = sig(8*z2);
+  // Output layer
+  const z3 = 1*a1 + 1*a2 - 1.5;
+  const a3 = sig(8*z3);
+
+  const expected = x1 ^ x2;
+  const got = a3 > 0.5 ? 1 : 0;
+  const correct = got === expected;
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">XOR via Two-Layer Network — Live Flow</div>
+      <div style={{fontSize:'0.75rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.55}}>
+        Network: <strong>NAND</strong> + <strong>OR</strong> → feed both into <strong>AND</strong>. The first layer creates a new feature space in which XOR becomes linearly separable.
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',alignItems:'center'}}>
+        <div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.6rem',marginBottom:'0.7rem'}}>
+            {[['x₁',x1,setX1,'#22d3ee'],['x₂',x2,setX2,'#a78bfa']].map(([lab,v,fn,col]) => (
+              <div key={lab} style={{textAlign:'center'}}>
+                <div style={{fontSize:'0.68rem',color:'var(--text-2)'}}>{lab}</div>
+                <div style={{display:'flex',gap:'0.3rem',justifyContent:'center',margin:'0.3rem 0'}}>
+                  {[0,1].map(b => (
+                    <button key={b} onClick={()=>fn(b)} style={{
+                      background:v===b?col:'rgba(148,163,184,0.1)',
+                      border:`1px solid ${col}`, color:v===b?'#0d1a30':col,
+                      borderRadius:6, padding:'4px 12px', fontFamily:'monospace',fontWeight:700,cursor:'pointer'}}>{b}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{background:'var(--bg-2)',border:'1px solid rgba(148,163,184,0.15)',borderRadius:8,padding:'0.75rem',fontFamily:'monospace',fontSize:'0.74rem',lineHeight:1.85,color:'var(--text-1)'}}>
+            <div style={{color:'#fb7185',fontWeight:700,marginBottom:'0.3rem'}}>// Hidden neuron 1 — NAND</div>
+            <div>z₁ = −1·{x1} + −1·{x2} + 1.5 = <span style={{color:'#22d3ee'}}>{z1.toFixed(2)}</span></div>
+            <div>a₁ = σ(z₁) ≈ <span style={{color:a1>0.5?'#34d399':'#fb7185',fontWeight:700}}>{a1.toFixed(3)}</span> → <span style={{color:a1>0.5?'#34d399':'#fb7185',fontWeight:700}}>{a1>0.5?'1':'0'}</span></div>
+            <div style={{color:'#a78bfa',fontWeight:700,marginTop:'0.5rem'}}>// Hidden neuron 2 — OR</div>
+            <div>z₂ = 1·{x1} + 1·{x2} − 0.5 = <span style={{color:'#22d3ee'}}>{z2.toFixed(2)}</span></div>
+            <div>a₂ = σ(z₂) ≈ <span style={{color:a2>0.5?'#34d399':'#fb7185',fontWeight:700}}>{a2.toFixed(3)}</span> → <span style={{color:a2>0.5?'#34d399':'#fb7185',fontWeight:700}}>{a2>0.5?'1':'0'}</span></div>
+            <div style={{color:'#fbbf24',fontWeight:700,marginTop:'0.5rem'}}>// Output neuron — AND</div>
+            <div>z₃ = 1·a₁ + 1·a₂ − 1.5 = <span style={{color:'#22d3ee'}}>{z3.toFixed(2)}</span></div>
+            <div>a₃ = σ(z₃) ≈ <span style={{color:a3>0.5?'#34d399':'#fb7185',fontWeight:700}}>{a3.toFixed(3)}</span> → <span style={{color:a3>0.5?'#34d399':'#fb7185',fontWeight:700,fontSize:'1.1em'}}>{a3>0.5?'1':'0'}</span></div>
+            <div style={{marginTop:'0.6rem',padding:'0.5rem',background:correct?'rgba(52,211,153,0.12)':'rgba(251,113,133,0.12)',borderRadius:6}}>
+              expected XOR({x1},{x2}) = <span style={{fontWeight:700,color:correct?'#34d399':'#fb7185'}}>{expected}</span> · got <span style={{fontWeight:700,color:correct?'#34d399':'#fb7185'}}>{got}</span> {correct?'✓':'✗'}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <svg viewBox="0 0 460 320" style={{width:'100%',height:'auto',background:'rgba(15,23,42,0.5)',border:'1px solid rgba(148,163,184,0.15)',borderRadius:8}}>
+            <defs>
+              <marker id="arr" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+                <polygon points="0,0 6,3 0,6" fill="#94a3b8"/>
+              </marker>
+            </defs>
+            <text x="20" y="30" fill="#22d3ee" fontFamily="monospace" fontSize="11">INPUT</text>
+            <text x="170" y="30" fill="#a78bfa" fontFamily="monospace" fontSize="11">HIDDEN</text>
+            <text x="340" y="30" fill="#fbbf24" fontFamily="monospace" fontSize="11">OUTPUT</text>
+
+            <circle cx="50" cy="100" r="22" fill={x1?'rgba(34,211,238,0.4)':'rgba(34,211,238,0.1)'} stroke="#22d3ee" strokeWidth="1.5"/>
+            <text x="50" y="105" textAnchor="middle" fill="#22d3ee" fontFamily="monospace" fontWeight="700" fontSize="14">{x1}</text>
+            <text x="50" y="135" textAnchor="middle" fill="#22d3ee" fontFamily="monospace" fontSize="10">x₁</text>
+
+            <circle cx="50" cy="220" r="22" fill={x2?'rgba(167,139,250,0.4)':'rgba(167,139,250,0.1)'} stroke="#a78bfa" strokeWidth="1.5"/>
+            <text x="50" y="225" textAnchor="middle" fill="#a78bfa" fontFamily="monospace" fontWeight="700" fontSize="14">{x2}</text>
+            <text x="50" y="255" textAnchor="middle" fill="#a78bfa" fontFamily="monospace" fontSize="10">x₂</text>
+
+            <circle cx="225" cy="100" r="28" fill={a1>0.5?'rgba(251,113,133,0.4)':'rgba(251,113,133,0.1)'} stroke="#fb7185" strokeWidth="1.8"/>
+            <text x="225" y="98" textAnchor="middle" fill="#fb7185" fontFamily="monospace" fontWeight="700" fontSize="11">NAND</text>
+            <text x="225" y="112" textAnchor="middle" fill={a1>0.5?'#34d399':'#fb7185'} fontFamily="monospace" fontSize="11">{a1.toFixed(2)}</text>
+
+            <circle cx="225" cy="220" r="28" fill={a2>0.5?'rgba(34,211,238,0.4)':'rgba(34,211,238,0.1)'} stroke="#22d3ee" strokeWidth="1.8"/>
+            <text x="225" y="218" textAnchor="middle" fill="#22d3ee" fontFamily="monospace" fontWeight="700" fontSize="11">OR</text>
+            <text x="225" y="232" textAnchor="middle" fill={a2>0.5?'#34d399':'#fb7185'} fontFamily="monospace" fontSize="11">{a2.toFixed(2)}</text>
+
+            <circle cx="395" cy="160" r="30" fill={a3>0.5?'rgba(251,191,36,0.4)':'rgba(251,191,36,0.1)'} stroke="#fbbf24" strokeWidth="2"/>
+            <text x="395" y="158" textAnchor="middle" fill="#fbbf24" fontFamily="monospace" fontWeight="700" fontSize="11">AND</text>
+            <text x="395" y="172" textAnchor="middle" fill={a3>0.5?'#34d399':'#fb7185'} fontFamily="monospace" fontWeight="700" fontSize="12">{a3.toFixed(2)}</text>
+            <text x="395" y="210" textAnchor="middle" fill="#fbbf24" fontFamily="monospace" fontSize="10">XOR out</text>
+
+            {[[72,100,197,100,'-1'],[72,100,197,220,'1'],[72,220,197,100,'-1'],[72,220,197,220,'1']].map(([x1c,y1c,x2c,y2c,w],i) => (
+              <g key={i}>
+                <line x1={x1c} y1={y1c} x2={x2c-3} y2={y2c} stroke="#94a3b8" strokeWidth="1.1" opacity="0.6" markerEnd="url(#arr)"/>
+                <text x={(x1c+x2c)/2} y={(y1c+y2c)/2-3} fill="#94a3b8" fontSize="9" fontFamily="monospace" textAnchor="middle">{w}</text>
+              </g>
+            ))}
+            {[[253,100,365,160,'1'],[253,220,365,160,'1']].map(([x1c,y1c,x2c,y2c,w],i) => (
+              <g key={i}>
+                <line x1={x1c} y1={y1c} x2={x2c-3} y2={y2c} stroke="#94a3b8" strokeWidth="1.4" opacity="0.7" markerEnd="url(#arr)"/>
+                <text x={(x1c+x2c)/2} y={(y1c+y2c)/2-3} fill="#94a3b8" fontSize="9" fontFamily="monospace" textAnchor="middle">{w}</text>
+              </g>
+            ))}
+            <text x="225" y="160" textAnchor="middle" fill="#94a3b8" fontFamily="monospace" fontSize="9">b₁=1.5  ·  b₂=−0.5</text>
+            <text x="395" y="225" textAnchor="middle" fill="#94a3b8" fontFamily="monospace" fontSize="9">b₃=−1.5</text>
+          </svg>
+          <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+            Cycle through all four inputs (0,0), (0,1), (1,0), (1,1) and watch the XOR output flip.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === Hypercube Visualizer (digits on 7-D unit cube projection) ===============
+function HypercubeViz() {
+  const [highlight, setHighlight] = useState(7);
+  const canRef = useRef(null);
+
+  useEffect(() => {
+    const c = canRef.current; if (!c) return;
+    const W = c.width = c.offsetWidth || 540;
+    const H = c.height = 360;
+    const ctx = c.getContext('2d'); ctx.clearRect(0,0,W,H);
+
+    // Generate all 128 binary 7-tuples and project to 2D using sum of popcount-weighted layers
+    // Approach: position by bit positions on a force layout
+    // We'll use: x = sum of cosines, y = sum of sines, with each segment i at angle 2πi/7 and radius determined by bit value
+    const verts = [];
+    for (let v = 0; v < 128; v++) {
+      let x = 0, y = 0;
+      let pop = 0;
+      for (let i = 0; i < 7; i++) {
+        const bit = (v >> i) & 1;
+        if (bit) {
+          const ang = 2*Math.PI * (i / 7) - Math.PI/2;
+          x += Math.cos(ang);
+          y += Math.sin(ang);
+          pop++;
+        }
+      }
+      // jitter slightly by index for separation
+      x += (Math.sin(v*3.7) - 0.5) * 0.08;
+      y += (Math.cos(v*4.1) - 0.5) * 0.08;
+      verts.push({v, x, y, pop});
+    }
+    const xMin = Math.min(...verts.map(p=>p.x))-0.5, xMax = Math.max(...verts.map(p=>p.x))+0.5;
+    const yMin = Math.min(...verts.map(p=>p.y))-0.5, yMax = Math.max(...verts.map(p=>p.y))+0.5;
+    const PAD = 24;
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-PAD-PAD);
+    const toY = y => H-PAD - (y-yMin)/(yMax-yMin)*(H-PAD-PAD);
+
+    // Build digit lookup
+    const digitVerts = {};
+    Object.keys(SEG_DIGITS).forEach(k => {
+      const segs = SEG_DIGITS[+k];
+      let v = 0;
+      for (let i = 0; i < 7; i++) if (segs[i]) v |= (1 << i);
+      digitVerts[+k] = v;
+    });
+    const digitV = digitVerts[highlight];
+
+    // Draw edges (Hamming distance 1) — only between digit-like vertices to keep it readable
+    ctx.strokeStyle = 'rgba(148,163,184,0.05)'; ctx.lineWidth = 0.5;
+    for (let i = 0; i < 128; i++) {
+      for (let bit = 0; bit < 7; bit++) {
+        const j = i ^ (1 << bit);
+        if (j > i) {
+          const a = verts[i], b = verts[j];
+          ctx.beginPath(); ctx.moveTo(toX(a.x), toY(a.y)); ctx.lineTo(toX(b.x), toY(b.y)); ctx.stroke();
+        }
+      }
+    }
+
+    // Draw all 128 vertices
+    verts.forEach(p => {
+      const isDigit = Object.values(digitVerts).includes(p.v);
+      const isHighlight = p.v === digitV;
+      ctx.fillStyle = isHighlight ? '#22d3ee' : (isDigit ? 'rgba(251,191,36,0.85)' : 'rgba(148,163,184,0.18)');
+      ctx.beginPath(); ctx.arc(toX(p.x), toY(p.y), isHighlight?7:isDigit?4.5:1.8, 0, 2*Math.PI); ctx.fill();
+      if (isHighlight) {
+        ctx.strokeStyle='#fff'; ctx.lineWidth=1.3; ctx.stroke();
+        ctx.save();
+        ctx.shadowBlur=12; ctx.shadowColor='#22d3ee';
+        ctx.beginPath(); ctx.arc(toX(p.x), toY(p.y), 7, 0, 2*Math.PI); ctx.fill();
+        ctx.restore();
+      }
+    });
+
+    // Label digits
+    Object.keys(digitVerts).forEach(k => {
+      const v = digitVerts[+k];
+      const p = verts[v];
+      const isH = v === digitV;
+      ctx.fillStyle = isH ? '#22d3ee' : 'rgba(251,191,36,0.9)';
+      ctx.font = `bold ${isH?14:10}px monospace`; ctx.textAlign='center';
+      ctx.fillText(k, toX(p.x), toY(p.y)-10);
+    });
+
+    ctx.fillStyle = 'var(--text-2)'; ctx.font='10px monospace'; ctx.textAlign='left';
+    ctx.fillText('128 vertices of 7-D unit hypercube', 10, 18);
+    ctx.fillStyle = 'rgba(251,191,36,0.9)'; ctx.fillText('• digit vertex', 10, 32);
+    ctx.fillStyle = '#22d3ee'; ctx.fillText('• highlighted', 10, 46);
+    ctx.fillStyle = 'rgba(148,163,184,0.5)'; ctx.fillText('• non-digit vertex', 10, 60);
+  }, [highlight]);
+
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Geometric View — The 7-D Digit Hypercube</div>
+      <div style={{fontSize:'0.75rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.55}}>
+        Each digit is a vertex of the unit 7-cube (2<sup>7</sup> = 128 vertices total). Any <strong>single vertex</strong> can always be "sliced off" by a hyperplane → single-digit classifiers <em>always</em> exist in the single-neuron hypothesis space.
+      </div>
+      <div style={{display:'flex',gap:'0.3rem',flexWrap:'wrap',marginBottom:'0.5rem'}}>
+        {Object.keys(SEG_DIGITS).map(k => (
+          <button key={k} onClick={()=>setHighlight(+k)} className="m4-algo-tab" style={{padding:'2px 11px',fontSize:'0.72rem',background:highlight===+k?'rgba(34,211,238,0.2)':'',borderColor:highlight===+k?'#22d3ee':''}}>
+            {k}
+          </button>
+        ))}
+      </div>
+      <canvas ref={canRef} style={{width:'100%',height:360,borderRadius:8,border:'1px solid rgba(148,163,184,0.15)'}} />
+      <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+        <strong>Vertices are positioned</strong> by summing the unit vectors of each segment that is "on" (segments fixed at 2π·i/7 around the unit circle). Edges connect vertices at Hamming distance 1.
+      </div>
+    </div>
+  );
+}
+
+function NeuronLogicTab() {
+  const [sec, setSec] = useState('overview');
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['overview','Overview'],
+          ['geometry','Hyperplane Geometry'],
+          ['seven','7-Segment Trainer'],
+          ['gates','Logic Gates'],
+          ['xor','XOR Problem'],
+          ['mlp','Multi-Layer XOR'],
+          ['hypercube','Digit Hypercube'],
+          ['summary','Key Takeaways'],
+        ].map(([v,l])=>(
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sec === 'overview' && (
+        <div>
+          <div style={{background:'linear-gradient(135deg,rgba(251,191,36,0.07) 0%,rgba(34,211,238,0.07) 100%)',border:'1px solid rgba(251,191,36,0.2)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+            {[['7-segment','Decoder problem','#fbbf24'],['Hyperplane','n-D linear classifier','#22d3ee'],['Logic gate','Neuron-as-gate','#a78bfa'],['XOR','Not lin. separable','#fb7185'],['Hypercube','Hypothesis space','#34d399'],['MLP','Multi-layer fix','#06b6d4']].map(([k,v,col])=>(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+                <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+                <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">The 7-Segment Decoder Problem</div>
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+                Older displays use 7 LED segments controlled by 7 bits (8th = decimal point). Standard ICs (e.g., 4056) <strong>encode</strong> a binary digit → segment pattern.
+                <br/><br/>
+                Our problem reverses that: <strong>decode</strong> the digit from the segment pattern — a computer-vision style classification.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Input/output dimensions</div>
+              <ul className="m4-bullets" style={{fontSize:'0.74rem'}}>
+                <li>Input: n = 7 segment bits (+ a bias)</li>
+                <li>Output: binary — "is this a <em>k</em>? y/n"</li>
+                <li>One neuron per target digit</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Segment Activation Table — Digit → Segments</div>
+              <table className="m4-ptable" style={{fontSize:'0.72rem'}}>
+                <thead><tr><th>Digit</th><th>a</th><th>b</th><th>c</th><th>d</th><th>e</th><th>f</th><th>g</th></tr></thead>
+                <tbody>
+                  {[0,1,2,3,4,5,6,7,8,9].map(d => {
+                    const segs = SEG_DIGITS[d];
+                    return (
+                      <tr key={d}>
+                        <td className="pk" style={{fontWeight:700}}>{d}</td>
+                        {segs.map((s,i)=>(
+                          <td key={i} style={{textAlign:'center',color:s?'#fbbf24':'rgba(148,163,184,0.3)'}}>{s?'▉':'·'}</td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Multi-Input Neurons — Biological Reality</div>
+            <div className="m4-two-col">
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.7}}>
+                Real neurons can have <strong>thousands</strong> of inputs:
+                <ul className="m4-bullets" style={{fontSize:'0.75rem',marginTop:'0.4rem'}}>
+                  <li>Purkinje cells (cerebellum): &gt; 1,000 dendritic branches, tens of thousands of synapses</li>
+                  <li>Human brain: ~86 billion neurons</li>
+                  <li>Average synaptic connections per neuron: ~7,000</li>
+                  <li>3-year-old child: ~10<sup>15</sup> total synapses</li>
+                </ul>
+              </div>
+              <div className="m4-infobox" style={{fontSize:'0.74rem'}}>
+                <strong>Composability is the key.</strong> A single biological neuron is the building block; intelligence emerges from arranging many in layers and circuits — exactly the lesson at the end of this lecture (NAND universality + multi-layer perceptron).
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">From 1 Input to n Inputs — The Geometry Grows</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Inputs</th><th>Activation</th><th>Decision boundary</th><th>Splits</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">1</td><td><Tex src="a = \sigma(wx + b)" /></td><td>point <Tex src="x = -b/w" /></td><td>real line</td></tr>
+                <tr><td className="pk">2</td><td><Tex src="a = \sigma(w_1 x_1 + w_2 x_2 + b)" /></td><td>1-D line</td><td>2-D plane</td></tr>
+                <tr><td className="pk">3</td><td><Tex src="a = \sigma(w_1 x_1 + w_2 x_2 + w_3 x_3 + b)" /></td><td>2-D plane</td><td>3-D space</td></tr>
+                <tr><td className="pk">n</td><td><Tex src="a = \sigma(\vec{w}\cdot\vec{x} + b)" /></td><td>(n−1)-D hyperplane</td><td>n-D space</td></tr>
+              </tbody>
+            </table>
+            <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.74rem'}}>
+              <strong>Key insight:</strong> a neuron with n inputs partitions <Tex src="\mathbb{R}^n" /> by the hyperplane <Tex src="\vec{w}\cdot\vec{x} + b = 0" />. Everything past that is just bookkeeping.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'geometry' && (
+        <div>
+          <Hyperplane2DViz />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Threshold-Line Algebra</div>
+              <div className="m4-flabel">Activation</div>
+              <Tex src="a = \sigma(w_1 x_1 + w_2 x_2 + b)" block />
+              <div className="m4-flabel" style={{marginTop:'0.4rem'}}>Decision rule a &gt; 0.5  ⟺  z &gt; 0</div>
+              <Tex src="w_1 x_1 + w_2 x_2 + b = 0 \;\Rightarrow\; x_2 = -\tfrac{w_1}{w_2}x_1 - \tfrac{b}{w_2}" block />
+              <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.4rem',lineHeight:1.6}}>
+                A linear equation <Tex src="y = c_1 x + c_0" />, i.e. a <strong>line</strong>.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Intercepts (memorise)</div>
+              <ul className="m4-bullets" style={{fontSize:'0.75rem'}}>
+                <li><Tex src="-b/w_1" /> on the x₁ axis</li>
+                <li><Tex src="-b/w_2" /> on the x₂ axis</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">n-Dimensional Generalisation</div>
+              <Tex src="a(\vec{w}, b, \vec{x}) = \sigma\!\left(\sum_{i=1}^n w_i x_i + b\right) = \sigma(\vec{w}\cdot\vec{x} + b)" block/>
+              <div className="m4-flabel" style={{marginTop:'0.6rem'}}>Hyperplane equation</div>
+              <Tex src="\vec{w}\cdot\vec{x} + b = 0" block/>
+              <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.73rem'}}>
+                For n inputs, the decision boundary is an <strong>(n−1)-dimensional hyperplane</strong>. Geometrically: a flat surface that divides n-D space into two half-spaces.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">NumPy implementation (n-D)</div>
+              <div className="m4-pseudocode" style={{fontSize:'0.7rem'}}>{`# Returns 1 × s array of activations
+def activation_nd(weights, b, inputs):
+    return logistic(np.dot(weights, inputs) + b)
+
+# Shapes: weights (1, n),  inputs (n, s)  →  out (1, s)
+# numpy auto-broadcasts for batch evaluation`}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'seven' && (
+        <div>
+          <SevenSegmentTrainer />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Training Data Setup (NumPy)</div>
+              <div className="m4-pseudocode" style={{fontSize:'0.7rem'}}>{`DIGITS = {
+  0: [0,1,2,4,5,6],
+  1: [2,5],
+  2: [0,2,3,4,6],
+  3: [0,2,3,5,6],
+  4: [1,2,3,5],
+  5: [0,1,3,5,6],
+  6: [0,1,3,4,5,6],
+  7: [0,2,5],
+  8: [0,1,2,3,4,5,6],
+  9: [0,1,2,3,5]
+}
+
+inputs = np.zeros((10, 7), dtype=int)
+for k in DIGITS:
+    inputs[k][DIGITS[k]] = 1
+inputs = inputs.T          # shape: (7, 10)
+
+# Target: "is a 1?"
+one = np.array([[0,1,0,0,0,0,0,0,0,0]])`}</div>
+              <div style={{fontSize:'0.72rem',color:'var(--text-2)',marginTop:'0.4rem'}}>
+                <strong>Shapes:</strong> inputs (7, 10) — 7 parameters × 10 trials. Target (1, 10).
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Training Observations</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <thead><tr><th>Target</th><th>Outcome</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">1 (easy)</td><td>Cost drops fast (~20 iter); class-1 activation crosses 0.5 at iter ~450; <strong>regularly succeeds</strong> regardless of initialisation</td></tr>
+                  <tr><td className="pk">7 (hard)</td><td>Often plateaus with class-7 activation ≈ 0.4. Sensitive to initialisation. Smaller ε / more iterations don't reliably help. Looks like a <strong>local minimum</strong></td></tr>
+                </tbody>
+              </table>
+              <div className="m4-warnbox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+                <strong>Why is '7' hard?</strong> {`{b, c}`} ⊂ {`{a, b, c}`} — the segments of '1' are a subset of '7'. The decision boundary has to thread <em>between</em> '1' and '7', not just isolate '7' against everything else.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Solution 2 — Hit-Counting Construction (Always Works)</div>
+            <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65,marginBottom:'0.5rem'}}>
+              Manually construct a neuron that detects an exact pattern by giving each segment a weight of <strong>+1</strong> (must be on) or <strong>−1</strong> (must be off), and setting bias to <Tex src="b = -(K - 0.5)" /> where K is the number of "on" segments.
+            </div>
+            <div className="m4-pseudocode" style={{fontSize:'0.7rem'}}>{`Example — digit '7' has segments {a, b, c} on (K = 3):
+weights = [+1, +1, +1, -1, -1, -1, -1]   # a,b,c=+1; d,e,f,g=-1
+bias    = -(3 - 0.5) = -2.5
+
+For input pattern 1010010 (digit '7'):
+  z = 1·1 + 1·1 + 1·1 + (-1)·0 + (-1)·0 + (-1)·0 + (-1)·0 + (-2.5)
+    = 3 - 2.5 = 0.5  →  σ(0.5) ≈ 0.62  →  fires!
+
+For any other digit: z < 0 → σ(z) < 0.5 → does not fire.`}</div>
+            <div className="m4-infobox" style={{marginTop:'0.5rem',fontSize:'0.72rem'}}>
+              <strong>Click "Hit-counting solution"</strong> in the trainer above to lock in these exact weights and confirm by inspection — score should jump straight to 10/10.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'gates' && (
+        <div>
+          <LogicGatePlayground />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Canonical Logic Gates — Lecture Values</div>
+              <table className="m4-ptable" style={{fontSize:'0.76rem'}}>
+                <thead><tr><th>Gate</th><th>w₁</th><th>w₂</th><th>b</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">AND</td><td>1</td><td>1</td><td>−1.5</td></tr>
+                  <tr><td className="pk">OR</td><td>1</td><td>1</td><td>−0.5</td></tr>
+                  <tr><td className="pk">NAND</td><td>−1</td><td>−1</td><td>1.5</td></tr>
+                  <tr><td className="pk">NOR</td><td>−1</td><td>−1</td><td>0.5</td></tr>
+                  <tr><td className="pk">¬x₁</td><td>−1</td><td>0</td><td>0.5</td></tr>
+                  <tr><td className="pk">¬x₂</td><td>0</td><td>−1</td><td>0.5</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+                Pattern: <strong>flip all signs</strong> to turn a gate into its negation.
+              </div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Perceptron vs Logistic Neuron</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+                <li><strong>Perceptron</strong> uses the step activation — gives clean 0/1.</li>
+                <li><strong>Sigmoid neuron</strong> outputs continuous values; a &gt; 0.5 is the threshold.</li>
+                <li>By scaling weights up (large w), a sigmoid neuron approaches a perceptron <strong>arbitrarily closely</strong> (Minsky &amp; Papert, 1969).</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">NAND universality</div>
+              <div style={{fontSize:'0.74rem',color:'var(--text-1)',lineHeight:1.6}}>
+                <strong>Any Boolean function</strong> of n inputs can be expressed using only NAND gates. Therefore any Boolean function can be realised by some <em>composition</em> of sigmoid neurons. The architecture below the gate table is exactly what NAND-universality gives you.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Logic Decoder Construction</div>
+            <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+              Treating 1/0 inputs as True/False, a neuron can implement any Boolean function of n inputs. For example, the truth-table for "is a 7" reads:
+            </div>
+            <Tex src="f([\bar{i}_0, \bar{i}_1, i_2, \bar{i}_3, \bar{i}_4, i_5, \bar{i}_6]) = \text{True}" block />
+            <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.4rem'}}>
+              Bar (¯) denotes negation. The single ANDed product term picks out one vertex of the 7-cube — the digit '7' pattern.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'xor' && (
+        <div>
+          <XORProblemViz />
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">'4 or 7' → Reduces to XOR</div>
+            <div className="m4-two-col">
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+                The class {`{4, 7}`} is separable from {`{0..9}`} <em>only if</em> {`{4, 7}`} is separable from {`{1, 4, 7, 9}`}.
+                Bits b, c, d, e (indices 2, 4, 5, 6) carry no discriminative value over this subset.
+                <br/><br/>Reduce to 3-D (i₀, i₁, i₂ = segments a, f, g). Columns i₀ and i₁ are identical → collapse to 2-D.
+              </div>
+              <table className="m4-ptable" style={{fontSize:'0.76rem'}}>
+                <thead><tr><th>Digit</th><th>i₀ (a)</th><th>i₂ (g)</th><th>out</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">1</td><td>0</td><td>0</td><td style={{color:'#fb7185',fontWeight:700}}>0</td></tr>
+                  <tr><td className="pk">4</td><td>1</td><td>0</td><td style={{color:'#34d399',fontWeight:700}}>1</td></tr>
+                  <tr><td className="pk">7</td><td>0</td><td>1</td><td style={{color:'#34d399',fontWeight:700}}>1</td></tr>
+                  <tr><td className="pk">9</td><td>1</td><td>1</td><td style={{color:'#fb7185',fontWeight:700}}>0</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <Tex src="\text{out} = i_0 \oplus i_2" block />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Implications for Hypothesis Space</div>
+            <ul className="m4-bullets" style={{fontSize:'0.78rem'}}>
+              <li><strong>Expressive enough</strong> to solve any <em>single-digit</em> 7-segment classifier (provable via hypercube).</li>
+              <li><strong>Not expressive enough</strong> to solve <em>two-digit</em> classifiers in general — specifically '4 or 7' which reduces to XOR.</li>
+              <li>Distinction between "does a solution exist in our hypothesis space?" and "can our algorithm find it?" <strong>matters</strong>.</li>
+              <li><strong>Minsky &amp; Papert (1969)</strong>, <em>Perceptrons: An Introduction to Computational Geometry</em> — highlighted exactly this limitation. Contributed to the AI Winter.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {sec === 'mlp' && (
+        <div>
+          <MultiLayerXORViz />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Architecture (Modares, 2012)</div>
+              <table className="m4-ptable" style={{fontSize:'0.75rem'}}>
+                <thead><tr><th>Neuron</th><th>w₁</th><th>w₂</th><th>b</th><th>Gate</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">Hidden 1</td><td>−1</td><td>−1</td><td>1.5</td><td>NAND</td></tr>
+                  <tr><td className="pk">Hidden 2</td><td>1</td><td>1</td><td>−0.5</td><td>OR</td></tr>
+                  <tr><td className="pk">Output</td><td>1</td><td>1</td><td>−1.5</td><td>AND</td></tr>
+                </tbody>
+              </table>
+              <Tex src="\text{XOR}(A, B) = \text{AND}(\text{NAND}(A,B),\ \text{OR}(A,B))" block />
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Geometric Interpretation</div>
+              <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+                Hidden neurons 1 &amp; 2 each draw a separating line in the original (x₁, x₂) plane. Their activations (a₁, a₂) define a <strong>new 2-D feature space</strong> in which the four input points become linearly separable. The output neuron then partitions <em>that</em> space with a single hyperplane.
+              </div>
+              <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+                <strong>This is the key insight</strong> — hidden layers compute new <em>features</em>. The output is just a linear classifier on those features. Modern deep networks do the same idea with many more layers and learned (not hand-crafted) weights.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem',background:'linear-gradient(135deg,rgba(52,211,153,0.06) 0%,rgba(34,211,238,0.06) 100%)'}}>
+            <div className="m4-card-h">NAND Universality — Why This Matters</div>
+            <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+              Every Boolean function can be expressed using only NAND gates (a well-known result from digital logic).
+              Therefore every Boolean function can be realised by a network of sigmoid neurons.
+              The <strong>2-layer architecture is universal</strong> — any classifier you can describe in logic can be built this way.
+              Modern neural networks generalise this to real-valued inputs and outputs with the <em>universal approximation theorem</em>.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'hypercube' && (
+        <div>
+          <HypercubeViz />
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Solution 1 — Hypercube Geometry</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+                <li>Each digit's segment pattern is a point in <Tex src="\{0,1\}^7" /> — i.e. a <strong>vertex of the 7-cube</strong>.</li>
+                <li>The cube has 2<sup>7</sup> = <strong>128</strong> vertices; 10 of them are digits 0–9.</li>
+                <li><strong>Any single vertex</strong> of a hypercube can be sliced off by a single hyperplane → single-digit classifier always exists.</li>
+                <li><strong>Adjacent vertices</strong> (Hamming distance 1) can be jointly sliced off — e.g. '1' = `0010010`, '7' = `1010010` differ in one bit, so {`{1,7}`} is separable from the rest.</li>
+                <li><strong>Opposite vertices</strong> of an embedded square (XOR-like) cannot — that's exactly what '4 or 7' becomes.</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Reduction Exercises</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <thead><tr><th>Pair</th><th>Min bits needed</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">5 vs 6</td><td>1 bit (segment e)</td></tr>
+                  <tr><td className="pk">7 vs 8</td><td>fewer than 7</td></tr>
+                  <tr><td className="pk">(8 or 9) vs (1 or 2)</td><td>small subset</td></tr>
+                  <tr><td className="pk">7 vs (1 or 2)</td><td>small subset</td></tr>
+                  <tr><td className="pk">1 or 7</td><td>reduces to 2 inputs (single vertex)</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-infobox" style={{marginTop:'0.55rem',fontSize:'0.72rem'}}>
+                <strong>Strategy:</strong> drop bits that are identical across the subset of digits being classified — they carry zero information. What remains is the effective hypercube the classifier operates on.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'summary' && (
+        <div>
+          <div className="m4-card" style={{background:'linear-gradient(135deg,rgba(34,211,238,0.06) 0%,rgba(167,139,250,0.06) 100%)'}}>
+            <div className="m4-card-h">Key Takeaways — Memorise These</div>
+            <ol style={{paddingLeft:'1.2rem',margin:0,fontSize:'0.84rem',lineHeight:2,color:'var(--text-1)'}}>
+              <li>An n-input neuron is a <strong>linear classifier</strong> in <Tex src="\mathbb{R}^n" /> — it partitions space with an (n−1)-dimensional <strong>hyperplane</strong> defined by <Tex src="\vec{w}\cdot\vec{x} + b = 0" />.</li>
+              <li>For the 7-segment problem, <strong>every single-digit classifier exists</strong> in the single-neuron hypothesis space — provable by hypercube geometry <em>and</em> by explicit hit-counting construction.</li>
+              <li><strong>Multi-digit classifiers</strong> (e.g., '4 or 7') reduce to XOR-like patterns, which are <strong>not linearly separable</strong> — a single neuron fails.</li>
+              <li>The fix is to <strong>stack neurons into layers</strong> (multi-layer perceptron). Any Boolean function is realisable because NAND is universal.</li>
+              <li>The existence of a solution in the hypothesis space is <em>independent</em> of whether gradient descent (or any algorithm) can find it. <strong>GIGO</strong> — answer both questions explicitly.</li>
+              <li>Hidden layers compute <strong>new features</strong>. The output is a linear classifier on those features. This is the entire intuition behind deep learning.</li>
+            </ol>
+          </div>
+
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">The Three Solutions From The Lecture</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <thead><tr><th>#</th><th>Approach</th><th>What it shows</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">1</td><td>Hypercube geometry</td><td>Any single vertex can be sliced off → existence proof</td></tr>
+                  <tr><td className="pk">2</td><td>Hit-counting</td><td>Constructive: ±1 weights + bias = −(K − 0.5)</td></tr>
+                  <tr><td className="pk">3</td><td>Neurons as logic gates</td><td>AND/OR/NAND/NOR with hand-set weights — NAND universality</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Historical Timeline</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <tbody>
+                  <tr><td className="pk">1957</td><td>Rosenblatt's <strong>Perceptron</strong> — adaptive linear classifier</td></tr>
+                  <tr><td className="pk">1969</td><td>Minsky &amp; Papert, <em>Perceptrons</em> — XOR limitation. <strong>AI Winter</strong> follows</td></tr>
+                  <tr><td className="pk">1986</td><td>Rumelhart et al. — back-propagation revives MLPs</td></tr>
+                  <tr><td className="pk">2012+</td><td>Modern deep learning takes over</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Bridge to the Rest of CITS4404</div>
+            <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.65}}>
+              <strong>Why this lecture matters for the trading-bot project:</strong>{' '}
+              You won't necessarily build an MLP, but you <em>will</em> use the same <strong>"language → model → metric"</strong> framework, the same gradient/stochastic search, and you'll encounter the same trade-offs — hypothesis-space expressiveness vs. algorithm reachability vs. over-fit. The discipline of separating "does a solution exist?" from "can my algorithm find it?" is exactly what disciplined experimental design looks like.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── ALGORITHM ATLAS — Memorisation Journey ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Six "stages" arranged into a learning journey
+const ATLAS_GROUPS = [
+  { id:'gradient', name:'Gradient Methods',          color:'#22d3ee', icon:'∇', subtitle:'Smooth, differentiable spaces — follow the slope', lecture:'Lec 6' },
+  { id:'direct',   name:'Direct Methods',            color:'#a78bfa', icon:'◇', subtitle:'No derivatives — sample your way around', lecture:'Lec 7' },
+  { id:'single',   name:'Single-State Stochastic',   color:'#fbbf24', icon:'★', subtitle:'One candidate + randomness escapes local optima', lecture:'Lec 9' },
+  { id:'evol',     name:'Evolutionary Strategies',   color:'#34d399', icon:'μ', subtitle:'Many candidates evolving — (μ, λ) and (μ + λ)', lecture:'Lec 10' },
+  { id:'ga',       name:'Genetic Algorithms',        color:'#fb7185', icon:'☷', subtitle:'Crossover, selection, mutation — Holland’s playbook', lecture:'Lec 11' },
+  { id:'emergent', name:'Emergent & Hybrid',         color:'#06b6d4', icon:'∞', subtitle:'PSO, DE, memetic — collective intelligence', lecture:'Lec 12' },
+];
+
+// Each algorithm uses {n} markers as fill-in-the-blank slots.
+// `blanks[n]` is the matching answer object.
+const ATLAS_ALGOS = [
+  // ── GRADIENT ──────────────────────────────────────────────────────────────
+  {
+    id:'ga-1d', group:'gradient', name:'1-D Gradient Ascent', lecture:'Lec 6',
+    intuition:'Climb in the direction of the gradient — uphill — to find a maximum.',
+    notes:[
+      'Sign of f′(x) gives the direction of step.',
+      'Magnitude of f′(x) gives the size of the step.',
+      'α is the learning rate (tuning parameter) that scales the step.',
+      'Ideal hypothesis space: continuously differentiable (C¹).',
+    ],
+    pseudo:`1: x ← random initial value
+2: repeat
+3:     x ← x {0} α {1}
+4: until stopping criterion reached
+5: return x`,
+    blanks:[
+      {answer:'+', options:['+','−','·','/'], explain:'Ascent moves in the direction of the gradient → add.'},
+      {answer:'f′(x)', options:['x','f(x)','f′(x)','f′′(x)'], explain:'Gradient ascent uses the first derivative.'},
+    ],
+  },
+  {
+    id:'gd-1d', group:'gradient', name:'1-D Gradient Descent', lecture:'Lec 6',
+    intuition:'Move opposite to the gradient — downhill — to find a minimum.',
+    notes:[
+      'Sign of f′(x) gives the direction; magnitude gives the size.',
+      'α (learning rate): too small = slow, too large = overshoot & oscillation.',
+      'Naturally slows down near a minimum for a suitable α.',
+      'Stopping: f′(x)=0, |f′(x)|<ε, iter cap, or time cap.',
+    ],
+    pseudo:`1: x ← random initial value
+2: repeat
+3:     x ← x {0} α f′(x)
+4: until stopping criterion reached
+5: return x`,
+    blanks:[
+      {answer:'−', options:['+','−','·','/'], explain:'Descent moves opposite to the gradient → subtract.'},
+    ],
+  },
+  {
+    id:'nr', group:'gradient', name:'Newton-Raphson (1-D Optimisation)', lecture:'Lec 6',
+    intuition:'Approximate f locally with a quadratic by using the curvature — the optimal step naturally scales with f′′.',
+    notes:[
+      'Use N-R on f′ (zeros of f′ = optima of f).',
+      'Solves a quadratic of the form ax²+b in ONE step.',
+      'Hypothesis space: twice differentiable (C²).',
+      '"Best" step size: rise / slope = f′(x) / f′′(x).',
+    ],
+    pseudo:`1: x ← random initial value
+2: repeat
+3:     x ← x − {0} / {1}
+4: until stopping criterion reached
+5: return x`,
+    blanks:[
+      {answer:'f′(x)', options:['f(x)','f′(x)','f′′(x)','α'], explain:'Optima of f are zeros of f′ → numerator is f′(x).'},
+      {answer:'f′′(x)', options:['f(x)','f′(x)','f′′(x)','α'], explain:'Dividing by curvature f′′(x) auto-tunes the step.'},
+    ],
+  },
+  {
+    id:'gd-nd', group:'gradient', name:'Multi-dim Gradient Ascent', lecture:'Lec 6',
+    intuition:'Same recipe in n dimensions — gradient ∇f is the vector of partial derivatives, pointing in the direction of steepest ascent.',
+    notes:[
+      '∇f is a vector of partial derivatives ∂f/∂xᵢ.',
+      'Pure linear-algebra operation — GPU-friendly.',
+      'Limitation: still gets stuck in local optima on multi-modal surfaces.',
+    ],
+    pseudo:`1: x⃗ ← random initial vector
+2: repeat
+3:     x⃗ ← x⃗ {0} α {1}
+4: until stopping criterion reached
+5: return x⃗`,
+    blanks:[
+      {answer:'+', options:['+','−','·','/'], explain:'Ascent.'},
+      {answer:'∇f(x⃗)', options:['f(x⃗)','∇f(x⃗)','∇²f(x⃗)','x⃗'], explain:'Gradient is the n-D analogue of f′.'},
+    ],
+  },
+  {
+    id:'ga-restart', group:'gradient', name:'Gradient Ascent with Restarts', algNum:'Algorithm 3', lecture:'Lec 6',
+    intuition:'Climb to a peak, remember the best, then teleport to a new random starting point and try again — the simplest escape from local optima.',
+    notes:[
+      'Inner loop = gradient climb to a local max.',
+      'Outer loop = restart at a new random point.',
+      'x⃗* always holds the best ever found.',
+      'Inner stopping uses ||∇f(x⃗)|| < ε in practice.',
+    ],
+    pseudo:`1:  x⃗ ← random initial value
+2:  x⃗* ← x⃗                        ▷ x⃗* will hold our best discovery so far
+3:  repeat
+4:      repeat
+5:          x⃗ ← x⃗ + α∇f(x⃗)        ▷ In one dimension: x ← x + αf′(x)
+6:      until {0}                       ▷ In one dimension: until f′(x) = 0
+7:      if {1} then                     ▷ Found a new best result!
+8:          x⃗* ← x⃗
+9:      x⃗ ← random value
+10: until we have run out of time
+11: return x⃗*`,
+    blanks:[
+      {answer:'||∇f(x⃗)|| = 0', options:['||∇f(x⃗)|| = 0','f(x⃗) > f(x⃗*)','x⃗ = x⃗*','time is up'], explain:'Inner loop ends when gradient vanishes.'},
+      {answer:'f(x⃗) > f(x⃗*)', options:['f(x⃗) > f(x⃗*)','x⃗ = x⃗*','f(x⃗) = 0','α < ε'], explain:'Update best only when we beat the previous best.'},
+    ],
+  },
+
+  // ── DIRECT METHODS ────────────────────────────────────────────────────────
+  {
+    id:'ccs', group:'direct', name:'Cyclic Coordinate Search', lecture:'Lec 7',
+    intuition:'Optimise one coordinate at a time, cycling through all dimensions — "taxicab" search. Will either improve or stay the same.',
+    notes:[
+      'Series of 1-D line searches along each basis direction.',
+      'Stops when one full cycle yields norm change ≤ ε.',
+      'Can fail to find local optimum on diagonal valleys/ridges.',
+    ],
+    pseudo:`function cyclic_coordinate_descent(f, x, ε)
+    Δ, n = Inf, length(x)
+    while abs(Δ) > ε
+        x′ = copy(x)
+        for i in 1 : n
+            d = {0}
+            x = {1}
+        end
+        Δ = norm(x - x′)
+    end
+    return x
+end`,
+    blanks:[
+      {answer:'basis(i, n)', options:['basis(i, n)','rand(n)','∇f(x)','x - x′'], explain:'Search direction = basis vector eᵢ.'},
+      {answer:'line_search(f, x, d)', options:['line_search(f, x, d)','x + α d','line_search(∇f, x, d)','f(x) + d'], explain:'Each step is a 1-D line search along d.'},
+    ],
+  },
+  {
+    id:'ccs-a', group:'direct', name:'CCS with Acceleration Step', lecture:'Lec 7',
+    intuition:'After one full cycle, the net displacement (xⁿ − x⁰) points in a promising direction — take an extra line search along it. Speeds up diagonal valleys.',
+    notes:[
+      'Identical to CCS plus one extra line search after the inner loop.',
+      'The extra direction is x − x′ (net cycle displacement).',
+      'Helps with diagonal ridges and curved valleys.',
+    ],
+    pseudo:`function cyclic_coordinate_descent_with_acceleration_step(f, x, ε)
+    Δ, n = Inf, length(x)
+    while abs(Δ) > ε
+        x′ = copy(x)
+        for i in 1 : n
+            d = basis(i, n)
+            x = line_search(f, x, d)
+        end
+        x = line_search(f, x, {0})  # acceleration step
+        Δ = norm(x - x′)
+    end
+    return x
+end`,
+    blanks:[
+      {answer:'x - x′', options:['x - x′','basis(1, n)','∇f(x)','Δ'], explain:'Net cycle displacement = x − x′.'},
+    ],
+  },
+  {
+    id:'powell', group:'direct', name:'Powell’s Method', lecture:'Lec 7',
+    intuition:'Like CCS but the directions adapt: keep a queue of n unit directions, replace the oldest with the latest "promising" direction (xⁿ − x⁰).',
+    notes:[
+      'Start with the n basis vectors in the queue.',
+      'After each cycle: enqueue (x′ − x), dequeue the oldest.',
+      'Risk: directions can become linearly dependent (loses full span).',
+    ],
+    pseudo:`function powell(f, x, ε)
+    n = length(x)
+    U = [basis(i,n) for i in 1 : n]
+    Δ = Inf
+    while Δ > ε
+        x′ = x
+        for i in 1 : n
+            d = U[i]
+            x′ = line_search(f, x′, d)
+        end
+        for i in 1 : n-1
+            U[i] = U[i+1]
+        end
+        U[n] = d = {0}
+        x′ = line_search(f, x′, d)
+        Δ = norm(x′ - x)
+        x = x′
+    end
+    return x
+end`,
+    blanks:[
+      {answer:'x′ - x', options:['x′ - x','x - x′','basis(n, n)','∇f(x′)'], explain:'The new direction is the cycle’s net progress vector.'},
+    ],
+  },
+  {
+    id:'hj', group:'direct', name:'Hooke-Jeeves Method', lecture:'Lec 7',
+    intuition:'Sample f(x ± α eᵢ) in every dimension. If any sample improves, jump to the best; if none do, shrink α.',
+    notes:[
+      'Requires 2n evaluations per step.',
+      'Step shrinks by factor γ (typically 0.5) when no improvement.',
+      'A type of pattern search — like sliding & shrinking an n-cube.',
+    ],
+    pseudo:`function hooke_jeeves(f, x, α, ε, γ=0.5)
+    y, n = f(x), length(x)
+    while α > ε
+        improved = false
+        x_best, y_best = x, y
+        for i in 1 : n
+            for sgn in (-1, 1)
+                x′ = x + sgn·α·basis(i, n)
+                y′ = f(x′)
+                if y′ < y_best
+                    x_best, y_best, improved = x′, y′, true
+                end
+            end
+        end
+        x, y = x_best, y_best
+        if !improved
+            α *= {0}
+        end
+    end
+    return x
+end`,
+    blanks:[
+      {answer:'γ', options:['γ','α','ε','n'], explain:'No-improvement → shrink step size by decay factor γ.'},
+    ],
+  },
+  {
+    id:'gps', group:'direct', name:'Generalised Pattern Search', lecture:'Lec 7',
+    intuition:'Like Hooke-Jeeves but the direction set D is a positive spanning set — fewer than 2n directions can still cover ℝⁿ.',
+    notes:[
+      'D must be a positive spanning set (e.g., n+1 vectors).',
+      'Opportunistic: accept the first improving direction.',
+      'Dynamic ordering: push the successful direction to the front.',
+    ],
+    pseudo:`function generalized_pattern_search(f, x, α, D, ε, γ=0.5)
+    y, n = f(x), length(x)
+    while α > ε
+        improved = false
+        for (i, d) in enumerate(D)
+            x′ = x + α·d
+            y′ = f(x′)
+            if {0}
+                x, y, improved = x′, y′, true
+                D = pushfirst!(deleteat!(D, i), d)
+                break
+            end
+        end
+        if !improved
+            α *= γ
+        end
+    end
+    return x
+end`,
+    blanks:[
+      {answer:'y′ < y', options:['y′ < y','y′ > y','α > ε','d == 0'], explain:'Accept if the candidate improves the objective.'},
+    ],
+  },
+  {
+    id:'nm', group:'direct', name:'Nelder-Mead Simplex', lecture:'Lec 7',
+    intuition:'Maintain an n+1 vertex simplex. Reflect the worst point through the centroid; if it’s great expand, if it’s bad contract, if all fails shrink.',
+    notes:[
+      'Typical defaults: α=1, β=2, γ=0.5, σ=0.5.',
+      'Sort low→high; xl, xs, xh = lowest, second-highest, highest.',
+      'Stopping: variance of vertex values · √(1/(n+1)) < ε.',
+      'Shape adapts: reflection, expansion, contraction, shrinkage.',
+    ],
+    pseudo:`function nelder_mead(f, S, ε; α=1.0, β=2.0, γ=0.5)
+    Δ, y_arr = Inf, f.(S)
+    while Δ > ε
+        p = sortperm(y_arr)               # sort lowest to highest
+        S, y_arr = S[p], y_arr[p]
+        xl, yl = S[1], y_arr[1]           # lowest
+        xh, yh = S[end], y_arr[end]       # highest
+        xs, ys = S[end-1], y_arr[end-1]   # second-highest
+        xm = mean(S[1:end-1])             # centroid
+        xr = xm + α*(xm - xh)            # {0}
+        yr = f(xr)
+        if yr < yl
+            xe = xm + {1}*(xr - xm)        # expansion point
+            ye = f(xe)
+            S[end], y_arr[end] = ye < yr ? (xe, ye) : (xr, yr)
+        elseif yr ≥ ys
+            if yr < yh
+                xh, yh, S[end], y_arr[end] = xr, yr, xr, yr
+            end
+            xc = xm + γ*(xh - xm)        # contraction point
+            yc = f(xc)
+            if yc > yh
+                for i in 2 : length(y_arr)
+                    S[i] = (S[i] + xl)/2
+                    y_arr[i] = f(S[i])
+                end
+            else
+                S[end], y_arr[end] = xc, yc
+            end
+        else
+            S[end], y_arr[end] = xr, yr
+        end
+        Δ = std(y_arr, corrected=false)
+    end
+    return S[argmin(y_arr)]
+end`,
+    blanks:[
+      {answer:'reflection point', options:['reflection point','expansion point','shrinkage point','centroid'], explain:'xr is the reflection of xh through xm.'},
+      {answer:'β', options:['α','β','γ','σ'], explain:'Expansion uses β (typically 2).'},
+    ],
+  },
+
+  // ── SINGLE-STATE STOCHASTIC ────────────────────────────────────────────────
+  {
+    id:'hc-restart', group:'single', name:'Hill-Climbing with Random Restarts', algNum:'Algorithm 10', lecture:'Lec 9',
+    intuition:'Tweak the candidate, keep it if it’s better; periodically jump to a brand-new random candidate. Short time intervals → exploration; long → exploitation.',
+    notes:[
+      'T is the distribution of intervals between restarts.',
+      'Best tracks the best solution across all restarts.',
+      'Pure tweak-accept hill climb inside; jump randomly outside.',
+    ],
+    pseudo:`1:  T ← distribution of possible time intervals
+2:  S ← some initial random candidate solution
+3:  Best ← S
+4:  repeat
+5:      time ← random time in the near future, chosen from T
+6:      repeat
+7:          R ← Tweak(Copy(S))
+8:          if {0} then
+9:              S ← R
+10:     until S is the ideal solution, or time is up, or we have run out of total time
+11:     if Quality(S) > Quality(Best) then
+12:         Best ← S
+13:     S ← {1}
+14: until Best is the ideal solution or we have run out of total time
+15: return Best`,
+    blanks:[
+      {answer:'Quality(R) > Quality(S)', options:['Quality(R) > Quality(S)','Quality(R) < Quality(S)','R = S','R ∈ L'], explain:'Greedy accept — keep R if it’s strictly better.'},
+      {answer:'some random candidate solution', options:['some random candidate solution','Best','Tweak(S)','∅'], explain:'Restart → jump to a brand-new random candidate.'},
+    ],
+  },
+  {
+    id:'gauss', group:'single', name:'Gaussian Convolution', algNum:'Algorithm 11', lecture:'Lec 9',
+    intuition:'Add normal-distributed noise to each element. Most jumps are small (locality); occasionally large jumps. σ directly tunes exploration.',
+    notes:[
+      'Jumps can be any size; large ones are rare.',
+      'σ (or σ²) is the very direct exploration knob.',
+      'Resamples noise if vi+n falls outside [min, max].',
+    ],
+    pseudo:`1:  v⃗ ← vector ⟨v1, v2, ...vl⟩ to be convolved
+2:  p ← probability of adding noise to an element      ▷ Often p = 1
+3:  σ² ← variance of Normal distribution to convolve with   ▷ Normal = Gaussian
+4:  min ← minimum desired vector element value
+5:  max ← maximum desired vector element value         ▷ may be (-∞, ∞)
+6:  for i from 1 to l do
+7:      if p ≥ random number chosen uniformly from 0.0 to 1.0 then
+8:          repeat
+9:              n ← random number chosen from the Normal distribution {0}
+10:         until min ≤ vi + n ≤ max
+11:         vi ← vi {1} n
+12: return v⃗`,
+    blanks:[
+      {answer:'N(0, σ²)', options:['N(0, σ²)','N(vi, σ²)','U(min, max)','N(μ, 1)'], explain:'Mean 0, variance σ² — the convolution is unbiased.'},
+      {answer:'+', options:['+','−','·','='], explain:'Add the noise to the current value.'},
+    ],
+  },
+  {
+    id:'sa', group:'single', name:'Simulated Annealing', algNum:'Algorithm 13', lecture:'Lec 9',
+    intuition:'Hill climb but occasionally accept a worse R, with probability that shrinks as temperature t cools. t=∞ → random walk; t=0 → pure hill climb.',
+    notes:[
+      't is temperature, decreased over time on some schedule.',
+      'Acceptance probability of a worse R = e^((Q(R)-Q(S))/t).',
+      'Works on combinatorial spaces too (e.g., TSP).',
+    ],
+    pseudo:`1:  t ← temperature, initially a high number
+2:  S ← some initial candidate solution
+3:  Best ← S
+4:  repeat
+5:      R ← Tweak(Copy(S))
+6:      if Quality(R) > Quality(S) or if a random number chosen from 0 to 1
+            < {0}  then
+7:          S ← R
+8:      {1}
+9:      if Quality(S) > Quality(Best) then
+10:         Best ← S
+11: until Best is the ideal solution, we have run out of time, or t ≤ 0
+12: return Best`,
+    blanks:[
+      {answer:'e^((Quality(R) - Quality(S)) / t)', options:['e^((Quality(R) - Quality(S)) / t)','e^((Quality(S) - Quality(R)) / t)','1 / t','Quality(R) / Quality(S)'], explain:'Boltzmann-style acceptance probability.'},
+      {answer:'Decrease t', options:['Decrease t','Increase t','Reset t','Set t ← 0'], explain:'Temperature decreases over time per the cooling schedule.'},
+    ],
+  },
+  {
+    id:'tabu', group:'single', name:'Tabu Search', algNum:'Algorithm 14', lecture:'Lec 9',
+    intuition:'Don’t go back where you’ve already been. Maintain a FIFO list L of recently visited solutions; sample n tweaks per step, reject candidates in L.',
+    notes:[
+      'L has maximum length l; oldest entries fall off.',
+      'Each step samples n tweaks; pick the best that’s not in L.',
+      'Real-valued spaces need a "sufficiently close" notion.',
+    ],
+    pseudo:`1:  l ← desired maximum tabu list length
+2:  n ← number of tweaks desired to sample the gradient
+3:  S ← some initial candidate solution
+4:  Best ← S
+5:  L ← {} a tabu list of maximum length l    ▷ First-in, first-out queue
+6:  Enqueue S into L
+7:  repeat
+8:      if Length(L) > l then
+9:          Remove oldest element from L
+10:     R ← Tweak(Copy(S))
+11:     for n − 1 times do
+12:         W ← Tweak(Copy(S))
+13:         if W ∉ L and (Quality(W) > Quality(R) or R ∈ L) then
+14:             R ← W
+15:     if {0} then
+16:         S ← R
+17:         Enqueue R into L
+18:     if Quality(S) > Quality(Best) then
+19:         Best ← S
+20: until Best is the ideal solution or we have run out of time
+21: return Best`,
+    blanks:[
+      {answer:'R ∉ L', options:['R ∉ L','R ∈ L','Quality(R) > Quality(S)','Length(L) > l'], explain:'Only adopt R if it is not tabu (not on the recent-visit list).'},
+    ],
+  },
+  {
+    id:'ils', group:'single', name:'Iterated Local Search (ILS)', algNum:'Algorithm 16', lecture:'Lec 9',
+    intuition:'Better local optima are usually near the one you’re in. Hill-climb to a peak, perturb home base, repeat.',
+    notes:[
+      'H = current "home base" local optimum.',
+      'NewHomeBase(H, S): decide whether to retain or replace.',
+      'Perturb(H): jump big enough to escape, small enough to stay nearby.',
+      '"Hill climb of hill climbs" vs "random walk of hill climbs".',
+    ],
+    pseudo:`1:  T ← distribution of possible time intervals
+2:  S ← some initial random candidate solution
+3:  H ← S                              ▷ The current "home base" local optimum
+4:  Best ← S
+5:  repeat
+6:      time ← random time in the near future, chosen from T
+7:      repeat
+8:          R ← Tweak(Copy(S))
+9:          if Quality(R) > Quality(S) then
+10:             S ← R
+11:     until S is the ideal solution, or time is up, or we have run out of total time
+12:     if Quality(S) > Quality(Best) then
+13:         Best ← S
+14:     H ← {0}
+15:     S ← {1}
+16: until Best is the ideal solution or we have run out of total time
+17: return Best`,
+    blanks:[
+      {answer:'NewHomeBase(H, S)', options:['NewHomeBase(H, S)','Perturb(H)','S','Best'], explain:'Update home base via the chosen heuristic.'},
+      {answer:'Perturb(H)', options:['NewHomeBase(H, S)','Perturb(H)','random value','S'], explain:'Perturb home base to seed the next inner climb.'},
+    ],
+  },
+
+  // ── EVOLUTIONARY STRATEGIES ─────────────────────────────────────────────────
+  {
+    id:'ea-abstract', group:'evol', name:'Abstract Generational EA', algNum:'Algorithm 17', lecture:'Lec 10',
+    intuition:'The skeleton every EA fits: assess fitness, track best, breed offspring, join into next generation.',
+    notes:[
+      'AssessFitness — can be expensive.',
+      'Breed — selection + tweaking (mutation and/or recombination).',
+      'Join — replace, or keep some fitter parents.',
+    ],
+    pseudo:`P ← BuildInitialPopulation()
+Best ← ∅                           // ∅ means "nobody yet"
+repeat
+    AssessFitness(P)
+    for each individual Pᵢ ∈ P do
+        if Best = ∅ or Fitness(Pᵢ) > Fitness(Best) then
+            Best ← Pᵢ              // Fitness is just Quality
+    P ← {0}
+until Best is the ideal solution or we have run out of time
+return Best`,
+    blanks:[
+      {answer:'Join(P, Breed(P))', options:['Join(P, Breed(P))','Breed(P)','Mutate(P)','SelectWithReplacement(P)'], explain:'Children come from Breed; the next generation is Join(parents, children).'},
+    ],
+  },
+  {
+    id:'mu-lambda', group:'evol', name:'(μ, λ) Evolution Strategy', algNum:'Algorithm 18', lecture:'Lec 10',
+    intuition:'Keep the top μ parents, mutate each λ/μ times to make λ children, then REPLACE the parents with the children.',
+    notes:[
+      'μ = parents kept (truncation selection).',
+      'λ = number of children produced.',
+      'Children REPLACE parents — no parent persists.',
+      'Lower premature-convergence risk than (μ + λ).',
+    ],
+    pseudo:`μ ← number of parents selected
+λ ← number of children generated by the parents
+
+P ← {}
+for λ times do                                   ▷ Build Initial Population
+    P ← P ∪ {new random individual}
+
+Best ← ∅
+repeat
+    for each individual Pᵢ ∈ P do
+        AssessFitness(Pᵢ)
+        if Best = ∅ or Fitness(Pᵢ) > Fitness(Best) then
+            Best ← Pᵢ
+    Q ← the μ individuals in P with greatest Fitness()   ▷ Truncation Selection
+    P ← {0}                                              ▷ Join = {1}
+    for each individual Qⱼ ∈ Q do
+        for λ/μ times do
+            P ← P ∪ {Mutate(Copy(Qⱼ))}
+until Best is the ideal solution or we have run out of time
+return Best`,
+    blanks:[
+      {answer:'{}', options:['{}','Q','P','Q ∪ P'], explain:'Children replace parents — start with empty P.'},
+      {answer:'replace P with children', options:['replace P with children','keep parents in P','union of P and Q','union of children and best'], explain:'(μ, λ): offspring-only — parents do NOT survive.'},
+    ],
+  },
+  {
+    id:'mu-plus-lambda', group:'evol', name:'(μ + λ) Evolution Strategy', algNum:'Algorithm 19', lecture:'Lec 10',
+    intuition:'Like (μ, λ) but the top μ parents COMPETE with their children for the next generation — more exploitative.',
+    notes:[
+      'Only line that changes: P ← Q (keep parents) instead of P ← {}.',
+      'Risk: premature convergence — a great parent never dies.',
+      'Equivalent in spirit to GA elitism.',
+    ],
+    pseudo:`μ ← number of parents selected
+λ ← number of children generated by the parents
+
+P ← {}
+for λ times do                         ▷ Or perhaps λ + μ — see Luke footnote 18
+    P ← P ∪ {new random individual}
+
+Best ← ∅
+repeat
+    for each individual Pᵢ ∈ P do
+        AssessFitness(Pᵢ)
+        if Best = ∅ or Fitness(Pᵢ) > Fitness(Best) then
+            Best ← Pᵢ
+    Q ← the μ individuals in P with greatest Fitness()
+    P ← {0}                             ▷ KEY DIFFERENCE: Join keeps parents in P
+    for each individual Qⱼ ∈ Q do
+        for λ/μ times do
+            P ← P ∪ {Mutate(Copy(Qⱼ))}
+until Best is the ideal solution or we have run out of time
+return Best`,
+    blanks:[
+      {answer:'Q', options:['Q','{}','P','{}∩Q'], explain:'(μ + λ): parents (Q) stay; offspring are added to them.'},
+    ],
+  },
+
+  // ── GENETIC ALGORITHMS ───────────────────────────────────────────────────────
+  {
+    id:'ga', group:'ga', name:'The Genetic Algorithm', algNum:'Algorithm 20', lecture:'Lec 11',
+    intuition:'Holland’s playbook: select two parents with replacement, crossover, mutate both children, repeat popsize/2 times. Crossover is the primary operator.',
+    notes:[
+      'popsize must be even.',
+      'SelectWithReplacement may pick the same individual twice.',
+      'Children = Mutate(Crossover(Copy(Pa), Copy(Pb))).',
+    ],
+    pseudo:`1:  popsize ← desired population size       ▷ Basically λ. Make it even.
+2:  P ← {}
+3:  for popsize times do
+4:      P ← P ∪ {new random individual}
+5:  Best ← □
+6:  repeat
+7:      for each individual Pᵢ ∈ P do
+8:          AssessFitness(Pᵢ)
+9:          if Best = □ or Fitness(Pᵢ) > Fitness(Best) then
+10:             Best ← Pᵢ
+11:     Q ← {}                             ▷ Begin deviation from (μ, λ)
+12:     for popsize/2 times do
+13:         Parent P_a ← {0}
+14:         Parent P_b ← {0}
+15:         Children C_a, C_b ← Crossover({1})
+16:         Q ← Q ∪ {Mutate(C_a), Mutate(C_b)}
+17:     P ← Q                              ▷ End of deviation
+18: until Best is the ideal solution or we have run out of time
+19: return Best`,
+    blanks:[
+      {answer:'SelectWithReplacement(P)', options:['SelectWithReplacement(P)','Truncation(P, μ)','Mutate(P)','Tabu(P)'], explain:'Two parents are independently selected (with replacement).'},
+      {answer:'Copy(P_a), Copy(P_b)', options:['Copy(P_a), Copy(P_b)','P_a, P_b','Mutate(P_a), Mutate(P_b)','Q, P'], explain:'Crossover works on COPIES — originals stay intact for re-selection.'},
+    ],
+  },
+  {
+    id:'rand-bitvec', group:'ga', name:'Generate a Random Bit-Vector', algNum:'Algorithm 21', lecture:'Lec 11',
+    intuition:'Each gene is independently true with probability 0.5.',
+    notes:[
+      'Simplest unbiased initialisation.',
+      'Generalises to other alphabets and representations.',
+    ],
+    pseudo:`1:  v⃗ ← a new vector ⟨v_1, v_2, ..., v_l⟩
+2:  for i from 1 to l do
+3:      if {0} > a random number chosen uniformly between 0.0 and 1.0 inclusive then
+4:          v_i ← true
+5:      else
+6:          v_i ← false
+7:  return v⃗`,
+    blanks:[
+      {answer:'0.5', options:['0.5','1/l','p','σ'], explain:'Fair coin → 0.5.'},
+    ],
+  },
+  {
+    id:'bit-flip', group:'ga', name:'Bit-Flip Mutation', algNum:'Algorithm 22', lecture:'Lec 11',
+    intuition:'For each bit, with small probability p (often 1/l), flip it. Expected number of flips per individual = p·l.',
+    notes:[
+      'Often p = 1/l → expected 1 flip per individual.',
+      'Maintains diversity; can re-open hypercube dimensions that crossover has collapsed.',
+    ],
+    pseudo:`1:  p ← probability of flipping a bit              ▷ Often p is set to {0}
+2:  v⃗ ← boolean vector ⟨v_1, v_2, ..., v_l⟩ to be mutated
+
+3:  for i from 1 to l do
+4:      if p ≥ random number chosen uniformly from 0.0 to 1.0 inclusive then
+5:          v_i ← {1}
+6:  return v⃗`,
+    blanks:[
+      {answer:'1/l', options:['1/l','0.5','1','0'], explain:'Canonical choice: one expected flip per individual.'},
+      {answer:'¬(v_i)', options:['¬(v_i)','v_i','true','false'], explain:'Flip = logical NOT.'},
+    ],
+  },
+  {
+    id:'1pt', group:'ga', name:'One-Point Crossover', algNum:'Algorithm 23', lecture:'Lec 11',
+    intuition:'Pick a cut point c uniformly in [1, l]; swap everything from c onwards. v₁ and v_l have a high (l−1)/l chance of being separated.',
+    notes:[
+      'Worst linkage for v₁ and v_l.',
+      'Best linkage for adjacent vᵢ and vᵢ₊₁.',
+    ],
+    pseudo:`1:  v⃗ ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
+2:  w⃗ ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
+
+3:  c ← random integer chosen uniformly from 1 to l inclusive
+4:  if c ≠ 1 then
+5:      for i from {0} to {1} do
+6:          Swap the values of v_i and w_i
+7:  return v⃗ and w⃗`,
+    blanks:[
+      {answer:'c', options:['1','c','c+1','l-c'], explain:'Swap region begins at c.'},
+      {answer:'l', options:['l-1','l','c+1','l/2'], explain:'Swap region ends at l.'},
+    ],
+  },
+  {
+    id:'2pt', group:'ga', name:'Two-Point Crossover', algNum:'Algorithm 24', lecture:'Lec 11',
+    intuition:'Pick two cut points c < d; swap the interior segment. Best visualised as cutting a ring — distance, not position, governs linkage.',
+    notes:[
+      'P(v₁ and v_l separated) = 2/l (same as adjacent genes).',
+      'Distant-but-not-endpoint genes still vulnerable.',
+    ],
+    pseudo:`1:  v⃗ ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
+2:  w⃗ ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
+
+3:  c ← random integer chosen uniformly from 1 to l inclusive
+4:  d ← random integer chosen uniformly from 1 to l inclusive
+5:  if c > d then
+6:      {0}
+7:  if c ≠ d then
+8:      for i from c to {1} do
+9:          Swap the values of v_i and w_i
+10: return v⃗ and w⃗`,
+    blanks:[
+      {answer:'Swap c and d', options:['Swap c and d','Set d = c','Return','Continue'], explain:'Ensure c ≤ d before iterating.'},
+      {answer:'d - 1', options:['d - 1','d','d + 1','l'], explain:'Swap from c up to (but not including) d.'},
+    ],
+  },
+  {
+    id:'uniform-x', group:'ga', name:'Uniform Crossover', algNum:'Algorithm 25', lecture:'Lec 11',
+    intuition:'For each index independently, swap with probability p (≤0.5). Equal linkage across all gene pairs.',
+    notes:[
+      'P(separation) for any two genes = 2p(1−p).',
+      'Disrupts building blocks aggressively if p is large.',
+    ],
+    pseudo:`1:  p ← probability of swapping an index            ▷ Often p = 1/l. At any rate, p ≤ 0.5
+2:  v⃗ ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
+3:  w⃗ ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
+
+4:  for i from 1 to l do
+5:      if {0} then
+6:          Swap the values of v_i and w_i
+7:  return v⃗ and w⃗`,
+    blanks:[
+      {answer:'p ≥ random number chosen uniformly from 0.0 to 1.0 inclusive', options:['p ≥ random number chosen uniformly from 0.0 to 1.0 inclusive','p ≤ 0.5','i = c','random < 0.5'], explain:'Each index swap is independent with probability p.'},
+    ],
+  },
+  {
+    id:'roulette', group:'ga', name:'Fitness-Proportionate (Roulette) Selection', algNum:'Algorithm 30', lecture:'Lec 11',
+    intuition:'Stack fitnesses into a CDF; pick a uniform random point on the stack and return whichever individual’s slice contains it.',
+    notes:[
+      'Assumes fitness is absolute (not just relative).',
+      'Build CDF once per generation; lookup is each call.',
+      'Vulnerable to flat-fitness landscapes (all picks ~uniform).',
+    ],
+    pseudo:`Perform once per generation                         ▷ Or whenever any fitnesses change
+1:  global p⃗ ← population copied into a vector of individuals ⟨p_1, p_2, ..., p_l⟩
+3:  global f⃗ ← ⟨f_1, f_2, ..., f_l⟩ fitnesses of individuals in p⃗  ▷ Must all be ≥ 0
+4:  if f⃗ is all 0.0s then                          ▷ Deal with all 0 fitnesses gracefully
+5:      Convert f⃗ to all 1.0s
+6:  for i from 2 to l do                            ▷ Convert f⃗ to a CDF; f_l = s
+7:      f_i ← {0}
+
+Perform each time
+9:   n ← random number from 0 to f_l inclusive
+10:  for i from 2 to l do                           ▷ Could use binary search
+11:      if {1} then
+12:          return p_i
+13:  return p_1`,
+    blanks:[
+      {answer:'f_i + f_{i-1}', options:['f_i + f_{i-1}','f_i · f_{i-1}','f_i / s','f_l - f_i'], explain:'Build the CDF by cumulative addition.'},
+      {answer:'f_{i-1} < n ≤ f_i', options:['f_{i-1} < n ≤ f_i','n = f_i','n > f_l','n < f_1'], explain:'Find the slice (f_{i-1}, f_i] containing the random point n.'},
+    ],
+  },
+  {
+    id:'sus', group:'ga', name:'Stochastic Universal Sampling', algNum:'Algorithm 31', lecture:'Lec 11',
+    intuition:'Like roulette but with n equally-spaced pointers on a single random offset — low-variance resampling that guarantees fair representation.',
+    notes:[
+      'Any individual with f_i ≥ s/n gets chosen at least once.',
+      'O(n) complexity; single random number per generation.',
+      'Variance much lower than vanilla roulette.',
+    ],
+    pseudo:`Perform once per n individuals produced            ▷ Usually n = l (once per generation)
+1:  global p⃗ ← copy of population ⟨p_1, p_2, ..., p_l⟩, shuffled randomly
+3:  global f⃗ ← ⟨f_1, f_2, ..., f_l⟩ fitnesses in same order as p⃗   ▷ All must be ≥ 0
+4:  global index ← 0
+5:  if f⃗ is all 0.0s then
+6:      Convert f⃗ to all 1.0s
+7:  for i from 2 to l do                            ▷ Convert f⃗ to a CDF; f_l = s
+8:      f_i ← f_i + f_{i-1}
+9:  global value ← random number from 0 to {0} inclusive
+
+Perform each time
+11: while f_{index} < value do
+12:     index ← index + 1
+13: value ← value + {1}
+14: return p_{index}`,
+    blanks:[
+      {answer:'f_l/n', options:['f_l/n','f_l','1/n','s'], explain:'Random offset within ONE slice of size s/n.'},
+      {answer:'f_l / n', options:['f_l / n','1 / n','f_l','s / l'], explain:'Advance by exactly one slice each call.'},
+    ],
+  },
+  {
+    id:'tournament', group:'ga', name:'Tournament Selection', algNum:'Algorithm 32', lecture:'Lec 11',
+    intuition:'Pick t individuals at random; return the fittest. t=1 → random; t≫popsize → truncation. Non-parametric and trivially parallel.',
+    notes:[
+      'Only the RANK ORDER of fitnesses matters — magnitudes are irrelevant.',
+      'Tuneable via tournament size t.',
+      'Most popular selection method for GAs.',
+    ],
+    pseudo:`1:  P ← population
+2:  t ← tournament size, t ≥ 1
+
+3:  Best ← individual picked at random from P with replacement
+4:  for i from 2 to t do
+5:      Next ← individual picked at random from P with replacement
+6:      if {0} then
+7:          Best ← Next
+8:  return Best`,
+    blanks:[
+      {answer:'Fitness(Next) > Fitness(Best)', options:['Fitness(Next) > Fitness(Best)','Fitness(Next) < Fitness(Best)','Next ∈ P','i = t'], explain:'Keep the strictly fitter of the two.'},
+    ],
+  },
+  {
+    id:'ga-elitism', group:'ga', name:'GA with Elitism', algNum:'Algorithm 33', lecture:'Lec 11',
+    intuition:'Carry forward the n fittest individuals UNCHANGED, then fill the rest of the next generation with normal GA breeding.',
+    notes:[
+      '(popsize − n) must be even.',
+      'Best monotonically improves — never goes backwards.',
+      'Risk: elites flood the gene pool → premature convergence.',
+    ],
+    pseudo:`1:  popsize ← desired population size
+2:  n ← desired number of elite individuals       ▷ popsize - n should be even
+
+3:  P ← {}
+4:  for popsize times do
+5:      P ← P ∪ {new random individual}
+6:  Best ← □
+7:  repeat
+8:      for each individual Pᵢ ∈ P do
+9:          AssessFitness(Pᵢ)
+10:         if Best = □ or Fitness(Pᵢ) > Fitness(Best) then
+11:             Best ← Pᵢ
+12:     Q ← {0}
+13:     for (popsize − n)/2 times do
+14:         Parent P_a ← SelectWithReplacement(P)
+15:         Parent P_b ← SelectWithReplacement(P)
+16:         Children C_a, C_b ← Crossover(Copy(P_a), Copy(P_b))
+17:         Q ← Q ∪ {Mutate(C_a), Mutate(C_b)}
+18:     P ← Q
+19: until Best is the ideal solution or we have run out of time
+20: return Best`,
+    blanks:[
+      {answer:'{the n fittest individuals in P, breaking ties at random}', options:['{the n fittest individuals in P, breaking ties at random}','{}','{Best}','SelectWithReplacement(P)'], explain:'Seed Q with the elite group BEFORE breeding the rest.'},
+    ],
+  },
+
+  // ── EMERGENT & HYBRID ───────────────────────────────────────────────────────
+  {
+    id:'pso', group:'emergent', name:'Particle Swarm Optimisation (PSO)', algNum:'Algorithm 39', lecture:'Lec 12',
+    intuition:'Each particle has a velocity blending its inertia (α) with attractions to personal best (β), informants’ best (γ), and global best (δ). ε scales the step.',
+    notes:[
+      'x* = particle’s own historical best.',
+      'x⁺ = best in the particle’s neighbourhood/informants.',
+      'x! = global best across the swarm.',
+      'α → exploration; δ → exploitation toward best.',
+    ],
+    pseudo:`1:  swarmsize ← desired swarm size
+2:  α ← proportion of velocity to be retained
+3:  β ← proportion of personal best to be retained
+4:  γ ← proportion of the informants’ best to be retained
+5:  δ ← proportion of global best to be retained
+6:  ε ← jump size of a particle
+
+7:  P ← {}
+8:  for swarmsize times do
+9:      P ← P ∪ {new random particle x with a random initial velocity v}
+10: Best ← □
+11: repeat
+12:     for each particle x ∈ P with velocity v do
+13:         AssessFitness(x)
+14:         if Best = □ or Fitness(x) > Fitness(Best) then
+15:             Best ← x
+16:     for each particle x ∈ P with velocity v do      ▷ Determine how to Mutate
+17:         x*  ← previous fittest location of x
+18:         x+  ← previous fittest location of informants of x   ▷ (including x itself)
+19:         x!  ← previous fittest location any particle
+20:         for each dimension i do
+21:             b ← random number from 0.0 to β inclusive
+22:             c ← random number from 0.0 to γ inclusive
+23:             d ← random number from 0.0 to δ inclusive
+24:             v_i ← {0}
+25:     for each particle x ∈ P with velocity v do      ▷ Mutate
+26:         x ← {1}
+27: until Best is the ideal solution or we have run out of time
+28: return Best`,
+    blanks:[
+      {answer:'α·v_i + b(x_i* − x_i) + c(x_i+ − x_i) + d(x_i! − x_i)', options:['α·v_i + b(x_i* − x_i) + c(x_i+ − x_i) + d(x_i! − x_i)','α·v_i + b·x_i*','v_i + α·∇f(x)','β(x_i! − x_i)'], explain:'Velocity is a weighted blend of inertia + 3 attractors.'},
+      {answer:'x + ε·v', options:['x + ε·v','x − ε·v','v + ε·x','ε(x* + v)'], explain:'Position update: integrate velocity by step size ε.'},
+    ],
+  },
+  {
+    id:'hybrid', group:'emergent', name:'Abstract Hybrid EA + Hill-Climb', algNum:'Algorithm 36', lecture:'Lec 12',
+    intuition:'Each evaluation in an EA is followed by t iterations of hill-climbing on that individual — combine global exploration of EA with local exploitation of HC.',
+    notes:[
+      'Hill-Climb runs for t iterations PER individual.',
+      'Hill-climbed individuals REPLACE the originals in P.',
+      'Also called "memetic" algorithms (memes ~ genes).',
+    ],
+    pseudo:`1:  t ← number of iterations to Hill-Climb
+
+2:  P ← Build Initial Population
+3:  Best ← □
+4:  repeat
+5:      AssessFitness(P)
+6:      for each individual Pᵢ ∈ P do
+7:          Pᵢ ← {0}          ▷ Replace Pᵢ in P
+8:          if Best = □ or Fitness(Pᵢ) > Fitness(Best) then
+9:              Best ← Pᵢ
+10:     P ← Join(P, Breed(P))
+11: until Best is the ideal solution or we have run out of time
+12: return Best`,
+    blanks:[
+      {answer:'Hill-Climb(Pᵢ) for t iterations', options:['Hill-Climb(Pᵢ) for t iterations','Mutate(Pᵢ)','Crossover(Pᵢ, P_j)','Copy(Pᵢ)'], explain:'Replace each individual with its locally-improved version.'},
+    ],
+  },
+  {
+    id:'de', group:'emergent', name:'Differential Evolution — Mutation Operator', lecture:'Lec 12',
+    intuition:'Pick three distinct individuals A, B, C. The child = A + F·(B − C). Step size auto-scales with population spread.',
+    notes:[
+      'Reminiscent of Nelder-Mead reflection.',
+      'Mutation magnitude shrinks naturally as the population converges.',
+      'F is a scale parameter (typically 0.5–1.0).',
+    ],
+    pseudo:`Pick three distinct individuals A, B, C from the population.
+The child is formed by vector addition:
+
+    child ← A {0} F·({1} − {2})
+
+The bigger the population spread, the bigger the step.
+Children compete directly against their immediate parents.`,
+    blanks:[
+      {answer:'+', options:['+','−','·','/'], explain:'Add the scaled difference vector to A.'},
+      {answer:'B', options:['A','B','C','child'], explain:'B and C define the difference vector.'},
+      {answer:'C', options:['A','B','C','child'], explain:'B − C is the difference.'},
+    ],
+  },
+];
+
+// ── Boss quizzes per stage ──────────────────────────────────────────────────────
+const ATLAS_QUIZZES = {
+  gradient: [
+    {q:'What does α control in gradient descent?', opts:['Stopping tolerance','Step size (learning rate)','Direction of descent','Curvature'], ans:1, expl:'α scales the magnitude of each step. Sign of f′ already gives direction.'},
+    {q:'Newton-Raphson for optimisation uses which update?', opts:['x ← x − α f′(x)','x ← x − f(x)/f′(x)','x ← x − f′(x)/f′′(x)','x ← x + α ∇f(x)'], ans:2, expl:'N-R for optima: divide first derivative by second derivative.'},
+    {q:'N-R requires which smoothness class?', opts:['C⁰','C¹','C²','C∞'], ans:2, expl:'Twice differentiable — we need f′′.'},
+    {q:'In Gradient Ascent with Restarts, when do you update the best x⃗*?', opts:['Every iteration','When the inner loop converges and f(x⃗) > f(x⃗*)','Only at the very end','After every restart, unconditionally'], ans:1, expl:'After each climb, check whether the new local optimum beats the recorded best.'},
+  ],
+  direct: [
+    {q:'Hooke-Jeeves does HOW many evaluations per step in n dimensions?', opts:['n','n+1','2n','2ⁿ'], ans:2, expl:'Two directions (±) per dimension → 2n samples.'},
+    {q:'Powell’s Method differs from CCS by:', opts:['Using gradients','Maintaining an adaptive QUEUE of search directions','Shrinking step size each cycle','Doubling the simplex'], ans:1, expl:'Powell keeps a queue of n directions; the oldest is replaced by the latest xⁿ − x⁰.'},
+    {q:'In Nelder-Mead, what is xm?', opts:['The highest vertex','The lowest vertex','The centroid of all vertices except xh','The reflection of xh'], ans:2, expl:'Centroid = mean of all vertices except the highest (worst).'},
+    {q:'A "positive spanning set" in GPS guarantees what?', opts:['Linear independence','At least one descent direction from any point','Convergence in n+1 steps','Constant-time evaluation'], ans:1, expl:'Any non-stationary point has at least one direction in D pointing downhill.'},
+  ],
+  single: [
+    {q:'In Hill-Climbing with Random Restarts, short time intervals favour:', opts:['Exploitation','Exploration','Convergence','Pure greedy'], ans:1, expl:'Short intervals → frequent restarts → more exploration.'},
+    {q:'The Simulated Annealing acceptance probability for a worse R equals:', opts:['1/t','e^((Q(R) − Q(S))/t)','e^((Q(S) − Q(R))/t)','Q(R)/Q(S)'], ans:1, expl:'Boltzmann — with Q(R)<Q(S) the exponent is negative.'},
+    {q:'Tabu Search’s tabu list is implemented as:', opts:['A stack (LIFO)','A FIFO queue with bounded length','A binary tree','A hash set with no capacity'], ans:1, expl:'Oldest visited solutions fall off the end as new ones arrive.'},
+    {q:'Iterated Local Search uses which heuristic for restarts?', opts:['Restart uniformly at random','Restart near the previous local optimum','Restart at the best','Restart at a fixed grid'], ans:1, expl:'Assume better optima are NEAR the current one; perturb home base.'},
+    {q:'σ (or σ²) in Gaussian Convolution directly tunes:', opts:['Stopping tolerance','Mutation probability','Rate of exploration','Number of restarts'], ans:2, expl:'Larger σ → bigger typical jumps → more exploration.'},
+  ],
+  evol: [
+    {q:'In (μ, λ), where do the parents end up in the next generation?', opts:['Mixed with offspring','REPLACED by offspring','Kept only if elite','Discarded only on plateau'], ans:1, expl:'Comma scheme — offspring-only.'},
+    {q:'(μ + λ) differs from (μ, λ) on exactly which line?', opts:['Build initial population','Truncation step','P ← {} vs P ← Q','for λ/μ times'], ans:2, expl:'Plus scheme keeps parents (P ← Q) instead of starting empty.'},
+    {q:'How many children does each parent produce in (μ, λ)?', opts:['1','λ','λ/μ','μ'], ans:2, expl:'Total λ offspring spread across μ parents.'},
+    {q:'Rechenberg’s One-Fifth Rule says: if p_s > 1/5, you should:', opts:['Decrease σ²','Increase σ²','Reset population','Keep σ² fixed'], ans:1, expl:'Too many improvements → over-exploiting; jump bigger.'},
+  ],
+  ga: [
+    {q:'In Algorithm 20, how many children are produced per crossover call?', opts:['1','2','popsize/2','popsize'], ans:1, expl:'Each Crossover returns C_a and C_b — two children.'},
+    {q:'Bit-Flip Mutation at p = 1/l gives an expected flip count per individual of:', opts:['0','1','l','l/2'], ans:1, expl:'Expectation = p·l = 1.'},
+    {q:'Two-Point Crossover’s probability of separating v₁ and v_l is:', opts:['1/l','(l−1)/l','2/l','2p(1−p)'], ans:2, expl:'Like any adjacent pair on the ring — just 2 cut points around them.'},
+    {q:'Tournament selection with t = 1 is equivalent to:', opts:['Truncation selection','Uniform random selection','Roulette','Elitism'], ans:1, expl:'Just one random pick — no comparison.'},
+    {q:'Crossover ALONE cannot:', opts:['Spread good substrings','Restore a collapsed dimension of the hypercube','Produce identical children','Operate on real-valued vectors'], ans:1, expl:'If all parents share a gene, crossover preserves that value — only mutation can reopen it.'},
+    {q:'GA with Elitism risks:', opts:['Loss of best','Premature convergence','Slow fitness improvement','Linear time complexity'], ans:1, expl:'Elites flood the gene pool.'},
+  ],
+  emergent: [
+    {q:'In PSO, x⁺ represents:', opts:['Particle’s own historical best','Best in particle’s informants','Global best','Latest velocity'], ans:1, expl:'Star=personal, plus=neighbourhood, bang=global.'},
+    {q:'The PSO position update is:', opts:['x ← x + α·v','x ← x + ε·v','x ← v + ε·x','x ← α·x + ε·v'], ans:1, expl:'ε scales velocity to a step.'},
+    {q:'Differential Evolution’s child = ?', opts:['A + F·B','A + F·(B − C)','(A + B + C)/3','F·∇f(A)'], ans:1, expl:'A perturbed by the scaled difference of B and C.'},
+    {q:'Hybrid / memetic algorithms typically combine:', opts:['Two crossover operators','Local search + population-based search','Two GAs in parallel','PSO and DE'], ans:1, expl:'Exploit + explore = best of both worlds.'},
+  ],
+};
+
+const ATLAS_KEY = 'cits4404_atlas_progress_v1';
+
+function loadAtlasProgress() {
+  try {
+    const raw = localStorage.getItem(ATLAS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { mastery:{}, quizzes:{}, streak:0, lastDate:null };
+}
+function saveAtlasProgress(p) {
+  try { localStorage.setItem(ATLAS_KEY, JSON.stringify(p)); } catch {}
+}
+
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// === Pseudo renderer with optional blanks =====================================
+function PseudoRender({ algo, mode, blankState, onBlankPick, revealAll }) {
+  // Parse template: split by /{n}/g where n is digit
+  const lines = algo.pseudo.split('\n');
+  return (
+    <div style={{background:'var(--bg-2)',border:'1px solid rgba(148,163,184,0.18)',borderRadius:8,padding:'0.9rem 1rem',fontFamily:'monospace',fontSize:'0.78rem',lineHeight:1.85,color:'var(--text-1)',whiteSpace:'pre-wrap',overflowX:'auto'}}>
+      {lines.map((line, li) => {
+        const parts = [];
+        let lastIdx = 0;
+        const re = /\{(\d+)\}/g;
+        let m;
+        let key = 0;
+        while ((m = re.exec(line)) !== null) {
+          if (m.index > lastIdx) parts.push(<span key={key++}>{line.slice(lastIdx, m.index)}</span>);
+          const bn = +m[1];
+          const blank = algo.blanks[bn];
+          const state = blankState && blankState[bn];
+          if (mode === 'study' || revealAll) {
+            parts.push(
+              <span key={key++} style={{background:'rgba(34,211,238,0.15)',padding:'0 4px',borderRadius:4,color:'#22d3ee',fontWeight:600,border:'1px dashed rgba(34,211,238,0.4)'}}>
+                {blank?.answer ?? '?'}
+              </span>
+            );
+          } else if (mode === 'blanks') {
+            if (state?.locked) {
+              const isRight = state.pick === blank.answer;
+              parts.push(
+                <span key={key++} style={{background:isRight?'rgba(52,211,153,0.18)':'rgba(251,113,133,0.18)',padding:'0 4px',borderRadius:4,color:isRight?'#34d399':'#fb7185',fontWeight:700,border:`1px solid ${isRight?'#34d399':'#fb7185'}`}}>
+                  {state.pick}{isRight?' ✓':` ✘ (→ ${blank.answer})`}
+                </span>
+              );
+            } else {
+              parts.push(
+                <select key={key++} value={state?.pick ?? ''} onChange={e=>onBlankPick(bn, e.target.value)}
+                  style={{background:'rgba(167,139,250,0.12)',border:'1px solid #a78bfa',borderRadius:4,color:'#a78bfa',padding:'1px 4px',fontFamily:'monospace',fontSize:'0.76rem',fontWeight:600}}>
+                  <option value="">_____</option>
+                  {blank.options.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              );
+            }
+          }
+          lastIdx = m.index + m[0].length;
+        }
+        if (lastIdx < line.length) parts.push(<span key={key++}>{line.slice(lastIdx)}</span>);
+        return <div key={li}>{parts.length ? parts : line || ' '}</div>;
+      })}
+    </div>
+  );
+}
+
+// === Single Algorithm Card with mode tabs =====================================
+function AlgorithmCard({ algo, progress, setProgress, onBack }) {
+  const group = ATLAS_GROUPS.find(g => g.id === algo.group);
+  const [mode, setMode] = useState('study');
+  const [blankState, setBlankState] = useState({});
+  const [orderState, setOrderState] = useState(() => shuffleArr(algo.pseudo.split('\n').map((line,i)=>({line, origIdx:i}))));
+  const [revealOrder, setRevealOrder] = useState(false);
+
+  useEffect(() => {
+    setBlankState({});
+    setOrderState(shuffleArr(algo.pseudo.split('\n').map((line,i)=>({line, origIdx:i}))));
+    setRevealOrder(false);
+  }, [algo.id]);
+
+  const onBlankPick = (n, val) => {
+    if (!val) return;
+    setBlankState(s => ({...s, [n]: { pick:val, locked:true } }));
+  };
+
+  const blankScore = useMemo(() => {
+    const total = algo.blanks.length;
+    let right = 0;
+    for (let i = 0; i < total; i++) {
+      const st = blankState[i];
+      if (st?.locked && st.pick === algo.blanks[i].answer) right++;
+    }
+    return { right, total, done: Object.keys(blankState).length === total };
+  }, [blankState, algo.blanks]);
+
+  const orderRight = useMemo(() => {
+    return orderState.every((it, i) => it.origIdx === i);
+  }, [orderState]);
+
+  const recordMastery = useCallback((field, value) => {
+    setProgress(p => {
+      const np = {...p, mastery:{...p.mastery}};
+      const m = np.mastery[algo.id] || {};
+      np.mastery[algo.id] = {...m, [field]:value, ts:Date.now()};
+      saveAtlasProgress(np);
+      return np;
+    });
+  }, [algo.id, setProgress]);
+
+  const moveUp = (i) => {
+    if (i === 0) return;
+    setOrderState(s => { const ns=[...s]; [ns[i-1],ns[i]]=[ns[i],ns[i-1]]; return ns; });
+  };
+  const moveDown = (i) => {
+    if (i === orderState.length-1) return;
+    setOrderState(s => { const ns=[...s]; [ns[i+1],ns[i]]=[ns[i],ns[i+1]]; return ns; });
+  };
+
+  const masteryBadge = (field) => {
+    const m = progress.mastery[algo.id];
+    if (m?.[field]) {
+      const c = field==='recall' ? '#34d399' : '#22d3ee';
+      return <span style={{marginLeft:4,fontSize:'0.62rem',color:c,fontFamily:'monospace'}}>✓</span>;
+    }
+    return null;
+  };
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:'0.6rem',marginBottom:'0.65rem',flexWrap:'wrap'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.72rem'}} onClick={onBack}>← Map</button>
+        <span style={{padding:'2px 9px',background:`${group.color}22`,border:`1px solid ${group.color}55`,borderRadius:6,color:group.color,fontSize:'0.65rem',fontFamily:'monospace',letterSpacing:'0.05em',fontWeight:700}}>{group.icon} {group.name.toUpperCase()}</span>
+        <span style={{fontSize:'0.65rem',color:'var(--text-2)',fontFamily:'monospace'}}>{algo.lecture}{algo.algNum?` · ${algo.algNum}`:''}</span>
+      </div>
+
+      <div style={{background:`linear-gradient(135deg,${group.color}10 0%,rgba(15,23,42,0.4) 100%)`,border:`1px solid ${group.color}44`,borderRadius:12,padding:'0.85rem 1rem',marginBottom:'0.7rem'}}>
+        <h3 style={{margin:'0 0 0.3rem 0',color:group.color,fontSize:'1.15rem'}}>{algo.name}</h3>
+        <div style={{fontSize:'0.78rem',color:'var(--text-1)',lineHeight:1.6}}>{algo.intuition}</div>
+      </div>
+
+      <div className="m4-algo-tabs" style={{marginBottom:'0.7rem'}}>
+        {[
+          ['study','§ Study'],
+          ['blanks','✏ Blanks'],
+          ['order','↕ Order'],
+          ['recall','★ Recall'],
+        ].map(([v,l]) => (
+          <button key={v} className={`m4-algo-tab ${mode===v?'m4-algo-tab--on':''}`} onClick={()=>setMode(v)}>
+            {l}{masteryBadge(v)}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'study' && (
+        <div className="m4-two-col">
+          <div>
+            <PseudoRender algo={algo} mode="study" />
+            <div style={{display:'flex',gap:'0.4rem',marginTop:'0.55rem',justifyContent:'flex-end'}}>
+              <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>recordMastery('study', true)}>I’ve studied this → next mode</button>
+            </div>
+          </div>
+          <div className="m4-card" style={{margin:0}}>
+            <div className="m4-card-h">Memory Pegs</div>
+            <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
+              {algo.notes.map((n,i) => <li key={i}>{n}</li>)}
+            </ul>
+            <div className="m4-hr"/>
+            <div className="m4-flabel">Mode legend</div>
+            <ul style={{listStyle:'none',padding:0,margin:0,fontSize:'0.72rem',lineHeight:1.7,color:'var(--text-2)'}}>
+              <li><strong style={{color:'#22d3ee'}}>§ Study</strong> — read the exact pseudocode + pegs</li>
+              <li><strong style={{color:'#a78bfa'}}>✏ Blanks</strong> — fill the missing tokens</li>
+              <li><strong style={{color:'#fbbf24'}}>↕ Order</strong> — unscramble the steps</li>
+              <li><strong style={{color:'#34d399'}}>★ Recall</strong> — rate your confidence; tracked for review</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {mode === 'blanks' && (
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.5rem',gap:'0.5rem',flexWrap:'wrap'}}>
+            <div style={{fontSize:'0.78rem',color:'var(--text-2)',lineHeight:1.55}}>
+              Pick the missing token from each dropdown. {algo.blanks.length} blank{algo.blanks.length===1?'':'s'} total.
+            </div>
+            <div style={{fontFamily:'monospace',fontSize:'0.78rem'}}>
+              <span style={{color:'var(--text-2)'}}>score: </span>
+              <span style={{color:blankScore.right===blankScore.total?'#34d399':'#fbbf24'}}>{blankScore.right}/{blankScore.total}</span>
+            </div>
+          </div>
+          <PseudoRender algo={algo} mode="blanks" blankState={blankState} onBlankPick={onBlankPick} />
+          {blankScore.done && (
+            <div style={{marginTop:'0.7rem',padding:'0.7rem',background:'rgba(15,23,42,0.5)',border:'1px solid rgba(148,163,184,0.2)',borderRadius:8}}>
+              <div style={{fontSize:'0.74rem',color:'#a78bfa',fontWeight:700,marginBottom:'0.3rem'}}>Explanations</div>
+              {algo.blanks.map((b,i) => {
+                const correct = blankState[i]?.pick === b.answer;
+                return (
+                  <div key={i} style={{fontSize:'0.74rem',color:correct?'#34d399':'#fb7185',marginBottom:3,lineHeight:1.55}}>
+                    <strong>{i+1}.</strong> {b.explain} <span style={{color:'var(--text-2)'}}>(answer: <code style={{color:'#22d3ee'}}>{b.answer}</code>)</span>
+                  </div>
+                );
+              })}
+              <div style={{display:'flex',gap:'0.4rem',marginTop:'0.6rem'}}>
+                <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>setBlankState({})}>↻ Try again</button>
+                {blankScore.right === blankScore.total && (
+                  <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem',background:'rgba(52,211,153,0.15)',borderColor:'#34d399',color:'#34d399'}} onClick={()=>{recordMastery('blanks', true); setMode('order');}}>✓ Mastered → Order mode</button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {mode === 'order' && (
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.55rem',flexWrap:'wrap',gap:'0.5rem'}}>
+            <div style={{fontSize:'0.78rem',color:'var(--text-2)'}}>
+              Reorder the lines into the algorithm’s correct sequence. Use the ▲ / ▼ buttons.
+            </div>
+            <div style={{display:'flex',gap:'0.4rem'}}>
+              <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>{setOrderState(shuffleArr(algo.pseudo.split('\n').map((line,i)=>({line, origIdx:i})))); setRevealOrder(false);}}>⚃ Reshuffle</button>
+              <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem'}} onClick={()=>setRevealOrder(r=>!r)}>{revealOrder?'▲ Hide answer':'▼ Reveal answer'}</button>
+            </div>
+          </div>
+          <div style={{background:'var(--bg-2)',border:'1px solid rgba(148,163,184,0.18)',borderRadius:8,padding:'0.55rem',fontFamily:'monospace',fontSize:'0.74rem'}}>
+            {orderState.map((it, i) => {
+              const correct = it.origIdx === i;
+              return (
+                <div key={i} style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'2px 4px',background:revealOrder?(correct?'rgba(52,211,153,0.08)':'rgba(251,113,133,0.08)'):'transparent',borderRadius:4,marginBottom:1}}>
+                  <span style={{display:'inline-flex',gap:1}}>
+                    <button onClick={()=>moveUp(i)} disabled={i===0} style={{background:'rgba(34,211,238,0.12)',border:'1px solid rgba(34,211,238,0.3)',color:'#22d3ee',borderRadius:3,padding:'0px 6px',cursor:i===0?'not-allowed':'pointer',fontSize:'0.7rem',opacity:i===0?0.4:1}}>▲</button>
+                    <button onClick={()=>moveDown(i)} disabled={i===orderState.length-1} style={{background:'rgba(167,139,250,0.12)',border:'1px solid rgba(167,139,250,0.3)',color:'#a78bfa',borderRadius:3,padding:'0px 6px',cursor:i===orderState.length-1?'not-allowed':'pointer',fontSize:'0.7rem',opacity:i===orderState.length-1?0.4:1}}>▼</button>
+                  </span>
+                  <span style={{color:revealOrder?(correct?'#34d399':'#fb7185'):'var(--text-1)',whiteSpace:'pre',flex:1}}>{it.line || ' '}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{marginTop:'0.55rem',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'0.5rem'}}>
+            <span style={{fontFamily:'monospace',fontSize:'0.74rem',color:orderRight?'#34d399':'var(--text-2)'}}>
+              {orderRight ? '✓ Perfect order!' : 'Keep rearranging…'}
+            </span>
+            {orderRight && (
+              <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.7rem',background:'rgba(52,211,153,0.15)',borderColor:'#34d399',color:'#34d399'}} onClick={()=>{recordMastery('order', true); setMode('recall');}}>✓ Mastered → Recall mode</button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {mode === 'recall' && (
+        <div>
+          <div style={{background:'rgba(15,23,42,0.4)',border:'1px solid rgba(148,163,184,0.18)',borderRadius:8,padding:'1rem',marginBottom:'0.7rem'}}>
+            <div style={{fontSize:'0.78rem',color:'var(--text-2)',marginBottom:'0.5rem'}}>
+              <strong style={{color:'#fbbf24'}}>Without looking</strong>, recite the algorithm in your head (or out loud, or on paper). Then click <em>Show</em> to compare and rate your confidence.
+            </div>
+            <details style={{marginTop:'0.4rem'}}>
+              <summary style={{cursor:'pointer',color:'#22d3ee',fontSize:'0.78rem',fontWeight:600,padding:'0.3rem 0'}}>▶ Show algorithm</summary>
+              <div style={{marginTop:'0.5rem'}}>
+                <PseudoRender algo={algo} mode="study" />
+              </div>
+            </details>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'0.5rem'}}>
+            {[
+              ['hard', '✘ Hard', '#fb7185', 'Review me again soon'],
+              ['good', '◍ Good', '#fbbf24', 'I mostly knew it'],
+              ['easy', '★ Easy', '#34d399', 'Locked in'],
+            ].map(([v,l,c,d]) => (
+              <button key={v} onClick={()=>recordMastery('recall', v)}
+                style={{background:progress.mastery[algo.id]?.recall===v?`${c}22`:'rgba(15,23,42,0.5)',border:`1px solid ${c}55`,color:c,borderRadius:8,padding:'0.7rem',cursor:'pointer',textAlign:'center'}}>
+                <div style={{fontSize:'0.9rem',fontWeight:700,marginBottom:3}}>{l}</div>
+                <div style={{fontSize:'0.66rem',color:'var(--text-2)'}}>{d}</div>
+              </button>
+            ))}
+          </div>
+          {progress.mastery[algo.id]?.recall && (
+            <div style={{marginTop:'0.55rem',padding:'0.5rem',background:'rgba(52,211,153,0.08)',border:'1px solid rgba(52,211,153,0.25)',borderRadius:6,fontSize:'0.72rem',color:'#34d399'}}>
+              Saved. Algorithms rated <em>Hard</em> bubble up to the top of your review queue.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// === Boss Quiz ================================================================
+function BossQuiz({ groupId, progress, setProgress, onDone }) {
+  const group = ATLAS_GROUPS.find(g => g.id === groupId);
+  const questions = ATLAS_QUIZZES[groupId] || [];
+  const [order] = useState(() => shuffleArr(questions.map((_,i)=>i)));
+  const [step, setStep] = useState(0);
+  const [picks, setPicks] = useState({});
+  const [done, setDone] = useState(false);
+  const cur = questions[order[step]];
+
+  const pick = (i) => {
+    setPicks(p => ({...p, [step]: i }));
+  };
+
+  const finish = () => {
+    let right = 0;
+    for (let i = 0; i < order.length; i++) {
+      if (picks[i] === questions[order[i]].ans) right++;
+    }
+    setProgress(p => {
+      const np = {...p, quizzes:{...p.quizzes}};
+      const prev = np.quizzes[groupId] || { best:0, attempts:0 };
+      np.quizzes[groupId] = { best:Math.max(prev.best, right), attempts:prev.attempts+1, last:right, total:order.length };
+      saveAtlasProgress(np);
+      return np;
+    });
+    setDone(true);
+  };
+
+  if (done) {
+    let right = 0;
+    for (let i = 0; i < order.length; i++) if (picks[i] === questions[order[i]].ans) right++;
+    const pct = Math.round((right/order.length)*100);
+    return (
+      <div className="m4-card" style={{borderLeft:`3px solid ${group.color}`}}>
+        <div className="m4-card-h">{group.icon} {group.name} — Boss Quiz Result</div>
+        <div style={{textAlign:'center',padding:'1.25rem'}}>
+          <div style={{fontSize:'2.5rem',fontWeight:700,color:pct>=80?'#34d399':pct>=60?'#fbbf24':'#fb7185',fontFamily:'monospace'}}>{right}/{order.length}</div>
+          <div style={{fontSize:'0.9rem',color:'var(--text-2)',marginTop:'0.3rem'}}>{pct}%  ·  {pct>=80?'Stage mastered!':pct>=60?'Solid — review the misses.':'Time for another pass.'}</div>
+        </div>
+        <div style={{maxHeight:300,overflow:'auto',marginBottom:'0.7rem'}}>
+          {order.map((qi,i) => {
+            const q = questions[qi];
+            const correct = picks[i] === q.ans;
+            return (
+              <div key={i} style={{padding:'0.5rem',marginBottom:'0.3rem',background:correct?'rgba(52,211,153,0.08)':'rgba(251,113,133,0.08)',border:`1px solid ${correct?'#34d399':'#fb7185'}55`,borderRadius:6,fontSize:'0.74rem'}}>
+                <div style={{color:correct?'#34d399':'#fb7185',fontWeight:700,marginBottom:3}}>Q{i+1}: {q.q}</div>
+                <div style={{color:'var(--text-2)',marginLeft:'0.5rem'}}>You: <span style={{color:correct?'#34d399':'#fb7185'}}>{q.opts[picks[i]] ?? '(no answer)'}</span></div>
+                <div style={{color:'var(--text-2)',marginLeft:'0.5rem'}}>Correct: <span style={{color:'#22d3ee'}}>{q.opts[q.ans]}</span></div>
+                <div style={{color:'var(--text-1)',marginLeft:'0.5rem',marginTop:3,fontStyle:'italic'}}>{q.expl}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{display:'flex',gap:'0.4rem'}}>
+          <button className="m4-algo-tab" style={{padding:'4px 14px',fontSize:'0.74rem'}} onClick={()=>{setStep(0); setPicks({}); setDone(false);}}>↻ Retake</button>
+          <button className="m4-algo-tab" style={{padding:'4px 14px',fontSize:'0.74rem'}} onClick={onDone}>← Back to map</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="m4-card" style={{borderLeft:`3px solid ${group.color}`}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.7rem',flexWrap:'wrap',gap:'0.5rem'}}>
+        <div className="m4-card-h" style={{marginBottom:0}}>{group.icon} {group.name} — Boss Quiz</div>
+        <span style={{fontFamily:'monospace',fontSize:'0.75rem',color:'var(--text-2)'}}>Q{step+1} / {order.length}</span>
+      </div>
+      <div style={{padding:'0.7rem 0.9rem',background:'rgba(15,23,42,0.4)',border:'1px solid rgba(148,163,184,0.18)',borderRadius:8,marginBottom:'0.55rem'}}>
+        <div style={{fontSize:'0.88rem',color:'var(--text-1)',marginBottom:'0.55rem',lineHeight:1.55}}>{cur.q}</div>
+        {cur.opts.map((o, i) => {
+          const selected = picks[step] === i;
+          return (
+            <button key={i} onClick={()=>pick(i)} style={{
+              display:'block',width:'100%',textAlign:'left',padding:'0.4rem 0.7rem',marginBottom:3,
+              background:selected?`${group.color}22`:'rgba(15,23,42,0.3)',
+              border:`1px solid ${selected?group.color:'rgba(148,163,184,0.2)'}`,
+              color:selected?group.color:'var(--text-1)',borderRadius:6,cursor:'pointer',fontSize:'0.78rem',fontFamily:'inherit'}}>
+              <span style={{fontFamily:'monospace',marginRight:8,color:'var(--text-2)'}}>{String.fromCharCode(65+i)}.</span>{o}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{display:'flex',gap:'0.4rem'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 14px',fontSize:'0.74rem'}} disabled={step===0} onClick={()=>setStep(s=>s-1)}>← Prev</button>
+        {step < order.length-1 && (
+          <button className="m4-algo-tab" style={{padding:'3px 14px',fontSize:'0.74rem'}} disabled={picks[step]===undefined} onClick={()=>setStep(s=>s+1)}>Next →</button>
+        )}
+        {step === order.length-1 && (
+          <button className="m4-algo-tab" style={{padding:'3px 14px',fontSize:'0.74rem',background:'rgba(52,211,153,0.15)',borderColor:'#34d399',color:'#34d399'}} disabled={picks[step]===undefined} onClick={finish}>✓ Submit</button>
+        )}
+        <button className="m4-algo-tab" style={{padding:'3px 14px',fontSize:'0.74rem',marginLeft:'auto'}} onClick={onDone}>✕ Exit</button>
+      </div>
+    </div>
+  );
+}
+
+// === Compare panel (μ,λ vs μ+λ etc.) ==========================================
+const COMPARE_PAIRS = [
+  {
+    id:'cmp-mu',
+    title:'(μ, λ)  vs  (μ + λ)',
+    color:'#34d399',
+    rows:[
+      ['Parents survive into next gen?', 'No — children only', 'Yes — they compete with children'],
+      ['Diff. on which algo line?',     'P ← {}',                'P ← Q'],
+      ['Exploitation tendency',          'Moderate',                  'Higher'],
+      ['Premature convergence risk',     'Lower',                     'Higher'],
+      ['Best monotonically improves?',   'Not guaranteed',            'Yes'],
+    ],
+  },
+  {
+    id:'cmp-crossover',
+    title:'One-Point  vs  Two-Point  vs  Uniform Crossover',
+    color:'#fb7185',
+    rows:[
+      ['Cuts',                            '1 random point c',                       '2 random points c, d',                'None — per-index swap'],
+      ['P(v₁ and v_l separated)',     '(l−1)/l',                          '2/l',                                  '2p(1−p)'],
+      ['P(vᵢ and vᵢ₊₁)',     '1/l',                                    '2/l',                                  '2p(1−p)'],
+      ['Best mental model',               'Cut a string',                          'Cut a ring',                          'Coin flip per gene'],
+      ['Disrupts building blocks?',       'Moderately',                            'Less',                                'Strongly (if p large)'],
+    ],
+  },
+  {
+    id:'cmp-selection',
+    title:'Roulette  vs  SUS  vs  Tournament',
+    color:'#a78bfa',
+    rows:[
+      ['Needs absolute fitness?',         'Yes',                                   'Yes',                                 'No — rank only'],
+      ['Variance',                        'High',                                  'Low (regular intervals)',             'Tuneable via t'],
+      ['Complexity',                      'O(log l) with BS, else O(l)',          'O(n)',                                'O(t)'],
+      ['Tuning knob',                     '—',                                'n (number drawn)',                    't (tournament size)'],
+      ['Trivially parallel?',             'No',                                    'Hard',                                'Yes'],
+    ],
+  },
+  {
+    id:'cmp-stochastic',
+    title:'SA  vs  Tabu  vs  ILS',
+    color:'#fbbf24',
+    rows:[
+      ['Escape strategy',                 'Probabilistic accept of worse',         'Forbid recent solutions',             'Perturb home base and re-climb'],
+      ['Memory of past?',                 'None (only current S, Best)',           'FIFO list L',                         'Single home base H'],
+      ['Hyper-parameters',                't, cooling schedule',                   'l (list size), n (tweak samples)',    'NewHomeBase, Perturb'],
+      ['Discrete vs continuous',          'Both (with care)',                      'Discrete (workarounds for cont.)',    'Both'],
+      ['Greedy at t=0?',                  'Yes — collapses to HC',            'Still avoids tabu',                   'Inner loop is HC'],
+    ],
+  },
+  {
+    id:'cmp-pso-de',
+    title:'PSO  vs  Differential Evolution',
+    color:'#06b6d4',
+    rows:[
+      ['Has velocity?',                   'Yes',                                   'No — vector arithmetic on candidates'],
+      ['Mutation operator',               'αv + b(x*−x) + c(x⁺−x) + d(x!−x)', 'child = A + F·(B − C)'],
+      ['Step size scales with…',     'ε (fixed)',                        'Spread of B, C (adaptive)'],
+      ['Children vs parents',             'Replaces particle',                     'Compete directly with parent'],
+      ['Best mental model',               'Flock of seagulls',                     'Nelder-Mead reflection'],
+    ],
+  },
+];
+
+function ComparePanel({ pair, onBack }) {
+  const cols = pair.rows[0].length - 1;
+  const headers = pair.title.split('  vs  ');
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:'0.6rem',marginBottom:'0.7rem'}}>
+        <button className="m4-algo-tab" style={{padding:'3px 11px',fontSize:'0.72rem'}} onClick={onBack}>← Map</button>
+        <span style={{padding:'2px 9px',background:`${pair.color}22`,border:`1px solid ${pair.color}55`,borderRadius:6,color:pair.color,fontSize:'0.65rem',fontFamily:'monospace',letterSpacing:'0.05em',fontWeight:700}}>COMPARE</span>
+      </div>
+      <div style={{background:`linear-gradient(135deg,${pair.color}10 0%,rgba(15,23,42,0.4) 100%)`,border:`1px solid ${pair.color}44`,borderRadius:12,padding:'0.85rem 1rem',marginBottom:'0.7rem'}}>
+        <h3 style={{margin:0,color:pair.color,fontSize:'1.15rem'}}>{pair.title}</h3>
+        <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.25rem'}}>Side-by-side — the differences are where the exam questions live.</div>
+      </div>
+      <table className="m4-ptable" style={{fontSize:'0.78rem'}}>
+        <thead>
+          <tr>
+            <th style={{width:'25%'}}>Aspect</th>
+            {headers.map((h,i) => <th key={h} style={{color:pair.color}}>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {pair.rows.map((r,i) => (
+            <tr key={i}>
+              <td className="pk">{r[0]}</td>
+              {Array.from({length:cols}).map((_,j) => <td key={j}>{r[j+1]}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// === Random Strike — picks a random algo + random mode ========================
+function RandomStrike({ progress, setProgress, onSelect }) {
+  const draw = () => {
+    const algo = ATLAS_ALGOS[Math.floor(Math.random() * ATLAS_ALGOS.length)];
+    const modes = ['blanks','order','recall'];
+    const mode = modes[Math.floor(Math.random()*modes.length)];
+    onSelect(algo, mode);
+  };
+  return (
+    <button onClick={draw} style={{
+      background:'linear-gradient(135deg,rgba(251,113,133,0.16),rgba(167,139,250,0.16))',
+      border:'1px solid rgba(251,113,133,0.4)',color:'#fb7185',borderRadius:8,
+      padding:'0.55rem 1rem',cursor:'pointer',fontFamily:'monospace',fontWeight:700,fontSize:'0.78rem',
+      width:'100%',letterSpacing:'0.05em'}}>
+      ⚡ RANDOM STRIKE — surprise me
+    </button>
+  );
+}
+
+// === Atlas Map ================================================================
+function AtlasMap({ progress, onPickAlgo, onPickQuiz, onPickCompare }) {
+  const algoMastery = (algo) => {
+    const m = progress.mastery[algo.id] || {};
+    let s = 0;
+    if (m.study) s++;
+    if (m.blanks) s++;
+    if (m.order) s++;
+    if (m.recall) s++;
+    return s; // out of 4
+  };
+  const groupMastery = (gid) => {
+    const algs = ATLAS_ALGOS.filter(a => a.group === gid);
+    let sum = 0;
+    algs.forEach(a => { sum += algoMastery(a); });
+    const total = algs.length * 4;
+    const quiz = progress.quizzes[gid];
+    const quizPart = quiz ? Math.min(1, quiz.best / quiz.total) : 0;
+    return { sum, total, quizPart, quizBest: quiz?.best, quizTotal: quiz?.total };
+  };
+
+  const totalAlgos = ATLAS_ALGOS.length;
+  const studied = ATLAS_ALGOS.filter(a => algoMastery(a) > 0).length;
+  const mastered = ATLAS_ALGOS.filter(a => algoMastery(a) === 4).length;
+  const totalBosses = ATLAS_GROUPS.length;
+  const bossesBeaten = ATLAS_GROUPS.filter(g => {
+    const q = progress.quizzes[g.id];
+    return q && q.best/q.total >= 0.8;
+  }).length;
+
+  return (
+    <div>
+      <div style={{background:'linear-gradient(135deg,rgba(34,211,238,0.08),rgba(251,113,133,0.08))',border:'1px solid rgba(34,211,238,0.25)',borderRadius:12,padding:'0.85rem 1rem',marginBottom:'1rem'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'0.7rem'}}>
+          <div>
+            <div style={{fontSize:'0.65rem',color:'var(--text-2)',letterSpacing:'0.05em',marginBottom:3}}>YOUR PROGRESS</div>
+            <div style={{fontSize:'0.85rem',color:'var(--text-1)'}}>
+              <span style={{color:'#22d3ee',fontFamily:'monospace',fontWeight:700,fontSize:'1.1rem'}}>{studied}/{totalAlgos}</span> opened &nbsp;·&nbsp;
+              <span style={{color:'#34d399',fontFamily:'monospace',fontWeight:700,fontSize:'1.1rem'}}>{mastered}/{totalAlgos}</span> mastered &nbsp;·&nbsp;
+              <span style={{color:'#fbbf24',fontFamily:'monospace',fontWeight:700,fontSize:'1.1rem'}}>{bossesBeaten}/{totalBosses}</span> bosses beaten
+            </div>
+          </div>
+          <div style={{minWidth:220}}>
+            <RandomStrike progress={progress} setProgress={()=>{}} onSelect={onPickAlgo} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(380px,1fr))',gap:'0.85rem',marginBottom:'1rem'}}>
+        {ATLAS_GROUPS.map((g, gi) => {
+          const algs = ATLAS_ALGOS.filter(a => a.group === g.id);
+          const stats = groupMastery(g.id);
+          const pct = Math.round((stats.sum / stats.total) * 100);
+          const bossUnlocked = stats.sum >= Math.floor(stats.total * 0.5);
+          return (
+            <div key={g.id} style={{position:'relative',background:`linear-gradient(135deg,${g.color}08,rgba(15,23,42,0.4))`,border:`1px solid ${g.color}55`,borderRadius:12,padding:'0.85rem 1rem'}}>
+              <div style={{position:'absolute',top:8,right:10,fontSize:'0.6rem',color:g.color,fontFamily:'monospace',letterSpacing:'0.05em',opacity:0.6}}>STAGE {gi+1}</div>
+              <div style={{display:'flex',alignItems:'center',gap:'0.55rem',marginBottom:'0.35rem'}}>
+                <span style={{fontSize:'1.5rem',color:g.color,fontWeight:700,fontFamily:'monospace',width:28,textAlign:'center'}}>{g.icon}</span>
+                <div>
+                  <h3 style={{margin:0,color:g.color,fontSize:'1.05rem'}}>{g.name}</h3>
+                  <div style={{fontSize:'0.65rem',color:'var(--text-2)',fontFamily:'monospace'}}>{g.lecture}</div>
+                </div>
+              </div>
+              <div style={{fontSize:'0.72rem',color:'var(--text-2)',marginBottom:'0.55rem',lineHeight:1.5}}>{g.subtitle}</div>
+
+              {/* progress bar */}
+              <div style={{height:6,background:'rgba(15,23,42,0.6)',borderRadius:4,overflow:'hidden',marginBottom:'0.5rem'}}>
+                <div style={{height:'100%',width:`${pct}%`,background:`linear-gradient(90deg, ${g.color}, ${g.color}99)`,transition:'width 0.3s'}}/>
+              </div>
+              <div style={{fontSize:'0.65rem',color:'var(--text-2)',fontFamily:'monospace',marginBottom:'0.6rem',display:'flex',justifyContent:'space-between'}}>
+                <span>mastery {stats.sum}/{stats.total} ({pct}%)</span>
+                {stats.quizBest != null && <span style={{color:g.color}}>boss best: {stats.quizBest}/{stats.quizTotal}</span>}
+              </div>
+
+              <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                {algs.map(a => {
+                  const m = algoMastery(a);
+                  return (
+                    <button key={a.id} onClick={()=>onPickAlgo(a)} style={{
+                      display:'flex',justifyContent:'space-between',alignItems:'center',
+                      background:m>0?'rgba(15,23,42,0.55)':'rgba(15,23,42,0.3)',
+                      border:`1px solid ${m===4?'#34d399':m>0?g.color+'44':'rgba(148,163,184,0.15)'}`,
+                      color:'var(--text-1)',borderRadius:6,padding:'4px 9px',cursor:'pointer',fontSize:'0.74rem',textAlign:'left',fontFamily:'inherit'}}>
+                      <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</span>
+                      <span style={{fontFamily:'monospace',fontSize:'0.62rem',color:m===4?'#34d399':m>0?'#fbbf24':'var(--text-2)',marginLeft:6}}>
+                        {'★'.repeat(m)}{'☆'.repeat(4-m)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button onClick={()=>onPickQuiz(g.id)} disabled={!bossUnlocked} style={{
+                marginTop:'0.7rem',width:'100%',
+                background:bossUnlocked?`${g.color}1f`:'rgba(15,23,42,0.4)',
+                border:`1px solid ${bossUnlocked?g.color:'rgba(148,163,184,0.2)'}`,
+                color:bossUnlocked?g.color:'var(--text-2)',
+                borderRadius:6,padding:'0.45rem',cursor:bossUnlocked?'pointer':'not-allowed',fontSize:'0.74rem',fontWeight:700,fontFamily:'monospace',letterSpacing:'0.05em'}}>
+                {bossUnlocked ? `♔ BOSS QUIZ — ${(ATLAS_QUIZZES[g.id]||[]).length} questions` : `⛔ Locked — study 50% of algorithms to unlock`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{background:'linear-gradient(135deg,rgba(167,139,250,0.08),rgba(34,211,238,0.08))',border:'1px solid rgba(167,139,250,0.25)',borderRadius:12,padding:'0.85rem 1rem',marginBottom:'1rem'}}>
+        <div style={{fontSize:'0.65rem',color:'var(--text-2)',letterSpacing:'0.05em',marginBottom:'0.5rem'}}>COMPARE-AND-CONTRAST CARDS</div>
+        <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginBottom:'0.6rem',lineHeight:1.55}}>
+          The exam loves comparison questions. Click a card to see two-or-three algorithms placed side-by-side on the dimensions that matter.
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:'0.5rem'}}>
+          {COMPARE_PAIRS.map(p => (
+            <button key={p.id} onClick={()=>onPickCompare(p.id)} style={{
+              background:`${p.color}11`,border:`1px solid ${p.color}55`,
+              color:p.color,borderRadius:8,padding:'0.55rem 0.7rem',cursor:'pointer',fontSize:'0.78rem',fontWeight:600,textAlign:'left',fontFamily:'inherit'}}>
+              {p.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="m4-warnbox" style={{fontSize:'0.74rem'}}>
+        <strong>How to use this atlas for maximum recall:</strong> first <em>Study</em> an algorithm, then <em>Blanks</em>, then <em>Order</em> (this is where the structure sticks), then <em>Recall</em> (rate yourself honestly — Hard items resurface). Beat the boss quiz at 80%+ to mark the stage clear. Re-visit anything you rated <em>Hard</em> in the days before the exam.
+      </div>
+    </div>
+  );
+}
+
+// === Top-level tab ============================================================
+function AlgorithmAtlasTab() {
+  const [progress, setProgress] = useState(() => loadAtlasProgress());
+  const [view, setView] = useState({ kind:'map' });
+
+  const pickAlgo = (algo, _mode) => setView({ kind:'algo', algo });
+  const pickQuiz = (gid) => setView({ kind:'quiz', groupId:gid });
+  const pickCompare = (pid) => setView({ kind:'compare', pairId:pid });
+  const backToMap = () => setView({ kind:'map' });
+
+  const reset = () => {
+    if (window.confirm('Reset all Algorithm Atlas progress? This cannot be undone.')) {
+      const fresh = { mastery:{}, quizzes:{}, streak:0, lastDate:null };
+      setProgress(fresh); saveAtlasProgress(fresh);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem',flexWrap:'wrap',gap:'0.5rem'}}>
+        <div style={{fontSize:'0.73rem',color:'var(--text-2)',lineHeight:1.6,flex:'1 1 320px'}}>
+          A self-paced memorisation journey across every algorithm in the unit — written EXACTLY as in the lectures. Pseudocode is preserved verbatim; explanations are mine.
+        </div>
+        <button onClick={reset} style={{background:'rgba(251,113,133,0.1)',border:'1px solid rgba(251,113,133,0.3)',color:'#fb7185',borderRadius:6,padding:'4px 11px',cursor:'pointer',fontSize:'0.7rem',fontFamily:'monospace'}}>↻ Reset progress</button>
+      </div>
+
+      {view.kind === 'map' && <AtlasMap progress={progress} onPickAlgo={pickAlgo} onPickQuiz={pickQuiz} onPickCompare={pickCompare} />}
+      {view.kind === 'algo' && <AlgorithmCard algo={view.algo} progress={progress} setProgress={setProgress} onBack={backToMap} />}
+      {view.kind === 'quiz' && <BossQuiz groupId={view.groupId} progress={progress} setProgress={setProgress} onDone={backToMap} />}
+      {view.kind === 'compare' && <ComparePanel pair={COMPARE_PAIRS.find(p=>p.id===view.pairId)} onBack={backToMap} />}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── MEMORY COSMOS — Brainstorm of Must-Memorise Facts ─────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// Designed for retention. Three views:
+//   1. Cosmos     — constellation map (spatial memory + dual coding)
+//   2. Lightning  — rapid-fire flashcards (active recall + spaced repetition)
+//   3. Mnemonics  — memorable phrases (chunking + storytelling)
+
+const COSMOS_CSS = `
+@keyframes mc-twinkle { 0%,100%{opacity:0.35} 50%{opacity:1} }
+@keyframes mc-pulse   { 0%,100%{filter:drop-shadow(0 0 4px var(--cw))} 50%{filter:drop-shadow(0 0 14px var(--cw))} }
+@keyframes mc-spin    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes mc-float   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-4px)} }
+@keyframes mc-shimmer { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+@keyframes mc-fadein  { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+.mc-bg {
+  position:relative;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(167,139,250,0.18) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 70%, rgba(251,113,133,0.15) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 100%, rgba(34,211,238,0.18) 0%, transparent 50%),
+    linear-gradient(180deg, #050818 0%, #0a0e27 50%, #1a0535 100%);
+  border-radius: 16px;
+  overflow:hidden;
+  border: 1px solid rgba(167,139,250,0.25);
+}
+.mc-star-dot {
+  cursor: pointer;
+  transition: transform 0.18s ease-out;
+  transform-origin: 0 0;
+  transform-box: view-box;
+}
+.mc-star-dot:hover { transform: scale(1.45); }
+.mc-twinkle { animation: mc-twinkle 3.2s ease-in-out infinite; }
+.mc-pulse   { animation: mc-pulse 2.4s ease-in-out infinite; }
+.mc-float   { animation: mc-float 4s ease-in-out infinite; }
+.mc-fadein  { animation: mc-fadein 0.28s ease-out; }
+.mc-shimmer-text {
+  background: linear-gradient(90deg, #22d3ee, #a78bfa, #fb7185, #fbbf24, #22d3ee);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: mc-shimmer 6s linear infinite;
+  font-weight: 800;
+}
+.mc-card-glow {
+  box-shadow: 0 0 0 1px var(--cw), 0 0 24px -2px var(--cw), inset 0 0 40px -10px var(--cw);
+}
+.mc-modal-bg {
+  background: radial-gradient(ellipse at center, rgba(15,23,42,0.94) 0%, rgba(5,8,24,0.98) 100%);
+  backdrop-filter: blur(8px);
+}
+.mc-flip {
+  perspective: 1200px;
+}
+.mc-flip-inner {
+  position: relative;
+  transition: transform 0.5s;
+  transform-style: preserve-3d;
+}
+.mc-flip-inner.mc-flipped { transform: rotateY(180deg); }
+.mc-flip-front, .mc-flip-back {
+  position:absolute; inset:0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.mc-flip-back { transform: rotateY(180deg); }
+`;
+
+function useCosmosStyles() {
+  useEffect(() => {
+    if (document.getElementById('mc-cosmos-style')) return;
+    const tag = document.createElement('style');
+    tag.id = 'mc-cosmos-style';
+    tag.textContent = COSMOS_CSS;
+    document.head.appendChild(tag);
+  }, []);
+}
+
+// Stars per constellation. (cx, cy) are normalised positions on a 1000×600 SVG canvas.
+const COSMOS_DATA = [
+  {
+    id:'origins', name:'THE ORIGINS', lecture:'L1–2', color:'#22d3ee', icon:'⊙',
+    cx:120, cy:90, vibe:'Foundations of intelligence',
+    stars:[
+      {x:0,y:0,label:'4 Quadrants',
+        mnemonic:'THINK vs ACT × HUMAN vs RATIONAL — Russell & Norvig’s map.',
+        facts:[
+          'Two axes: Thinking ↔ Acting and Humanly ↔ Rationally',
+          '4 quadrants: thinking-humanly, thinking-rationally, acting-humanly, acting-rationally',
+          'Acting-humanly = Turing-test style operational definition',
+          'Acting-rationally = Nilsson — intelligent behaviour in artefacts',
+        ],
+        q:'The "4 Quadrants" of AI are defined by which two axes?',
+        opts:['Symbolic ↔ Connectionist  ·  Soft ↔ Hard','Thinking ↔ Acting  ·  Humanly ↔ Rationally','Deterministic ↔ Stochastic  ·  Online ↔ Offline','Discrete ↔ Continuous  ·  Greedy ↔ Optimal'],
+        ans:1},
+      {x:60,y:-32,label:'Turing Test',
+        mnemonic:'INDISTINGUISHABLE = INTELLIGENT (operational, not philosophical).',
+        facts:[
+          '1950 — Alan Turing’s "Imitation Game"',
+          'Operational test: an interrogator chats with both human and machine',
+          'Passes if interrogator cannot reliably tell which is which',
+          'Side-steps "what IS intelligence?" by testing what it DOES',
+        ],
+        q:'What does the Turing Test deliberately avoid?',
+        opts:['Defining intelligence philosophically','Using language as a medium','Asking trick questions','Comparing to humans'],
+        ans:0},
+      {x:110,y:18,label:'AI Winter',
+        mnemonic:'1969 — Minsky & Papert showed perceptrons cannot XOR → funding froze.',
+        facts:[
+          'Triggered by Minsky & Papert’s 1969 book *Perceptrons*',
+          'Showed a single perceptron cannot represent XOR',
+          'Funding bodies pulled back from neural-net research',
+          'Revived 1986 with back-propagation (Rumelhart, Hinton, Williams)',
+        ],
+        q:'Which classic limitation triggered the first AI Winter?',
+        opts:['Halting problem','Single perceptrons cannot represent XOR','Lack of FLOPS','Bayesian intractability'],
+        ans:1},
+      {x:50,y:60,label:'Real World = Messy',
+        mnemonic:'BLACK BOX — noisy, dirty, multi-objective, partial info.',
+        facts:[
+          'Search spaces: huge, non-smooth, deceptive',
+          'Objectives often conflict — multi-criteria',
+          'Information is partial, noisy, dynamic',
+          'Motivates heuristic / metaheuristic methods',
+        ],
+        q:'Why prefer heuristics over closed-form optima in the "real world"?',
+        opts:['Heuristics are always faster','Real-world problems are large, non-smooth, partial-info — exact methods can’t cope','Heuristics give global optimum guarantees','Heuristics need no compute'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,3],[1,2],[2,3]],
+  },
+  {
+    id:'triad', name:'THE TRIAD', lecture:'L3', color:'#a78bfa', icon:'△',
+    cx:300, cy:80, vibe:'Three ingredients of every optimisation',
+    stars:[
+      {x:0,y:0,label:'Language',
+        mnemonic:'IF YOU CAN’T DESCRIBE IT, YOU CAN’T MODEL IT.',
+        facts:[
+          'Representation = the descriptive vocabulary',
+          'Defines the hypothesis space H',
+          'Examples: equations, grammars, programs, Gantt charts, trees, bit-vectors',
+          'Wrong language → no good solution exists → can never be found',
+        ],
+        q:'In the optimisation triad, "Language" specifies:',
+        opts:['The stopping criterion','The candidate solution','The hypothesis space H','The error metric'],
+        ans:2},
+      {x:60,y:-30,label:'Model',
+        mnemonic:'AN INSTANTIATION — one specific candidate, drawn from H.',
+        facts:[
+          'A model = one element of H',
+          'Also called a "candidate solution" or "hypothesis"',
+          'Instantiation step: pick parameter values',
+          'Optimisation = search over models',
+        ],
+        q:'A "Model" in the L3 triad is best described as:',
+        opts:['The set of all possible solutions','One specific candidate solution drawn from H','The cost function','The dataset'],
+        ans:1},
+      {x:30,y:50,label:'Metric',
+        mnemonic:'f : H → ℝ  —  argmin or argmax this.',
+        facts:[
+          'Maps each h ∈ H to a real number',
+          'Also called: error / cost / loss / fitness / objective',
+          'Optimisation = argmin f(h) or argmax f(h)',
+          'MSE example: (1/n) Σ (yᵢ − ŷᵢ)²',
+        ],
+        q:'The optimisation metric f : H → ℝ measures:',
+        opts:['Size of the hypothesis space','Distance between models','Quality of a candidate hypothesis','Compute cost'],
+        ans:2},
+      {x:90,y:30,label:'argmin / argmax',
+        mnemonic:'argmin = the WHO, not the WHAT.',
+        facts:[
+          'argmin returns the h, not f(h)',
+          'Distinguishes "best value" from "best candidate"',
+          'Min vs max chosen by problem framing',
+          'Many algorithms only need rank order — non-parametric',
+        ],
+        q:'What does argmin_h f(h) return?',
+        opts:['The smallest f value','The candidate h achieving that f value','The mean of all f values','The gradient of f'],
+        ans:1},
+    ],
+    edges:[[0,1],[1,2],[2,3],[3,0],[0,2]],
+  },
+  {
+    id:'factory', name:'THE FACTORY', lecture:'L4', color:'#fb7185', icon:'⚙',
+    cx:480, cy:90, vibe:'Job Shop Scheduling — classic combinatorial',
+    stars:[
+      {x:0,y:0,label:'JSSP Setup',
+        mnemonic:'n JOBS × m MACHINES — each op fixed on a machine, fixed time.',
+        facts:[
+          'n jobs, m machines',
+          'Each job = ordered sequence of operations',
+          'Operations have a fixed machine + duration',
+          'Each machine handles ≤1 op at a time',
+        ],
+        q:'In the JSSP, the precedence constraints apply:',
+        opts:['Between different jobs','Between operations within the same job','Between machines','Between time slots'],
+        ans:1},
+      {x:60,y:-40,label:'(n!)ᵐ space',
+        mnemonic:'EACH OF m MACHINES INDEPENDENTLY ORDERS n JOBS.',
+        facts:[
+          'Solution space size |H| ≤ (n!)ᵐ',
+          'For n=4, m=3 → (4!)³ = 13,824',
+          'Astronomical even at modest sizes → NP-hard',
+          'Motivates heuristic search',
+        ],
+        q:'For n=4 jobs and m=3 machines, the solution-space size is:',
+        opts:['64','1,728','13,824','24'],
+        ans:2},
+      {x:50,y:60,label:'Makespan Cₘₐₓ',
+        mnemonic:'TIME TO FINISH THE LAST JOB.',
+        facts:[
+          'Cₘₐₓ = max_i Cᵢ (latest completion)',
+          'Most common JSSP objective',
+          'Length of the longest Gantt bar',
+          'Minimise it = pack the schedule tighter',
+        ],
+        q:'The makespan Cₘₐₓ is:',
+        opts:['Average job completion time','The time of the latest job completion','Total processing time summed','Number of operations'],
+        ans:1},
+      {x:110,y:25,label:'Dispatching Rules',
+        mnemonic:'SPT / LPT / FCFS / EDD — cheap & cheerful priority rules.',
+        facts:[
+          'SPT = shortest processing time first',
+          'LPT = longest processing time first',
+          'FCFS = first come first served',
+          'EDD = earliest due date first',
+        ],
+        q:'SPT dispatching prioritises the operation with:',
+        opts:['Earliest due date','Shortest processing time','Most remaining work','Largest job index'],
+        ans:1},
+      {x:-20,y:55,label:'N1 Neighborhood',
+        mnemonic:'SWAP ADJACENT OPS ON THE SAME MACHINE.',
+        facts:[
+          'Used in local search over schedules',
+          'Swap two adjacent operations on one machine',
+          'Most basic JSSP neighbourhood',
+          'Combine with simulated annealing or tabu',
+        ],
+        q:'N1 neighbourhood for JSSP local search is:',
+        opts:['Swap operations between machines','Swap two adjacent ops on the same machine','Reverse an entire job','Insert a new dummy op'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,2],[0,3],[3,4],[1,2]],
+  },
+  {
+    id:'slopes', name:'SLOPES & CURVES', lecture:'L5', color:'#34d399', icon:'∂',
+    cx:680, cy:95, vibe:'The calculus refresh',
+    stars:[
+      {x:0,y:0,label:'Derivative Limit',
+        mnemonic:'RISE OVER RUN AS RUN → 0.',
+        facts:[
+          'f′(x) = lim_{h→0} (f(x+h) − f(x)) / h',
+          'Slope of tangent line at x',
+          'Exists ⇒ function is differentiable there',
+        ],
+        q:'The derivative f′(x) is defined as the limit of:',
+        opts:['(f(x+h)−f(x)) / h as h→0','(f(x)−f(x−h)) · h as h→∞','f(x)/x as x→0','f(x+h)·f(x) as h→0'],
+        ans:0},
+      {x:55,y:-35,label:'Chain Rule',
+        mnemonic:'OUTSIDE × INSIDE — peel the onion.',
+        facts:[
+          '(f∘g)′(x) = f′(g(x)) · g′(x)',
+          'The backbone of back-propagation',
+          'Combines with product/quotient rules',
+        ],
+        q:'Chain rule: d/dx[f(g(x))] equals:',
+        opts:["f′(g(x)) · g′(x)","f′(x) · g′(x)","f(g(x)) · g′(x)","f′(g(x)) · g(x)"],
+        ans:0},
+      {x:80,y:35,label:'Gradient ∇f',
+        mnemonic:'VECTOR OF PARTIALS — direction of STEEPEST ASCENT.',
+        facts:[
+          '∇f = [∂f/∂x₁, …, ∂f/∂xₙ]ᵀ',
+          'Always points uphill',
+          'Move along −∇f for descent',
+        ],
+        q:'∇f(x⃗) for a scalar function f : ℝⁿ → ℝ is:',
+        opts:['A scalar','A matrix of second derivatives','A vector of partial derivatives','Always zero'],
+        ans:2},
+      {x:25,y:55,label:'2nd-Deriv Test',
+        mnemonic:'f″ > 0 = SMILE (min) · f″ < 0 = FROWN (max).',
+        facts:[
+          'At critical point (f′ = 0)',
+          'f″ > 0 → local minimum (concave up)',
+          'f″ < 0 → local maximum (concave down)',
+          'f″ = 0 → inconclusive',
+        ],
+        q:'If f′(x*) = 0 and f″(x*) > 0, then x* is:',
+        opts:['Saddle point','Local maximum','Local minimum','Boundary point'],
+        ans:2},
+      {x:-30,y:35,label:'Smoothness C^k',
+        mnemonic:'C⁰ continuous · C¹ has f′ · C² has f″ · C^∞ smooth forever.',
+        facts:[
+          'C⁰ — continuous',
+          'C¹ — continuously differentiable',
+          'C² — twice differentiable (N-R needs this)',
+          'C^∞ — infinitely differentiable',
+        ],
+        q:'Newton-Raphson requires which smoothness class?',
+        opts:['C⁰','C¹','C²','C^∞'],
+        ans:2},
+    ],
+    edges:[[0,1],[1,2],[2,3],[3,4],[4,0]],
+  },
+  {
+    id:'descent', name:'THE DESCENT', lecture:'L6', color:'#fbbf24', icon:'↘',
+    cx:870, cy:90, vibe:'Gradient methods — follow the slope',
+    stars:[
+      {x:0,y:0,label:'GD Update',
+        mnemonic:'x ← x − α · f′(x). MINUS FOR DOWN.',
+        facts:[
+          '1-D descent: x ← x − α f′(x)',
+          '1-D ascent: x ← x + α f′(x)',
+          'N-D: x⃗ ← x⃗ − α ∇f',
+          'Naturally slows near a minimum',
+        ],
+        q:'1-D gradient descent update is:',
+        opts:['x ← x + α f′(x)','x ← x − α f′(x)','x ← x − f(x) / f′(x)','x ← x − f′(x) / f″(x)'],
+        ans:1},
+      {x:65,y:-30,label:'Learning Rate α',
+        mnemonic:'TOO SMALL = CRAWL · TOO LARGE = OSCILLATE.',
+        facts:[
+          'Scales step size',
+          'Small α → slow but stable',
+          'Large α → overshoot, oscillation, divergence',
+          'Adaptive schemes (Adam) tune α per parameter',
+        ],
+        q:'A learning rate α that is too large will typically:',
+        opts:['Converge faster always','Cause overshoot and oscillation','Get stuck in a saddle point','Never affect convergence'],
+        ans:1},
+      {x:80,y:35,label:'Newton-Raphson',
+        mnemonic:'f′ OVER f″ — curvature picks the step.',
+        facts:[
+          'For optima: x ← x − f′(x) / f″(x)',
+          'Solves quadratic ax²+b in ONE step',
+          'Requires C² (twice differentiable)',
+          'Best step size — auto-tuned by curvature',
+        ],
+        q:'Newton-Raphson’s key advantage over plain gradient descent:',
+        opts:['Always finds global optimum','Uses curvature to auto-scale the step','Needs no derivatives','Adds randomness'],
+        ans:1},
+      {x:-25,y:55,label:'Local Optima',
+        mnemonic:'GRADIENT METHODS = MYOPIC. They stop at the nearest valley.',
+        facts:[
+          'Gradient methods are local',
+          'Multimodal surfaces → get stuck',
+          'Mitigation: random restarts',
+          '"No general algorithm finds the global optimum on non-enumerable spaces"',
+        ],
+        q:'Plain gradient descent is guaranteed to find:',
+        opts:['Global minimum','A local minimum (under smoothness)','The saddle nearest to start','Nothing'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,2],[0,3],[1,2]],
+  },
+  {
+    id:'sea', name:'SAMPLE SEA', lecture:'L7', color:'#14b8a6', icon:'◇',
+    cx:130, cy:240, vibe:'Direct methods — no derivatives needed',
+    stars:[
+      {x:0,y:0,label:'No-Derivative Need',
+        mnemonic:'BLACK BOX OK — just need to evaluate f.',
+        facts:[
+          'Only the objective function is needed',
+          'Each evaluation = info gained',
+          'Useful when f is non-differentiable or unknown',
+        ],
+        q:'Direct methods differ from gradient methods because:',
+        opts:['They use second derivatives','They need no derivative, only evaluations','They never converge','They use crossover'],
+        ans:1},
+      {x:55,y:-30,label:'CCS',
+        mnemonic:'TAXICAB — line-search one coord at a time.',
+        facts:[
+          'Cyclic Coordinate Search',
+          'Line search along each basis direction in turn',
+          'Stops when full cycle gives norm-change < ε',
+          'Acceleration variant adds an extra step in net direction',
+        ],
+        q:'Cyclic Coordinate Search optimises:',
+        opts:['All coordinates simultaneously','One coordinate at a time','Random directions','Gradient directions'],
+        ans:1},
+      {x:30,y:50,label:'Hooke-Jeeves',
+        mnemonic:'PROBE ±α IN EACH DIM — shrink α on no-improve.',
+        facts:[
+          'Samples f at x ± α·eᵢ — 2n evaluations',
+          'Move to best improving direction',
+          'Shrink α by γ (often 0.5) on stall',
+          'A pattern search — like sliding an n-cube',
+        ],
+        q:'Hooke-Jeeves does HOW many evaluations per step in n-D?',
+        opts:['n','n+1','2n','2ⁿ'],
+        ans:2},
+      {x:80,y:35,label:'Nelder-Mead',
+        mnemonic:'SIMPLEX = TRIANGLE-LIKE BLOB. Reflect / Expand / Contract / Shrink.',
+        facts:[
+          'Maintains n+1 vertex simplex',
+          'Operations: reflection (α), expansion (β), contraction (γ), shrinkage (σ)',
+          'Defaults α=1, β=2, γ=0.5, σ=0.5',
+          'Adapts shape and shrinks toward optimum',
+        ],
+        q:'Nelder-Mead’s simplex in n dimensions has how many vertices?',
+        opts:['n','n+1','2n','2ⁿ'],
+        ans:1},
+      {x:-30,y:40,label:'Powell',
+        mnemonic:'QUEUE OF DIRECTIONS — replace the oldest each cycle.',
+        facts:[
+          'Adapts the search directions',
+          'Queue starts as basis vectors',
+          'After cycle: enqueue (x′−x), dequeue oldest',
+          'Risk: directions can become linearly dependent',
+        ],
+        q:'Powell’s Method differs from CCS by:',
+        opts:['Using gradients','Maintaining an adaptive queue of search directions','Shrinking α each cycle','Sampling random directions'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,2],[0,3],[0,4]],
+  },
+  {
+    id:'chaos', name:'CHAOS SEED', lecture:'L8 + Labs', color:'#6366f1', icon:'※',
+    cx:330, cy:230, vibe:'Randomness, PRNGs, online heuristics',
+    stars:[
+      {x:0,y:0,label:'LCG',
+        mnemonic:'LINEAR CONGRUENTIAL — Xₙ₊₁ = (aXₙ + c) mod m.',
+        facts:[
+          'Xₙ₊₁ = (a·Xₙ + c) mod m',
+          'Three params: multiplier a, increment c, modulus m',
+          'Deterministic but mimics randomness',
+          'Full-period theorem: cycles through all m values under specific conditions',
+        ],
+        q:'For LCG with X₀=1, a=3, c=1, m=7, X₁ equals:',
+        opts:['3','4','7','1'],
+        ans:1},
+      {x:55,y:-35,label:'Bin Packing',
+        mnemonic:'FF · NF · BF · FFD — online vs offline.',
+        facts:[
+          'FF — first fit (first bin that fits)',
+          'NF — next fit (only current bin)',
+          'BF — best fit (tightest fit)',
+          'FFD — first-fit decreasing (offline; needs sort)',
+        ],
+        q:'Which bin-packing heuristic is OFFLINE (requires all items in advance)?',
+        opts:['FF','NF','BF','FFD'],
+        ans:3},
+      {x:25,y:55,label:'No Free Lunch',
+        mnemonic:'AVERAGED OVER ALL PROBLEMS, NO ALGORITHM WINS.',
+        facts:[
+          'Wolpert & Macready, 1997',
+          'No universal best optimisation algorithm',
+          'Gains on one class ⇔ losses on another',
+          'Implication: domain knowledge is essential',
+        ],
+        q:'The No Free Lunch theorem states:',
+        opts:['Gradient descent always wins','No algorithm outperforms others averaged across ALL problems','Stochastic always beats deterministic','Randomness is useless'],
+        ans:1},
+      {x:80,y:30,label:'Mersenne Primes',
+        mnemonic:'2^p − 1 PRIMES — make great LCG moduli.',
+        facts:[
+          'M_p = 2^p − 1',
+          'Mersenne Twister uses M19937 = 2^19937 − 1',
+          'Long-period generators built on them',
+          'Used widely in scientific RNGs',
+        ],
+        q:'A Mersenne prime has the form:',
+        opts:['p² − 1','2^p + 1','2^p − 1','p! + 1'],
+        ans:2},
+    ],
+    edges:[[0,1],[0,3],[0,2],[2,3]],
+  },
+  {
+    id:'wanderers', name:'LONE WANDERERS', lecture:'L9', color:'#f97316', icon:'⚝',
+    cx:520, cy:230, vibe:'Single-state stochastic search',
+    stars:[
+      {x:0,y:0,label:'HC + Restarts',
+        mnemonic:'CLIMB → REMEMBER BEST → TELEPORT → REPEAT.',
+        facts:[
+          'Inner: tweak + accept if Quality(R)>Quality(S)',
+          'Outer: time-based random restart',
+          'Best tracked across all restarts',
+          'Short intervals → exploration; long → exploitation',
+        ],
+        q:'In HC with restarts, SHORT time intervals favour:',
+        opts:['Exploitation','Exploration','Pure greedy','Convergence'],
+        ans:1},
+      {x:60,y:-30,label:'Simulated Annealing',
+        mnemonic:'e^(ΔQ/t) — HOT JUMPS, COOL CLINGS.',
+        facts:[
+          'Accept worse R with prob e^((Q(R)−Q(S))/t)',
+          't=∞: random walk · t=0: pure hill climb',
+          'Temperature decreased on a cooling schedule',
+          'Works on combinatorial spaces (e.g. TSP)',
+        ],
+        q:'In Simulated Annealing, P(accept worse R) at high temperature t is:',
+        opts:['Near 0','Near 0.5','Near 1','Exactly 0'],
+        ans:2},
+      {x:80,y:35,label:'Tabu Search',
+        mnemonic:'DON’T GO BACK WHERE YOU’VE BEEN. (FIFO list)',
+        facts:[
+          'Maintain FIFO list L of recent solutions',
+          'Reject tweaks that match L (the tabu)',
+          'Eventually escapes any local optimum',
+          'Discrete spaces; "close enough" needed for continuous',
+        ],
+        q:'Tabu Search’s memory of recent solutions is implemented as:',
+        opts:['A stack (LIFO)','A FIFO queue with max length','A hash set with no bound','A binary tree'],
+        ans:1},
+      {x:30,y:55,label:'ILS',
+        mnemonic:'BETTER OPTIMA LIVE NEAR THIS ONE — perturb home base.',
+        facts:[
+          'H = current "home base" local optimum',
+          'Inner: climb from S',
+          'Update H via NewHomeBase(H, S)',
+          'Perturb(H) seeds the next climb',
+        ],
+        q:'ILS assumes which heuristic about the search space?',
+        opts:['Restarts should be uniform','Better local optima are near existing ones','All optima are global','Cost surfaces are convex'],
+        ans:1},
+    ],
+    edges:[[0,1],[1,2],[2,3],[3,0]],
+  },
+  {
+    id:'swarm', name:'SWARM GARDEN', lecture:'L10', color:'#84cc16', icon:'μ',
+    cx:710, cy:230, vibe:'Population-based evolution strategies',
+    stars:[
+      {x:0,y:0,label:'(μ, λ) ES',
+        mnemonic:'COMMA = CHILDREN ONLY. Parents disappear.',
+        facts:[
+          'μ parents picked by truncation',
+          'λ children produced — λ/μ each',
+          'P ← {} → only offspring survive',
+          'Lower premature-convergence risk',
+        ],
+        q:'In (μ, λ), the next generation contains:',
+        opts:['μ parents + λ children','λ children only','μ best across both','Random sample of size μ'],
+        ans:1},
+      {x:55,y:-35,label:'(μ + λ) ES',
+        mnemonic:'PLUS = PARENTS PERSIST. P ← Q (keep parents).',
+        facts:[
+          'Same skeleton as (μ, λ)',
+          'KEY change: P ← Q (parents kept) instead of P ← {}',
+          'Higher exploitation, higher premature-convergence risk',
+          'Akin to GA elitism',
+        ],
+        q:'(μ + λ) differs from (μ, λ) on exactly which line?',
+        opts:['Build initial population','Truncation step','P ← {} vs P ← Q','for λ/μ times'],
+        ans:2},
+      {x:30,y:55,label:'1/5 Rule',
+        mnemonic:'p_s > 1/5 → INCREASE σ². Children winning → JUMP BIGGER.',
+        facts:[
+          'Rechenberg’s adaptive rule',
+          'p_s = fraction of children fitter than parents',
+          'p_s > 1/5 → increase σ² (explore more)',
+          'p_s < 1/5 → decrease σ² (exploit more)',
+        ],
+        q:'Rechenberg’s One-Fifth Rule: if p_s > 1/5, you should:',
+        opts:['Decrease σ²','Increase σ²','Reset population','Switch to (μ + λ)'],
+        ans:1},
+      {x:90,y:30,label:'EA Skeleton',
+        mnemonic:'ASSESS → SELECT → BREED → JOIN.',
+        facts:[
+          'BuildInitialPopulation()',
+          'AssessFitness(P)',
+          'Breed(P) — selection + mutation/crossover',
+          'Join(P, Breed(P)) — merge into next gen',
+        ],
+        q:'The "Join" step in an EA does:',
+        opts:['Generates initial population','Evaluates fitness','Combines parents and offspring into next generation','Selects parents'],
+        ans:2},
+    ],
+    edges:[[0,1],[1,3],[0,2],[2,3],[0,3]],
+  },
+  {
+    id:'genome', name:'GENOME LAB', lecture:'L11', color:'#ec4899', icon:'☷',
+    cx:130, cy:400, vibe:'Genetic Algorithms — crossover is king',
+    stars:[
+      {x:0,y:0,label:'GA Loop',
+        mnemonic:'SELECT 2 → CROSSOVER → MUTATE → repeat popsize/2 times.',
+        facts:[
+          'popsize must be even',
+          'Each iteration: SelectWithReplacement × 2 → Crossover → Mutate both children',
+          'Returns Best individual seen',
+          'Differs from (μ,λ): crossover is core',
+        ],
+        q:'A GA produces HOW many children per crossover call?',
+        opts:['1','2','popsize/2','popsize'],
+        ans:1},
+      {x:60,y:-30,label:'Bit-Flip',
+        mnemonic:'p = 1/l → EXPECTED 1 FLIP PER INDIVIDUAL.',
+        facts:[
+          'For each bit, flip with probability p',
+          'Often p = 1/l (length of vector)',
+          'Maintains diversity',
+          'Can reopen collapsed hypercube dimensions',
+        ],
+        q:'With bit-flip mutation at p=1/l, expected flips per individual:',
+        opts:['0','1','l/2','l'],
+        ans:1},
+      {x:80,y:35,label:'Crossover Trio',
+        mnemonic:'1pt = CUT STRING · 2pt = CUT RING · UNIFORM = COIN FLIP.',
+        facts:[
+          '1pt: P(separate v₁,v_l) = (l−1)/l',
+          '2pt: P(separate any pair) ≈ 2/l (think ring)',
+          'Uniform: P = 2p(1−p) for any pair',
+          'Linkage = distance between genes',
+        ],
+        q:'Two-point crossover is best mental-modelled as cutting:',
+        opts:['A line at one point','A ring at two points','Random rectangles','A spiral'],
+        ans:1},
+      {x:25,y:55,label:'Selection Trio',
+        mnemonic:'ROULETTE (CDF) · SUS (LOW VAR) · TOURNAMENT (RANK).',
+        facts:[
+          'Roulette: pick by fitness-proportional CDF',
+          'SUS: n equally-spaced pointers — low variance',
+          'Tournament: pick t at random, return fittest',
+          'Tournament is non-parametric (rank only)',
+        ],
+        q:'Tournament Selection with t=1 is equivalent to:',
+        opts:['Truncation','Random selection','Roulette','Elitism'],
+        ans:1},
+      {x:-30,y:40,label:'Elitism',
+        mnemonic:'CARRY n FITTEST UNCHANGED — best monotonically improves.',
+        facts:[
+          'n elites copied unchanged',
+          'Remaining (popsize−n)/2 pairs bred normally',
+          'Pro: best never goes backwards',
+          'Con: risk of premature convergence',
+        ],
+        q:'GA Elitism’s main risk:',
+        opts:['Slow improvement','Premature convergence','Loss of best','Memory overhead'],
+        ans:1},
+      {x:115,y:-15,label:'Hypercube Collapse',
+        mnemonic:'IF ALL PARENTS AGREE ON A BIT — crossover can NEVER reopen it.',
+        facts:[
+          'Binary chromosomes live on hypercube corners',
+          'Crossover produces children on the SAME hypercube',
+          'Lost diversity at a gene → dimension collapsed',
+          'Only mutation can climb back out',
+        ],
+        q:'When all parents share the same allele at a gene, crossover:',
+        opts:['Restores diversity randomly','Can never produce a different value at that gene','Increases mutation rate','Doubles the population'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,2],[0,3],[3,4],[2,5],[0,5]],
+  },
+  {
+    id:'hive', name:'HIVE MIND', lecture:'L12', color:'#0ea5e9', icon:'∞',
+    cx:340, cy:400, vibe:'PSO, DE, hybrid/memetic',
+    stars:[
+      {x:0,y:0,label:'PSO Velocity',
+        mnemonic:'α INERTIA + β PERSONAL + γ INFORMANTS + δ GLOBAL — ε scales step.',
+        facts:[
+          'v ← α·v + b(x*−x) + c(x⁺−x) + d(x!−x)',
+          'x*: personal best · x⁺: informants · x!: global',
+          'b, c, d ∈ U(0, β/γ/δ)',
+          'Then x ← x + ε·v',
+        ],
+        q:'In PSO, x! denotes:',
+        opts:['Personal best','Informants’ best','Global best across the swarm','Velocity'],
+        ans:2},
+      {x:55,y:-35,label:'DE Mutation',
+        mnemonic:'child = A + F·(B − C). Step scales with population spread.',
+        facts:[
+          'Pick three distinct A, B, C',
+          'Adaptive step — large spread → large step',
+          'Children compete directly with parents',
+          'Reminiscent of Nelder-Mead reflection',
+        ],
+        q:'Differential Evolution’s child formula:',
+        opts:['A · F · B · C','A + F · (B − C)','(A + B + C)/3','F · ∇f(A)'],
+        ans:1},
+      {x:80,y:30,label:'Memetic / Hybrid',
+        mnemonic:'EXPLORE WITH POPULATION · EXPLOIT WITH HILL-CLIMB.',
+        facts:[
+          'Hybrid = local-search step inside EA loop',
+          'Hill-Climb each individual t times',
+          'Replace original with locally improved',
+          'Lamarck wink — improvement persists in P',
+        ],
+        q:'A memetic algorithm typically combines:',
+        opts:['Two GAs','Local search + population-based search','SA + Tabu','Roulette + SUS'],
+        ans:1},
+      {x:-30,y:40,label:'Emergent Behaviour',
+        mnemonic:'WHOLE > SUM OF PARTS. Collective info > any individual.',
+        facts:[
+          'Swarm > individual seagull',
+          'Diversity carries landscape information',
+          'Premature convergence loses this',
+          'Foundational EC question of Lecture 10',
+        ],
+        q:'Emergent behaviour in swarm methods means:',
+        opts:['Particles act identically','Group dynamics exhibit useful properties beyond any individual','Particles randomly diverge','No information is shared'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,2],[2,3],[1,2],[0,3]],
+  },
+  {
+    id:'threshold', name:'THE THRESHOLD', lecture:'L13', color:'#a855f7', icon:'σ',
+    cx:540, cy:400, vibe:'Perceptron → logistic neuron',
+    stars:[
+      {x:0,y:0,label:'Sigmoid σ',
+        mnemonic:'1 / (1 + e^−z) — squished S, bounded in (0,1).',
+        facts:[
+          'σ(z) = 1/(1+e^−z)',
+          'Monotonic, smooth, bounded (0,1)',
+          'Replaces non-differentiable step',
+          'Decision boundary at σ(z)=0.5 ⇔ z=0',
+        ],
+        q:'The logistic sigmoid σ(z) equals:',
+        opts:['e^z / e^−z','1 / (1 + e^−z)','tanh(z)','1 − e^−z'],
+        ans:1},
+      {x:60,y:-30,label:'σ′ Identity',
+        mnemonic:'σ′(z) = σ(z) · (1 − σ(z)). FREE GRADIENT.',
+        facts:[
+          'σ′(z) = σ(z)(1−σ(z))',
+          'Maximum derivative = 0.25 at z=0',
+          'Forward pass gives backward pass for free',
+          'Foundational to back-propagation',
+        ],
+        q:'σ′(z) equals:',
+        opts:['σ(z)','σ(z)·(1−σ(z))','σ(z)²','e^z'],
+        ans:1},
+      {x:80,y:35,label:'Bias Trick',
+        mnemonic:'T → b = −T. Threshold becomes a LEARNABLE INPUT.',
+        facts:[
+          'Replace x > T with x + b > 0 (b = −T)',
+          'Lets us learn the threshold via gradient methods',
+          'Bias is just another weight, on input "1"',
+        ],
+        q:'The bias trick reinterprets the threshold T as:',
+        opts:['A hyperparameter','A constant input of value T','A learnable input with weight b = −T','A second activation function'],
+        ans:2},
+      {x:30,y:55,label:'MSE Divergence',
+        mnemonic:'w → ∞ to MAKE σ A PERFECT STEP. Cost shrinks, weights explode.',
+        facts:[
+          'MSE drives w larger to sharpen σ',
+          '−b/w (boundary) stays correct',
+          'Parameter magnitudes diverge to ±∞',
+          'Fix: regularisation, cross-entropy, classification-correct stop',
+        ],
+        q:'In 2-D classification with MSE + sigmoid, parameters diverge because:',
+        opts:['The data is noisy','σ only asymptotically reaches 0/1 — bigger w shrinks residuals','The learning rate is too high','Gradients vanish prematurely'],
+        ans:1},
+      {x:-30,y:40,label:'Chain Rule for dC/db',
+        mnemonic:'−(y − a) · a · (1 − a). MEMORISE THIS.',
+        facts:[
+          'dC/db = −(1/n) Σ (y − a) · a · (1 − a)',
+          'Three factors: residual × σ × (1−σ)',
+          'For ∂/∂w: extra factor of x',
+          'Pattern reused throughout deep learning',
+        ],
+        q:'The per-sample gradient dC/db for logistic regression has the form:',
+        opts:['(y − a)²','−(y − a) · a · (1 − a)','a · log(y)','y − a'],
+        ans:1},
+    ],
+    edges:[[0,1],[0,2],[2,3],[3,4],[1,4]],
+  },
+  {
+    id:'forge', name:'LOGIC FORGE', lecture:'L14', color:'#eab308', icon:'⌬',
+    cx:740, cy:400, vibe:'Neurons → logic gates → MLPs',
+    stars:[
+      {x:0,y:0,label:'Hyperplane',
+        mnemonic:'n INPUTS → (n−1)-D HYPERPLANE divides ℝⁿ.',
+        facts:[
+          'σ(w⃗·x⃗ + b) > 0.5 ⇔ w⃗·x⃗ + b > 0',
+          '1 input: point · 2 inputs: line · 3 inputs: plane',
+          'In general: (n−1)-dimensional hyperplane',
+          'Decision boundary is always linear',
+        ],
+        q:'A neuron with 3 inputs partitions 3-D space using:',
+        opts:['A point','A 1-D line','A 2-D plane','A 3-D cube'],
+        ans:2},
+      {x:55,y:-35,label:'AND Gate',
+        mnemonic:'w₁=w₂=1, b=−1.5 → only (1,1) fires.',
+        facts:[
+          'Logical AND',
+          'Sum z = x₁+x₂−1.5',
+          'Only z>0 when both inputs are 1',
+        ],
+        q:'Weights/bias for AND: w₁=w₂=1, b=?',
+        opts:['−0.5','−1.5','+1.5','+0.5'],
+        ans:1},
+      {x:80,y:30,label:'OR Gate',
+        mnemonic:'w₁=w₂=1, b=−0.5 → any 1 fires.',
+        facts:[
+          'Logical OR',
+          'Sum z = x₁+x₂−0.5',
+          'Fires when at least one input is 1',
+        ],
+        q:'Weights/bias for OR: w₁=w₂=1, b=?',
+        opts:['−1.5','−0.5','+0.5','0'],
+        ans:1},
+      {x:30,y:55,label:'NAND / NOR',
+        mnemonic:'FLIP ALL SIGNS OF AND/OR.',
+        facts:[
+          'NAND: w₁=w₂=−1, b=1.5',
+          'NOR: w₁=w₂=−1, b=0.5',
+          'Pattern: negate to negate gate',
+        ],
+        q:'NAND weights/bias are:',
+        opts:['w=1,1, b=−1.5','w=−1,−1, b=1.5','w=−1,1, b=0','w=1,−1, b=−0.5'],
+        ans:1},
+      {x:-30,y:40,label:'XOR Wall',
+        mnemonic:'DIAGONAL DOOM — (0,1),(1,0) vs (0,0),(1,1). NO LINE WORKS.',
+        facts:[
+          'XOR not linearly separable',
+          'Solve with 2-layer net: NAND + OR → AND',
+          'NAND alone is universal for Boolean logic',
+          'Multi-layer perceptrons = NAND universal ⇒ universal classifiers',
+        ],
+        q:'XOR is not linearly separable because the positive class:',
+        opts:['Occupies one corner','Occupies opposite diagonal corners','Is empty','Equals the negative class'],
+        ans:1},
+      {x:115,y:-15,label:'Hit-Counting',
+        mnemonic:'wᵢ = +1 / −1 · b = −(K − 0.5). Always exists for one digit.',
+        facts:[
+          'Constructive proof — single digit',
+          'wᵢ = +1 if segment i is ON, −1 if OFF',
+          'b = −(K − 0.5) where K = #segments ON',
+          'Always classifies one digit pattern correctly',
+        ],
+        q:'In hit-counting, the bias b is set to:',
+        opts:['K + 1','K · 0.5','−(K − 0.5)','−2K'],
+        ans:2},
+    ],
+    edges:[[0,1],[0,2],[1,2],[1,3],[2,3],[3,4],[0,5]],
+  },
+];
+
+// ── 13 standalone mnemonics — the "exam mantras" =================================
+const MNEMONICS = [
+  { color:'#22d3ee', topic:'L3 Triad',         line:'Language → Model → Metric.  Describe → Instantiate → Evaluate.' },
+  { color:'#fb7185', topic:'L4 JSSP',          line:'Solution space (n!)ᵐ.  Makespan = time the LAST job finishes.' },
+  { color:'#34d399', topic:'L5 Calc',          line:'f″ smiles for min · f″ frowns for max.' },
+  { color:'#fbbf24', topic:'L6 GD',            line:'x ← x − α f′(x).  Minus for down, plus for up.' },
+  { color:'#fbbf24', topic:'L6 N-R',           line:'f′ over f″ — curvature picks the perfect step.' },
+  { color:'#14b8a6', topic:'L7 Direct',        line:'CCS taxi · H-J probe ±α · NM reflect-expand-contract-shrink.' },
+  { color:'#6366f1', topic:'L8 LCG',           line:'Xₙ₊₁ = (a·Xₙ + c) mod m.  Three knobs: a, c, m.' },
+  { color:'#6366f1', topic:'L8 NFL',           line:'Averaged over all problems, no algorithm beats another.' },
+  { color:'#f97316', topic:'L9 SA',            line:'e^(ΔQ/t).  Hot jumps, cool clings.' },
+  { color:'#f97316', topic:'L9 Tabu',          line:'Don’t go back where you’ve been (FIFO list).' },
+  { color:'#84cc16', topic:'L10 (μ,λ)',        line:'COMMA = Children Only.  PLUS = Parents Persist.' },
+  { color:'#84cc16', topic:'L10 1/5',          line:'p_s > 1/5 → grow σ² · p_s < 1/5 → shrink σ².' },
+  { color:'#ec4899', topic:'L11 Crossover',    line:'1pt cuts string · 2pt cuts ring · uniform flips coins.' },
+  { color:'#ec4899', topic:'L11 Selection',    line:'Roulette CDF · SUS regular spacing · Tournament rank-only.' },
+  { color:'#0ea5e9', topic:'L12 PSO',          line:'α inertia + β personal + γ informants + δ global · ε step.' },
+  { color:'#0ea5e9', topic:'L12 DE',           line:'child = A + F·(B − C).  Spread scales the step.' },
+  { color:'#a855f7', topic:'L13 σ',            line:'σ(z) = 1 / (1 + e^−z) ·  σ′ = σ(1 − σ).' },
+  { color:'#a855f7', topic:'L13 dC/db',        line:'−(y − a) · a · (1 − a).  Residual times σ times (1−σ).' },
+  { color:'#eab308', topic:'L14 Gates',        line:'AND b=−1.5 · OR b=−0.5 · NAND/NOR: flip all signs.' },
+  { color:'#eab308', topic:'L14 XOR',          line:'Diagonal Doom — opposite corners, one line WILL NOT WORK.' },
+];
+
+// ── Memory Cosmos main component ===============================================
+function MemoryCosmosTab() {
+  useCosmosStyles();
+  const [view, setView] = useState('cosmos');
+  const [active, setActive] = useState(null);
+  const [picks, setPicks] = useState({});
+  const [visited, setVisited] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cits4404_cosmos_v1');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {};
+  });
+  const markVisited = useCallback((id) => {
+    setVisited(v => {
+      const nv = {...v, [id]:true};
+      try { localStorage.setItem('cits4404_cosmos_v1', JSON.stringify(nv)); } catch {}
+      return nv;
+    });
+  }, []);
+
+  const allStars = useMemo(() => {
+    const out = [];
+    COSMOS_DATA.forEach(c => c.stars.forEach((s, i) => out.push({ ...s, conId:c.id, conColor:c.color, conName:c.name, conLecture:c.lecture, idx:i, id:`${c.id}:${i}` })));
+    return out;
+  }, []);
+
+  const visitedCount = Object.keys(visited).filter(k => visited[k]).length;
+  const total = allStars.length;
+  const pct = Math.round((visitedCount/total)*100);
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'0.7rem',flexWrap:'wrap',marginBottom:'0.8rem'}}>
+        <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
+          {[['cosmos','✦ Cosmos'],['lightning','⚡ Lightning'],['mnemonics','♦ Mnemonics']].map(([v,l]) => (
+            <button key={v} onClick={()=>setView(v)} style={{
+              background: view===v ? 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(34,211,238,0.25))' : 'rgba(15,23,42,0.5)',
+              border:`1px solid ${view===v?'#a78bfa':'rgba(148,163,184,0.25)'}`,
+              color:view===v?'#fff':'var(--text-2)',
+              borderRadius:8, padding:'0.45rem 1rem', cursor:'pointer',
+              fontFamily:'monospace', fontWeight:700, fontSize:'0.78rem', letterSpacing:'0.05em'}}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <div style={{fontFamily:'monospace',fontSize:'0.78rem'}}>
+          <span style={{color:'var(--text-2)'}}>visited </span>
+          <span style={{color:'#22d3ee'}}>{visitedCount}</span>
+          <span style={{color:'var(--text-2)'}}> / {total}</span>
+          <span style={{color:'#a78bfa',marginLeft:8}}>({pct}%)</span>
+        </div>
+      </div>
+
+      {view === 'cosmos' && (
+        <CosmosView
+          allStars={allStars}
+          visited={visited}
+          markVisited={markVisited}
+          active={active}
+          setActive={setActive}
+          picks={picks}
+          setPicks={setPicks}
+        />
+      )}
+
+      {view === 'lightning' && (
+        <LightningRound
+          allStars={allStars}
+          visited={visited}
+          markVisited={markVisited}
+        />
+      )}
+
+      {view === 'mnemonics' && (
+        <MnemonicsChain />
+      )}
+    </div>
+  );
+}
+
+// ── Cosmos View ==================================================================
+function CosmosView({ allStars, visited, markVisited, active, setActive, picks, setPicks }) {
+  // Big canvas (constellation cx/cy values are scaled by S to spread them out)
+  const S = 2.2;
+  const W = 2200, H = 1100;
+  const INITIAL = { x:0, y:0, w:W, h:H };
+  const MIN_W = 380, MAX_W = W * 1.6;
+
+  const [view, setView] = useState(INITIAL);
+  const panRef = useRef(null);          // {startClientX, startClientY, vx, vy} while panning
+  const [panning, setPanning] = useState(false);
+  const wrapRef = useRef(null);
+  const svgRef = useRef(null);
+
+  // Background twinkle stars (decorative — distributed across the larger canvas)
+  const bgStars = useMemo(() => Array.from({length:240}, (_,i) => ({
+    x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.4 + 0.4, d: Math.random()*3 + 1
+  })), []);
+
+  // Wheel zoom — must attach manually to allow preventDefault (React passive default)
+  useEffect(() => {
+    const el = wrapRef.current; if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const rect = svgRef.current.getBoundingClientRect();
+      setView(v => {
+        const mx = v.x + ((e.clientX - rect.left) / rect.width) * v.w;
+        const my = v.y + ((e.clientY - rect.top) / rect.height) * v.h;
+        const factor = e.deltaY > 0 ? 1.18 : 0.85;
+        let nw = Math.max(MIN_W, Math.min(MAX_W, v.w * factor));
+        let nh = nw * (H / W);
+        const nx = mx - (mx - v.x) * (nw / v.w);
+        const ny = my - (my - v.y) * (nh / v.h);
+        return { x: nx, y: ny, w: nw, h: nh };
+      });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []); // eslint-disable-line
+
+  // Track pan via document listeners so the drag survives the cursor leaving the SVG
+  useEffect(() => {
+    if (!panning) return;
+    const onMove = (e) => {
+      const p = panRef.current; if (!p) return;
+      const rect = svgRef.current.getBoundingClientRect();
+      setView(v => {
+        const scaleX = v.w / rect.width;
+        const scaleY = v.h / rect.height;
+        const dx = (e.clientX - p.startClientX) * scaleX;
+        const dy = (e.clientY - p.startClientY) * scaleY;
+        return { ...v, x: p.vx - dx, y: p.vy - dy };
+      });
+    };
+    const onUp = () => { panRef.current = null; setPanning(false); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [panning]);
+
+  const startPan = (e) => {
+    // Skip pan if user grabbed a star
+    let t = e.target;
+    while (t && t !== e.currentTarget) {
+      if (t.classList && t.classList.contains('mc-star-dot')) return;
+      t = t.parentNode;
+    }
+    panRef.current = { startClientX: e.clientX, startClientY: e.clientY, vx: view.x, vy: view.y };
+    setPanning(true);
+    e.preventDefault();
+  };
+
+  // Zoom helpers — keep the canvas centre fixed
+  const zoomBy = (factor) => setView(v => {
+    let nw = Math.max(MIN_W, Math.min(MAX_W, v.w * factor));
+    const nh = nw * (H / W);
+    const cx = v.x + v.w/2, cy = v.y + v.h/2;
+    return { x: cx - nw/2, y: cy - nh/2, w: nw, h: nh };
+  });
+  const resetView = () => setView(INITIAL);
+  const zoomPct = Math.round((W / view.w) * 100);
+
+  // Helper: jump to a constellation
+  const jumpTo = (c) => setView({ x: c.cx*S - 350, y: c.cy*S - 250, w: 700, h: 500 });
+
+  return (
+    <div>
+      {/* Constellation quick-jump chips */}
+      <div style={{display:'flex', flexWrap:'wrap', gap:5, marginBottom:'0.6rem', alignItems:'center'}}>
+        <span style={{fontSize:'0.66rem', color:'var(--text-2)', fontFamily:'monospace', letterSpacing:'0.08em', marginRight:6}}>JUMP TO →</span>
+        {COSMOS_DATA.map(c => (
+          <button key={c.id} onClick={()=>jumpTo(c)} style={{
+            background:`${c.color}14`, border:`1px solid ${c.color}55`, color:c.color,
+            borderRadius:6, padding:'2px 9px', cursor:'pointer',
+            fontFamily:'monospace', fontSize:'0.66rem', fontWeight:700, letterSpacing:'0.04em'}}>
+            {c.icon} {c.name.replace(/^THE /,'')}
+          </button>
+        ))}
+      </div>
+
+      <div ref={wrapRef} className="mc-bg" style={{
+        padding:'0', minHeight: 700, position:'relative',
+        cursor: panning ? 'grabbing' : 'grab',
+        touchAction:'none', userSelect:'none',
+      }}
+      onMouseDown={startPan}>
+
+        {/* Floating controls (top-right) */}
+        <div style={{position:'absolute', top:10, right:10, zIndex:10, display:'flex', flexDirection:'column', gap:5}}>
+          {[
+            ['+', 'Zoom in', () => zoomBy(0.8)],
+            ['−', 'Zoom out', () => zoomBy(1.25)],
+            ['⊙', 'Reset view', resetView],
+          ].map(([label, title, fn]) => (
+            <button key={label} title={title} onClick={fn} style={{
+              width:34, height:34, borderRadius:8,
+              background:'rgba(15,23,42,0.78)',
+              border:'1px solid rgba(167,139,250,0.35)',
+              color:'#a78bfa', cursor:'pointer',
+              fontFamily:'monospace', fontWeight:700, fontSize:'1rem',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              backdropFilter:'blur(6px)',
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {/* Floating zoom % indicator (bottom-right) */}
+        <div style={{position:'absolute', bottom:10, right:10, zIndex:10,
+          background:'rgba(15,23,42,0.78)',
+          border:'1px solid rgba(167,139,250,0.35)',
+          borderRadius:6, padding:'3px 9px',
+          fontFamily:'monospace', fontSize:'0.7rem', color:'#a78bfa',
+          backdropFilter:'blur(6px)', letterSpacing:'0.06em',
+        }}>{zoomPct}%</div>
+
+        {/* Hint banner (top-left) */}
+        <div style={{position:'absolute', top:10, left:10, zIndex:10,
+          background:'rgba(15,23,42,0.78)',
+          border:'1px solid rgba(167,139,250,0.35)',
+          borderRadius:6, padding:'3px 9px',
+          fontFamily:'monospace', fontSize:'0.66rem', color:'var(--text-2)',
+          backdropFilter:'blur(6px)', letterSpacing:'0.04em', pointerEvents:'none',
+        }}>
+          drag · scroll to zoom · click a ✦ for the card
+        </div>
+
+        <svg ref={svgRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+          style={{width:'100%', height:'auto', display:'block', minHeight:700}}>
+          {/* Background twinkles */}
+          {bgStars.map((s,i) => (
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fff"
+              style={{opacity:0.55, animation:`mc-twinkle ${s.d}s ease-in-out infinite`, animationDelay:`${i*0.05}s`}} />
+          ))}
+          <defs>
+            {COSMOS_DATA.map(c => (
+              <radialGradient key={c.id} id={`grad-${c.id}`} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor={c.color} stopOpacity="0.55"/>
+                <stop offset="100%" stopColor={c.color} stopOpacity="0"/>
+              </radialGradient>
+            ))}
+          </defs>
+
+          {/* Constellation nebula glows */}
+          {COSMOS_DATA.map(c => (
+            <ellipse key={c.id} cx={c.cx*S + 40} cy={c.cy*S + 15} rx="180" ry="120"
+              fill={`url(#grad-${c.id})`} opacity="0.55" pointerEvents="none" />
+          ))}
+
+          {/* Constellations */}
+          {COSMOS_DATA.map(c => {
+            const ccx = c.cx*S, ccy = c.cy*S;
+            return (
+              <g key={c.id}>
+                {/* Edges */}
+                {c.edges.map(([a,b],ei) => {
+                  const sa = c.stars[a], sb = c.stars[b];
+                  return <line key={ei}
+                    x1={ccx + sa.x} y1={ccy + sa.y}
+                    x2={ccx + sb.x} y2={ccy + sb.y}
+                    stroke={c.color} strokeWidth="1.2" strokeOpacity="0.45" strokeDasharray="3 3"
+                    pointerEvents="none" />;
+                })}
+                {/* Title — moved further up to clear stars */}
+                <text x={ccx + 40} y={ccy - 80} fill={c.color} fontFamily="monospace" fontWeight="700" fontSize="15" textAnchor="middle"
+                  style={{filter:`drop-shadow(0 0 6px ${c.color})`, letterSpacing:'0.1em'}}
+                  pointerEvents="none">
+                  {c.icon} {c.name}
+                </text>
+                <text x={ccx + 40} y={ccy - 62} fill={c.color} opacity="0.75" fontFamily="monospace" fontSize="11" textAnchor="middle"
+                  pointerEvents="none">
+                  {c.lecture} · {c.vibe}
+                </text>
+
+                {/* Stars */}
+                {c.stars.map((s, si) => {
+                  const id = `${c.id}:${si}`;
+                  const isVisited = !!visited[id];
+                  const cx = ccx + s.x, cy = ccy + s.y;
+                  return (
+                    <g key={si} transform={`translate(${cx} ${cy})`}>
+                      <g className="mc-star-dot" onClick={(e)=>{e.stopPropagation(); setActive(id);}}>
+                        <circle cx="0" cy="0" r="16" fill="transparent" />
+                        {isVisited && (
+                          <circle cx="0" cy="0" r="14" fill="none" stroke={c.color} strokeWidth="1" strokeOpacity="0.55"
+                            style={{animation:'mc-pulse 2.5s ease-in-out infinite', '--cw':c.color}} />
+                        )}
+                        <circle cx="0" cy="0" r={isVisited?7.5:6} fill={isVisited?c.color:'#fff'} stroke={c.color} strokeWidth="1.5"
+                          style={{filter:`drop-shadow(0 0 ${isVisited?10:6}px ${c.color})`, animation: isVisited ? 'none' : `mc-twinkle ${2+si*0.3}s ease-in-out infinite`}}/>
+                      </g>
+                      <text x="0" y="22" fill={isVisited?c.color:'#fff'} fontFamily="monospace" fontSize="11"
+                        textAnchor="middle" opacity={isVisited?1:0.85} pointerEvents="none"
+                        style={{textShadow:'0 0 4px #000'}}>{s.label}</text>
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div style={{marginTop:'0.8rem',background:'rgba(15,23,42,0.5)',border:'1px solid rgba(148,163,184,0.2)',borderRadius:8,padding:'0.55rem 0.9rem',fontSize:'0.73rem',color:'var(--text-2)',lineHeight:1.55}}>
+        <strong style={{color:'#a78bfa'}}>How to use the Cosmos:</strong> <em>drag</em> to pan, <em>scroll</em> (or use + / −) to zoom, <em>click a chip</em> at the top to fly to a constellation, <em>click a ✦</em> to open its fact card and quick quiz. Visited stars pulse — your memory map literally lights up as you go.
+      </div>
+
+      {active && (() => {
+        const star = allStars.find(s => s.id === active);
+        if (!star) return null;
+        return <StarModal star={star} onClose={()=>setActive(null)} markVisited={markVisited} picks={picks} setPicks={setPicks} />;
+      })()}
+    </div>
+  );
+}
+
+// ── Star Modal ===================================================================
+function StarModal({ star, onClose, markVisited, picks, setPicks }) {
+  const pick = picks[star.id];
+  const isCorrect = pick === star.ans;
+  const submit = (i) => setPicks(p => ({...p, [star.id]: i}));
+
+  return (
+    <div onClick={onClose} className="mc-modal-bg" style={{
+      position:'fixed', inset:0, zIndex:1000,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem',
+    }}>
+      <div onClick={e=>e.stopPropagation()} className="mc-fadein" style={{
+        background:`linear-gradient(135deg, ${star.conColor}10 0%, rgba(5,8,24,0.96) 100%)`,
+        border:`1px solid ${star.conColor}`,
+        borderRadius:14, maxWidth:560, width:'100%', maxHeight:'90vh', overflow:'auto',
+        boxShadow:`0 0 60px -10px ${star.conColor}`,
+        '--cw': star.conColor,
+      }}>
+        <div style={{padding:'1.1rem 1.3rem', borderBottom:`1px solid ${star.conColor}33`, position:'sticky', top:0, background:'rgba(5,8,24,0.94)', backdropFilter:'blur(6px)', zIndex:2}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
+            <div>
+              <div style={{fontSize:'0.62rem',color:star.conColor,letterSpacing:'0.08em',fontFamily:'monospace',fontWeight:700,marginBottom:3}}>
+                {star.conName} · {star.conLecture}
+              </div>
+              <h3 style={{margin:0,color:'#fff',fontSize:'1.3rem',letterSpacing:'-0.01em'}}>{star.label}</h3>
+            </div>
+            <button onClick={onClose} style={{background:'rgba(148,163,184,0.1)',border:'1px solid rgba(148,163,184,0.3)',color:'var(--text-2)',borderRadius:6,padding:'4px 11px',cursor:'pointer',fontFamily:'monospace',fontSize:'0.8rem'}}>✕</button>
+          </div>
+        </div>
+
+        <div style={{padding:'1.1rem 1.3rem'}}>
+          {/* Mnemonic banner */}
+          <div style={{
+            background:`linear-gradient(135deg, ${star.conColor}1f, rgba(167,139,250,0.12))`,
+            border:`1px dashed ${star.conColor}`,
+            borderRadius:10, padding:'0.7rem 0.9rem', marginBottom:'0.85rem',
+          }}>
+            <div style={{fontSize:'0.6rem',color:star.conColor,fontFamily:'monospace',letterSpacing:'0.1em',marginBottom:4,fontWeight:700}}>★ MNEMONIC</div>
+            <div style={{color:'#fff',fontSize:'0.92rem',fontWeight:600,lineHeight:1.45,letterSpacing:'0.01em'}}>{star.mnemonic}</div>
+          </div>
+
+          {/* Facts */}
+          <div style={{marginBottom:'1rem'}}>
+            <div style={{fontSize:'0.6rem',color:'#22d3ee',fontFamily:'monospace',letterSpacing:'0.1em',marginBottom:5,fontWeight:700}}>◆ KEY FACTS</div>
+            <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:6}}>
+              {star.facts.map((f,i) => (
+                <li key={i} style={{
+                  display:'flex',alignItems:'flex-start',gap:'0.55rem',
+                  background:'rgba(15,23,42,0.55)',
+                  border:'1px solid rgba(148,163,184,0.15)',
+                  borderRadius:8, padding:'0.5rem 0.7rem',
+                  fontSize:'0.83rem', color:'var(--text-1)', lineHeight:1.5,
+                }}>
+                  <span style={{color:star.conColor,fontFamily:'monospace',fontWeight:700,minWidth:14}}>{String(i+1).padStart(2,'0')}</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Quiz */}
+          <div style={{
+            background:'rgba(167,139,250,0.06)',
+            border:'1px solid rgba(167,139,250,0.3)',
+            borderRadius:10, padding:'0.85rem',
+          }}>
+            <div style={{fontSize:'0.6rem',color:'#a78bfa',fontFamily:'monospace',letterSpacing:'0.1em',marginBottom:5,fontWeight:700}}>⚡ QUICK CHECK</div>
+            <div style={{color:'#fff',fontSize:'0.88rem',marginBottom:'0.55rem',lineHeight:1.5}}>{star.q}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              {star.opts.map((o,i) => {
+                const isPick = pick === i;
+                const reveal = pick !== undefined;
+                const correct = i === star.ans;
+                let bg = 'rgba(15,23,42,0.5)', border = 'rgba(148,163,184,0.2)', color = 'var(--text-1)';
+                if (reveal && correct) { bg = 'rgba(52,211,153,0.18)'; border = '#34d399'; color = '#34d399'; }
+                else if (reveal && isPick && !correct) { bg = 'rgba(251,113,133,0.18)'; border = '#fb7185'; color = '#fb7185'; }
+                else if (isPick) { bg = `${star.conColor}22`; border = star.conColor; color = '#fff'; }
+                return (
+                  <button key={i} disabled={pick !== undefined} onClick={()=>submit(i)} style={{
+                    display:'flex', alignItems:'flex-start', gap:'0.55rem', textAlign:'left',
+                    background:bg, border:`1px solid ${border}`, color, borderRadius:7,
+                    padding:'0.45rem 0.7rem', cursor:pick !== undefined ? 'default':'pointer',
+                    fontSize:'0.8rem', fontFamily:'inherit', lineHeight:1.45,
+                  }}>
+                    <span style={{fontFamily:'monospace',color:'var(--text-2)'}}>{String.fromCharCode(65+i)}.</span>
+                    <span style={{flex:1}}>{o}</span>
+                    {reveal && correct && <span>✓</span>}
+                    {reveal && isPick && !correct && <span>✘</span>}
+                  </button>
+                );
+              })}
+            </div>
+            {pick !== undefined && (
+              <div style={{marginTop:'0.7rem',padding:'0.55rem 0.75rem',background:isCorrect?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)',border:`1px solid ${isCorrect?'#34d399':'#fbbf24'}55`,borderRadius:7,fontSize:'0.78rem',color:isCorrect?'#34d399':'#fbbf24'}}>
+                {isCorrect ? '★ Correct — locked in.' : `Hint: re-read fact ${star.facts.length} and the mnemonic above, then click "Mark visited" once it clicks.`}
+              </div>
+            )}
+          </div>
+
+          <div style={{display:'flex',justifyContent:'space-between',gap:'0.5rem',marginTop:'0.9rem'}}>
+            <button onClick={onClose} style={{background:'rgba(148,163,184,0.1)',border:'1px solid rgba(148,163,184,0.3)',color:'var(--text-2)',borderRadius:8,padding:'0.45rem 0.95rem',cursor:'pointer',fontFamily:'monospace',fontSize:'0.78rem'}}>← Back to Cosmos</button>
+            <button onClick={()=>{markVisited(star.id); onClose();}} style={{
+              background:`linear-gradient(135deg, ${star.conColor}, ${star.conColor}99)`,
+              border:'none', color:'#0a0e27', borderRadius:8,
+              padding:'0.45rem 1.1rem', cursor:'pointer', fontFamily:'monospace', fontWeight:700, fontSize:'0.78rem', letterSpacing:'0.05em'}}>
+              ✓ MARK VISITED
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Lightning Round (flashcards) =================================================
+function LightningRound({ allStars, markVisited }) {
+  const [order, setOrder] = useState(() => shuffleArr(allStars.map((_,i)=>i)));
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [pick, setPick] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+
+  const cur = allStars[order[idx]];
+
+  const next = useCallback(() => {
+    setFlipped(false); setPick(null);
+    setIdx(i => (i+1) % order.length);
+  }, [order.length]);
+
+  const submit = (i) => {
+    setPick(i);
+    if (i === cur.ans) {
+      setStreak(s => {
+        const ns = s+1;
+        setBestStreak(b => Math.max(b, ns));
+        return ns;
+      });
+      markVisited(cur.id);
+    } else {
+      setStreak(0);
+    }
+  };
+
+  return (
+    <div className="mc-bg" style={{minHeight:560, padding:'1.5rem', display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem'}}>
+      <div style={{display:'flex',gap:'1rem',marginBottom:'0.3rem'}}>
+        <div style={{textAlign:'center'}}>
+          <div style={{fontSize:'0.6rem',color:'rgba(148,163,184,0.7)',letterSpacing:'0.1em',fontFamily:'monospace'}}>CARD</div>
+          <div style={{fontSize:'1.4rem',color:'#fff',fontFamily:'monospace',fontWeight:700}}>{idx+1}<span style={{color:'rgba(148,163,184,0.5)',fontSize:'0.85rem'}}> / {order.length}</span></div>
+        </div>
+        <div style={{textAlign:'center'}}>
+          <div style={{fontSize:'0.6rem',color:'rgba(251,113,133,0.8)',letterSpacing:'0.1em',fontFamily:'monospace'}}>STREAK 🔥</div>
+          <div style={{fontSize:'1.4rem',color:'#fb7185',fontFamily:'monospace',fontWeight:700}}>{streak}</div>
+        </div>
+        <div style={{textAlign:'center'}}>
+          <div style={{fontSize:'0.6rem',color:'rgba(251,191,36,0.8)',letterSpacing:'0.1em',fontFamily:'monospace'}}>BEST</div>
+          <div style={{fontSize:'1.4rem',color:'#fbbf24',fontFamily:'monospace',fontWeight:700}}>{bestStreak}</div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:540, width:'100%', position:'relative', perspective:'1200px'}}>
+        <div style={{
+          position:'relative', minHeight:380, transition:'transform 0.5s',
+          transformStyle:'preserve-3d',
+          transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}>
+          {/* Front */}
+          <div style={{
+            position:'absolute', inset:0, backfaceVisibility:'hidden',
+            background:`linear-gradient(135deg, ${cur.conColor}18, rgba(5,8,24,0.95))`,
+            border:`1px solid ${cur.conColor}`, borderRadius:14,
+            padding:'1.5rem', display:'flex',flexDirection:'column',gap:'0.8rem',
+            boxShadow:`0 0 40px -10px ${cur.conColor}`,
+          }}>
+            <div style={{fontSize:'0.6rem',color:cur.conColor,letterSpacing:'0.12em',fontFamily:'monospace',fontWeight:700}}>{cur.conName} · {cur.conLecture}</div>
+            <h2 style={{margin:0, color:'#fff', fontSize:'1.9rem', letterSpacing:'-0.01em', lineHeight:1.1}}>{cur.label}</h2>
+            <div style={{
+              background:'rgba(167,139,250,0.1)', border:'1px dashed #a78bfa55',
+              borderRadius:10, padding:'0.7rem 0.85rem',
+            }}>
+              <div style={{fontSize:'0.58rem',color:'#a78bfa',fontFamily:'monospace',letterSpacing:'0.1em',marginBottom:4,fontWeight:700}}>★ MNEMONIC</div>
+              <div style={{color:'#fff',fontSize:'0.93rem',fontWeight:600,lineHeight:1.4}}>{cur.mnemonic}</div>
+            </div>
+            <button onClick={()=>setFlipped(true)} style={{
+              marginTop:'auto', padding:'0.55rem 1rem',
+              background:`linear-gradient(135deg, ${cur.conColor}, ${cur.conColor}88)`,
+              border:'none', borderRadius:8, color:'#0a0e27',
+              cursor:'pointer', fontWeight:700, fontFamily:'monospace', letterSpacing:'0.05em',
+            }}>↻ FLIP — TEST ME</button>
+          </div>
+          {/* Back */}
+          <div style={{
+            position:'absolute', inset:0, backfaceVisibility:'hidden',
+            transform:'rotateY(180deg)',
+            background:`linear-gradient(135deg, rgba(15,23,42,0.97), ${cur.conColor}18)`,
+            border:`1px solid ${cur.conColor}`, borderRadius:14,
+            padding:'1.25rem', display:'flex',flexDirection:'column',gap:'0.6rem',
+            boxShadow:`0 0 40px -10px ${cur.conColor}`,
+          }}>
+            <div style={{fontSize:'0.58rem',color:cur.conColor,letterSpacing:'0.12em',fontFamily:'monospace',fontWeight:700}}>QUICK QUIZ</div>
+            <div style={{color:'#fff',fontSize:'1rem',fontWeight:600,lineHeight:1.4}}>{cur.q}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:5,marginTop:'0.3rem'}}>
+              {cur.opts.map((o,i) => {
+                const isPick = pick === i;
+                const reveal = pick !== null;
+                const correct = i === cur.ans;
+                let bg = 'rgba(15,23,42,0.5)', border = 'rgba(148,163,184,0.2)', color = 'var(--text-1)';
+                if (reveal && correct) { bg = 'rgba(52,211,153,0.18)'; border = '#34d399'; color = '#34d399'; }
+                else if (reveal && isPick && !correct) { bg = 'rgba(251,113,133,0.18)'; border = '#fb7185'; color = '#fb7185'; }
+                return (
+                  <button key={i} disabled={pick !== null} onClick={()=>submit(i)} style={{
+                    textAlign:'left', background:bg, border:`1px solid ${border}`, color, borderRadius:7,
+                    padding:'0.5rem 0.7rem', cursor:pick !== null ? 'default':'pointer',
+                    fontSize:'0.85rem', fontFamily:'inherit', lineHeight:1.4,
+                  }}>
+                    <span style={{fontFamily:'monospace',color:'var(--text-2)',marginRight:7}}>{String.fromCharCode(65+i)}.</span>
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+            {pick !== null && (
+              <button onClick={next} style={{
+                marginTop:'auto', padding:'0.55rem 1rem',
+                background:'linear-gradient(135deg, #22d3ee, #a78bfa)',
+                border:'none', borderRadius:8, color:'#0a0e27',
+                cursor:'pointer', fontWeight:700, fontFamily:'monospace', letterSpacing:'0.05em',
+              }}>NEXT CARD →</button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:'flex',gap:'0.5rem',marginTop:'0.5rem'}}>
+        <button onClick={()=>{setOrder(shuffleArr(allStars.map((_,i)=>i))); setIdx(0); setFlipped(false); setPick(null); setStreak(0);}}
+          style={{background:'rgba(15,23,42,0.6)',border:'1px solid rgba(148,163,184,0.3)',color:'var(--text-1)',borderRadius:8,padding:'0.4rem 0.95rem',cursor:'pointer',fontFamily:'monospace',fontSize:'0.74rem'}}>
+          ⚃ Reshuffle
+        </button>
+        <button onClick={()=>{setIdx(i => (i-1+order.length)%order.length); setFlipped(false); setPick(null);}}
+          style={{background:'rgba(15,23,42,0.6)',border:'1px solid rgba(148,163,184,0.3)',color:'var(--text-1)',borderRadius:8,padding:'0.4rem 0.95rem',cursor:'pointer',fontFamily:'monospace',fontSize:'0.74rem'}}>
+          ← Prev
+        </button>
+        <button onClick={next}
+          style={{background:'rgba(15,23,42,0.6)',border:'1px solid rgba(148,163,184,0.3)',color:'var(--text-1)',borderRadius:8,padding:'0.4rem 0.95rem',cursor:'pointer',fontFamily:'monospace',fontSize:'0.74rem'}}>
+          Skip →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Mnemonics Chain ==============================================================
+function MnemonicsChain() {
+  const [hover, setHover] = useState(null);
+  return (
+    <div className="mc-bg" style={{padding:'1.5rem 1.25rem', minHeight:560}}>
+      <div style={{textAlign:'center', marginBottom:'1.3rem'}}>
+        <div className="mc-shimmer-text" style={{fontSize:'2rem', letterSpacing:'-0.01em'}}>THE EXAM MANTRAS</div>
+        <div style={{color:'var(--text-2)', fontSize:'0.85rem', marginTop:'0.3rem'}}>{MNEMONICS.length} one-line spells. Hover for the full mnemonic to glow up.</div>
+      </div>
+
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'0.65rem'}}>
+        {MNEMONICS.map((m, i) => {
+          const isHover = hover === i;
+          return (
+            <div key={i}
+              onMouseEnter={()=>setHover(i)}
+              onMouseLeave={()=>setHover(null)}
+              style={{
+                position:'relative',
+                background: isHover
+                  ? `linear-gradient(135deg, ${m.color}22, rgba(5,8,24,0.85))`
+                  : `linear-gradient(135deg, ${m.color}0e, rgba(5,8,24,0.6))`,
+                border: `1px solid ${isHover?m.color:m.color+'55'}`,
+                borderRadius:10, padding:'0.7rem 0.9rem',
+                transition:'all 0.18s',
+                transform: isHover ? 'translateY(-2px)' : 'translateY(0)',
+                boxShadow: isHover ? `0 0 24px -6px ${m.color}` : 'none',
+                cursor:'default',
+              }}>
+              <div style={{
+                fontSize:'0.55rem', fontFamily:'monospace', letterSpacing:'0.12em',
+                color: m.color, fontWeight:700, marginBottom:4,
+              }}>
+                {m.topic}
+              </div>
+              <div style={{color:isHover?'#fff':'var(--text-1)', fontSize:'0.86rem', lineHeight:1.45, fontWeight:isHover?600:500}}>
+                {m.line}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{
+        marginTop:'1.4rem',
+        background:'linear-gradient(135deg, rgba(34,211,238,0.08), rgba(251,113,133,0.08))',
+        border:'1px solid rgba(167,139,250,0.3)',
+        borderRadius:10, padding:'0.85rem 1rem',
+      }}>
+        <div style={{fontSize:'0.6rem', color:'#a78bfa', fontFamily:'monospace', letterSpacing:'0.1em', fontWeight:700, marginBottom:'0.4rem'}}>
+          💡 THE WAY TO USE MNEMONICS FOR MEMORY
+        </div>
+        <ul style={{listStyle:'none', padding:0, margin:0, fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.7}}>
+          <li><strong style={{color:'#22d3ee'}}>1.</strong> Read each line aloud (audition strengthens recall).</li>
+          <li><strong style={{color:'#a78bfa'}}>2.</strong> Make a silly mental image of the phrase — sillier = more memorable.</li>
+          <li><strong style={{color:'#fb7185'}}>3.</strong> Connect to its colour — colour is a retrieval cue.</li>
+          <li><strong style={{color:'#34d399'}}>4.</strong> Recall the mnemonic before re-reading the lecture — active retrieval &gt;&gt; passive review.</li>
+          <li><strong style={{color:'#fbbf24'}}>5.</strong> Repeat with spacing: day 1, day 3, day 7. <em>Spaced repetition crystallises memory.</em></li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Genetic Algorithms','Emergent','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
+const MAIN_TABS = ['Overview','Algorithm Atlas','Memory Cosmos','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Genetic Algorithms','Emergent','Perceptron','Neuron Logic','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4404() {
@@ -7450,6 +12889,71 @@ export default function CITS4404() {
               <h1 className="m4-hero-title"><span style={{color:'var(--cyan)'}}>AI</span> &amp; Adaptive Systems</h1>
               <p className="m4-hero-sub">Nature-inspired computing. From the definition of intelligence to calculus, gradient descent, and stochastic optimisation — building the full picture of how adaptive systems work.</p>
             </div>
+            {/* Memory Cosmos hero banner */}
+            <div onClick={() => setTab('Memory Cosmos')} style={{
+              cursor:'pointer',
+              background:`
+                radial-gradient(ellipse at 20% 30%, rgba(167,139,250,0.25) 0%, transparent 45%),
+                radial-gradient(ellipse at 80% 70%, rgba(251,113,133,0.22) 0%, transparent 45%),
+                radial-gradient(ellipse at 50% 100%, rgba(34,211,238,0.18) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0e27 0%, #1a0535 100%)
+              `,
+              border:'1px solid rgba(167,139,250,0.45)',
+              borderRadius:14,
+              padding:'1.1rem 1.3rem',
+              marginBottom:'0.95rem',
+              display:'grid',
+              gridTemplateColumns:'1fr auto',
+              alignItems:'center',
+              gap:'1rem',
+              transition:'transform 0.15s, box-shadow 0.15s',
+              position:'relative',
+              overflow:'hidden',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 14px 36px rgba(167,139,250,0.25)';}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}>
+              <div style={{position:'relative', zIndex:1}}>
+                <div style={{fontSize:'0.65rem',color:'#a78bfa',fontFamily:'monospace',letterSpacing:'0.1em',fontWeight:700,marginBottom:'0.35rem'}}>✦  MEMORY COSMOS · NEW</div>
+                <div style={{fontSize:'1.3rem',color:'#fff',fontWeight:700,marginBottom:'0.3rem',letterSpacing:'-0.01em'}}>Every must-memorise fact as a star · click your way through the universe</div>
+                <div style={{fontSize:'0.82rem',color:'rgba(226,232,240,0.78)',lineHeight:1.55}}>
+                  A spatial brainstorm of <strong style={{color:'#22d3ee'}}>13 constellations</strong> — one per topic — with every key fact as a star. Click a star for its mnemonic, key points, and a one-question quick check. Lightning Round mode flips through all <strong style={{color:'#fb7185'}}>~60 cards</strong> with a streak counter, and Mnemonics view collects every "exam mantra" in one shimmering wall.
+                </div>
+              </div>
+              <div style={{textAlign:'center',padding:'0 0.5rem', position:'relative', zIndex:1}}>
+                <div style={{fontSize:'2.1rem',fontFamily:'monospace',fontWeight:700,color:'#a78bfa',textShadow:'0 0 20px rgba(167,139,250,0.6)'}}>✦</div>
+                <div style={{fontSize:'0.66rem',color:'#a78bfa',fontFamily:'monospace',letterSpacing:'0.06em'}}>ENTER COSMOS</div>
+              </div>
+            </div>
+
+            {/* Algorithm Atlas highlight banner */}
+            <div onClick={() => setTab('Algorithm Atlas')} style={{
+              cursor:'pointer',
+              background:'linear-gradient(135deg, rgba(251,113,133,0.14) 0%, rgba(167,139,250,0.14) 50%, rgba(34,211,238,0.14) 100%)',
+              border:'1px solid rgba(251,113,133,0.4)',
+              borderRadius:14,
+              padding:'1rem 1.25rem',
+              marginBottom:'1.2rem',
+              display:'grid',
+              gridTemplateColumns:'1fr auto',
+              alignItems:'center',
+              gap:'1rem',
+              transition:'transform 0.15s, box-shadow 0.15s',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 10px 30px rgba(251,113,133,0.18)';}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}>
+              <div>
+                <div style={{fontSize:'0.65rem',color:'#fb7185',fontFamily:'monospace',letterSpacing:'0.08em',fontWeight:700,marginBottom:'0.35rem'}}>🏛  ALGORITHM ATLAS · NEW</div>
+                <div style={{fontSize:'1.3rem',color:'var(--text-1)',fontWeight:700,marginBottom:'0.3rem',letterSpacing:'-0.01em'}}>Memorise every algorithm — the way the exam wants it</div>
+                <div style={{fontSize:'0.82rem',color:'var(--text-2)',lineHeight:1.55}}>
+                  A self-paced learning journey across <strong style={{color:'#22d3ee'}}>all {ATLAS_ALGOS.length}</strong> lecture algorithms — gradient methods, direct, single-state stochastic, evolutionary, GA, swarm/hybrid. Each algorithm has four study modes (read · fill blanks · reorder steps · rate recall) plus a boss quiz at the end of every stage. Progress saves automatically.
+                </div>
+              </div>
+              <div style={{textAlign:'center',padding:'0 0.5rem'}}>
+                <div style={{fontSize:'2rem',fontFamily:'monospace',fontWeight:700,background:'linear-gradient(135deg,#fb7185,#a78bfa,#22d3ee)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>→</div>
+                <div style={{fontSize:'0.66rem',color:'#fb7185',fontFamily:'monospace',letterSpacing:'0.06em'}}>BEGIN QUEST</div>
+              </div>
+            </div>
+
             <div className="m4-topic-grid">
               {[
                 {code:'L1–2', title:'Intelligence & Adaptation', color:'var(--cyan)', desc:'Four quadrants of AI, Turing Test, history from Symbolic AI to LLMs. Why the real world is messy and how nature adapts.', go:'Intelligence'},
@@ -7460,6 +12964,8 @@ export default function CITS4404() {
                 {code:'Labs 1–2', title:'PRNG & Bin Packing', color:'var(--violet)', desc:'LCG recurrence, Mersenne primes, full-period theorem. Bin packing heuristics: FF, NF, BF, FFD. Online vs offline algorithms.', go:'Labs'},
                 {code:'L11', title:'Genetic Algorithms', color:'var(--emerald)', desc:'Holland\'s GA: binary chromosomes, crossover (1pt/2pt/uniform), selection (roulette, SUS, tournament), elitism. Live crossover & selection visualisers plus a full GA simulator that evolves a target string.', go:'Genetic Algorithms'},
                 {code:'L12', title:'Emergent & Hybrid', color:'var(--cyan)', desc:'Particle Swarm Optimisation, Differential Evolution, hybrid/memetic algorithms. Live PSO simulation on the Ackley landscape and an interactive DE mutation visualiser.', go:'Emergent'},
+                {code:'L13', title:'Perceptrons & 1-D Classifiers', color:'var(--cyan)', desc:'Step function → logistic sigmoid, bias trick, MSE cost, full chain-rule derivation. Live 1-D and 2-D gradient-descent trainers on the moon-escape problem — including the divergence trap.', go:'Perceptron'},
+                {code:'L14', title:'Neurons to Logic — n-D', color:'var(--amber)', desc:'Hyperplane geometry, 7-segment digit trainer, neuron-as-logic-gate, the XOR problem, multi-layer fix. From single neuron to multi-layer perceptron + NAND universality.', go:'Neuron Logic'},
                 {code:'Paper', title:'Dragonfly Algorithm', color:'var(--cyan)', desc:'Swarm intelligence metaheuristic (Mirjalili, 2016). Five behavioural operators, live 2D simulation on Ackley function, literature review Q&A with paper references.', go:'Dragonfly Algorithm'},
               ].map(item => (
                 <div key={item.code} className="m4-tcard" style={{'--tc':item.color}} onClick={() => setTab(item.go)}>
@@ -7553,6 +13059,50 @@ export default function CITS4404() {
               <p className="m4-sec-sub">When the whole becomes greater than the sum of the parts. Particle Swarm Optimisation and Differential Evolution as continuous-space metaheuristics, and the bridge to memetic / hybrid algorithms that combine local and global search.</p>
             </div>
             <EmergentTab />
+          </>
+        )}
+
+        {/* ── PERCEPTRON ── */}
+        {tab === 'Perceptron' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Perceptrons &amp; 1-D Classifiers <span className="m4-badge" style={{background:'rgba(34,211,238,0.12)',color:'var(--cyan)',border:'1px solid rgba(34,211,238,0.3)'}}>Lecture 13</span></h2>
+              <p className="m4-sec-sub">The classification problem. Step functions, the logistic sigmoid, the bias trick, MSE cost surfaces, and the chain-rule derivation of dC/db. Live 1-D and 2-D gradient-descent trainers on the moon-escape-velocity dataset — including the hidden divergence trap.</p>
+            </div>
+            <PerceptronTab />
+          </>
+        )}
+
+        {/* ── MEMORY COSMOS ── */}
+        {tab === 'Memory Cosmos' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Memory Cosmos <span className="m4-badge" style={{background:'rgba(167,139,250,0.12)',color:'#a78bfa',border:'1px solid rgba(167,139,250,0.3)'}}>Brainstorm · Visual</span></h2>
+              <p className="m4-sec-sub">A constellation map of every must-memorise fact from the unit. Three complementary views — Cosmos (spatial map), Lightning (rapid flashcards with streak counter), and Mnemonics (the exam mantras). Designed using dual coding, spaced repetition, and active recall — the three best-known principles for long-term retention.</p>
+            </div>
+            <MemoryCosmosTab />
+          </>
+        )}
+
+        {/* ── ALGORITHM ATLAS ── */}
+        {tab === 'Algorithm Atlas' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Algorithm Atlas <span className="m4-badge" style={{background:'rgba(251,113,133,0.12)',color:'#fb7185',border:'1px solid rgba(251,113,133,0.3)'}}>Memorisation Journey</span></h2>
+              <p className="m4-sec-sub">Every algorithm in the unit, written exactly as in the lectures. Study → fill blanks → reorder steps → rate your recall. Beat the boss quiz at the end of each stage. Progress is saved locally and persists between visits.</p>
+            </div>
+            <AlgorithmAtlasTab />
+          </>
+        )}
+
+        {/* ── NEURON LOGIC ── */}
+        {tab === 'Neuron Logic' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Neurons to Logic — n-D Classifiers <span className="m4-badge" style={{background:'rgba(251,191,36,0.12)',color:'var(--amber)',border:'1px solid rgba(251,191,36,0.3)'}}>Lecture 14</span></h2>
+              <p className="m4-sec-sub">From a single neuron to logic gates and multi-layer perceptrons. Interactive 7-segment digit trainer, hyperplane geometry, neuron-as-gate playground, the XOR problem you can't solve with one neuron, and the multi-layer fix.</p>
+            </div>
+            <NeuronLogicTab />
           </>
         )}
 
