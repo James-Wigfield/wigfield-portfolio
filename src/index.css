@@ -2769,6 +2769,30 @@ strong { color: var(--text-0); font-weight: 600; }
 .m4-pseudocode .cm { color: rgba(148,163,184,0.5); }
 .m4-pseudocode .num { color: var(--cyan); }
 
+/* ── Vector notation (replaces combining diacritic U+20D7 with a visible arrow) ── */
+.m4-vec {
+  position: relative;
+  display: inline-block;
+  font-weight: 700;
+  font-style: italic;
+  padding-top: 0.25em;
+  margin-top: -0.25em;
+  line-height: 1;
+}
+.m4-vec::before {
+  content: '\2192';
+  position: absolute;
+  top: -0.05em;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0.85);
+  font-size: 0.55em;
+  font-weight: 600;
+  font-style: normal;
+  color: currentColor;
+  pointer-events: none;
+  line-height: 1;
+}
+
 /* ── Variable description table ─────────────────────────────────────────────── */
 .m4-vartable {
   background: rgba(0,0,0,0.22);

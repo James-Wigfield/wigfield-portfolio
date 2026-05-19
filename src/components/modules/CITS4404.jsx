@@ -14,6 +14,38 @@ function Tex({ src, block = false }) {
   return <span ref={ref} className={block ? 'm4-tex-block' : 'm4-tex-inline'} />;
 }
 
+// ── Vector text renderer ───────────────────────────────────────────────────────
+// Defensive renderer for text that still contains the combining diacritic U+20D7
+// (e.g. legacy "letter + arrow-above" sequences). Splits on the mark and wraps
+// the preceding letter in a span styled by `.m4-vec`. The bulk of vector
+// variables are now stored as single-codepoint Mathematical Bold letters (𝐱, 𝐲,
+// 𝐳, 𝐰, 𝐯, 𝐩, 𝐟…) so the surrounding renderers can pass strings straight
+// through. This helper stays in place as a safety net for any new content that
+// uses the old `x⃗`-style combining mark.
+function renderVecText(text, keyPrefix = 'v') {
+  if (typeof text !== 'string' || !text.includes('⃗')) return text;
+  const parts = [];
+  let buf = '';
+  let k = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (text[i + 1] === '⃗') {
+      if (buf) { parts.push(buf); buf = ''; }
+      parts.push(<span key={`${keyPrefix}-${k++}`} className="m4-vec">{ch}</span>);
+      i++; // skip the combining mark itself
+    } else {
+      buf += ch;
+    }
+  }
+  if (buf) parts.push(buf);
+  return parts;
+}
+
+// Convenience component wrapper around renderVecText for use inside JSX.
+function VecText({ children }) {
+  return <>{renderVecText(String(children ?? ''))}</>;
+}
+
 // ── Variable Description Table ─────────────────────────────────────────────────
 // vars: array of [latexSymbol, plainTextDescription]
 function VarTable({ vars }) {
@@ -3300,16 +3332,16 @@ function AlgorithmsTab() {
               <div className="m4-card-h">Gradient Descent with Restarts</div>
               <div className="m4-pseudocode">
                 <span className="kw">Algorithm</span>: Gradient Ascent with Restarts{'\n'}
-                <span className="num"> 1:</span> x⃗  ← random initial value{'\n'}
-                <span className="num"> 2:</span> x⃗* ← x⃗  <span className="cm">▷ best so far</span>{'\n'}
+                <span className="num"> 1:</span> 𝐱  ← random initial value{'\n'}
+                <span className="num"> 2:</span> 𝐱* ← 𝐱  <span className="cm">▷ best so far</span>{'\n'}
                 <span className="num"> 3:</span> <span className="kw">repeat</span>{'\n'}
                 <span className="num"> 4:</span>   <span className="kw">repeat</span>{'\n'}
-                <span className="num"> 5:</span>     x⃗ ← x⃗ + α∇f(x⃗){'\n'}
-                <span className="num"> 6:</span>   <span className="kw">until</span> ‖∇f(x⃗)‖ {"<"} ε{'\n'}
-                <span className="num"> 7:</span>   <span className="kw">if</span> f(x⃗) {">"} f(x⃗*) <span className="kw">then</span> x⃗* ← x⃗{'\n'}
-                <span className="num"> 8:</span>   x⃗ ← random value{'\n'}
+                <span className="num"> 5:</span>     𝐱 ← 𝐱 + α∇f(𝐱){'\n'}
+                <span className="num"> 6:</span>   <span className="kw">until</span> ‖∇f(𝐱)‖ {"<"} ε{'\n'}
+                <span className="num"> 7:</span>   <span className="kw">if</span> f(𝐱) {">"} f(𝐱*) <span className="kw">then</span> 𝐱* ← 𝐱{'\n'}
+                <span className="num"> 8:</span>   𝐱 ← random value{'\n'}
                 <span className="num"> 9:</span> <span className="kw">until</span> time exhausted{'\n'}
-                <span className="num">10:</span> <span className="kw">return</span> x⃗*
+                <span className="num">10:</span> <span className="kw">return</span> 𝐱*
               </div>
               <div className="m4-infobox" style={{fontSize:'0.79rem'}}>
                 <strong>Why restarts?</strong> Gradient methods get stuck in local optima. Multiple random restarts explore different regions. Under bounded space + finite optima, this <em>eventually</em> finds the global optimum.
@@ -3734,8 +3766,8 @@ const PRACTICE_QUESTIONS = [
     solution: [
       { label: 'a', answer: 'Algorithm: 1D Gradient Descent\n1: x ← random initial value\n2: repeat\n3:   x ← x − α f\'(x)\n4: until |f\'(x)| < ε or iteration limit reached\n5: return x\n\nRole of α (learning rate): scales the step size. The sign of f\'(x) gives direction; α scales magnitude.\n\nToo small α: slow convergence — many iterations to reach minimum.\nToo large α: overshoot — oscillates around minimum, may never converge.\n\nIdeal for quadratics: steps naturally shrink as we approach minimum (f\'(x) → 0).' },
       { label: 'b', answer: 'NR for optimisation: x_{n+1} = x_n − f\'(x_n) / f\'\'(x_n)\n\nWhy it auto-scales: divides slope by curvature. Large curvature → small step (needed near tight bends). Flat region → large step. Approximates f with a local quadratic, matching both value and curvature at x_n.\n\nFor f(x) = ax² + b:\nf\'(x) = 2ax, f\'\'(x) = 2a\nx_{n+1} = x_n − 2ax_n / 2a = x_n − x_n = 0\n\nOne step! NR finds the exact minimum of a quadratic in a single iteration.' },
-      { label: 'c', answer: 'Algorithm: Gradient Ascent with Restarts\n1: x⃗ ← random initial value; x⃗* ← x⃗\n2: repeat\n3:   repeat\n4:     x⃗ ← x⃗ + α∇f(x⃗)\n5:   until ‖∇f(x⃗)‖ < ε\n6:   if f(x⃗) > f(x⃗*) then x⃗* ← x⃗\n7:   x⃗ ← random value\n8: until time exhausted\n9: return x⃗*\n\nCan find global optimum eventually if: (1) search space is bounded AND (2) number of local optima is finite. No guarantees in general for infinite/non-enumerable spaces.' },
-      { label: 'd', answer: 'Multivariate update: x⃗ ← x⃗ − α∇f(x⃗)\n\nFor f(x₁, x₂) = 3x₁² + x₂²:\n∂f/∂x₁ = 6x₁\n∂f/∂x₂ = 2x₂\n\n∇f(x₁, x₂) = [6x₁, 2x₂]ᵀ\n\nUpdate: [x₁, x₂] ← [x₁ − 6αx₁, x₂ − 2αx₂]' },
+      { label: 'c', answer: 'Algorithm: Gradient Ascent with Restarts\n1: 𝐱 ← random initial value; 𝐱* ← 𝐱\n2: repeat\n3:   repeat\n4:     𝐱 ← 𝐱 + α∇f(𝐱)\n5:   until ‖∇f(𝐱)‖ < ε\n6:   if f(𝐱) > f(𝐱*) then 𝐱* ← 𝐱\n7:   𝐱 ← random value\n8: until time exhausted\n9: return 𝐱*\n\nCan find global optimum eventually if: (1) search space is bounded AND (2) number of local optima is finite. No guarantees in general for infinite/non-enumerable spaces.' },
+      { label: 'd', answer: 'Multivariate update: 𝐱 ← 𝐱 − α∇f(𝐱)\n\nFor f(x₁, x₂) = 3x₁² + x₂²:\n∂f/∂x₁ = 6x₁\n∂f/∂x₂ = 2x₂\n\n∇f(x₁, x₂) = [6x₁, 2x₂]ᵀ\n\nUpdate: [x₁, x₂] ← [x₁ − 6αx₁, x₂ − 2αx₂]' },
     ],
   },
   {
@@ -3865,7 +3897,7 @@ const PRACTICE_QUESTIONS = [
     solution: [
       { label: 'a', answer: 'Partial derivative: derivative of a multivariable function with respect to one variable, treating all other variables as constants.\n\nFor f(x₁, x₂) = x₁³ + 2x₁x₂ + x₂²:\n∂f/∂x₁ = 3x₁² + 2x₂ (differentiate w.r.t. x₁, hold x₂ constant)\n∂f/∂x₂ = 2x₁ + 2x₂ (differentiate w.r.t. x₂, hold x₁ constant)' },
       { label: 'b', answer: '∇f(x) = [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ]ᵀ (column vector of all partial derivatives)\n\nAt (x₁, x₂) = (1, 2):\n∂f/∂x₁ = 3(1)² + 2(2) = 3 + 4 = 7\n∂f/∂x₂ = 2(1) + 2(2) = 2 + 4 = 6\n\n∇f(1,2) = [7, 6]ᵀ' },
-      { label: 'c', answer: 'The gradient ∇f at any point is a vector that points in the direction of steepest ascent — the direction in which f increases most rapidly. This follows from the definition: the gradient is constructed from the partial derivatives, each measuring rate of change in one coordinate direction; the vector sum points in the overall steepest direction.\n\nTo maximise: move in direction +∇f (gradient ascent): x⃗ ← x⃗ + α∇f(x⃗)\nTo minimise: move in direction −∇f (gradient descent): x⃗ ← x⃗ − α∇f(x⃗)' },
+      { label: 'c', answer: 'The gradient ∇f at any point is a vector that points in the direction of steepest ascent — the direction in which f increases most rapidly. This follows from the definition: the gradient is constructed from the partial derivatives, each measuring rate of change in one coordinate direction; the vector sum points in the overall steepest direction.\n\nTo maximise: move in direction +∇f (gradient ascent): 𝐱 ← 𝐱 + α∇f(𝐱)\nTo minimise: move in direction −∇f (gradient descent): 𝐱 ← 𝐱 − α∇f(𝐱)' },
     ],
   },
   {
@@ -6636,11 +6668,11 @@ return Best`}</div>
               <div>
                 <div className="m4-flabel">Bit-Flip Mutation (Algorithm 22)</div>
                 <div className="m4-pseudocode">{`p ← prob of flipping a bit  ▷ often 1/L
-v⃗ ← boolean vector to mutate
+𝐯 ← boolean vector to mutate
 for i from 1 to L:
   if p ≥ U(0,1):
     v_i ← ¬v_i
-return v⃗`}</div>
+return 𝐯`}</div>
                 <div style={{fontSize:'0.74rem',color:'var(--text-2)',marginTop:'0.5rem',lineHeight:1.65}}>
                   With <Tex src="p = 1/L" />, the expected number of flips per individual is exactly 1 — the canonical balance between disturbing and preserving the genome.
                 </div>
@@ -6657,8 +6689,8 @@ return v⃗`}</div>
             <div className="m4-card">
               <div className="m4-card-h">Algorithm 30 — Fitness-Proportionate (Roulette)</div>
               <div className="m4-pseudocode">{`Once per generation:
-  global p⃗ ← population
-  global f⃗ ← fitnesses (≥ 0)
+  global 𝐩 ← population
+  global 𝐟 ← fitnesses (≥ 0)
   if all zero: set all to 1
   for i from 2 to L: f_i ← f_i + f_{i-1}   ▷ CDF
 
@@ -8466,11 +8498,11 @@ def gradient_descent_2d(alpha, epsilon, xs, ys):
           <div className="m4-card" style={{marginTop:'0.75rem'}}>
             <div className="m4-card-h">Generic Multi-D Gradient Descent</div>
             <div className="m4-pseudocode" style={{fontSize:'0.72rem'}}>{`Algorithm — Gradient Descent
-1: x⃗ ← random initial vector
+1: 𝐱 ← random initial vector
 2: repeat
-3:     x⃗ ← x⃗ − α · ∇f(x⃗)
+3:     𝐱 ← 𝐱 − α · ∇f(𝐱)
 4: until stopping criterion reached
-5: return x⃗
+5: return 𝐱
 
 ∇f = [ ∂f/∂x₁,  ∂f/∂x₂,  …,  ∂f/∂xₙ ]ᵀ`}</div>
           </div>
@@ -9848,14 +9880,14 @@ const ATLAS_ALGOS = [
       'Pure linear-algebra operation — GPU-friendly.',
       'Limitation: still gets stuck in local optima on multi-modal surfaces.',
     ],
-    pseudo:`1: x⃗ ← random initial vector
+    pseudo:`1: 𝐱 ← random initial vector
 2: repeat
-3:     x⃗ ← x⃗ {0} α {1}
+3:     𝐱 ← 𝐱 {0} α {1}
 4: until stopping criterion reached
-5: return x⃗`,
+5: return 𝐱`,
     blanks:[
       {answer:'+', options:['+','−','·','/'], explain:'Ascent.'},
-      {answer:'∇f(x⃗)', options:['f(x⃗)','∇f(x⃗)','∇²f(x⃗)','x⃗'], explain:'Gradient is the n-D analogue of f′.'},
+      {answer:'∇f(𝐱)', options:['f(𝐱)','∇f(𝐱)','∇²f(𝐱)','𝐱'], explain:'Gradient is the n-D analogue of f′.'},
     ],
   },
   {
@@ -9864,23 +9896,23 @@ const ATLAS_ALGOS = [
     notes:[
       'Inner loop = gradient climb to a local max.',
       'Outer loop = restart at a new random point.',
-      'x⃗* always holds the best ever found.',
-      'Inner stopping uses ||∇f(x⃗)|| < ε in practice.',
+      '𝐱* always holds the best ever found.',
+      'Inner stopping uses ||∇f(𝐱)|| < ε in practice.',
     ],
-    pseudo:`1:  x⃗ ← random initial value
-2:  x⃗* ← x⃗                        ▷ x⃗* will hold our best discovery so far
+    pseudo:`1:  𝐱 ← random initial value
+2:  𝐱* ← 𝐱                        ▷ 𝐱* will hold our best discovery so far
 3:  repeat
 4:      repeat
-5:          x⃗ ← x⃗ + α∇f(x⃗)        ▷ In one dimension: x ← x + αf′(x)
+5:          𝐱 ← 𝐱 + α∇f(𝐱)        ▷ In one dimension: x ← x + αf′(x)
 6:      until {0}                       ▷ In one dimension: until f′(x) = 0
 7:      if {1} then                     ▷ Found a new best result!
-8:          x⃗* ← x⃗
-9:      x⃗ ← random value
+8:          𝐱* ← 𝐱
+9:      𝐱 ← random value
 10: until we have run out of time
-11: return x⃗*`,
+11: return 𝐱*`,
     blanks:[
-      {answer:'||∇f(x⃗)|| = 0', options:['||∇f(x⃗)|| = 0','f(x⃗) > f(x⃗*)','x⃗ = x⃗*','time is up'], explain:'Inner loop ends when gradient vanishes.'},
-      {answer:'f(x⃗) > f(x⃗*)', options:['f(x⃗) > f(x⃗*)','x⃗ = x⃗*','f(x⃗) = 0','α < ε'], explain:'Update best only when we beat the previous best.'},
+      {answer:'||∇f(𝐱)|| = 0', options:['||∇f(𝐱)|| = 0','f(𝐱) > f(𝐱*)','𝐱 = 𝐱*','time is up'], explain:'Inner loop ends when gradient vanishes.'},
+      {answer:'f(𝐱) > f(𝐱*)', options:['f(𝐱) > f(𝐱*)','𝐱 = 𝐱*','f(𝐱) = 0','α < ε'], explain:'Update best only when we beat the previous best.'},
     ],
   },
 
@@ -10119,7 +10151,7 @@ end`,
       'σ (or σ²) is the very direct exploration knob.',
       'Resamples noise if vi+n falls outside [min, max].',
     ],
-    pseudo:`1:  v⃗ ← vector ⟨v1, v2, ...vl⟩ to be convolved
+    pseudo:`1:  𝐯 ← vector ⟨v1, v2, ...vl⟩ to be convolved
 2:  p ← probability of adding noise to an element      ▷ Often p = 1
 3:  σ² ← variance of Normal distribution to convolve with   ▷ Normal = Gaussian
 4:  min ← minimum desired vector element value
@@ -10130,7 +10162,7 @@ end`,
 9:              n ← random number chosen from the Normal distribution {0}
 10:         until min ≤ vi + n ≤ max
 11:         vi ← vi {1} n
-12: return v⃗`,
+12: return 𝐯`,
     blanks:[
       {answer:'N(0, σ²)', options:['N(0, σ²)','N(vi, σ²)','U(min, max)','N(μ, 1)'], explain:'Mean 0, variance σ² — the convolution is unbiased.'},
       {answer:'+', options:['+','−','·','='], explain:'Add the noise to the current value.'},
@@ -10357,13 +10389,13 @@ return Best`,
       'Simplest unbiased initialisation.',
       'Generalises to other alphabets and representations.',
     ],
-    pseudo:`1:  v⃗ ← a new vector ⟨v_1, v_2, ..., v_l⟩
+    pseudo:`1:  𝐯 ← a new vector ⟨v_1, v_2, ..., v_l⟩
 2:  for i from 1 to l do
 3:      if {0} > a random number chosen uniformly between 0.0 and 1.0 inclusive then
 4:          v_i ← true
 5:      else
 6:          v_i ← false
-7:  return v⃗`,
+7:  return 𝐯`,
     blanks:[
       {answer:'0.5', options:['0.5','1/l','p','σ'], explain:'Fair coin → 0.5.'},
     ],
@@ -10376,12 +10408,12 @@ return Best`,
       'Maintains diversity; can re-open hypercube dimensions that crossover has collapsed.',
     ],
     pseudo:`1:  p ← probability of flipping a bit              ▷ Often p is set to {0}
-2:  v⃗ ← boolean vector ⟨v_1, v_2, ..., v_l⟩ to be mutated
+2:  𝐯 ← boolean vector ⟨v_1, v_2, ..., v_l⟩ to be mutated
 
 3:  for i from 1 to l do
 4:      if p ≥ random number chosen uniformly from 0.0 to 1.0 inclusive then
 5:          v_i ← {1}
-6:  return v⃗`,
+6:  return 𝐯`,
     blanks:[
       {answer:'1/l', options:['1/l','0.5','1','0'], explain:'Canonical choice: one expected flip per individual.'},
       {answer:'¬(v_i)', options:['¬(v_i)','v_i','true','false'], explain:'Flip = logical NOT.'},
@@ -10394,14 +10426,14 @@ return Best`,
       'Worst linkage for v₁ and v_l.',
       'Best linkage for adjacent vᵢ and vᵢ₊₁.',
     ],
-    pseudo:`1:  v⃗ ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
-2:  w⃗ ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
+    pseudo:`1:  𝐯 ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
+2:  𝐰 ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
 
 3:  c ← random integer chosen uniformly from 1 to l inclusive
 4:  if c ≠ 1 then
 5:      for i from {0} to {1} do
 6:          Swap the values of v_i and w_i
-7:  return v⃗ and w⃗`,
+7:  return 𝐯 and 𝐰`,
     blanks:[
       {answer:'c', options:['1','c','c+1','l-c'], explain:'Swap region begins at c.'},
       {answer:'l', options:['l-1','l','c+1','l/2'], explain:'Swap region ends at l.'},
@@ -10414,8 +10446,8 @@ return Best`,
       'P(v₁ and v_l separated) = 2/l (same as adjacent genes).',
       'Distant-but-not-endpoint genes still vulnerable.',
     ],
-    pseudo:`1:  v⃗ ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
-2:  w⃗ ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
+    pseudo:`1:  𝐯 ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
+2:  𝐰 ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
 
 3:  c ← random integer chosen uniformly from 1 to l inclusive
 4:  d ← random integer chosen uniformly from 1 to l inclusive
@@ -10424,7 +10456,7 @@ return Best`,
 7:  if c ≠ d then
 8:      for i from c to {1} do
 9:          Swap the values of v_i and w_i
-10: return v⃗ and w⃗`,
+10: return 𝐯 and 𝐰`,
     blanks:[
       {answer:'Swap c and d', options:['Swap c and d','Set d = c','Return','Continue'], explain:'Ensure c ≤ d before iterating.'},
       {answer:'d - 1', options:['d - 1','d','d + 1','l'], explain:'Swap from c up to (but not including) d.'},
@@ -10438,13 +10470,13 @@ return Best`,
       'Disrupts building blocks aggressively if p is large.',
     ],
     pseudo:`1:  p ← probability of swapping an index            ▷ Often p = 1/l. At any rate, p ≤ 0.5
-2:  v⃗ ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
-3:  w⃗ ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
+2:  𝐯 ← first vector ⟨v_1, v_2, ..., v_l⟩ to be crossed over
+3:  𝐰 ← second vector ⟨w_1, w_2, ..., w_l⟩ to be crossed over
 
 4:  for i from 1 to l do
 5:      if {0} then
 6:          Swap the values of v_i and w_i
-7:  return v⃗ and w⃗`,
+7:  return 𝐯 and 𝐰`,
     blanks:[
       {answer:'p ≥ random number chosen uniformly from 0.0 to 1.0 inclusive', options:['p ≥ random number chosen uniformly from 0.0 to 1.0 inclusive','p ≤ 0.5','i = c','random < 0.5'], explain:'Each index swap is independent with probability p.'},
     ],
@@ -10458,11 +10490,11 @@ return Best`,
       'Vulnerable to flat-fitness landscapes (all picks ~uniform).',
     ],
     pseudo:`Perform once per generation                         ▷ Or whenever any fitnesses change
-1:  global p⃗ ← population copied into a vector of individuals ⟨p_1, p_2, ..., p_l⟩
-3:  global f⃗ ← ⟨f_1, f_2, ..., f_l⟩ fitnesses of individuals in p⃗  ▷ Must all be ≥ 0
-4:  if f⃗ is all 0.0s then                          ▷ Deal with all 0 fitnesses gracefully
-5:      Convert f⃗ to all 1.0s
-6:  for i from 2 to l do                            ▷ Convert f⃗ to a CDF; f_l = s
+1:  global 𝐩 ← population copied into a vector of individuals ⟨p_1, p_2, ..., p_l⟩
+3:  global 𝐟 ← ⟨f_1, f_2, ..., f_l⟩ fitnesses of individuals in 𝐩  ▷ Must all be ≥ 0
+4:  if 𝐟 is all 0.0s then                          ▷ Deal with all 0 fitnesses gracefully
+5:      Convert 𝐟 to all 1.0s
+6:  for i from 2 to l do                            ▷ Convert 𝐟 to a CDF; f_l = s
 7:      f_i ← {0}
 
 Perform each time
@@ -10485,12 +10517,12 @@ Perform each time
       'Variance much lower than vanilla roulette.',
     ],
     pseudo:`Perform once per n individuals produced            ▷ Usually n = l (once per generation)
-1:  global p⃗ ← copy of population ⟨p_1, p_2, ..., p_l⟩, shuffled randomly
-3:  global f⃗ ← ⟨f_1, f_2, ..., f_l⟩ fitnesses in same order as p⃗   ▷ All must be ≥ 0
+1:  global 𝐩 ← copy of population ⟨p_1, p_2, ..., p_l⟩, shuffled randomly
+3:  global 𝐟 ← ⟨f_1, f_2, ..., f_l⟩ fitnesses in same order as 𝐩   ▷ All must be ≥ 0
 4:  global index ← 0
-5:  if f⃗ is all 0.0s then
-6:      Convert f⃗ to all 1.0s
-7:  for i from 2 to l do                            ▷ Convert f⃗ to a CDF; f_l = s
+5:  if 𝐟 is all 0.0s then
+6:      Convert 𝐟 to all 1.0s
+7:  for i from 2 to l do                            ▷ Convert 𝐟 to a CDF; f_l = s
 8:      f_i ← f_i + f_{i-1}
 9:  global value ← random number from 0 to {0} inclusive
 
@@ -10657,7 +10689,7 @@ const ATLAS_QUIZZES = {
     {q:'What does α control in gradient descent?', opts:['Stopping tolerance','Step size (learning rate)','Direction of descent','Curvature'], ans:1, expl:'α scales the magnitude of each step. Sign of f′ already gives direction.'},
     {q:'Newton-Raphson for optimisation uses which update?', opts:['x ← x − α f′(x)','x ← x − f(x)/f′(x)','x ← x − f′(x)/f′′(x)','x ← x + α ∇f(x)'], ans:2, expl:'N-R for optima: divide first derivative by second derivative.'},
     {q:'N-R requires which smoothness class?', opts:['C⁰','C¹','C²','C∞'], ans:2, expl:'Twice differentiable — we need f′′.'},
-    {q:'In Gradient Ascent with Restarts, when do you update the best x⃗*?', opts:['Every iteration','When the inner loop converges and f(x⃗) > f(x⃗*)','Only at the very end','After every restart, unconditionally'], ans:1, expl:'After each climb, check whether the new local optimum beats the recorded best.'},
+    {q:'In Gradient Ascent with Restarts, when do you update the best 𝐱*?', opts:['Every iteration','When the inner loop converges and f(𝐱) > f(𝐱*)','Only at the very end','After every restart, unconditionally'], ans:1, expl:'After each climb, check whether the new local optimum beats the recorded best.'},
   ],
   direct: [
     {q:'Hooke-Jeeves does HOW many evaluations per step in n dimensions?', opts:['n','n+1','2n','2ⁿ'], ans:2, expl:'Two directions (±) per dimension → 2n samples.'},
@@ -10729,14 +10761,14 @@ function PseudoRender({ algo, mode, blankState, onBlankPick, revealAll }) {
         let m;
         let key = 0;
         while ((m = re.exec(line)) !== null) {
-          if (m.index > lastIdx) parts.push(<span key={key++}>{line.slice(lastIdx, m.index)}</span>);
+          if (m.index > lastIdx) parts.push(<span key={key++}>{renderVecText(line.slice(lastIdx, m.index), `t${li}-${key}`)}</span>);
           const bn = +m[1];
           const blank = algo.blanks[bn];
           const state = blankState && blankState[bn];
           if (mode === 'study' || revealAll) {
             parts.push(
               <span key={key++} style={{background:'rgba(34,211,238,0.15)',padding:'0 4px',borderRadius:4,color:'#22d3ee',fontWeight:600,border:'1px dashed rgba(34,211,238,0.4)'}}>
-                {blank?.answer ?? '?'}
+                {renderVecText(blank?.answer ?? '?', `ans${li}-${key}`)}
               </span>
             );
           } else if (mode === 'blanks') {
@@ -10744,7 +10776,7 @@ function PseudoRender({ algo, mode, blankState, onBlankPick, revealAll }) {
               const isRight = state.pick === blank.answer;
               parts.push(
                 <span key={key++} style={{background:isRight?'rgba(52,211,153,0.18)':'rgba(251,113,133,0.18)',padding:'0 4px',borderRadius:4,color:isRight?'#34d399':'#fb7185',fontWeight:700,border:`1px solid ${isRight?'#34d399':'#fb7185'}`}}>
-                  {state.pick}{isRight?' ✓':` ✘ (→ ${blank.answer})`}
+                  {renderVecText(state.pick, `pk${li}-${key}`)}{isRight ? ' ✓' : <> ✘ (→ {renderVecText(blank.answer, `ba${li}-${key}`)})</>}
                 </span>
               );
             } else {
@@ -10752,15 +10784,15 @@ function PseudoRender({ algo, mode, blankState, onBlankPick, revealAll }) {
                 <select key={key++} value={state?.pick ?? ''} onChange={e=>onBlankPick(bn, e.target.value)}
                   style={{background:'rgba(167,139,250,0.12)',border:'1px solid #a78bfa',borderRadius:4,color:'#a78bfa',padding:'1px 4px',fontFamily:'monospace',fontSize:'0.76rem',fontWeight:600}}>
                   <option value="">_____</option>
-                  {blank.options.map(o => <option key={o} value={o}>{o}</option>)}
+                  {blank.options.map(o => <option key={o} value={o}>{vecPlainText(o)}</option>)}
                 </select>
               );
             }
           }
           lastIdx = m.index + m[0].length;
         }
-        if (lastIdx < line.length) parts.push(<span key={key++}>{line.slice(lastIdx)}</span>);
-        return <div key={li}>{parts.length ? parts : line || ' '}</div>;
+        if (lastIdx < line.length) parts.push(<span key={key++}>{renderVecText(line.slice(lastIdx), `tl${li}-${key}`)}</span>);
+        return <div key={li}>{parts.length ? parts : (line ? renderVecText(line, `ln${li}`) : ' ')}</div>;
       })}
     </div>
   );
@@ -10864,7 +10896,7 @@ function AlgorithmCard({ algo, progress, setProgress, onBack }) {
           <div className="m4-card" style={{margin:0}}>
             <div className="m4-card-h">Memory Pegs</div>
             <ul className="m4-bullets" style={{fontSize:'0.76rem'}}>
-              {algo.notes.map((n,i) => <li key={i}>{n}</li>)}
+              {algo.notes.map((n,i) => <li key={i}>{renderVecText(n, `note${i}`)}</li>)}
             </ul>
             <div className="m4-hr"/>
             <div className="m4-flabel">Mode legend</div>
@@ -10897,7 +10929,7 @@ function AlgorithmCard({ algo, progress, setProgress, onBack }) {
                 const correct = blankState[i]?.pick === b.answer;
                 return (
                   <div key={i} style={{fontSize:'0.74rem',color:correct?'#34d399':'#fb7185',marginBottom:3,lineHeight:1.55}}>
-                    <strong>{i+1}.</strong> {b.explain} <span style={{color:'var(--text-2)'}}>(answer: <code style={{color:'#22d3ee'}}>{b.answer}</code>)</span>
+                    <strong>{i+1}.</strong> {renderVecText(b.explain, `expl${i}`)} <span style={{color:'var(--text-2)'}}>(answer: <code style={{color:'#22d3ee'}}>{renderVecText(b.answer, `bansw${i}`)}</code>)</span>
                   </div>
                 );
               })}
@@ -10932,7 +10964,7 @@ function AlgorithmCard({ algo, progress, setProgress, onBack }) {
                     <button onClick={()=>moveUp(i)} disabled={i===0} style={{background:'rgba(34,211,238,0.12)',border:'1px solid rgba(34,211,238,0.3)',color:'#22d3ee',borderRadius:3,padding:'0px 6px',cursor:i===0?'not-allowed':'pointer',fontSize:'0.7rem',opacity:i===0?0.4:1}}>▲</button>
                     <button onClick={()=>moveDown(i)} disabled={i===orderState.length-1} style={{background:'rgba(167,139,250,0.12)',border:'1px solid rgba(167,139,250,0.3)',color:'#a78bfa',borderRadius:3,padding:'0px 6px',cursor:i===orderState.length-1?'not-allowed':'pointer',fontSize:'0.7rem',opacity:i===orderState.length-1?0.4:1}}>▼</button>
                   </span>
-                  <span style={{color:revealOrder?(correct?'#34d399':'#fb7185'):'var(--text-1)',whiteSpace:'pre',flex:1}}>{it.line || ' '}</span>
+                  <span style={{color:revealOrder?(correct?'#34d399':'#fb7185'):'var(--text-1)',whiteSpace:'pre',flex:1}}>{it.line ? renderVecText(it.line, `oline${i}`) : ' '}</span>
                 </div>
               );
             })}
@@ -11031,10 +11063,10 @@ function BossQuiz({ groupId, progress, setProgress, onDone }) {
             const correct = picks[i] === q.ans;
             return (
               <div key={i} style={{padding:'0.5rem',marginBottom:'0.3rem',background:correct?'rgba(52,211,153,0.08)':'rgba(251,113,133,0.08)',border:`1px solid ${correct?'#34d399':'#fb7185'}55`,borderRadius:6,fontSize:'0.74rem'}}>
-                <div style={{color:correct?'#34d399':'#fb7185',fontWeight:700,marginBottom:3}}>Q{i+1}: {q.q}</div>
-                <div style={{color:'var(--text-2)',marginLeft:'0.5rem'}}>You: <span style={{color:correct?'#34d399':'#fb7185'}}>{q.opts[picks[i]] ?? '(no answer)'}</span></div>
-                <div style={{color:'var(--text-2)',marginLeft:'0.5rem'}}>Correct: <span style={{color:'#22d3ee'}}>{q.opts[q.ans]}</span></div>
-                <div style={{color:'var(--text-1)',marginLeft:'0.5rem',marginTop:3,fontStyle:'italic'}}>{q.expl}</div>
+                <div style={{color:correct?'#34d399':'#fb7185',fontWeight:700,marginBottom:3}}>Q{i+1}: {renderVecText(q.q, `bqq${i}`)}</div>
+                <div style={{color:'var(--text-2)',marginLeft:'0.5rem'}}>You: <span style={{color:correct?'#34d399':'#fb7185'}}>{picks[i]===undefined ? '(no answer)' : renderVecText(q.opts[picks[i]], `bqu${i}`)}</span></div>
+                <div style={{color:'var(--text-2)',marginLeft:'0.5rem'}}>Correct: <span style={{color:'#22d3ee'}}>{renderVecText(q.opts[q.ans], `bqc${i}`)}</span></div>
+                <div style={{color:'var(--text-1)',marginLeft:'0.5rem',marginTop:3,fontStyle:'italic'}}>{renderVecText(q.expl, `bqe${i}`)}</div>
               </div>
             );
           })}
@@ -11054,7 +11086,7 @@ function BossQuiz({ groupId, progress, setProgress, onDone }) {
         <span style={{fontFamily:'monospace',fontSize:'0.75rem',color:'var(--text-2)'}}>Q{step+1} / {order.length}</span>
       </div>
       <div style={{padding:'0.7rem 0.9rem',background:'rgba(15,23,42,0.4)',border:'1px solid rgba(148,163,184,0.18)',borderRadius:8,marginBottom:'0.55rem'}}>
-        <div style={{fontSize:'0.88rem',color:'var(--text-1)',marginBottom:'0.55rem',lineHeight:1.55}}>{cur.q}</div>
+        <div style={{fontSize:'0.88rem',color:'var(--text-1)',marginBottom:'0.55rem',lineHeight:1.55}}>{renderVecText(cur.q, `curq${step}`)}</div>
         {cur.opts.map((o, i) => {
           const selected = picks[step] === i;
           return (
@@ -11063,7 +11095,7 @@ function BossQuiz({ groupId, progress, setProgress, onDone }) {
               background:selected?`${group.color}22`:'rgba(15,23,42,0.3)',
               border:`1px solid ${selected?group.color:'rgba(148,163,184,0.2)'}`,
               color:selected?group.color:'var(--text-1)',borderRadius:6,cursor:'pointer',fontSize:'0.78rem',fontFamily:'inherit'}}>
-              <span style={{fontFamily:'monospace',marginRight:8,color:'var(--text-2)'}}>{String.fromCharCode(65+i)}.</span>{o}
+              <span style={{fontFamily:'monospace',marginRight:8,color:'var(--text-2)'}}>{String.fromCharCode(65+i)}.</span>{renderVecText(o, `opt${step}-${i}`)}
             </button>
           );
         })}
@@ -11638,7 +11670,7 @@ const COSMOS_DATA = [
           'Always points uphill',
           'Move along −∇f for descent',
         ],
-        q:'∇f(x⃗) for a scalar function f : ℝⁿ → ℝ is:',
+        q:'∇f(𝐱) for a scalar function f : ℝⁿ → ℝ is:',
         opts:['A scalar','A matrix of second derivatives','A vector of partial derivatives','Always zero'],
         ans:2},
       {x:25,y:55,label:'2nd-Deriv Test',
@@ -11675,7 +11707,7 @@ const COSMOS_DATA = [
         facts:[
           '1-D descent: x ← x − α f′(x)',
           '1-D ascent: x ← x + α f′(x)',
-          'N-D: x⃗ ← x⃗ − α ∇f',
+          'N-D: 𝐱 ← 𝐱 − α ∇f',
           'Naturally slows near a minimum',
         ],
         q:'1-D gradient descent update is:',
@@ -12123,7 +12155,7 @@ const COSMOS_DATA = [
       {x:0,y:0,label:'Hyperplane',
         mnemonic:'n INPUTS → (n−1)-D HYPERPLANE divides ℝⁿ.',
         facts:[
-          'σ(w⃗·x⃗ + b) > 0.5 ⇔ w⃗·x⃗ + b > 0',
+          'σ(𝐰·𝐱 + b) > 0.5 ⇔ 𝐰·𝐱 + b > 0',
           '1 input: point · 2 inputs: line · 3 inputs: plane',
           'In general: (n−1)-dimensional hyperplane',
           'Decision boundary is always linear',
@@ -12846,8 +12878,2576 @@ function MnemonicsChain() {
   );
 }
 
+// ─── NEURAL NETWORKS TAB (Lecture 15) ─────────────────────────────────────────
+
+function NNNetworkCanvas({ layers, height=240, activeLayer=-1, activeNode=null, activeWeight=null, activeFlow=null }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const W = c.width = c.offsetWidth || 420;
+    const H = c.height = height;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const xPad = 30;
+    const layerX = layers.map((_, li) => xPad + (W - 2*xPad) * (li / Math.max(1, layers.length-1)));
+    const pos = layers.map((n, li) => {
+      const dy = (H - 50) / Math.max(1, n);
+      return Array.from({length:n}, (_, ni) => ({ x: layerX[li], y: 25 + dy * (ni + 0.5) }));
+    });
+    for (let l = 0; l < layers.length - 1; l++) {
+      for (let j = 0; j < layers[l+1]; j++) {
+        for (let k = 0; k < layers[l]; k++) {
+          const a = pos[l][k], b = pos[l+1][j];
+          const isAW = activeWeight && activeWeight.l === l+1 && activeWeight.j === j && activeWeight.k === k;
+          const flowActive = activeFlow && (
+            (activeFlow.dir === 'forward' && activeFlow.upTo >= l+1) ||
+            (activeFlow.dir === 'backward' && activeFlow.downTo <= l+1)
+          );
+          ctx.strokeStyle = isAW ? '#fbbf24' : (flowActive ? (activeFlow.dir === 'forward' ? 'rgba(34,211,238,0.7)' : 'rgba(251,113,133,0.7)') : 'rgba(148,163,184,0.18)');
+          ctx.lineWidth = isAW ? 2.5 : (flowActive ? 1.4 : 0.5);
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+    }
+    pos.forEach((layer, li) => {
+      const base = li === 0 ? '#22d3ee' : li === pos.length - 1 ? '#fb7185' : '#a78bfa';
+      layer.forEach((p, ni) => {
+        const isActive = activeLayer === li && (activeNode === null || activeNode === ni);
+        ctx.fillStyle = isActive ? '#fbbf24' : base;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1; ctx.stroke();
+      });
+    });
+    ctx.fillStyle = 'rgba(226,232,240,0.55)';
+    ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    layers.forEach((n, li) => {
+      const label = li === 0 ? 'INPUT' : li === layers.length-1 ? 'OUTPUT' : `HIDDEN ${li}`;
+      ctx.fillText(label, layerX[li], H - 8);
+    });
+  }, [layers, activeLayer, activeNode, activeWeight, activeFlow, height]);
+  return <canvas ref={ref} style={{width:'100%', height, display:'block', borderRadius:8, background:'rgba(15,23,42,0.4)'}} />;
+}
+
+function NNArchitectureBuilder() {
+  const [input, setInput] = useState(4);
+  const [hidden, setHidden] = useState([6, 6]);
+  const [output, setOutput] = useState(2);
+  const layers = [input, ...hidden, output];
+  const totalW = layers.slice(1).reduce((acc, n, i) => acc + n * layers[i], 0);
+  const totalB = layers.slice(1).reduce((acc, n) => acc + n, 0);
+  const addLayer = () => hidden.length < 4 && setHidden([...hidden, 6]);
+  const removeLayer = () => hidden.length > 1 && setHidden(hidden.slice(0, -1));
+  const setLayerSize = (idx, val) => setHidden(hidden.map((h, i) => i === idx ? val : h));
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Feedforward Architecture Builder</div>
+      <NNNetworkCanvas layers={layers} height={260} />
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(130px, 1fr))', gap:'0.6rem', marginTop:'0.7rem'}}>
+        <div>
+          <div className="m4-flabel" style={{color:'#22d3ee'}}>Input: {input}</div>
+          <input type="range" min={1} max={10} value={input} onChange={e=>setInput(+e.target.value)} style={{width:'100%'}}/>
+        </div>
+        {hidden.map((h, i) => (
+          <div key={i}>
+            <div className="m4-flabel" style={{color:'#a78bfa'}}>Hidden {i+1}: {h}</div>
+            <input type="range" min={1} max={12} value={h} onChange={e=>setLayerSize(i, +e.target.value)} style={{width:'100%'}}/>
+          </div>
+        ))}
+        <div>
+          <div className="m4-flabel" style={{color:'#fb7185'}}>Output: {output}</div>
+          <input type="range" min={1} max={10} value={output} onChange={e=>setOutput(+e.target.value)} style={{width:'100%'}}/>
+        </div>
+      </div>
+      <div style={{display:'flex', gap:'0.5rem', marginTop:'0.6rem', flexWrap:'wrap'}}>
+        <button onClick={addLayer} className="m4-preset-btn" disabled={hidden.length >= 4}>+ Hidden Layer</button>
+        <button onClick={removeLayer} className="m4-preset-btn" disabled={hidden.length <= 1}>− Hidden Layer</button>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.6rem', fontSize:'0.76rem'}}>
+        <strong>Trainable parameters:</strong> {(totalW+totalB).toLocaleString()} ({totalW.toLocaleString()} weights + {totalB.toLocaleString()} biases). <strong>Architecture string:</strong> {layers.join(' → ')}.
+        <br/><em style={{fontSize:'0.72rem'}}>Hidden layers are a "dark art" — no hard rule for count or width. Deeper ⇒ more expressive but harder to train.</em>
+      </div>
+    </div>
+  );
+}
+
+function NNBackpropWalker() {
+  const layers = [3, 4, 2];
+  const [step, setStep] = useState(0);
+  const [auto, setAuto] = useState(false);
+  const steps = [
+    { t:'Step 1 · Initialise', d:'Set the input activation a¹ = x. Pick random initial weights & biases. The network starts cold.', activeLayer:0, flow:null, eqn:'a^{1} = x', col:'#22d3ee' },
+    { t:'Step 2 · Forward (layer 1 → 2)', d:'For each neuron j in layer 2: zⱼ² = Σₖ wⱼₖ² aₖ¹ + bⱼ². Then aⱼ² = σ(zⱼ²).', activeLayer:1, flow:{dir:'forward', upTo:1}, eqn:'z^{2} = w^{2}a^{1} + b^{2}, \\quad a^{2} = \\sigma(z^{2})', col:'#22d3ee' },
+    { t:'Step 3 · Forward (layer 2 → 3)', d:'Repeat for the output layer L = 3. This is the entire feedforward pass.', activeLayer:2, flow:{dir:'forward', upTo:2}, eqn:'z^{3} = w^{3}a^{2} + b^{3}, \\quad a^{3} = \\sigma(z^{3})', col:'#22d3ee' },
+    { t:'Step 4 · Output Error δᴸ (BP-1)', d:'δᴸ = ∇ₐ C ⊙ σ′(zᴸ). With MSE: ∇ₐ C = (aᴸ − y), so δᴸ = (aᴸ − y) ⊙ σ′(zᴸ).', activeLayer:2, flow:{dir:'backward', downTo:3}, eqn:'\\delta^{L} = \\nabla_{a} C \\odot \\sigma\'(z^{L})', col:'#fb7185' },
+    { t:'Step 5 · Backpropagate (BP-2)', d:'δˡ = ((wˡ⁺¹)ᵀ δˡ⁺¹) ⊙ σ′(zˡ). The error at layer ℓ is the error at ℓ+1, pulled back through the transposed weights, then gated by σ′.', activeLayer:1, flow:{dir:'backward', downTo:2}, eqn:'\\delta^{l} = \\bigl((w^{l+1})^{T}\\delta^{l+1}\\bigr) \\odot \\sigma\'(z^{l})', col:'#fb7185' },
+    { t:'Step 6 · Bias gradient (BP-3)', d:'∂C/∂bˡⱼ = δˡⱼ. Each bias gradient is just the local error itself — no extra work.', activeLayer:-1, flow:null, eqn:'\\frac{\\partial C}{\\partial b^{l}_{j}} = \\delta^{l}_{j}', col:'#fbbf24' },
+    { t:'Step 7 · Weight gradient (BP-4)', d:'∂C/∂wˡⱼₖ = aˡ⁻¹ₖ · δˡⱼ. Weight blame = (pre-layer activation) × (post-layer error).', activeLayer:-1, flow:null, eqn:'\\frac{\\partial C}{\\partial w^{l}_{jk}} = a^{l-1}_{k}\\,\\delta^{l}_{j}', col:'#fbbf24' },
+    { t:'Step 8 · Update', d:'Apply one gradient-descent step: wˡ ← wˡ − α · ∂C/∂wˡ (same for b). Then repeat from Step 2.', activeLayer:-1, flow:null, eqn:'w \\leftarrow w - \\alpha\\,\\nabla_{w} C, \\quad b \\leftarrow b - \\alpha\\,\\nabla_{b} C', col:'#34d399' },
+  ];
+  useEffect(() => {
+    if (!auto) return;
+    const id = setInterval(() => setStep(s => (s+1) % steps.length), 1600);
+    return () => clearInterval(id);
+  }, [auto, steps.length]);
+  const s = steps[step];
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Backpropagation Step-Walker (3 → 4 → 2)</div>
+      <NNNetworkCanvas layers={layers} height={240} activeLayer={s.activeLayer} activeFlow={s.flow} />
+      <div style={{marginTop:'0.6rem', padding:'0.65rem 0.85rem', background:`${s.col}11`, border:`1px solid ${s.col}55`, borderRadius:8}}>
+        <div style={{fontSize:'0.7rem', color:s.col, fontFamily:'monospace', fontWeight:700, letterSpacing:'0.08em'}}>{step+1} / {steps.length}</div>
+        <div style={{fontSize:'0.95rem', color:'#fff', fontWeight:700, marginTop:'0.2rem'}}>{s.t}</div>
+        <div style={{marginTop:'0.45rem'}}><Tex src={s.eqn} block /></div>
+        <div style={{fontSize:'0.78rem', color:'var(--text-1)', marginTop:'0.35rem', lineHeight:1.55}}>{s.d}</div>
+      </div>
+      <div style={{display:'flex', gap:'0.5rem', marginTop:'0.55rem', justifyContent:'space-between', flexWrap:'wrap'}}>
+        <button className="m4-preset-btn" onClick={()=>setStep(Math.max(0, step-1))} disabled={step===0}>← Prev</button>
+        <button className="m4-preset-btn" onClick={()=>setAuto(a=>!a)}>{auto?'⏸ Pause':'▶ Auto'}</button>
+        <button className="m4-preset-btn" onClick={()=>setStep(Math.min(steps.length-1, step+1))} disabled={step===steps.length-1}>Next →</button>
+        <button className="m4-preset-btn" onClick={()=>{setStep(0); setAuto(false);}}>Restart</button>
+      </div>
+    </div>
+  );
+}
+
+function NNCostContour() {
+  const [trail, setTrail] = useState([]);
+  const [running, setRunning] = useState(false);
+  const [w, setW] = useState(-3);
+  const [b, setB] = useState(2.5);
+  const [lr, setLr] = useState(0.1);
+  const cost = useCallback((w, b) => 0.5*Math.pow(w - 2.5, 2) + 0.5*Math.pow(b + 1, 2) + 0.1, []);
+  const grad = useCallback((w, b) => [w - 2.5, b + 1], []);
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const W = c.width = c.offsetWidth || 420;
+    const H = c.height = 320;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const toX = (w) => ((w + 5) / 10) * W;
+    const toY = (b) => H - ((b + 5) / 10) * H;
+    const res = 60;
+    const cellW = W / res, cellH = H / res;
+    let maxC = 0, minC = Infinity;
+    const cs = [];
+    for (let i = 0; i < res; i++) {
+      const row = [];
+      for (let j = 0; j < res; j++) {
+        const ww = -5 + 10 * (i / res), bb = -5 + 10 * (j / res);
+        const cc = cost(ww, bb);
+        row.push(cc);
+        if (cc > maxC) maxC = cc;
+        if (cc < minC) minC = cc;
+      }
+      cs.push(row);
+    }
+    for (let i = 0; i < res; i++) {
+      for (let j = 0; j < res; j++) {
+        const v = (cs[i][j] - minC) / (maxC - minC + 1e-9);
+        ctx.fillStyle = `hsl(${235 - v * 200}, 65%, ${20 + (1-v)*45}%)`;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(i * cellW, H - (j+1) * cellH, cellW + 1, cellH + 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (trail.length > 1) {
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      trail.forEach(([ww, bb], i) => {
+        if (i === 0) ctx.moveTo(toX(ww), toY(bb));
+        else ctx.lineTo(toX(ww), toY(bb));
+      });
+      ctx.stroke();
+      trail.forEach(([ww, bb]) => {
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath(); ctx.arc(toX(ww), toY(bb), 2.5, 0, Math.PI*2); ctx.fill();
+      });
+    }
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(toX(w), toY(b), 7, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath(); ctx.arc(toX(2.5), toY(-1), 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
+    ctx.fillText('min', toX(2.5) + 9, toY(-1) - 5);
+    ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
+    ctx.fillText('w →', W - 26, H - 5);
+    ctx.save(); ctx.translate(8, 16); ctx.fillText('b ↑', 0, 0); ctx.restore();
+  }, [w, b, trail, cost]);
+  const step = useCallback(() => {
+    const [gw, gb] = grad(w, b);
+    setTrail(t => [...t.slice(-80), [w, b]]);
+    setW(w - lr * gw); setB(b - lr * gb);
+  }, [w, b, lr, grad]);
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(step, 90);
+    return () => clearInterval(id);
+  }, [running, step]);
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Cost Surface C(w, b) — Gradient Descent in 2-D</div>
+      <canvas ref={ref} style={{width:'100%', height:320, display:'block', borderRadius:8}}/>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.5rem', marginTop:'0.6rem'}}>
+        <div>
+          <div className="m4-flabel">w = {w.toFixed(2)}</div>
+          <input type="range" min={-5} max={5} step={0.1} value={w} onChange={e=>{setW(+e.target.value); setTrail([]);}} style={{width:'100%'}}/>
+        </div>
+        <div>
+          <div className="m4-flabel">b = {b.toFixed(2)}</div>
+          <input type="range" min={-5} max={5} step={0.1} value={b} onChange={e=>{setB(+e.target.value); setTrail([]);}} style={{width:'100%'}}/>
+        </div>
+        <div>
+          <div className="m4-flabel">α = {lr.toFixed(3)}</div>
+          <input type="range" min={0.005} max={0.6} step={0.005} value={lr} onChange={e=>setLr(+e.target.value)} style={{width:'100%'}}/>
+        </div>
+      </div>
+      <div style={{display:'flex', gap:'0.5rem', marginTop:'0.5rem', justifyContent:'center'}}>
+        <button className="m4-preset-btn" onClick={()=>setRunning(r=>!r)}>{running ? '⏸ Pause' : '▶ Run GD'}</button>
+        <button className="m4-preset-btn" onClick={step}>Step</button>
+        <button className="m4-preset-btn" onClick={()=>{setW(-3); setB(2.5); setTrail([]); setRunning(false);}}>Reset</button>
+        <button className="m4-preset-btn" onClick={()=>{setW(-4+Math.random()*8); setB(-4+Math.random()*8); setTrail([]);}}>Random start</button>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+        Current C(w, b) = <strong style={{color:'#fbbf24'}}>{cost(w, b).toFixed(3)}</strong>. True minimum at (2.5, −1). Each step: (w, b) ← (w, b) − α · ∇C. A real network has <em>millions</em> of dimensions instead of 2.
+      </div>
+    </div>
+  );
+}
+
+function NNUniversalApprox() {
+  const [target, setTarget] = useState('sin');
+  const [n, setN] = useState(8);
+  const ref = useRef(null);
+  const targetFn = useCallback((x) => {
+    if (target === 'sin') return Math.sin(x * 2);
+    if (target === 'gauss') return Math.exp(-2*x*x);
+    if (target === 'step') return x > 0 ? 0.8 : -0.5;
+    if (target === 'parab') return -0.3 * x*x + 0.5;
+    if (target === 'wiggle') return 0.4*Math.sin(3*x) + 0.3*Math.cos(5*x);
+    return 0;
+  }, [target]);
+  const params = useMemo(() => {
+    const xs = []; const ys = [];
+    for (let i = 0; i < 120; i++) {
+      const x = -2 + 4 * (i/119);
+      xs.push(x); ys.push(targetFn(x));
+    }
+    const basis = Array.from({length:n}, (_, i) => {
+      const center = -2 + 4 * (i + 0.5) / n;
+      return { center, slope: 7 + (i % 4) * 0.7 };
+    });
+    const Phi = xs.map(x => [1, ...basis.map(b => 1/(1+Math.exp(-b.slope*(x-b.center))))]);
+    const k = n + 1;
+    const A = Array.from({length:k}, () => Array(k).fill(0));
+    const v = Array(k).fill(0);
+    for (let i = 0; i < xs.length; i++) {
+      for (let j = 0; j < k; j++) {
+        v[j] += Phi[i][j] * ys[i];
+        for (let l = 0; l < k; l++) A[j][l] += Phi[i][j] * Phi[i][l];
+      }
+    }
+    for (let i = 0; i < k; i++) A[i][i] += 1e-3;
+    for (let i = 0; i < k; i++) {
+      let piv = i;
+      for (let j = i+1; j < k; j++) if (Math.abs(A[j][i]) > Math.abs(A[piv][i])) piv = j;
+      [A[i], A[piv]] = [A[piv], A[i]];
+      [v[i], v[piv]] = [v[piv], v[i]];
+      for (let j = 0; j < k; j++) {
+        if (j === i) continue;
+        const f = A[j][i] / A[i][i];
+        for (let l = i; l < k; l++) A[j][l] -= f * A[i][l];
+        v[j] -= f * v[i];
+      }
+    }
+    const coef = Array(k);
+    for (let i = 0; i < k; i++) coef[i] = v[i] / A[i][i];
+    return { basis, coef };
+  }, [n, targetFn]);
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv) return;
+    const W = cv.width = cv.offsetWidth || 420;
+    const H = cv.height = 250;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const toX = (x) => ((x + 2) / 4) * W;
+    const toY = (y) => H/2 - y * (H * 0.4);
+    ctx.strokeStyle = 'rgba(148,163,184,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+    ctx.strokeStyle = '#fb7185'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < 240; i++) {
+      const x = -2 + 4*(i/239);
+      const y = targetFn(x);
+      if (i === 0) ctx.moveTo(toX(x), toY(y)); else ctx.lineTo(toX(x), toY(y));
+    }
+    ctx.stroke();
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    let mse = 0;
+    for (let i = 0; i < 240; i++) {
+      const x = -2 + 4*(i/239);
+      let y = params.coef[0];
+      params.basis.forEach((b, j) => {
+        y += params.coef[j+1] * 1/(1+Math.exp(-b.slope*(x-b.center)));
+      });
+      mse += Math.pow(y - targetFn(x), 2);
+      if (i === 0) ctx.moveTo(toX(x), toY(y)); else ctx.lineTo(toX(x), toY(y));
+    }
+    ctx.stroke();
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#fb7185'; ctx.fillRect(10, 10, 18, 3); ctx.fillStyle = '#fff'; ctx.fillText('target f(x)', 32, 14);
+    ctx.fillStyle = '#22d3ee'; ctx.fillRect(10, 22, 18, 3); ctx.fillStyle = '#fff'; ctx.fillText(`NN g(x), n=${n} hidden`, 32, 26);
+    ctx.fillStyle = 'rgba(226,232,240,0.85)';
+    ctx.fillText(`MSE = ${(mse/240).toFixed(4)}`, 32, 40);
+  }, [params, target, n, targetFn]);
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Universal Function Approximator — One Hidden Layer</div>
+      <canvas ref={ref} style={{width:'100%', height:250, display:'block', borderRadius:8}}/>
+      <div style={{display:'grid', gridTemplateColumns:'1.4fr 1fr', gap:'0.5rem', marginTop:'0.6rem'}}>
+        <div>
+          <div className="m4-flabel">Target function</div>
+          <div style={{display:'flex', gap:'0.35rem', flexWrap:'wrap'}}>
+            {[['sin','sin(2x)'],['gauss','Gaussian'],['step','Step'],['parab','Parabola'],['wiggle','Wiggle']].map(([k,l]) => (
+              <button key={k} className="m4-preset-btn" onClick={()=>setTarget(k)} style={target===k?{background:'rgba(34,211,238,0.25)',borderColor:'#22d3ee'}:{}}>{l}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="m4-flabel">Hidden neurons: {n}</div>
+          <input type="range" min={1} max={30} value={n} onChange={e=>setN(+e.target.value)} style={{width:'100%'}}/>
+        </div>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.75rem'}}>
+        <strong>Universal approximation theorem:</strong> for any continuous f(x) and any ε &gt; 0, there exists a single-hidden-layer NN g(x) with |g(x) − f(x)| &lt; ε. Slide n up to watch the cyan curve hug the rose target. More accuracy ⇒ more hidden nodes.
+      </div>
+    </div>
+  );
+}
+
+function NNFlashcards() {
+  const cards = useMemo(() => ([
+    { q: 'Why are neural networks needed?', a: 'A single neuron can only divide space with a hyperplane (linearly separable patterns) — it cannot implement XOR. Networks compose complex regions from simpler ones.' },
+    { q: 'Universal approximation theorem (informal)', a: 'For any continuous target f(x) and any desired precision ε > 0, there exists a neural network g(x) such that |g(x) − f(x)| < ε for all x. One hidden layer is enough.' },
+    { q: 'Define δˡⱼ', a: 'δˡⱼ ≡ ∂C/∂zˡⱼ — the partial derivative of the cost with respect to the weighted input of neuron j in layer l. The "error" attributable to that neuron.' },
+    { q: 'BP equation 1 (output error)', a: 'δᴸ = ∇ₐ C ⊙ σ′(zᴸ) — element-wise (cost gradient) × (activation slope) at the output layer.' },
+    { q: 'BP equation 2 (back-propagate)', a: 'δˡ = ((wˡ⁺¹)ᵀ δˡ⁺¹) ⊙ σ′(zˡ) — pull error backward through transposed weights, then gate by σ′.' },
+    { q: 'BP equation 3 (bias gradient)', a: '∂C/∂bˡⱼ = δˡⱼ. Each bias gradient is just the local error itself.' },
+    { q: 'BP equation 4 (weight gradient)', a: '∂C/∂wˡⱼₖ = aˡ⁻¹ₖ · δˡⱼ. Weight blame = pre-activation × post-error.' },
+    { q: 'Quadratic cost function C(w, b)', a: 'C(w, b) ≡ (1/2n) Σₓ ||y(x) − a||² — half-mean-squared error. The ½ cancels the 2 from differentiation; doesn\'t move the minimum.' },
+    { q: 'Vectorised forward pass', a: 'aˡ = σ(wˡ aˡ⁻¹ + bˡ) where wˡ is a weight matrix and σ is applied element-wise. zˡ = wˡ aˡ⁻¹ + bˡ separates the linear part.' },
+    { q: 'Notation: wˡⱼₖ', a: 'Weight from the k-th neuron in layer (l−1) to the j-th neuron in layer l. The j,k ordering is "reversed" so wˡ is a clean matrix to multiply with aˡ⁻¹.' },
+    { q: 'MNIST dimensions', a: 'Input: 784-D (28×28 pixel-grey vector, scaled 0–1). Output: 10-D one-hot for digits 0–9. 60k training images, 10k testing — distinct.' },
+    { q: 'When is the output layer linear?', a: 'When the task is regression / "accumulation". Linear lets outputs leave (0,1). f(w,b,x) = w·x + b — no σ.' },
+    { q: 'Why is training = minimisation?', a: 'Pick w, b to minimise C(w, b). Could be millions of parameters → no analytic solution → gradient descent.' },
+    { q: 'Three layer types of an FFN', a: '(1) Input "layer" — just numbers, not really a layer. (2) Hidden layers — no I/O, where the "magic" happens. (3) Output layer — often single node, sometimes different activation.' },
+    { q: 'NN learning intuition', a: 'Weights & biases are control sliders. Cost C measures how wrong. Gradient ∇C tells which sliders, how far, and in which direction to move.' },
+    { q: 'Mark I Perceptron (Rosenblatt 1958)', a: '400 cadmium sulfide photocells. 20×20 pixel image. Random connections to neurons. Potentiometers encoded adaptive weights — the first image-recognition NN.' },
+    { q: 'V1 — primary visual cortex', a: '140 million neurons, tens of billions of connections. Detects primitive features: edges, orientation, spatial frequency, colour. "Tuned by evolution over hundreds of millions of years".' },
+    { q: 'Symbolic vs sub-symbolic', a: 'Symbolic = rule-based, brittle, breaks on exceptions ("7 has a line across the top"). Sub-symbolic = vector of real numbers, "degree of 4-ness", graceful degradation.' },
+    { q: 'Network is only ever as good as…', a: '…the data it is trained with. Even if f(x) ≈ y(x) on every training sample, generalisation outside that set is not guaranteed.' },
+    { q: 'Hidden layers — "dark art"', a: 'No hard rule for layer count or width. Deeper ⇒ more expressive but harder to train. Active research uses neuro-evolution to design topology automatically.' },
+  ]), []);
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [seen, setSeen] = useState(() => new Set());
+  const next = () => { setSeen(s => new Set([...s, idx])); setFlipped(false); setIdx((idx+1) % cards.length); };
+  const prev = () => { setFlipped(false); setIdx((idx-1+cards.length) % cards.length); };
+  const shuffle = () => { setFlipped(false); setIdx(Math.floor(Math.random()*cards.length)); };
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Recall Flashcards — Click to flip ({seen.size}/{cards.length} seen)</div>
+      <div onClick={()=>setFlipped(f=>!f)} style={{
+        background: flipped ? 'linear-gradient(135deg, rgba(52,211,153,0.14), rgba(34,211,238,0.14))' : 'linear-gradient(135deg, rgba(167,139,250,0.14), rgba(251,113,133,0.14))',
+        border: `2px solid ${flipped ? 'rgba(52,211,153,0.5)' : 'rgba(167,139,250,0.5)'}`,
+        borderRadius:14, padding:'1.3rem 1.2rem', minHeight:170, cursor:'pointer',
+        display:'flex', flexDirection:'column', justifyContent:'center',
+        transition:'all 0.25s', userSelect:'none'
+      }}>
+        <div style={{fontSize:'0.66rem', color:flipped?'#34d399':'#a78bfa', fontFamily:'monospace', fontWeight:700, letterSpacing:'0.1em', marginBottom:'0.55rem'}}>
+          {flipped ? '◆ ANSWER' : '◇ QUESTION'} · {idx+1}/{cards.length}
+        </div>
+        <div style={{fontSize: flipped?'0.9rem':'1.1rem', color:'#fff', lineHeight:1.55, fontWeight: flipped?500:600}}>
+          {flipped ? cards[idx].a : cards[idx].q}
+        </div>
+        <div style={{fontSize:'0.65rem', color:'var(--text-2)', marginTop:'0.85rem', fontStyle:'italic', textAlign:'right'}}>
+          (click card to {flipped?'see question':'reveal answer'})
+        </div>
+      </div>
+      <div style={{display:'flex', gap:'0.5rem', marginTop:'0.6rem', justifyContent:'space-between', flexWrap:'wrap'}}>
+        <button className="m4-preset-btn" onClick={prev}>← Prev</button>
+        <button className="m4-preset-btn" onClick={shuffle}>🔀 Shuffle</button>
+        <button className="m4-preset-btn" onClick={()=>{setSeen(new Set()); setIdx(0); setFlipped(false);}}>Reset progress</button>
+        <button className="m4-preset-btn" onClick={next}>Next →</button>
+      </div>
+    </div>
+  );
+}
+
+function NNArchitectureZoo() {
+  const zoo = [
+    {k:'P',     n:'Perceptron',              c:'#22d3ee', d:'Single neuron, step activation. Rosenblatt 1958. The grand-parent of every NN architecture.'},
+    {k:'FF',    n:'Feed Forward',            c:'#22d3ee', d:'Information flows one way only — no cycles. Input → hidden → output. The canonical "vanilla" NN.'},
+    {k:'RBF',   n:'Radial Basis Network',    c:'#a78bfa', d:'Hidden units are radial basis functions centred on prototypes. Local activation around centres.'},
+    {k:'DFF',   n:'Deep Feed Forward',       c:'#22d3ee', d:'FFN with many hidden layers. Modern MLP. Deeper ⇒ more expressive but harder to train.'},
+    {k:'RNN',   n:'Recurrent NN',            c:'#fbbf24', d:'Hidden state feeds back into itself across time. Designed for sequences.'},
+    {k:'LSTM',  n:'Long/Short-Term Memory',  c:'#fbbf24', d:'Gated RNN with a cell-state highway — fixes the vanishing-gradient problem in long sequences.'},
+    {k:'GRU',   n:'Gated Recurrent Unit',    c:'#fbbf24', d:'Lighter LSTM variant. Just a reset gate and an update gate.'},
+    {k:'AE',    n:'Auto Encoder',            c:'#34d399', d:'Compress through a bottleneck, then reconstruct. Unsupervised representation learning.'},
+    {k:'VAE',   n:'Variational AE',          c:'#34d399', d:'AE with a stochastic Gaussian latent — generative; you can sample new points.'},
+    {k:'DAE',   n:'Denoising AE',            c:'#34d399', d:'AE trained to reconstruct clean input from a corrupted version — learns robust features.'},
+    {k:'SAE',   n:'Sparse AE',               c:'#34d399', d:'AE with a sparsity penalty on hidden activations — few-but-strong representations.'},
+    {k:'MC',    n:'Markov Chain',            c:'#fb7185', d:'Stateful with memoryless transition probabilities. Foundational for HMMs.'},
+    {k:'HN',    n:'Hopfield Network',        c:'#fb7185', d:'Fully-connected recurrent associative memory. Stable states = stored patterns.'},
+    {k:'BM',    n:'Boltzmann Machine',       c:'#fb7185', d:'Stochastic recurrent net of visible + hidden binary units. Trained via energy minimisation.'},
+    {k:'RBM',   n:'Restricted BM',           c:'#fb7185', d:'Bipartite BM (no intra-layer connections) — fast training via contrastive divergence.'},
+    {k:'DBN',   n:'Deep Belief Network',     c:'#fb7185', d:'Stack of RBMs trained layer-by-layer. Pioneered modern deep-learning pre-training.'},
+    {k:'DCN',   n:'Deep Convolutional Net',  c:'#06b6d4', d:'Convolution + pool + dense. The image-recognition workhorse (e.g. AlexNet, VGG, ResNet).'},
+    {k:'DN',    n:'Deconvolutional Network', c:'#06b6d4', d:'Inverts convolutions to upsample features — image generation and segmentation.'},
+    {k:'DCIGN', n:'Deep Conv Inverse Graphics Net', c:'#06b6d4', d:'Variational AE with convolutional encoder and deconvolutional decoder.'},
+  ];
+  const [open, setOpen] = useState(null);
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">The Neural Network Zoo (van Veen & Leijnen, 2019)</div>
+      <div style={{fontSize:'0.74rem', color:'var(--text-2)', marginBottom:'0.65rem', lineHeight:1.55}}>
+        Click any architecture to read its specialism. Family colours: <span style={{color:'#22d3ee'}}>feedforward</span> · <span style={{color:'#a78bfa'}}>basis</span> · <span style={{color:'#fbbf24'}}>recurrent</span> · <span style={{color:'#34d399'}}>autoencoder</span> · <span style={{color:'#fb7185'}}>energy-based</span> · <span style={{color:'#06b6d4'}}>convolutional</span>.
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(90px, 1fr))', gap:'0.45rem'}}>
+        {zoo.map(z => (
+          <button key={z.k} onClick={()=>setOpen(open===z.k?null:z.k)} style={{
+            background: open===z.k ? `${z.c}33` : 'rgba(15,23,42,0.45)',
+            border: `1.5px solid ${open===z.k?z.c:'rgba(148,163,184,0.2)'}`,
+            borderRadius:10, padding:'0.55rem 0.4rem', textAlign:'center', cursor:'pointer',
+            transition:'all 0.15s', fontFamily:'inherit'
+          }}>
+            <div style={{fontSize:'0.95rem', fontWeight:700, color:z.c, fontFamily:'monospace'}}>{z.k}</div>
+            <div style={{fontSize:'0.6rem', color:'var(--text-2)', marginTop:'0.2rem', lineHeight:1.2}}>{z.n}</div>
+          </button>
+        ))}
+      </div>
+      {open && (
+        <div style={{marginTop:'0.65rem', padding:'0.75rem 0.95rem', background:`${zoo.find(z=>z.k===open).c}11`, border:`1px solid ${zoo.find(z=>z.k===open).c}66`, borderRadius:8}}>
+          <div style={{fontSize:'0.88rem', color:zoo.find(z=>z.k===open).c, fontWeight:700, marginBottom:'0.35rem'}}>
+            {zoo.find(z=>z.k===open).k} · {zoo.find(z=>z.k===open).n}
+          </div>
+          <div style={{fontSize:'0.8rem', color:'var(--text-1)', lineHeight:1.6}}>
+            {zoo.find(z=>z.k===open).d}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NNVisualCortex() {
+  const layers = [
+    {k:'V1',  n:'Primary Visual Cortex', d:'140 million neurons. Tens of billions of connections. Detects edges, orientations, spatial frequency, colour.', c:'#22d3ee', feature:'Edges & orientation'},
+    {k:'V2',  n:'V2',  d:'Contours and simple textures. Continuity of patterns.', c:'#a78bfa', feature:'Contours'},
+    {k:'V3',  n:'V3',  d:'Motion direction and depth-from-motion cues.', c:'#34d399', feature:'Motion + depth'},
+    {k:'V4',  n:'V4',  d:'Complex shapes, curvature, colour combinations.', c:'#fbbf24', feature:'Shape + colour'},
+    {k:'V5',  n:'V5 (MT)', d:'Coherent motion of complete object features. Object-level tracking.', c:'#fb7185', feature:'Object motion'},
+    {k:'IT',  n:'Inferotemporal',  d:'Faces, places, full object recognition. Top of the ventral-stream hierarchy.', c:'#ec4899', feature:'Faces / objects'},
+  ];
+  const [sel, setSel] = useState(0);
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Visual Cortex Hierarchy → ANN Layers</div>
+      <div style={{fontSize:'0.76rem', color:'var(--text-2)', lineHeight:1.6, marginBottom:'0.65rem'}}>
+        Animal visual cortex shows evidence of <strong style={{color:'#22d3ee'}}>hierarchical feature abstraction</strong>: simple features (edges) → complex features (faces). Click each region.
+      </div>
+      <div style={{display:'flex', gap:'0.35rem', flexWrap:'wrap', marginBottom:'0.65rem'}}>
+        {layers.map((l, i) => (
+          <button key={l.k} onClick={()=>setSel(i)} style={{
+            flex:'1 1 85px',
+            background: sel===i ? `${l.c}33` : 'rgba(15,23,42,0.45)',
+            border: `1.5px solid ${sel===i?l.c:'rgba(148,163,184,0.25)'}`,
+            borderRadius:8, padding:'0.6rem 0.4rem', cursor:'pointer',
+            transition:'all 0.15s', fontFamily:'inherit'
+          }}>
+            <div style={{fontSize:'1.1rem', fontWeight:800, color:l.c, fontFamily:'monospace'}}>{l.k}</div>
+            <div style={{fontSize:'0.6rem', color:'var(--text-2)', marginTop:'0.2rem'}}>{l.feature}</div>
+          </button>
+        ))}
+      </div>
+      <div style={{padding:'0.75rem 0.95rem', background:`${layers[sel].c}11`, border:`1px solid ${layers[sel].c}66`, borderRadius:8}}>
+        <div style={{fontSize:'0.88rem', color:layers[sel].c, fontWeight:700, marginBottom:'0.3rem'}}>{layers[sel].k} · {layers[sel].n}</div>
+        <div style={{fontSize:'0.8rem', color:'var(--text-1)', lineHeight:1.55}}>{layers[sel].d}</div>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.65rem', fontSize:'0.74rem'}}>
+        <strong>Conjecture for ANN's:</strong> deeper layers do more abstract processing. Lower layers learn Gabor-like edge filters; deeper layers learn parts (eyes, wheels, wings) and finally whole objects. <em>Principle of increasing abstraction.</em> Source: Riesenhuber &amp; Poggio (1999); Lee et al. (2009).
+      </div>
+    </div>
+  );
+}
+
+function NNDigitSketcher() {
+  const SIZE = 14;
+  const [grid, setGrid] = useState(() => Array(SIZE*SIZE).fill(0));
+  const [drawing, setDrawing] = useState(false);
+  const [erasing, setErasing] = useState(false);
+  const ref = useRef(null);
+  const cellSize = 14;
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    c.width = SIZE * cellSize; c.height = SIZE * cellSize;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const v = grid[y*SIZE + x];
+        ctx.fillStyle = v > 0 ? `rgba(34,211,238,${0.3 + 0.7*v})` : 'rgba(15,23,42,0.6)';
+        ctx.fillRect(x*cellSize+0.5, y*cellSize+0.5, cellSize-1, cellSize-1);
+      }
+    }
+    ctx.strokeStyle = 'rgba(148,163,184,0.1)';
+    for (let i = 0; i <= SIZE; i++) {
+      ctx.beginPath(); ctx.moveTo(i*cellSize, 0); ctx.lineTo(i*cellSize, c.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i*cellSize); ctx.lineTo(c.width, i*cellSize); ctx.stroke();
+    }
+  }, [grid]);
+  const paint = (e, force) => {
+    if (!drawing && !force) return;
+    const rect = ref.current.getBoundingClientRect();
+    const cx = Math.floor((e.clientX - rect.left) / cellSize);
+    const cy = Math.floor((e.clientY - rect.top) / cellSize);
+    if (cx < 0 || cy < 0 || cx >= SIZE || cy >= SIZE) return;
+    setGrid(g => {
+      const ng = [...g];
+      const v = erasing ? 0 : 1;
+      ng[cy*SIZE + cx] = v;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy]) => {
+        const nx = cx+dx, ny = cy+dy;
+        if (nx>=0 && ny>=0 && nx<SIZE && ny<SIZE) {
+          ng[ny*SIZE+nx] = erasing ? Math.min(ng[ny*SIZE+nx], 0.2) : Math.max(ng[ny*SIZE+nx], 0.5);
+        }
+      });
+      return ng;
+    });
+  };
+  const totalLit = grid.filter(v => v > 0).length;
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Hand-Sketch a Digit → See the Input Vector</div>
+      <div style={{display:'grid', gridTemplateColumns:'auto 1fr', gap:'0.85rem', alignItems:'start'}}>
+        <div>
+          <canvas
+            ref={ref}
+            onMouseDown={(e) => { setDrawing(true); paint(e, true); }}
+            onMouseUp={() => setDrawing(false)}
+            onMouseMove={paint}
+            onMouseLeave={() => setDrawing(false)}
+            style={{cursor: erasing?'cell':'crosshair', borderRadius:6, display:'block', border:'1px solid rgba(34,211,238,0.3)'}}
+          />
+          <div style={{display:'flex', gap:'0.4rem', marginTop:'0.45rem'}}>
+            <button className="m4-preset-btn" onClick={()=>setErasing(e=>!e)} style={erasing?{background:'rgba(251,113,133,0.2)',borderColor:'#fb7185'}:{}}>{erasing?'✏ Draw':'🧹 Erase'}</button>
+            <button className="m4-preset-btn" onClick={()=>setGrid(Array(SIZE*SIZE).fill(0))}>Clear</button>
+          </div>
+        </div>
+        <div>
+          <div className="m4-flabel">Input vector <Tex src={`x \\in \\mathbb{R}^{${SIZE*SIZE}}`} /> (mini MNIST has 784)</div>
+          <div style={{fontSize:'0.7rem', color:'var(--text-2)', fontFamily:'monospace', maxHeight:120, overflow:'auto', background:'rgba(15,23,42,0.55)', padding:'0.5rem 0.65rem', borderRadius:6, lineHeight:1.5, border:'1px solid rgba(34,211,238,0.15)'}}>
+            x = [{grid.slice(0, 28).map(v => v.toFixed(1)).join(', ')}, …<br/>      … {SIZE*SIZE-28} more values]
+          </div>
+          <div style={{marginTop:'0.65rem', fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.55}}>
+            <div><strong style={{color:'#22d3ee'}}>Pixels lit:</strong> {totalLit} / {SIZE*SIZE}</div>
+            <div><strong style={{color:'#a78bfa'}}>Sparsity:</strong> {(100*(1-totalLit/(SIZE*SIZE))).toFixed(1)}%</div>
+            <div style={{marginTop:'0.45rem', color:'var(--text-2)', fontSize:'0.72rem'}}>
+              Each pixel becomes one input neuron. The full MNIST setup feeds a <strong>784-D vector</strong> into the first layer, then maps to a <strong>10-D one-hot</strong> output (digit identity). Each connection between layers is a weight to learn.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NNNotationExplorer() {
+  const [hover, setHover] = useState(null);
+  const layers = [3, 4, 4, 2];
+  const examples = {
+    w: {
+      sym: 'w^{l}_{jk}',
+      highlight: { l:3, j:1, k:2 },
+      desc: (
+        <>
+          Weight of the connection from the <strong>k-th</strong> neuron in layer <Tex src="(l-1)" /> to the <strong>j-th</strong> neuron in layer <Tex src="l" />. The j,k ordering looks reversed but makes <Tex src="a^{l} = \sigma(w^{l} a^{l-1} + b^{l})" /> a clean matrix product.
+        </>
+      ),
+    },
+    a: {
+      sym: 'a^{l}_{j}',
+      highlight: { layer:2, node:0 },
+      desc: (
+        <>
+          Activation of the j-th neuron in layer <Tex src="l" />. Layer 1 activation <Tex src="a^{1}" /> is the raw input itself.
+        </>
+      ),
+    },
+    b: {
+      sym: 'b^{l}_{j}',
+      highlight: { layer:1, node:2 },
+      desc: (
+        <>
+          Bias of the j-th neuron in layer <Tex src="l" />. Shifts the pre-activation sum before the activation function.
+        </>
+      ),
+    },
+    z: {
+      sym: 'z^{l}_{j}',
+      highlight: { layer:2, node:1 },
+      desc: (
+        <>
+          Weighted input (pre-activation) of neuron j in layer <Tex src="l" />: <Tex src="z^{l} = w^{l} a^{l-1} + b^{l}" />, then <Tex src="a^{l} = \sigma(z^{l})" />.
+        </>
+      ),
+    },
+    delta: {
+      sym: '\\delta^{l}_{j}',
+      highlight: { layer:3, node:0 },
+      desc: (
+        <>
+          Local error <Tex src="\delta^{l}_{j} \equiv \partial C / \partial z^{l}_{j}" />. How much "blame" neuron j in layer <Tex src="l" /> bears for the cost. Large <Tex src="|\delta|" /> ⇒ big opportunity to improve.
+        </>
+      ),
+    },
+    sigma: {
+      sym: '\\sigma(z)',
+      highlight: null,
+      desc: (
+        <>
+          The logistic activation <Tex src="\sigma(z) = \dfrac{1}{1+e^{-z}}" />. Continuously differentiable to all orders — safe for gradient methods. <Tex src="\sigma'(z) = \sigma(z)\bigl(1 - \sigma(z)\bigr)" />.
+        </>
+      ),
+    },
+  };
+  const active = hover ? examples[hover] : null;
+  const aw = active?.highlight && 'l' in active.highlight ? active.highlight : null;
+  const an = active?.highlight && 'layer' in active.highlight ? active.highlight : null;
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Notation Explorer — Hover or Click Each Symbol</div>
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1.3fr', gap:'0.85rem', alignItems:'start'}}>
+        <div style={{display:'flex', flexDirection:'column', gap:'0.4rem'}}>
+          {Object.keys(examples).map(k => (
+            <div
+              key={k}
+              onMouseEnter={()=>setHover(k)}
+              onMouseLeave={()=>setHover(null)}
+              onClick={()=>setHover(hover===k?null:k)}
+              style={{
+                padding:'0.6rem 0.85rem',
+                background: hover===k ? 'rgba(251,191,36,0.14)' : 'rgba(15,23,42,0.5)',
+                border:`1.5px solid ${hover===k?'#fbbf24':'rgba(148,163,184,0.22)'}`,
+                borderRadius:8, cursor:'pointer', transition:'all 0.15s'
+              }}>
+              <div style={{fontSize:'1rem', marginBottom:'0.35rem'}}><Tex src={examples[k].sym} /></div>
+              <div style={{fontSize:'0.74rem', color:'var(--text-2)', lineHeight:1.6}}>{examples[k].desc}</div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <NNNetworkCanvas
+            layers={layers}
+            height={280}
+            activeLayer={an?.layer ?? -1}
+            activeNode={an?.node ?? null}
+            activeWeight={aw}
+          />
+          <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+            <strong>j vs k:</strong> j indexes the destination row in <Tex src="w^{l}" />; k indexes the source column. Read <Tex src="w^{l}_{jk}" /> as "weight TO j FROM k in layer l".
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const NN_SIGMA = z => 1 / (1 + Math.exp(-z));
+const NN_SIGMA_PRIME = z => { const s = NN_SIGMA(z); return s * (1 - s); };
+
+function NNSigmoidProperties() {
+  const [z, setZ] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const W = c.width = c.offsetWidth || 420;
+    const H = c.height = 210;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const toX = z => ((z + 8) / 16) * W;
+    const toY = y => H - y * H * 0.8 - 20;
+    ctx.strokeStyle = 'rgba(148,163,184,0.22)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, toY(0)); ctx.lineTo(W, toY(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(0), 0); ctx.lineTo(toX(0), H); ctx.stroke();
+    ctx.strokeStyle = 'rgba(251,191,36,0.3)'; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(0, toY(0.5)); ctx.lineTo(W, toY(0.5)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const zz = -8 + 16*(i/200);
+      if (i === 0) ctx.moveTo(toX(zz), toY(NN_SIGMA(zz))); else ctx.lineTo(toX(zz), toY(NN_SIGMA(zz)));
+    }
+    ctx.stroke();
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const zz = -8 + 16*(i/200);
+      if (i === 0) ctx.moveTo(toX(zz), toY(NN_SIGMA_PRIME(zz)*4)); else ctx.lineTo(toX(zz), toY(NN_SIGMA_PRIME(zz)*4));
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.arc(toX(z), toY(NN_SIGMA(z)), 7, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#a78bfa';
+    ctx.beginPath(); ctx.arc(toX(z), toY(NN_SIGMA_PRIME(z)*4), 5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
+    ctx.fillStyle = '#22d3ee'; ctx.fillRect(10, 8, 18, 3); ctx.fillStyle = '#fff'; ctx.fillText('σ(z) — activation', 32, 12);
+    ctx.fillStyle = '#a78bfa'; ctx.fillRect(10, 22, 18, 3); ctx.fillStyle = '#fff'; ctx.fillText('σ′(z) × 4 — gradient', 32, 26);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText(`z=${z.toFixed(2)}   σ(z)=${NN_SIGMA(z).toFixed(3)}   σ′(z)=${NN_SIGMA_PRIME(z).toFixed(3)}`, 10, 44);
+  }, [z]);
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">σ(z) and σ′(z) — Drag the slider to move the marker</div>
+      <canvas ref={ref} style={{width:'100%', height:210, display:'block', borderRadius:8, background:'rgba(15,23,42,0.4)'}}/>
+      <div style={{marginTop:'0.55rem'}}>
+        <div className="m4-flabel">z = {z.toFixed(2)}</div>
+        <input type="range" min={-8} max={8} step={0.1} value={z} onChange={e=>setZ(+e.target.value)} style={{width:'100%'}}/>
+      </div>
+      <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.75rem'}}>
+        Self-derivative identity: <Tex src="\sigma'(z) = \sigma(z)\bigl(1 - \sigma(z)\bigr)" />. Once you have a = σ(z), the gradient is free — this is why the logistic dominates as the canonical NN activation. σ′ is bell-shaped, peaks at z = 0 with σ′(0) = 0.25.
+      </div>
+    </div>
+  );
+}
+
+function NNQuiz() {
+  const qs = useMemo(() => ([
+    {q:'What property makes the logistic σ the activation of choice over a step function?', opts:['Bounded in [0,1]', 'Easy to compute', 'Differentiable to all orders → safe for gradient methods', 'Output is monotonic'], a:2, expl:'σ is continuously differentiable, so chain-rule based methods (backpropagation) work. The step function is not differentiable at the threshold — gradient descent stalls.'},
+    {q:'A neural network with one hidden layer can…', opts:['only model linear functions', 'approximate any continuous function to arbitrary precision', 'always train to zero error', 'only do classification, not regression'], a:1, expl:'Universal approximation theorem — one hidden layer suffices for arbitrary precision, though potentially with very many neurons.'},
+    {q:'What is δˡⱼ in the backprop equations?', opts:['Output activation of neuron j in layer l', '∂C/∂zˡⱼ — the local error', 'Bias of neuron j in layer l', 'Layer-wise learning rate'], a:1, expl:'δˡⱼ ≡ ∂C/∂zˡⱼ. It captures how much that neuron is "to blame" for the cost.'},
+    {q:'Backprop equation 4 (weight gradient) is…', opts:['∂C/∂wˡⱼₖ = δˡⱼ', '∂C/∂wˡⱼₖ = aˡ⁻¹ₖ · δˡⱼ', '∂C/∂wˡⱼₖ = aˡⱼ · δˡ⁻¹ₖ', '∂C/∂wˡⱼₖ = σ′(zˡⱼ)'], a:1, expl:'∂C/∂wˡⱼₖ = aˡ⁻¹ₖ · δˡⱼ. Pre-layer activation × post-layer error.'},
+    {q:'Why is the constant ½ added in the quadratic cost?', opts:['To normalise into [0,1]', 'To cancel the 2 that appears when differentiating x²', 'It is required for convexity', 'No reason — convention'], a:1, expl:'Differentiating ½x² gives x — much cleaner than 2x. The factor does not affect the location of the minimum.'},
+    {q:'Vectorised forward pass at layer l is…', opts:['aˡ = wˡ aˡ⁻¹ + bˡ', 'aˡ = σ(wˡ aˡ⁻¹) + bˡ', 'aˡ = σ(wˡ aˡ⁻¹ + bˡ)', 'aˡ = σ((wˡ)ᵀ aˡ⁻¹ + bˡ)'], a:2, expl:'Linear part first: zˡ = wˡ aˡ⁻¹ + bˡ. Then σ applied element-wise: aˡ = σ(zˡ).'},
+    {q:'For MNIST what are x and y dimensions?', opts:['x: 28-D, y: 10-D', 'x: 784-D, y: 10-D', 'x: 784-D, y: 1-D', 'x: 28×28-D, y: 28×28-D'], a:1, expl:'28×28 = 784 input pixels (greyscale, normalised). One-hot 10-D output for digits 0–9.'},
+    {q:'In the formula wˡⱼₖ, what does j index?', opts:['Source neuron in layer l−1', 'Destination neuron in layer l', 'Layer index', 'Sample index'], a:1, expl:'j = destination (layer l, row of weight matrix), k = source (layer l−1, column). So wˡ has shape (|layer l|, |layer l−1|).'},
+    {q:'BP equation 1 (output layer error) is…', opts:['δᴸ = (aᴸ − y)', 'δᴸ = ∇ₐC ⊙ σ′(zᴸ)', 'δᴸ = (wᴸ)ᵀδᴸ⁻¹', 'δᴸ = σ′(aᴸ)'], a:1, expl:'δᴸ = ∇ₐC ⊙ σ′(zᴸ). For MSE this becomes (aᴸ − y) ⊙ σ′(zᴸ).'},
+    {q:'Why are hidden layers called "hidden"?', opts:['They are kept secret in production', 'They are inactive during training', 'They have no direct input or output to the outside world', 'They use a different activation'], a:2, expl:'No I/O. They sit between input and output — we can examine them in research but they don\'t drive outputs directly.'},
+    {q:'What does the Universal Approximation Theorem NOT guarantee?', opts:['Existence of an approximating NN', 'That the NN has one hidden layer', 'That a practical training procedure will find it', 'Arbitrary precision'], a:2, expl:'The theorem is existential — it says g(x) exists but says nothing about how to find it via training. In practice, finding it might need huge networks or fail entirely.'},
+    {q:'What is the relationship between Lecture 14 (one neuron) and Lecture 15 (network)?', opts:['Networks replace neurons entirely', 'A network composes many neurons to overcome the linear-separability limit (e.g. XOR)', 'Networks are slower and rarely used', 'They are unrelated'], a:1, expl:'A single neuron is limited to linearly separable patterns. Composing neurons into layers escapes that limit and gives universal approximation.'},
+  ]), []);
+  const [picked, setPicked] = useState({});
+  const [showAll, setShowAll] = useState(false);
+  const score = Object.keys(picked).filter(i => picked[i] === qs[i].a).length;
+  const answered = Object.keys(picked).length;
+  return (
+    <div className="m4-card">
+      <div className="m4-card-h">Lecture 15 Quiz — 12 Questions</div>
+      <div style={{display:'flex', gap:'0.7rem', alignItems:'center', marginBottom:'0.7rem', flexWrap:'wrap'}}>
+        <div style={{fontSize:'0.78rem', color:'var(--text-2)'}}>Answered: <strong style={{color:'#22d3ee'}}>{answered}/{qs.length}</strong></div>
+        <div style={{fontSize:'0.78rem', color:'var(--text-2)'}}>Correct: <strong style={{color:'#34d399'}}>{score}</strong></div>
+        {answered === qs.length && (
+          <div style={{fontSize:'0.78rem', padding:'0.18rem 0.55rem', background:score===qs.length?'rgba(52,211,153,0.18)':'rgba(251,191,36,0.18)', border:`1px solid ${score===qs.length?'#34d399':'#fbbf24'}`, borderRadius:6, color:score===qs.length?'#34d399':'#fbbf24', fontWeight:700}}>
+            {score === qs.length ? '🏆 Perfect!' : `${Math.round(100*score/qs.length)}%`}
+          </div>
+        )}
+        <button className="m4-preset-btn" onClick={()=>{setPicked({}); setShowAll(false);}}>Reset</button>
+        <button className="m4-preset-btn" onClick={()=>setShowAll(s=>!s)}>{showAll?'Hide all':'Reveal all'}</button>
+      </div>
+      <div style={{display:'flex', flexDirection:'column', gap:'0.6rem'}}>
+        {qs.map((q, i) => (
+          <div key={i} style={{background:'rgba(15,23,42,0.5)', border:'1px solid rgba(148,163,184,0.2)', borderRadius:8, padding:'0.7rem 0.85rem'}}>
+            <div style={{fontSize:'0.84rem', color:'#fff', fontWeight:600, marginBottom:'0.5rem', lineHeight:1.5}}>
+              <span style={{color:'#a78bfa', marginRight:'0.4rem'}}>Q{i+1}.</span>{q.q}
+            </div>
+            <div style={{display:'flex', flexDirection:'column', gap:'0.3rem'}}>
+              {q.opts.map((o, oi) => {
+                const isPicked = picked[i] === oi;
+                const isCorrect = oi === q.a;
+                const shouldShow = (i in picked) || showAll;
+                return (
+                  <button
+                    key={oi}
+                    onClick={() => setPicked(p => ({...p, [i]: oi}))}
+                    style={{
+                      textAlign:'left', padding:'0.45rem 0.75rem',
+                      background: shouldShow ? (isCorrect ? 'rgba(52,211,153,0.18)' : isPicked ? 'rgba(251,113,133,0.18)' : 'rgba(15,23,42,0.4)') : (isPicked ? 'rgba(34,211,238,0.15)' : 'rgba(15,23,42,0.4)'),
+                      border: `1px solid ${shouldShow ? (isCorrect ? '#34d399' : isPicked ? '#fb7185' : 'rgba(148,163,184,0.2)') : (isPicked ? '#22d3ee' : 'rgba(148,163,184,0.2)')}`,
+                      borderRadius:6, cursor:'pointer',
+                      color: shouldShow && isCorrect ? '#34d399' : 'var(--text-1)',
+                      fontSize:'0.78rem', fontFamily:'inherit', lineHeight:1.45
+                    }}>
+                    {shouldShow && isCorrect ? '✓ ' : shouldShow && isPicked ? '✗ ' : ''}{o}
+                  </button>
+                );
+              })}
+            </div>
+            {((i in picked) || showAll) && (
+              <div style={{marginTop:'0.5rem', padding:'0.5rem 0.75rem', background:'rgba(34,211,238,0.08)', borderLeft:'2px solid #22d3ee', borderRadius:'0 6px 6px 0', fontSize:'0.74rem', color:'var(--text-1)', lineHeight:1.5}}>
+                <strong style={{color:'#22d3ee'}}>Why:</strong> {q.expl}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NeuralNetworksTab() {
+  const [sec, setSec] = useState('overview');
+  return (
+    <div>
+      <div className="m4-algo-tabs">
+        {[
+          ['overview', 'Overview'],
+          ['biology', 'Biological Roots'],
+          ['mnist', 'MNIST Case'],
+          ['arch', 'Architectures'],
+          ['training', 'Training & Cost'],
+          ['notation', 'Notation'],
+          ['backprop', 'Backpropagation'],
+          ['universal', 'Universal Approx.'],
+          ['memorise', 'Memorise'],
+        ].map(([v,l]) => (
+          <button key={v} className={`m4-algo-tab ${sec===v?'m4-algo-tab--on':''}`} onClick={()=>setSec(v)}>{l}</button>
+        ))}
+      </div>
+
+      {sec === 'overview' && (
+        <div>
+          <div style={{background:'linear-gradient(135deg,rgba(167,139,250,0.08) 0%,rgba(34,211,238,0.08) 100%)',border:'1px solid rgba(167,139,250,0.25)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'1rem',display:'flex',flexWrap:'wrap',gap:'0.45rem'}}>
+            {[['XOR','Need >1 neuron','#fb7185'],['Layers','Input + hidden + output','#22d3ee'],['σ','Differentiable activation','#34d399'],['MSE','Quadratic cost','#fbbf24'],['∇C','Gradient descent','#a78bfa'],['Backprop','BP-1 to BP-4','#06b6d4'],['Universal','Approx. any continuous f','#ec4899']].map(([k,v,col])=>(
+              <div key={k} style={{display:'flex',alignItems:'center',gap:'0.4rem',background:`${col}11`,border:`1px solid ${col}33`,borderRadius:6,padding:'3px 9px'}}>
+                <span style={{fontSize:'0.7rem',fontWeight:700,color:col,fontFamily:'monospace'}}>{k}</span>
+                <span style={{fontSize:'0.67rem',color:'var(--text-2)'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Why Neural Networks?</div>
+              <ul className="m4-bullets" style={{fontSize:'0.78rem', lineHeight:1.65}}>
+                <li>A <strong>single neuron</strong> can only divide space with a hyperplane — <em>linearly separable</em> patterns only.</li>
+                <li>It cannot implement <strong>XOR</strong> (or anything that reduces to XOR).</li>
+                <li>A <strong>network of neurons</strong> composes more complex regions from these linearly separable ones.</li>
+                <li>In fact, neural networks can approximate <strong>any continuous function</strong>! (Universal approximation theorem)</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Two essential design dials</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <tbody>
+                  <tr><td className="pk">Topology</td><td>How many layers? How many nodes per layer? (the "hardware")</td></tr>
+                  <tr><td className="pk">Parameters</td><td>What are the weights and biases? (the "software")</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">The Promise — Universal Function Approximation</div>
+              <div style={{fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.65}}>
+                For any target function f(x) and desired precision ε &gt; 0, there exists a neural network with output g(x) such that:
+              </div>
+              <Tex src="|g(x) - f(x)| < \epsilon \quad \text{for all } x" block />
+              <div className="m4-infobox" style={{marginTop:'0.5rem', fontSize:'0.74rem'}}>
+                <strong>Holds with just one hidden layer!</strong> But "exists" ≠ "easy to train". More precision typically needs <em>many more nodes</em>.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Conceptually</div>
+              <div style={{fontSize:'0.74rem', color:'var(--text-2)', lineHeight:1.6}}>
+                A NN is just a 7-segment display with a lot more segments (now called pixels) and graded input (vs binary).
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNArchitectureBuilder />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">The Big Themes of Lecture 15</div>
+            <table className="m4-ptable" style={{fontSize:'0.76rem'}}>
+              <thead><tr><th>Theme</th><th>Question it answers</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Biological inspiration</td><td>Where does the architecture come from? — V1, V2, hierarchies, Allen Atlas.</td></tr>
+                <tr><td className="pk">Case study</td><td>How does a real classification task (MNIST) shape input, output, and topology?</td></tr>
+                <tr><td className="pk">Architecture</td><td>What variants exist? — the Neural Network Zoo.</td></tr>
+                <tr><td className="pk">Cost</td><td>How do we measure how wrong the network is? — MSE / quadratic cost.</td></tr>
+                <tr><td className="pk">Training</td><td>How do we find good weights? — Gradient descent on ∇C(w, b).</td></tr>
+                <tr><td className="pk">Backpropagation</td><td>How do we compute every partial derivative? — Four equations + an algorithm.</td></tr>
+                <tr><td className="pk">Universal approx.</td><td>What can a NN actually represent? — Any continuous function.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sec === 'biology' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Inspiration — Biological Brains</div>
+              <div style={{fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.65}}>
+                The <strong>Allen Mouse Brain Connectivity Atlas</strong> (Oh et al., <em>Nature</em>, 2014) was the first detailed map of any mammal's neural network.
+              </div>
+              <ul className="m4-bullets" style={{fontSize:'0.74rem', marginTop:'0.5rem'}}>
+                <li>Dense multi-coloured network of neural connections, mapped in 3D.</li>
+                <li>Fibrous branching structures form the overall brain shape.</li>
+                <li>Demonstrates the topological complexity ANNs try to capture.</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Mark I Perceptron (Rosenblatt, 1958)</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                <li><strong>400 cadmium sulfide photocells</strong></li>
+                <li><strong>20 × 20 pixel</strong> image input</li>
+                <li><strong>Randomly connected</strong> to neurons</li>
+                <li><strong>Potentiometers</strong> encode the adaptive weights</li>
+              </ul>
+              <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+                Rosenblatt's original Mk I was designed for <strong>image recognition</strong>. Architecture: Mosaic of Sensory Points → Projection Area → Association System → Response Units (R₁, R₂, …, Rₙ) with feedback circuits running backward. The very first NN!
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNVisualCortex />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Hierarchical Models of Object Recognition (Riesenhuber &amp; Poggio, 1999)</div>
+            <div style={{fontSize:'0.76rem', color:'var(--text-1)', lineHeight:1.6, marginBottom:'0.5rem'}}>
+              <em>Some</em> biological evidence suggests animal visual cortices operate in a hierarchy — from simple features (edge orientation) to complex features (faces).
+            </div>
+            <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+              <thead><tr><th>Layer</th><th>Operation</th><th>Output</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Input image</td><td>—</td><td>Raw pixels</td></tr>
+                <tr><td className="pk">Simple cells (S1)</td><td><strong>Weighted sum</strong></td><td>Edge orientation detectors (−, /, |, \)</td></tr>
+                <tr><td className="pk">Complex cells (C1)</td><td><strong>MAX</strong> (pool)</td><td>Pooled over orientations</td></tr>
+                <tr><td className="pk">Composite feature cells (S2)</td><td><strong>Weighted sum</strong></td><td>Combine multiple C1 outputs</td></tr>
+                <tr><td className="pk">Complex composite cells (C2)</td><td><strong>MAX</strong> (pool)</td><td>Higher-level combinations</td></tr>
+                <tr><td className="pk">View-tuned cells</td><td>—</td><td>Top-level object / view representations</td></tr>
+              </tbody>
+            </table>
+            <div style={{fontSize:'0.72rem', color:'var(--text-2)', marginTop:'0.5rem', lineHeight:1.55}}>
+              <strong>Convention:</strong> solid arrows = weighted sum operations. Dashed arrows = MAX (pooling) operations. This alternating "filter / pool" pattern is the direct ancestor of convolutional neural networks.
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Layers in ANN's — The Conjecture</div>
+            <div className="m4-two-col">
+              <div>
+                <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                  <li>ANN's likely do something <em>analogous</em> to human vision.</li>
+                  <li>Deeper layers do more abstract processing — <strong>principle of increasing abstraction</strong>.</li>
+                  <li>Doesn't just apply to vision (language, audio, robotics too).</li>
+                  <li>However, deeper networks are generally <strong>harder to train</strong>.</li>
+                  <li><strong>More expressive ⇒ harder to find solution.</strong></li>
+                </ul>
+              </div>
+              <div className="m4-infobox" style={{fontSize:'0.74rem'}}>
+                <strong>Empirical evidence</strong> from Lee et al. (ICML 2009): A deep convolutional belief network trained on faces, cars, airplanes, motorbikes shows:
+                <ul style={{margin:'0.4rem 0 0 0', paddingLeft:'1rem'}}>
+                  <li><strong>Lower layers:</strong> edge-like / Gabor-style patches.</li>
+                  <li><strong>Higher layers:</strong> recognisable parts — eyes, wheels, wings.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'mnist' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Recognising Hand-Written Digits — Why It Matters</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                <li>Classic neural network success story (Nielsen, 2019).</li>
+                <li><strong>Recognition uses:</strong> postal services, digitising old manuscripts, accessibility for the visually impaired.</li>
+                <li><strong>Search uses:</strong> handwriting → text conversion, news/sentiment analysis on scanned content.</li>
+                <li>Most freehand-annotation drawing apps now have handwriting search.</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Why Is It Hard for Traditional Computers?</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                <li>Over <strong>7 billion people</strong> in the world, each with unique handwriting.</li>
+                <li>Variable quality of writing, media, contrast, lighting.</li>
+                <li>Positioning on the page (e.g. postcode squares).</li>
+                <li>Security and trust (election ballots, signatures).</li>
+              </ul>
+              <div className="m4-warnbox" style={{marginTop:'0.55rem', fontSize:'0.73rem'}}>
+                <strong>Rule-based techniques are too brittle.</strong> The problem requires <em>approximation, judgement, and graceful degradation</em> — exactly what neural networks provide.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Symbolic vs Sub-Symbolic Approaches</div>
+            <table className="m4-ptable" style={{fontSize:'0.76rem'}}>
+              <thead><tr><th></th><th>Symbolic ("rule-based")</th><th>Sub-symbolic</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Style</td><td>"7 has a line across the top, 4 comes to a point at the top…"</td><td>Vector of real numbers — "degree of 4-ness"</td></tr>
+                <tr><td className="pk">Failure mode</td><td>Many exceptions, no consistency — <strong>brittle</strong></td><td><strong>Graceful degradation</strong> — values shift smoothly</td></tr>
+                <tr><td className="pk">Interpretability</td><td>Very high (rules in plain English)</td><td>Low — may not be intuitively meaningful</td></tr>
+                <tr><td className="pk">Examples</td><td>Expert systems, decision trees</td><td>Neural networks (values at hidden nodes)</td></tr>
+              </tbody>
+            </table>
+            <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+              ANN's <strong>learn</strong> their own sub-symbolic values from many examples — 1,000s, 1,000,000s, or even 1,000,000,000s depending on difficulty. Made possible by the exponential growth in computing power.
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNDigitSketcher />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">The MNIST Dataset</div>
+            <div className="m4-two-col">
+              <div>
+                <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                  <li>Created in <strong>1998</strong> from US Census Bureau employees + US high school students <em>(bias?)</em>.</li>
+                  <li>Normalised to <strong>28 × 28 pixels</strong>.</li>
+                  <li><strong>60,000 training</strong> images + <strong>10,000 testing</strong> — distinct sets.</li>
+                  <li>Original: National Institute of Standards and Technology — LeCun, Cortes, Burges.</li>
+                  <li>Many replicas exist (Kaggle, scikit-learn, etc.).</li>
+                </ul>
+              </div>
+              <div>
+                <div className="m4-flabel">Input/output dimensions for MNIST</div>
+                <Tex src="\vec{x} \in \mathbb{R}^{784} \quad \text{(28×28 pixels)}" block />
+                <Tex src="\vec{y} \in \mathbb{R}^{10} \quad \text{(one-hot digit)}" block />
+                <div style={{fontSize:'0.74rem', color:'var(--text-2)', marginTop:'0.45rem', lineHeight:1.55}}>
+                  For example: <Tex src="\vec{y} = [0,0,0,0,0,0,1,0,0,0]^T" /> for a '6'. The functional representation is <Tex src="y(\vec{x}) = \vec{y}" />.
+                </div>
+              </div>
+            </div>
+            <div className="m4-hr"/>
+            <div className="m4-flabel">Training goal</div>
+            <div className="m4-two-col">
+              <div className="m4-infobox" style={{background:'rgba(34,211,238,0.08)'}}>
+                <div style={{fontSize:'0.74rem', color:'#22d3ee', fontWeight:700, marginBottom:'0.3rem'}}>IDEAL</div>
+                <Tex src="f(\vec{x}) = y(\vec{x}) \text{ for all } \vec{x}" block/>
+              </div>
+              <div className="m4-warnbox" style={{background:'rgba(251,191,36,0.08)'}}>
+                <div style={{fontSize:'0.74rem', color:'#fbbf24', fontWeight:700, marginBottom:'0.3rem'}}>REALITY</div>
+                <Tex src="f(\vec{x}) \approx y(\vec{x}) \text{ for all samples } \vec{x}" block/>
+              </div>
+            </div>
+            <div style={{fontSize:'0.74rem', color:'var(--text-2)', marginTop:'0.55rem', textAlign:'center', fontStyle:'italic'}}>
+              ➡ A network is only ever as good as the data it is trained with.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'arch' && (
+        <div>
+          <NNArchitectureZoo />
+
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">Feed-Forward Networks (FFNN) — The Workhorse</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                <li>Many variants of ANNs exist — most are based on the FFNN.</li>
+                <li><strong>Input "layer"</strong> — not really a layer, just numbers passed in.</li>
+                <li>One or more <strong>hidden layers</strong> — where the "magic" happens.</li>
+                <li><strong>Output layer</strong> — often a single node (binary classifier), and often a different activation.</li>
+                <li>Biases are typically <em>not shown</em> in diagrams (but they are there!).</li>
+                <li>Each neuron has only <strong>one output</strong>, replicated across destination connections.</li>
+              </ul>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">The Three Layer Types</div>
+              <table className="m4-ptable" style={{fontSize:'0.75rem'}}>
+                <thead><tr><th>Layer</th><th>Role</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk" style={{color:'#22d3ee'}}>Input</td><td>Just numbers passed in (not really a layer). Dimensions set by the problem.</td></tr>
+                  <tr><td className="pk" style={{color:'#a78bfa'}}>Hidden</td><td>"Hidden" in the sense of no I/O. We can examine values in research, but they don't drive any outputs. <strong>Where most of the work happens.</strong></td></tr>
+                  <tr><td className="pk" style={{color:'#fb7185'}}>Output</td><td>Often a single node (e.g. binary classifier). Often has a <strong>different activation</strong> — e.g. linear ("accumulation") with no [0,1] restriction.</td></tr>
+                </tbody>
+              </table>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Linear output node (regression)</div>
+              <Tex src="f(\vec{w}, b, \vec{x}) = \vec{w}\cdot\vec{x} + b" block />
+              <div style={{fontSize:'0.72rem', color:'var(--text-2)', marginTop:'0.35rem'}}>
+                No σ — output can be any real number.
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNArchitectureBuilder />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Design — Choosing the Architecture</div>
+            <table className="m4-ptable" style={{fontSize:'0.76rem'}}>
+              <thead><tr><th>Decision</th><th>Driver</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Input layer size</td><td>Problem representation. Example: 64×64 greyscale → 4,096 input neurons; pixel values 0–255 scaled to 0–1.</td></tr>
+                <tr><td className="pk">Output layer size</td><td>Problem representation. Example: binary classifier "is this a 9?" → 1 output; multi-class → one neuron per class.</td></tr>
+                <tr><td className="pk">Output threshold</td><td>For binary classification: &lt; 0.5 → "not a 9", &gt; 0.5 → "is a 9".</td></tr>
+                <tr><td className="pk">Hidden layers — count</td><td><strong>"Dark art."</strong> No hard and fast rules. Lots of research on heuristics and trade-offs.</td></tr>
+                <tr><td className="pk">Hidden layers — width</td><td>Same. Some empirical precedents, but mostly experimentation.</td></tr>
+              </tbody>
+            </table>
+            <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+              <strong>Neuro-evolution:</strong> active research uses <em>adaptive algorithms</em> to design the NN configuration / topology, as well as the weights. Analogous to the "hardware" (topology) and the "software" (weights).
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'training' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Supervised Learning — Recap</div>
+              <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                <li>Set of sample inputs with answers — the <strong>training set</strong>.</li>
+                <li>The teacher ("supervisor") provides the answers.</li>
+                <li>Goal: find parameters that match the answers as closely as possible.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Toy example — moon escape velocity</div>
+              <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+                <thead><tr><th>Trial</th><th>x (km/s)</th><th>y</th></tr></thead>
+                <tbody>
+                  <tr><td className="pk">1</td><td>1</td><td>0 (no)</td></tr>
+                  <tr><td className="pk">2</td><td>5</td><td>1 (yes)</td></tr>
+                  <tr><td className="pk">3</td><td>3</td><td>1</td></tr>
+                  <tr><td className="pk">4</td><td>2</td><td>0</td></tr>
+                  <tr><td className="pk">5</td><td>2.5</td><td>1</td></tr>
+                  <tr><td className="pk">6</td><td>2.2</td><td>0</td></tr>
+                </tbody>
+              </table>
+              <div style={{fontSize:'0.72rem', color:'var(--text-2)', marginTop:'0.35rem'}}>Single input, single output — same shape as the data we used to train a single neuron.</div>
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">Cost Function — Many Names, One Idea</div>
+              <div style={{fontSize:'0.76rem', color:'var(--text-1)', lineHeight:1.65}}>
+                We need a measure of the <strong>distance</strong> between network estimates and "teacher" answers.
+              </div>
+              <div className="m4-flabel" style={{marginTop:'0.5rem'}}>Also called…</div>
+              <div style={{display:'flex', gap:'0.3rem', flexWrap:'wrap'}}>
+                {['Cost', 'Objective', 'Loss', 'Fitness', 'Error'].map(t => (
+                  <span key={t} style={{fontSize:'0.7rem', padding:'2px 8px', background:'rgba(34,211,238,0.12)', border:'1px solid rgba(34,211,238,0.3)', borderRadius:6, color:'#22d3ee'}}>{t} function</span>
+                ))}
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Vector-space view</div>
+              <div style={{fontSize:'0.74rem', color:'var(--text-2)', lineHeight:1.6}}>
+                A network with M inputs and N outputs is a function <Tex src="f : \mathbb{R}^M \to \mathbb{R}^N" />. Given <Tex src="x" />, compare <Tex src="f(x)" /> and <Tex src="y(x)" /> — both points in <Tex src="\mathbb{R}^{N}" />. The "distance" between them is the distance from the origin to:
+              </div>
+              <Tex src="\vec{v} = f(\vec{x}) - y(\vec{x})" block />
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Norms — How We Measure "Distance"</div>
+            <div className="m4-two-col">
+              <div>
+                <div className="m4-flabel">Absolute value norm (1-D)</div>
+                <Tex src="\|v\| = |v|" block />
+                <div style={{fontSize:'0.72rem', color:'var(--text-2)', marginTop:'0.3rem'}}>Simplest case, single dimension.</div>
+              </div>
+              <div>
+                <div className="m4-flabel">Euclidean / L² norm (n-D)</div>
+                <Tex src="\|\vec{v}\|_2 = \sqrt{v_1^2 + \cdots + v_n^2}" block />
+                <div style={{fontSize:'0.72rem', color:'var(--text-2)', marginTop:'0.3rem'}}>The most familiar norm on ℝⁿ — from Pythagoras.</div>
+              </div>
+            </div>
+            <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+              A <strong>norm</strong> is a function from a vector space to non-negative real numbers that behaves like a distance — equivalently, the "length" of a difference vector.
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Mean Squared Error (MSE / Least Squares / Quadratic Cost)</div>
+            <div className="m4-flabel">Multi-sample MSE</div>
+            <Tex src="MSE \equiv \frac{1}{n} \sum_{s=1}^{S} \bigl(\|f(\vec{x_s}) - y(\vec{x_s})\|_2\bigr)^2" block />
+            <div style={{fontSize:'0.73rem', color:'var(--text-2)', marginTop:'0.35rem'}}>No need to take the square root — L² norm is already squared.</div>
+            <div className="m4-hr"/>
+            <div className="m4-flabel">Nielsen's notation — quadratic cost</div>
+            <Tex src="C(w, b) \equiv \frac{1}{2n} \sum_{\vec{x}} \bigl(\|y(\vec{x}) - a\|_2\bigr)^2" block />
+            <VarTable vars={[
+              ['w', 'The collection of all weights in the network'],
+              ['b', 'The collection of all biases'],
+              ['n', 'Number of training samples'],
+              ['a', 'Network outputs (activations); a function of w, b, x'],
+              ['\\frac{1}{2}', 'Conveniently cancels the 2 from differentiation — doesn\'t affect the result'],
+            ]} />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Training = Minimisation</div>
+            <div style={{fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.65, marginBottom:'0.45rem'}}>
+              <strong>Goal:</strong> find weights and biases that minimise C(w, b).
+            </div>
+            <Tex src="C(w, b) \equiv \frac{1}{2n} \sum_{\vec{x}} \bigl(\|y(\vec{x}) - a\|_2\bigr)^2" block />
+            <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.65, marginTop:'0.45rem'}}>
+              <li>Could be <strong>millions</strong> of weights and biases.</li>
+              <li>Can't solve analytically.</li>
+              <li>But we can use <strong>gradient descent!</strong></li>
+            </ul>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Gradient Descent in n Dimensions — Recall</div>
+            <div className="m4-two-col">
+              <div>
+                <div className="m4-flabel">Algorithm</div>
+                <div className="m4-pseudocode" style={{fontSize:'0.74rem'}}>{`1. 𝐱 ← random initial vector
+2. repeat:
+3.    𝐱 ← 𝐱 − α · ∇f(𝐱)
+4. until stopping criterion reached
+5. return 𝐱`}</div>
+              </div>
+              <div>
+                <div className="m4-flabel">Gradient of cost</div>
+                <Tex src="\nabla C = \begin{bmatrix} \partial C/\partial w_1 \\ \vdots \\ \partial C/\partial w_p \\ \partial C/\partial b_1 \\ \vdots \\ \partial C/\partial b_q \end{bmatrix}" block />
+              </div>
+            </div>
+            <div className="m4-warnbox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+              <strong>Problem:</strong> how do we calculate all these partial derivatives efficiently? <strong>Next:</strong> the secret sauce — <span style={{color:'#fbbf24', fontWeight:700}}>backpropagation!</span>
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNCostContour />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">What Does NN Learning Look Like? — Intuition</div>
+            <div style={{fontSize:'0.76rem', color:'var(--text-1)', lineHeight:1.7}}>
+              Imagine controlling a process using a <strong>panel of sliders</strong>:
+            </div>
+            <ul className="m4-bullets" style={{fontSize:'0.75rem', lineHeight:1.7, marginTop:'0.4rem'}}>
+              <li>Weights and biases are <strong>parameters</strong> — the sliders.</li>
+              <li>We want to minimise the cost C — how wrong the network is.</li>
+              <li>We want to reduce C by changing the weights and biases.</li>
+              <li>But <strong>some sliders have more effect than others</strong>.</li>
+              <li><em>How do we decide how far, and in which direction, to move each one?</em></li>
+            </ul>
+            <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.75rem'}}>
+              Answer: <strong>gradient descent</strong>. If we know ∇C(w, b) — i.e. ∂C/∂w for every w and ∂C/∂b for every b — we can take a step downhill on the cost surface.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'notation' && (
+        <div>
+          <NNNotationExplorer />
+
+          <div className="m4-two-col" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card">
+              <div className="m4-card-h">From Nets to Matrices — Activation Equation</div>
+              <div className="m4-flabel">Component form</div>
+              <Tex src="a^l_j = \sigma\!\left(\sum_k w^l_{jk}\, a^{l-1}_k + b^l_j\right)" block />
+              <VarTable vars={[
+                ['\\sigma', 'Logistic activation, applied element-wise'],
+                ['a^{l-1}_k', 'Previous-layer activation (input k)'],
+                ['w^l_{jk}', 'This-layer weight (from neuron k in layer l−1 to neuron j in layer l)'],
+                ['b^l_j', 'This-layer bias for neuron j'],
+              ]} />
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Beautiful and compact matrix form</div>
+              <Tex src="\boxed{a^l = \sigma(w^l a^{l-1} + b^l)}" block />
+              <div style={{fontSize:'0.73rem', color:'var(--text-2)', marginTop:'0.35rem'}}>
+                Let <Tex src="w^{l}" /> be a matrix of weights for layer <Tex src="l" />, with <Tex src="w_{jk}" /> in row <Tex src="j" /> and column <Tex src="k" />. Define <Tex src="a^{l}" /> and <Tex src="b^{l}" /> as you'd expect. <Tex src="\sigma" /> is applied element-wise.
+              </div>
+            </div>
+
+            <div className="m4-card">
+              <div className="m4-card-h">Separate the Linear Part — Define zˡ</div>
+              <Tex src="\boxed{a^l = \sigma(z^l), \quad z^l = w^l a^{l-1} + b^l}" block />
+              <div className="m4-flabel" style={{marginTop:'0.5rem'}}>Component form</div>
+              <Tex src="z^l_j = \sum_k w^l_{jk}\, a^{l-1}_k + b^l_j" block />
+              <div style={{fontSize:'0.73rem', color:'var(--text-2)', marginTop:'0.35rem'}}>
+                <Tex src="z^{l}_{j}" /> is the <strong>weighted input</strong> to the activation function for neuron <Tex src="j" /> in layer <Tex src="l" />.
+              </div>
+              <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+                Splitting linear from non-linear is convenient for backpropagation — many derivatives are expressed in terms of z rather than a.
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Single-Neuron Schematic — The Building Block</div>
+            <div className="m4-two-col">
+              <div>
+                <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+                  <li>Inputs x₁, x₂, …, xₙ enter via weights w₁, w₂, …, wₙ.</li>
+                  <li>The summing junction (⊕) computes z = ∑ wᵢxᵢ + b.</li>
+                  <li>Then σ produces a = σ(z), shown as an S-curve in the activation box.</li>
+                  <li>Threshold check: a &gt; 0.5? — classification verdict.</li>
+                </ul>
+              </div>
+              <div>
+                <NNSigmoidProperties />
+              </div>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Notation Cheat Sheet</div>
+            <table className="m4-ptable" style={{fontSize:'0.74rem'}}>
+              <thead><tr><th>Symbol</th><th>Meaning</th><th>Shape (typ.)</th></tr></thead>
+              <tbody>
+                <tr><td className="pk"><Tex src="w^l_{jk}"/></td><td>Weight from neuron k (layer l−1) to neuron j (layer l)</td><td>scalar</td></tr>
+                <tr><td className="pk"><Tex src="w^l"/></td><td>Weight matrix at layer l</td><td>(|l|, |l−1|)</td></tr>
+                <tr><td className="pk"><Tex src="b^l_j"/></td><td>Bias of neuron j in layer l</td><td>scalar</td></tr>
+                <tr><td className="pk"><Tex src="b^l"/></td><td>Bias vector at layer l</td><td>(|l|, 1)</td></tr>
+                <tr><td className="pk"><Tex src="a^l_j"/></td><td>Activation of neuron j in layer l</td><td>scalar</td></tr>
+                <tr><td className="pk"><Tex src="a^l"/></td><td>Activation vector at layer l</td><td>(|l|, 1)</td></tr>
+                <tr><td className="pk"><Tex src="z^l_j"/></td><td>Weighted input (pre-activation) of neuron j in layer l</td><td>scalar</td></tr>
+                <tr><td className="pk"><Tex src="z^l"/></td><td>Pre-activation vector at layer l</td><td>(|l|, 1)</td></tr>
+                <tr><td className="pk"><Tex src="\delta^l_j"/></td><td>Local error of neuron j in layer l — <Tex src="\partial C / \partial z^{l}_{j}" /></td><td>scalar</td></tr>
+                <tr><td className="pk"><Tex src="L"/></td><td>Index of the output layer</td><td>integer</td></tr>
+                <tr><td className="pk"><Tex src="\odot"/></td><td>Hadamard (element-wise) product</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sec === 'backprop' && (
+        <div>
+          <div className="m4-two-col">
+            <div className="m4-card">
+              <div className="m4-card-h">Stepping Down Hill — Per-Neuron Error</div>
+              <div style={{fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.65}}>
+                What is the contribution to the error at each <Tex src="z^l_j"/>?
+              </div>
+              <ul className="m4-bullets" style={{fontSize:'0.74rem', lineHeight:1.7, marginTop:'0.4rem'}}>
+                <li>If <Tex src="\partial C/\partial z^l_j"/> is <strong>large</strong>, there is an opportunity to make a significant change to C.</li>
+                <li>If <Tex src="\partial C/\partial z^l_j"/> is <strong>small</strong>, there is little opportunity.</li>
+                <li>It gives us an indication of how much "error" can be attributed to that neuron.</li>
+              </ul>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Definition — local error</div>
+              <Tex src="\boxed{\delta^l_j \equiv \frac{\partial C}{\partial z^l_j}}" block />
+            </div>
+            <div className="m4-card">
+              <div className="m4-card-h">The Goal — What We Want</div>
+              <div style={{fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.65}}>
+                Compute the partial derivatives (vector components of the direction of maximum slope) <Tex src="\partial C/\partial w"/> and <Tex src="\partial C/\partial b"/> of the cost function C with respect to all weights w and biases b.
+              </div>
+              <div className="m4-hr"/>
+              <div className="m4-flabel">Why it's hard</div>
+              <ul className="m4-bullets" style={{fontSize:'0.74rem'}}>
+                <li>A modern network has millions or billions of weights.</li>
+                <li>Cost depends on <em>every</em> weight via deeply nested compositions.</li>
+                <li>Naive chain-rule application is intractable — need to share work.</li>
+              </ul>
+              <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.73rem'}}>
+                <strong>Backpropagation</strong> reuses computation: the error at layer ℓ feeds the error at layer ℓ−1, etc. O(network size) per training example.
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNBackpropWalker />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">The Four Backpropagation Equations — Memorise These</div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'0.55rem'}}>
+              {[
+                {n:'BP-1', t:'Output-layer error', eq:'\\delta^L = \\nabla_a C \\odot \\sigma\'(z^L)', d:'Change at output layer in terms of change in cost.', col:'#fb7185'},
+                {n:'BP-2', t:'Back-propagate', eq:'\\delta^l = \\bigl((w^{l+1})^T \\delta^{l+1}\\bigr) \\odot \\sigma\'(z^l)', d:'Change at hidden node in terms of change at next layer!', col:'#a78bfa'},
+                {n:'BP-3', t:'Bias gradient', eq:'\\frac{\\partial C}{\\partial b^l_j} = \\delta^l_j', d:'Change in bias in terms of change at layer.', col:'#fbbf24'},
+                {n:'BP-4', t:'Weight gradient', eq:'\\frac{\\partial C}{\\partial w^l_{jk}} = a^{l-1}_k\\, \\delta^l_j', d:'Change in weight in terms of change at layer.', col:'#34d399'},
+              ].map(b => (
+                <div key={b.n} style={{padding:'0.7rem 0.85rem', background:`${b.col}11`, border:`1px solid ${b.col}55`, borderRadius:8}}>
+                  <div style={{fontSize:'0.72rem', color:b.col, fontFamily:'monospace', fontWeight:700, letterSpacing:'0.08em'}}>{b.n} · {b.t}</div>
+                  <div style={{margin:'0.45rem 0'}}><Tex src={b.eq} block/></div>
+                  <div style={{fontSize:'0.74rem', color:'var(--text-2)', lineHeight:1.55, fontStyle:'italic'}}>{b.d}</div>
+                </div>
+              ))}
+            </div>
+            <div className="m4-infobox" style={{marginTop:'0.65rem', fontSize:'0.75rem'}}>
+              We now know how to calculate ∇C(w, b)!
+              <Tex src="\nabla C = \begin{bmatrix} \partial C/\partial w_1 \\ \vdots \\ \partial C/\partial w_p \\ \partial C/\partial b_1 \\ \vdots \\ \partial C/\partial b_q \end{bmatrix}" block/>
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">The Backpropagation Algorithm — Step by Step</div>
+            <div style={{fontSize:'0.74rem', color:'var(--text-1)', lineHeight:1.7}}>
+              <div style={{marginBottom:'0.5rem'}}>
+                <strong style={{color:'#22d3ee'}}>1. Input x.</strong> Set the corresponding activation a¹ for the input layer.
+              </div>
+              <div style={{marginBottom:'0.5rem'}}>
+                <strong style={{color:'#22d3ee'}}>2. Feedforward.</strong> For each l = 2, 3, …, L compute:
+                <Tex src="z^l = w^l a^{l-1} + b^l \quad \text{and} \quad a^l = \sigma(z^l)" block />
+              </div>
+              <div style={{marginBottom:'0.5rem'}}>
+                <strong style={{color:'#fb7185'}}>3. Output error δᴸ.</strong> Compute:
+                <Tex src="\delta^L = \nabla_a C \odot \sigma'(z^L)" block />
+              </div>
+              <div style={{marginBottom:'0.5rem'}}>
+                <strong style={{color:'#fb7185'}}>4. Backpropagate the error.</strong> For each l = L−1, L−2, …, 2 compute:
+                <Tex src="\delta^l = \bigl((w^{l+1})^T \delta^{l+1}\bigr) \odot \sigma'(z^l)" block />
+              </div>
+              <div>
+                <strong style={{color:'#34d399'}}>5. Output.</strong> The gradient of the cost function is given by:
+                <Tex src="\frac{\partial C}{\partial w^l_{jk}} = a^{l-1}_k\, \delta^l_j \quad \text{and} \quad \frac{\partial C}{\partial b^l_j} = \delta^l_j" block />
+              </div>
+            </div>
+            <div className="m4-warnbox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+              <strong>Note the direction.</strong> Feedforward goes l = 2 → L (low to high). Backprop goes l = L−1 → 2 (high to low). The pre-computed a^l and z^l from feedforward are reused on the way back down.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'universal' && (
+        <div>
+          <div className="m4-card">
+            <div className="m4-card-h">Universal Function Approximation</div>
+            <ul className="m4-bullets" style={{fontSize:'0.78rem', lineHeight:1.7}}>
+              <li>We've talked a lot about <strong>expressiveness</strong> of a representation.</li>
+              <li>Success of neural nets comes from their <em>incredible</em> expressiveness.</li>
+              <li>➡ Neural networks can compute <strong>any continuous function</strong>, to <strong>any required precision</strong>.</li>
+              <li>➡ <strong>Universal function approximators.</strong></li>
+            </ul>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Formal Statement</div>
+            <div style={{fontSize:'0.77rem', color:'var(--text-1)', lineHeight:1.65}}>
+              For any target function <Tex src="f(x)"/> and desired accuracy <Tex src="\epsilon"/>, there exists a neural network with output <Tex src="g(x)"/> such that:
+            </div>
+            <Tex src="|g(x) - f(x)| < \epsilon \quad \text{for all } x" block />
+            <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7, marginTop:'0.5rem'}}>
+              <li>Holds for <strong>multiple inputs and multiple outputs</strong>.</li>
+              <li>Holds even with <strong>just one hidden layer!</strong></li>
+              <li>Not necessarily a <em>practical</em> approach.</li>
+              <li>More accuracy required ⇒ more nodes in the hidden layer.</li>
+            </ul>
+            <div className="m4-infobox" style={{marginTop:'0.55rem', fontSize:'0.75rem'}}>
+              See Nielsen's brilliant interactive proof — <em>"A visual proof that neural nets can compute any function"</em> (neuralnetworksanddeeplearning.com/chap4.html).
+            </div>
+          </div>
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNUniversalApprox />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">What the Theorem Does &amp; Doesn't Promise</div>
+            <table className="m4-ptable" style={{fontSize:'0.75rem'}}>
+              <thead><tr><th>Does promise</th><th>Doesn't promise</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td style={{verticalAlign:'top', color:'#34d399'}}>
+                    <ul style={{margin:0, paddingLeft:'1rem'}}>
+                      <li>g(x) <strong>exists</strong></li>
+                      <li>Arbitrary precision is achievable</li>
+                      <li>Even one hidden layer suffices</li>
+                      <li>Works for multi-input / multi-output</li>
+                    </ul>
+                  </td>
+                  <td style={{verticalAlign:'top', color:'#fb7185'}}>
+                    <ul style={{margin:0, paddingLeft:'1rem'}}>
+                      <li>That training will <em>find</em> g(x)</li>
+                      <li>That g(x) is small or efficient</li>
+                      <li>That gradient descent converges</li>
+                      <li>That ε can be reached in finite time</li>
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="m4-warnbox" style={{marginTop:'0.55rem', fontSize:'0.74rem'}}>
+              <strong>Existential, not constructive.</strong> The theorem says "such a network exists somewhere in parameter space" — finding it is what training (gradient descent + backprop) is for.
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Putting It All Together — The Full Pipeline</div>
+            <div style={{display:'flex', flexWrap:'wrap', gap:'0.5rem', justifyContent:'space-between', alignItems:'center'}}>
+              {[
+                {n:'1', t:'Architecture', c:'#22d3ee', d:'Pick layers'},
+                {n:'2', t:'Random init', c:'#a78bfa', d:'w, b'},
+                {n:'3', t:'Forward', c:'#34d399', d:'a^l = σ(z^l)'},
+                {n:'4', t:'Cost C(w,b)', c:'#fbbf24', d:'MSE'},
+                {n:'5', t:'Backprop', c:'#fb7185', d:'BP-1..4'},
+                {n:'6', t:'GD update', c:'#06b6d4', d:'w ← w − α∇C'},
+                {n:'7', t:'Repeat 3-6', c:'#ec4899', d:'Until converged'},
+              ].map((s, i, arr) => (
+                <div key={s.n} style={{display:'flex', alignItems:'center', gap:'0.4rem'}}>
+                  <div style={{padding:'0.6rem 0.75rem', background:`${s.c}14`, border:`1.5px solid ${s.c}66`, borderRadius:8, minWidth:80, textAlign:'center'}}>
+                    <div style={{fontSize:'0.7rem', color:s.c, fontFamily:'monospace', fontWeight:700}}>{s.n}</div>
+                    <div style={{fontSize:'0.72rem', color:'#fff', fontWeight:600, marginTop:'0.2rem'}}>{s.t}</div>
+                    <div style={{fontSize:'0.62rem', color:'var(--text-2)', marginTop:'0.15rem'}}>{s.d}</div>
+                  </div>
+                  {i < arr.length-1 && <span style={{color:'rgba(148,163,184,0.5)', fontSize:'1rem'}}>→</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sec === 'memorise' && (
+        <div>
+          <div style={{background:'linear-gradient(135deg,rgba(52,211,153,0.08) 0%,rgba(167,139,250,0.08) 100%)',border:'1px solid rgba(52,211,153,0.25)',borderRadius:12,padding:'0.75rem 1rem',marginBottom:'0.85rem'}}>
+            <div style={{fontSize:'0.66rem', color:'#34d399', fontFamily:'monospace', letterSpacing:'0.1em', fontWeight:700, marginBottom:'0.35rem'}}>✦ MEMORISATION HUB</div>
+            <div style={{fontSize:'1rem', color:'#fff', fontWeight:700, marginBottom:'0.3rem'}}>Active recall, not passive review</div>
+            <div style={{fontSize:'0.76rem', color:'var(--text-2)', lineHeight:1.6}}>
+              Flip flashcards before peeking. Take the quiz. Repeat after 1 day, 3 days, 7 days — spaced repetition crystallises memory. Top up with the Memory Cosmos tab for spatial cues.
+            </div>
+          </div>
+
+          <NNFlashcards />
+
+          <div style={{marginTop:'0.75rem'}}>
+            <NNQuiz />
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">Exam Mantras — Memorise Verbatim</div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'0.5rem'}}>
+              {[
+                {col:'#fb7185', t:'BP-1 (output error)', m:'"Cost gradient times sigma prime, at the output layer."', eq:'\\delta^L = \\nabla_a C \\odot \\sigma\'(z^L)'},
+                {col:'#a78bfa', t:'BP-2 (back-prop)', m:'"Transposed weights, times next-layer delta, gated by sigma prime."', eq:'\\delta^l = ((w^{l+1})^T \\delta^{l+1}) \\odot \\sigma\'(z^l)'},
+                {col:'#fbbf24', t:'BP-3 (bias gradient)', m:'"Bias gradient equals delta. Same neuron."', eq:'\\partial C/\\partial b^l_j = \\delta^l_j'},
+                {col:'#34d399', t:'BP-4 (weight gradient)', m:'"Pre-activation times post-error."', eq:'\\partial C/\\partial w^l_{jk} = a^{l-1}_k \\delta^l_j'},
+                {col:'#22d3ee', t:'Forward pass', m:'"Linear-then-sigma. Sigma element-wise."', eq:'a^l = \\sigma(w^l a^{l-1} + b^l)'},
+                {col:'#06b6d4', t:'Cost (quadratic)', m:'"Half mean squared error — the half kills the 2."', eq:'C(w,b) = \\frac{1}{2n}\\sum_x \\|y(x) - a\\|^2'},
+                {col:'#ec4899', t:'Universal approx.', m:'"For any continuous f and any epsilon, a NN g exists with |g − f| &lt; ε, even with one hidden layer."', eq:'|g(x) - f(x)| < \\epsilon'},
+                {col:'#fb7185', t:'σ self-derivative', m:'"Sigmoid prime equals sigmoid times one-minus-sigmoid. The gradient is free."', eq:'\\sigma\'(z) = \\sigma(z)(1 - \\sigma(z))'},
+              ].map(m => (
+                <div key={m.t} style={{padding:'0.7rem 0.85rem', background:`${m.col}10`, border:`1px solid ${m.col}55`, borderRadius:8}}>
+                  <div style={{fontSize:'0.72rem', color:m.col, fontFamily:'monospace', fontWeight:700, letterSpacing:'0.06em'}}>{m.t}</div>
+                  <div style={{margin:'0.45rem 0'}}><Tex src={m.eq} block /></div>
+                  <div style={{fontSize:'0.74rem', color:'var(--text-1)', lineHeight:1.55, fontStyle:'italic'}}>{m.m}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="m4-card" style={{marginTop:'0.75rem'}}>
+            <div className="m4-card-h">5-Step Memorisation Protocol</div>
+            <ul className="m4-bullets" style={{fontSize:'0.76rem', lineHeight:1.7}}>
+              <li><strong style={{color:'#22d3ee'}}>1.</strong> Read each equation aloud. Sound activates auditory + verbal memory.</li>
+              <li><strong style={{color:'#a78bfa'}}>2.</strong> Re-draw the network diagram from memory. Spatial encoding is sticky.</li>
+              <li><strong style={{color:'#34d399'}}>3.</strong> Connect each BP equation to its mantra — colour and metaphor anchor recall.</li>
+              <li><strong style={{color:'#fbbf24'}}>4.</strong> Run the Backprop Walker without peeking. Active retrieval &gt;&gt; passive review.</li>
+              <li><strong style={{color:'#fb7185'}}>5.</strong> Repeat with spacing — day 1, day 3, day 7. Spaced repetition crystallises memory.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ── EXAM VAULT — Themed Multi-Part Questions with Cone of Recall ──────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// Each question models the official short-answer style: a real-world scenario,
+// then 3–4 sub-parts. Every sub-part exposes five progressively-revealed hint
+// layers (the "Cone of Recall") so the learner can self-pace from gentle nudge
+// to full model answer.
+
+const HINT_TYPES = [
+  { key:'concept',  icon:'🧭', label:'Compass',  color:'#22d3ee', sub:'Which topic is in play' },
+  { key:'term',     icon:'🔑', label:'Key Term', color:'#a78bfa', sub:'The specific concept name' },
+  { key:'formula',  icon:'📐', label:'Diagram',  color:'#34d399', sub:'Relevant formula / picture' },
+  { key:'approach', icon:'🛠',  label:'Forge',    color:'#fbbf24', sub:'How to structure the answer' },
+  { key:'answer',   icon:'✓',  label:'Vault',    color:'#fb7185', sub:'Full model answer' },
+];
+
+const EXAM_QUESTIONS = [
+  {
+    id:'q1-karri-trading', title:'Trading Bot & Evolutionary Strategies',
+    lectures:['L3','L7','L10'], accent:'#22d3ee', icon:'₿', source:'Practice 2026 · Q1',
+    scenario:'Suppose Karri decides to build a trading bot that seeks to identify a trend from the previous 10 closing prices of an asset. In order to avoid any inherent bias on what constitutes a good trend, she decides to do this by optimising a nonlinear weighted average over a window of the previous 10 price signals to decide whether to buy.',
+    formula:'\\text{TREND}_t = \\frac{\\sum_{i=0}^{9} w_i\\, p_{t-i}}{\\sum_{i=0}^{9} w_i}',
+    setup:'Karri plans to optimise the bot using a historical data sequence. The bot starts with $100. Each day: if TREND > 0 the bot buys $10 of the asset; if TREND ≤ 0 the bot sells $10 (assuming it has at least $10 remaining).',
+    parts:[
+      { label:'a',
+        q:'What do we mean by a candidate solution for this problem? Is the hypothesis space finite or infinite? What is the dimension of the hypothesis space?',
+        hints:{
+          concept:'Lecture 3 — the Optimisation Framework. Three ingredients: Language (representation), Model (a candidate solution / hypothesis), and Metric. You are being asked about the Model side and the geometry of the space it lives in.',
+          term:'A "candidate solution" is the same thing as a "hypothesis" — a single point in the hypothesis space H. The dimension of H is the number of free parameters defining one hypothesis.',
+          formula:'H = \\{(w_0, w_1, \\ldots, w_9) : w_i \\in \\mathbb{R}\\} \\subseteq \\mathbb{R}^{10}',
+          approach:'(1) Spot what is being optimised → the weights w_0..w_9.  (2) State a candidate solution is one assignment of those ten numbers.  (3) Each w_i is a real number → uncountably infinite.  (4) Count parameters → dimension is 10.',
+          answer:'A candidate solution is a specific assignment of the ten weights (w_0, w_1, …, w_9) defining the weighted-average filter. Since each weight is a real number, the hypothesis space is INFINITE (in fact uncountable). Its DIMENSION is 10 — one degree of freedom per weight.'
+        }},
+      { label:'b',
+        q:'Suppose Karri wishes to use an evolutionary strategy to optimise the bot. Briefly describe three decisions that must be made as part of the implementation.',
+        hints:{
+          concept:'Lecture 10 — Evolution Strategies. ES has many tunable knobs: how many parents/offspring, what mutation distribution, what selection rule, what stopping condition, etc.',
+          term:'Common ES choices: parent count μ; offspring count λ; whether parents survive ((μ,λ) vs (μ+λ)); mutation operator (typically Gaussian, std σ); fitness function; termination criterion; initialisation distribution.',
+          formula:'(1)\\ \\mu, \\lambda \\quad (2)\\ \\sigma\\ \\text{(mutation std)}\\quad (3)\\ \\text{fitness} = \\text{final portfolio value}',
+          approach:'Pick any three from: (a) μ/λ population sizes, (b) (μ,λ) vs (μ+λ), (c) mutation σ (possibly adapted via One-Fifth Rule), (d) fitness/cost definition, (e) stopping criterion, (f) initial population.',
+          answer:'Three decisions: (1) Population sizes μ (parents) and λ (offspring). (2) Mutation operator — typically Gaussian with std σ, often adapted at runtime by the One-Fifth Rule. (3) Selection scheme — (μ, λ) where parents are discarded, or (μ + λ) where parents compete with offspring. (Other valid choices: fitness function, termination criterion, initial distribution.)'
+        }},
+      { label:'c',
+        q:'Briefly explain the difference between a (μ, λ) evolutionary strategy and a (μ + λ) strategy.',
+        hints:{
+          concept:'Lecture 10. Both produce λ children from μ parents. The difference is in WHO is allowed to survive into the next generation.',
+          term:'(μ, λ): parents are DISCARDED. Only the λ children compete; the top μ children form the next generation. (μ + λ): parents and children are MERGED into one pool; the top μ of the (μ + λ) survive.',
+          formula:'(\\mu, \\lambda):\\ P_{next} = \\text{best } \\mu \\text{ of } \\lambda \\text{ children}\\\\ (\\mu + \\lambda):\\ P_{next} = \\text{best } \\mu \\text{ of } (\\lambda \\text{ children} \\cup \\mu \\text{ parents})',
+          approach:'State which pool selection draws from in each scheme. Mention the trade-off: (μ,λ) is more exploratory (the elite always dies), (μ+λ) is more exploitative (elites persist) but risks premature convergence.',
+          answer:'In (μ, λ): only the λ offspring form the candidate pool for the next generation; all μ parents are unconditionally discarded. In (μ + λ): parents and offspring compete together; the best μ of the merged (μ + λ) survive. Effect: (μ, λ) is more exploratory because elites die each generation — useful for noisy or dynamic fitness landscapes. (μ + λ) is more exploitative because the best-ever solution is always preserved — faster convergence but higher risk of getting stuck.'
+        }},
+      { label:'d',
+        q:'Assuming the dimensionality of the space is d, briefly explain the key differences between (i) a Hooke-Jeeves search, (ii) a steepest ascent hill climb with sample size n=2d, (iii) a steepest ascent hill climb with replacement where n=2d, (iv) a (1, 2d) evolutionary strategy, (v) a (1 + 2d) evolutionary strategy.',
+        hints:{
+          concept:'Lectures 7 (direct methods) and 10 (ES). Compare on three axes: HOW neighbours are sampled, WHETHER the parent can survive, WHETHER worse moves are ever accepted.',
+          term:'HJ = direct method with PATTERN moves combining recent successes. SAHC = sample n neighbours and take the best. With replacement = always move (no improvement check). (1, λ) = no parent survival. (1 + λ) = parent competes with offspring.',
+          formula:'\\text{HJ: axes-aligned explore + pattern moves combining wins.}\\\\ \\text{SAHC: best of 2d samples; move only if better.}\\\\ \\text{SAHC-R: best of 2d samples; always move.}\\\\ (1, 2d):\\ \\text{parent discarded; best child survives.}\\\\ (1 + 2d):\\ \\text{best of (parent, 2d children) survives.}',
+          approach:'For each method give: (1) how neighbours are generated, (2) is parent kept, (3) are worse moves accepted. The five methods sit on a spectrum from deterministic & elitist (HJ) to stochastic & non-elitist ((1, 2d)).',
+          answer:'(i) Hooke-Jeeves: deterministic; alternates axis-aligned exploratory moves with PATTERN moves that combine recent successes. (ii) Steepest-ascent HC (n=2d): samples 2d random neighbours, picks the best, accepts ONLY IF better than current. (iii) SAHC with replacement: same as (ii) but always accepts the best of the 2d samples — even if worse — making it pure random walk biased by sampling. (iv) (1, 2d) ES: parent produces 2d children by Gaussian mutation; parent is unconditionally discarded; best child becomes next parent (can be worse). (v) (1 + 2d) ES: parent competes with 2d children; best of all 2d+1 survives — current best is always preserved (elitist).'
+        }},
+    ]
+  },
+  {
+    id:'q2-sigmoid-graceful', title:'Sigmoid Activation & Graceful Degradation',
+    lectures:['L1','L13'], accent:'#a78bfa', icon:'σ', source:'Practice 2026 · Q2',
+    scenario:'Karri is now interested in a different problem — designing the activation function for a single neuron in a perceptron-style classifier.',
+    setup:'She wants the neuron to handle noisy or partially-corrupted inputs gracefully, rather than failing abruptly when an input drifts past a threshold.',
+    parts:[
+      { label:'a',
+        q:'One of the goals of soft computing is graceful degradation. What do we mean by graceful degradation? Give a practical example where graceful degradation is important. Using your example, why might you expect a network of neurons with sigmoid activation functions to provide better degradation properties than perceptrons with step functions?',
+        hints:{
+          concept:'Lecture 1–2 — soft computing aims to mimic biological systems whose performance degrades smoothly under stress. Lecture 13 — comparing step vs sigmoid as activation functions.',
+          term:'Graceful degradation = performance drops smoothly with damage/noise rather than catastrophically. Step function = discontinuous (binary output). Sigmoid = smooth, bounded in (0,1), differentiable everywhere.',
+          formula:'\\text{Step}(z) = \\begin{cases}1 & z > 0 \\\\ 0 & z \\le 0\\end{cases} \\qquad \\sigma(z) = \\frac{1}{1+e^{-z}}',
+          approach:'(1) Define graceful degradation. (2) Pick a concrete example (handwriting OCR, faulty sensor, biological neural damage). (3) Explain that a small input perturbation barely changes a sigmoid output near the bulk of the curve, but flips a step function entirely at the threshold.',
+          answer:'Graceful degradation means a system\'s performance declines SMOOTHLY rather than catastrophically when conditions deteriorate (noise, damage, missing data). Example: handwritten digit recognition — a slightly smudged "7" should still be recognised as a 7 (perhaps with lower confidence), not abruptly misclassified. With a STEP function, a tiny perturbation that pushes z across the threshold causes the output to flip from 0 to 1 — a catastrophic change. With a SIGMOID, a tiny perturbation changes σ(z) only slightly (its derivative is bounded by 0.25), so the output decays smoothly and downstream layers can integrate this small change. Differentiability also lets us train via gradient descent.'
+        }},
+      { label:'b',
+        q:'Consider a neuron that uses the sigmoid activation function a(z) = z / (1 + |z|). Assume you wish the neuron to have an acceptance region for all values z > T for some threshold T. What values of a(z) might you use to indicate that a sample z_0 is accepted? Draw the activation function, indicating the acceptance region.',
+        hints:{
+          concept:'Lecture 13 — the activation outputs a "confidence". An acceptance region is the set of outputs corresponding to "yes, accept" — usually defined by a threshold on a(z).',
+          term:'Algebraic sigmoid a(z) = z/(1+|z|): ranges over (−1, 1), is monotonic increasing, with a(0) = 0. Acceptance region in OUTPUT space = a(z) > a(T).',
+          formula:'a(z) = \\frac{z}{1+|z|} \\in (-1, 1),\\quad a(T) = \\frac{T}{1+|T|}\\\\ \\text{Accept iff } a(z) > a(T) \\Leftrightarrow z > T.',
+          approach:'(1) Evaluate a(T). (2) State the rule "accept iff a(z) > a(T)". (3) Sketch a(z): S-curve through origin with asymptotes y = ±1; mark vertical line z = T and horizontal a(T); shade the region z > T (equivalently a(z) > a(T)).',
+          answer:'Accept the sample iff a(z_0) > a(T), where a(T) = T/(1+|T|). Since a is strictly monotonic increasing, this is equivalent to z_0 > T. Diagram: an S-shaped algebraic sigmoid passing through the origin, with horizontal asymptotes at y = +1 and y = −1. Mark the point (T, a(T)) on the curve; draw a vertical dashed line at z = T and a horizontal dashed line at a(T); shade the region to the RIGHT of z = T (equivalently ABOVE a(T)) — that is the acceptance region.'
+        }},
+      { label:'c',
+        q:'Suppose you wish to use a bias input to move the threshold to the origin, so that the acceptance region is z > 0. What activation function would you use? Draw a diagram depicting the neuron.',
+        hints:{
+          concept:'Lecture 13 — the "bias trick": adding a fixed bias term b = −T shifts the activation horizontally so the decision boundary sits at the origin.',
+          term:'Bias trick: feed an extra "constant 1" input with weight b = −T. The pre-activation becomes z + b = z − T, so the sigmoid is centred at z = T.',
+          formula:'a\'(z) = a(z - T) = \\frac{z - T}{1 + |z - T|}\\\\ \\text{Acceptance: } a\'(z) > 0 \\iff z > T.',
+          approach:'(1) Define the new activation a\'(z) = (z−T)/(1+|z−T|). (2) Draw the neuron: input z; constant input 1 weighted by b = −T; summing node Σ producing z\' = z + b; activation a\'(·); output. (3) Note acceptance now corresponds to z\' > 0, equivalent to original z > T.',
+          answer:'Use the shifted activation a\'(z) = a(z − T) = (z − T)/(1 + |z − T|). Diagram of the neuron: input z (top); a constant input of 1 (bottom) multiplied by a bias weight b = −T; both feed into a summation node Σ which computes z\' = z − T; the sum passes through the activation a\'(·); the result is the output. Acceptance region: a\'(z) > 0 ⇔ z\' > 0 ⇔ z > T — the threshold has been shifted to the origin.'
+        }},
+    ]
+  },
+  {
+    id:'q3-liam-hyperparams', title:'Hyperparameter Tuning & Stochastic Search',
+    lectures:['L3','L6','L9'], accent:'#fbbf24', icon:'⚙', source:'Author · Q3',
+    scenario:'Liam is tuning a recommendation engine that exposes four continuous hyperparameters — learning rate η, dropout p, regularisation λ, and embedding dimension scale s. Each combination must be evaluated by retraining the model overnight and measuring click-through rate (CTR) on a held-out validation set, which takes ~6 hours per evaluation.',
+    setup:'Liam can run roughly 20 evaluations per week. CTR appears to be a noisy, multi-modal function of the hyperparameters with no analytic form.',
+    parts:[
+      { label:'a',
+        q:'Identify the three ingredients of the optimisation framework as they apply to Liam\'s problem. Briefly state each one.',
+        hints:{
+          concept:'Lecture 3 — every optimisation problem has the same three ingredients. Map them onto Liam\'s setting.',
+          term:'Language (representation of hypotheses), Model (a single candidate hypothesis), Metric (evaluation function f : H → ℝ).',
+          formula:'\\text{Language: } H \\subseteq \\mathbb{R}^4 \\quad \\text{Model: } (\\eta, p, \\lambda, s) \\in H \\quad \\text{Metric: } f(\\cdot) = \\text{CTR}',
+          approach:'For each ingredient, name it AND tie it to Liam\'s problem. Language → 4-D real hypothesis space. Model → a specific (η, p, λ, s) tuple. Metric → measured CTR on validation.',
+          answer:'Language: a 4-dimensional real-valued hypothesis space H ⊆ ℝ⁴ — every point is a candidate configuration. Model: a specific instance (η, p, λ, s) ∈ H — one set of hyperparameters Liam might try. Metric: the validation CTR after training with that configuration; f : H → ℝ, where higher is better. Liam wants argmax of f.'
+        }},
+      { label:'b',
+        q:'Briefly explain why Liam cannot directly use gradient descent to find the best hyperparameter setting.',
+        hints:{
+          concept:'Lecture 6 — gradient descent requires ∇f at every query point. Lecture 3 — Liam\'s metric is a black-box evaluation, not a closed-form function.',
+          term:'Gradient descent requires the function to be (a) differentiable and (b) cheap to query its gradient. Black-box / simulator-based fitness has neither.',
+          formula:'\\nabla f = \\bigl[\\partial f/\\partial \\eta, \\partial f/\\partial p, \\partial f/\\partial \\lambda, \\partial f/\\partial s\\bigr]^T \\quad \\text{(unavailable)}',
+          approach:'List the reasons gradient descent fails: (1) no analytic form for f, so no symbolic gradient; (2) approximating ∇f by finite differences requires 2d extra evaluations per step (≥ 8) — way too expensive; (3) CTR appears multi-modal so even a successful gradient would only find a local optimum; (4) noise in CTR measurement makes finite-difference estimates unreliable.',
+          answer:'Gradient descent assumes f is differentiable and ∇f is cheap to compute. Liam\'s f (CTR after a 6-hour training run) has NO analytic form — gradients must be approximated by finite differences, requiring 2d = 8 extra evaluations per step (48 hours per gradient estimate). Worse: CTR is noisy and multi-modal, so even an accurate gradient would only find a local maximum, and finite-difference estimates would be drowned in noise. A derivative-free method (HC, SA, ILS, ES) is required.'
+        }},
+      { label:'c',
+        q:'Briefly compare Hill Climbing with Random Restarts to Simulated Annealing as alternatives for Liam\'s problem.',
+        hints:{
+          concept:'Lecture 9 — single-state stochastic global optimisation. Both maintain ONE candidate solution but differ in how they escape local optima.',
+          term:'HC with restarts: do local HC to convergence, jump to a random new point, repeat. SA: HC variant that PROBABILISTICALLY accepts worse moves with probability exp(ΔQ / t), where t decreases over time.',
+          formula:'\\text{HC+R: inner HC loop + outer random-restart loop.}\\\\ \\text{SA: } P(\\text{accept worse } R) = \\exp\\bigl((Q(R) - Q(S))/t\\bigr)\\\\ \\text{cooling: } t \\to 0 \\text{ over iterations.}',
+          approach:'Compare on: (1) memory — both use one state; (2) escape mechanism — HC+R restarts globally, SA accepts bad moves locally; (3) parameter tuning — HC+R needs restart count, SA needs cooling schedule; (4) exploration vs exploitation profile over time.',
+          answer:'Hill Climbing with Random Restarts: runs a vanilla hill climb until convergence (gradient zero or no improvement), records the best, then teleports to a fresh random starting point and repeats. Pure exploration is global (random restart) but no exploration once inside a basin. Simulated Annealing: at each step, generate a neighbour R; if R is better accept it; if R is worse accept with probability P = exp((Q(R) − Q(S))/t). The temperature t starts high (mostly random walk — explores) and decreases towards 0 (mostly hill climb — exploits). Difference: HC+R exploration is discontinuous (jumps), SA exploration is local but continuous (probabilistic accept). For Liam — with only 20 evals/week — SA may make better use of each evaluation; HC+R risks wasting samples re-exploring already-mapped basins.'
+        }},
+      { label:'d',
+        q:'In Simulated Annealing, describe the role of the cooling schedule.',
+        hints:{
+          concept:'Lecture 9 — the temperature t controls the exploration/exploitation trade-off; the cooling schedule is how t decreases over time.',
+          term:'Cooling schedule = function t(n) mapping iteration n → temperature. Geometric: t_{n+1} = α t_n (0 < α < 1). Logarithmic: t_n = T_0 / log(n+1) (theoretical guarantees but slow).',
+          formula:'P(\\text{accept worse}) = e^{(Q(R) - Q(S))/t}\\\\ t \\to \\infty: P \\to 1 \\text{ (random walk)}\\\\ t \\to 0: P \\to 0 \\text{ (pure HC)}',
+          approach:'Explain that (1) high t early = exploration; (2) low t late = exploitation; (3) too fast cooling = local optima trap; (4) too slow = wasted iterations; (5) the schedule is the chief design choice in SA.',
+          answer:'The cooling schedule t(n) controls how the acceptance probability of worse moves decreases over time. Early on (high t) the algorithm accepts nearly any move — heavy EXPLORATION, escaping local optima. Late (low t) only improving moves are accepted — pure EXPLOITATION, refining the current candidate. If cooling is too FAST the algorithm freezes into the first local optimum it finds; if too SLOW it wastes evaluations on random search. Common schedules: geometric (t_{n+1} = α t_n with α ≈ 0.95) — fast and simple; logarithmic — provides theoretical convergence to global optimum but is far too slow in practice.'
+        }},
+    ]
+  },
+  {
+    id:'q4-mira-jobshop', title:'Job Shop Scheduling',
+    lectures:['L4'], accent:'#fb7185', icon:'⚙', source:'Author · Q4',
+    scenario:'Mira manages a print shop with 5 jobs and 3 machines: a cutter, a printer, and a binder. Each job has a fixed sequence (e.g. cut → print → bind, or print → cut → bind depending on the product) and a known processing time on each machine.',
+    setup:'Mira wants to minimise the MAKESPAN — the total time from the start of the first operation to the completion of the last operation across all jobs.',
+    parts:[
+      { label:'a',
+        q:'How large is the solution space for Mira\'s problem? Express your answer in terms of n (number of jobs) and m (number of machines), then evaluate it for her instance. Comment on tractability.',
+        hints:{
+          concept:'Lecture 4 — Job Shop Scheduling has a famously combinatorial solution space.',
+          term:'For n jobs and m machines, each machine has its own permutation of n jobs → n! orderings per machine, independent → (n!)^m total.',
+          formula:'|H| = (n!)^m\\\\ \\text{Mira: } n=5,\\ m=3 \\Rightarrow (5!)^3 = 120^3 = 1{,}728{,}000',
+          approach:'(1) State the formula (n!)^m. (2) Substitute. (3) Compute. (4) Discuss whether exhaustive enumeration is feasible — for small n maybe, but JSSP is NP-hard in general.',
+          answer:'The solution space has size (n!)^m — each of the m machines independently orders n jobs. For Mira: (5!)^3 = 120^3 = 1,728,000 candidate schedules. Exhaustive enumeration is just about tractable here (under 2 million), but the formula grows EXPLOSIVELY: 7 jobs on 5 machines is already ≈ 10^17. JSSP is NP-hard in general — heuristic search (dispatching rules, local search, metaheuristics) is required for realistic instances.'
+        }},
+      { label:'b',
+        q:'Briefly describe two dispatching rules Mira could use to construct a feasible schedule quickly, and the situation in which each is most appropriate.',
+        hints:{
+          concept:'Lecture 4 — dispatching rules are GREEDY constructive heuristics that pick the next job for an idle machine based on a simple priority.',
+          term:'Common rules: SPT (Shortest Processing Time first), LPT (Longest first), EDD (Earliest Due Date), FIFO (First In First Out), MWKR (Most Work Remaining), CR (Critical Ratio).',
+          formula:'\\text{SPT: pick job with smallest } pt\\\\ \\text{EDD: pick job with smallest } dd\\\\ \\text{MWKR: pick job with largest remaining work}',
+          approach:'Pick any TWO rules. For each: (a) state the priority, (b) say when it works best (SPT minimises mean flow time; EDD minimises maximum lateness; MWKR is often good for makespan).',
+          answer:'Two examples: SPT (Shortest Processing Time) — whenever a machine becomes idle, pick the ready job with the smallest processing time on that machine. SPT minimises the AVERAGE flow time and works well when total throughput matters more than meeting individual deadlines. EDD (Earliest Due Date) — pick the ready job with the earliest due date. EDD minimises the MAXIMUM LATENESS and is appropriate when missing deadlines carries a penalty. Other valid pairs: FIFO + MWKR, LPT + CR, etc.'
+        }},
+      { label:'c',
+        q:'Briefly explain what the disjunctive graph model represents, and why it is useful for JSSP.',
+        hints:{
+          concept:'Lecture 4 — the disjunctive graph is a standard way to encode a JSSP instance as a combinatorial graph problem.',
+          term:'Nodes = operations (one per job–machine pair). Conjunctive arcs (fixed direction) = precedence within a job. Disjunctive arcs (undirected pairs) = conflicts between operations sharing the same machine. A SCHEDULE = an orientation of all disjunctive arcs.',
+          formula:'G = (V, A \\cup E)\\\\ A: \\text{conjunctive (job precedence)}\\\\ E: \\text{disjunctive (machine conflicts)}\\\\ \\text{Makespan} = \\text{longest path in oriented } G',
+          approach:'(1) Describe the graph components. (2) Explain that orienting disjunctive arcs = choosing job order on each machine. (3) State that makespan = longest path. (4) Note this lets us use graph algorithms (longest-path eval, neighbourhood moves) for JSSP.',
+          answer:'The disjunctive graph G = (V, A ∪ E) represents a JSSP instance: nodes V are individual operations (one per job-machine pair); conjunctive arcs A (fixed direction) encode the within-job precedence; disjunctive arc pairs E (initially undirected) connect every pair of operations that compete for the same machine. A complete SCHEDULE corresponds to orienting every disjunctive arc — i.e. choosing the processing order on each machine. The MAKESPAN equals the longest path through the resulting directed graph. The model is useful because (1) it cleanly captures both job precedence and machine conflicts, (2) it lets us compute makespan via longest-path algorithms, and (3) standard local-search neighbourhoods (e.g. N1 — swap adjacent operations on a critical path) are natural to define on the graph.'
+        }},
+      { label:'d',
+        q:'Mira benchmarks two heuristics against the known optimum of a small instance. Explain what the Relative Percentage Deviation (RPD) measures and why it is preferred over the raw makespan difference.',
+        hints:{
+          concept:'Lecture 4 — RPD is a normalised quality metric for comparing schedulers across instances of different sizes.',
+          term:'RPD = 100 × (Cmax_heuristic − Cmax_optimum) / Cmax_optimum.',
+          formula:'\\text{RPD} = 100 \\times \\frac{C_{\\max}^{\\text{heur}} - C_{\\max}^{\\text{opt}}}{C_{\\max}^{\\text{opt}}}\\ \\%',
+          approach:'(1) Give the formula. (2) Explain it normalises by the optimum so values are comparable across instances of different scale. (3) RPD = 0 ⇒ optimal; RPD = 10 ⇒ 10% above optimum. (4) Raw differences cannot be averaged sensibly across instances of different scales.',
+          answer:'RPD measures how much a heuristic\'s makespan exceeds the known optimum, as a PERCENTAGE of the optimum: RPD = 100 × (Cmax_heur − Cmax_opt) / Cmax_opt. It is preferred over the raw difference because raw differences cannot be sensibly aggregated across instances of different scales — a 10-unit gap on a 50-unit instance is a 20% miss, while the same 10-unit gap on a 1000-unit instance is only 1%. Reporting RPD lets us average performance over a benchmark set; RPD = 0 means the heuristic matched the optimum.'
+        }},
+    ]
+  },
+  {
+    id:'q5-aroha-genetic', title:'Genetic Algorithm for a Game AI',
+    lectures:['L11'], accent:'#34d399', icon:'☷', source:'Author · Q5',
+    scenario:'Aroha is evolving the decision policy of a fighting-game AI. Each candidate is encoded as a 24-bit binary chromosome controlling thresholds for "attack", "block", "dodge" priorities. Fitness is measured by win-rate over 50 matches against a fixed opponent.',
+    setup:'She runs a generational GA with population size 100 and runs for 200 generations.',
+    parts:[
+      { label:'a',
+        q:'Explain why Aroha\'s problem is a good candidate for a Genetic Algorithm rather than a gradient method.',
+        hints:{
+          concept:'Lecture 11 — GAs handle discrete and combinatorial spaces where gradients do not exist.',
+          term:'GA fits because: (1) representation is BINARY (discrete) so no gradient; (2) fitness comes from a stochastic SIMULATION (50 matches) so noisy and black-box; (3) the search space (2^24 ≈ 16.7M) is too large for exhaustive enumeration.',
+          formula:'|H| = 2^{24} \\approx 1.68 \\times 10^7 \\quad \\text{fitness: noisy black-box}',
+          approach:'List the disqualifiers for gradient methods (no gradient, discrete) and the matching strengths of GA (population diversity, crossover combines partial solutions, mutation explores).',
+          answer:'Three reasons: (1) The chromosome is BINARY — there is no continuous gradient ∇f to follow. (2) Fitness is determined by a noisy STOCHASTIC simulation (50 matches), so finite-difference gradient estimates would be drowned in noise. (3) The space has 2^24 ≈ 16.7 million candidates — too large to enumerate but small enough that population-based crossover/mutation can effectively recombine successful "building blocks". GAs handle all three: they need only fitness evaluations (black-box), they work on discrete genomes, and they recombine partial solutions through crossover.'
+        }},
+      { label:'b',
+        q:'Briefly compare one-point crossover, two-point crossover, and uniform crossover. Which would you recommend for Aroha\'s 24-bit chromosome and why?',
+        hints:{
+          concept:'Lecture 11 — crossover operators differ in their POSITIONAL BIAS: how strongly they preserve adjacent gene blocks ("schemata").',
+          term:'1-point: pick one crossover point c, swap tails. 2-point: pick c, d; swap the middle segment. Uniform: independent per-gene coin flip (swap or not).',
+          formula:'1\\text{pt: } v\' = v_{1..c}\\,w_{c+1..L},\\ w\' = w_{1..c}\\,v_{c+1..L}\\\\ 2\\text{pt: ring view; cut at c,d; swap middle arc}\\\\ \\text{Uniform: } v\'_i = v_i \\text{ or } w_i \\text{ w.p. } 1/2',
+          approach:'For each operator describe: (1) the mechanic, (2) the positional bias (which adjacent genes tend to stay together). Recommend based on whether Aroha\'s genes have meaningful adjacency (probably not — 24 bits encoding 3 thresholds).',
+          answer:'1-point: choose c ∈ [1, L−1]; child v\' takes v[1..c] then w[c+1..L]. Strong positional bias — genes at opposite ends are almost always separated. 2-point: choose c < d; swap the middle segment. Visualised as a ring, every gene is "equidistant" — reduces positional bias. Uniform: per-bit coin flip selects from v or w independently; NO positional bias. For Aroha: the 24 bits are split into 3 logical sub-fields of 8 bits each, so adjacency MATTERS within a sub-field. I would recommend TWO-POINT crossover — it preserves contiguous blocks better than uniform but avoids the strong endpoint bias of one-point.'
+        }},
+      { label:'c',
+        q:'Briefly compare fitness-proportionate (roulette) selection with tournament selection. Which is more robust when fitness values are noisy?',
+        hints:{
+          concept:'Lecture 11 — selection schemes differ in how strongly they discriminate by fitness, and how robust they are to noisy fitness estimates.',
+          term:'Roulette: P(pick i) = f_i / Σ f_j — sensitive to scale, dominated by super-individuals. Tournament: pick k random individuals, return the best — depends only on RANK, not absolute values.',
+          formula:'\\text{Roulette: } P_i = \\frac{f_i}{\\sum_j f_j}\\\\ \\text{Tournament}(k=2): \\text{pick 2 random, return better}',
+          approach:'(1) Describe each operator. (2) For noise robustness: tournament uses only RANK (relative comparison), so absolute scale of noise doesn\'t bias selection pressure as long as the better individual is correctly identified more than 50% of the time.',
+          answer:'Roulette: probability of selection proportional to absolute fitness, P_i = f_i / Σ_j f_j. Very sensitive to fitness scale and to "super-individuals" (one outlier can dominate the spinner). Tournament: pick k random individuals (typically k = 2) and return the one with the best fitness. Depends only on RANK comparisons, not absolute values. For NOISY fitness (Aroha\'s 50-match win-rate): tournament is more robust because (a) it does not amplify a single noisy high estimate, (b) selection pressure is controlled by k and is independent of the fitness scale, and (c) as long as the better candidate beats the noise threshold more than 50% of the time, tournament still selects correctly on average.'
+        }},
+      { label:'d',
+        q:'Aroha is considering whether to use elitism. What is elitism, and what is the trade-off?',
+        hints:{
+          concept:'Lecture 11 — elitism unconditionally copies the top-k individuals from one generation to the next.',
+          term:'Elitism: the best e ≥ 1 individuals survive verbatim; the remaining popsize − e slots are filled by selection + crossover + mutation as usual.',
+          formula:'P_{next} = \\text{top-}e(P_{cur}) \\cup \\text{(popsize}-e\\text{ children)}\\\\ \\text{Guarantees: best fitness is monotone non-decreasing.}',
+          approach:'(1) Define elitism. (2) Pro: guarantees the best-so-far never gets lost; monotone improvement. (3) Con: reduces diversity → premature convergence on multi-modal landscapes. (4) Tuning e: small (1–5) usually best.',
+          answer:'Elitism: at each generation, the top e ≥ 1 individuals (by fitness) are copied UNCHANGED into the next generation; the remaining popsize − e slots are filled by ordinary selection + crossover + mutation. Pro: guarantees the best-ever fitness is MONOTONE non-decreasing — you can never lose your best solution to bad luck during mutation. Con: reduces effective diversity (the same elite occupies several slots in the breeding pool), which can cause premature convergence on a local optimum. Typical compromise: small e (1–5 out of 100) gives the safety net without crushing diversity.'
+        }},
+    ]
+  },
+  {
+    id:'q6-tane-swarm', title:'Particle Swarm vs Differential Evolution',
+    lectures:['L12'], accent:'#06b6d4', icon:'∞', source:'Author · Q6',
+    scenario:'Tane is optimising an aerospace wing-profile design with 8 continuous parameters. The cost function is a CFD (computational fluid dynamics) simulation that takes 20 minutes per evaluation and is known to be multi-modal with several basins of attraction.',
+    setup:'He has heard that Particle Swarm Optimisation and Differential Evolution are both well-suited to continuous, multi-modal problems and wants to choose between them.',
+    parts:[
+      { label:'a',
+        q:'Briefly explain why a population-based method is preferable to a single-state method (e.g. SA) for Tane\'s problem.',
+        hints:{
+          concept:'Lecture 12 — population-based methods maintain DIVERSITY explicitly, which helps multi-modal landscapes and parallel evaluation.',
+          term:'Single-state = one candidate at a time. Population-based = many candidates. Diversity = candidates spread across different regions of H.',
+          formula:'\\text{Single-state at any moment: } |S| = 1\\\\ \\text{Population: } |P| = N \\gg 1',
+          approach:'List the advantages: (1) implicit diversity covers multiple basins; (2) parallel CFD evaluation cuts wall-clock time; (3) social/cooperative info-sharing (PSO global best, DE difference vectors) does not exist for single-state; (4) avoids the cooling-schedule fragility of SA.',
+          answer:'A population maintains DIVERSITY of candidates — they sit in many basins of attraction at once, so the algorithm can explore multiple promising regions in parallel. For Tane\'s multi-modal landscape this dramatically reduces the chance of getting trapped in a bad basin. Practical bonus: each generation\'s N CFD evaluations are INDEPENDENT and can be run in parallel on a cluster, slashing wall-clock time. Finally, both PSO and DE leverage information across the population (global best, difference vectors) that simply does not exist in a single-state method.'
+        }},
+      { label:'b',
+        q:'State the velocity-update rule used in Particle Swarm Optimisation, and briefly explain each term.',
+        hints:{
+          concept:'Lecture 12 — PSO updates each particle\'s velocity using three components: inertia, cognitive (own best), and social (swarm best).',
+          term:'v_{i,t+1} = α·v_{i,t} + β·r_1·(p_i − x_i) + γ·r_2·(g − x_i). Then x_{i,t+1} = x_{i,t} + v_{i,t+1}.',
+          formula:'\\vec{v}_i^{\\,t+1} = \\alpha\\,\\vec{v}_i^{\\,t} + \\beta\\,r_1\\,(\\vec{p}_i - \\vec{x}_i^{\\,t}) + \\gamma\\,r_2\\,(\\vec{g} - \\vec{x}_i^{\\,t})\\\\ \\vec{x}_i^{\\,t+1} = \\vec{x}_i^{\\,t} + \\vec{v}_i^{\\,t+1}',
+          approach:'Write the equation, then label each term: inertia (α — keep going), cognitive (β — pulled to own best p_i), social (γ — pulled to swarm best g). r_1, r_2 ∈ U(0,1) add stochasticity.',
+          answer:'Velocity update: v_i^{t+1} = α v_i^{t} + β r_1 (p_i − x_i^{t}) + γ r_2 (g − x_i^{t}); position update: x_i^{t+1} = x_i^{t} + v_i^{t+1}. Terms: α v_i^t — INERTIA, retains previous direction (exploration). β r_1 (p_i − x_i) — COGNITIVE component, pulls the particle towards its OWN best position p_i seen so far. γ r_2 (g − x_i) — SOCIAL component, pulls towards the GLOBAL best g of the entire swarm. r_1, r_2 are independent U(0,1) random numbers per update, providing stochasticity. Constants α, β, γ trade off exploration (α high) vs convergence (β, γ high).'
+        }},
+      { label:'b2',
+        q:'Briefly explain the Differential Evolution mutation operator.',
+        hints:{
+          concept:'Lecture 12 — DE creates a trial vector by adding the SCALED DIFFERENCE of two randomly chosen population members to a third.',
+          term:'DE/rand/1: v = a + F · (b − c) where a, b, c are distinct random individuals from the population. F ∈ (0, 2] is the scaling factor.',
+          formula:'\\vec{v}_i = \\vec{a} + F\\,(\\vec{b} - \\vec{c})\\\\ a, b, c \\in P,\\ a \\ne b \\ne c \\ne \\vec{x}_i\\\\ F \\in (0, 2]',
+          approach:'(1) State the formula. (2) Explain the geometric intuition: (b − c) is a vector drawn from the population\'s own DISTRIBUTION, so the step scale adapts to current diversity. (3) Mention the optional binomial crossover with the parent x_i.',
+          answer:'For each parent x_i pick three DISTINCT random population members a, b, c (none equal to x_i). Form the mutant vector v_i = a + F · (b − c) where F is a user-set scaling factor (commonly F ≈ 0.5–1.0). Intuition: the difference (b − c) is a vector sampled FROM the population\'s own current spread, so the step size automatically ADAPTS to remaining diversity — large when the population is spread out, small as it converges. After mutation, DE typically applies a per-coordinate binomial crossover with x_i to produce the trial child, which then competes 1-to-1 against x_i for a slot in the next generation.'
+        }},
+      { label:'c',
+        q:'Briefly state one situation in which you would prefer PSO over DE, and one situation in which you would prefer DE over PSO.',
+        hints:{
+          concept:'Lecture 12 — both are excellent on continuous landscapes; they differ in how they balance exploration/exploitation and respond to landscape geometry.',
+          term:'PSO converges quickly when the swarm can identify a single global best; struggles on rugged, deceptive landscapes. DE\'s adaptive step (b − c) is robust on rugged and multi-modal surfaces.',
+          formula:'\\text{PSO: fast on unimodal / single-attractor}\\\\ \\text{DE: robust on multi-modal / rugged}',
+          approach:'Pick contrasting characteristics: PSO wins when global best is informative (unimodal-ish), DE wins on rugged multi-modal. Mention tuning sensitivity, convergence speed.',
+          answer:'Prefer PSO when the landscape is largely UNIMODAL or has a single dominant basin — the swarm rapidly converges towards the global best g, giving fast wall-clock progress. Prefer DE when the landscape is RUGGED and MULTI-MODAL — DE\'s mutation (b − c) draws step sizes from the population\'s own current spread, so it automatically maintains useful step sizes as the population evolves, and it does not collapse into a single attractor as easily as PSO. For Tane\'s known-multi-modal CFD problem, DE is the safer default.'
+        }},
+    ]
+  },
+  {
+    id:'q7-sione-neuralnet', title:'Neural Network for MNIST',
+    lectures:['L15'], accent:'#ec4899', icon:'⟦⟧', source:'Author · Q7',
+    scenario:'Sione is training a fully-connected feed-forward neural network to classify 28×28 grayscale MNIST digits. He plans to use the standard architecture: 784 inputs → two hidden layers (each with 30 sigmoid neurons) → 10 sigmoid outputs.',
+    setup:'He intends to train using mini-batch gradient descent on the mean squared error.',
+    parts:[
+      { label:'a',
+        q:'State the dimensions of Sione\'s input vector x and target vector y for a single training example, and write down the quadratic cost function he will minimise (across n training examples).',
+        hints:{
+          concept:'Lecture 15 — MNIST setup: 784 input pixels (normalised 0–1), 10-D one-hot targets.',
+          term:'Input dim: 28·28 = 784. Output dim: 10 (one neuron per digit class). Cost: quadratic (½ MSE).',
+          formula:'\\vec{x} \\in \\mathbb{R}^{784},\\ \\vec{y} \\in \\{0,1\\}^{10}\\\\ C(w, b) = \\frac{1}{2n}\\sum_{\\vec{x}}\\|\\vec{y}(\\vec{x}) - \\vec{a}\\|_2^2',
+          approach:'(1) State x dim from 28×28 = 784. (2) State y dim = 10 (one-hot). (3) Write quadratic cost formula with ½ factor explained as cancelling the 2 from differentiation.',
+          answer:'Input x ∈ ℝ^{784} (the flattened 28×28 grayscale pixels, normalised to [0,1]). Target y ∈ {0,1}^{10} is one-hot — e.g. y = [0,0,0,0,0,0,1,0,0,0]^T denotes a "6". Quadratic cost across n training examples: C(w, b) = (1/2n) Σ_x ||y(x) − a(x)||_2^2, where a(x) is the network output (the activation at the output layer) for input x. The ½ is a convenience: it cancels the 2 that drops out when we differentiate the squared norm, leaving cleaner gradient formulas.'
+        }},
+      { label:'b',
+        q:'Briefly explain the role of the backpropagation algorithm. Write down the four backpropagation equations.',
+        hints:{
+          concept:'Lecture 15 — backprop computes ALL the partial derivatives ∂C/∂w and ∂C/∂b efficiently by reusing intermediate quantities.',
+          term:'Local error δ^l_j = ∂C/∂z^l_j. Forward pass computes z^l, a^l; backward pass propagates δ from output to input.',
+          formula:'\\delta^L = \\nabla_a C \\odot \\sigma\'(z^L) \\quad (\\text{BP-1})\\\\ \\delta^l = ((w^{l+1})^T \\delta^{l+1}) \\odot \\sigma\'(z^l) \\quad (\\text{BP-2})\\\\ \\partial C / \\partial b^l_j = \\delta^l_j \\quad (\\text{BP-3})\\\\ \\partial C / \\partial w^l_{jk} = a^{l-1}_k \\delta^l_j \\quad (\\text{BP-4})',
+          approach:'(1) State the goal: compute ∇C(w, b) for gradient descent. (2) Define δ^l. (3) Write the four equations in order (BP-1 output error, BP-2 propagate, BP-3 bias gradient, BP-4 weight gradient).',
+          answer:'Role: backpropagation computes the gradient of the cost C with respect to EVERY weight and bias in the network in O(network size) per training example — using the chain rule efficiently by sharing intermediate quantities. Without it, naive numerical differentiation would require one forward pass per parameter (millions). Define the local error δ^l_j ≡ ∂C/∂z^l_j. The four BP equations: (BP-1) Output error: δ^L = ∇_a C ⊙ σ\'(z^L). (BP-2) Backpropagation: δ^l = ((w^{l+1})^T δ^{l+1}) ⊙ σ\'(z^l). (BP-3) Bias gradient: ∂C/∂b^l_j = δ^l_j. (BP-4) Weight gradient: ∂C/∂w^l_{jk} = a^{l-1}_k δ^l_j.'
+        }},
+      { label:'c',
+        q:'Briefly explain why Sione uses sigmoid activations rather than step functions in the hidden layers.',
+        hints:{
+          concept:'Lecture 13/15 — the step function is non-differentiable; gradient methods need a smooth activation.',
+          term:'σ is continuously differentiable; σ\'(z) = σ(z)(1 − σ(z)) is its self-derivative identity. Step function has zero gradient almost everywhere and is undefined at the threshold.',
+          formula:'\\sigma\'(z) = \\sigma(z)(1 - \\sigma(z)) \\quad \\text{(self-derivative)}\\\\ \\text{Step}\'(z) = 0 \\text{ a.e., undefined at } z=0',
+          approach:'Two reasons: (1) differentiability — needed for backprop; (2) graceful response — small input perturbations cause small output changes (cf. Q2 graceful degradation).',
+          answer:'Two reasons. (1) Differentiability: backpropagation requires ∂C/∂w via the chain rule, which in turn requires σ\'(z). The sigmoid is continuously differentiable everywhere with a clean self-derivative identity σ\'(z) = σ(z)(1 − σ(z)) — so once we have the forward activation a = σ(z), the gradient is essentially free. The step function has gradient zero almost everywhere and is undefined at the threshold, so it kills the gradient signal during backprop. (2) Graceful response: sigmoids let small input perturbations produce small output changes, supporting graceful degradation and stable training.'
+        }},
+      { label:'d',
+        q:'State the Universal Approximation Theorem (informally) and one practical caveat.',
+        hints:{
+          concept:'Lecture 15 — UAT establishes the EXPRESSIVENESS of feed-forward networks. The caveat is about EXISTENCE vs FINDABILITY.',
+          term:'UAT: for any continuous target f and any ε > 0, there exists a feed-forward NN with one hidden layer such that |g(x) − f(x)| < ε for all x.',
+          formula:'\\forall \\epsilon > 0\\ \\exists g\\ (\\text{one hidden layer})\\ :\\ |g(\\vec{x}) - f(\\vec{x})| < \\epsilon\\ \\forall \\vec{x}',
+          approach:'(1) State the theorem informally. (2) Stress "exists" not "easy to find". (3) Note that approximation may require MANY hidden units, and gradient descent may not actually converge to the optimal g.',
+          answer:'Universal Approximation Theorem (informal): for any continuous target function f and any desired precision ε > 0, there exists a feed-forward neural network with ONE hidden layer whose output g satisfies |g(x) − f(x)| < ε for all x. The theorem holds with sigmoid activation and arbitrary input/output dimensions. Caveat: the theorem is EXISTENTIAL only — it does NOT promise (a) that backpropagation will FIND such a network, (b) that the network is small or efficient, or (c) that the required number of hidden units is bounded. In practice, achieving ε precision may need impractically many neurons, and training may get stuck in local minima.'
+        }},
+    ]
+  },
+  {
+    id:'q8-lina-calculus', title:'Vector Calculus Refresher',
+    lectures:['L5'], accent:'#34d399', icon:'∂', source:'Author · Q8',
+    scenario:'Lina is studying a smooth loss function f : ℝ^3 → ℝ that arises in a regression problem.',
+    setup:'She wants to characterise its critical points and use the gradient to design an iterative optimiser.',
+    parts:[
+      { label:'a',
+        q:'Define the partial derivative ∂f/∂x_i at a point and give a one-sentence geometric interpretation.',
+        hints:{
+          concept:'Lecture 5 — partial derivative = the rate of change of f along ONE coordinate direction, holding others fixed.',
+          term:'∂f/∂x_i = lim_{h→0} (f(x + h e_i) − f(x)) / h, where e_i is the i-th unit vector.',
+          formula:'\\frac{\\partial f}{\\partial x_i}(\\vec{x}) = \\lim_{h \\to 0} \\frac{f(\\vec{x} + h\\,\\vec{e}_i) - f(\\vec{x})}{h}',
+          approach:'(1) Give the limit definition. (2) State that geometrically it is the slope of the curve obtained by cutting the graph of f with the plane through x parallel to the x_i-axis.',
+          answer:'∂f/∂x_i(x) = lim_{h→0} (f(x + h e_i) − f(x)) / h, where e_i is the i-th standard basis vector. Geometrically: it is the SLOPE of the curve obtained by holding every coordinate except x_i fixed and walking along the x_i-axis — the rate of change of f in the i-th coordinate direction at the point x.'
+        }},
+      { label:'b',
+        q:'Write down the gradient ∇f(x) of a scalar function f : ℝ^n → ℝ and explain why it points in the direction of steepest ascent.',
+        hints:{
+          concept:'Lecture 5 — the gradient is a VECTOR of partial derivatives; its direction maximises the directional derivative ∂f/∂u.',
+          term:'∇f(x) = (∂f/∂x_1, …, ∂f/∂x_n)^T. Directional derivative ∂f/∂u = ∇f · u (for unit u).',
+          formula:'\\nabla f(\\vec{x}) = \\begin{bmatrix}\\partial f / \\partial x_1 \\\\ \\vdots \\\\ \\partial f / \\partial x_n\\end{bmatrix}\\\\ \\partial f/\\partial \\vec{u} = \\nabla f \\cdot \\vec{u} \\le \\|\\nabla f\\|',
+          approach:'(1) State the gradient vector. (2) Show ∂f/∂u = ∇f · u for unit u. (3) Maximised when u is parallel to ∇f, giving max rate ||∇f||.',
+          answer:'∇f(x) = (∂f/∂x_1, ∂f/∂x_2, …, ∂f/∂x_n)^T — the vector of partial derivatives. For any UNIT direction u the directional derivative ∂f/∂u = ∇f(x) · u (Cauchy–Schwarz). This dot product is maximised when u is parallel to ∇f, giving the maximum rate of change ||∇f(x)||. Hence ∇f points in the direction of STEEPEST ASCENT at x; −∇f points in the direction of steepest descent (used by gradient descent).'
+        }},
+      { label:'c',
+        q:'Lina finds a point x* at which ∇f(x*) = 0. Briefly explain how she can decide whether x* is a local minimum, local maximum, or saddle point.',
+        hints:{
+          concept:'Lecture 5 — second derivative test using the Hessian matrix.',
+          term:'Hessian H_{ij} = ∂²f/(∂x_i ∂x_j). H positive-definite ⇒ local min; H negative-definite ⇒ local max; indefinite ⇒ saddle.',
+          formula:'H(\\vec{x}^*) = \\bigl[\\partial^2 f/\\partial x_i \\partial x_j\\bigr]_{ij}\\\\ \\text{PD: all eigenvalues } > 0 \\Rightarrow \\text{min}\\\\ \\text{ND: all eigenvalues } < 0 \\Rightarrow \\text{max}\\\\ \\text{indefinite: mixed signs} \\Rightarrow \\text{saddle}',
+          approach:'(1) Compute the Hessian H. (2) Inspect eigenvalues (or apply Sylvester\'s criterion). (3) Classify: PD = min, ND = max, mixed signs = saddle, semi-definite needs further analysis.',
+          answer:'∇f(x*) = 0 only tells us x* is a CRITICAL POINT. To classify it, compute the Hessian H(x*) = [∂²f/(∂x_i ∂x_j)]. The classification depends on the eigenvalues of H(x*): all eigenvalues POSITIVE ⇒ H is positive-definite ⇒ x* is a LOCAL MINIMUM. All eigenvalues NEGATIVE ⇒ negative-definite ⇒ LOCAL MAXIMUM. MIXED signs ⇒ indefinite ⇒ SADDLE POINT. If any eigenvalue is zero the test is inconclusive and higher-order terms must be examined.'
+        }},
+      { label:'d',
+        q:'State the chain rule for h(x) = f(g(x)) where x is a scalar and f, g are differentiable, and one for a composition involving a scalar function of multiple variables.',
+        hints:{
+          concept:'Lecture 5 — the chain rule is the backbone of backpropagation in NNs.',
+          term:'Scalar chain rule: dh/dx = f\'(g(x)) · g\'(x). Multivariate: if h(x_1, …, x_n) = f(g(x_1, …, x_n)), then ∂h/∂x_i = f\'(g) · ∂g/∂x_i.',
+          formula:'\\frac{dh}{dx} = f\'(g(x))\\,g\'(x)\\\\ \\frac{\\partial h}{\\partial x_i} = f\'(g)\\,\\frac{\\partial g}{\\partial x_i}',
+          approach:'Write the simple version, then show how it extends partial-by-partial when g maps multiple variables. Mention this is what makes backpropagation tick.',
+          answer:'Scalar: if h(x) = f(g(x)) then dh/dx = f\'(g(x)) · g\'(x). Multivariate (scalar valued): if h(x_1,…,x_n) = f(g(x_1,…,x_n)) where f : ℝ → ℝ and g : ℝ^n → ℝ, then ∂h/∂x_i = f\'(g(x)) · ∂g/∂x_i for each i. The general matrix-vector chain rule (Jacobians composed by multiplication) is exactly what backpropagation in a neural network applies layer by layer.'
+        }},
+    ]
+  },
+  {
+    id:'q9-hemi-xor', title:'XOR & The Single-Neuron Limit',
+    lectures:['L14'], accent:'#fbbf24', icon:'⊕', source:'Author · Q9',
+    scenario:'Hemi is studying binary classification with a single sigmoid neuron. He attempts to learn the XOR function on inputs (x_1, x_2) ∈ {0,1}^2 with target y = x_1 ⊕ x_2.',
+    setup:'After thousands of gradient-descent iterations the cost plateaus at a non-zero value; the neuron cannot reach near-zero training error.',
+    parts:[
+      { label:'a',
+        q:'Explain in 2–3 sentences why a single sigmoid neuron cannot exactly learn the XOR function.',
+        hints:{
+          concept:'Lecture 14 — a single neuron implements a LINEAR decision boundary (hyperplane). XOR\'s positive class lies on a diagonal that cannot be separated by any straight line.',
+          term:'Linear separability: a dataset is linearly separable iff there exists a hyperplane that perfectly separates the two classes. XOR is NOT linearly separable.',
+          formula:'\\text{Neuron: } a > 0.5 \\iff w_1 x_1 + w_2 x_2 + b > 0\\\\ \\text{XOR truth: } (0,0)\\!\\to\\!0,\\ (0,1)\\!\\to\\!1,\\ (1,0)\\!\\to\\!1,\\ (1,1)\\!\\to\\!0',
+          approach:'(1) A single neuron with sigmoid + threshold 0.5 partitions input space with a LINE w_1x_1 + w_2x_2 + b = 0. (2) XOR\'s "1"-class points are (0,1) and (1,0); the "0"-class points are (0,0) and (1,1). (3) These cannot be separated by any single line — opposite corners of the unit square.',
+          answer:'A single sigmoid neuron classifies (a > 0.5) on the linear half-plane w_1 x_1 + w_2 x_2 + b > 0 — a HYPERPLANE in input space. The XOR positive class consists of (0,1) and (1,0), and the negative class consists of (0,0) and (1,1). These two classes occupy OPPOSITE diagonals of the unit square and cannot be separated by any straight line — XOR is not linearly separable, so no choice of (w_1, w_2, b) lets a single neuron implement it exactly.'
+        }},
+      { label:'b',
+        q:'Describe a two-layer network architecture (with how many neurons in each layer) that can implement XOR. State the role of each hidden neuron.',
+        hints:{
+          concept:'Lecture 14 — two hidden neurons can build OR and (NOT AND), and the output neuron AND-combines them: XOR = OR AND NAND.',
+          term:'XOR = (x_1 OR x_2) AND NOT(x_1 AND x_2). One hidden neuron implements OR, another implements NAND, output AND.',
+          formula:'h_1 = \\sigma(x_1 + x_2 - 0.5)\\ (\\text{OR})\\\\ h_2 = \\sigma(-x_1 - x_2 + 1.5)\\ (\\text{NAND})\\\\ y = \\sigma(h_1 + h_2 - 1.5)\\ (\\text{AND})',
+          approach:'(1) Network: 2 inputs → 2 hidden neurons → 1 output. (2) Set hidden 1 = OR, hidden 2 = NAND. (3) Output AND of the two. (4) Verify on each of the four XOR cases.',
+          answer:'Architecture: 2 inputs → 2 hidden sigmoid neurons → 1 sigmoid output. Hidden neuron 1 implements OR (weights (1, 1), bias −0.5): h_1 = σ(x_1 + x_2 − 0.5). Hidden neuron 2 implements NAND (weights (−1, −1), bias +1.5): h_2 = σ(−x_1 − x_2 + 1.5). Output neuron implements AND of (h_1, h_2) (weights (1, 1), bias −1.5): y = σ(h_1 + h_2 − 1.5). Then y > 0.5 iff (x_1 OR x_2) AND NOT(x_1 AND x_2) — exactly XOR.'
+        }},
+      { label:'c',
+        q:'Describe the hyperplane decision boundary of a neuron with n inputs. State the dimension of the boundary and the dimension of the space it divides.',
+        hints:{
+          concept:'Lecture 14 — for n inputs, the decision boundary {x : w·x + b = 0} is a hyperplane of co-dimension 1 in ℝ^n.',
+          term:'Hyperplane: an (n−1)-dimensional affine subspace of ℝ^n that divides the space into two half-spaces.',
+          formula:'\\{\\vec{x} \\in \\mathbb{R}^n : \\vec{w} \\cdot \\vec{x} + b = 0\\}\\\\ \\dim = n - 1',
+          approach:'State n inputs ⇒ (n−1)-D hyperplane in n-D space. Examples: n=1 point on line; n=2 line in plane; n=3 plane in space; n=n flat hyperplane.',
+          answer:'A neuron with n inputs and weights w ∈ ℝ^n, bias b, decides by the sign of w·x + b. Its decision boundary is the set {x ∈ ℝ^n : w·x + b = 0} — an (n−1)-dimensional HYPERPLANE that divides ℝ^n into two half-spaces. Concrete examples: n=1, boundary is a POINT on the real line; n=2, a LINE in the plane; n=3, a PLANE in 3-D space; n=n, a (n−1)-D flat in n-D space.'
+        }},
+      { label:'d',
+        q:'Briefly state the principle of NAND universality and explain its implication for neural networks.',
+        hints:{
+          concept:'Lecture 14 — NAND (NOT AND) gates can implement ANY Boolean function. Since a single neuron can implement NAND, networks of neurons can compute any Boolean function.',
+          term:'NAND universality: AND, OR, NOT, XOR, MUX… can all be built from NAND gates only. A neuron with weights (−1,−1) and bias 1.5 is a NAND.',
+          formula:'\\text{NAND}(a, b) = \\neg(a \\wedge b)\\\\ \\text{NAND-only } \\Rightarrow \\text{any Boolean function}\\\\ \\text{Neuron: } \\sigma(-x_1 - x_2 + 1.5) \\approx \\text{NAND}',
+          approach:'(1) State NAND universality. (2) Show one neuron implements NAND. (3) Conclude: neural networks (universal Boolean gates + composability) can in principle compute any Boolean function, and via UAT any continuous function.',
+          answer:'NAND universality: the NAND gate is functionally COMPLETE — any Boolean function (AND, OR, NOT, XOR, MUX, adders, multipliers, full CPUs) can be constructed from NAND gates alone. A single sigmoid neuron with weights (−1, −1) and bias +1.5 implements NAND (σ(−x_1 − x_2 + 1.5) > 0.5 iff NOT(x_1 AND x_2)). Implication: by COMPOSING enough neurons we can implement any Boolean circuit, and — via the Universal Approximation Theorem — any continuous function. The key practical step is COMPOSABILITY: a single neuron is the building block, and the magic of intelligence emerges from arranging them in layers and circuits.'
+        }},
+    ]
+  },
+  {
+    id:'q10-ngaire-stochastic', title:'LCG, Hull–Dobell & No Free Lunch',
+    lectures:['L8'], accent:'#6366f1', icon:'※', source:'Author · Q10',
+    scenario:'Ngaire works on an embedded control system that must generate pseudo-random numbers for a Monte Carlo simulation. Memory is constrained, so she implements a Linear Congruential Generator (LCG).',
+    setup:'She also wants to choose an OPTIMISATION ALGORITHM and is aware of the No Free Lunch theorem.',
+    parts:[
+      { label:'a',
+        q:'Write down the LCG recurrence and define each parameter. State why a Mersenne prime is a desirable choice for the modulus m.',
+        hints:{
+          concept:'Lecture 8 — LCG produces a deterministic sequence approximating uniform randomness. Choice of m, a, c critically affects period and equidistribution.',
+          term:'Recurrence X_{n+1} = (a X_n + c) mod m. Mersenne primes m = 2^p − 1 (with p prime) have very few factors → long full periods are easier to achieve.',
+          formula:'X_{n+1} = (a\\,X_n + c)\\bmod m\\\\ \\text{Mersenne: } m = 2^p - 1,\\ p\\ \\text{prime},\\ m\\ \\text{prime}',
+          approach:'(1) Write recurrence. (2) Identify X_0 (seed), a (multiplier), c (increment), m (modulus). (3) Note period ≤ m. (4) Many small factors ⇒ short sub-cycles. Mersenne primes have very few factors ⇒ long period is easier to guarantee.',
+          answer:'Recurrence: X_{n+1} = (a · X_n + c) mod m. Parameters: X_0 (seed — initial value), a (multiplier), c (increment / additive constant), m (modulus — sets the output range [0, m−1]). The period is at most m. A modulus with many divisors (e.g. m = 12 = 2²·3) tends to produce short cycles and poor equidistribution. A MERSENNE PRIME m = 2^p − 1 (where p is itself prime, e.g. p = 3, 5, 7, 13, 17 …) is prime by construction and has very few factors, making it easy to satisfy the conditions for a full-period LCG of length m.'
+        }},
+      { label:'b',
+        q:'Briefly state the Hull–Dobell theorem (the three conditions for a full-period LCG).',
+        hints:{
+          concept:'Lecture 8 — Hull–Dobell gives necessary and sufficient conditions for the LCG period to equal the modulus m.',
+          term:'Three conditions: (1) gcd(c, m) = 1, (2) (a − 1) is divisible by every prime factor of m, (3) if 4 | m then 4 | (a − 1).',
+          formula:'\\text{Period} = m \\iff \\begin{cases}\\gcd(c, m) = 1 \\\\ p \\mid m \\Rightarrow p \\mid (a-1)\\ \\forall \\text{ prime } p \\\\ 4 \\mid m \\Rightarrow 4 \\mid (a-1)\\end{cases}',
+          approach:'List the three conditions and add the conclusion: when all three hold, the LCG visits every value in {0, 1, …, m−1} exactly once per period.',
+          answer:'Hull–Dobell: the LCG attains its maximum possible period m if and only if all three of the following hold: (1) gcd(c, m) = 1 — the increment is coprime with the modulus. (2) For every prime p dividing m, p also divides (a − 1). (3) If 4 divides m then 4 divides (a − 1). When all three conditions are satisfied, the sequence cycles through every value in {0, 1, …, m − 1} exactly once before repeating.'
+        }},
+      { label:'c',
+        q:'State the No Free Lunch theorem (Wolpert & Macready, 1997).',
+        hints:{
+          concept:'Lecture 8 — NFL is a deep result about algorithm selection: there is no universal champion across the space of all possible objective functions.',
+          term:'NFL: averaged over the set of ALL possible objective functions, every search algorithm has identical performance. Any gain on one class of problems is balanced by a loss on another.',
+          formula:'\\sum_f \\text{Perf}(A_1, f) = \\sum_f \\text{Perf}(A_2, f) \\quad \\forall A_1, A_2',
+          approach:'(1) State the average-over-all-functions equivalence. (2) Stress the practical takeaway — algorithm selection must use DOMAIN KNOWLEDGE about the specific problem class.',
+          answer:'No Free Lunch (Wolpert & Macready, 1997): averaged over the set of ALL possible objective functions, every search algorithm has identical expected performance. Equivalently, any performance advantage that an algorithm enjoys on one class of problems is exactly counter-balanced by an equal disadvantage on some other class. Practical consequence: there is no UNIVERSALLY OPTIMAL optimisation algorithm. Algorithm selection must be informed by DOMAIN KNOWLEDGE about the specific problem class — its smoothness, modality, separability, noise, etc.'
+        }},
+      { label:'d',
+        q:'Briefly explain why the No Free Lunch theorem does NOT mean "random search is just as good as any other algorithm" in practice.',
+        hints:{
+          concept:'Lecture 8 — NFL averages over ALL functions, including bizarre/pathological ones. Real-world problems are not drawn uniformly from this set.',
+          term:'Real-world functions have STRUCTURE — locality, smoothness, low-frequency components, hierarchical decomposition. NFL\'s "all functions" includes random-noise functions that lack any structure to exploit.',
+          formula:'\\text{Real problems} \\subsetneq \\text{All possible problems}\\\\ \\text{Structure} \\to \\text{Exploitable} \\to \\text{Better-than-random}',
+          approach:'(1) NFL averages over uniform distribution on functions. (2) Real problems are a TINY, STRUCTURED subset. (3) Structure can be exploited (gradient on smooth problems, building blocks for GA, etc.).',
+          answer:'NFL averages performance over the set of ALL possible objective functions — including, in equal weight, completely structureless random-noise functions on which no algorithm can do better than random search. Real-world problems are NOT uniformly distributed over that set: they have rich STRUCTURE (smoothness, locality, low-frequency components, hierarchical decomposability). Algorithms that EXPLOIT a particular kind of structure (gradient descent → smooth + differentiable; GA → recombinable building blocks; SA → metastable basins) outperform random search on the small structured subset of problems that matters in practice. NFL is a warning against believing in a UNIVERSAL champion, not an endorsement of randomness on real problems.'
+        }},
+    ]
+  },
+  {
+    id:'q11-pippa-intelligence', title:'Defining Intelligence & Soft Computing',
+    lectures:['L1','L2'], accent:'#ec4899', icon:'⊙', source:'Author · Q11',
+    scenario:'Pippa is preparing a one-page brief for an AI-safety committee. She is asked to explain what AI researchers mean by "intelligence" and why the field needs SOFT computing techniques (as opposed to classical symbolic AI).',
+    setup:'She must keep her language precise but accessible to non-specialists.',
+    parts:[
+      { label:'a',
+        q:'Briefly describe the four "quadrants" of definitions of AI as catalogued by Russell & Norvig. Indicate which quadrant the Turing Test belongs to.',
+        hints:{
+          concept:'Lecture 1 — Russell & Norvig\'s 2 × 2 grid: thinking vs acting, humanly vs rationally.',
+          term:'Four quadrants: Thinking Humanly (cognitive modelling), Thinking Rationally (logic), Acting Humanly (Turing Test), Acting Rationally (rational agents).',
+          formula:'\\begin{array}{c|cc} & \\text{Humanly} & \\text{Rationally} \\\\ \\hline \\text{Think} & \\text{Cognitive modelling} & \\text{Laws of thought} \\\\ \\text{Act}   & \\text{Turing Test}        & \\text{Rational agent} \\end{array}',
+          approach:'(1) Lay out the 2 × 2 grid (think vs act, humanly vs rationally). (2) One sentence per quadrant. (3) Locate the Turing Test in "Acting Humanly".',
+          answer:'Four quadrants (2 axes × 2 values): Thinking Humanly — building systems that REASON like humans do (cognitive modelling). Thinking Rationally — systems that follow the LAWS OF THOUGHT (logic, deduction). Acting Humanly — systems that BEHAVE indistinguishably from a human (the Turing Test belongs here). Acting Rationally — systems that, given goals and beliefs, take actions that MAXIMISE expected utility (rational agents — currently the dominant AI definition).'
+        }},
+      { label:'b',
+        q:'Briefly explain the Turing Test and state one common critique of it.',
+        hints:{
+          concept:'Lecture 1 — Turing\'s 1950 Imitation Game proposed behavioural indistinguishability as a sufficient criterion for machine intelligence.',
+          term:'Turing Test: a human judge converses (via text) with both a human and a machine. If the judge cannot reliably tell which is which, the machine "passes".',
+          formula:'\\text{Pass} \\iff P(\\text{judge correctly identifies}) \\approx 0.5',
+          approach:'(1) Describe the setup (text-only conversation, blind judge). (2) Provide a critique: Searle\'s Chinese Room (behaviour ≠ understanding), or that it tests imitation rather than reasoning, or that modern LLMs can pass without "intelligence" in any robust sense.',
+          answer:'A human judge holds an unrestricted text-only conversation with two unseen participants — one human, one machine. If the judge cannot reliably distinguish the machine from the human, the machine "passes" the Turing Test. Common critique: behavioural indistinguishability is not the same as UNDERSTANDING (Searle\'s Chinese Room — a system that produces the right Chinese outputs need not understand Chinese). Modern LLMs routinely fool casual judges without anyone claiming they "think"; the test confuses imitation with cognition.'
+        }},
+      { label:'c',
+        q:'Compare symbolic and sub-symbolic AI. Give one strength and one weakness of each.',
+        hints:{
+          concept:'Lecture 2 — symbolic (rules, knowledge bases) vs sub-symbolic (neural networks, statistical learning).',
+          term:'Symbolic: explicit logical representation, IF–THEN rules. Sub-symbolic: distributed numerical encoding, learned from data.',
+          formula:'\\text{Symbolic: } \\text{IF } 7\\text{-segments include}\\{a,b,c\\} \\text{ THEN } 7\\\\ \\text{Sub-symbolic: vector of activations}',
+          approach:'For each paradigm: (1) describe; (2) one strength; (3) one weakness. Symbolic: + interpretable / − brittle. Sub-symbolic: + graceful degradation / − opaque.',
+          answer:'Symbolic AI: knowledge is represented by EXPLICIT LOGICAL STRUCTURES (rules, facts, ontologies). Strength: highly INTERPRETABLE — a human can read the rules and verify the reasoning. Weakness: BRITTLE — small input perturbations or unforeseen cases break the rules; coping with noise is hard. Sub-symbolic AI: knowledge is represented as a DISTRIBUTED PATTERN OF ACTIVATIONS (weights in a neural network). Strength: GRACEFUL DEGRADATION — handles noise, partial inputs, and novel cases robustly; learns from data. Weakness: OPAQUE — it is difficult to extract a human-readable explanation of why the system produced a particular output.'
+        }},
+      { label:'d',
+        q:'Briefly explain why we cannot in general expect a classical optimisation problem (with full mathematical specification) to capture every real-world decision problem. Mention one feature of the real world that motivates SOFT computing.',
+        hints:{
+          concept:'Lecture 2 — classical optimisation assumes a closed, well-specified model. The real world is messy: incomplete information, noise, dynamic environments.',
+          term:'Soft computing features: tolerance for imprecision, ability to handle noisy / partial / missing data, adaptation to changing conditions.',
+          formula:'\\text{Classical: } \\min f(\\vec{x})\\ \\text{s.t.}\\ g(\\vec{x}) = 0\\\\ \\text{Real: noisy, dynamic, partial, sometimes-non-stationary}',
+          approach:'List real-world features classical models can\'t capture: (1) noise / measurement error; (2) incomplete information; (3) non-stationarity; (4) qualitative trade-offs without numerical metric; (5) emergence and feedback. Argue these motivate adaptive, learning-based, "soft" approaches.',
+          answer:'Classical optimisation assumes a closed, fully-specified model: a complete cost function f, a complete constraint set, and full information about the environment. The real world is not closed: it has NOISE (sensor and measurement error), MISSING DATA, NON-STATIONARITY (the cost surface shifts over time as the environment changes), and qualitative trade-offs (fairness, aesthetics, ethics) that cannot be reduced to a single numerical metric. Soft computing techniques — neural networks, evolutionary algorithms, fuzzy logic, probabilistic reasoning — tolerate imprecision and noise, adapt to changing conditions, and degrade gracefully when their assumptions are violated. They are the right tool for problems whose specification is itself partial.'
+        }},
+    ]
+  },
+];
+
+// ── Progress persistence ──────────────────────────────────────────────────────
+const EXAM_VAULT_KEY = 'cits4404_examvault_v1';
+function loadVaultProgress() {
+  try {
+    const raw = localStorage.getItem(EXAM_VAULT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { hintsRevealed: {}, partRating: {}, lastOpened: null };
+}
+function saveVaultProgress(p) {
+  try { localStorage.setItem(EXAM_VAULT_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+// Aggregate stats helpers
+function partKey(qid, label) { return `${qid}|${label}`; }
+function partRating(progress, qid, label) {
+  return progress.partRating?.[partKey(qid, label)] || null;
+}
+function questionStatus(progress, q) {
+  const ratings = q.parts.map(p => partRating(progress, q.id, p.label));
+  const rated   = ratings.filter(r => r !== null);
+  if (rated.length === 0) return { kind:'fresh', label:'untouched' };
+  if (rated.length < q.parts.length) return { kind:'progress', label:`${rated.length}/${q.parts.length} attempted` };
+  const allEasy = rated.every(r => r === 'easy');
+  if (allEasy) return { kind:'mastered', label:'mastered' };
+  const anyHard = rated.some(r => r === 'hard');
+  if (anyHard) return { kind:'review', label:'needs review' };
+  return { kind:'attempted', label:'attempted' };
+}
+
+// ── Hint reveal — one button per layer ────────────────────────────────────────
+function HintReveal({ type, content, isOpen, onToggle }) {
+  return (
+    <div style={{marginBottom:'0.45rem'}}>
+      <button
+        onClick={onToggle}
+        style={{
+          width:'100%',
+          textAlign:'left',
+          background: isOpen ? `${type.color}1a` : 'rgba(15,23,42,0.45)',
+          border: `1px solid ${isOpen ? type.color : 'rgba(148,163,184,0.22)'}`,
+          borderRadius:8,
+          padding:'0.55rem 0.85rem',
+          cursor:'pointer',
+          display:'flex',
+          alignItems:'center',
+          gap:'0.65rem',
+          fontFamily:'inherit',
+          color: isOpen ? type.color : 'var(--text-1)',
+          transition:'all 0.18s',
+        }}>
+        <span style={{fontSize:'1.15rem'}}>{type.icon}</span>
+        <span style={{display:'flex', flexDirection:'column', alignItems:'flex-start', flex:1}}>
+          <span style={{fontSize:'0.78rem', fontWeight:700, letterSpacing:'0.02em'}}>{type.label}</span>
+          <span style={{fontSize:'0.66rem', color:'var(--text-2)', marginTop:1}}>{type.sub}</span>
+        </span>
+        <span style={{fontSize:'0.7rem', color:isOpen ? type.color : 'var(--text-2)', fontFamily:'monospace'}}>{isOpen ? '▼ open' : '▶ peel'}</span>
+      </button>
+      {isOpen && (
+        <div style={{
+          marginTop:6,
+          padding:'0.65rem 0.85rem 0.7rem 1.1rem',
+          background:`${type.color}0d`,
+          borderLeft:`3px solid ${type.color}`,
+          borderRadius:'0 8px 8px 0',
+          fontSize: type.key === 'formula' ? '0.85rem' : '0.8rem',
+          color:'var(--text-1)',
+          lineHeight:1.65,
+        }}>
+          {type.key === 'formula' ? <Tex src={content} block /> : content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Single part (a, b, c, …) ──────────────────────────────────────────────────
+function PartCard({ qid, part, progress, setProgress, accent }) {
+  const key = partKey(qid, part.label);
+  const revealed = progress.hintsRevealed[key] || [];
+  const rating   = progress.partRating[key] || null;
+
+  const toggleHint = (hintKey) => {
+    setProgress(p => {
+      const cur = p.hintsRevealed[key] || [];
+      const next = cur.includes(hintKey) ? cur.filter(k => k !== hintKey) : [...cur, hintKey];
+      const np = { ...p, hintsRevealed:{ ...p.hintsRevealed, [key]: next } };
+      saveVaultProgress(np);
+      return np;
+    });
+  };
+  const setRating = (val) => {
+    setProgress(p => {
+      const np = { ...p, partRating:{ ...p.partRating, [key]: val } };
+      saveVaultProgress(np);
+      return np;
+    });
+  };
+  const resetPart = () => {
+    setProgress(p => {
+      const np = { ...p,
+        hintsRevealed:{ ...p.hintsRevealed, [key]: [] },
+        partRating:{ ...p.partRating, [key]: null }
+      };
+      saveVaultProgress(np);
+      return np;
+    });
+  };
+
+  return (
+    <div style={{
+      background:'rgba(15,23,42,0.55)',
+      border:`1px solid ${accent}33`,
+      borderLeft:`3px solid ${accent}`,
+      borderRadius:10,
+      padding:'0.95rem 1.05rem',
+      marginBottom:'0.95rem',
+    }}>
+      <div style={{display:'flex', alignItems:'baseline', gap:'0.6rem', marginBottom:'0.65rem', flexWrap:'wrap'}}>
+        <span style={{fontFamily:'monospace', fontSize:'1.05rem', fontWeight:800, color:accent}}>({part.label})</span>
+        <span style={{fontSize:'0.88rem', color:'var(--text-1)', lineHeight:1.55, flex:1}}>{part.q}</span>
+      </div>
+
+      <div style={{display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.55rem'}}>
+        <span style={{fontSize:'0.66rem', color:'var(--text-2)', fontFamily:'monospace', letterSpacing:'0.06em'}}>CONE OF RECALL</span>
+        <span style={{flex:1, height:1, background:'linear-gradient(90deg, rgba(148,163,184,0.3), transparent)'}}/>
+        <span style={{fontSize:'0.66rem', color:'var(--text-2)', fontFamily:'monospace'}}>{revealed.length}/{HINT_TYPES.length} peeled</span>
+      </div>
+
+      {HINT_TYPES.map(type => (
+        <HintReveal
+          key={type.key}
+          type={type}
+          content={part.hints[type.key]}
+          isOpen={revealed.includes(type.key)}
+          onToggle={() => toggleHint(type.key)}
+        />
+      ))}
+
+      <div style={{
+        marginTop:'0.7rem',
+        padding:'0.55rem 0.7rem',
+        background:'rgba(15,23,42,0.45)',
+        border:'1px dashed rgba(148,163,184,0.25)',
+        borderRadius:8,
+        display:'flex',
+        flexWrap:'wrap',
+        alignItems:'center',
+        gap:'0.55rem',
+      }}>
+        <span style={{fontSize:'0.7rem', color:'var(--text-2)', fontFamily:'monospace'}}>Self-rate (after attempting):</span>
+        {[
+          { v:'hard', l:'✘ Hard', c:'#fb7185', d:'Need to revisit' },
+          { v:'ok',   l:'◍ OK',   c:'#fbbf24', d:'Got most of it' },
+          { v:'easy', l:'★ Easy', c:'#34d399', d:'Locked in' },
+        ].map(opt => (
+          <button key={opt.v}
+            onClick={() => setRating(opt.v)}
+            title={opt.d}
+            style={{
+              background: rating === opt.v ? `${opt.c}26` : 'rgba(15,23,42,0.55)',
+              border: `1px solid ${rating === opt.v ? opt.c : 'rgba(148,163,184,0.22)'}`,
+              color: rating === opt.v ? opt.c : 'var(--text-1)',
+              borderRadius:6,
+              padding:'0.25rem 0.7rem',
+              cursor:'pointer',
+              fontSize:'0.72rem',
+              fontWeight:600,
+              fontFamily:'inherit',
+            }}>{opt.l}</button>
+        ))}
+        <span style={{flex:1}}/>
+        <button onClick={resetPart}
+          style={{background:'rgba(15,23,42,0.6)', border:'1px solid rgba(148,163,184,0.2)', color:'var(--text-2)', borderRadius:6, padding:'0.22rem 0.6rem', cursor:'pointer', fontSize:'0.7rem', fontFamily:'monospace'}}>↻ reset</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Question detail panel ─────────────────────────────────────────────────────
+function QuestionPanel({ q, progress, setProgress, onBack }) {
+  const status = questionStatus(progress, q);
+  const totalHints = q.parts.reduce((acc, p) => acc + (progress.hintsRevealed[partKey(q.id, p.label)]?.length || 0), 0);
+  const maxHints = q.parts.length * HINT_TYPES.length;
+
+  const peelAll = () => {
+    setProgress(p => {
+      const np = { ...p, hintsRevealed:{ ...p.hintsRevealed } };
+      q.parts.forEach(part => { np.hintsRevealed[partKey(q.id, part.label)] = HINT_TYPES.map(t => t.key); });
+      saveVaultProgress(np);
+      return np;
+    });
+  };
+  const resetQuestion = () => {
+    if (!window.confirm(`Reset all hints and ratings for "${q.title}"?`)) return;
+    setProgress(p => {
+      const np = { ...p, hintsRevealed:{ ...p.hintsRevealed }, partRating:{ ...p.partRating } };
+      q.parts.forEach(part => {
+        np.hintsRevealed[partKey(q.id, part.label)] = [];
+        np.partRating[partKey(q.id, part.label)] = null;
+      });
+      saveVaultProgress(np);
+      return np;
+    });
+  };
+
+  return (
+    <div>
+      <div style={{display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.85rem', flexWrap:'wrap'}}>
+        <button onClick={onBack} className="m4-algo-tab" style={{padding:'3px 11px', fontSize:'0.72rem'}}>← Vault</button>
+        <span style={{padding:'2px 9px', background:`${q.accent}22`, border:`1px solid ${q.accent}55`, borderRadius:6, color:q.accent, fontSize:'0.65rem', fontFamily:'monospace', letterSpacing:'0.05em', fontWeight:700}}>{q.icon} {q.title.toUpperCase()}</span>
+        <span style={{fontSize:'0.65rem', color:'var(--text-2)', fontFamily:'monospace'}}>{q.lectures.join(' · ')} · {q.source}</span>
+        <span style={{flex:1}}/>
+        <span style={{fontSize:'0.66rem', color:'var(--text-2)', fontFamily:'monospace'}}>hints {totalHints}/{maxHints}</span>
+      </div>
+
+      <div style={{
+        background:`linear-gradient(135deg, ${q.accent}14 0%, rgba(15,23,42,0.5) 100%)`,
+        border:`1px solid ${q.accent}55`,
+        borderRadius:14,
+        padding:'1.05rem 1.2rem',
+        marginBottom:'1rem',
+      }}>
+        <div style={{display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.55rem'}}>
+          <span style={{fontSize:'1.8rem', color:q.accent, fontWeight:800, fontFamily:'monospace'}}>{q.icon}</span>
+          <div>
+            <div style={{fontSize:'1.18rem', color:'#fff', fontWeight:700, lineHeight:1.3}}>{q.title}</div>
+            <div style={{fontSize:'0.7rem', color:'var(--text-2)', fontFamily:'monospace', letterSpacing:'0.05em'}}>STATUS · {status.label}</div>
+          </div>
+        </div>
+        <div style={{fontSize:'0.85rem', color:'var(--text-1)', lineHeight:1.65, marginTop:'0.5rem'}}>{q.scenario}</div>
+        {q.formula && (
+          <div style={{margin:'0.7rem 0 0.4rem', padding:'0.6rem 0.9rem', background:'rgba(15,23,42,0.55)', borderLeft:`2px solid ${q.accent}`, borderRadius:'0 8px 8px 0'}}>
+            <Tex src={q.formula} block />
+          </div>
+        )}
+        {q.setup && <div style={{fontSize:'0.82rem', color:'var(--text-2)', lineHeight:1.6, marginTop:'0.4rem', fontStyle:'italic'}}>{q.setup}</div>}
+      </div>
+
+      <div style={{display:'flex', gap:'0.4rem', marginBottom:'0.7rem', flexWrap:'wrap'}}>
+        <button onClick={peelAll} className="m4-algo-tab" style={{padding:'3px 11px', fontSize:'0.7rem'}}>↯ Peel every hint</button>
+        <button onClick={resetQuestion} className="m4-algo-tab" style={{padding:'3px 11px', fontSize:'0.7rem'}}>↻ Reset question</button>
+      </div>
+
+      {q.parts.map(part => (
+        <PartCard key={part.label} qid={q.id} part={part} progress={progress} setProgress={setProgress} accent={q.accent} />
+      ))}
+
+      <div style={{display:'flex', justifyContent:'center', marginTop:'0.85rem'}}>
+        <button onClick={onBack} className="m4-algo-tab" style={{padding:'5px 18px', fontSize:'0.78rem'}}>← Back to vault</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Question grid card ────────────────────────────────────────────────────────
+function QuestionDoor({ q, progress, onOpen }) {
+  const status = questionStatus(progress, q);
+  const ringColor = {
+    fresh:    'rgba(148,163,184,0.28)',
+    progress: '#fbbf24',
+    review:   '#fb7185',
+    attempted:'#a78bfa',
+    mastered: '#34d399',
+  }[status.kind] || 'rgba(148,163,184,0.28)';
+  const ratings = q.parts.map(p => partRating(progress, q.id, p.label));
+  return (
+    <button onClick={onOpen} style={{
+      textAlign:'left',
+      cursor:'pointer',
+      background:`linear-gradient(135deg, ${q.accent}12 0%, rgba(15,23,42,0.55) 100%)`,
+      border:`1.5px solid ${ringColor}`,
+      borderRadius:14,
+      padding:'1rem 1.05rem',
+      transition:'transform 0.15s, box-shadow 0.15s',
+      fontFamily:'inherit',
+      color:'inherit',
+      width:'100%',
+      display:'flex',
+      flexDirection:'column',
+      gap:'0.45rem',
+      position:'relative',
+      overflow:'hidden',
+    }}
+    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow=`0 12px 28px ${q.accent}22`;}}
+    onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}>
+      <div style={{display:'flex', alignItems:'center', gap:'0.55rem'}}>
+        <span style={{fontSize:'1.8rem', color:q.accent, fontWeight:800, fontFamily:'monospace', textShadow:`0 0 14px ${q.accent}55`}}>{q.icon}</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:'0.62rem', color:q.accent, fontFamily:'monospace', letterSpacing:'0.08em', fontWeight:700}}>{q.lectures.join(' · ')}</div>
+          <div style={{fontSize:'0.95rem', color:'#fff', fontWeight:700, lineHeight:1.25, marginTop:2}}>{q.title}</div>
+        </div>
+      </div>
+      <div style={{fontSize:'0.74rem', color:'var(--text-2)', lineHeight:1.55, maxHeight:'4.5em', overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical'}}>{q.scenario}</div>
+      <div style={{display:'flex', alignItems:'center', gap:'0.4rem', marginTop:'0.2rem'}}>
+        <span style={{fontSize:'0.66rem', color:'var(--text-2)', fontFamily:'monospace'}}>parts</span>
+        {q.parts.map((p, i) => {
+          const r = ratings[i];
+          const c = r === 'easy' ? '#34d399' : r === 'ok' ? '#fbbf24' : r === 'hard' ? '#fb7185' : 'rgba(148,163,184,0.4)';
+          return (
+            <span key={p.label} title={r ? `${p.label}: ${r}` : `${p.label}: untouched`}
+              style={{width:18, height:18, borderRadius:5, background:`${c}28`, border:`1px solid ${c}`, color:c, fontSize:'0.65rem', fontWeight:700, fontFamily:'monospace', display:'inline-flex', alignItems:'center', justifyContent:'center'}}>{p.label}</span>
+          );
+        })}
+        <span style={{flex:1}}/>
+        <span style={{fontSize:'0.65rem', color:ringColor, fontFamily:'monospace', letterSpacing:'0.04em', fontWeight:700, textTransform:'uppercase'}}>{status.label}</span>
+      </div>
+    </button>
+  );
+}
+
+// ── Vault grid view ───────────────────────────────────────────────────────────
+function VaultGrid({ progress, onOpen, onReset }) {
+  const [lectureFilter, setLectureFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Build the lecture filter list dynamically from question metadata.
+  const allLectures = useMemo(() => {
+    const s = new Set();
+    EXAM_QUESTIONS.forEach(q => q.lectures.forEach(l => s.add(l)));
+    return ['all', ...Array.from(s).sort((a,b) => {
+      const na = parseInt(a.replace('L',''),10), nb = parseInt(b.replace('L',''),10);
+      return na - nb;
+    })];
+  }, []);
+
+  const filtered = useMemo(() => {
+    return EXAM_QUESTIONS.filter(q => {
+      if (lectureFilter !== 'all' && !q.lectures.includes(lectureFilter)) return false;
+      if (statusFilter !== 'all') {
+        const st = questionStatus(progress, q).kind;
+        if (st !== statusFilter) return false;
+      }
+      return true;
+    });
+  }, [lectureFilter, statusFilter, progress]);
+
+  const tally = useMemo(() => {
+    let fresh = 0, progressing = 0, review = 0, attempted = 0, mastered = 0;
+    EXAM_QUESTIONS.forEach(q => {
+      const k = questionStatus(progress, q).kind;
+      if (k === 'fresh') fresh++;
+      else if (k === 'progress') progressing++;
+      else if (k === 'review') review++;
+      else if (k === 'attempted') attempted++;
+      else if (k === 'mastered') mastered++;
+    });
+    return { fresh, progressing, review, attempted, mastered };
+  }, [progress]);
+
+  const openRandom = () => {
+    const pool = filtered.length ? filtered : EXAM_QUESTIONS;
+    onOpen(pool[Math.floor(Math.random() * pool.length)]);
+  };
+
+  return (
+    <div>
+      {/* Stats banner */}
+      <div style={{
+        background:'linear-gradient(135deg, rgba(251,191,36,0.07) 0%, rgba(52,211,153,0.07) 100%)',
+        border:'1px solid rgba(251,191,36,0.25)',
+        borderRadius:12,
+        padding:'0.85rem 1.05rem',
+        marginBottom:'0.9rem',
+        display:'grid',
+        gridTemplateColumns:'repeat(auto-fit, minmax(110px, 1fr))',
+        gap:'0.5rem',
+      }}>
+        {[
+          { l:'TOTAL',     v:EXAM_QUESTIONS.length, c:'#fbbf24' },
+          { l:'untouched', v:tally.fresh,           c:'rgba(148,163,184,0.7)' },
+          { l:'in progress', v:tally.progressing,   c:'#fbbf24' },
+          { l:'attempted', v:tally.attempted,       c:'#a78bfa' },
+          { l:'review',    v:tally.review,          c:'#fb7185' },
+          { l:'mastered',  v:tally.mastered,        c:'#34d399' },
+        ].map(s => (
+          <div key={s.l} style={{textAlign:'center'}}>
+            <div style={{fontSize:'1.4rem', fontWeight:800, fontFamily:'monospace', color:s.c}}>{s.v}</div>
+            <div style={{fontSize:'0.6rem', color:'var(--text-2)', fontFamily:'monospace', letterSpacing:'0.08em', textTransform:'uppercase'}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters + actions */}
+      <div style={{display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.7rem', flexWrap:'wrap'}}>
+        <span style={{fontSize:'0.7rem', color:'var(--text-2)', fontFamily:'monospace', letterSpacing:'0.06em'}}>LECTURE</span>
+        <div style={{display:'flex', gap:'0.3rem', flexWrap:'wrap'}}>
+          {allLectures.map(L => (
+            <button key={L} onClick={()=>setLectureFilter(L)}
+              style={{
+                background: lectureFilter === L ? 'rgba(251,191,36,0.2)' : 'rgba(15,23,42,0.5)',
+                border: `1px solid ${lectureFilter === L ? '#fbbf24' : 'rgba(148,163,184,0.22)'}`,
+                color: lectureFilter === L ? '#fbbf24' : 'var(--text-1)',
+                borderRadius:6, padding:'2px 9px', cursor:'pointer', fontSize:'0.7rem', fontFamily:'monospace', fontWeight:600
+              }}>{L === 'all' ? 'all' : L}</button>
+          ))}
+        </div>
+        <span style={{flex:1}}/>
+        <button onClick={openRandom} className="m4-algo-tab" style={{padding:'3px 11px', fontSize:'0.7rem'}}>🎲 Random</button>
+        <button onClick={onReset} className="m4-algo-tab" style={{padding:'3px 11px', fontSize:'0.7rem'}}>↻ Reset all</button>
+      </div>
+      <div style={{display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.9rem', flexWrap:'wrap'}}>
+        <span style={{fontSize:'0.7rem', color:'var(--text-2)', fontFamily:'monospace', letterSpacing:'0.06em'}}>STATUS</span>
+        <div style={{display:'flex', gap:'0.3rem', flexWrap:'wrap'}}>
+          {[
+            { k:'all',       l:'all',         c:'#fbbf24' },
+            { k:'fresh',     l:'untouched',   c:'rgba(148,163,184,0.7)' },
+            { k:'progress',  l:'in progress', c:'#fbbf24' },
+            { k:'attempted', l:'attempted',   c:'#a78bfa' },
+            { k:'review',    l:'review',      c:'#fb7185' },
+            { k:'mastered',  l:'mastered',    c:'#34d399' },
+          ].map(s => (
+            <button key={s.k} onClick={()=>setStatusFilter(s.k)}
+              style={{
+                background: statusFilter === s.k ? `${s.c}22` : 'rgba(15,23,42,0.5)',
+                border: `1px solid ${statusFilter === s.k ? s.c : 'rgba(148,163,184,0.22)'}`,
+                color: statusFilter === s.k ? s.c : 'var(--text-1)',
+                borderRadius:6, padding:'2px 9px', cursor:'pointer', fontSize:'0.7rem', fontFamily:'monospace', fontWeight:600
+              }}>{s.l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(290px, 1fr))', gap:'0.7rem'}}>
+        {filtered.map(q => <QuestionDoor key={q.id} q={q} progress={progress} onOpen={() => onOpen(q)} />)}
+      </div>
+      {filtered.length === 0 && (
+        <div style={{padding:'1.5rem', textAlign:'center', color:'var(--text-2)', fontSize:'0.85rem'}}>
+          No questions match the current filters.
+        </div>
+      )}
+
+      {/* Mode-of-use guide */}
+      <div className="m4-card" style={{marginTop:'1rem'}}>
+        <div className="m4-card-h">How to use the Exam Vault</div>
+        <ol style={{paddingLeft:'1.2rem', fontSize:'0.78rem', color:'var(--text-1)', lineHeight:1.65, margin:0}}>
+          <li><strong style={{color:'#fbbf24'}}>Open</strong> a question — read the scenario.</li>
+          <li>For each part: <strong>write your answer on paper FIRST</strong>. Resist peeking.</li>
+          <li>If stuck, peel back the Cone of Recall in order — Compass → Key Term → Diagram → Forge → Vault. Most parts should be answerable by the Forge stage.</li>
+          <li>Self-rate <strong style={{color:'#fb7185'}}>Hard</strong>, <strong style={{color:'#fbbf24'}}>OK</strong>, or <strong style={{color:'#34d399'}}>Easy</strong>. Hard cards bubble up in the Review filter.</li>
+          <li>Progress saves automatically. Revisit Reviews after 1, 3, 7 days for spaced repetition.</li>
+        </ol>
+        <div className="m4-hr"/>
+        <div className="m4-flabel">The five hint types — at a glance</div>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:'0.45rem'}}>
+          {HINT_TYPES.map(t => (
+            <div key={t.key} style={{padding:'0.5rem 0.7rem', background:`${t.color}10`, border:`1px solid ${t.color}55`, borderRadius:8}}>
+              <div style={{fontSize:'1rem', color:t.color, fontWeight:700, marginBottom:2}}>{t.icon} {t.label}</div>
+              <div style={{fontSize:'0.7rem', color:'var(--text-2)', lineHeight:1.5}}>{t.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main ExamVault ────────────────────────────────────────────────────────────
+function ExamVault() {
+  const [progress, setProgress] = useState(() => loadVaultProgress());
+  const [view, setView] = useState({ kind:'list' });
+
+  const open = (q) => {
+    setProgress(p => {
+      const np = { ...p, lastOpened: q.id };
+      saveVaultProgress(np);
+      return np;
+    });
+    setView({ kind:'question', qid: q.id });
+  };
+  const back = () => setView({ kind:'list' });
+
+  const resetAll = () => {
+    if (!window.confirm('Reset ALL Exam Vault progress? This wipes every revealed hint and rating.')) return;
+    const fresh = { hintsRevealed:{}, partRating:{}, lastOpened: null };
+    setProgress(fresh);
+    saveVaultProgress(fresh);
+  };
+
+  if (view.kind === 'question') {
+    const q = EXAM_QUESTIONS.find(x => x.id === view.qid);
+    if (!q) return <div>Question not found.</div>;
+    return <QuestionPanel q={q} progress={progress} setProgress={setProgress} onBack={back} />;
+  }
+
+  return <VaultGrid progress={progress} onOpen={open} onReset={resetAll} />;
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview','Algorithm Atlas','Memory Cosmos','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Genetic Algorithms','Emergent','Perceptron','Neuron Logic','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
+const MAIN_TABS = ['Overview','Algorithm Atlas','Memory Cosmos','Exam Vault','Intelligence','Adaptation','Job Shop','Optimisation','Calculus','Algorithms','Population','Genetic Algorithms','Emergent','Perceptron','Neuron Logic','Neural Networks','Labs','Quiz','Practice Exam','Group Project','Dragonfly Algorithm'];
 const LAB_TABS  = ['PRNG & LCG','Bin Packing','Job Shop (JSSP)','Solution Space'];
 
 export default function CITS4404() {
@@ -12922,6 +15522,41 @@ export default function CITS4404() {
               <div style={{textAlign:'center',padding:'0 0.5rem', position:'relative', zIndex:1}}>
                 <div style={{fontSize:'2.1rem',fontFamily:'monospace',fontWeight:700,color:'#a78bfa',textShadow:'0 0 20px rgba(167,139,250,0.6)'}}>✦</div>
                 <div style={{fontSize:'0.66rem',color:'#a78bfa',fontFamily:'monospace',letterSpacing:'0.06em'}}>ENTER COSMOS</div>
+              </div>
+            </div>
+
+            {/* Exam Vault banner */}
+            <div onClick={() => setTab('Exam Vault')} style={{
+              cursor:'pointer',
+              background:`
+                radial-gradient(ellipse at 25% 50%, rgba(251,191,36,0.22) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(52,211,153,0.18) 0%, transparent 55%),
+                linear-gradient(135deg, #1a1408 0%, #0a1a14 100%)
+              `,
+              border:'1px solid rgba(251,191,36,0.45)',
+              borderRadius:14,
+              padding:'1.1rem 1.3rem',
+              marginBottom:'0.95rem',
+              display:'grid',
+              gridTemplateColumns:'1fr auto',
+              alignItems:'center',
+              gap:'1rem',
+              transition:'transform 0.15s, box-shadow 0.15s',
+              position:'relative',
+              overflow:'hidden',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 14px 36px rgba(251,191,36,0.25)';}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}>
+              <div style={{position:'relative', zIndex:1}}>
+                <div style={{fontSize:'0.65rem',color:'#fbbf24',fontFamily:'monospace',letterSpacing:'0.1em',fontWeight:700,marginBottom:'0.35rem'}}>🗝  EXAM VAULT · NEW</div>
+                <div style={{fontSize:'1.3rem',color:'#fff',fontWeight:700,marginBottom:'0.3rem',letterSpacing:'-0.01em'}}>Themed multi-part exam questions with progressive hint reveals</div>
+                <div style={{fontSize:'0.82rem',color:'rgba(226,232,240,0.78)',lineHeight:1.55}}>
+                  Eleven exam-style scenarios in the official short-answer format. Each part offers the <strong style={{color:'#fbbf24'}}>Cone of Recall</strong> — five hint layers from concept hint → key term → formula → solution approach → model answer. Attempt on paper, peel back hints only when stuck. Covers every lecture L1–L15.
+                </div>
+              </div>
+              <div style={{textAlign:'center',padding:'0 0.5rem', position:'relative', zIndex:1}}>
+                <div style={{fontSize:'2.1rem',fontFamily:'monospace',fontWeight:700,color:'#fbbf24',textShadow:'0 0 20px rgba(251,191,36,0.6)'}}>🗝</div>
+                <div style={{fontSize:'0.66rem',color:'#fbbf24',fontFamily:'monospace',letterSpacing:'0.06em'}}>OPEN VAULT</div>
               </div>
             </div>
 
@@ -13106,6 +15741,17 @@ export default function CITS4404() {
           </>
         )}
 
+        {/* ── NEURAL NETWORKS ── */}
+        {tab === 'Neural Networks' && (
+          <>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Neural Networks &amp; Function Representation <span className="m4-badge" style={{background:'rgba(167,139,250,0.12)',color:'var(--violet)',border:'1px solid rgba(167,139,250,0.3)'}}>Lecture 15</span></h2>
+              <p className="m4-sec-sub">From single neurons to multi-layer networks. Biological inspiration, MNIST and the visual cortex hierarchy, feed-forward architecture, training as minimisation, the backpropagation algorithm, and the universal approximation theorem. Every key fact rendered as an interactive widget.</p>
+            </div>
+            <NeuralNetworksTab />
+          </>
+        )}
+
         {/* ── LABS ── */}
         {tab === 'Labs' && (
           <div>
@@ -13165,6 +15811,15 @@ export default function CITS4404() {
             <p className="m4-sec-sub">Full exam-style questions covering every topic. Write your answer before revealing the solution. Includes 3 questions from the 2026 practice exam and 15 questions derived from lecture content.</p>
           </div>
           <PracticeExamTab />
+        </>)}
+
+        {/* ── EXAM VAULT ── */}
+        {tab === 'Exam Vault' && (<>
+          <div className="m4-sec-hdr">
+            <h2 className="m4-sec-title">Exam Vault <span className="m4-badge" style={{background:'rgba(251,191,36,0.12)',color:'var(--amber)',border:'1px solid rgba(251,191,36,0.3)'}}>Themed Exam Prep</span></h2>
+            <p className="m4-sec-sub">A locker of <strong>11 themed multi-part questions</strong> written in the official short-answer style. Each part exposes the <em>Cone of Recall</em> — five progressive hint layers (Concept → Term → Formula → Approach → Model answer). Crack one open, attempt on paper, then peel back hints as needed.</p>
+          </div>
+          <ExamVault />
         </>)}
 
         {/* ── GROUP PROJECT ── */}
