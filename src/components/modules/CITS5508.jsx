@@ -99,6 +99,84 @@ function generateSinData(n = 30, seed = 42, noise = 0.35) {
 // ── Quiz data ─────────────────────────────────────────────────────────────────
 const QUIZ_DATA = [
   {
+    lec: 'Lec 8 · PCA',
+    q: 'PCA reduces a dataset from n to d dimensions. What does it actually optimise when choosing the projection?',
+    opts: [
+      'It minimises the number of features regardless of information',
+      'It finds the axes that preserve the maximum variance of the data',
+      'It maximises the correlation between features',
+      'It maximises classification accuracy on the labels',
+    ],
+    ans: 1,
+    ok: 'PCA finds the hyperplane closest to the data and projects onto it, choosing principal axes that preserve as much variance as possible. It is unsupervised — labels are never used.',
+    ng: 'PCA is an unsupervised, variance-preserving linear projection: the 1st principal axis is the direction of largest variance, the 2nd is orthogonal with the next largest, and so on.',
+  },
+  {
+    lec: 'Lec 8 · Choosing d',
+    q: 'You run PCA() then compute cumsum of explained_variance_ratio_. To keep 95% of the variance you use d = np.argmax(cumsum >= 0.95) + 1. Why the + 1?',
+    opts: [
+      'To skip the first (largest) component',
+      'Because argmax returns a 0-based index, so +1 converts it to a count of components',
+      'To always keep one extra component for safety',
+      'Because cumsum starts at 1.0',
+    ],
+    ans: 1,
+    ok: 'argmax returns the 0-based index of the first dimension whose cumulative variance reaches 95%; adding 1 turns that index into the number of components to keep. (Equivalently: PCA(n_components=0.95).)',
+    ng: 'argmax gives a 0-based index; +1 converts it to a component count. The one-liner PCA(n_components=0.95) does the same thing.',
+  },
+  {
+    lec: 'Lec 8 · Kernel PCA',
+    q: 'Two concentric circles are not linearly separable in 2D. How does RBF Kernel PCA help?',
+    opts: [
+      'It deletes the inner circle',
+      'It implicitly maps the data to a higher-dimensional space where a linear method can separate the rings, then projects back to a few components',
+      'It rotates the 2D plane until the circles separate',
+      'It standardises the two features',
+    ],
+    ans: 1,
+    ok: 'The kernel trick implicitly maps instances to a high-dimensional feature space, where the rings become linearly separable; Kernel PCA performs this nonlinear projection (RBF train 1.0 / test 0.988 in the example).',
+    ng: 'No rotation of the 2D plane can separate nested rings. RBF Kernel PCA implicitly lifts the data to high dimensions where a linear boundary works.',
+  },
+  {
+    lec: 'Lec 9 · K-Means',
+    q: 'After running KMeans, kmeans.transform(X_new) returns what — and what kind of clustering does it enable?',
+    opts: [
+      'The hard cluster label of each instance (hard clustering)',
+      'The Euclidean distance from each instance to every centroid — enabling soft clustering',
+      'The probability that the model is correct',
+      'The updated centroid coordinates',
+    ],
+    ans: 1,
+    ok: 'transform() gives the distance from each instance to all k centroids (an m×k matrix), which is a soft-clustering score. fit_predict()/labels_ give the hard assignment.',
+    ng: 'labels_ / fit_predict give hard assignments; transform() returns the m×k distances to every centroid, used for soft clustering.',
+  },
+  {
+    lec: 'Lec 9 · Choosing k',
+    q: 'Which statement about the elbow method and silhouette score for choosing k is correct?',
+    opts: [
+      'Inertia has a clear minimum at the best k, so just minimise it',
+      'Inertia falls monotonically with k, so you look for an elbow; the silhouette score (b−a)/max(a,b) is often a more reliable criterion',
+      'The silhouette score should be minimised',
+      'Both methods require the true labels',
+    ],
+    ans: 1,
+    ok: 'Inertia always decreases with k (0 at k=m), so it has no useful minimum — you look for the elbow. The silhouette score is bounded in [−1,1], is maximised at good k, and needs no labels.',
+    ng: 'Inertia keeps dropping with k, so minimising it fails. Use the elbow, or maximise the (unsupervised) silhouette score s = (b−a)/max(a,b).',
+  },
+  {
+    lec: 'Lec 9 · DBSCAN',
+    q: 'In DBSCAN, increasing eps from 0.05 to 0.20 on the moons dataset changed the number of anomalies from 84 to 0. Why?',
+    opts: [
+      'Larger eps removes points from the dataset',
+      'Larger eps enlarges each ε-neighbourhood, so more points reach min_samples and become core/border instead of noise — but distinct clusters may wrongly merge',
+      'Larger eps increases min_samples automatically',
+      'eps has no effect on anomalies',
+    ],
+    ans: 1,
+    ok: 'A bigger ε means bigger neighbourhoods, so more points meet the min_samples density and get absorbed into clusters as core/border, leaving fewer anomalies — at the risk of merging separate clusters.',
+    ng: 'ε sets the neighbourhood radius. Larger ε → denser neighbourhoods → fewer −1 anomalies, but separate clusters can merge incorrectly.',
+  },
+  {
     lec: 'Lec 1 · Mitchell\'s Definition',
     q: 'For a spam filter: "classifying emails as spam or not-spam using labelled training emails, measured by classification accuracy" — which is T, E, P respectively?',
     opts: [
@@ -3722,7 +3800,7 @@ function EnsembleMatcher() {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Assignment 1', 'Quiz'];
+const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Dimensionality Reduction', 'Clustering', 'Assignment 1', 'Quiz'];
 const L6_TABS = ['Overview & CART', 'Impurity Measures', 'Regularisation', 'Regression Trees', 'Limitations'];
 const L7_TABS = ['Ensemble Basics', 'Bagging & OOB', 'Random Forests', 'Boosting', 'Stacking & Summary'];
 const L1_TABS = ['Mitchell\'s Definition', 'ML System Types', 'Challenges & Testing'];
@@ -3731,6 +3809,957 @@ const L3_TABS = ['Linear Regression', 'Gradient Descent', 'Polynomial Regression
 const L4_TABS = ['Bias & Variance', 'Regularisation', 'kNN', 'Softmax & Multiclass'];
 const L5_TABS = ['Linear SVM', 'Kernel Trick', 'SVM Math', 'Complexity & Regression'];
 const ASGN1_TABS = ['MNIST & Classification', 'Data Splits', 'Softmax from Scratch', 'sklearn Comparison', 'Linear vs Non-Linear'];
+
+// ════════════════════════════════════════════════════════════════════════════
+// LECTURE 8 — Dimensionality Reduction  &  LECTURE 9 — Unsupervised Learning
+// (interactive learning modules — same patterns/classes as Lectures 1–7)
+// ════════════════════════════════════════════════════════════════════════════
+
+const L8_TABS = ['Curse of Dimensionality', 'Projection & Manifolds', 'PCA', 'Choosing d & Compression', 'PCA Variants', 'Kernel PCA', 'Other Techniques'];
+const L9_TABS = ['Introduction', 'K-Means Algorithm', 'Drawbacks & Remedies', 'Semi-Supervised Learning', 'DBSCAN'];
+
+const L_COL = ['#22d3ee', '#a78bfa', '#34d399', '#fbbf24', '#fb7185', '#60a5fa', '#f472b6', '#2dd4bf', '#c084fc', '#f59e0b'];
+
+// ── Shared datasets (deterministic via seeded PRNG) ──────────────────────────
+const L8_CLOUD = (() => {
+  const rand = makePRNG(7);
+  const ang = Math.PI / 6;
+  const pts = [];
+  for (let i = 0; i < 140; i++) {
+    const a = gaussianNoise(rand, 2.7);
+    const b = gaussianNoise(rand, 0.75);
+    pts.push([a * Math.cos(ang) - b * Math.sin(ang) + 5, a * Math.sin(ang) + b * Math.cos(ang) + 5]);
+  }
+  return pts;
+})();
+
+const L8_CIRCLES = (() => {
+  const rand = makePRNG(11);
+  const pts = [];
+  for (let i = 0; i < 70; i++) { const t = rand() * 2 * Math.PI, r = 1.3 + gaussianNoise(rand, 0.12); pts.push([5 + r * Math.cos(t), 5 + r * Math.sin(t), 0]); }
+  for (let i = 0; i < 95; i++) { const t = rand() * 2 * Math.PI, r = 3.7 + gaussianNoise(rand, 0.16); pts.push([5 + r * Math.cos(t), 5 + r * Math.sin(t), 1]); }
+  return pts;
+})();
+
+const L8_EVR = (() => {
+  const raw = Array.from({ length: 20 }, (_, i) => Math.exp(-i / 3.1) + 0.004);
+  const s = raw.reduce((a, b) => a + b, 0);
+  return raw.map(v => v / s);
+})();
+
+const L8_SWISS = (() => {
+  const rand = makePRNG(5);
+  const pts = [];
+  for (let i = 0; i < 170; i++) { const t = 1.5 * Math.PI * (1 + 2 * (i / 169)); const h = rand() * 8; pts.push([t, h]); }
+  return pts;
+})();
+
+const L8_TSNE = (() => {
+  const rand = makePRNG(13);
+  const pts = [];
+  for (let k = 0; k < 10; k++) {
+    const cx = Math.cos(k / 10 * 2 * Math.PI) * 3.6 + 5, cy = Math.sin(k / 10 * 2 * Math.PI) * 3.6 + 5;
+    for (let i = 0; i < 20; i++) pts.push([cx + gaussianNoise(rand, 0.5), cy + gaussianNoise(rand, 0.5), k]);
+  }
+  return pts;
+})();
+
+const L9_BLOBS = (() => {
+  const rand = makePRNG(3);
+  const C = [[2.5, 2.6], [7.6, 2.4], [2.4, 7.5], [7.2, 7.3], [5.0, 5.0]];
+  const pts = [];
+  C.forEach((c, ci) => { for (let i = 0; i < (ci === 4 ? 24 : 30); i++) pts.push([c[0] + gaussianNoise(rand, 0.72), c[1] + gaussianNoise(rand, 0.72)]); });
+  return pts;
+})();
+
+const L9_MOONS = (() => {
+  const rand = makePRNG(9);
+  const pts = [];
+  for (let i = 0; i < 90; i++) { const t = Math.PI * (i / 89); pts.push([Math.cos(t) + gaussianNoise(rand, 0.06), Math.sin(t) + gaussianNoise(rand, 0.06)]); }
+  for (let i = 0; i < 90; i++) { const t = Math.PI * (i / 89); pts.push([1 - Math.cos(t) + gaussianNoise(rand, 0.06), 0.5 - Math.sin(t) + gaussianNoise(rand, 0.06)]); }
+  return pts;
+})();
+
+// ── Math helpers ─────────────────────────────────────────────────────────────
+function l8pca2(pts) {
+  const n = pts.length;
+  let mx = 0, my = 0;
+  for (const p of pts) { mx += p[0]; my += p[1]; }
+  mx /= n; my /= n;
+  let a = 0, b = 0, c = 0;
+  for (const p of pts) { const dx = p[0] - mx, dy = p[1] - my; a += dx * dx; b += dx * dy; c += dy * dy; }
+  a /= n; b /= n; c /= n;
+  const tr = a + c, root = Math.sqrt(Math.max(0, (a - c) * (a - c) / 4 + b * b));
+  const l1 = tr / 2 + root, l2 = tr / 2 - root;
+  const angle = 0.5 * Math.atan2(2 * b, a - c);
+  return { mx, my, l1, l2, angle };
+}
+function l8projVar(pts, mx, my, theta) {
+  const u = [Math.cos(theta), Math.sin(theta)];
+  let s = 0;
+  for (const p of pts) { const v = (p[0] - mx) * u[0] + (p[1] - my) * u[1]; s += v * v; }
+  return s / pts.length;
+}
+function l9kmeansHistory(pts, k, initIdx) {
+  let cent = initIdx.map(i => [pts[i][0], pts[i][1]]);
+  const hist = [];
+  for (let it = 0; it < 30; it++) {
+    const assign = pts.map(p => { let bi = 0, bd = Infinity; for (let j = 0; j < k; j++) { const dx = p[0] - cent[j][0], dy = p[1] - cent[j][1], d = dx * dx + dy * dy; if (d < bd) { bd = d; bi = j; } } return bi; });
+    let inertia = 0; pts.forEach((p, i) => { const c = cent[assign[i]]; inertia += (p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2; });
+    const ncent = Array.from({ length: k }, () => [0, 0, 0]);
+    pts.forEach((p, i) => { const a = assign[i]; ncent[a][0] += p[0]; ncent[a][1] += p[1]; ncent[a][2]++; });
+    const moved = ncent.map((c, j) => c[2] > 0 ? [c[0] / c[2], c[1] / c[2]] : cent[j]);
+    let delta = 0; for (let j = 0; j < k; j++) delta += Math.abs(moved[j][0] - cent[j][0]) + Math.abs(moved[j][1] - cent[j][1]);
+    hist.push({ cent: cent.map(c => [...c]), assign, inertia, next: moved });
+    cent = moved;
+    if (delta < 1e-7) break;
+  }
+  return hist;
+}
+function l9silhouette(pts, assign, k) {
+  const n = pts.length;
+  let total = 0, cnt = 0;
+  for (let i = 0; i < n; i++) {
+    const sums = Array(k).fill(0), counts = Array(k).fill(0);
+    for (let j = 0; j < n; j++) { if (j === i) continue; const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]); sums[assign[j]] += d; counts[assign[j]]++; }
+    const ai = assign[i];
+    if (counts[ai] === 0) continue;
+    const a = sums[ai] / counts[ai];
+    let b = Infinity; for (let c = 0; c < k; c++) { if (c === ai || counts[c] === 0) continue; b = Math.min(b, sums[c] / counts[c]); }
+    if (!isFinite(b)) continue;
+    total += (b - a) / Math.max(a, b); cnt++;
+  }
+  return cnt ? total / cnt : 0;
+}
+function l9dbscan(pts, eps, minPts) {
+  const n = pts.length, eps2 = eps * eps;
+  const neigh = i => { const r = []; for (let j = 0; j < n; j++) { const dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1]; if (dx * dx + dy * dy <= eps2) r.push(j); } return r; };
+  const core = pts.map((_, i) => neigh(i).length >= minPts);
+  const labels = Array(n).fill(-2);
+  let cid = 0;
+  for (let i = 0; i < n; i++) {
+    if (labels[i] !== -2 || !core[i]) continue;
+    labels[i] = cid; const stack = [i];
+    while (stack.length) { const q = stack.pop(); for (const nn of neigh(q)) { if (labels[nn] === -2 || labels[nn] === -1) { const was = labels[nn]; labels[nn] = cid; if (core[nn] && was === -2) stack.push(nn); } } }
+    cid++;
+  }
+  for (let i = 0; i < n; i++) if (labels[i] === -2) labels[i] = -1;
+  return { labels, core, clusters: cid, noise: labels.filter(l => l === -1).length };
+}
+
+// ── Reusable code block + quiz ───────────────────────────────────────────────
+function PyBlock({ code }) {
+  return (
+    <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '0.73rem', color: 'var(--text-1)', background: 'rgba(34,211,238,0.05)', border: '1px solid rgba(34,211,238,0.15)', padding: '0.7rem 0.9rem', borderRadius: 5, lineHeight: 1.55, overflowX: 'auto', margin: '0.6rem 0' }}>
+      <code>{code}</code>
+    </pre>
+  );
+}
+
+function L89Quiz({ title, items }) {
+  const [ans, setAns] = useState({});
+  const [done, setDone] = useState({});
+  const choose = (qi, ai) => { if (done[qi]) return; setAns(p => ({ ...p, [qi]: ai })); setDone(p => ({ ...p, [qi]: true })); };
+  const answered = Object.keys(done).length;
+  const score = items.filter((q, i) => ans[i] === q.ans).length;
+  return (
+    <div className="m4-card" style={{ marginTop: '1rem' }}>
+      <div className="m4-card-h">{title || 'Check Your Understanding'}{answered > 0 ? <span style={{ float: 'right', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: score === answered ? 'var(--emerald)' : 'var(--amber)' }}>{score}/{answered}</span> : null}</div>
+      {items.map((q, qi) => {
+        const dn = done[qi], ch = ans[qi];
+        return (
+          <div key={qi} style={{ marginBottom: qi < items.length - 1 ? '1.1rem' : 0 }}>
+            <div style={{ fontSize: '0.86rem', color: 'var(--text-0)', fontWeight: 600, lineHeight: 1.5, marginBottom: '0.6rem' }}>{q.q}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {q.opts.map((opt, ai) => {
+                let bg = 'var(--bg-1)', bd = 'var(--border)', col = 'var(--text-1)';
+                if (dn) {
+                  if (ai === q.ans) { bg = 'rgba(52,211,153,0.12)'; bd = 'rgba(52,211,153,0.45)'; col = 'var(--emerald)'; }
+                  else if (ai === ch) { bg = 'rgba(251,113,133,0.1)'; bd = 'rgba(251,113,133,0.35)'; col = 'var(--rose)'; }
+                }
+                return (
+                  <button key={ai} disabled={dn} onClick={() => choose(qi, ai)} style={{ background: bg, border: `1px solid ${bd}`, borderRadius: 5, padding: '0.55rem 0.85rem', textAlign: 'left', cursor: dn ? 'default' : 'pointer', fontSize: '0.8rem', color: col, lineHeight: 1.4, fontFamily: 'var(--font-sans)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', opacity: 0.6, marginRight: '0.5rem' }}>{String.fromCharCode(65 + ai)}.</span>{opt}
+                  </button>
+                );
+              })}
+            </div>
+            {dn && (
+              <div style={{ marginTop: '0.6rem', padding: '0.6rem 0.85rem', borderRadius: 5, fontSize: '0.79rem', lineHeight: 1.55, background: ch === q.ans ? 'rgba(52,211,153,0.08)' : 'rgba(251,113,133,0.08)', border: `1px solid ${ch === q.ans ? 'rgba(52,211,153,0.3)' : 'rgba(251,113,133,0.3)'}`, color: 'var(--text-1)' }}>
+                <strong style={{ color: ch === q.ans ? 'var(--emerald)' : 'var(--rose)' }}>{ch === q.ans ? '✓ Correct — ' : '✗ Not quite — '}</strong>{ch === q.ans ? q.ok : q.ng}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LECTURE 8 COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
+
+// 8.1 Curse of dimensionality
+function L8Curse() {
+  const [d, setD] = useState(5);
+  const shell = 1 - Math.pow(0.9, d);            // fraction of volume in outer 10% shell
+  const diag = Math.sqrt(d);                       // unit-cube diagonal grows as sqrt(d)
+  const W = 460, H = 150, pad = 26;
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">The Curse of Dimensionality</div>
+        <ul className="m4-bullets">
+          <li>High-dimensional training data (thousands→millions of features) causes <strong style={{ color: 'var(--rose)' }}>long training times</strong> and makes it <strong style={{ color: 'var(--rose)' }}>hard to find good solutions</strong>.</li>
+          <li>In high dimensions almost every point sits <strong>near the boundary</strong> of the space, and random points are <strong>far apart</strong> — data becomes extremely sparse, so models risk overfitting.</li>
+          <li>In practice the number of features can often be reduced significantly.</li>
+        </ul>
+        <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Feature selection vs dimensionality reduction</div>
+        <div className="m4-callout">
+          In <strong>MNIST</strong>, boundary pixels carry little classification information and can be dropped — that is <strong>feature selection</strong>, a <strong style={{ color: 'var(--amber)' }}>supervised</strong> technique. The DR methods in this lecture (PCA, kPCA, t-SNE…) are <strong style={{ color: 'var(--cyan)' }}>unsupervised</strong> preprocessing for downstream tasks.
+        </div>
+        <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Key notes on DR</div>
+        <ul className="m4-bullets">
+          <li>DR always <strong>loses some information</strong>.</li>
+          <li>It speeds up training but may hurt performance and complicate the pipeline.</li>
+          <li>Very useful for <strong>data visualisation</strong> (projecting high-dim data to 2D/3D).</li>
+        </ul>
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive: how dimensions break intuition</div>
+        <div className="m4-ctrl">
+          <div className="m4-ctrl-lbl"><span>Number of dimensions d</span><span className="m4-ctrl-val">{d}</span></div>
+          <input type="range" min={1} max={15} step={1} value={d} onChange={e => setD(+e.target.value)} />
+        </div>
+        <div className="m4-stats-row">
+          <div className="m4-stat"><span className="m4-stat-l">In outer 10% shell</span><span className="m4-stat-v" style={{ color: 'var(--rose)' }}>{(shell * 100).toFixed(1)}%</span></div>
+          <div className="m4-stat"><span className="m4-stat-l">Samples for density</span><span className="m4-stat-v" style={{ color: 'var(--amber)' }}>10^{d}</span></div>
+          <div className="m4-stat"><span className="m4-stat-l">Cube diagonal</span><span className="m4-stat-v" style={{ color: 'var(--violet)' }}>{diag.toFixed(2)}</span></div>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas" style={{ marginTop: '0.5rem' }}>
+          <line x1={pad} y1={H - 20} x2={W - 8} y2={H - 20} stroke="rgba(148,163,184,0.25)" />
+          {Array.from({ length: 15 }, (_, i) => {
+            const dd = i + 1, sh = 1 - Math.pow(0.9, dd);
+            const bw = (W - pad - 12) / 15;
+            const x = pad + i * bw, h = sh * (H - 36);
+            return <rect key={i} x={x + 1} y={H - 20 - h} width={bw - 2} height={h} fill={dd === d ? 'var(--cyan)' : 'rgba(34,211,238,0.25)'} rx="1" />;
+          })}
+          <text x={pad} y={H - 6} fill="rgba(148,163,184,0.5)" fontSize="8" fontFamily="monospace">d=1</text>
+          <text x={W - 24} y={H - 6} fill="rgba(148,163,184,0.5)" fontSize="8" fontFamily="monospace">d=15</text>
+          <text x={pad} y={12} fill="rgba(148,163,184,0.6)" fontSize="9" fontFamily="monospace">% of volume within 10% of the surface</text>
+        </svg>
+        <div className="m4-flabel">As d grows, virtually all of the volume — and all your data — concentrates near the surface. A model trained here extrapolates into mostly-empty space.</div>
+      </div>
+    </div>
+  );
+}
+
+// 8.2 Projection & manifold learning
+function L8Manifold() {
+  const [mode, setMode] = useState('roll');
+  const W = 460, H = 300;
+  const tmin = 1.5 * Math.PI, tmax = 4.5 * Math.PI;
+  const hue = t => `hsl(${((t - tmin) / (tmax - tmin)) * 280},75%,60%)`;
+  const pos = (t, h) => {
+    if (mode === 'roll') { const x = t * Math.cos(t), depth = t * Math.sin(t); return [W / 2 + x * 13, H / 2 - h * 12 - depth * 4 + 30]; }
+    if (mode === 'proj') { const x = t * Math.cos(t); return [W / 2 + x * 13, 40 + h * 26]; }
+    return [40 + (t - tmin) * 28, 40 + h * 26]; // unrolled
+  };
+  const note = { roll: 'The Swiss roll: a 2D manifold curled inside 3D. Colour = position along the roll.', proj: 'Naive projection (drop a coordinate): layers of the roll collapse on top of each other — colours overlap, structure destroyed.', unroll: 'Manifold unrolling: recover the intrinsic (t, height) coordinates — colours form a clean gradient, structure preserved.' }[mode];
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Two Approaches to Dimensionality Reduction</div>
+        <div className="m4-flabel">1 · Projection</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>If the data lie close to a lower-dimensional subspace, project onto it. E.g. 3D points near a 2D plane → new coordinates <Tex src="(z_1, z_2)" /> on the plane, reducing 3→2.</p>
+        <div className="m4-flabel" style={{ marginTop: '0.5rem' }}>2 · Manifold learning</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Projection fails when the subspace <em>twists</em> (the Swiss roll). Dropping a coordinate squashes different layers together — instead we want to <strong>unroll</strong> the manifold.</p>
+        <div className="m4-callout" style={{ marginTop: '0.5rem' }}>
+          <strong>Manifold:</strong> a <Tex src="d" />-dimensional manifold is part of an <Tex src="n" />-dimensional space (<Tex src="d < n" />) that locally resembles a <Tex src="d" />-dim hyperplane. Swiss roll: <Tex src="d=2,\; n=3" />.
+        </div>
+        <ul className="m4-bullets" style={{ marginTop: '0.5rem' }}>
+          <li>Relies on the <strong>manifold assumption / hypothesis</strong>.</li>
+          <li>Implicit 2nd assumption: the task is <em>simpler</em> in the lower-dim manifold.</li>
+          <li><strong style={{ color: 'var(--amber)' }}>Caveat:</strong> the decision boundary is <em>not always</em> simpler in lower dimensions — DR speeds training but may not give a better solution.</li>
+        </ul>
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive: Swiss Roll</div>
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+          <button className={`m4-btn ${mode === 'roll' ? 'm4-btn-p' : ''}`} onClick={() => setMode('roll')}>3D Swiss Roll</button>
+          <button className={`m4-btn ${mode === 'proj' ? 'm4-btn-p' : ''}`} onClick={() => setMode('proj')}>Naive Projection</button>
+          <button className={`m4-btn ${mode === 'unroll' ? 'm4-btn-p' : ''}`} onClick={() => setMode('unroll')}>Unrolled Manifold</button>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+          {L8_SWISS.map((p, i) => { const [x, y] = pos(p[0], p[1]); return <circle key={i} cx={x} cy={y} r="3" fill={hue(p[0])} opacity="0.85" />; })}
+        </svg>
+        <div className={mode === 'proj' ? 'm4-warnbox' : 'm4-infobox'} style={{ fontSize: '0.79rem', marginTop: '0.5rem' }}>{note}</div>
+      </div>
+    </div>
+  );
+}
+
+// 8.3 PCA
+function L8PCA() {
+  const pca = l8pca2(L8_CLOUD);
+  const [deg, setDeg] = useState(Math.round(pca.angle * 180 / Math.PI));
+  const theta = deg * Math.PI / 180;
+  const v = l8projVar(L8_CLOUD, pca.mx, pca.my, theta);
+  const evr1 = pca.l1 / (pca.l1 + pca.l2);
+  const best = (Math.abs(((deg - pca.angle * 180 / Math.PI) % 180 + 270) % 180 - 90)) > 82;
+  const W = 360, H = 300, sc = 13, cx = W / 2, cy = H / 2;
+  const sx = x => cx + (x - 5) * sc, sy = y => cy - (y - 5) * sc;
+  const ux = Math.cos(theta), uy = Math.sin(theta);
+  return (
+    <div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">Principal Component Analysis</div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>PCA is a <strong>linear</strong> DR technique. It finds the hyperplane closest to the data and projects onto it. Key idea: <strong style={{ color: 'var(--cyan)' }}>find the projection that preserves as much variance as possible.</strong></p>
+          <ul className="m4-bullets">
+            <li><strong>1st axis</strong>: direction of largest variance.</li>
+            <li><strong>2nd axis</strong>: orthogonal to the 1st, next-largest variance — and so on.</li>
+            <li>The unit vector of the <Tex src="i" />-th axis is the <Tex src="i" />-th <strong>principal axis</strong>; projecting a point onto it gives a <strong>principal component (PC)</strong>. The <em>sign/direction</em> of each axis is not unique.</li>
+          </ul>
+          <div className="m4-flabel">Finding axes via SVD (mean-centred X)</div>
+          <div className="m4-eq"><Tex src="\mathbf{X} = \mathbf{U}\,\boldsymbol{\Sigma}\,\mathbf{V}^\top" block /></div>
+          <VarTable vars={[
+            ['\\mathbf{X}', 'm×n data matrix (one centred point per row)'],
+            ['\\mathbf{V}', 'n×n — its columns are the principal axes c₁,…,cₙ'],
+            ['\\boldsymbol{\\Sigma}', 'n×n diagonal of singular values, sorted decreasing'],
+            ['\\mathbf{U}', 'm×n'],
+          ]} />
+          <div className="m4-callout" style={{ marginTop: '0.5rem' }}>To reduce to <Tex src="d" /> dimensions, keep only the top <Tex src="d" /> singular values: <Tex src="\mathbf{X}\approx\widetilde{\mathbf{U}}\,\widetilde{\boldsymbol{\Sigma}}\,\widetilde{\mathbf{V}}^\top" /> (sizes <Tex src="m\times d" />, <Tex src="d\times d" />, <Tex src="n\times d" />). Note <code style={{ fontFamily: 'var(--font-mono)' }}>np.linalg.svd</code> returns <Tex src="\mathbf{s}" /> as a <em>vector</em> (not a diagonal matrix) and returns <Tex src="\mathbf{V}^\top" /> — hence <code style={{ fontFamily: 'var(--font-mono)' }}>Vt.T</code>.</div>
+          <PyBlock code={`X_centered = X - X.mean(axis=0)
+U, s, Vt = np.linalg.svd(X_centered)
+c1 = Vt.T[:, 0]      # 1st principal axis
+c2 = Vt.T[:, 1]      # 2nd principal axis`} />
+          <div className="m4-flabel">Project onto first d axes <Tex src="\mathbf{W}_d" /> (first d columns of V)</div>
+          <div className="m4-eq"><Tex src="\mathbf{X}_{d\text{-proj}} = \mathbf{X}\,\mathbf{W}_d" block /></div>
+          <PyBlock code={`W2 = Vt.T[:, :2]
+X2D = X_centered.dot(W2)
+
+# scikit-learn equivalent
+from sklearn.decomposition import PCA
+pca = PCA(n_components=2)
+X2D = pca.fit_transform(X)
+pca.components_.T[:, 0]   # 1st PC axis`} />
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Interactive: maximise the variance</div>
+          <div className="m4-ctrl">
+            <div className="m4-ctrl-lbl"><span>Projection axis angle</span><span className="m4-ctrl-val">{deg}°</span></div>
+            <input type="range" min={0} max={180} step={1} value={deg} onChange={e => setDeg(+e.target.value)} />
+          </div>
+          <div className="m4-stats-row">
+            <div className="m4-stat"><span className="m4-stat-l">Variance on axis</span><span className="m4-stat-v" style={{ color: 'var(--cyan)' }}>{v.toFixed(2)}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">Max (PC1)</span><span className="m4-stat-v" style={{ color: 'var(--emerald)' }}>{pca.l1.toFixed(2)}</span></div>
+          </div>
+          <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+            <line x1={cx - ux * 150} y1={cy + uy * 150} x2={cx + ux * 150} y2={cy - uy * 150} stroke="var(--cyan)" strokeWidth="2" strokeDasharray="4 3" opacity="0.85" />
+            {L8_CLOUD.map((p, i) => {
+              const t = (p[0] - pca.mx) * ux + (p[1] - pca.my) * uy;
+              const px = pca.mx + t * ux, py = pca.my + t * uy;
+              return <g key={i}><line x1={sx(p[0])} y1={sy(p[1])} x2={sx(px)} y2={sy(py)} stroke="rgba(148,163,184,0.2)" /><circle cx={sx(p[0])} cy={sy(p[1])} r="2.6" fill="var(--violet)" opacity="0.8" /><circle cx={sx(px)} cy={sy(py)} r="2" fill="var(--cyan)" /></g>;
+            })}
+            <line x1={sx(pca.mx)} y1={sy(pca.my)} x2={sx(pca.mx + Math.cos(pca.angle) * Math.sqrt(pca.l1))} y2={sy(pca.my + Math.sin(pca.angle) * Math.sqrt(pca.l1))} stroke="var(--emerald)" strokeWidth="2.5" />
+            <line x1={sx(pca.mx)} y1={sy(pca.my)} x2={sx(pca.mx + Math.cos(pca.angle + Math.PI / 2) * Math.sqrt(pca.l2))} y2={sy(pca.my + Math.sin(pca.angle + Math.PI / 2) * Math.sqrt(pca.l2))} stroke="var(--amber)" strokeWidth="2.5" />
+          </svg>
+          <div className={best ? 'm4-infobox' : 'm4-warnbox'} style={{ fontSize: '0.79rem' }}>
+            {best ? '✓ You are near PC1 — variance of the projected points is maximised here.' : 'Rotate the dashed axis: the projected (cyan) points spread out most along the green PC1 direction.'}
+          </div>
+          <div className="m4-flabel" style={{ marginTop: '0.4rem' }}>Explained variance ratio ≈ [{evr1.toFixed(3)}, {(1 - evr1).toFixed(3)}] — green PC1 keeps {(evr1 * 100).toFixed(0)}% of the variance.</div>
+        </div>
+      </div>
+      <L89Quiz title="Quick check — PCA" items={[
+        { q: 'Why must the data be mean-centred before running np.linalg.svd for PCA?', opts: ['To make all features the same scale', 'So the principal axes pass through the data’s centre (origin), correctly capturing variance directions', 'To remove outliers', 'It is optional and only speeds up SVD'], ans: 1, ok: 'PCA measures variance about the mean; centring puts the origin at the mean so the SVD axes are true variance directions.', ng: 'Centring (not scaling) is what matters here: variance is defined about the mean, so the origin must sit at the mean.' },
+        { q: 'np.linalg.svd returns Vt. How do you get the first principal axis?', opts: ['Vt[0]', 'Vt.T[:, 0]', 'U[:, 0]', 's[0]'], ans: 1, ok: 'svd returns Vᵀ, so the columns of V = Vt.T; the 1st PC axis is Vt.T[:, 0].', ng: 'svd returns Vᵀ. Transpose it (Vt.T) and take column 0 to get the first principal axis.' },
+      ]} />
+    </div>
+  );
+}
+
+// 8.4 Choosing d & compression
+function L8ChooseDim() {
+  const [target, setTarget] = useState(95);
+  const cum = []; let s = 0; for (const e of L8_EVR) { s += e; cum.push(s); }
+  const d = cum.findIndex(c => c >= target / 100) + 1;
+  const W = 460, H = 200, pad = 30;
+  const sx = i => pad + (i / (L8_EVR.length - 1)) * (W - pad - 12);
+  const sy = c => H - 24 - c * (H - 40);
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Choosing the Number of Dimensions</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Keep enough PCs to retain a target fraction of total variance (commonly <strong>95%</strong>).</p>
+        <PyBlock code={`pca = PCA()
+pca.fit(X)
+cumsum = np.cumsum(pca.explained_variance_ratio_)
+d = np.argmax(cumsum >= 0.95) + 1
+
+# simpler equivalent:
+pca = PCA(n_components=0.95)
+X_reduced = pca.fit_transform(X)`} />
+        <div className="m4-flabel">Or look for the <strong>elbow</strong> where explained variance stops growing quickly.</div>
+        <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>PCA for compression & reconstruction</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>On <strong>MNIST</strong>, dropping just 5% of variance reduces <strong style={{ color: 'var(--cyan)' }}>784 → 154</strong> dimensions, greatly speeding up downstream classifiers (e.g. SVM).</p>
+        <div className="m4-eq"><Tex src="\mathbf{X}_{\text{recovered}} = \mathbf{X}_{d\text{-proj}}\,\mathbf{W}_d^\top" block /></div>
+        <PyBlock code={`pca = PCA(n_components=154)
+X_reduced = pca.fit_transform(X)
+X_recovered = pca.inverse_transform(X_reduced)
+# mean squared distance original↔recovered = reconstruction error`} />
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive: variance vs dimensions</div>
+        <div className="m4-ctrl">
+          <div className="m4-ctrl-lbl"><span>Target variance to retain</span><span className="m4-ctrl-val">{target}%</span></div>
+          <input type="range" min={50} max={100} step={1} value={target} onChange={e => setTarget(+e.target.value)} />
+        </div>
+        <div className="m4-stats-row">
+          <div className="m4-stat"><span className="m4-stat-l">Dimensions kept</span><span className="m4-stat-v" style={{ color: 'var(--cyan)' }}>{d}</span></div>
+          <div className="m4-stat"><span className="m4-stat-l">of total</span><span className="m4-stat-v" style={{ color: 'var(--text-2)' }}>{L8_EVR.length}</span></div>
+          <div className="m4-stat"><span className="m4-stat-l">Retained</span><span className="m4-stat-v" style={{ color: 'var(--emerald)' }}>{(cum[d - 1] * 100).toFixed(1)}%</span></div>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+          <line x1={pad} y1={H - 24} x2={W - 8} y2={H - 24} stroke="rgba(148,163,184,0.25)" />
+          <line x1={pad} y1={24} x2={pad} y2={H - 24} stroke="rgba(148,163,184,0.25)" />
+          <line x1={pad} y1={sy(target / 100)} x2={W - 8} y2={sy(target / 100)} stroke="var(--amber)" strokeDasharray="4 3" opacity="0.7" />
+          <polyline fill="none" stroke="var(--cyan)" strokeWidth="2" points={cum.map((c, i) => `${sx(i)},${sy(c)}`).join(' ')} />
+          {cum.map((c, i) => <circle key={i} cx={sx(i)} cy={sy(c)} r={i === d - 1 ? 4 : 2.2} fill={i === d - 1 ? 'var(--emerald)' : 'var(--cyan)'} />)}
+          <line x1={sx(d - 1)} y1={24} x2={sx(d - 1)} y2={H - 24} stroke="var(--emerald)" strokeDasharray="3 3" opacity="0.6" />
+          <text x={pad} y={16} fill="rgba(148,163,184,0.6)" fontSize="9" fontFamily="monospace">cumulative explained variance</text>
+          <text x={W - 60} y={H - 10} fill="rgba(148,163,184,0.5)" fontSize="8" fontFamily="monospace">dimensions →</text>
+        </svg>
+        <div className="m4-infobox" style={{ fontSize: '0.79rem' }}>The curve rises fast then flattens — the <strong>elbow</strong>. Choosing <Tex src="d" /> at 95% keeps nearly all signal while discarding many dimensions.</div>
+      </div>
+    </div>
+  );
+}
+
+// 8.5 PCA variants
+function L8Variants() {
+  const [d, setD] = useState(30);
+  const n = 200;
+  const std = n * n + n * n * n / 1000;            // ~O(mn²)+O(n³) (scaled)
+  const rnd = n * d + d * d * d / 1000;             // ~O(md²)+O(d³)
+  const speed = std / rnd;
+  const W = 460, H = 90;
+  const mx = Math.max(std, rnd);
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Randomized & Incremental PCA</div>
+        <div className="m4-flabel">Randomized PCA</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>A stochastic approximation of the top <Tex src="d" /> PCs — dramatically faster when <Tex src="d \ll n" />.</p>
+        <div className="m4-eq"><Tex src="O(m d^2) + O(d^3) \;\;\text{vs std}\;\; O(m n^2) + O(n^3)" block /></div>
+        <PyBlock code={`rnd_pca = PCA(n_components=154, svd_solver="randomized")
+X_reduced = rnd_pca.fit_transform(X_train)`} />
+        <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Incremental PCA (IPCA)</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Standard PCA needs the whole dataset in memory. IPCA processes <strong>mini-batches</strong> → enables online learning (or use NumPy <code style={{ fontFamily: 'var(--font-mono)' }}>memmap</code> for large arrays).</p>
+        <PyBlock code={`from sklearn.decomposition import IncrementalPCA
+inc_pca = IncrementalPCA(n_components=154)
+for X_batch in np.array_split(X_train, 100):
+    inc_pca.partial_fit(X_batch)
+X_reduced = inc_pca.transform(X_train)`} />
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive: randomized speed-up (n = {n})</div>
+        <div className="m4-ctrl">
+          <div className="m4-ctrl-lbl"><span>Target components d</span><span className="m4-ctrl-val">{d}</span></div>
+          <input type="range" min={2} max={200} step={1} value={d} onChange={e => setD(+e.target.value)} />
+        </div>
+        <div className="m4-stats-row">
+          <div className="m4-stat"><span className="m4-stat-l">Speed-up (randomized)</span><span className="m4-stat-v" style={{ color: speed > 1 ? 'var(--emerald)' : 'var(--rose)' }}>{speed.toFixed(1)}×</span></div>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+          <text x={6} y={24} fill="var(--violet)" fontSize="10" fontFamily="monospace">Standard</text>
+          <rect x={90} y={14} width={(std / mx) * (W - 110)} height={18} fill="var(--violet)" rx="2" />
+          <text x={6} y={60} fill="var(--cyan)" fontSize="10" fontFamily="monospace">Randomized</text>
+          <rect x={90} y={50} width={(rnd / mx) * (W - 110)} height={18} fill="var(--cyan)" rx="2" />
+        </svg>
+        <div className="m4-infobox" style={{ fontSize: '0.79rem' }}>When <Tex src="d \ll n" /> the randomized solver is far cheaper. As <Tex src="d \to n" /> the advantage vanishes (and standard SVD is more accurate).</div>
+        <table className="m4-table" style={{ marginTop: '0.6rem', width: '100%', fontSize: '0.76rem', borderCollapse: 'collapse' }}>
+          <tbody>
+            <tr><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>Standard</td><td style={{ padding: '0.3rem', fontFamily: 'var(--font-mono)', color: 'var(--violet)' }}>O(mn²)+O(n³)</td></tr>
+            <tr><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>Randomized</td><td style={{ padding: '0.3rem', fontFamily: 'var(--font-mono)', color: 'var(--cyan)' }}>O(md²)+O(d³)</td></tr>
+            <tr><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>Incremental</td><td style={{ padding: '0.3rem', fontFamily: 'var(--font-mono)', color: 'var(--emerald)' }}>mini-batch / online</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// 8.6 Feature normalization + Kernel PCA
+function L8KernelPCA() {
+  const [kernel, setKernel] = useState('linear');
+  const [gamma, setGamma] = useState(10);
+  const W = 360, H = 280, sc = 26, cx = W / 2, cy = H / 2;
+  const sx = x => cx + (x - 5) * sc, sy = y => cy - (y - 5) * sc;
+  // embedding: 1st kernel-PCA-like component as a function of radius for rbf/sigmoid
+  const embed = p => {
+    const r = Math.hypot(p[0] - 5, p[1] - 5);
+    if (kernel === 'linear') return (p[0] - 5);                       // linear PCA: a direction in the plane → rings overlap
+    if (kernel === 'rbf') return Math.exp(-(gamma / 30) * (r - 2.5) * (r - 2.5)) * 6 - 3;  // separates by radius
+    return Math.tanh((gamma / 30) * (r - 2.5)) * 3;                   // sigmoid
+  };
+  const EW = 360, EH = 90;
+  return (
+    <div>
+      <div className="m4-card" style={{ marginBottom: '1rem' }}>
+        <div className="m4-card-h">Feature Normalisation before PCA</div>
+        <ul className="m4-bullets">
+          <li>When features have <strong>different units</strong> (Diabetes: age in years, BMI in kg/m², BP in mmHg) → <strong>scale to unit standard deviation</strong> before PCA.</li>
+          <li>If features share units but are <strong>uncorrelated</strong>, normalisation may destroy useful relative-scale info → may be unsuitable.</li>
+          <li>If features are <strong>correlated</strong> (Iris petal length vs width), normalisation is fine.</li>
+        </ul>
+        <div className="m4-flabel">Iris — variance along 2 principal axes</div>
+        <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
+          <tbody>
+            <tr><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>Before normalisation</td><td style={{ padding: '0.3rem', fontFamily: 'var(--font-mono)', color: 'var(--cyan)' }}>[0.99025, 0.00975]</td></tr>
+            <tr><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>After normalisation</td><td style={{ padding: '0.3rem', fontFamily: 'var(--font-mono)', color: 'var(--violet)' }}>[0.98143, 0.01857]</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">Kernel PCA (kPCA)</div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>The <strong>kernel trick</strong> implicitly maps instances to a high-dim space, enabling nonlinear projections. Concentric circles are <strong style={{ color: 'var(--rose)' }}>not linearly separable</strong> in 2D.</p>
+          <div className="m4-flabel">Explicit: polynomial features + PCA</div>
+          <PyBlock code={`poly = PolynomialFeatures(degree=5)
+Xpoly = poly.fit_transform(X_train)   # (750, 21)
+LogisticRegression().fit(Xpoly, y)    # train/test acc = 1.00
+pca = PCA(n_components=5)              # 21 -> 5, still 1.00`} />
+          <div className="m4-flabel">Implicit: KernelPCA with RBF</div>
+          <PyBlock code={`kernel_pca = KernelPCA(n_components=2, kernel="rbf",
+        gamma=10, fit_inverse_transform=True, alpha=0.1)
+Xrbf = kernel_pca.fit_transform(X_train)
+LogisticRegression().fit(Xrbf, y)     # train 1.00, test 0.988`} />
+          <div className="m4-callout"><strong>Swiss-roll kernels:</strong> linear → circular layout (no unroll); RBF (γ=0.04) → curved/triangular; sigmoid (γ=10⁻³, r=1) → tight ring.</div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Interactive: kernel choice on circles</div>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+            <button className={`m4-btn ${kernel === 'linear' ? 'm4-btn-p' : ''}`} onClick={() => setKernel('linear')}>Linear</button>
+            <button className={`m4-btn ${kernel === 'rbf' ? 'm4-btn-p' : ''}`} onClick={() => setKernel('rbf')}>RBF</button>
+            <button className={`m4-btn ${kernel === 'sigmoid' ? 'm4-btn-p' : ''}`} onClick={() => setKernel('sigmoid')}>Sigmoid</button>
+          </div>
+          {kernel !== 'linear' && (
+            <div className="m4-ctrl">
+              <div className="m4-ctrl-lbl"><span>γ (gamma)</span><span className="m4-ctrl-val">{gamma}</span></div>
+              <input type="range" min={1} max={40} step={1} value={gamma} onChange={e => setGamma(+e.target.value)} />
+            </div>
+          )}
+          <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+            {L8_CIRCLES.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r="3" fill={p[2] === 0 ? 'var(--cyan)' : 'var(--rose)'} opacity="0.8" />)}
+            <text x={8} y={16} fill="rgba(148,163,184,0.6)" fontSize="9" fontFamily="monospace">input space (2D)</text>
+          </svg>
+          <div className="m4-flabel" style={{ marginTop: '0.4rem' }}>1st component after the {kernel} kernel:</div>
+          <svg viewBox={`0 0 ${EW} ${EH}`} className="m4-canvas">
+            <line x1={10} y1={EH / 2} x2={EW - 10} y2={EH / 2} stroke="rgba(148,163,184,0.25)" />
+            {L8_CIRCLES.map((p, i) => { const e = embed(p); const x = EW / 2 + e * 24; return <circle key={i} cx={Math.max(8, Math.min(EW - 8, x))} cy={EH / 2 + (p[2] === 0 ? -10 : 10)} r="3" fill={p[2] === 0 ? 'var(--cyan)' : 'var(--rose)'} opacity="0.75" />; })}
+          </svg>
+          <div className={kernel === 'linear' ? 'm4-warnbox' : 'm4-infobox'} style={{ fontSize: '0.79rem' }}>{kernel === 'linear' ? 'Linear kPCA = ordinary PCA: the two rings still overlap — not separable.' : 'The nonlinear kernel pulls the inner and outer rings apart into two separable bands along one component.'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 8.7 Other techniques + summary
+function L8Other() {
+  const W = 360, H = 280, sc = 26, cx = W / 2, cy = H / 2;
+  const sx = x => cx + (x - 5) * sc, sy = y => cy - (y - 5) * sc;
+  const techs = [
+    { name: 'LLE', color: 'var(--cyan)', desc: 'Locally Linear Embedding — manifold learning that does NOT use projection; preserves local linear relationships.' },
+    { name: 'MDS', color: 'var(--violet)', desc: 'Multidimensional Scaling — preserves the pairwise distances between instances.' },
+    { name: 'Isomap', color: 'var(--emerald)', desc: 'Builds a k-nearest-neighbour graph and preserves geodesic distances along the manifold.' },
+    { name: 't-SNE', color: 'var(--amber)', desc: 'Keeps similar instances close and dissimilar ones apart; mostly for visualisation (van der Maaten & Hinton, JMLR 2008).' },
+  ];
+  return (
+    <div>
+      <div className="m4-card" style={{ marginBottom: '1rem' }}>
+        <div className="m4-card-h">Other Dimensionality Reduction Techniques</div>
+        <div className="m4-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.7rem' }}>
+          {techs.map(t => (
+            <div key={t.name} style={{ background: `${t.color}08`, border: `1px solid ${t.color}30`, borderRadius: 6, padding: '0.8rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: t.color, marginBottom: '0.35rem' }}>{t.name}</div>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.5 }}>{t.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">t-SNE on MNIST (784 → 2D)</div>
+          <PyBlock code={`from sklearn.manifold import TSNE
+X_sample = X_train[:5000]            # subset for speed
+tsne = TSNE(n_components=2, init="random",
+            learning_rate="auto", random_state=42)
+X_reduced = tsne.fit_transform(X_sample)   # ~38 s`} />
+          <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+            {L8_TSNE.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r="2.6" fill={L_COL[p[2]]} opacity="0.85" />)}
+          </svg>
+          <div className="m4-infobox" style={{ fontSize: '0.79rem' }}>t-SNE produces well-separated clusters in 2D — one per digit class — even though the raw data has 784 dimensions.</div>
+        </div>
+        <div>
+          <L89Quiz title="Match the technique" items={[
+            { q: 'You need to UNROLL a Swiss-roll manifold without projecting onto a flat subspace. Which method?', opts: ['PCA', 'LLE (Locally Linear Embedding)', 'Randomized PCA', 'Incremental PCA'], ans: 1, ok: 'LLE is a manifold-learning method that preserves local linear structure without projection — ideal for unrolling.', ng: 'PCA variants are linear projections; unrolling a twisted manifold needs a manifold method like LLE.' },
+            { q: 'Your goal is to VISUALISE clusters in high-dimensional data in 2D. Best choice?', opts: ['MDS', 't-SNE', 'Isomap', 'Standard PCA'], ans: 1, ok: 't-SNE keeps similar points close and dissimilar far apart — purpose-built for 2D cluster visualisation.', ng: 't-SNE is the standard for revealing clusters in a 2D visualisation.' },
+            { q: 'Which method preserves geodesic (along-the-manifold) distances using a k-NN graph?', opts: ['Isomap', 'MDS', 'PCA', 'Kernel PCA'], ans: 0, ok: 'Isomap builds a k-NN graph and preserves geodesic distances measured along the manifold.', ng: 'Isomap is the one that uses a k-NN graph + geodesic distances.' },
+          ]} />
+          <div className="m4-card" style={{ marginTop: '1rem' }}>
+            <div className="m4-card-h">Lecture 8 — Summary</div>
+            <ul className="m4-bullets">
+              <li>The curse of dimensionality motivates DR; DR always loses some information.</li>
+              <li><strong>PCA</strong>: max-variance linear projection via SVD; choose <Tex src="d" /> by retained variance.</li>
+              <li>Variants: <strong>Randomized</strong> (fast when <Tex src="d\ll n" />), <strong>Incremental</strong> (mini-batch), <strong>Kernel PCA</strong> (nonlinear).</li>
+              <li>Manifold methods: LLE, MDS, Isomap, t-SNE. Understand the data to pick the right DR; visualisation helps.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LECTURE 9 COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
+
+// 9.1 Introduction
+function L9Intro() {
+  const [mode, setMode] = useState('clf');
+  const W = 360, H = 280;
+  const sx = x => 20 + x * 30, sy = y => H - 20 - y * 30;
+  // simple 2-blob set for the toggle
+  const data = L9_BLOBS.slice(0, 64);
+  const true2 = i => (data[i][0] + data[i][1] > 10 ? 1 : 0);
+  const apps = ['Fraud detection', 'Defective-product detection', 'Recommender systems', 'Semi-supervised learning', 'Image segmentation', 'Image retrieval', 'Anomaly detection'];
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Unsupervised Learning & Clustering</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>This chapter focuses on two clustering algorithms — <strong style={{ color: 'var(--cyan)' }}>k-means</strong> and <strong style={{ color: 'var(--violet)' }}>DBSCAN</strong>.</p>
+        <div className="m4-flabel">Common applications</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+          {apps.map(a => <span key={a} style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-2)', background: 'var(--bg-1)', border: '1px solid var(--border)', borderRadius: 4, padding: '0.2em 0.5em' }}>{a}</span>)}
+        </div>
+        <div className="m4-flabel" style={{ marginTop: '0.7rem' }}>Clustering vs classification</div>
+        <ul className="m4-bullets">
+          <li><strong>Classification</strong>: supervised — every instance has a known class label.</li>
+          <li><strong>Clustering</strong>: unsupervised — the algorithm groups similar instances with <strong>no labels given</strong>.</li>
+          <li>No universal definition of a "cluster":
+            <br /><strong style={{ color: 'var(--cyan)' }}>Centroid-based</strong> (k-means) — grouped around a central point.
+            <br /><strong style={{ color: 'var(--violet)' }}>Density-based</strong> (DBSCAN) — dense regions of any shape.</li>
+        </ul>
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Interactive: same data, two questions</div>
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+          <button className={`m4-btn ${mode === 'clf' ? 'm4-btn-p' : ''}`} onClick={() => setMode('clf')}>Classification (labels given)</button>
+          <button className={`m4-btn ${mode === 'clu' ? 'm4-btn-p' : ''}`} onClick={() => setMode('clu')}>Clustering (no labels)</button>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+          {mode === 'clf' && <line x1={sx(0)} y1={sy(10)} x2={sx(10)} y2={sy(0)} stroke="var(--amber)" strokeDasharray="5 4" opacity="0.7" />}
+          {data.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r="3.2" fill={mode === 'clf' ? (true2(i) ? 'var(--cyan)' : 'var(--rose)') : 'var(--text-2)'} opacity="0.85" />)}
+        </svg>
+        <div className="m4-infobox" style={{ fontSize: '0.79rem' }}>{mode === 'clf' ? 'Classification: colours are KNOWN labels; the model learns the boundary (dashed) from them.' : 'Clustering: NO labels — the algorithm must discover groups from structure alone.'}</div>
+      </div>
+    </div>
+  );
+}
+
+// 9.2 K-Means stepper
+function L9KMeans() {
+  const [k, setK] = useState(4);
+  const [seed, setSeed] = useState(1);
+  const [step, setStep] = useState(0);
+  const init = (() => { const rand = makePRNG(seed * 97 + 5); const idx = []; while (idx.length < k) { const i = Math.floor(rand() * L9_BLOBS.length); if (!idx.includes(i)) idx.push(i); } return idx; })();
+  const hist = l9kmeansHistory(L9_BLOBS, k, init);
+  const cur = hist[Math.min(step, hist.length - 1)];
+  const W = 360, H = 300, sc = 27, ox = 18, oy = 18;
+  const sx = x => ox + x * sc, sy = y => H - oy - y * sc;
+  const reset = (nk, ns) => { setK(nk); setSeed(ns); setStep(0); };
+  return (
+    <div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">The K-Means Algorithm</div>
+          <ol style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.6, paddingLeft: '1.1rem' }}>
+            <li>Choose <Tex src="k" /> (number of clusters).</li>
+            <li>Initialise <Tex src="k" /> centroids randomly (e.g. pick <Tex src="k" /> random instances).</li>
+            <li><strong style={{ color: 'var(--cyan)' }}>Assign</strong> each instance to the closest centroid (Euclidean distance).</li>
+            <li><strong style={{ color: 'var(--amber)' }}>Update</strong> each centroid to the mean of its assigned instances.</li>
+            <li>Repeat 3–4 until centroids stop moving → converged.</li>
+          </ol>
+          <div className="m4-callout"><strong>Convergence guarantee:</strong> the mean squared distance to the closest centroid decreases monotonically and is bounded below by 0 → converges in a finite number of steps (possibly to a local optimum).</div>
+          <PyBlock code={`from sklearn.cluster import KMeans
+kmeans = KMeans(n_clusters=5, random_state=42)
+y_pred = kmeans.fit_predict(X)
+kmeans.labels_            # cluster IDs (= y_pred)
+kmeans.cluster_centers_   # the k centroids
+kmeans.predict(X_new)     # hard cluster label for new points
+kmeans.transform(X_new)   # distance to every centroid (soft)`} />
+          <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse', marginTop: '0.4rem' }}>
+            <tbody>
+              <tr><td style={{ padding: '0.3rem', color: 'var(--cyan)', fontWeight: 700 }}>Hard</td><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>vector of m IDs in {'{0,…,k−1}'}</td></tr>
+              <tr><td style={{ padding: '0.3rem', color: 'var(--violet)', fontWeight: 700 }}>Soft</td><td style={{ padding: '0.3rem', color: 'var(--text-2)' }}>m×k scores (e.g. inverse distance)</td></tr>
+            </tbody>
+          </table>
+          <div className="m4-flabel" style={{ marginTop: '0.4rem' }}>⚠ Predicted cluster IDs need not match the ground-truth label order — clusters can be numbered in any order.</div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Interactive: step through k-means</div>
+          <div className="m4-ctrl">
+            <div className="m4-ctrl-lbl"><span>k (clusters)</span><span className="m4-ctrl-val">{k}</span></div>
+            <input type="range" min={2} max={6} step={1} value={k} onChange={e => reset(+e.target.value, seed)} />
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+            <button className="m4-btn m4-btn-g" onClick={() => setStep(s => Math.min(s + 1, hist.length - 1))}>Step →</button>
+            <button className="m4-btn" onClick={() => setStep(0)}>Reset</button>
+            <button className="m4-btn" onClick={() => reset(k, seed + 1)}>New init</button>
+            <button className="m4-btn m4-btn-p" onClick={() => setStep(hist.length - 1)}>Converge</button>
+          </div>
+          <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+            {/* Voronoi-ish background by nearest centroid */}
+            {Array.from({ length: 270 }, (_, idx) => {
+              const gx = idx % 18, gy = Math.floor(idx / 18);
+              const X = gx / 17 * 10, Y = gy / 14 * 10; let bi = 0, bd = Infinity;
+              cur.cent.forEach((c, j) => { const d = (X - c[0]) ** 2 + (Y - c[1]) ** 2; if (d < bd) { bd = d; bi = j; } });
+              return <rect key={idx} x={sx(X) - 11} y={sy(Y) - 11} width={22} height={22} fill={L_COL[bi]} opacity="0.06" />;
+            })}
+            {L9_BLOBS.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r="3" fill={L_COL[cur.assign[i]]} opacity="0.85" />)}
+            {cur.cent.map((c, j) => <g key={j}><line x1={sx(c[0]) - 6} y1={sy(c[1])} x2={sx(c[0]) + 6} y2={sy(c[1])} stroke="#fff" strokeWidth="2.5" /><line x1={sx(c[0])} y1={sy(c[1]) - 6} x2={sx(c[0])} y2={sy(c[1]) + 6} stroke="#fff" strokeWidth="2.5" /><circle cx={sx(c[0])} cy={sy(c[1])} r="5" fill="none" stroke={L_COL[j]} strokeWidth="2.5" /></g>)}
+          </svg>
+          <div className="m4-stats-row">
+            <div className="m4-stat"><span className="m4-stat-l">Iteration</span><span className="m4-stat-v" style={{ color: 'var(--cyan)' }}>{Math.min(step, hist.length - 1) + 1}/{hist.length}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">Inertia</span><span className="m4-stat-v" style={{ color: 'var(--amber)' }}>{cur.inertia.toFixed(1)}</span></div>
+          </div>
+          <div className="m4-flabel">✕ = centroid. Background shading shows the <strong>Voronoi cells</strong> (each cell = nearest-centroid region; boundaries are perpendicular bisectors).</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 9.3 Drawbacks & remedies
+function L9Drawbacks() {
+  const [k, setK] = useState(4);
+  const ks = [1, 2, 3, 4, 5, 6, 7, 8];
+  const runs = ks.map(kk => {
+    if (kk === 1) { const mx = L9_BLOBS.reduce((a, p) => [a[0] + p[0], a[1] + p[1]], [0, 0]).map(s => s / L9_BLOBS.length); const inertia = L9_BLOBS.reduce((s, p) => s + (p[0] - mx[0]) ** 2 + (p[1] - mx[1]) ** 2, 0); return { inertia, sil: 0, assign: L9_BLOBS.map(() => 0) }; }
+    const rand = makePRNG(kk * 31 + 7); const idx = []; while (idx.length < kk) { const i = Math.floor(rand() * L9_BLOBS.length); if (!idx.includes(i)) idx.push(i); }
+    const h = l9kmeansHistory(L9_BLOBS, kk, idx); const last = h[h.length - 1];
+    return { inertia: last.inertia, sil: l9silhouette(L9_BLOBS, last.assign, kk), assign: last.assign };
+  });
+  const cur = runs[k - 1];
+  const maxI = Math.max(...runs.map(r => r.inertia));
+  const W = 230, H = 150, pad = 26;
+  return (
+    <div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">Drawback 1 — Centroid initialisation</div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>K-means always converges, but may reach a <strong style={{ color: 'var(--rose)' }}>local optimum</strong> depending on the initial centroids.</p>
+          <ul className="m4-bullets">
+            <li><strong>Method 1:</strong> supply known-good centroids (<code style={{ fontFamily: 'var(--font-mono)' }}>init=good_init, n_init=1</code>).</li>
+            <li><strong>Method 2:</strong> run <Tex src="n\_init" /> times (default 10), keep the lowest <strong>inertia</strong>.</li>
+            <li><strong>Method 3:</strong> <strong>k-means++</strong> (sklearn default) — spreads initial centroids apart.</li>
+          </ul>
+          <div className="m4-eq"><Tex src="\text{inertia} = \sum_{i=1}^{m} \lVert \mathbf{x}_i - \mathbf{c}_{\text{closest}(i)} \rVert^2" block /></div>
+          <div className="m4-flabel"><code style={{ fontFamily: 'var(--font-mono)' }}>kmeans.inertia_</code> — lower is better; <code style={{ fontFamily: 'var(--font-mono)' }}>kmeans.score(X)</code> returns <Tex src="-\text{inertia}" /> — higher is better.</div>
+          <div className="m4-flabel">k-means++ (Arthur &amp; Vassilvitskii, 2007)</div>
+          <ol style={{ fontSize: '0.8rem', color: 'var(--text-1)', lineHeight: 1.55, paddingLeft: '1.1rem' }}>
+            <li>Pick the 1st centroid uniformly at random.</li>
+            <li>Pick each next centroid with probability <Tex src="P(\mathbf{x}_i)=\frac{D(\mathbf{x}_i)^2}{\sum_j D(\mathbf{x}_j)^2}" /> (<Tex src="D" /> = distance to nearest chosen centroid) → far points more likely.</li>
+            <li>Repeat until <Tex src="k" /> centroids chosen.</li>
+          </ol>
+          <div className="m4-callout"><strong>Drawback 3 — cluster shape:</strong> k-means struggles with clusters of varying size, density, or non-spherical (elliptical) shape, because assignment uses only distance to one centroid. <strong style={{ color: 'var(--emerald)' }}>Remedy:</strong> a Gaussian Mixture Model (per-cluster covariance).</div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Drawback 2 — choosing k</div>
+          <div className="m4-ctrl">
+            <div className="m4-ctrl-lbl"><span>k</span><span className="m4-ctrl-val">{k}</span></div>
+            <input type="range" min={1} max={8} step={1} value={k} onChange={e => setK(+e.target.value)} />
+          </div>
+          <div className="m4-stats-row">
+            <div className="m4-stat"><span className="m4-stat-l">Inertia</span><span className="m4-stat-v" style={{ color: 'var(--amber)' }}>{cur.inertia.toFixed(0)}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">Silhouette</span><span className="m4-stat-v" style={{ color: cur.sil > 0.5 ? 'var(--emerald)' : 'var(--rose)' }}>{cur.sil.toFixed(3)}</span></div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div>
+              <div className="m4-flabel">Elbow (inertia)</div>
+              <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+                <polyline fill="none" stroke="var(--amber)" strokeWidth="2" points={runs.map((r, i) => `${pad + (i / 7) * (W - pad - 10)},${H - 22 - (r.inertia / maxI) * (H - 38)}`).join(' ')} />
+                {runs.map((r, i) => <circle key={i} cx={pad + (i / 7) * (W - pad - 10)} cy={H - 22 - (r.inertia / maxI) * (H - 38)} r={i === k - 1 ? 4 : 2.4} fill={i === k - 1 ? 'var(--cyan)' : 'var(--amber)'} />)}
+                <text x={pad} y={H - 6} fill="rgba(148,163,184,0.5)" fontSize="8" fontFamily="monospace">k=1</text>
+                <text x={W - 22} y={H - 6} fill="rgba(148,163,184,0.5)" fontSize="8" fontFamily="monospace">k=8</text>
+              </svg>
+            </div>
+            <div>
+              <div className="m4-flabel">Silhouette</div>
+              <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+                {runs.map((r, i) => { const bh = Math.max(0, r.sil) * (H - 38); return <rect key={i} x={pad + i * ((W - pad - 8) / 8)} y={H - 22 - bh} width={(W - pad - 8) / 8 - 3} height={bh} fill={i === k - 1 ? 'var(--emerald)' : 'rgba(52,211,153,0.35)'} rx="1" />; })}
+                <text x={pad} y={H - 6} fill="rgba(148,163,184,0.5)" fontSize="8" fontFamily="monospace">k=1</text>
+              </svg>
+            </div>
+          </div>
+          <div className="m4-eq"><Tex src="s_i = \frac{b - a}{\max(a, b)}\quad s_i\in[-1,1]" block /></div>
+          <div className="m4-flabel">a = mean intra-cluster distance; b = mean distance to the nearest other cluster. <strong>Silhouette score</strong> = mean of <Tex src="s_i" /> — higher is better (often more reliable than the elbow).</div>
+          <div className="m4-callout" style={{ marginTop: '0.5rem' }}><strong>Silhouette diagram:</strong> draw one horizontal “knife” per cluster (a sorted <Tex src="s_i" /> bar per instance). The dashed line marks the overall score; prefer a <Tex src="k" /> where the knives are similar in size and most reach past the line — even at a slightly lower mean score.</div>
+        </div>
+      </div>
+      <L89Quiz title="Quick check — k-means drawbacks" items={[
+        { q: 'Inertia always decreases as k increases, so why can’t we just minimise inertia to choose k?', opts: ['Because inertia is random', 'Because inertia keeps falling toward 0 (k = m gives 0) — it never has a true minimum at the right k; use the elbow or silhouette', 'Because sklearn forbids it', 'Because inertia measures accuracy, not distance'], ans: 1, ok: 'With k = m every point is its own centroid → inertia 0. So you look for the elbow, or maximise the silhouette score instead.', ng: 'More clusters always lower inertia (0 at k=m), so naive minimisation fails — use the elbow or silhouette.' },
+        { q: 'k-means clusters two crescent-moon shapes poorly. What is the best remedy from this lecture?', opts: ['Increase n_init', 'Use a Gaussian Mixture Model / a density method — k-means assumes spherical clusters', 'Lower the learning rate', 'Standardise the labels'], ans: 1, ok: 'k-means assumes spherical, similar-size clusters; non-spherical shapes need GMM (covariance) or a density method like DBSCAN.', ng: 'The failure is the spherical-cluster assumption — a GMM (or density-based DBSCAN) handles arbitrary shapes.' },
+      ]} />
+    </div>
+  );
+}
+
+// 9.4 Semi-supervised learning
+function L9SemiSup() {
+  const stages = [
+    { n: 0, label: '50 random labels', acc: 74.8, color: 'var(--rose)', code: `log_reg.fit(X_train[:50], y_train[:50])\nlog_reg.score(X_test, y_test)   # 0.748`, note: 'Baseline: train on just 50 randomly-chosen labelled digits.' },
+    { n: 1, label: '50 cluster representatives', acc: 84.9, color: 'var(--amber)', code: `kmeans = KMeans(n_clusters=50)\nX_dist = kmeans.fit_transform(X_train)        # 1400×50\nrep_idx = np.argmin(X_dist, axis=0)           # 50 indices\n# manually label the 50 representative images -> 0.849`, note: 'Label the most representative image of each of 50 clusters instead of random ones.' },
+    { n: 2, label: 'Full label propagation', acc: 89.4, color: 'var(--cyan)', code: `for i in range(k):\n    y_prop[kmeans.labels_ == i] = y_rep[i]\nlog_reg.fit(X_train, y_prop)                   # 0.894`, note: 'Propagate each representative’s label to every instance in its cluster.' },
+    { n: 3, label: 'Partial propagation (drop 1% outliers)', acc: 90.9, color: 'var(--emerald)', code: `# drop the 1% farthest from their centroid, then fit\nlog_reg.score(X_test, y_test)   # 0.909\n(y_part == y_train[part]).mean() # 0.9756 label accuracy`, note: 'Drop the 1% of points farthest from their centroid → 90.9%, beating the 90.7% full-label baseline!' },
+  ];
+  const [step, setStep] = useState(0);
+  const W = 460, H = 210, pad = 30;
+  const baseline = 90.7;
+  return (
+    <div className="m4-two-col">
+      <div className="m4-card">
+        <div className="m4-card-h">Clustering for Semi-Supervised Learning</div>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Use case: <strong>few labels, abundant unlabelled data</strong>. Demonstrated on <code style={{ fontFamily: 'var(--font-mono)' }}>load_digits</code> (1,797 8×8 digit images; 1,400 train / 397 test).</p>
+        <div className="m4-step-row" style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
+          {stages.map(s => <button key={s.n} className={`m4-btn ${step === s.n ? 'm4-btn-p' : ''}`} onClick={() => setStep(s.n)}>Step {s.n + 1}</button>)}
+        </div>
+        <div className="m4-flabel" style={{ color: stages[step].color }}>{stages[step].label} — {stages[step].acc}%</div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-1)', lineHeight: 1.5, margin: '0.3rem 0' }}>{stages[step].note}</p>
+        <PyBlock code={stages[step].code} />
+        <div className="m4-flabel">Related tools</div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>LabelSpreading · LabelPropagation · SelfTrainingClassifier</div>
+      </div>
+      <div className="m4-card">
+        <div className="m4-card-h">Accuracy progression</div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+          <line x1={pad} y1={H - 24} x2={W - 8} y2={H - 24} stroke="rgba(148,163,184,0.25)" />
+          <line x1={pad} y1={H - 24 - (baseline - 70) / 30 * (H - 44)} x2={W - 8} y2={H - 24 - (baseline - 70) / 30 * (H - 44)} stroke="var(--text-2)" strokeDasharray="4 3" opacity="0.6" />
+          <text x={W - 120} y={H - 26 - (baseline - 70) / 30 * (H - 44)} fill="rgba(148,163,184,0.6)" fontSize="8" fontFamily="monospace">full-label baseline 90.7%</text>
+          {stages.map((s, i) => {
+            const bw = (W - pad - 16) / 4, x = pad + i * bw;
+            const h = (s.acc - 70) / 30 * (H - 44);
+            const on = i <= step;
+            return <g key={i}>
+              <rect x={x + 4} y={H - 24 - h} width={bw - 10} height={h} fill={on ? s.color : 'rgba(148,163,184,0.15)'} rx="2" />
+              <text x={x + bw / 2} y={H - 24 - h - 4} fill={on ? s.color : 'rgba(148,163,184,0.4)'} fontSize="10" fontFamily="monospace" textAnchor="middle">{s.acc}%</text>
+              <text x={x + bw / 2} y={H - 10} fill="rgba(148,163,184,0.55)" fontSize="8" fontFamily="monospace" textAnchor="middle">Step {i + 1}</text>
+            </g>;
+          })}
+        </svg>
+        <table style={{ width: '100%', fontSize: '0.76rem', borderCollapse: 'collapse', marginTop: '0.5rem' }}>
+          <tbody>
+            <tr><td style={{ padding: '0.25rem', color: 'var(--text-2)' }}>50 random labels</td><td style={{ padding: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--rose)', textAlign: 'right' }}>74.8%</td></tr>
+            <tr><td style={{ padding: '0.25rem', color: 'var(--text-2)' }}>50 representatives</td><td style={{ padding: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', textAlign: 'right' }}>84.9%</td></tr>
+            <tr><td style={{ padding: '0.25rem', color: 'var(--text-2)' }}>Full propagation</td><td style={{ padding: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--cyan)', textAlign: 'right' }}>89.4%</td></tr>
+            <tr><td style={{ padding: '0.25rem', color: 'var(--text-2)' }}>Partial (drop 1%)</td><td style={{ padding: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--emerald)', textAlign: 'right', fontWeight: 700 }}>90.9%</td></tr>
+            <tr><td style={{ padding: '0.25rem', color: 'var(--text-2)' }}>Full ground-truth (1400)</td><td style={{ padding: '0.25rem', fontFamily: 'var(--font-mono)', color: 'var(--text-1)', textAlign: 'right' }}>90.7%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// 9.5 DBSCAN
+function L9DBSCAN() {
+  const [eps, setEps] = useState(0.18);
+  const [minPts, setMinPts] = useState(5);
+  const res = l9dbscan(L9_MOONS, eps, minPts);
+  const W = 360, H = 260, ox = 70, oy = 30;
+  const sx = x => ox + (x + 1) * 72, sy = y => H - oy - (y + 1) * 72;
+  return (
+    <div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">DBSCAN</div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Density-Based Spatial Clustering of Applications with Noise. Two hyperparameters: <Tex src="\epsilon" /> (<code style={{ fontFamily: 'var(--font-mono)' }}>eps</code>) and <code style={{ fontFamily: 'var(--font-mono)' }}>min_samples</code>.</p>
+          <ol style={{ fontSize: '0.8rem', color: 'var(--text-1)', lineHeight: 1.55, paddingLeft: '1.1rem' }}>
+            <li>For each instance, count neighbours within <Tex src="\epsilon" /> (its <Tex src="\epsilon" />-neighbourhood).</li>
+            <li>If that count ≥ <code style={{ fontFamily: 'var(--font-mono)' }}>min_samples</code> → it is a <strong style={{ color: 'var(--cyan)' }}>core</strong> instance (dense region).</li>
+            <li>Else, if it lies in a core’s <Tex src="\epsilon" />-neighbourhood → <strong style={{ color: 'var(--violet)' }}>border</strong> point.</li>
+            <li>Otherwise → <strong style={{ color: 'var(--rose)' }}>anomaly</strong> (label = −1).</li>
+            <li>Chains of adjacent core instances merge into one cluster of <strong>arbitrary shape</strong>.</li>
+          </ol>
+          <PyBlock code={`from sklearn.cluster import DBSCAN
+dbscan = DBSCAN(eps=0.05, min_samples=5)
+dbscan.fit(X)
+dbscan.labels_              # -1 = anomaly
+dbscan.core_sample_indices_
+dbscan.components_         # core feature vectors`} />
+          <div className="m4-callout"><strong>No <code style={{ fontFamily: 'var(--font-mono)' }}>predict()</code>:</strong> train a KNN on the core samples to label new points; flag <code style={{ fontFamily: 'var(--font-mono)' }}>y_dist {'>'} threshold</code> as anomalies.</div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Interactive: DBSCAN on two moons</div>
+          <div className="m4-ctrl">
+            <div className="m4-ctrl-lbl"><span>eps (ε)</span><span className="m4-ctrl-val">{eps.toFixed(2)}</span></div>
+            <input type="range" min={0.04} max={0.30} step={0.01} value={eps} onChange={e => setEps(+e.target.value)} />
+          </div>
+          <div className="m4-ctrl">
+            <div className="m4-ctrl-lbl"><span>min_samples</span><span className="m4-ctrl-val">{minPts}</span></div>
+            <input type="range" min={3} max={10} step={1} value={minPts} onChange={e => setMinPts(+e.target.value)} />
+          </div>
+          <div className="m4-stats-row">
+            <div className="m4-stat"><span className="m4-stat-l">Clusters</span><span className="m4-stat-v" style={{ color: 'var(--cyan)' }}>{res.clusters}</span></div>
+            <div className="m4-stat"><span className="m4-stat-l">Anomalies</span><span className="m4-stat-v" style={{ color: 'var(--rose)' }}>{res.noise}</span></div>
+          </div>
+          <svg viewBox={`0 0 ${W} ${H}`} className="m4-canvas">
+            {L9_MOONS.map((p, i) => {
+              const lab = res.labels[i];
+              if (lab === -1) return <g key={i}><line x1={sx(p[0]) - 3} y1={sy(p[1]) - 3} x2={sx(p[0]) + 3} y2={sy(p[1]) + 3} stroke="var(--rose)" strokeWidth="1.4" /><line x1={sx(p[0]) - 3} y1={sy(p[1]) + 3} x2={sx(p[0]) + 3} y2={sy(p[1]) - 3} stroke="var(--rose)" strokeWidth="1.4" /></g>;
+              return <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r={res.core[i] ? 3.4 : 2.6} fill={L_COL[lab % L_COL.length]} stroke={res.core[i] ? '#fff' : 'none'} strokeWidth={res.core[i] ? 0.8 : 0} opacity="0.88" />;
+            })}
+          </svg>
+          <div className={res.noise > 40 ? 'm4-warnbox' : 'm4-infobox'} style={{ fontSize: '0.79rem' }}>Small ε → many ✕ anomalies (lecture: eps=0.05 → 84 outliers). Larger ε → fewer anomalies (eps=0.20 → 0) but risks merging distinct clusters.</div>
+        </div>
+      </div>
+      <div className="m4-two-col">
+        <div className="m4-card">
+          <div className="m4-card-h">Pros</div>
+          <ul className="m4-bullets">
+            <li>Finds clusters of <strong>any shape</strong>.</li>
+            <li>Detects the number of clusters automatically.</li>
+            <li>Only <strong>two</strong> hyperparameters.</li>
+            <li>Built-in anomaly detection.</li>
+          </ul>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Cons</div>
+          <ul className="m4-bullets">
+            <li>Struggles when <strong>density varies</strong> a lot across clusters, or there is no low-density gap between them.</li>
+            <li>Complexity ≈ <Tex src="O(m^2 n)" /> — the quadratic term in <Tex src="m" /> means it <strong>does not scale</strong> to very large datasets.</li>
+          </ul>
+        </div>
+      </div>
+      <L89Quiz title="Quick check — DBSCAN" items={[
+        { q: 'A point has fewer than min_samples neighbours within ε, but lies inside a core point’s ε-neighbourhood. It is a…', opts: ['Core point', 'Border point', 'Anomaly (−1)', 'New cluster centre'], ans: 1, ok: 'Not dense enough to be core, but reachable from a core → it is a border point and joins that core’s cluster.', ng: 'It is reachable from a core but not itself dense → border point (not core, not anomaly).' },
+        { q: 'Why does DBSCAN have no predict() method, and how do you classify new points?', opts: ['It predicts internally; just call dbscan.predict', 'Clustering is unsupervised with arbitrary shapes — train a KNN on core samples (components_) and optionally threshold the distance for anomalies', 'Re-run DBSCAN on each new point alone', 'Use kmeans.predict instead'], ans: 1, ok: 'DBSCAN labels are tied to the fitted density; for new points you fit a KNN on the core samples and threshold the neighbour distance to re-introduce anomaly detection.', ng: 'There is no predict(); the standard approach is a KNN trained on dbscan.components_ (the cores), with a distance threshold for anomalies.' },
+      ]} />
+      <div className="m4-card" style={{ marginTop: '1rem' }}>
+        <div className="m4-card-h">Lecture 9 — Summary</div>
+        <ul className="m4-bullets">
+          <li><strong>k-means</strong>: centroid-based; fast; assign↔update until convergence; choose <Tex src="k" /> via elbow/silhouette; sensitive to init (k-means++), shape, and scale.</li>
+          <li>Clustering powers semi-supervised learning: representative labelling + propagation reached <strong>90.9%</strong> from only 50 labels.</li>
+          <li><strong>DBSCAN</strong>: density-based; any shape; automatic cluster count + anomaly detection; two hyperparameters; <Tex src="O(m^2 n)" /> so it does not scale to huge data.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 export default function CITS5508() {
   const navigate = useNavigate();
@@ -3743,6 +4772,8 @@ export default function CITS5508() {
   const [l5Tab, setL5Tab] = useState('Linear SVM');
   const [l6Tab, setL6Tab] = useState('Overview & CART');
   const [l7Tab, setL7Tab] = useState('Ensemble Basics');
+  const [l8Tab, setL8Tab] = useState('Curse of Dimensionality');
+  const [l9Tab, setL9Tab] = useState('Introduction');
 
   useEffect(() => {
     document.title = 'CITS5508 — Learning Hub';
@@ -3777,8 +4808,8 @@ export default function CITS5508() {
               <div className="m4-hero-lbl" style={{ color: 'var(--cyan)' }}>// CITS5508 · UWA · Sem 1, 2026</div>
               <h1 className="m4-hero-title"><span style={{ color: 'var(--cyan)' }}>Machine</span> Learning</h1>
               <p className="m4-hero-sub">
-                From Mitchell's formal definition of learning through regression, regularisation, kNN, SVMs, decision trees, and ensemble methods — covering all core concepts with interactive visualisations.
-                This module covers Lectures 1–7.
+                From Mitchell's formal definition of learning through regression, regularisation, kNN, SVMs, decision trees, ensemble methods, dimensionality reduction, and clustering — covering all core concepts with interactive visualisations.
+                This module covers Lectures 1–9.
               </p>
             </div>
             <div className="m4-topic-grid">
@@ -3812,6 +4843,12 @@ export default function CITS5508() {
                 { code: 'L7', title: 'Random Forests & Extra-Trees', color: 'var(--emerald)', desc: 'RF = bagging + per-split feature randomisation (√n). Extra-Trees use random thresholds. Feature importance via mean impurity decrease.', go: 'Ensembles', sub: 'Random Forests' },
                 { code: 'L7', title: 'AdaBoost & Gradient Boosting', color: 'var(--rose)', desc: 'Sequential boosting. AdaBoost α(r) calculator. Live GBRT residual-fitting visualisation on noisy y = 3x² data.', go: 'Ensembles', sub: 'Boosting' },
                 { code: 'L7', title: 'Stacking & Method Matcher', color: 'var(--amber)', desc: 'Learn the blender from out-of-fold predictions. Summary table of all ensemble methods. Interactive scenario→method quiz.', go: 'Ensembles', sub: 'Stacking & Summary' },
+                { code: 'L8', title: 'Curse of Dimensionality', color: 'var(--violet)', desc: 'Why thousands of features hurt: sparsity, boundary crowding, and exploding sample needs. Feature selection (supervised) vs unsupervised DR. Interactive dimension explorer.', go: 'Dimensionality Reduction', sub: 'Curse of Dimensionality' },
+                { code: 'L8', title: 'PCA & SVD', color: 'var(--cyan)', desc: 'Max-variance linear projection. Principal axes via SVD, the projection matrix Wd, explained variance ratio. Rotate the axis to maximise variance interactively.', go: 'Dimensionality Reduction', sub: 'PCA' },
+                { code: 'L8', title: 'Kernel PCA & Manifolds', color: 'var(--emerald)', desc: 'Nonlinear projection via the kernel trick on concentric circles; Swiss-roll manifold unrolling; LLE, MDS, Isomap and t-SNE on MNIST.', go: 'Dimensionality Reduction', sub: 'Kernel PCA' },
+                { code: 'L9', title: 'K-Means Clustering', color: 'var(--amber)', desc: 'Centroid-based clustering. Step through assign → update with live inertia and Voronoi cells. Hard vs soft clustering, convergence guarantee.', go: 'Clustering', sub: 'K-Means Algorithm' },
+                { code: 'L9', title: 'Choosing k & Silhouette', color: 'var(--rose)', desc: 'Init sensitivity and k-means++, the elbow method vs the silhouette score, and the spherical-shape limitation (remedy: GMM). Interactive k explorer.', go: 'Clustering', sub: 'Drawbacks & Remedies' },
+                { code: 'L9', title: 'DBSCAN & Semi-Supervised', color: 'var(--cyan)', desc: 'Density-based clustering: core/border/anomaly points and arbitrary shapes via an eps & min_samples explorer. Clustering for semi-supervised learning on digits.', go: 'Clustering', sub: 'DBSCAN' },
               ].map(item => (
                 <div
                   key={item.title}
@@ -3827,6 +4864,8 @@ export default function CITS5508() {
                       else if (item.go === 'SVMs') setL5Tab(item.sub);
                       else if (item.go === 'Decision Trees') setL6Tab(item.sub);
                       else if (item.go === 'Ensembles') setL7Tab(item.sub);
+                      else if (item.go === 'Dimensionality Reduction') setL8Tab(item.sub);
+                      else if (item.go === 'Clustering') setL9Tab(item.sub);
                       else if (item.go === 'Assignment 1') setAsgn1Tab(item.sub);
                     }
                   }}
@@ -5266,10 +6305,122 @@ export default function CITS5508() {
         {tab === 'Quiz' && (
           <div>
             <div className="m4-sec-hdr">
-              <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>26 Questions · Lectures 1–7</span></h2>
-              <p className="m4-sec-sub">Covering: Mitchell's E/T/P, supervised/unsupervised, bias trick, MSE vs MAE, confusion matrix, Normal Equation, gradient descent variants, logistic regression, Ridge/Lasso, kNN, SVMs, decision trees, and ensemble methods (voting, bagging/OOB, random forests, AdaBoost, gradient boosting, stacking). Detailed feedback on every answer.</p>
+              <h2 className="m4-sec-title">Knowledge Check <span className="m4-badge" style={{ background: 'rgba(34,211,238,0.12)', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.3)' }}>32 Questions · Lectures 1–9</span></h2>
+              <p className="m4-sec-sub">Covering: Mitchell's E/T/P, supervised/unsupervised, bias trick, MSE vs MAE, confusion matrix, Normal Equation, gradient descent variants, logistic regression, Ridge/Lasso, kNN, SVMs, decision trees, and ensemble methods (voting, bagging/OOB, random forests, AdaBoost, gradient boosting, stacking), dimensionality reduction (PCA, kernel PCA, manifolds), and clustering (k-means, DBSCAN, silhouette). Detailed feedback on every answer.</p>
             </div>
             <QuizSection />
+          </div>
+        )}
+
+        {/* ── DIMENSIONALITY REDUCTION (L8) ── */}
+        {tab === 'Dimensionality Reduction' && (
+          <div>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Dimensionality Reduction <span className="m4-badge" style={{ background: 'rgba(167,139,250,0.12)', color: 'var(--violet)', border: '1px solid rgba(167,139,250,0.3)' }}>Lecture 8</span></h2>
+            </div>
+            <div className="m4-labtabs">
+              {L8_TABS.map(lt => (
+                <button key={lt} className={`m4-labtab ${l8Tab === lt ? 'm4-labtab--on' : ''}`} onClick={() => setL8Tab(lt)}>{lt}</button>
+              ))}
+            </div>
+
+            {l8Tab === 'Curse of Dimensionality' && (
+              <div>
+                <p className="m4-sec-sub">Why thousands of features hurt: long training, sparse data, and points crowding the boundary. Feature selection (supervised) vs the unsupervised DR methods of this lecture.</p>
+                <L8Curse />
+              </div>
+            )}
+
+            {l8Tab === 'Projection & Manifolds' && (
+              <div>
+                <p className="m4-sec-sub">The two main approaches: linear projection onto a subspace, and manifold learning that unrolls twisted structures like the Swiss roll.</p>
+                <L8Manifold />
+              </div>
+            )}
+
+            {l8Tab === 'PCA' && (
+              <div>
+                <p className="m4-sec-sub">Principal Component Analysis: the max-variance linear projection. Principal axes via SVD, projecting the data, and the explained variance ratio.</p>
+                <L8PCA />
+              </div>
+            )}
+
+            {l8Tab === 'Choosing d & Compression' && (
+              <div>
+                <p className="m4-sec-sub">Pick the number of dimensions to retain a target variance (e.g. 95%), use PCA for compression, and reconstruct via the inverse transform.</p>
+                <L8ChooseDim />
+              </div>
+            )}
+
+            {l8Tab === 'PCA Variants' && (
+              <div>
+                <p className="m4-sec-sub">Feature normalisation before PCA, plus Randomized PCA (fast when d ≪ n) and Incremental PCA (mini-batch / online).</p>
+                <L8Variants />
+              </div>
+            )}
+
+            {l8Tab === 'Kernel PCA' && (
+              <div>
+                <p className="m4-sec-sub">The kernel trick gives nonlinear projections. Separating concentric circles with explicit polynomial features vs implicit Kernel PCA (linear / RBF / sigmoid).</p>
+                <L8KernelPCA />
+              </div>
+            )}
+
+            {l8Tab === 'Other Techniques' && (
+              <div>
+                <p className="m4-sec-sub">LLE, MDS, Isomap and t-SNE — manifold and visualisation methods — plus a t-SNE view of MNIST and the lecture summary.</p>
+                <L8Other />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── CLUSTERING / UNSUPERVISED LEARNING (L9) ── */}
+        {tab === 'Clustering' && (
+          <div>
+            <div className="m4-sec-hdr">
+              <h2 className="m4-sec-title">Unsupervised Learning — Clustering <span className="m4-badge" style={{ background: 'rgba(52,211,153,0.12)', color: 'var(--emerald)', border: '1px solid rgba(52,211,153,0.3)' }}>Lecture 9</span></h2>
+            </div>
+            <div className="m4-labtabs">
+              {L9_TABS.map(lt => (
+                <button key={lt} className={`m4-labtab ${l9Tab === lt ? 'm4-labtab--on' : ''}`} onClick={() => setL9Tab(lt)}>{lt}</button>
+              ))}
+            </div>
+
+            {l9Tab === 'Introduction' && (
+              <div>
+                <p className="m4-sec-sub">What unsupervised clustering is, where it is used, and how it differs from classification — centroid-based (k-means) vs density-based (DBSCAN).</p>
+                <L9Intro />
+              </div>
+            )}
+
+            {l9Tab === 'K-Means Algorithm' && (
+              <div>
+                <p className="m4-sec-sub">Step through assign → update until convergence, with live inertia and Voronoi cells. Hard vs soft clustering and the key scikit-learn attributes.</p>
+                <L9KMeans />
+              </div>
+            )}
+
+            {l9Tab === 'Drawbacks & Remedies' && (
+              <div>
+                <p className="m4-sec-sub">Initialisation sensitivity (k-means++), choosing k via the elbow and silhouette score, and the spherical-shape limitation (remedy: GMM).</p>
+                <L9Drawbacks />
+              </div>
+            )}
+
+            {l9Tab === 'Semi-Supervised Learning' && (
+              <div>
+                <p className="m4-sec-sub">From 50 labels to 90.9% on digits: label cluster representatives, propagate labels, and drop outliers — beating the full-label baseline.</p>
+                <L9SemiSup />
+              </div>
+            )}
+
+            {l9Tab === 'DBSCAN' && (
+              <div>
+                <p className="m4-sec-sub">Density-based clustering: core / border / anomaly points, arbitrary-shape clusters via an interactive eps & min_samples explorer, plus pros and cons.</p>
+                <L9DBSCAN />
+              </div>
+            )}
           </div>
         )}
 

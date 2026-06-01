@@ -1542,35 +1542,1039 @@ function PaperSegResMamba() {
   );
 }
 
-function TabResearchPapers() {
-  const papers = [
-    { id: 'seg-res-mamba', label: 'SegResMamba', venue: 'MIDL 2025', color: C.violet },
-  ];
-  const [paper, setPaper] = useState('seg-res-mamba');
+// ─────────────────────────────────────────────────────────────────────────────
+//  RESEARCH PAPERS — uniform data-driven paper renderer
+// ─────────────────────────────────────────────────────────────────────────────
 
+const PAPERS_DATA = [
+  // ── 1. Partial Volume Effect — Soret, Bacharach, Buvat (2007) ─────────────
+  {
+    id: 'pve', label: 'Partial Volume Effect', venue: 'J Nucl Med 2007', year: 2007, color: C.amber,
+    hero: {
+      title: 'Partial-Volume Effect in PET Tumor Imaging',
+      subtitle: 'A comprehensive review of PVE phenomena and correction methods',
+      authors: 'Soret · Bacharach · Buvat — J Nucl Med 2007 (48: 932–945)',
+      tags: ['PET QUANTIFICATION', 'PVE', 'REVIEW', 'CLINICAL', 'SUV BIAS'],
+    },
+    tldr: "Foundational review on how PET's finite spatial resolution causes systematic underestimation of small lesion uptake — explaining why voxel-level Dice will always be modest for tiny metastatic lesions.",
+    stats: [
+      { val: '3× FWHM', lbl: 'Accuracy threshold', sub: 'lesions below: larger but dimmer', color: C.amber },
+      { val: '2', lbl: 'Distinct PVE causes', sub: 'PSF blur + tissue-fraction', color: C.cyan },
+      { val: '~50%', lbl: 'Typical SUV under-estimation', sub: 'for sub-resolution lesions', color: C.rose },
+      { val: '7+', lbl: 'Correction methods reviewed', sub: 'no widely accepted clinical solution', color: C.violet },
+    ],
+    motivation: "Quantitative PET — SUVs, lesion volumes, treatment response — is the backbone of nuclear medicine. The scanner's finite spatial resolution causes signal to spill OUT of small hot lesions and surrounding tissue uptake to spill IN. Without understanding PVE, no quantitative PET result is trustworthy.",
+    innovations: [
+      { n: '01', title: 'Two-Phenomenon Decomposition', desc: '(1) 3D blurring from finite scanner resolution — convolution with the point-spread function. (2) Tissue-fraction effect — each voxel averages whatever tissues fall inside it.', color: C.amber },
+      { n: '02', title: 'Recovery Coefficient (RC)', desc: 'Simplest, most clinically adopted correction. Assumes spherical tumor + uniform background. Returns a corrected number, not a corrected image. Widely used.', color: C.cyan },
+      { n: '03', title: 'Geometric Transfer Matrix (GTM)', desc: 'Generalises RC to multiple compartments using anatomic priors from CT/MRI. Better for multi-region quantification — but assumes accurate boundary segmentation.', color: C.violet },
+      { n: '04', title: 'Pixel-Level Corrections', desc: 'Iterative deconvolution, partition correction, wavelet methods, MAP reconstruction with anatomic priors, kinetic-model corrections. Produce corrected images (not just numbers).', color: C.rose },
+      { n: '05', title: 'Measurement-Method Trade-offs', desc: 'SUVmax is observer-independent but noise-sensitive. Manual ROIs are subjective. Fixed-size ROIs introduce size bias. Isocontours depend on threshold choice — no free lunch.', color: C.emerald },
+    ],
+    architecture: {
+      summary: 'Not an architecture paper — a conceptual taxonomy of correction methods, split into regional (correct numbers) vs. pixel-level (correct images). The pipeline below shows how PVE arises from a true lesion signal.',
+      sketch: [
+        { l: 'True lesion SUV', c: C.amber, dim: 'small object, e.g. 0.5 cm³ metastasis' },
+        { l: '⊛ PSF convolution', c: C.rose, dim: 'finite scanner resolution', arrow: '↓' },
+        { l: '⊕ Tissue-fraction effect', c: C.violet, dim: 'voxel averages multiple tissues', arrow: '↓' },
+        { l: 'Observed SUV (biased ↓)', c: C.cyan, dim: 'underestimated, blurred, dim' },
+        { l: 'PVE correction (RC/GTM/MAP)', c: C.emerald, dim: 'regional or pixel-level', arrow: '↑' },
+        { l: 'Corrected SUV / image', c: C.amber, dim: 'closer to true value' },
+      ],
+    },
+    results: {
+      intro: 'No widely accepted single solution exists. RC is the only method with real clinical traction. Even imperfect correction substantially reduces bias. Strong advocacy for standardisation of acquisition, reconstruction, and ROI protocols.',
+      tables: [
+        {
+          title: 'PVE correction methods at a glance', color: C.cyan,
+          headers: ['Method', 'Output', 'Assumption', 'Adoption'],
+          rows: [
+            { cells: ['Recovery Coefficient', 'Number', 'Spherical tumor, uniform bg', 'Widespread'] },
+            { cells: ['Geometric Transfer Matrix', 'Number', 'Multi-compartment anatomy', 'Research'] },
+            { cells: ['Iterative deconvolution', 'Number', 'Known PSF', 'Limited'] },
+            { cells: ['Partition correction', 'Image', 'Tissue map (MRI/CT)', 'Brain mainly'] },
+            { cells: ['MAP reconstruction', 'Image', 'Anatomic prior', 'Experimental'] },
+            { cells: ['Kinetic-model correction', 'Image', 'Dynamic acquisition', 'Niche'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Comprehensive review — cleanly distinguishes PSF blurring vs. tissue-fraction effect',
+      'Practical taxonomy of correction methods (regional vs. pixel-level)',
+      'Honest about lack of universal clinical solution',
+      'Strong advocacy for standardisation — later realised via EARL accreditation',
+    ],
+    weaknesses: [
+      "Predates modern TOF and PSF modelling in iterative reconstruction (now routine)",
+      'No widely accepted clinical solution at time of writing (2007)',
+      'Measurement-method discussion is rich but lacks definitive recommendation',
+      'Cross-centre standardisation remains a problem in 2026',
+    ],
+    relevance: "Explains why voxel-level DSC for PSMA segmentation is fundamentally bounded (~43% in Kendrick 2022). Tiny metastatic lesions are below the PSF resolution limit — their boundaries are physically blurred in the input itself. This motivates the Honours project's choice of lesion-level F1 (not voxel DSC) as the primary metric, and explains why beating Observer 2 on DSC is already an impressive result.",
+  },
+
+  // ── 2. U-Net — Ronneberger, Fischer, Brox (2015) ──────────────────────────
+  {
+    id: 'u-net', label: 'U-Net', venue: 'MICCAI 2015', year: 2015, color: C.cyan,
+    hero: {
+      title: 'U-Net',
+      subtitle: 'Convolutional Networks for Biomedical Image Segmentation',
+      authors: 'Ronneberger · Fischer · Brox — University of Freiburg, MICCAI 2015',
+      tags: ['ENCODER-DECODER', 'SKIP CONNECTIONS', 'BIOMEDICAL', 'FOUNDATIONAL', '2D'],
+    },
+    tldr: 'The foundational encoder-decoder with skip connections that defined biomedical image segmentation — wins ISBI 2015 EM and cell-tracking challenges from just 30 training images.',
+    stats: [
+      { val: '92.0%', lbl: 'PhC-U373 IoU', sub: 'vs 83% second-best', color: C.cyan },
+      { val: '77.6%', lbl: 'DIC-HeLa IoU', sub: 'vs 46% second-best', color: C.emerald },
+      { val: '30', lbl: 'Training images (ISBI EM)', sub: 'works with tiny datasets', color: C.amber },
+      { val: '< 1 s', lbl: 'Inference per 512×512', sub: 'on contemporary GPU', color: C.violet },
+    ],
+    motivation: "Image classification CNNs (Krizhevsky/AlexNet) couldn't help biomedical imaging because (1) segmentation needs per-pixel labels, not one label per image, and (2) annotated biomedical data is scarce (often dozens, not millions). The prior best — Ciresan's sliding-window CNN — was painfully slow and trapped between context and localisation.",
+    innovations: [
+      { n: '01', title: 'U-Shaped Encoder-Decoder', desc: 'Contracting path (encoder) doubles channels at each downsample for context. Symmetric expanding path (decoder) halves channels via 2×2 up-convolutions for precise localisation. Capacity flows both ways.', color: C.cyan },
+      { n: '02', title: 'Skip Connections (Concatenation)', desc: 'Cropped encoder feature maps are concatenated into the decoder at the same resolution. High-resolution spatial detail is recovered exactly where the decoder needs it. This single idea changed segmentation.', color: C.rose },
+      { n: '03', title: 'Overlap-Tile + Mirror Padding', desc: 'For images bigger than GPU memory, predict overlapping tiles. Border-pixel context filled via mirror padding. Lets U-Net segment arbitrarily large images seamlessly.', color: C.violet },
+      { n: '04', title: 'Elastic Deformation Augmentation', desc: 'Random displacement field (σ=10 px, 3×3 grid, bicubic interp) teaches invariance to soft tissue deformations without needing annotations. Single biggest reason it works with 30 images.', color: C.amber },
+      { n: '05', title: 'Distance-Weighted Loss for Touching Cells', desc: 'Pre-computed weight map gives huge loss weight to thin background pixels between touching cells. Forces the network to learn separation borders. Critical for instance segmentation.', color: C.emerald },
+    ],
+    architecture: {
+      summary: '23 convolutional layers, no fully-connected. 4 downsampling stages (channels 64→128→256→512→1024 bottleneck). Symmetric decoder. Only valid (unpadded) convolutions — so output pixels always have full surrounding context.',
+      sketch: [
+        { l: 'Input 572×572 (1ch)', c: C.cyan, dim: 'biomedical image (EM, cell, MRI...)' },
+        { l: 'Encoder × 4 — conv3×3 ×2 + ReLU + maxpool 2×2', c: C.cyan, dim: '64→128→256→512 channels', arrow: '↓ + skip₁,₂,₃,₄' },
+        { l: 'Bottleneck — conv3×3 ×2', c: C.rose, dim: '1024 channels @ 28×28' },
+        { l: 'Decoder × 4 — up-conv 2×2 + concat skip + conv3×3 ×2', c: C.amber, dim: 'mirrors encoder', arrow: '↑' },
+        { l: 'Conv 1×1 — K output channels', c: C.emerald, dim: '(388×388, K-class softmax)' },
+      ],
+    },
+    results: {
+      intro: 'Won the ISBI 2015 EM Segmentation Challenge (best warping error) and both categories of the ISBI 2015 Cell Tracking Challenge by large margins — with no pre/post-processing.',
+      tables: [
+        {
+          title: 'ISBI 2015 cell tracking — IoU', color: C.cyan,
+          headers: ['Method', 'PhC-U373', 'DIC-HeLa'],
+          rows: [
+            { cells: ['IMCB-SG (2014)', '0.267', '0.294'] },
+            { cells: ['KTH-SE (2014)', '0.795', '0.461'] },
+            { cells: ['Second-best 2015', '0.830', '0.460'] },
+            { cells: ['U-Net (this paper)', '0.920', '0.776'], hl: true },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Works with tiny datasets (~30 imgs) via aggressive augmentation',
+      'Skip connections — single most important segmentation idea of the 2010s',
+      'End-to-end training, no post-processing tricks needed',
+      'Seamless tiling for arbitrarily large images',
+    ],
+    weaknesses: [
+      '2D only — needs the 3D extension for volumetric data',
+      'Unpadded conv loses border pixels — input/output sizes mismatch',
+      'Hand-crafted weight map for touching cells is dataset-specific',
+      'Batch size = 1 (with momentum 0.99) is finicky to tune',
+    ],
+    relevance: "The DNA of every architecture in this Honours project — including the nnU-Net baseline and the U-Mamba target. The encoder-decoder + skip-connection skeleton from 2015 has held up remarkably and is the structural foundation for both the PSMA baseline (Kendrick 2022 via nnU-Net) and the proposed Mamba-based replacement.",
+  },
+
+  // ── 3. 3D U-Net — Çiçek et al. (2016) ─────────────────────────────────────
+  {
+    id: '3d-unet', label: '3D U-Net', venue: 'MICCAI 2016', year: 2016, color: C.rose,
+    hero: {
+      title: '3D U-Net',
+      subtitle: 'Learning Dense Volumetric Segmentation from Sparse Annotation',
+      authors: 'Çiçek · Abdulkadir · Lienkamp · Brox · Ronneberger — Freiburg, MICCAI 2016',
+      tags: ['3D SEGMENTATION', 'VOLUMETRIC', 'SPARSE ANNOTATION', 'BATCH NORM', 'XENOPUS KIDNEY'],
+    },
+    tldr: 'Direct 3D extension of U-Net that learns dense volumetric segmentation from just a handful of sparsely annotated slices — replacing all 2D operations with 3D counterparts.',
+    stats: [
+      { val: '0.863', lbl: 'IoU semi-automated', sub: '3-fold CV, Xenopus kidney', color: C.rose },
+      { val: '0.704', lbl: 'IoU fully-automated', sub: 'avg vs 0.547 for 2D baseline', color: C.cyan },
+      { val: '19.07 M', lbl: 'Parameters', sub: '132×132×116 → 44×44×28 output', color: C.violet },
+      { val: '~3 days', lbl: 'Training on TitanX', sub: '70 K iterations', color: C.amber },
+    ],
+    motivation: 'Volumetric biomedical data (CT, MRI, microscopy) is abundant but annotation is brutal — only 2D slices can be shown on screen, neighbours are nearly identical, full 3D labelling is impractical. The need: train on a handful of orthogonal sparse slices and densely segment the whole volume.',
+    innovations: [
+      { n: '01', title: 'All 2D Operations → 3D', desc: '3×3×3 convolutions, 2×2×2 max-pooling, 2×2×2 up-convolutions. Direct architectural translation of U-Net to volumetric. No new tricks — just commit to 3D end-to-end.', color: C.rose },
+      { n: '02', title: 'Weighted Softmax Loss for Sparse Annotation', desc: 'Set the loss weight of unlabelled voxels (label 3) to ZERO. Network learns only from labelled voxels but generalises to the whole volume. Enables sparse-slice training.', color: C.cyan },
+      { n: '03', title: 'Batch Normalisation Before Each ReLU', desc: 'BN at every layer for faster convergence. Batch size of 1 — use current-batch statistics also at test time. Stabilises tiny-batch volumetric training.', color: C.violet },
+      { n: '04', title: 'On-the-Fly 3D Elastic Deformation', desc: 'Smooth dense deformation field via B-spline interpolation (σ=4 on a 32-voxel grid). Data and labels deformed together. Memory-efficient augmentation for 3D.', color: C.emerald },
+      { n: '05', title: 'Avoid Bottlenecks via Pre-doubling Channels', desc: 'Channel count doubled BEFORE max-pooling (not after). Prevents information bottleneck and keeps representational capacity high through pooling.', color: C.amber },
+    ],
+    architecture: {
+      summary: 'Same U-shape as 2D U-Net but with 3D everywhere. 4 analysis levels (3D conv ×2 + 3D maxpool), bottleneck, 4 synthesis levels (3D up-conv + concat + 3D conv ×2). Final 1×1×1 conv to K classes. Input tile 132×132×116, output 44×44×28.',
+      sketch: [
+        { l: 'Input 132×132×116 (3 ch)', c: C.cyan, dim: 'Tomato-Lectin + DAPI + β-Catenin' },
+        { l: 'Analysis × 4 — conv3³ ×2 + maxpool2³', c: C.cyan, dim: '32→64→128→256 channels', arrow: '↓ + skip' },
+        { l: 'Bottleneck — conv3³ ×2', c: C.rose, dim: '512 channels' },
+        { l: 'Synthesis × 4 — up-conv2³ + concat + conv3³ ×2', c: C.amber, dim: 'mirrors analysis', arrow: '↑' },
+        { l: 'Conv 1×1×1 — K classes', c: C.emerald, dim: '(44×44×28 output, K=3)' },
+      ],
+    },
+    results: {
+      intro: 'Tested on Xenopus kidney microscopy. The 3D-with-BN variant decisively beats both 2D and 3D-without-BN. Sparse-annotation training is viable from as few as 3 orthogonal slices per axis.',
+      tables: [
+        {
+          title: 'Semi-automated 3-fold CV (IoU)', color: C.rose,
+          headers: ['Test slices', '3D w/o BN', '3D + BN', '2D + BN'],
+          rows: [
+            { cells: ['Subset 1', '0.822', '0.855', '0.785'] },
+            { cells: ['Subset 2', '0.857', '0.871', '0.820'] },
+            { cells: ['Subset 3', '0.846', '0.863', '0.782'] },
+            { cells: ['Average', '0.842', '0.863', '0.796'], hl: true },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Native 3D context — exploits inter-slice information that 2D nets miss',
+      'Sparse-annotation training — radically reduces labelling burden',
+      'BN at batch-size-1 — pragmatic choice that just works',
+      'End-to-end from scratch (no pre-trained 3D backbone needed)',
+    ],
+    weaknesses: [
+      'Memory-hungry — limits tile size, hence receptive field',
+      '19M parameters but small effective input field of view',
+      'Tested only on one biological structure (Xenopus kidney)',
+      'No formal long-range modelling beyond convolutional receptive field',
+    ],
+    relevance: 'The direct ancestor of every 3D PSMA segmentation network in this project — the nnU-Net cascade used by Kendrick (2022) is built on this 3D U-Net architecture, and the proposed Mamba alternative inherits the same encoder-decoder + skip-connection skeleton.',
+  },
+
+  // ── 4. Tversky Loss — Salehi, Erdogmus, Gholipour (2017) ──────────────────
+  {
+    id: 'tversky', label: 'Tversky Loss', venue: 'MLMI 2017', year: 2017, color: C.amber,
+    hero: {
+      title: 'Tversky Loss Function for Image Segmentation',
+      subtitle: 'Using 3D Fully Convolutional Networks — asymmetric FP/FN weighting',
+      authors: 'Salehi · Erdogmus · Gholipour — Boston Children\'s Hospital · MLMI 2017',
+      tags: ['LOSS FUNCTION', 'CLASS IMBALANCE', 'LESION SEGMENTATION', 'F-BETA', 'FOCAL TVERSKY'],
+    },
+    tldr: 'A generalised Dice loss with separate weights α (FP) and β (FN). Pushing β > α biases training toward recall — and surprisingly improves DSC too, on imbalanced lesion segmentation.',
+    stats: [
+      { val: '56.4%', lbl: 'DSC at β = 0.7', sub: 'vs 53.4% for β = 0.5 (Dice)', color: C.amber },
+      { val: '56.9%', lbl: 'Sensitivity at β = 0.7', sub: 'vs 49.9% Dice baseline', color: C.rose },
+      { val: 'α + β = 1', lbl: 'F-β family', sub: 'subsumes Dice, Jaccard, F₂', color: C.violet },
+      { val: '15 / 2', lbl: 'Subjects / fold-CV', sub: 'MS lesion MRI proof of concept', color: C.cyan },
+    ],
+    motivation: 'In lesion segmentation, non-lesion voxels outnumber lesion voxels by 500× or more. Cross-entropy predicts "no lesion" everywhere (high precision, terrible recall). Dice helps but treats FP and FN symmetrically — which is wrong for clinical practice, where missing a lesion is much worse than a false alarm.',
+    innovations: [
+      { n: '01', title: 'Generalised Tversky Index', desc: 'T(α, β) = TP / (TP + α·FP + β·FN). α and β are independent — controlling FP and FN penalty separately. Smooth and differentiable for backprop.', color: C.amber },
+      { n: '02', title: 'Subsumes Dice / Jaccard / F-β', desc: 'α = β = 0.5 → Dice. α = β = 1 → Jaccard/Tanimoto. α + β = 1 → F-β family. One loss to rule them all (per dataset, anyway).', color: C.cyan },
+      { n: '03', title: 'Recall-Biased Tuning (β > α)', desc: 'For clinical lesion detection, missing a lesion is far costlier than a false alarm. β > α explicitly amplifies the gradient through FN. Recommended start: α=0.3, β=0.7.', color: C.rose },
+      { n: '04', title: 'Cross-Metric Improvement', desc: 'Surprising finding: a recall-biased loss improves DSC too (a symmetric metric). Authors attribute this to "improved generalisation" — escaping the trivial all-zero solution that Dice can fall into.', color: C.emerald },
+      { n: '05', title: 'Drop-in Compatibility', desc: 'No architectural change required. Plug into any FCN/U-Net; just swap the loss. Single hyperparameter trade-off (β) is easy to sweep.', color: C.violet },
+    ],
+    architecture: {
+      summary: 'Not an architecture — a loss function. The diagram below shows how it slots into a standard 3D segmentation pipeline. The only change is the loss block.',
+      sketch: [
+        { l: 'Multi-channel MRI (T1 + T2 + FLAIR)', c: C.cyan, dim: 'imbalanced input volume' },
+        { l: '3D U-Net (any backbone)', c: C.rose, dim: 'unchanged segmentation network', arrow: '↓' },
+        { l: 'Sigmoid → soft segmentation', c: C.violet, dim: 'p ∈ [0,1] per voxel', arrow: '↓' },
+        { l: 'Tversky Loss  T(α, β)', c: C.amber, dim: 'α = 0.3, β = 0.7  recommended', arrow: '↑ backprop' },
+        { l: 'TP / (TP + α·FP + β·FN)', c: C.emerald, dim: 'asymmetric class-imbalance loss' },
+      ],
+    },
+    results: {
+      intro: 'MS lesion segmentation on multi-channel MRI (T1, T2, FLAIR), 15 subjects, 2-fold CV. β = 0.7 wins on every metric. Pushing β to 0.9 keeps sensitivity climbing but collapses precision.',
+      tables: [
+        {
+          title: 'Tversky β sweep on MS lesion MRI', color: C.amber,
+          headers: ['β', 'DSC', 'Sensitivity', 'F₂', 'APR'],
+          rows: [
+            { cells: ['0.5  (= Dice)', '53.4%', '49.9%', '50.5%', '52.7%'] },
+            { cells: ['0.6', '54.1%', '52.7%', '53.2%', '53.6%'] },
+            { cells: ['0.7  (recommended)', '56.4%', '56.9%', '57.3%', '56.0%'], hl: true },
+            { cells: ['0.8', '54.9%', '60.2%', '58.9%', '54.7%'] },
+            { cells: ['0.9', '50.1%', '64.0%', '60.4%', '51.5%'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Simple drop-in replacement for Dice loss',
+      'Tunable for clinical FN-cost preference',
+      'Aged extremely well — spawned Focal Tversky and asymmetric variants',
+      'Counter-intuitive cross-metric gain (recall-biased loss → better DSC)',
+    ],
+    weaknesses: [
+      'β must be tuned per dataset (no theory says β=0.7 generalises)',
+      'Thin experimental base — 15 subjects, one dataset, one application',
+      'Mechanism behind cross-metric gain is hand-wavy',
+      'PR-curve variance across subjects exceeds variance across β values',
+    ],
+    relevance: "The most direct lever for raising the Honours project's 73% sensitivity. Kendrick (2022) explicitly cites Tversky-style loss as recommended future work for the PSMA baseline. Initial hyperparameter pick for the Honours implementation: α = 0.3, β = 0.7 — exactly the value recommended here.",
+  },
+
+  // ── 5. PSMA Pelvic Deep Net — Zhao et al. (2020) ──────────────────────────
+  {
+    id: 'zhao-psma', label: 'Zhao PSMA (Pelvic)', venue: 'EJNMMI 2020', year: 2020, color: C.emerald,
+    hero: {
+      title: 'Deep Neural Network for Automatic Characterization of Lesions on ⁶⁸Ga-PSMA-11 PET/CT',
+      subtitle: 'Triple-combining 2.5D U-Net for pelvic mPCa lesion detection',
+      authors: 'Zhao · Gafita · Vollnberg · Tetteh · Haupt · Afshar-Oromieh · Menze · Eiber · Rominger · Shi — EJNMMI 2020',
+      tags: ['PSMA PET/CT', '2.5D ENSEMBLE', 'PELVIC mPCa', 'MULTI-CENTER', 'BONE+LN+LOCAL'],
+    },
+    tldr: 'First multi-center deep network for automated PSMA PET/CT lesion characterisation — a triple-plane 2.5D U-Net ensemble that mimics how radiologists scroll axial/coronal/sagittal views.',
+    stats: [
+      { val: '0.99', lbl: 'Bone lesion F1', sub: '99% / 99% / 99% P / R / F1', color: C.emerald },
+      { val: '0.92', lbl: 'Lymph node F1', sub: '94% precision, 90% recall', color: C.cyan },
+      { val: '0.69', lbl: 'Local lesion F1', sub: 'hardest class (n=127, low contrast)', color: C.rose },
+      { val: '193', lbl: 'Patients · 3 centres', sub: 'TUM + Munich + Bern · 1,756 lesions', color: C.amber },
+    ],
+    motivation: '¹⁷⁷Lu-PSMA radioligand therapy (RLT) was suboptimal in ~30% of patients — better tumour-burden quantification is needed. RLT patients typically have many metastases, so manual segmentation is impractical at clinical scale. Prior automation (bone-PET-index) was bone-only.',
+    innovations: [
+      { n: '01', title: '2.5D Input — 3 Slices as Channels', desc: 'Each input is 6-channel: 3 consecutive slices × 2 modalities (PET + CT). The third dimension flows through channels rather than 3D convolutions. Massive memory savings vs 3D.', color: C.emerald },
+      { n: '02', title: 'Triple-Plane Ensemble + Majority Voting', desc: 'Independent 2.5D U-Nets trained on axial, coronal, sagittal slicings. Outputs combined by per-voxel majority vote. Mimics how clinicians scroll all three orthogonal views.', color: C.cyan },
+      { n: '03', title: 'Three Lesion Classes Simultaneously', desc: 'Bone / lymph node / local prostate. Multi-class Dice loss (insensitive to absolute background voxel count) handles the extreme imbalance directly.', color: C.violet },
+      { n: '04', title: 'Detection via Connected Components', desc: 'Post-processing on the segmentation: connected-component analysis + volume filter (T_V = 25 mm³) + 10% GT-overlap detection criterion (T_E). Turns dense seg into clinical-style lesion detection.', color: C.amber },
+      { n: '05', title: 'PET + CT Super-Additivity', desc: 'CT alone: <10% Dice. PET alone: ~50% Dice. PET + CT: 54–65% Dice. The joint signal exceeds the sum — CT provides anatomical context (where bones are) that disambiguates PET uptake.', color: C.rose },
+    ],
+    architecture: {
+      summary: '6-channel (3 slices × 2 modalities) input → three 2.5D U-Nets (axial / coronal / sagittal) → per-voxel majority vote → 3-class segmentation → connected components + filters → lesion detections.',
+      sketch: [
+        { l: 'Input PET + CT volume', c: C.cyan, dim: 'pelvic ROI, 1×1×1 mm³' },
+        { l: 'Axial 2.5D U-Net (6-ch input)', c: C.emerald, dim: 'axial voxel predictions', arrow: '↓' },
+        { l: 'Coronal 2.5D U-Net', c: C.violet, dim: 'coronal voxel predictions', arrow: '↓' },
+        { l: 'Sagittal 2.5D U-Net', c: C.rose, dim: 'sagittal voxel predictions', arrow: '↓' },
+        { l: 'Majority voting (per voxel)', c: C.amber, dim: 'fusion of 3 view predictions', arrow: '↓' },
+        { l: 'CC + volume filter + 10% overlap', c: C.cyan, dim: 'segmentation → lesion detection' },
+      ],
+    },
+    results: {
+      intro: 'Detection metrics on the held-out 63-patient test set, balanced across centres. Bone is near-perfect; lymph node very strong; local is clearly the hardest (only 127 examples, low contrast against healthy prostate).',
+      tables: [
+        {
+          title: 'Detection F1 by lesion class', color: C.emerald,
+          headers: ['Class', 'Precision', 'Recall', 'F1'],
+          rows: [
+            { cells: ['Bone', '0.99', '0.99', '0.99'], hl: true },
+            { cells: ['Lymph node', '0.94', '0.90', '0.92'] },
+            { cells: ['Local prostate', '0.79', '0.61', '0.69'] },
+          ],
+        },
+        {
+          title: 'Modality ablation (bone class)', color: C.cyan,
+          headers: ['Modality', 'DSC', 'PPV', 'Specificity'],
+          rows: [
+            { cells: ['CT only', '< 10%', '< 10%', '~12%'] },
+            { cells: ['PET only', '51.5%', '61.9%', '54.8%'] },
+            { cells: ['PET + CT', '64.5%', '79.9%', '60.6%'], hl: true },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Memory-efficient (2.5D over 3D) — can train on full slices, not small patches',
+      'Triple-plane ensemble mimics clinician workflow — robust to view-specific features',
+      'First multi-center PSMA study — addresses cross-scanner generalisation',
+      'Clean detection pipeline via connected components + thresholds',
+    ],
+    weaknesses: [
+      'Pelvic-only — does NOT address whole-body PSMA segmentation',
+      'Local lesions only F1=69% (small training set, low PET contrast)',
+      'Cross-fold variation high — cohort just large enough for stable training',
+      'Manual ground truth itself is imperfect (inter-observer + PVE)',
+    ],
+    relevance: 'The pelvic precursor to the Honours baseline (Kendrick 2022 cites this as ref [31]). Establishes the >90% sensitivity ceiling for pelvic-only PSMA. Kendrick deliberately traded some pelvic sensitivity (73%) for whole-body coverage — and the Honours project aims to recover that sensitivity using Mamba.',
+  },
+
+  // ── 6. Vision Transformer — Dosovitskiy et al. (2021) ────────────────────
+  {
+    id: 'vit', label: 'Vision Transformer (ViT)', venue: 'ICLR 2021', year: 2021, color: C.violet,
+    hero: {
+      title: 'An Image is Worth 16×16 Words',
+      subtitle: 'Transformers for Image Recognition at Scale',
+      authors: 'Dosovitskiy et al. — Google Research, ICLR 2021',
+      tags: ['TRANSFORMER', 'PATCH EMBEDDING', 'GLOBAL ATTENTION', 'SCALE WINS', 'NO CONV'],
+    },
+    tldr: 'A standard Transformer applied to flat 16×16 image patches matches or beats CNNs — proving scale + data can replace CNN inductive biases (locality, equivariance).',
+    stats: [
+      { val: '88.55%', lbl: 'ImageNet (ViT-H/14)', sub: 'pre-trained on JFT-300M', color: C.violet },
+      { val: '4×', lbl: 'Less pre-training compute', sub: 'vs BiT-L, same accuracy', color: C.amber },
+      { val: 'O(N²)', lbl: 'Self-attention cost', sub: 'in sequence length N', color: C.rose },
+      { val: '86 M – 632 M', lbl: 'ViT-B / L / H params', sub: 'B/16, L/16, H/14', color: C.cyan },
+    ],
+    motivation: 'CNNs hard-code locality, translation equivariance, and 2D neighbourhood structure. Transformers conquered NLP without similar inductive biases — can they do the same for vision if given enough data? The bet: replace architecture priors with scale + data priors.',
+    innovations: [
+      { n: '01', title: 'Image as a Sequence of Patches', desc: 'Split image into N = HW/P² patches of P×P pixels (e.g. P=16). Flatten each, linearly project to D-dim. Treat the resulting sequence exactly like a sequence of word tokens.', color: C.violet },
+      { n: '02', title: 'Learnable [class] Token + Position Embedding', desc: 'BERT-style: prepend a learnable [class] token whose final representation feeds an MLP head. Add learnable 1D position embeddings — which spontaneously develop 2D row/column structure during training.', color: C.cyan },
+      { n: '03', title: 'Pure Transformer Encoder', desc: 'L stacked encoder layers, each = pre-norm + multi-head self-attention + residual + MLP (2-layer GELU) + residual. No image-specific machinery. Standard Transformer toolkit applies directly.', color: C.rose },
+      { n: '04', title: 'Scale Beats Inductive Bias', desc: 'On ImageNet-only, ViT loses to ResNets. On ImageNet-21k, roughly tied. On JFT-300M, ViT wins decisively. The bet pays off only at scale — data substitutes for architectural priors.', color: C.amber },
+      { n: '05', title: 'Compute-Efficient at Scale', desc: 'ViT-H/14 matches or beats BiT-L and Noisy Student with ~4× less pre-training compute. The compute/accuracy frontier favours Transformers as scale grows.', color: C.emerald },
+    ],
+    architecture: {
+      summary: 'Patch → Linear projection → +PosEmbed → Transformer encoder × L → MLP head on [class] token → class prediction. Almost embarrassingly simple — that\'s the point.',
+      sketch: [
+        { l: 'Input image  H × W × 3', c: C.violet, dim: 'e.g. 224 × 224 × 3' },
+        { l: 'Split into N = HW/P² patches', c: C.cyan, dim: 'e.g. 196 patches of 16×16', arrow: '↓' },
+        { l: 'Linear projection → D dims', c: C.rose, dim: 'patch embedding via trainable E', arrow: '↓' },
+        { l: 'Prepend [class] + position emb', c: C.amber, dim: '(N+1) × D sequence', arrow: '↓' },
+        { l: 'Transformer encoder × L', c: C.emerald, dim: 'pre-norm + MSA + MLP + residual' },
+        { l: 'MLP head on [class] token', c: C.violet, dim: 'K-class prediction' },
+      ],
+    },
+    results: {
+      intro: 'ViT-H/14 (pre-trained on JFT-300M) wins ImageNet, ImageNet-ReaL, CIFAR-100, Oxford-IIIT Pets, VTAB (19 tasks) at a fraction of the pre-training compute of BiT or Noisy Student.',
+      tables: [
+        {
+          title: 'ViT vs CNN baselines at scale', color: C.violet,
+          headers: ['Benchmark', 'ViT-H/14', 'BiT-L', 'Noisy Student'],
+          rows: [
+            { cells: ['ImageNet', '88.55', '87.54', '88.4'], hl: true },
+            { cells: ['ImageNet-ReaL', '90.72', '90.54', '90.55'] },
+            { cells: ['CIFAR-100', '94.55', '93.51', '—'] },
+            { cells: ['Oxford-IIIT Pets', '97.56', '96.62', '—'] },
+            { cells: ['TPUv3-core-days', '2.5 k', '9.9 k', '12.3 k'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Scales beautifully — performance hasn\'t saturated within tested compute',
+      'Transfers the whole Transformer toolkit (caching, MoE, SSL) to vision for free',
+      'Spawned an entire research direction — DeiT, Swin, MAE, CLIP all descend from ViT',
+      'Compute-efficient at scale (4× less than BiT for same accuracy)',
+    ],
+    weaknesses: [
+      'Data-hungry — loses to ResNets on ImageNet alone',
+      'O(N²) self-attention — infeasible for whole-body 3D volumes (millions of voxels)',
+      'No native locality bias — must learn it from data',
+      'Position embeddings are interpolated at fine-tuning — not a clean 2D solution',
+    ],
+    relevance: "The architecture whose quadratic cost MOTIVATES Mamba for whole-body PSMA. SwinUNETR (Transformer for 3D medical) is the strongest non-Mamba baseline — but it hits VRAM walls on whole-body PET volumes (SegMamba-V2 paper shows Transformers OOM at 128³). Linear-complexity SSMs (Mamba) are the response.",
+  },
+
+  // ── 7. nnU-Net — Isensee et al. (2021) ────────────────────────────────────
+  {
+    id: 'nnunet', label: 'nnU-Net', venue: 'Nature Methods 2021', year: 2021, color: C.cyan,
+    hero: {
+      title: 'nnU-Net',
+      subtitle: 'A Self-Configuring Method for Deep Learning-Based Biomedical Image Segmentation',
+      authors: 'Isensee · Jaeger · Kohl · Petersen · Maier-Hein — DKFZ Heidelberg, Nature Methods 2021',
+      tags: ['SELF-CONFIGURING', 'AUTO-ML', '23 DATASETS', 'NO NEW NET', 'FOUNDATIONAL'],
+    },
+    tldr: '"No new net" — strong segmentation performance comes from systematic auto-configuration, not architectural novelty. Sets SOTA on 33 of 53 tasks across 23 datasets with zero manual tuning.',
+    stats: [
+      { val: '33 / 53', lbl: 'SOTA targets', sub: '11 international challenges', color: C.cyan },
+      { val: '23', lbl: 'Datasets validated', sub: 'CT, MRI, EM, FM across organs', color: C.emerald },
+      { val: '1000 × 250', lbl: 'Epochs × mini-batches', sub: 'SGD + Nesterov momentum 0.99', color: C.rose },
+      { val: '5-fold CV', lbl: 'Always', sub: '2D / 3D / 3D-cascade auto-chosen', color: C.violet },
+    ],
+    motivation: 'Deep learning segmentation typically requires expert per-dataset tuning. Configurations from one dataset rarely transfer to another (modality, voxel spacing, image size, class ratio all vary). AutoML approaches need huge compute and large datasets. The need: an out-of-the-box tool that just works.',
+    innovations: [
+      { n: '01', title: 'Three-Tier Parameter Strategy', desc: '(1) FIXED params (robust common choices: SGD+Nesterov μ=0.99, Dice+CE loss, Poly LR, deep supervision). (2) RULE-BASED params (heuristic functions of dataset fingerprint). (3) EMPIRICAL params (ensemble selection, post-processing — learned from data).', color: C.cyan },
+      { n: '02', title: 'Dataset Fingerprint → Pipeline Fingerprint', desc: 'Captures spacing distribution, median shape, intensity stats, modalities, class ratios. Heuristic rules map fingerprint → patch size, batch size, topology, target spacing, normalisation strategy.', color: C.rose },
+      { n: '03', title: 'Auto Choice of 2D / 3D / 3D-Cascade', desc: 'Trains up to three configurations; selects best via 5-fold CV. Cascade triggered when full-res patch covers < 12.5% of median image — adds a low-res stage providing global context.', color: C.violet },
+      { n: '04', title: 'Memory-Aware Patch + Topology Selection', desc: 'Initialise patch size = median image shape; iteratively reduce while adapting depth/kernels until network fits in GPU with batch ≥ 2. No GPU needed for configuration — memory estimated from feature-map sizes.', color: C.amber },
+      { n: '05', title: 'Pipeline Beats Architecture (KiTS Analysis)', desc: 'On KiTS19 (100+ teams): all top-15 used 3D U-Net. Teams using the SAME architecture spanned the whole leaderboard. Pipeline choices (normalisation, patch size, LR) drove the variance, not the architecture.', color: C.emerald },
+    ],
+    architecture: {
+      summary: 'Plain U-Net variants — no residual, dense, attention, dilated, or SE blocks. Instance norm + leaky ReLU + deep supervision. Initial 32 feature maps, doubled per downsample, capped at 320 (3D) / 512 (2D). The novelty is the configuration pipeline, not the network.',
+      sketch: [
+        { l: 'Training data', c: C.cyan, dim: 'any 2D/3D modality' },
+        { l: 'Dataset Fingerprint', c: C.rose, dim: 'spacing, shape, intensity, modality, classes', arrow: '↓' },
+        { l: 'Rule-based pipeline config', c: C.violet, dim: 'patch, batch, topology, normalisation', arrow: '↓' },
+        { l: 'Train 2D + 3D + (3D-cascade)', c: C.amber, dim: '5-fold CV each', arrow: '↓' },
+        { l: 'Empirical: ensemble + post-process', c: C.emerald, dim: 'connected-component suppression', arrow: '↓' },
+        { l: 'Pipeline Fingerprint → Predictions', c: C.cyan, dim: 'traceable, reproducible' },
+      ],
+    },
+    results: {
+      intro: '11 international challenges, 23 datasets, 53 tasks — first place on 33. On the KiTS 2019 challenge (largest at MICCAI 2019), nnU-Net (submitted after the deadline) reset the leaderboard with a plain 3D U-Net.',
+      tables: [
+        {
+          title: 'Selected challenge rankings (rank / total entries)', color: C.cyan,
+          headers: ['Challenge', 'Dataset', 'Rank'],
+          rows: [
+            { cells: ['LiTS', 'Liver (D14)', '1 / 119'], hl: true },
+            { cells: ['KiTS', 'Kidney + tumour (D17)', '1 / 342'], hl: true },
+            { cells: ['BCV', '13 abdominal organs (D11)', '1 / 38–46'], hl: true },
+            { cells: ['ACDC', 'Cardiac MRI (D13)', '1 / 9–10'] },
+            { cells: ['CHAOS', 'MRI organs (D16)', '1 / 46'] },
+            { cells: ['MSD', '10 tasks (D1–D10)', 'mostly 1–3'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'No expert tuning needed — out-of-the-box on any new task',
+      'Generalises across modalities (CT/MRI/EM/FM) and organ scales',
+      'Every decision is TRACEABLE to dataset properties (unlike black-box AutoML)',
+      'Open source + pre-trained models published — used as the standard baseline',
+    ],
+    weaknesses: [
+      'Optimised for Dice metric — domain-specific metrics may need adaptation',
+      'Some dataset properties remain unconsidered (e.g., EM-specific preprocessing weak on CREMI)',
+      'Plain U-Net only — does not benefit from later architectural advances (attention, Mamba)',
+      'Massive training cost (1000 × 250 minibatches × 5 folds) — not exploration-friendly',
+    ],
+    relevance: 'THE baseline framework for the Honours project. The 79.9% lesion F1, 73% sensitivity, 94.5% patient-level accuracy in [[automatic-prognostic-biomarker]] all come from nnU-Net. The proposed Mamba architecture replaces nnU-Net\'s U-Net backbone — but inherits the same self-configuring preprocessing, training schedule, and evaluation pipeline.',
+  },
+
+  // ── 8. Kendrick PSMA — Automatic Prognostic Biomarker (2022) ──────────────
+  {
+    id: 'kendrick', label: 'Kendrick PSMA (Baseline)', venue: 'EJNMMI 2022', year: 2022, color: C.rose,
+    hero: {
+      title: 'Fully Automatic Prognostic Biomarker Extraction from Whole-Body PSMA-11 PET/CT',
+      subtitle: 'nnU-Net 3D cascade for metastatic prostate cancer · the direct Honours baseline',
+      authors: 'Kendrick · Francis · Hassan · Rowshanfarzad · Ong · Ebert — UWA & SCGH · EJNMMI 2022',
+      tags: ['HONOURS BASELINE', 'WHOLE-BODY PSMA', 'nnU-Net CASCADE', 'mPCa', 'TLV/TLU'],
+    },
+    tldr: 'First fully-automated whole-body mPCa lesion segmentation pipeline (nnU-Net 3D cascade). Produces biomarkers (TLU, TLV) that stratify overall survival (p < 0.005) — and the 79.9% F1 / 73% sensitivity numbers the Honours project must beat.',
+    stats: [
+      { val: '94.5%', lbl: 'Patient-level accuracy', sub: '121 / 128 scans correctly classified', color: C.emerald },
+      { val: '79.9%', lbl: 'Lesion F1 (BASELINE)', sub: 'PPV 88.2% · Sens 73.0%', color: C.rose },
+      { val: '43.5%', lbl: 'Voxel-level DSC', sub: 'modest — small lesions, PVE-limited', color: C.amber },
+      { val: 'p < 0.005', lbl: 'TLU survival stratification', sub: 'Spearman r = 0.95 vs manual', color: C.violet },
+    ],
+    motivation: 'PSMA PET/CT is now standard of care for biochemically recurrent prostate cancer, but manual whole-body lesion segmentation is impractical — labor-intensive, inter-observer-variable, and a prerequisite for radiomics. Prior automation (Zhao 2020 etc.) was pelvic-only. This study extends to whole-body.',
+    innovations: [
+      { n: '01', title: 'nnU-Net 3D Cascade — Two-Stage Refinement', desc: 'Stage 1 (low-res 5.22×5.22×2 mm) sees more spatial context; produces coarse segmentation. Stage 2 (full-res 4.07×4.07×2 mm) refines, with the upsampled coarse seg as a third input channel alongside PET + CT.', color: C.rose },
+      { n: '02', title: 'Three-Level Evaluation Framework', desc: '(1) PATIENT-level classification (scan PSMA-positive vs negative). (2) LESION-level detection (≥10% volumetric overlap with GT). (3) VOXEL-level segmentation (DSC). Separates "did we find it?" from "did we outline it?"', color: C.cyan },
+      { n: '03', title: 'PSMA-Negative Scans Test-Only', desc: 'Held all 53 PSMA-negative scans out of training to avoid polluting the loss with massively over-represented negatives. Test set: 75 positive + 53 negative. Patient-level split prevents data leakage.', color: C.violet },
+      { n: '04', title: 'Within-Observer-Variability Validation', desc: 'On 28-scan inter-observer subset: auto DSC = 49.3% > observer 2 = 33.1% (p = 0.012). Auto PPV = 67.9% > observer 2 = 31.7% (p < 0.005). The model is BETTER than a second human on those metrics.', color: C.amber },
+      { n: '05', title: 'Clinically Validated Biomarkers (TLU + TLV)', desc: 'Total lesional uptake (sum of SUVs over predicted mask) and total lesional volume — both fully automated. Correlate r ≈ 0.95 with manual. Both stratify OS at p < 0.005 (median split).', color: C.emerald },
+    ],
+    architecture: {
+      summary: 'Two-stage 3D nnU-Net cascade. Both stages standard nnU-Net: instance norm + leaky ReLU + deep supervision + Dice + BCE loss. Cap at 320 feature maps. Trained 5-fold CV, 1000 epochs each, SGD μ=0.99, LR 0.01 poly decay.',
+      sketch: [
+        { l: 'PET + CT  (4.07×4.07×2 mm)', c: C.cyan, dim: 'whole-body input' },
+        { l: 'CT → resample to PET grid (B-spline)', c: C.emerald, dim: 'spatial alignment', arrow: '↓' },
+        { l: 'Stage 1 — low-res 3D nnU-Net', c: C.violet, dim: '5.22×5.22×2 mm · patch 80×80×224', arrow: '↓' },
+        { l: 'Coarse seg upsampled', c: C.amber, dim: 'used as 3rd input channel', arrow: '↓' },
+        { l: 'Stage 2 — full-res 3D nnU-Net', c: C.rose, dim: 'PET + CT + coarse · patch 96×96×256', arrow: '↓' },
+        { l: 'Final whole-body segmentation', c: C.cyan, dim: '→ TLV / TLU biomarkers' },
+      ],
+    },
+    results: {
+      intro: '337 scans / 193 patients (single institution, SCGH Perth). Test set 128 scans (75 PSMA-positive + 53 negative). The 73% sensitivity is the bottleneck — and the direct target for the Honours project.',
+      tables: [
+        {
+          title: 'Multi-level evaluation summary', color: C.rose,
+          headers: ['Level', 'Metric', 'Value'],
+          rows: [
+            { cells: ['Patient', 'Accuracy', '94.5% (121/128)'], hl: true },
+            { cells: ['Patient', 'PPV', '97.2%'] },
+            { cells: ['Patient', 'Specificity', '96.2%'] },
+            { cells: ['Lesion', 'PPV', '88.2% (224/254)'] },
+            { cells: ['Lesion', 'Sensitivity', '73.0% (224/307)'], hl: true },
+            { cells: ['Lesion', 'F1', '79.9%'], hl: true },
+            { cells: ['Voxel', 'DSC', '43.5 ± 21.5%'] },
+          ],
+        },
+        {
+          title: 'Lesion-level sensitivity by sub-type', color: C.amber,
+          headers: ['Lesion type', 'Sensitivity', 'Count'],
+          rows: [
+            { cells: ['Local prostate', '90.0%', '36/40'] },
+            { cells: ['Distant nodal', '76.2%', '115/151'] },
+            { cells: ['Regional nodal', '68.3%', '41/60'] },
+            { cells: ['Osseous (bone)', '58.2%', '32/55'], hl: true },
+            { cells: ['Visceral', '0%', '0/1'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'First whole-body PSMA segmentation (vs prior pelvic-only)',
+      'Clinically validated — TLU/TLV biomarkers stratify OS (p < 0.005)',
+      'WITHIN human inter-observer variability for DSC and PPV',
+      'Three-level evaluation (patient + lesion + voxel) — separates detection from delineation',
+    ],
+    weaknesses: [
+      'Lesion sensitivity 73% — too low; some metastases missed',
+      'Bone lesion F1 only 58.2% — needs HU-aware preprocessing',
+      'Single institution (SCGH Perth) — selection bias risk; multi-centre needed',
+      'Voxel DSC 43.5% — modest, but partly intrinsic (see [[pve]])',
+    ],
+    relevance: 'THE direct baseline of the Honours project. Every metric on the OVERVIEW tab (79.9% F1, 88.2% PPV, 73% sensitivity, 94.5% patient accuracy) comes from this paper. The proposed Mamba architecture replaces the nnU-Net backbone in this pipeline. Same dataset (SCGH ~300 patients), same supervisors (Kendrick + Hassan), same evaluation framework. Beat 73% sensitivity → thesis.',
+  },
+
+  // ── 9. LRU / "Resurrecting RNNs" — Orvieto et al. (2023) ──────────────────
+  {
+    id: 'lru', label: 'Linear Recurrent Unit (LRU)', venue: 'ICML 2023', year: 2023, color: C.violet,
+    hero: {
+      title: 'Resurrecting Recurrent Neural Networks for Long Sequences',
+      subtitle: 'Distilling state space models down to a minimum-viable Linear Recurrent Unit',
+      authors: 'Orvieto · Smith · Gu · Fernando · Gulcehre · Pascanu · De — DeepMind, ICML 2023',
+      tags: ['SSM THEORY', 'LRU', 'ABLATION STUDY', 'COMPLEX DIAGONAL', 'NO HIPPO'],
+    },
+    tldr: 'Distils S4/S5 down by ablating each ingredient — none of HiPPO, continuous-time, or Δ parameterisation is needed. Just linear recurrence + complex diagonal exponential + careful normalisation matches S4 on Long Range Arena.',
+    stats: [
+      { val: '5 steps', lbl: 'RNN → LRU', sub: 'each ingredient ablated separately', color: C.violet },
+      { val: '~8×', lbl: 'Speedup from diagonalisation', sub: 'via parallel scans on complex λ', color: C.cyan },
+      { val: '6 / 6', lbl: 'LRA tasks matched', sub: 'sCIFAR, ListOps, Text, Retrieval, Path, PathX', color: C.emerald },
+      { val: '16 K', lbl: 'PathX max sequence', sub: 'cracked with restricted-phase init', color: C.amber },
+    ],
+    motivation: 'Deep SSMs (S4, S4D, S5) suddenly crushed Long Range Arena in 2021–22 with a lot of machinery — continuous-time formulation, HiPPO init, ZOH discretisation, Δ parameter sharing. Which of these actually matter? Strip them away one by one until you find the minimum needed for long-range modelling.',
+    innovations: [
+      { n: '01', title: 'Drop the Recurrent Nonlinearity', desc: 'Replace x_k = tanh(A x_{k-1} + B u_k) with x_k = A x_{k-1} + B u_k. Position-wise MLPs between layers supply enough nonlinearity. This step improves accuracy AND unlocks parallel scans.', color: C.violet },
+      { n: '02', title: 'Diagonalise in the Complex Plane', desc: 'A dense linear RNN is reparameterised as Λ = diag(λ₁…λ_N) with complex eigenvalues. By Ginibre\'s circular law, Glorot-init dense matrices have eigenvalues ~uniform on the unit disk — so init λⱼ on the unit disk. ~8× speedup.', color: C.cyan },
+      { n: '03', title: 'Stable Exponential Parameterisation', desc: 'λⱼ = exp(−exp(ν^log) + i·exp(θ^log)). Outer exp on magnitude guarantees |λⱼ| ≤ 1 (stability). Magnitude/phase decoupling makes Adam happy. Enables init close to the unit disk without training blow-up.', color: C.rose },
+      { n: '04', title: 'γ Normalisation', desc: 'Eigenvalues near the unit disk cause forward-pass blow-up by ~1/(1−|λ|²). Fix: scale input projection per-eigendirection — γⱼ = √(1−|λⱼ|²). Proved via random-matrix-style calculation (Prop 3.3).', color: C.amber },
+      { n: '05', title: 'Restricted Phase Init for Very Long Sequences', desc: 'For PathX (length 16 K), uniform phase init means most state components oscillate wildly. Restrict θ ∈ [0, π/10] biases toward learning global features. Final ingredient needed to crack PathX.', color: C.emerald },
+    ],
+    architecture: {
+      summary: 'Pedagogical "minimum-viable SSM". Same block-level structure as S4/S5 (linear recurrence inside, MLP outside), but with a much simpler core. The diagram below shows the LRU recipe — each step ablates a piece of standard SSMs.',
+      sketch: [
+        { l: 'Vanilla tanh RNN', c: C.rose, dim: 'x_k = tanh(A x_{k-1} + B u_k)' },
+        { l: '1. Drop nonlinearity', c: C.violet, dim: 'x_k = A x_{k-1} + B u_k', arrow: '↓' },
+        { l: '2. Diagonalise (complex Λ)', c: C.cyan, dim: 'Λ = diag(λ₁…λ_N), λⱼ ∈ ℂ', arrow: '↓' },
+        { l: '3. Exp parameterisation', c: C.amber, dim: 'λⱼ = exp(−e^ν + i·e^θ)', arrow: '↓' },
+        { l: '4. γ normalisation', c: C.emerald, dim: 'γⱼ = √(1 − |λⱼ|²)', arrow: '↓' },
+        { l: '5. Restricted phase init', c: C.rose, dim: 'θ ∈ [0, π/10]  (PathX only)' },
+      ],
+    },
+    results: {
+      intro: 'LRU matches S4/S4D/S5 across all six Long Range Arena tasks with essentially the same training speed. None of the SSM-specific machinery (HiPPO, continuous-time, ZOH discretisation, Δ parameter sharing) is needed.',
+      tables: [
+        {
+          title: 'Long Range Arena — LRU vs S4 family', color: C.violet,
+          headers: ['Task', 'S4 family', 'LRU', 'Outcome'],
+          rows: [
+            { cells: ['sCIFAR', '~91%', '~91%', 'Tied'] },
+            { cells: ['ListOps', '~59%', '~60%', 'Tied'] },
+            { cells: ['Text', '~89%', '~89%', 'Tied'] },
+            { cells: ['Retrieval', '~91%', '~89%', 'Tied'] },
+            { cells: ['PathFinder', '~94%', '~95%', 'Tied'] },
+            { cells: ['PathX (16 K)', '~96%', '~94%', 'Tied (with phase init)'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Clean pedagogical artifact — explains SSM success without HiPPO mystique',
+      '"Drop nonlinearity" finding aged well — most modern SSMs are linear',
+      '"HiPPO init isn\'t necessary" broadly accepted in the field',
+      'Rigorous: each ingredient justified by experiment + theory',
+    ],
+    weaknesses: [
+      'No input-dependent recurrence — pre-dates Mamba selection mechanism',
+      'Limited absolute gain over S4/S5 — same accuracy, slightly simpler',
+      'Pedagogical not productive — Mamba is what you actually use',
+      'Doesn\'t address vision/3D — LRA tasks are all sequential',
+    ],
+    relevance: "Theoretical grounding for why Mamba's linear recurrence works for long sequences. Tells the Honours project that the SSM core can be simpler than HiPPO-based S4 — but the Mamba selection mechanism IS still needed (LRU doesn't have it). Useful for the literature-review framing of why SSMs matter for whole-body 3D segmentation.",
+  },
+
+  // ── 10. Mamba — Gu & Dao (2024) ───────────────────────────────────────────
+  {
+    id: 'mamba', label: 'Mamba (S6)', venue: 'arXiv 2024', year: 2024, color: C.emerald,
+    hero: {
+      title: 'Mamba',
+      subtitle: 'Linear-Time Sequence Modeling with Selective State Spaces',
+      authors: 'Albert Gu (CMU) · Tri Dao (Princeton) · arXiv 2312.00752',
+      tags: ['SELECTIVE SSM', 'LINEAR COMPLEXITY', 'PARALLEL SCAN', 'CORE TECH', 'S6 LAYER'],
+    },
+    tldr: 'A new SSM with input-dependent selection (Δ, B, C are functions of input) + a hardware-aware parallel scan algorithm. Matches Transformer quality at 5× higher inference throughput with linear O(L) scaling.',
+    stats: [
+      { val: '5×', lbl: 'Inference throughput vs Transformer', sub: 'no KV cache → bigger batches', color: C.emerald },
+      { val: 'O(L)', lbl: 'Linear scaling', sub: 'vs O(L²) for attention', color: C.cyan },
+      { val: '+4 pts', lbl: 'Mamba-3B vs Pythia-3B avg', sub: 'common-sense reasoning, exceeds Pythia-7B', color: C.rose },
+      { val: '1 M', lbl: 'Max sequence length', sub: 'DNA classification, 4000× train length', color: C.violet },
+    ],
+    motivation: 'Transformers scale O(L²) — infeasible for very long sequences (DNA, audio, whole-body 3D scans). Sub-quadratic alternatives (linear attention, gated conv, RNNs, plain SSMs) all under-perform on dense modalities like language because their parameters are CONSTANT across time. Need: time-varying parameters that enable content-based reasoning, but kept hardware-efficient.',
+    innovations: [
+      { n: '01', title: 'Selective SSM (S6 Layer)', desc: 'Make Δ, B, C input-dependent: Δ_t = softplus(W_Δ · x_t), B_t = W_B · x_t, C_t = W_C · x_t. A stays input-independent. Large Δ → reset state (forget); small Δ → preserve state. Generalises RNN gating (Theorem 1).', color: C.emerald },
+      { n: '02', title: 'Hardware-Aware Parallel Scan', desc: 'Kernel fusion + parallel scan (Blelloch 1990) + recomputation. Load Δ, A, B, C from HBM → discretise in SRAM → scan in SRAM → multiply by C → write y back to HBM. 20–40× speedup vs naive scan.', color: C.cyan },
+      { n: '03', title: 'Simplified Homogeneous Block', desc: 'No attention, no MLP. Mamba block = Linear(D→2E) → 1D conv → SiLU → S6 SSM → ⊗ gate → Linear(E→D). Two blocks ≈ params of one Transformer block (MHA + MLP). Stack with residuals + RMSNorm.', color: C.violet },
+      { n: '04', title: 'Linear Complexity in Practice', desc: 'O(BLDN) FLOPs (lower constant than convolution\'s O(BLD log L)). Scales linearly with sequence length L. Crucial for whole-body 3D volumes where L ≈ millions of voxels.', color: C.amber },
+      { n: '05', title: 'Generalises RNN Gating', desc: 'Setting N=1, A=-1, B=1 reduces selective SSM to h_t = (1 − σ(Wx_t)) h_{t-1} + σ(Wx_t) x_t — exactly the GRU/LSTM gate. Mamba is a strict generalisation of gated RNNs with state expansion + selective B, C.', color: C.rose },
+    ],
+    architecture: {
+      summary: 'Stacked homogeneous Mamba blocks with residual + RMSNorm. Each block does: in_proj → conv1d (depthwise k=4) → SiLU → S6 SSM → out_proj. The S6 layer is where the selectivity lives — Δ, B, C all input-dependent.',
+      sketch: [
+        { l: 'Input (B, L, D)', c: C.emerald, dim: 'sequence of D-dim tokens' },
+        { l: 'RMSNorm', c: C.cyan, dim: 'pre-norm residual stream', arrow: '↓' },
+        { l: 'in_proj  Linear(D → 2E)', c: C.rose, dim: 'split → x (data) + z (gate)', arrow: '↓' },
+        { l: 'Causal Conv1D (k=4, depthwise)', c: C.amber, dim: 'short local context', arrow: '↓' },
+        { l: 'Selective Scan  (S6)', c: C.violet, dim: 'INPUT-DEP Δ, B, C · fixed A · parallel scan' },
+        { l: '⊗ gate by SiLU(z) + out_proj', c: C.emerald, dim: 'project E → D + residual' },
+      ],
+    },
+    results: {
+      intro: 'SOTA on language modelling (Pile, LAMBADA), audio generation (SC09), and DNA modelling (HG38, Great Apes 1M-length classification) — all with the same architecture.',
+      tables: [
+        {
+          title: 'Zero-shot language modelling (selected)', color: C.emerald,
+          headers: ['Model', 'Params', 'LAMBADA acc', 'Avg (6 tasks)'],
+          rows: [
+            { cells: ['Pythia-2.8B', '2.8 B', '64.7', '59.1'] },
+            { cells: ['RWKV-3B', '3.0 B', '63.9', '59.6'] },
+            { cells: ['Mamba-2.8B', '2.8 B', '69.2', '63.3'], hl: true },
+            { cells: ['Pythia-6.9B', '6.9 B', '67.1', '61.7'] },
+            { cells: ['RWKV-7.4B', '7.4 B', '67.2', '62.5'] },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Linear complexity makes arbitrarily long sequences feasible',
+      'High inference throughput (no KV cache → bigger inference batches)',
+      'Generalises gated RNNs (LSTM/GRU) as a special case',
+      'Scales to massive sequences (1M tokens, 4000× training length)',
+    ],
+    weaknesses: [
+      "Selectivity HURTS smooth continuous signals (audio waveforms) — LTI S4 better there",
+      'Untested at > 3 B params at time of writing — unknown if scaling holds',
+      'Recurrence less parallel than attention (chunked scan helps but not free)',
+      '1D scanning by default — needs adaptation for 3D (orthogonal-plane scans, etc.)',
+    ],
+    relevance: "The CORE technology being applied in the Honours project. Mamba\'s linear complexity is what makes whole-body 3D PSMA segmentation feasible — Transformers OOM on these volumes. The selection mechanism is the mechanism by which the model can selectively amplify weak lesion signals over high-intensity background — directly targeting the 73% sensitivity bottleneck.",
+  },
+
+  // ── 11. U-Mamba — Ma, Li, Wang (2024) ─────────────────────────────────────
+  {
+    id: 'u-mamba', label: 'U-Mamba', venue: 'arXiv 2024', year: 2024, color: C.violet,
+    hero: {
+      title: 'U-Mamba',
+      subtitle: 'Enhancing Long-Range Dependency for Biomedical Image Segmentation',
+      authors: 'Jun Ma · Feifei Li · Bo Wang — UHN · University of Toronto · Vector Institute',
+      tags: ['HYBRID CNN-MAMBA', 'MEDICAL SEGMENTATION', 'nnU-Net BACKBONE', 'FIRST MEDICAL MAMBA', '3D'],
+    },
+    tldr: 'First hybrid CNN-Mamba architecture for medical image segmentation. Integrates Mamba blocks into nnU-Net\'s encoder with linear complexity — beats nnU-Net, SegResNet, UNETR, SwinUNETR across 4 diverse datasets.',
+    stats: [
+      { val: '0.8683', lbl: 'Abdomen CT DSC (Bot)', sub: 'beats nnU-Net 0.8615', color: C.violet },
+      { val: '0.8501', lbl: 'Abdomen MRI DSC (Enc)', sub: 'beats nnU-Net 0.8309', color: C.rose },
+      { val: '4', lbl: 'Diverse datasets', sub: '3D CT, 3D MRI, 2D endoscopy, microscopy', color: C.emerald },
+      { val: '1', lbl: 'A100 GPU', sub: '1000 epochs from scratch', color: C.amber },
+    ],
+    motivation: 'CNNs have inherent locality — limited long-range modelling. Transformers have O(L²) cost — prohibitive for 3D medical volumes. Need a hybrid: CNN for local features, Mamba SSM for long-range context, with linear complexity AND nnU-Net-style self-configuring auto-adaptation.',
+    innovations: [
+      { n: '01', title: 'CNN + Mamba Hybrid Block', desc: 'Each encoder block: 2× residual conv (conv + IN + leaky ReLU) → flatten 3D → 1D sequence → LayerNorm → in_proj → conv1d + SiLU → SSM ⊗ gate → out_proj → reshape back to 3D. Local conv features + global Mamba context.', color: C.violet },
+      { n: '02', title: 'Two Variants — Bot vs Enc', desc: 'U-Mamba_Bot: Mamba block only at the bottleneck (cheaper, captures deep global context). U-Mamba_Enc: Mamba blocks in EVERY encoder stage (more expressive, slightly slower). Different datasets favour different variants.', color: C.cyan },
+      { n: '03', title: 'Self-Configuring via nnU-Net', desc: 'Built on the nnU-Net framework — inherits automatic patch size, batch size, topology, target spacing, and 5-fold CV. No per-dataset tuning needed. Plug-in Mamba upgrade for nnU-Net.', color: C.rose },
+      { n: '04', title: 'Flatten 3D → 1D for SSM', desc: 'Spatial features (B, C, H, W, D) → flatten + transpose → (B, L=HWD, C) → run SSM → reshape back. Simple but loses some spatial structure (motivating SegMamba\'s tri-directional scan).', color: C.amber },
+      { n: '05', title: 'Linear Scaling in Feature Size', desc: 'Replaces Transformer\'s quadratic self-attention with Mamba\'s linear scan. Enables larger 3D patches within the same VRAM budget — directly relevant to whole-body PET\'s memory constraints.', color: C.emerald },
+    ],
+    architecture: {
+      summary: 'U-Mamba_Enc shown: 4 encoder stages each containing a U-Mamba block, bottleneck U-Mamba, 4 decoder stages with residual blocks + transposed conv. Skip connections everywhere. Built on nnU-Net framework for auto-config.',
+      sketch: [
+        { l: 'Input volume (B, C, H, W, D)', c: C.cyan, dim: 'auto-configured patch size' },
+        { l: 'U-Mamba block × 4', c: C.violet, dim: 'conv res + flatten → SSM → reshape', arrow: '↓ + skip₁,₂,₃,₄' },
+        { l: 'Bottleneck — U-Mamba block', c: C.rose, dim: 'deep global context' },
+        { l: 'Residual blocks + transposed conv × 4', c: C.amber, dim: 'standard nnU-Net decoder', arrow: '↑' },
+        { l: 'Conv 1×1×1 + Softmax', c: C.emerald, dim: 'final segmentation map' },
+      ],
+    },
+    results: {
+      intro: 'U-Mamba beats nnU-Net, SegResNet, UNETR, SwinUNETR across all 4 datasets. U-Mamba_Bot wins on CT (bottleneck is enough); U-Mamba_Enc wins on MRI and 2D tasks (encoder-wide Mamba helps).',
+      tables: [
+        {
+          title: '3D organ segmentation — DSC (best of two variants bolded)', color: C.violet,
+          headers: ['Method', 'CT DSC', 'CT NSD', 'MRI DSC', 'MRI NSD'],
+          rows: [
+            { cells: ['nnU-Net', '0.8615', '0.8972', '0.8309', '0.8996'] },
+            { cells: ['SegResNet', '0.7927', '0.8257', '0.8146', '0.8841'] },
+            { cells: ['UNETR', '0.6824', '0.7004', '0.6867', '0.7440'] },
+            { cells: ['SwinUNETR', '0.7594', '0.7663', '0.7565', '0.8218'] },
+            { cells: ['U-Mamba_Bot', '0.8683', '0.9049', '0.8453', '0.9121'], hl: true },
+            { cells: ['U-Mamba_Enc', '0.8638', '0.8980', '0.8501', '0.9171'], hl: true },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'First medical Mamba — opened the floodgates (SegMamba, SegResMamba followed)',
+      'Inherits nnU-Net auto-config — no per-dataset tuning',
+      'Linear complexity — bigger patches within same VRAM',
+      'Two variants for compute/quality trade-off (Bot cheaper, Enc better)',
+    ],
+    weaknesses: [
+      'Single 1D scan direction — loses spatial structure on flatten',
+      'No multi-directional / orthogonal-plane scanning',
+      'Mamba only in encoder — decoder is plain conv (no symmetric global context)',
+      'Transformer baselines (UNETR/SwinUNETR) underperformed — possibly due to train-from-scratch setting',
+    ],
+    relevance: 'Direct architectural template for the Honours project. U-Mamba already shows that a CNN-Mamba hybrid beats nnU-Net (the PSMA baseline) on multiple medical datasets. The Honours work extends this to whole-body PSMA + adds the 6-directional / tri-orthogonal scanning that SegMamba-V2 and SegResMamba developed.',
+  },
+
+  // ── 12. SegMamba-V2 — Xing et al. (2026) ──────────────────────────────────
+  {
+    id: 'seg-mamba-v2', label: 'SegMamba-V2', venue: 'IEEE TMI 2026', year: 2026, color: C.amber,
+    hero: {
+      title: 'SegMamba-V2',
+      subtitle: 'Long-Range Sequential Modeling Mamba for General 3D Medical Image Segmentation',
+      authors: 'Xing · Ye · Yang · Cai · Gai · Wu · Gao · Zhu — HKUST · Sun Yat-sen Univ. · IEEE TMI 2026',
+      tags: ['TRI-ORTHO MAMBA', 'HIERARCHICAL DOWNSAMPLING', 'CRC-2000 DATASET', 'SOTA 3D MEDICAL', 'EFFICIENT'],
+    },
+    tldr: 'Four-stage hybrid Convolution-Mamba with Tri-orientated Ortho Mamba (Coronal + Sagittal + Axial scans) and parallel multi-kernel hierarchical downsampling — sets SOTA on BraTS, AbdomenAtlas, AIIB, and the new CRC-2000.',
+    stats: [
+      { val: '91.60%', lbl: 'BraTS2023 avg Dice', sub: 'beats SegMamba 91.32% + SwinUNETR-V2 89.39%', color: C.amber },
+      { val: '88.84%', lbl: 'AIIB23 airway IoU', sub: 'beats U-Mamba 88.60%, SegMamba 88.59%', color: C.cyan },
+      { val: '13.3 GB', lbl: 'Training memory', sub: 'vs 34 GB SwinUNETR, OOM for Transformer', color: C.emerald },
+      { val: '2000', lbl: 'CRC-2000 dataset volumes', sub: 'new fine-grained colorectal cancer dataset', color: C.rose },
+    ],
+    motivation: '1D Mamba scans capture global context in one direction — but 3D medical volumes have rich anatomical info across all three orthogonal planes (axial, coronal, sagittal). Single-direction scanning misses cross-axis dependencies. Need: full 3D long-range coverage at Mamba\'s efficiency.',
+    innovations: [
+      { n: '01', title: 'Tri-orientated Ortho Mamba (ToOM)', desc: 'Extends Tri-oriented Mamba from one plane to THREE orthogonal planes — ToM-Coronal + ToM-Sagittal + ToM-Axial, summed. Within each plane: forward + reverse + cross-group scans. Captures full 3D long-range structure.', color: C.amber },
+      { n: '02', title: 'Hierarchical Scale Downsampling (HSDownsampling)', desc: 'Three parallel CNN downsampling branches with kernel sizes 5×5×5, 3×3×3, 2×2×2 — wide receptive field + medium + local retention. Fused by 1×1×1 conv. Expands receptive field while preserving fine info.', color: C.cyan },
+      { n: '03', title: 'Gated Spatial Convolution (GSC)', desc: 'Before each Mamba layer: GSC = z + Conv3³(Conv3³(z) · Conv1³(z)). Multiplicative gate captures spatial relationships BEFORE flattening to 1D (which loses spatial info).', color: C.violet },
+      { n: '04', title: '4-Stage Hybrid Architecture', desc: 'Bottom 2 stages (high-res, detailed info): depthwise convolution blocks. Top 2 stages (low-res, semantic info): TSMamba blocks. Mamba on top of high-res features is inefficient — only use it where it earns its cost.', color: C.rose },
+      { n: '05', title: 'Feature-level Uncertainty Estimation (FUE)', desc: 'Compute uncertainty map u = -z̄·log(z̄) on channel-mean of each encoder skip. Output is z + z·(1-u) — boosts confident features along skip connections, dampens uncertain ones.', color: C.emerald },
+    ],
+    architecture: {
+      summary: '4-stage encoder (HSDownsampling + DWConv at stages 1-2, HSDownsampling + TSMamba at stages 3-4). Decoder with transposed convs + FUE-enhanced skip connections. TSMamba block = GSC → ToOM → MLP with residuals.',
+      sketch: [
+        { l: 'Input volume (D × H × W)', c: C.cyan, dim: '128³ training crop' },
+        { l: 'HSDownsampling × 4 (5³+3³+2³ parallel)', c: C.violet, dim: 'multi-kernel parallel branches', arrow: '↓' },
+        { l: 'Stages 1–2 — DWConv blocks', c: C.rose, dim: 'high-res, detailed features' },
+        { l: 'Stages 3–4 — TSMamba (GSC + ToOM + MLP)', c: C.amber, dim: 'low-res, semantic + global', arrow: '↓' },
+        { l: 'FUE-enhanced skip connections', c: C.emerald, dim: 'uncertainty-weighted features', arrow: '↑' },
+        { l: 'Decoder + Seg head', c: C.cyan, dim: 'final 3D segmentation' },
+      ],
+    },
+    results: {
+      intro: 'SOTA on BraTS2023, AbdomenAtlas-1.0, AIIB2023 (airway), and the new CRC-2000. Also the most memory-efficient global-modelling method tested — Transformer OOMs at 128³, SwinUNETR uses 34 GB, SegMamba-V2 uses 13.3 GB.',
+      tables: [
+        {
+          title: 'BraTS2023 — average Dice (↑)', color: C.amber,
+          headers: ['Method', 'Dice-WT', 'Dice-TC', 'Dice-ET', 'Avg'],
+          rows: [
+            { cells: ['nnU-Net', '93.50', '91.20', '86.70', '90.46'] },
+            { cells: ['SwinUNETR-V2', '93.35', '89.65', '85.17', '89.39'] },
+            { cells: ['U-Mamba-Bot', '93.67', '91.96', '87.26', '90.96'] },
+            { cells: ['SegMamba (V1)', '93.61', '92.65', '87.71', '91.32'] },
+            { cells: ['SegMamba-V2', '94.02', '92.83', '87.93', '91.60'], hl: true },
+          ],
+        },
+        {
+          title: 'Efficiency — global modelling modules (128³ input)', color: C.emerald,
+          headers: ['Method', 'Train mem', 'Infer mem', 'Infer time'],
+          rows: [
+            { cells: ['UX-Net (large conv)', '18.9 GB', '5.8 GB', '1.02 s'] },
+            { cells: ['SwinUNETR', '34.0 GB', '9.5 GB', '1.68 s'] },
+            { cells: ['Pure Transformer', 'OOM', '—', '—'] },
+            { cells: ['TSMamba (V1)', '18.0 GB', '6.3 GB', '1.51 s'] },
+            { cells: ['SegMamba-V2', '13.3 GB', '6.1 GB', '1.38 s'], hl: true },
+          ],
+        },
+      ],
+    },
+    strengths: [
+      'Full 3D coverage via three orthogonal-plane Mamba scans',
+      'Multi-kernel parallel downsampling — receptive field without info loss',
+      'Best memory efficiency among global-modelling methods (Transformer OOMs)',
+      'New CRC-2000 dataset (4× larger than CRC-500) — major benchmark contribution',
+    ],
+    weaknesses: [
+      'Complex block design — many sub-components (GSC + ToOM + HSDown + FUE)',
+      'Mamba slower than conv on high-res stages (hence the hybrid stage split)',
+      'Ablation gains modest (+0.1–0.5%) per module — most benefit from ToOM (+1.27%)',
+      'Sum-fusion vs linear-fusion not clearly better (dataset-dependent)',
+    ],
+    relevance: 'Strong architectural alternative for the Honours project. The tri-orthogonal scan directly addresses the limitation of U-Mamba\'s single-direction 1D flatten. ToOM is a plausible replacement for the 6-directional scan in the proposed PSMA architecture — and at 13.3 GB training memory, it would comfortably fit on the SCGH HPC hardware.',
+  },
+];
+
+// ─── Strengths / Limitations side-by-side ─────────────────────────────────────
+function StrengthsWeaknesses({ strengths, weaknesses }) {
+  return (
+    <div className="ho-sw-grid">
+      <div className="ho-sw-col ho-sw-col--good">
+        <p className="ho-sw-h" style={{ color: C.emerald }}>✓ STRENGTHS</p>
+        <ul className="ho-sw-list">
+          {strengths.map((s, i) => (
+            <li key={i} className="ho-sw-item">
+              <span className="ho-sw-bullet" style={{ color: C.emerald }}>+</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="ho-sw-col ho-sw-col--bad">
+        <p className="ho-sw-h" style={{ color: C.rose }}>✗ LIMITATIONS</p>
+        <ul className="ho-sw-list">
+          {weaknesses.map((w, i) => (
+            <li key={i} className="ho-sw-item">
+              <span className="ho-sw-bullet" style={{ color: C.rose }}>−</span>
+              <span>{w}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// ─── Uniform paper renderer ─────────────────────────────────────────────────
+function PaperRenderer({ paper }) {
   return (
     <div>
-      <SH color={C.violet}>Research Papers</SH>
-      <InfoBox color={C.violet}>
-        Papers reviewed as part of the Honours research program. Each entry includes an interactive breakdown of
-        the architecture and key findings — with both <strong>plain English</strong> and <strong>technical</strong> explanations.
-      </InfoBox>
+      {/* Hero */}
+      <div
+        className="ho-paper-hero"
+        style={{
+          borderColor: `${paper.color}40`,
+          background: `linear-gradient(135deg, ${paper.color}15 0%, ${paper.color}05 100%)`,
+        }}
+      >
+        <span
+          className="ho-paper-venue"
+          style={{ color: paper.color, borderColor: `${paper.color}50`, background: `${paper.color}1a` }}
+        >
+          {paper.venue}
+        </span>
+        <h2 className="ho-paper-title">{paper.hero.title}</h2>
+        <p className="ho-paper-subtitle">{paper.hero.subtitle}</p>
+        <p className="ho-paper-authors">{paper.hero.authors}</p>
+        <div className="ho-tags" style={{ marginTop: '0.75rem' }}>
+          {paper.hero.tags.map(t => <span key={t} className="ho-tag">{t}</span>)}
+        </div>
+      </div>
 
-      <div className="ho-view-btns">
-        {papers.map(p => (
-          <button
-            key={p.id}
-            className={`ho-view-btn${paper === p.id ? ' ho-view-btn--on' : ''}`}
-            style={paper === p.id ? { color: p.color, borderColor: p.color, background: `${p.color}18` } : {}}
-            onClick={() => setPaper(p.id)}
-          >
-            {p.label}
-            <span style={{ opacity: 0.6, fontSize: '0.7em', marginLeft: '0.4em' }}>{p.venue}</span>
-          </button>
+      {/* TL;DR */}
+      <SH color={paper.color}>TL;DR</SH>
+      <InfoBox color={paper.color}>{paper.tldr}</InfoBox>
+
+      {/* Headline numbers */}
+      {paper.stats && (
+        <>
+          <SH color={C.amber}>Headline Numbers</SH>
+          <div className="ho-stat-grid">
+            {paper.stats.map(s => (
+              <div key={s.lbl} className="ho-stat-card" style={{ borderColor: s.color }}>
+                <p className="ho-stat-val" style={{ color: s.color }}>{s.val}</p>
+                <p className="ho-stat-lbl">{s.lbl}</p>
+                <p className="ho-stat-sub">{s.sub}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Motivation */}
+      <SH color={C.violet}>Motivation</SH>
+      <InfoBox color={C.violet}>{paper.motivation}</InfoBox>
+
+      {/* Key innovations */}
+      <SH color={C.cyan}>Key Innovations</SH>
+      <div className="ho-aims">
+        {paper.innovations.map(i => (
+          <div key={i.n} className="ho-aim">
+            <span className="ho-aim-num" style={{ color: i.color }}>{i.n}</span>
+            <div>
+              <p className="ho-aim-title">{i.title}</p>
+              <p className="ho-aim-desc">{i.desc}</p>
+            </div>
+          </div>
         ))}
       </div>
 
+      {/* Architecture sketch */}
+      {paper.architecture && (
+        <>
+          <SH color={C.emerald}>Architecture at a Glance</SH>
+          <InfoBox color={C.emerald}>{paper.architecture.summary}</InfoBox>
+          <div className="ho-card">
+            <p className="ho-card-h" style={{ color: C.emerald }}>// Data flow</p>
+            <div className="ho-arch-sketch">
+              {paper.architecture.sketch.map((r, i) => (
+                <div key={i} className="ho-sketch-row">
+                  {r.arrow && <span className="ho-sketch-arrow">{r.arrow}</span>}
+                  <div className="ho-sketch-box" style={{ borderColor: r.c }}>
+                    <span className="ho-sketch-lbl" style={{ color: r.c }}>{r.l}</span>
+                    <span className="ho-sketch-dim">{r.dim}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Results */}
+      {paper.results && (
+        <>
+          <SH color={C.amber}>Key Results</SH>
+          {paper.results.intro && <InfoBox color={C.amber}>{paper.results.intro}</InfoBox>}
+          {paper.results.tables && paper.results.tables.map((tbl, i) => (
+            <div key={i} className="ho-card">
+              <p className="ho-card-h" style={{ color: tbl.color || C.amber }}>// {tbl.title}</p>
+              <table className="ho-table">
+                <thead>
+                  <tr>{tbl.headers.map((h, k) => <th key={k}>{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {tbl.rows.map((r, j) => (
+                    <tr key={j} style={r.hl ? { background: `${tbl.color || C.amber}14` } : {}}>
+                      {r.cells.map((c, k) => (
+                        <td
+                          key={k}
+                          className={k === 0 ? 'ho-td-key' : ''}
+                          style={r.hl ? { color: tbl.color || C.amber, fontWeight: k === 0 ? 700 : 600 } : {}}
+                        >
+                          {c}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Strengths & Limitations */}
+      <SH color={C.emerald}>Strengths &amp; Limitations</SH>
+      <StrengthsWeaknesses strengths={paper.strengths} weaknesses={paper.weaknesses} />
+
+      {/* Relevance */}
+      <SH color={paper.color}>Relevance to PSMA Honours</SH>
+      <InfoBox color={paper.color}>{paper.relevance}</InfoBox>
+    </div>
+  );
+}
+
+// ─── Paper picker grid ──────────────────────────────────────────────────────
+function PaperPicker({ papers, current, onSelect }) {
+  return (
+    <div className="ho-paper-picker">
+      {papers.map(p => (
+        <button
+          key={p.id}
+          className={`ho-paper-pick${current === p.id ? ' ho-paper-pick--on' : ''}`}
+          style={{ '--pick-color': p.color }}
+          onClick={() => onSelect(p.id)}
+        >
+          <span className="ho-paper-pick-year">{p.year}</span>
+          <span className="ho-paper-pick-label">{p.label}</span>
+          <span className="ho-paper-pick-venue">{p.venue}</span>
+          {p.deepDive && <span className="ho-paper-pick-badge">DEEP DIVE</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TabResearchPapers() {
+  // SegResMamba has its own interactive deep-dive view; all other papers use the uniform PaperRenderer
+  const PICKER_PAPERS = [
+    ...PAPERS_DATA.map(p => ({ id: p.id, label: p.label, venue: p.venue, year: p.year, color: p.color })),
+    { id: 'seg-res-mamba', label: 'SegResMamba', venue: 'MIDL 2025', year: 2025, color: C.violet, deepDive: true },
+  ].sort((a, b) => a.year - b.year);
+
+  const [paper, setPaper] = useState('kendrick'); // start on the direct Honours baseline
+  const selected = PAPERS_DATA.find(p => p.id === paper);
+
+  return (
+    <div>
+      <SH color={C.violet}>Research Papers — Literature Review</SH>
+      <InfoBox color={C.violet}>
+        <strong>13 papers</strong> reviewed for the Honours research program — from foundational <strong>U-Net (2015)</strong> through the
+        full <strong>Mamba</strong> lineage (Mamba, U-Mamba, SegResMamba, SegMamba-V2) to the latest 3D medical SOTA <strong>SegMamba-V2 (2026)</strong>.
+        Each card gives an at-a-glance breakdown of <strong>motivation</strong>, <strong>key innovations</strong>, <strong>architecture</strong>,
+        <strong> results</strong>, <strong>strengths &amp; limitations</strong>, and direct <strong>relevance to PSMA</strong>. Sorted chronologically — start with
+        Kendrick (the direct baseline) or any tile below.
+      </InfoBox>
+
+      <PaperPicker papers={PICKER_PAPERS} current={paper} onSelect={setPaper} />
+
       {paper === 'seg-res-mamba' && <PaperSegResMamba />}
+      {selected && <PaperRenderer paper={selected} />}
     </div>
   );
 }

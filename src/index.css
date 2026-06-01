@@ -3054,9 +3054,34 @@ strong { color: var(--text-0); font-weight: 600; }
 .ho-tom-descs { display: flex; flex-direction: column; gap: 0.75rem; }
 .ho-tom-formula-row { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; padding: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; margin-top: 0.75rem; }
 
+/* ── Paper picker grid (RESEARCH PAPERS tab) ─────────────────────────────── */
+.ho-paper-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.65rem; margin: 1.25rem 0 1.75rem; }
+.ho-paper-pick { display: flex; flex-direction: column; gap: 0.32rem; padding: 0.85rem 0.95rem; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--pick-color); border-radius: 6px; cursor: pointer; text-align: left; transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; font-family: inherit; color: inherit; position: relative; overflow: hidden; }
+.ho-paper-pick::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--pick-color) 0%, transparent 60%); opacity: 0; transition: opacity 0.18s ease; pointer-events: none; }
+.ho-paper-pick:hover { background: rgba(255,255,255,0.035); border-color: var(--pick-color); transform: translateY(-1px); }
+.ho-paper-pick:hover::before { opacity: 0.08; }
+.ho-paper-pick--on { background: color-mix(in srgb, var(--pick-color) 14%, transparent); border-color: var(--pick-color); box-shadow: 0 0 0 1px var(--pick-color), 0 6px 24px -10px var(--pick-color); }
+.ho-paper-pick--on::before { opacity: 0.12; }
+.ho-paper-pick-year { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--pick-color); font-weight: 700; opacity: 0.95; }
+.ho-paper-pick-label { font-size: 0.86rem; font-weight: 700; color: var(--text-0); line-height: 1.22; position: relative; }
+.ho-paper-pick-venue { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-2); letter-spacing: 0.05em; }
+.ho-paper-pick-badge { position: absolute; top: 0.45rem; right: 0.5rem; font-family: var(--font-mono); font-size: 0.5rem; font-weight: 700; letter-spacing: 0.1em; padding: 0.12em 0.45em; border-radius: 3px; background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.4); color: var(--violet); }
+
+/* ── Strengths / Limitations side-by-side ────────────────────────────────── */
+.ho-sw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+@media (max-width: 640px) { .ho-sw-grid { grid-template-columns: 1fr; } }
+.ho-sw-col { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.25rem; }
+.ho-sw-col--good { border-left: 3px solid var(--emerald); background: linear-gradient(135deg, rgba(52,211,153,0.04) 0%, transparent 60%); }
+.ho-sw-col--bad { border-left: 3px solid var(--rose); background: linear-gradient(135deg, rgba(251,113,133,0.04) 0%, transparent 60%); }
+.ho-sw-h { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; margin: 0 0 0.85rem; font-weight: 700; }
+.ho-sw-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.ho-sw-item { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.78rem; color: var(--text-1); line-height: 1.55; }
+.ho-sw-bullet { font-family: var(--font-mono); font-weight: 700; flex-shrink: 0; font-size: 1rem; line-height: 1.3; }
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ho-hero-title { font-size: 1.3rem; }
   .ho-arch { grid-template-columns: 1fr; }
   .ho-hname { display: none; }
+  .ho-paper-picker { grid-template-columns: repeat(2, 1fr); }
 }
