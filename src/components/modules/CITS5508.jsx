@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -3800,7 +3801,7 @@ function EnsembleMatcher() {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Dimensionality Reduction', 'Clustering', 'Assignment 1', 'Quiz'];
+const MAIN_TABS = ['Overview', 'Exam Summary', 'Code Lab', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Dimensionality Reduction', 'Clustering', 'Assignment 1', 'Quiz'];
 const L6_TABS = ['Overview & CART', 'Impurity Measures', 'Regularisation', 'Regression Trees', 'Limitations'];
 const L7_TABS = ['Ensemble Basics', 'Bagging & OOB', 'Random Forests', 'Boosting', 'Stacking & Summary'];
 const L1_TABS = ['Mitchell\'s Definition', 'ML System Types', 'Challenges & Testing'];
@@ -4761,6 +4762,1863 @@ dbscan.components_         # core feature vectors`} />
   );
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// EXAM SUMMARY — cross-cutting, memorisation-first revision of Lectures 1–9
+// Reuses the same m4- classes, <Tex>, <PyBlock> and inline-style idioms as the
+// lecture modules above. Hex colours are used so `${color}22` alpha-hex
+// concatenation produces valid 8-digit hex values.
+// ════════════════════════════════════════════════════════════════════════════
+
+const EXAM_LECTURES = [
+  { id: 'ex-l1', code: 'L1', color: '#22d3ee', title: 'The ML Landscape', focus: 'Definitions · system types · challenges · validation', go: 'Intro to ML' },
+  { id: 'ex-l2', code: 'L2', color: '#a78bfa', title: 'ML Projects & Evaluation', focus: 'Bias trick · workflow · regression & classification metrics', go: 'ML Projects' },
+  { id: 'ex-l3', code: 'L3', color: '#34d399', title: 'Regression Models', focus: 'Linear · Normal Eq · gradient descent · polynomial · logistic', go: 'Regression' },
+  { id: 'ex-l4', code: 'L4', color: '#fbbf24', title: 'Regularisation & kNN', focus: 'Bias/variance · CV · Ridge/Lasso/Elastic · softmax · kNN', go: 'Reg. & kNN' },
+  { id: 'ex-l5', code: 'L5', color: '#fb7185', title: 'Support Vector Machines', focus: 'Margins · soft-margin C · kernel trick · complexity · SVR', go: 'SVMs' },
+  { id: 'ex-l6', code: 'L6', color: '#60a5fa', title: 'Decision Trees', focus: 'CART · Gini/entropy · regularisation · pruning · limits', go: 'Decision Trees' },
+  { id: 'ex-l7', code: 'L7', color: '#f472b6', title: 'Ensembles & Random Forests', focus: 'Voting · bagging/OOB · RF · boosting · stacking', go: 'Ensembles' },
+  { id: 'ex-l8', code: 'L8', color: '#2dd4bf', title: 'Dimensionality Reduction', focus: 'Curse · PCA/SVD · choosing d · kernel PCA · t-SNE', go: 'Dimensionality Reduction' },
+  { id: 'ex-l9', code: 'L9', color: '#c084fc', title: 'Unsupervised Learning', focus: 'k-means · choosing k · semi-supervised · DBSCAN', go: 'Clustering' },
+];
+
+// Colour-coded lecture section wrapper with an anchor id for the quick-jump nav
+function ExLec({ lec, onOpen, onCheat, children }) {
+  return (
+    <section id={lec.id} style={{ scrollMarginTop: '120px', marginBottom: '2.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', padding: '0.65rem 0.9rem', borderRadius: 8, background: `linear-gradient(90deg, ${lec.color}24 0%, ${lec.color}0a 55%, transparent 100%)`, borderLeft: `4px solid ${lec.color}`, marginBottom: '1rem' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em', color: lec.color, background: `${lec.color}1c`, border: `1px solid ${lec.color}55`, padding: '0.2em 0.55em', borderRadius: 4, flexShrink: 0 }}>{lec.code}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-0)' }}>{lec.title}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-2)', letterSpacing: '0.02em', marginTop: '0.18rem' }}>{lec.focus}</div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, flexWrap: 'wrap' }}>
+          <button className="m4-btn" style={{ borderColor: `${lec.color}66`, color: lec.color }} onClick={() => onCheat(lec.code)}>✎ Handwritten notes</button>
+          <button className="m4-btn" style={{ borderColor: `${lec.color}66`, color: lec.color }} onClick={() => onOpen(lec.go)}>Open module →</button>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+// Key-formula callout (colour-coded left border)
+function ExF({ label, src, color = '#22d3ee', note }) {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', borderLeft: `3px solid ${color}`, borderRadius: '0 5px 5px 0', padding: '0.5rem 0.8rem', margin: '0.45rem 0' }}>
+      {label && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.59rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: '0.25rem' }}>{label}</div>}
+      <Tex src={src} block />
+      {note && <div style={{ fontSize: '0.73rem', color: 'var(--text-2)', marginTop: '0.3rem', lineHeight: 1.5 }}>{note}</div>}
+    </div>
+  );
+}
+
+// "Must remember" / mnemonic highlight box
+function ExRemember({ children, color = '#fbbf24', label = '★ Must remember' }) {
+  return (
+    <div style={{ background: `${color}14`, border: `1px solid ${color}40`, borderRadius: 6, padding: '0.6rem 0.85rem', margin: '0.6rem 0' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.57rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color, marginBottom: '0.3rem' }}>{label}</div>
+      <div style={{ fontSize: '0.8rem', color: 'var(--text-1)', lineHeight: 1.55 }}>{children}</div>
+    </div>
+  );
+}
+
+// Side-by-side comparison columns (e.g. Bagging vs Boosting)
+function ExVS({ items }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${items.length}, 1fr)`, gap: '0.6rem', margin: '0.6rem 0' }}>
+      {items.map(it => (
+        <div key={it.title} style={{ background: `${it.color}0e`, border: `1px solid ${it.color}38`, borderRadius: 6, padding: '0.7rem 0.8rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.69rem', fontWeight: 700, color: it.color, marginBottom: '0.45rem' }}>{it.title}</div>
+          <ul style={{ margin: 0, paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            {it.points.map((p, i) => <li key={i} style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.5 }}>{p}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Quick-jump chip nav for the exam summary
+function ExamNav() {
+  const jump = id => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const extra = [
+    { id: 'ex-master', code: '★', color: '#e2e8f0', title: 'Master Cheat-Sheet' },
+    { id: 'ex-recall', code: '⚡', color: '#e2e8f0', title: 'Exam-Day Recall' },
+  ];
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1.5rem' }}>
+      {[extra[0], ...EXAM_LECTURES, extra[1]].map(l => (
+        <button key={l.id} onClick={() => jump(l.id)} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', fontWeight: 600, color: l.color, background: `${l.color}14`, border: `1px solid ${l.color}3a`, borderRadius: 5, padding: '0.32rem 0.6rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          {l.code} · {l.title}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Handwritten cheatsheet ────────────────────────────────────────────────────
+// A "student's one-page revision notes" modal for each Exam Summary lecture.
+// Readable ink palette (the neon lecture colours are too light on white paper).
+const CHEAT_INK = {
+  L1: '#0e7490', L2: '#6d28d9', L3: '#047857', L4: '#b45309', L5: '#be123c',
+  L6: '#1d4ed8', L7: '#be185d', L8: '#0f766e', L9: '#7c3aed',
+};
+
+// Handwritten building blocks (rendered inside .cheat-paper). `ink` = pen colour.
+function HSec({ ink, title, children }) {
+  return (
+    <section className="cheat-blk">
+      <div className="cheat-h" style={{ color: ink }}>{title}</div>
+      {children}
+    </section>
+  );
+}
+function HF({ ink, label, src }) {
+  return (
+    <div className="cheat-f" style={{ borderColor: ink }}>
+      {label && <div className="cheat-f-lbl">{label}</div>}
+      <Tex src={src} block />
+    </div>
+  );
+}
+function HBox({ ink, title, children }) {
+  return (
+    <div className="cheat-box" style={{ color: ink }}>
+      {title && <div className="cheat-box-t">{title}</div>}
+      <div style={{ color: '#20303f' }}>{children}</div>
+    </div>
+  );
+}
+function HUL({ ink, marker = '✦', items }) {
+  return (
+    <ul className="cheat-ul">
+      {items.map((it, i) => (
+        <li key={i}><span className="cheat-mk" style={{ color: ink }}>{marker}</span>{it}</li>
+      ))}
+    </ul>
+  );
+}
+function HNote({ children }) { return <div className="cheat-note">{children}</div>; }
+function HFlow({ ink, steps }) {
+  return (
+    <div className="cheat-flow" style={{ color: ink }}>
+      {steps.flatMap((s, i) => {
+        const els = i > 0 ? [<span key={`a${i}`} className="arr">→</span>] : [];
+        els.push(<span key={`s${i}`} className="step">{s}</span>);
+        return els;
+      })}
+    </div>
+  );
+}
+function Hi({ c, children }) {
+  return <span className="cheat-hi" style={c ? { background: `linear-gradient(transparent 58%, ${c} 58%, ${c} 92%, transparent 92%)` } : undefined}>{children}</span>;
+}
+function Pen({ c, children }) { return <strong style={{ color: c, fontWeight: 700 }}>{children}</strong>; }
+
+// Cheatsheet content — one dense one-pager per lecture. Content mirrors exactly
+// what each Exam Summary section already states (no new/unverified material).
+const CHEATSHEETS = {
+  L1: {
+    title: 'The ML Landscape',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="What is ML?">
+          <HUL ink={ink} items={[
+            <><Pen c="#0e7490">Samuel ’59</Pen>: learn "without being explicitly programmed".</>,
+            <><Pen c="#0e7490">Mitchell ’97</Pen>: improves at task <strong>T</strong>, measured by <strong>P</strong>, with experience <strong>E</strong>.</>,
+            <>= <Hi>inductive learning</Hi> — specific examples → general rule.</>,
+          ]} />
+          <HBox ink={ink} title="Spam filter = E/T/P">
+            <HUL ink={ink} marker="•" items={[
+              <><strong>E</strong> = labelled spam / not-spam emails</>,
+              <><strong>T</strong> = is a new email spam?</>,
+              <><strong>P</strong> = accuracy on new emails</>,
+            ]} />
+          </HBox>
+        </HSec>
+        <HSec ink={ink} title="Formal model">
+          <HF ink={ink} label="data point (n ex, m attrs)" src="D_i = (\vec{x}_i,\, y_i)" />
+          <HF ink={ink} label="target vs hypothesis" src="f:\mathcal{X}\to\mathcal{Y},\;\; g\in\mathcal{H},\;\; g\approx f" />
+          <HF ink={ink} label="linear classifier" src="h(\vec{x}) = \mathrm{sgn}\!\Big(\textstyle\sum_i w_i x_i + b\Big)" />
+          <HF ink={ink} label="sign" src="\mathrm{sgn}(x)=\begin{cases}-1 & x<0\\ +1 & x>0\end{cases}" />
+        </HSec>
+        <HSec ink={ink} title="3 ways to categorise">
+          <HUL ink={ink} items={[
+            <>Supervised ↔ Unsupervised (labels?)</>,
+            <>Batch ↔ Online (learn incrementally?)</>,
+            <>Instance-based ↔ Model-based</>,
+          ]} />
+          <HNote><Pen c="#0e7490">Instance</Pen> = memorise + similarity (kNN). <Pen c="#0e7490">Model</Pen> = build a model, then predict.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Supervised vs Unsupervised">
+          <HBox ink="#0e7490" title="Supervised (X→y)">Classification (nominal y) · Regression (real y). Lin/Log/Softmax, kNN, SVM, DT, RF.</HBox>
+          <HBox ink="#6d28d9" title="Unsupervised (no labels)">Clustering (k-means, DBSCAN, HCA) · DR/viz (PCA, LLE, t-SNE) · Association (Apriori, Eclat) · Anomaly detection.</HBox>
+        </HSec>
+        <HSec ink={ink} title="Challenges + validation">
+          <HUL ink="#be123c" marker="✗" items={[
+            'too little data', 'non-representative / poor quality',
+            'irrelevant features', <Hi>overfit (deg-15) / underfit (deg-1)</Hi>,
+          ]} />
+          <HBox ink={ink} title="Test & validate">Train/Test ≈ 80/20 · generalisation = <strong>out-of-sample error</strong> · validation set for tuning — <Hi c="rgba(248,113,113,0.5)">tuning on test leaks!</Hi></HBox>
+        </HSec>
+      </>
+    ),
+  },
+  L2: {
+    title: 'ML Projects & Evaluation',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="Bias trick + workflow">
+          <HF ink={ink} label="fold bias into w  (x₀=1, w₀=b)" src="h(x) = \mathrm{sgn}(w^\top x)" />
+          <HNote>Vectorise: <Pen c="#6d28d9">np.sign(X @ w)</Pen> — no loops.</HNote>
+          <HF ink={ink} label="perceptron update (if wrong)" src="w \leftarrow w + y_i x_i \;\;\text{if } y_i \neq h(x_i)" />
+          <HNote><strong>6 steps:</strong></HNote>
+          <HFlow ink={ink} steps={['understand', 'explore', 'prep data', 'train+tune', 'present', 'launch+monitor']} />
+        </HSec>
+        <HSec ink={ink} title="Regression metrics">
+          <HF ink={ink} label="MSE" src="\mathrm{MSE} = \tfrac1m \textstyle\sum (h(x^{(i)})-y^{(i)})^2" />
+          <HF ink={ink} label="MAE" src="\mathrm{MAE} = \tfrac1m \textstyle\sum |h(x^{(i)})-y^{(i)}|" />
+          <HNote><Hi>MSE squares → punishes outliers</Hi>; MAE robust; RMSE=√MSE (target units).</HNote>
+        </HSec>
+        <HSec ink={ink} title="Classification eval">
+          <HNote><Pen c="#6d28d9">MNIST</Pen>: 70k images, 784 = 28×28.</HNote>
+          <HF ink={ink} label="precision (of predicted +)" src="\mathrm{precision} = \tfrac{TP}{TP+FP}" />
+          <HF ink={ink} label="recall / TPR (of actual +)" src="\mathrm{recall} = \tfrac{TP}{TP+FN}" />
+          <HF ink={ink} label="F₁ — harmonic mean" src="F_1 = \tfrac{2}{\frac1P + \frac1R}" />
+          <HBox ink="#be123c" title="Watch out!">Accuracy lies on imbalanced data ("always not-5" {'>'}90%). ROC = TPR vs FPR(=1−spec); bigger <strong>AUC</strong> better.</HBox>
+          <HNote><Hi>Mnemonic:</Hi> <strong>P</strong>recision denom = <strong>P</strong>redicted +; <strong>R</strong>ecall denom = <strong>R</strong>eal +.</HNote>
+          <HNote>P/R trade-off: ↑threshold ⇒ ↑precision ↓recall. Precision when FP costly (lane change); recall when FN costly (cancer).</HNote>
+          <HNote>Sampling bias: 1936 poll → Landon, but Roosevelt 62%. Multiclass: Softmax/RF/NB direct; SVM binary → OvA/OvO.</HNote>
+        </HSec>
+      </>
+    ),
+  },
+  L3: {
+    title: 'Regression Models',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="Linear regression">
+          <HF ink={ink} label="prediction" src="\hat{y} = \theta^\top x = \theta_0 + \theta_1 x_1 + \cdots + \theta_n x_n" />
+          <HF ink={ink} label="cost (RSS = m·MSE)" src="\mathrm{MSE} = \tfrac1m \textstyle\sum (\theta^\top x^{(i)} - y^{(i)})^2" />
+          <HF ink={ink} label="Normal Equation" src="\hat{\theta} = (X^\top X)^{-1} X^\top y" />
+          <HNote><Hi c="rgba(248,113,113,0.5)">O(n³) in #features</Hi> → use GD for wide data.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Gradient descent">
+          <HF ink={ink} label="gradient of MSE" src="\nabla_\theta\,\mathrm{MSE} = \tfrac2m X^\top (X\theta - y)" />
+          <HF ink={ink} label="step (η = learning rate)" src="\theta^{(t+1)} = \theta^{(t)} - \eta\,\nabla_\theta\,\mathrm{MSE}" />
+          <HNote>η too big → <Pen c="#be123c">diverge</Pen>; can stall in local min / plateau.</HNote>
+          <HBox ink={ink} title="3 variants">
+            <HUL ink={ink} marker="•" items={[
+              <><strong>Batch</strong>: all data — stable, slow</>,
+              <><strong>SGD</strong>: 1 random — fast, noisy → schedule</>,
+              <><strong>Mini-batch</strong>: subset — GPU vectorised</>,
+            ]} />
+          </HBox>
+        </HSec>
+        <HSec ink={ink} title="Polynomial + curves">
+          <HUL ink={ink} items={[
+            'add powers x², x³… then fit a linear model',
+            <>high degree → <strong>overfit</strong>; too simple → <strong>underfit</strong></>,
+            'learning curves = error vs train-set size → diagnose',
+          ]} />
+        </HSec>
+        <HSec ink={ink} title="Logistic regression">
+          <HF ink={ink} label="sigmoid (predict 1 if p̂≥0.5)" src="\hat{p} = \sigma(\theta^\top x),\;\; \sigma(t)=\tfrac{1}{1+e^{-t}}" />
+          <HF ink={ink} label="log loss (cross-entropy)" src="J = -\tfrac1m \textstyle\sum [\,y\log\hat{p} + (1-y)\log(1-\hat{p})\,]" />
+          <HNote><Hi>convex → GD finds global min</Hi>; linear boundary (Iris-Virginica).</HNote>
+        </HSec>
+      </>
+    ),
+  },
+  L4: {
+    title: 'Regularisation & kNN',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="Bias / Variance">
+          <HF ink={ink} label="error decomposes" src="\text{Err} = \text{Bias}^2 + \text{Var} + \text{Irreducible}" />
+          <HBox ink="#0e7490" title="High bias = underfit">too simple → richer model, better features, less reg.</HBox>
+          <HBox ink="#be123c" title="High variance = overfit">too sensitive → more data, CV, fewer dims, more reg.</HBox>
+          <HNote><Hi>↑complexity ⇒ ↑variance, ↓bias</Hi>. Irreducible = data noise.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Tuning">
+          <HUL ink={ink} items={[
+            <><strong>hyperparameter</strong>: set before training (k, degree, α, threshold)</>,
+            <><strong>k-fold CV</strong>; GridSearchCV / RandomizedSearchCV</>,
+            'retrain best on full train, test ONCE',
+            'early stopping at min validation error',
+          ]} />
+        </HSec>
+        <HSec ink={ink} title="Regularised linear">
+          <HF ink={ink} label="Ridge — ℓ₂" src="J = \mathrm{MSE} + \alpha \textstyle\sum \theta_i^2" />
+          <HF ink={ink} label="Lasso — ℓ₁" src="J = \mathrm{MSE} + \alpha \textstyle\sum |\theta_i|" />
+          <HF ink={ink} label="Elastic Net (ratio r)" src="J = \mathrm{MSE} + r\alpha\textstyle\sum|\theta_i| + \tfrac{1-r}{2}\alpha\textstyle\sum\theta_i^2" />
+          <HNote><Hi>Lasso = ℓ1 = corners → zeros</Hi> (selection); Ridge = ℓ2 = round → shrinks. Penalty in training only.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Softmax (multiclass)">
+          <HF ink={ink} label="probability → argmax" src="\hat{p}_k = \tfrac{\exp(s_k)}{\sum_j \exp(s_j)},\;\; s_k=(\theta^{(k)})^\top x" />
+          <HNote>trained with cross-entropy.</HNote>
+        </HSec>
+        <HSec ink={ink} title="kNN (instance-based)">
+          <HF ink={ink} label="Minkowski (p=1 Manh, p=2 Eucl)" src="D(x_i,x_j)=\big(\textstyle\sum_l |x_i[l]-x_j[l]|^p\big)^{1/p}" />
+          <HF ink={ink} label="distance-weighted vote" src="w_i = 1/d(x_q,x_i)^2" />
+          <HUL ink="#be123c" marker="!" items={[
+            <Hi>must normalise features</Hi>,
+            'small k → overfit; large k → underfit + majority bias',
+            'lazy — no training, slow at predict',
+          ]} />
+          <HNote>Multiclass (OvA/OvO) · Multilabel · Multioutput-multiclass.</HNote>
+        </HSec>
+      </>
+    ),
+  },
+  L5: {
+    title: 'Support Vector Machines',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="Large margin">
+          <HUL ink={ink} items={[
+            'fit the widest "street" between classes',
+            <>boundary set by <strong>support vectors</strong> only</>,
+            <>scale-sensitive → <Pen c="#be123c">StandardScaler (fit train only)</Pen></>,
+            'best for small–medium complex data',
+          ]} />
+          <HBox ink={ink} title="Hard vs soft">Hard = no violations, needs separable, outlier-sensitive. Soft = slack ζ, balance width vs violations via <strong>C</strong>.</HBox>
+        </HSec>
+        <HSec ink={ink} title="C + kernels">
+          <HNote><Hi>small C → wide street / more violations; large C → narrow / overfit.</Hi> Overfit? reduce C.</HNote>
+          <HF ink={ink} label="Gaussian RBF" src="K(a,b)=\exp(-\gamma\lVert a-b\rVert^2)" />
+          <HF ink={ink} label="polynomial" src="K(a,b)=(\gamma\, a^\top b + r)^d" />
+          <HNote><strong>Kernel trick</strong> = many poly/similarity features without computing them. Kernels: linear, poly, RBF, sigmoid.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Optimisation (under the hood)">
+          <HF ink={ink} label="decision function" src="\hat{y} = w^\top x + b" />
+          <HF ink={ink} label="hard margin" src="\min \tfrac12 w^\top w \;\text{ s.t. } t^{(i)}(w^\top x^{(i)}+b)\ge 1" />
+          <HF ink={ink} label="soft margin" src="\min \tfrac12 w^\top w + C\textstyle\sum \zeta^{(i)}" />
+          <HF ink={ink} label="hinge loss" src="J = \tfrac12 w^\top w + C\textstyle\sum \max(0,\,1 - t^{(i)}(w^\top x^{(i)}+b))" />
+          <HNote>Convex QP; the <strong>dual</strong> enables the kernel trick.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Complexity + SVR">
+          <HUL ink={ink} marker="•" items={[
+            <>LinearSVC <Pen c="#047857">O(m·n)</Pen> · SGDClassifier <Pen c="#047857">O(m·n)</Pen></>,
+            <>SVC (kernel) <Pen c="#be123c">O(m²n)–O(m³n)</Pen> — small data only</>,
+          ]} />
+          <HNote><Hi>Big m → never kernel SVC.</Hi> SVR: fit as many points <em>inside</em> the ε-tube.</HNote>
+        </HSec>
+      </>
+    ),
+  },
+  L6: {
+    title: 'Decision Trees',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="CART">
+          <HUL ink={ink} items={[
+            'greedy + top-down (global = NP-hard)',
+            'binary, axis-aligned splits Xⱼ ≤ tⱼ',
+            '"Guess Who" = most informative question first',
+            <>white-box · <strong>no scaling needed</strong></>,
+          ]} />
+          <HF ink={ink} label="split cost (classification)" src="J = \tfrac{m_L}{m}G_L + \tfrac{m_R}{m}G_R" />
+          <HNote>predict <strong>O(log₂m)</strong>; train O(n·m·log₂m).</HNote>
+        </HSec>
+        <HSec ink={ink} title="Impurity">
+          <HF ink={ink} label="Gini (default, faster)" src="G_i = 1 - \textstyle\sum_k p_{i,k}^2" />
+          <HF ink={ink} label="Entropy" src="H_i = -\textstyle\sum_k p_{i,k}\log_2 p_{i,k}" />
+          <HNote><Hi>both 0 at a pure node</Hi> (50/50 Gini = 0.5); similar trees. Leaf value → class probs.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Regularise + prune">
+          <HNote>nonparametric → overfits. ↑min_* or ↓max_*:</HNote>
+          <HFlow ink={ink} steps={['max_depth ↓', 'min_samples_leaf ↑', 'max_leaf_nodes ↓', 'max_features ↓']} />
+          <HF ink={ink} label="cost-complexity pruning" src="\textstyle\sum_l \sum_{x_i\in R_l}(y_i-\hat{y}_{R_l})^2 + \alpha|T|" />
+          <HNote>α=0 → full tree; α→∞ → root only. Pick α by CV.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Regression trees + limits">
+          <HF ink={ink} label="split cost (MSE)" src="J = \tfrac{m_L}{m}\mathrm{MSE}_L + \tfrac{m_R}{m}\mathrm{MSE}_R" />
+          <HNote>leaf = mean of region (Hitters: Years/Hits → log salary).</HNote>
+          <HBox ink="#be123c" title="3 limits → fix">overfit → prune · axis-aligned (rotation) → <Pen c="#1d4ed8">PCA</Pen> · high variance → <Pen c="#1d4ed8">Random Forests</Pen>.</HBox>
+        </HSec>
+      </>
+    ),
+  },
+  L7: {
+    title: 'Ensembles & Random Forests',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="Voting — wisdom of crowd">
+          <HBox ink={ink} title="Hard vs soft">Hard = majority class. Soft = avg predict_proba (confident votes weigh more, usually better).</HBox>
+          <HNote><Hi>weak learners → strong</Hi> if enough & diverse.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Bagging / Pasting / OOB">
+          <HUL ink={ink} items={[
+            <><strong>Bagging</strong> = sample WITH replacement; Pasting = without</>,
+            'aggregate: mode / average → ↓ variance',
+            <><strong>OOB</strong> ≈ ⅓ left out = free validation (oob_score_)</>,
+            'Random Patches (rows+cols) vs Subspaces (cols only)',
+          ]} />
+        </HSec>
+        <HSec ink={ink} title="Random Forests">
+          <HUL ink={ink} items={[
+            <>RF = bagged trees + random <strong>√n features per split</strong></>,
+            'Extra-Trees: + random thresholds (faster, more bias)',
+            'feature importance = mean impurity decrease (norm to 1)',
+          ]} />
+          <HNote><Hi>Bagging fixes features per tree; RF resamples at every split.</Hi></HNote>
+        </HSec>
+        <HSec ink={ink} title="Boosting (sequential)">
+          <HF ink={ink} label="AdaBoost: error & predictor weight" src="r_j = \!\!\sum_{\hat{y}_j^{(i)}\neq y^{(i)}}\!\! w^{(i)},\;\; \alpha_j = \eta\log\tfrac{1-r_j}{r_j}" />
+          <HNote>boost misclassified ×exp(αⱼ), renorm. Stump = depth 1.</HNote>
+          <HNote><strong>GBRT</strong>: fit residuals; small learning_rate + many trees + early stopping; classification = log loss.</HNote>
+          <HBox ink={ink} title="Bagging vs Boosting">Bagging = <Pen c="#047857">parallel, ↓variance</Pen>. Boosting = <Pen c="#be123c">sequential, ↓bias</Pen> (can't parallelise).</HBox>
+        </HSec>
+        <HSec ink={ink} title="Stacking">
+          <HNote>train a <strong>blender</strong> on base models' <Hi>out-of-fold</Hi> predictions, then retrain bases on the full set.</HNote>
+        </HSec>
+      </>
+    ),
+  },
+  L8: {
+    title: 'Dimensionality Reduction',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="Curse + approaches">
+          <HUL ink={ink} items={[
+            '1000s of features → sparse, slow, hard',
+            'DR loses info BUT speeds train + enables 2D/3D viz',
+            'feature selection = supervised; DR here = unsupervised',
+          ]} />
+          <HBox ink={ink} title="Projection vs Manifold">Projection = data near a low-dim subspace (fails on twists). Manifold = unroll (Swiss roll: d=2 in n=3).</HBox>
+        </HSec>
+        <HSec ink={ink} title="PCA — max variance">
+          <HF ink={ink} label="SVD of centred data" src="X = U\,\Sigma\,V^\top" />
+          <HNote>cols of V = principal axes (1st = max var, ⟂ next); sign not unique.</HNote>
+          <HF ink={ink} label="project (Wd = first d cols of V)" src="X_{d\text{-proj}} = X\,W_d" />
+          <HF ink={ink} label="reconstruct → recon. error" src="X_\text{rec} = X_{d\text{-proj}}\,W_d^\top" />
+          <HNote><Hi>centre data first</Hi>; np.linalg.svd returns Vᵀ.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Choose d + variants">
+          <HF ink={ink} label="keep 95% variance" src="d = \arg\max(\text{cumsum(EVR)} \ge 0.95) + 1" />
+          <HUL ink={ink} marker="•" items={[
+            <>= <Pen c="#0f766e">PCA(n_components=0.95)</Pen> or the elbow</>,
+            'MNIST 95% → 784 → 154 dims',
+            'Randomized PCA O(md²)+O(d³) ≪ O(mn²)+O(n³)',
+            'Incremental PCA = mini-batches (online)',
+          ]} />
+        </HSec>
+        <HSec ink={ink} title="Kernel PCA + others">
+          <HNote><strong>Kernel PCA</strong> = kernel trick + PCA → nonlinear (separates concentric circles).</HNote>
+          <HBox ink={ink} title="other DR">
+            <HUL ink={ink} marker="•" items={[
+              'LLE — manifold, no projection',
+              'MDS — preserves pairwise distances',
+              'Isomap — kNN graph, geodesic distances',
+              't-SNE — visualisation (MNIST → 2D clusters)',
+            ]} />
+          </HBox>
+        </HSec>
+      </>
+    ),
+  },
+  L9: {
+    title: 'Unsupervised Learning',
+    render: ink => (
+      <>
+        <HSec ink={ink} title="k-Means">
+          <HNote>uses: fraud/defect, recommender, image seg/retrieval, anomaly, semi-supervised.</HNote>
+          <HUL ink={ink} items={[
+            'loop: assign → update centroid means → repeat',
+            'converges (inertia ↓, bounded ≥ 0)',
+            'hard = labels_; soft = transform() distances',
+          ]} />
+          <HF ink={ink} label="inertia (score = −inertia)" src="\text{inertia} = \textstyle\sum_i \lVert x_i - c_{\text{closest}(i)}\rVert^2" />
+          <HNote>Voronoi diagram shows the cells.</HNote>
+        </HSec>
+        <HSec ink={ink} title="3 drawbacks → fixes">
+          <HNote><Pen c={ink}>① init sensitive</Pen> → n_init / k-means++:</HNote>
+          <HF ink={ink} label="k-means++ pick-next" src="P(x_i) = \tfrac{D(x_i)^2}{\sum_j D(x_j)^2}" />
+          <HNote><Pen c={ink}>② choose k</Pen> → elbow (misleading) or silhouette:</HNote>
+          <HF ink={ink} label="silhouette ∈ [−1,1], higher better" src="s_i = \tfrac{b - a}{\max(a,\, b)}" />
+          <HNote>a = intra-cluster, b = nearest other cluster. <Pen c={ink}>③ shape</Pen> (size/density/non-spherical) → <strong>GMM</strong>.</HNote>
+        </HSec>
+        <HSec ink={ink} title="Semi-supervised (digits)">
+          <HUL ink={ink} marker="•" items={[
+            '50 random labels → 74.8%',
+            '50 cluster reps → 84.9%',
+            'full propagation → 89.4%',
+            <Hi>partial (drop 1%) → 90.9% {'>'} 90.7% (all labels)</Hi>,
+          ]} />
+        </HSec>
+        <HSec ink={ink} title="DBSCAN (density)">
+          <HUL ink={ink} items={[
+            'params: ε (radius) + min_samples',
+            'Core (≥min in ε) / Border / Noise(−1)',
+            'core chains → any-shape cluster; ↑ε → fewer anomalies (84→0)',
+            'no predict() → train kNN on components_',
+          ]} />
+          <HBox ink={ink} title="Pros / Cons"><Pen c="#047857">+ any shape, auto-k, anomalies, 2 params.</Pen> <Pen c="#be123c">− varying density; O(m²n), no scale.</Pen></HBox>
+        </HSec>
+      </>
+    ),
+  },
+};
+
+// Accessible modal: overlay + click-outside + Esc + close button + focus trap + scroll-lock.
+function CheatsheetModal({ code, onClose }) {
+  const sheet = CHEATSHEETS[code];
+  const lec = EXAM_LECTURES.find(l => l.code === code);
+  const ink = CHEAT_INK[code] || '#20303f';
+  const closeRef = useRef(null);
+  const paperRef = useRef(null);
+
+  useEffect(() => {
+    const prevActive = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus();
+    const onKey = e => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && paperRef.current) {
+        const f = paperRef.current.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      if (prevActive && prevActive.focus) prevActive.focus();
+    };
+  }, [onClose, code]);
+
+  if (!sheet) return null;
+
+  return createPortal(
+    <div className="cheat-overlay" onClick={onClose}>
+      <div
+        className="cheat-paper"
+        ref={paperRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${sheet.title} — handwritten cheatsheet`}
+        onClick={e => e.stopPropagation()}
+      >
+        <button ref={closeRef} className="cheat-close" onClick={onClose} aria-label="Close cheatsheet">✕</button>
+        <div className="cheat-title" style={{ color: ink }}>{sheet.title}</div>
+        <div className="cheat-sub">{code} · {lec ? lec.focus : 'handwritten revision notes'}</div>
+        <div className="cheat-cols">{sheet.render(ink)}</div>
+        <div style={{ marginTop: '0.6rem', fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: '#94a3b8', textAlign: 'right' }}>↳ Esc or click outside to close</div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CODE LAB — learn the implementation side of the course.
+// A tiny zero-dependency Python highlighter (same hand-rolled spirit as the
+// existing .m4-pseudocode), a real-editor CodeEditor (chrome + line numbers +
+// dark VS-Code-style theme), and five interactive study modes. All snippets are
+// copied faithfully from the lecture notes / Hands-on-ML notebooks.
+// ════════════════════════════════════════════════════════════════════════════
+
+const PY_KW = new Set(['import', 'from', 'as', 'for', 'in', 'if', 'elif', 'else', 'while', 'return', 'def', 'class', 'lambda', 'with', 'try', 'except', 'finally', 'raise', 'yield', 'pass', 'break', 'continue', 'and', 'or', 'not', 'is', 'None', 'True', 'False', 'global', 'del', 'assert']);
+const PY_BI = new Set(['np', 'pd', 'plt', 'self', 'sum', 'len', 'range', 'print', 'zip', 'enumerate']);
+
+// Tokenise & colour ONE line of Python (no multi-line strings in our snippets).
+function pyHL(line) {
+  const out = [];
+  const re = /([ \t]+)|(#.*)|([rfbRFB]?(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'))|(\b\d[\w.]*)|([A-Za-z_]\w*)|([()[\]{}.,:;])|([=+\-*/%@<>!&|^~]+)/g;
+  let m, idx = 0, k = 0;
+  while ((m = re.exec(line))) {
+    if (m.index > idx) out.push(<span key={k++}>{line.slice(idx, m.index)}</span>);
+    idx = re.lastIndex;
+    if (m[1]) out.push(<span key={k++}>{m[1]}</span>);
+    else if (m[2]) out.push(<span key={k++} className="ce-cm">{m[2]}</span>);
+    else if (m[3]) out.push(<span key={k++} className="ce-str">{m[3]}</span>);
+    else if (m[4]) out.push(<span key={k++} className="ce-num">{m[4]}</span>);
+    else if (m[5]) {
+      const w = m[5];
+      let cls = 'ce-id';
+      if (PY_KW.has(w)) cls = 'ce-kw';
+      else if (PY_BI.has(w)) cls = 'ce-bi';
+      else if (/^\s*\(/.test(line.slice(re.lastIndex))) cls = 'ce-fn';
+      out.push(<span key={k++} className={cls}>{w}</span>);
+    }
+    else if (m[6]) out.push(<span key={k++} className="ce-pn">{m[6]}</span>);
+    else if (m[7]) out.push(<span key={k++} className="ce-op">{m[7]}</span>);
+  }
+  if (idx < line.length) out.push(<span key={k++}>{line.slice(idx)}</span>);
+  return out;
+}
+
+// Editor chrome (filename tab + traffic lights + language) wrapping pre-built rows.
+function CodeEditor({ file, color = '#22d3ee', rows }) {
+  return (
+    <div className="ce">
+      <div className="ce-bar">
+        <span className="ce-dots"><i style={{ background: '#ff5f56' }} /><i style={{ background: '#ffbd2e' }} /><i style={{ background: '#27c93f' }} /></span>
+        <span className="ce-file">{file}</span>
+        <span className="ce-lang" style={{ color }}>PYTHON</span>
+      </div>
+      <div className="ce-body">{rows}</div>
+    </div>
+  );
+}
+
+// Numbered, highlighted rows; lines present in `notes` are click-to-expand.
+function codeRows(code, { notes, activeNote, onLineClick } = {}) {
+  const lines = code.split('\n');
+  const rows = [];
+  lines.forEach((ln, i) => {
+    const n = i + 1;
+    const note = notes && notes[n];
+    rows.push(
+      <div key={`r${i}`} className={`ce-row${note ? ' ce-clk' : ''}${activeNote === n ? ' ce-on' : ''}`} onClick={note ? () => onLineClick(n) : undefined}>
+        <span className="ce-ln">{n}</span>
+        <code className="ce-src">{ln.length ? pyHL(ln) : ' '}{note && <span className="ce-note-mk">●</span>}</code>
+      </div>
+    );
+    if (note && activeNote === n) {
+      rows.push(<div key={`n${i}`} className="ce-note"><span className="ce-note-l">L{n}</span>{note}</div>);
+    }
+  });
+  return rows;
+}
+
+// Rows where ‹answer› markers become fill-in inputs.
+function blankRows(template, { vals, checked, revealed, setVal }) {
+  const lines = template.split('\n');
+  let bi = 0;
+  return lines.map((ln, i) => {
+    const parts = ln.split(/‹([^›]*)›/);   // even = static code, odd = blank answer
+    const content = parts.map((p, j) => {
+      if (j % 2 === 0) return p.length ? <span key={j}>{pyHL(p)}</span> : null;
+      const idx = bi++, ans = p;
+      const val = revealed ? ans : (vals[idx] ?? '');
+      let cls = 'ce-blank';
+      if (revealed || (checked && val.trim() === ans)) cls += ' ok';
+      else if (checked) cls += ' bad';
+      return <input key={j} className={cls} value={val} spellCheck={false} disabled={revealed}
+        style={{ width: `${Math.max(ans.length, 2) + 1}ch` }} aria-label={`blank ${idx + 1}`}
+        onChange={e => setVal(idx, e.target.value)} />;
+    });
+    return (
+      <div key={i} className="ce-row">
+        <span className="ce-ln">{i + 1}</span>
+        <code className="ce-src">{content}</code>
+      </div>
+    );
+  });
+}
+
+// Scramble-the-lines mode (seeded so it is stable across re-renders).
+function ReorderMode({ code, color, seed }) {
+  const lines = code.split('\n').filter(l => l.trim().length);
+  const [order, setOrder] = useState(() => {
+    const idx = lines.map((_, i) => i);
+    const rand = makePRNG(seed);
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    if (idx.every((v, i) => v === i) && idx.length > 1) { [idx[0], idx[1]] = [idx[1], idx[0]]; }
+    return idx;
+  });
+  const [checked, setChecked] = useState(false);
+  const move = (pos, dir) => {
+    if (checked) return;
+    const t = pos + dir;
+    if (t < 0 || t >= order.length) return;
+    const n = [...order]; [n[pos], n[t]] = [n[t], n[pos]]; setOrder(n);
+  };
+  const correct = order.filter((v, i) => v === i).length;
+  return (
+    <div>
+      <div className="ce">
+        <div className="ce-bar"><span className="ce-dots"><i style={{ background: '#ff5f56' }} /><i style={{ background: '#ffbd2e' }} /><i style={{ background: '#27c93f' }} /></span><span className="ce-file">arrange the lines in order</span></div>
+        <div className="ce-body">
+          {order.map((orig, pos) => (
+            <div key={pos} className={`cl-reorder-row${checked ? (orig === pos ? ' ok' : ' bad') : ''}`}>
+              <span className="cl-mv">
+                <button onClick={() => move(pos, -1)} disabled={pos === 0 || checked} aria-label="move up">▲</button>
+                <button onClick={() => move(pos, 1)} disabled={pos === order.length - 1 || checked} aria-label="move down">▼</button>
+              </span>
+              <code className="ce-src">{pyHL(lines[orig])}</code>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="cl-bar">
+        {!checked && <button className="m4-btn" style={{ borderColor: color, color }} onClick={() => setChecked(true)}>Check order</button>}
+        {checked && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: correct === order.length ? 'var(--emerald)' : 'var(--amber)' }}>{correct}/{order.length} lines in the right place</span>}
+        <button className="m4-btn" onClick={() => { setChecked(false); const idx = lines.map((_, i) => i); const rand = makePRNG(seed + 1); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; } setOrder(idx); }}>Shuffle</button>
+      </div>
+    </div>
+  );
+}
+
+// One concept: editor + a switcher between five study modes.
+function ConceptLab({ c, color, seed }) {
+  const [mode, setMode] = useState('walk');
+  const [activeNote, setActiveNote] = useState(null);
+  const [vals, setVals] = useState({});
+  const [checked, setChecked] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const [shown, setShown] = useState(false);
+
+  const stripped = c.code.replace(/‹([^›]*)›/g, '$1');
+  const answers = [...c.code.matchAll(/‹([^›]*)›/g)].map(m => m[1]);
+  const hasBlanks = answers.length > 0;
+  const score = answers.filter((a, i) => (vals[i] ?? '').trim() === a).length;
+
+  const MODES = [['walk', 'Walkthrough'], hasBlanks && ['blank', 'Fill blanks'], ['reorder', 'Reorder'], ['recall', 'Recall']].filter(Boolean);
+
+  return (
+    <div className="cl-card">
+      <div className="cl-card-h"><span className="cl-c-title">{c.title}</span><span className="cl-c-file">{c.file}</span></div>
+      <p className="cl-c-ctx">{c.context}</p>
+      <div className="cl-modes">
+        {MODES.map(([k, label]) => (
+          <button key={k} className={`cl-mode${mode === k ? ' on' : ''}`} style={mode === k ? { borderColor: color, color } : undefined} onClick={() => setMode(k)}>{label}</button>
+        ))}
+      </div>
+
+      {mode === 'walk' && (
+        <>
+          <CodeEditor file={c.file} color={color} rows={codeRows(stripped, { notes: c.notes, activeNote, onLineClick: n => setActiveNote(activeNote === n ? null : n) })} />
+          {c.notes && <div className="cl-hint">Click the ● lines for a line-by-line explanation.</div>}
+        </>
+      )}
+
+      {mode === 'blank' && (
+        <>
+          <CodeEditor file={c.file} color={color} rows={blankRows(c.code, { vals, checked, revealed, setVal: (i, v) => setVals(p => ({ ...p, [i]: v })) })} />
+          <div className="cl-bar">
+            {!revealed && <button className="m4-btn" style={{ borderColor: color, color }} onClick={() => setChecked(true)}>Check</button>}
+            {!revealed && <button className="m4-btn" onClick={() => setRevealed(true)}>Reveal</button>}
+            <button className="m4-btn" onClick={() => { setVals({}); setChecked(false); setRevealed(false); }}>Reset</button>
+            {checked && !revealed && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: score === answers.length ? 'var(--emerald)' : 'var(--amber)' }}>{score}/{answers.length} correct</span>}
+          </div>
+        </>
+      )}
+
+      {mode === 'reorder' && <ReorderMode code={stripped} color={color} seed={seed} />}
+
+      {mode === 'recall' && (
+        <div className="cl-recall">
+          <div className="cl-recall-q"><strong>Recall:</strong> {c.recall || c.context}</div>
+          {shown
+            ? <CodeEditor file={c.file} color={color} rows={codeRows(stripped, {})} />
+            : <button className="m4-btn" style={{ borderColor: color, color }} onClick={() => setShown(true)}>Reveal the code →</button>}
+          {shown && <button className="m4-btn" style={{ marginTop: '0.5rem' }} onClick={() => setShown(false)}>Hide again</button>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// "Predict the output" — show real code, guess the printed result.
+function PredictCard({ item, color }) {
+  const [pick, setPick] = useState(null);
+  const done = pick !== null;
+  return (
+    <div className="cl-card">
+      <div className="cl-card-h"><span className="cl-c-title">Predict the output</span><span className="cl-c-file">{item.file}</span></div>
+      <CodeEditor file={item.file} color={color} rows={codeRows(item.code, {})} />
+      <p className="cl-c-ctx" style={{ marginTop: '0.6rem' }}>{item.q}</p>
+      <div className="cl-opts">
+        {item.opts.map((o, i) => {
+          let cls = 'cl-opt';
+          if (done && i === item.ans) cls += ' ok';
+          else if (done && i === pick) cls += ' bad';
+          return <button key={i} className={cls} disabled={done} onClick={() => setPick(i)}>{o}</button>;
+        })}
+      </div>
+      {done && (
+        <div className="cl-fb" style={{ background: pick === item.ans ? 'rgba(52,211,153,0.08)' : 'rgba(251,113,133,0.08)', border: `1px solid ${pick === item.ans ? 'rgba(52,211,153,0.3)' : 'rgba(251,113,133,0.3)'}`, color: 'var(--text-1)' }}>
+          <strong style={{ color: pick === item.ans ? 'var(--emerald)' : 'var(--rose)' }}>{pick === item.ans ? '✓ Correct — ' : '✗ Not quite — '}</strong>{item.ok}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Faithful snippets grouped by concept → lecture. ‹answer› marks a fill-in blank.
+const CODE_GROUPS = [
+  {
+    id: 'cl-l12', title: 'L1–2 · Foundations', color: '#22d3ee', go: 'Intro to ML',
+    heading: 'Foundations — simple model & evaluation',
+    blurb: 'The vectorised linear classifier and how to score a classifier honestly.',
+    concepts: [
+      {
+        id: 'simple-model', title: 'Simple linear model (vectorised)', file: 'simple_model.py',
+        context: "The course's simple classifier h(x) = sgn(wᵀx), bias folded in as w₀ (x₀ = 1), trained by the perceptron update.",
+        recall: 'Write the vectorised prediction and the perceptron weight update.',
+        code: `import numpy as np
+
+# h(x) = sign(wᵀx), with a dummy feature x0 = 1 (the bias trick)
+def predict(X, w):
+    return np.‹sign›(X @ w)          # vectorised over all rows — no Python loop
+
+# Perceptron update over the training set
+for i in range(len(X)):
+    if y[i] != np.sign(X[i] @ w):    # misclassified?
+        w = w + ‹y[i]› * X[i]        # w <- w + y_i * x_i`,
+        notes: { 5: 'np.sign(X @ w) scores every row at once — this replaces a slow per-row Python loop.', 10: 'The whole learning rule: a misclassified point nudges w toward its correct side.' },
+      },
+      {
+        id: 'class-metrics', title: 'Classification metrics', file: 'classification.py',
+        context: 'Evaluate a classifier honestly: confusion matrix → precision & recall. On imbalanced data, accuracy alone misleads.',
+        code: `from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import confusion_matrix, precision_score, recall_score
+
+y_train_pred = cross_val_predict(sgd_clf, X_train, y_train_5, cv=‹3›)
+cm = ‹confusion_matrix›(y_train_5, y_train_pred)
+
+precision_score(y_train_5, y_train_pred)   # TP / (TP + FP)
+recall_score(y_train_5, y_train_pred)      # TP / (TP + FN)`,
+        notes: { 4: 'cross_val_predict makes clean out-of-fold predictions — no train/test leakage in the metrics.', 7: 'Precision = of everything flagged positive, how much was actually right.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'mnist_baseline.py',
+        code: `from sklearn.dummy import DummyClassifier
+
+dummy = DummyClassifier()        # predicts the majority class
+dummy.fit(X_train, y_train_5)    # y_train_5: is the digit a 5?
+print(dummy.score(X_train, y_train_5))`,
+        q: "Only ~10% of MNIST digits are 5s. What accuracy does this 'always not-5' classifier reach?",
+        opts: ['~50%', '~90%+', 'exactly 100%', '~10%'], ans: 1,
+        ok: 'Over 90% — about 90% of digits are not 5s, so always guessing not-5 is right ~90% of the time. This is exactly why accuracy misleads on imbalanced data.',
+      },
+    ],
+  },
+  {
+    id: 'cl-l3', title: 'L3 · Regression', color: '#34d399', go: 'Regression',
+    heading: 'Regression — linear models, GD, logistic',
+    blurb: 'Closed-form fit, gradient descent, and logistic regression.',
+    concepts: [
+      {
+        id: 'normal-eq', title: 'Normal Equation (closed form)', file: 'normal_equation.py',
+        context: 'Solve for the optimal θ directly — no iteration, no learning rate.',
+        code: `from sklearn.preprocessing import add_dummy_feature
+
+X_b = add_dummy_feature(X)                       # add x0 = 1 to each instance
+theta_best = np.linalg.‹inv›(X_b.T @ X_b) @ X_b.T @ y`,
+        notes: { 3: 'add_dummy_feature prepends a column of 1s so θ₀ becomes the intercept.', 4: 'Closed form θ̂ = (XᵀX)⁻¹Xᵀy — O(n³) in the number of features, so slow for very wide data.' },
+      },
+      {
+        id: 'batch-gd', title: 'Batch Gradient Descent', file: 'gradient_descent.py',
+        context: 'Batch GD uses the WHOLE training set to compute each step.',
+        code: `eta = ‹0.1›           # learning rate
+n_epochs = 1000
+m = len(X_b)
+
+np.random.seed(42)
+theta = np.random.randn(2, 1)   # random initialisation
+
+for epoch in range(n_epochs):
+    gradients = 2 / m * X_b.T @ (X_b @ theta - y)
+    theta = theta - eta * ‹gradients›`,
+        notes: { 9: 'Gradient of the MSE cost: (2/m)·Xᵀ(Xθ − y) over the full training set (= batch).', 10: 'Step downhill by η·gradient. η too large → diverge; too small → slow convergence.' },
+      },
+      {
+        id: 'logreg', title: 'Logistic Regression', file: 'logistic_regression.py',
+        context: 'Classify Iris-Virginica from petal width — a linear decision boundary via the sigmoid.',
+        code: `from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+X = iris.data[["petal width (cm)"]].values
+y = iris.target_names[iris.target] == '‹virginica›'
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+log_reg = ‹LogisticRegression›(random_state=42)
+log_reg.fit(X_train, y_train)`,
+        notes: { 6: 'random_state fixes the split → reproducible results (avoids data-snooping bias).', 8: 'Logistic regression: p̂ = σ(θᵀx). Its log-loss is convex, so GD finds the global minimum.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'gd_variants.py',
+        code: `gradients = 2 / m * X_b.T @ (X_b @ theta - y)
+theta = theta - eta * gradients`,
+        q: 'This computes the gradient over the WHOLE training set each step. Which variant is it?',
+        opts: ['Stochastic GD', 'Batch GD', 'Mini-batch GD', 'Normal Equation'], ans: 1,
+        ok: 'Batch GD — it averages over all m instances (2/m · Xᵀ(Xθ−y)) every step: an accurate gradient, but slow on large datasets.',
+      },
+    ],
+  },
+  {
+    id: 'cl-l4', title: 'L4 · Reg & kNN', color: '#fbbf24', go: 'Reg. & kNN',
+    heading: 'Regularisation & k-NN',
+    blurb: 'Ridge / Lasso / Elastic Net and instance-based k-NN.',
+    concepts: [
+      {
+        id: 'regularization', title: 'Ridge / Lasso / Elastic Net', file: 'regularization.py',
+        context: 'Three regularised linear models. alpha = strength; l1_ratio = the Elastic Net mix.',
+        code: `from sklearn.linear_model import Ridge, Lasso, ElasticNet
+
+ridge_reg = ‹Ridge›(alpha=0.1, solver="cholesky")
+ridge_reg.fit(X, y)
+
+lasso_reg = Lasso(alpha=‹0.1›)
+lasso_reg.fit(X, y)
+
+elastic_net = ElasticNet(alpha=0.1, l1_ratio=0.5)
+elastic_net.fit(X, y)`,
+        notes: { 3: 'Ridge = ℓ₂ penalty αΣθ² — shrinks weights smoothly, never exactly to zero.', 6: 'Lasso = ℓ₁ penalty αΣ|θ| — drives some weights to exactly 0 (automatic feature selection).', 9: 'Elastic Net mixes both; l1_ratio = r balances ℓ₁ vs ℓ₂.' },
+      },
+      {
+        id: 'knn', title: 'k-Nearest Neighbours (multilabel)', file: 'knn.py',
+        context: 'k-NN is instance-based — it just stores the data. Remember to scale features first.',
+        code: `import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+
+y_train_large = (y_train >= '7')
+y_train_odd = (y_train.astype('int8') % 2 == 1)
+y_multilabel = np.c_[y_train_large, y_train_odd]
+
+knn_clf = ‹KNeighborsClassifier›()
+knn_clf.fit(X_train, y_multilabel)`,
+        notes: { 6: 'np.c_ stacks two boolean targets → multilabel: each instance gets several binary labels.', 8: 'k-NN learns no model; at predict time it compares a new point to its k nearest neighbours.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'lasso_vs_ridge.py',
+        code: `lasso = Lasso(alpha=0.5)
+lasso.fit(X, y)
+print((lasso.coef_ == 0).sum(), "coefficients are exactly zero")`,
+        q: 'Compared to Ridge, what can Lasso (ℓ₁) uniquely do to coefficients?',
+        opts: ['Make them all equal', 'Drive some to exactly 0 (feature selection)', 'Make them all negative', 'Nothing different from Ridge'], ans: 1,
+        ok: 'The ℓ₁ penalty has corners on the axes, so the optimum often sits where some coefficients are exactly 0 — automatic feature selection. Ridge only shrinks toward zero.',
+      },
+    ],
+  },
+  {
+    id: 'cl-l5', title: 'L5 · SVMs', color: '#fb7185', go: 'SVMs',
+    heading: 'Support Vector Machines',
+    blurb: 'Scaled linear SVM, polynomial features, and the kernel trick.',
+    concepts: [
+      {
+        id: 'linear-svm', title: 'Linear SVM (scaled pipeline)', file: 'linear_svm.py',
+        context: 'A linear SVM in a pipeline. SVMs are scale-sensitive — only fit the scaler on training data.',
+        code: `from sklearn.datasets import load_iris
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
+
+iris = load_iris(as_frame=True)
+X = iris.data[["petal length (cm)", "petal width (cm)"]].values
+y = (iris.target == 2)  # Iris virginica
+
+svm_clf = make_pipeline(‹StandardScaler›(),
+                        LinearSVC(C=‹1›, dual=True, random_state=42))
+svm_clf.fit(X, y)`,
+        notes: { 10: 'make_pipeline chains the scaler with the SVM so scaling is part of fit/predict.', 11: 'C is the soft-margin penalty: small C → wider street + more violations; large C → narrow.' },
+      },
+      {
+        id: 'nonlinear-svm', title: 'Nonlinear SVM (polynomial features)', file: 'nonlinear_svm.py',
+        context: 'Make non-linear data separable by adding polynomial features, then a linear SVM.',
+        code: `from sklearn.datasets import make_moons
+from sklearn.preprocessing import PolynomialFeatures
+
+X, y = make_moons(n_samples=100, noise=0.15, random_state=42)
+
+polynomial_svm_clf = make_pipeline(
+    PolynomialFeatures(degree=‹3›),
+    StandardScaler(),
+    LinearSVC(C=10, max_iter=10_000, dual=True, random_state=42))
+polynomial_svm_clf.fit(X, y)`,
+        notes: { 4: 'make_moons is a classic non-linearly-separable 2D dataset.', 7: 'Adding polynomial features can turn a non-linear problem into a linearly separable one.' },
+      },
+      {
+        id: 'kernel-svm', title: 'The kernel trick (poly kernel)', file: 'kernel_svm.py',
+        context: 'The kernel trick gives the effect of many polynomial features — without computing them. SVC supports kernels; LinearSVC does not.',
+        code: `from sklearn.svm import SVC
+
+poly_kernel_svm_clf = make_pipeline(StandardScaler(),
+                                    SVC(kernel="‹poly›", degree=3, coef0=1, C=5))
+poly_kernel_svm_clf.fit(X, y)`,
+        notes: { 4: 'kernel="poly" implicitly works in the degree-3 feature space; coef0 = r weights high vs low-degree terms.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'svm_C.py',
+        code: `svm = SVC(kernel="rbf", gamma=5, C=1000)
+svm.fit(X, y)`,
+        q: 'You set a very large C. What happens to the margin?',
+        opts: ['Wider street, more violations allowed', 'Narrower street, fewer violations — tighter fit (overfit risk)', 'C has no effect on the margin', 'It switches to a linear kernel'], ans: 1,
+        ok: 'Large C heavily penalises violations → a narrow street that hugs the data (overfitting risk). Small C → wider street, more violations, usually better generalisation.',
+      },
+    ],
+  },
+  {
+    id: 'cl-l6', title: 'L6 · Trees', color: '#60a5fa', go: 'Decision Trees',
+    heading: 'Decision Trees',
+    blurb: 'Train, read class probabilities, and do regression with CART.',
+    concepts: [
+      {
+        id: 'train-tree', title: 'Train & visualise a tree', file: '06_decision_trees.py',
+        context: "Train a depth-2 tree on Iris. Trees need no scaling and are 'white-box' (readable).",
+        code: `from sklearn.datasets import load_iris
+from sklearn.tree import DecisionTreeClassifier
+
+iris = load_iris(as_frame=True)
+X_iris = iris.data[["petal length (cm)", "petal width (cm)"]].values
+y_iris = iris.target
+
+tree_clf = DecisionTreeClassifier(max_depth=‹2›)
+tree_clf.fit(X_iris, y_iris)`,
+        notes: { 8: 'max_depth is the main regulariser: smaller → higher bias, less overfitting.', 9: 'CART grows greedily, picking the split that most reduces weighted Gini impurity.' },
+      },
+      {
+        id: 'tree-proba', title: 'Estimating class probabilities', file: 'tree_proba.py',
+        context: "A leaf stores class counts; normalise them to get predicted probabilities.",
+        code: `tree_clf.‹predict_proba›([[5, 1.5]]).round(3)
+# array([[0.   , 0.907, 0.093]])
+
+tree_clf.predict([[5, 1.5]])
+# array([1])   # class 1 = versicolor`,
+        notes: { 1: "A leaf's probabilities = the class fractions among its training samples (49/54, 5/54).", 4: 'predict returns the argmax (most probable) class of the reached leaf.' },
+      },
+      {
+        id: 'tree-reg', title: 'Regression tree', file: 'tree_regression.py',
+        context: 'Trees do regression too: piecewise-constant predictions (the mean target per leaf region).',
+        code: `import numpy as np
+from sklearn.tree import DecisionTreeRegressor
+
+X_quad = np.random.rand(200, 1) - 0.5            # one random input feature
+y_quad = X_quad ** 2 + 0.025 * np.random.randn(200, 1)
+
+tree_reg = ‹DecisionTreeRegressor›(max_depth=2, random_state=42)
+tree_reg.fit(X_quad, y_quad)`,
+        notes: { 5: 'A noisy quadratic; max_depth controls the resolution of the step function.', 7: 'A regression tree splits to minimise MSE; each leaf predicts the MEAN target of its region.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'tree_proba.py',
+        code: `# the leaf reached by [5, 1.5] has training counts value = [0, 49, 5]
+tree_clf.predict_proba([[5, 1.5]]).round(3)`,
+        q: 'The leaf has class counts [0, 49, 5] over 54 samples. What does predict_proba return?',
+        opts: ['[0.0, 0.5, 0.5]', '[0.0, 0.907, 0.093]', '[0.333, 0.333, 0.333]', '[0, 49, 5]'], ans: 1,
+        ok: 'Normalise the counts: 49/54 = 0.907, 5/54 = 0.093 → [0.0, 0.907, 0.093]. predict() then returns the argmax (class 1).',
+      },
+    ],
+  },
+  {
+    id: 'cl-l7', title: 'L7 · Ensembles', color: '#f472b6', go: 'Ensembles',
+    heading: 'Ensembles & Random Forests',
+    blurb: 'Voting, bagging/OOB, random forests, boosting and stacking.',
+    concepts: [
+      {
+        id: 'voting', title: 'Voting classifier', file: 'voting.py',
+        context: 'Combine diverse models — wisdom of the crowd. Hard = majority; soft = average probabilities.',
+        code: `from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
+voting_clf = ‹VotingClassifier›(
+    estimators=[
+        ('lr',  LogisticRegression(random_state=42)),
+        ('rf',  RandomForestClassifier(random_state=42)),
+        ('svc', SVC(random_state=42))
+    ])
+voting_clf.fit(X_train, y_train)`,
+        notes: { 5: "Default is hard voting; set voting='soft' to average predict_proba (often better).", 7: 'Diversity (different algorithms) is what makes the ensemble beat any single model.' },
+      },
+      {
+        id: 'bagging', title: 'Bagging + Out-of-Bag', file: 'bagging.py',
+        context: 'Bag 500 trees with out-of-bag scoring — no separate validation split needed.',
+        code: `from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+bag_clf = BaggingClassifier(
+    DecisionTreeClassifier(), n_estimators=500,
+    oob_score=‹True›, n_jobs=-1, random_state=42)
+bag_clf.fit(X_train, y_train)
+bag_clf.oob_score_                  # 0.896`,
+        notes: { 5: 'Bagging = bootstrap sampling (with replacement) + aggregation → lower variance.', 8: 'OOB: the ~⅓ of instances not sampled by each tree act as a free validation set.' },
+      },
+      {
+        id: 'rf', title: 'Random Forest + feature importance', file: 'random_forest.py',
+        context: 'A random forest and its feature importances. On Iris, petal length & width dominate (~0.86 together).',
+        code: `from sklearn.ensemble import RandomForestClassifier
+
+rnd_clf = ‹RandomForestClassifier›(n_estimators=500, random_state=42)
+rnd_clf.fit(iris.data, iris.target)
+
+for score, name in zip(rnd_clf.feature_importances_, iris.feature_names):
+    print(round(score, 2), name)`,
+        notes: { 3: 'RF = bagged trees + at each split it searches only a random √n subset of features → more diversity.', 6: 'feature_importances_ = average impurity decrease across all trees (normalised to sum 1).' },
+      },
+      {
+        id: 'adaboost', title: 'AdaBoost', file: 'adaboost.py',
+        context: "AdaBoost chains 30 decision stumps, each focusing on the previous one's mistakes.",
+        code: `from sklearn.ensemble import AdaBoostClassifier
+
+ada_clf = AdaBoostClassifier(
+    DecisionTreeClassifier(max_depth=‹1›),
+    n_estimators=30, learning_rate=0.5, random_state=42)
+ada_clf.fit(X_train, y_train)`,
+        notes: { 4: "A max_depth=1 tree is a 'decision stump' — AdaBoost's default weak learner.", 5: 'Boosting is sequential: each predictor re-weights the instances its predecessor misclassified.' },
+      },
+      {
+        id: 'gbrt', title: 'Gradient Boosting (manual)', file: 'gbrt.py',
+        context: 'Gradient Boosting by hand: fit a tree, fit the next to its residuals, sum them. (GradientBoostingRegressor automates this.)',
+        code: `from sklearn.tree import DecisionTreeRegressor
+
+tree_reg1 = DecisionTreeRegressor(max_depth=2)
+tree_reg1.fit(X, y)
+
+y2 = y - tree_reg1.predict(X)            # residuals of tree 1
+tree_reg2 = DecisionTreeRegressor(max_depth=2)
+tree_reg2.fit(X, y2)
+
+y3 = y2 - tree_reg2.predict(X)           # residuals of tree 2
+tree_reg3 = DecisionTreeRegressor(max_depth=2)
+tree_reg3.fit(X, y3)
+
+y_pred = ‹sum›(tree.predict(X_new)
+           for tree in (tree_reg1, tree_reg2, tree_reg3))`,
+        notes: { 6: 'Gradient boosting fits each new tree to the RESIDUAL errors of the previous one.', 14: "The ensemble's prediction is the SUM of all the trees' outputs." },
+      },
+      {
+        id: 'gbrt-builtin', title: 'Gradient Boosting (built-in + early stopping)', file: 'gbrt_builtin.py',
+        context: 'GradientBoostingRegressor automates the residual-fitting loop. Low learning_rate + many trees + early stopping is the recommended recipe.',
+        code: `from sklearn.ensemble import GradientBoostingRegressor
+
+gbrt = GradientBoostingRegressor(max_depth=2, n_estimators=3, learning_rate=1.0)
+gbrt.fit(X, y)
+
+# better generalisation: small learning_rate + many trees + early stopping
+gbrt_best = GradientBoostingRegressor(
+    max_depth=2, learning_rate=‹0.05›,
+    n_estimators=500, n_iter_no_change=10)
+gbrt_best.fit(X, y)
+gbrt_best.n_estimators_   # e.g. 92 (stopped early)`,
+        notes: { 3: 'The built-in class does the manual residual-tree loop for you.', 8: 'Shrinkage: a low learning_rate needs more trees but generalises better.', 9: 'n_iter_no_change enables early stopping — training halts once validation stops improving.' },
+      },
+      {
+        id: 'stacking', title: 'Stacking', file: 'stacking.py',
+        context: "Stacking learns a 'blender' to combine base predictions, instead of a fixed vote.",
+        code: `from sklearn.ensemble import StackingClassifier
+
+stacking_clf = StackingClassifier(
+    estimators=[
+        ('lr',  LogisticRegression()),
+        ('rf',  RandomForestClassifier()),
+        ('svc', SVC(probability=True))
+    ],
+    final_estimator=‹RandomForestClassifier›(),
+    cv=5)
+stacking_clf.fit(X_train, y_train)`,
+        notes: { 9: "The final_estimator (the 'blender') learns how to combine the base models' predictions.", 10: 'cv=5: base models predict out-of-fold, so the blender trains on unbiased inputs.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'rf_importance.py',
+        code: `rnd_clf = RandomForestClassifier(n_estimators=500, random_state=42)
+rnd_clf.fit(iris.data, iris.target)
+print(rnd_clf.feature_importances_.round(2))`,
+        q: 'On Iris, which features get the highest importance?',
+        opts: ['sepal length & sepal width', 'petal length & petal width', 'all four equally', 'sepal width alone'], ans: 1,
+        ok: 'Petal length (~0.44) and petal width (~0.42) dominate — together ~86% of the predictive power. Sepal width is almost worthless.',
+      },
+    ],
+  },
+  {
+    id: 'cl-l8', title: 'L8 · Dim. Reduction', color: '#2dd4bf', go: 'Dimensionality Reduction',
+    heading: 'Dimensionality Reduction',
+    blurb: 'PCA via SVD and scikit-learn, kernel PCA, and t-SNE.',
+    concepts: [
+      {
+        id: 'pca-svd', title: 'PCA via SVD (NumPy)', file: 'pca_svd.py',
+        context: 'PCA from scratch via SVD. np.linalg.svd returns Vᵀ, so transpose to read the axes.',
+        code: `X_centered = X - X.mean(axis=0)          # PCA needs centred data
+U, s, Vt = np.linalg.‹svd›(X_centered)
+c1 = Vt.T[:, 0]                          # 1st principal axis
+c2 = Vt.T[:, 1]                          # 2nd principal axis`,
+        notes: { 1: 'Always centre the data first — PCA measures variance about the mean.', 2: 'SVD: X = UΣVᵀ. The columns of V (rows of Vt) are the principal axes.' },
+      },
+      {
+        id: 'pca-sklearn', title: 'PCA + explained variance + choosing d', file: 'pca_sklearn.py',
+        context: 'scikit-learn PCA, the explained-variance ratio, and the one-liner that picks d for 95% variance.',
+        code: `from sklearn.decomposition import PCA
+
+pca = PCA(n_components=2)
+X2D = pca.fit_transform(X)
+pca.explained_variance_ratio_       # array([0.84248607, 0.14631839])
+
+# keep 95% of the variance automatically:
+pca = PCA(n_components=‹0.95›)
+X_reduced = pca.fit_transform(X)`,
+        notes: { 5: 'explained_variance_ratio_ = the fraction of variance each PC preserves.', 8: 'A float in (0,1) keeps just enough components for that much variance (MNIST: 784 → 154).' },
+      },
+      {
+        id: 'kernel-pca', title: 'Kernel PCA', file: 'kernel_pca.py',
+        context: 'Kernel PCA: a non-linear PCA via the kernel trick (RBF here) — unrolls e.g. concentric circles.',
+        code: `from sklearn.decomposition import KernelPCA
+
+kernel_pca = KernelPCA(n_components=2, kernel="‹rbf›", gamma=10,
+                       fit_inverse_transform=True, alpha=0.1)
+X_reduced = kernel_pca.fit_transform(X_train)`,
+        notes: { 3: 'The kernel trick gives a non-linear projection that ordinary (linear) PCA cannot.' },
+      },
+      {
+        id: 'tsne', title: 't-SNE', file: 'tsne.py',
+        context: 't-SNE for visualising high-dimensional data in 2D (slow; run it on a subset).',
+        code: `from sklearn.manifold import TSNE
+
+tsne = TSNE(n_components=‹2›, init="random",
+            learning_rate="auto", random_state=42)
+X_reduced = tsne.fit_transform(X_sample)`,
+        notes: { 3: 't-SNE keeps similar points close & dissimilar points apart — visualisation only (MNIST → 2D clusters).' },
+      },
+    ],
+    predict: [
+      {
+        file: 'pca_mnist.py',
+        code: `pca = PCA(n_components=0.95)
+X_reduced = pca.fit_transform(X_train)   # MNIST: 70000 x 784
+print(pca.n_components_)`,
+        q: 'Keeping 95% of MNIST variance reduces 784 features to about how many?',
+        opts: ['About 2', 'About 154', 'About 700', 'Exactly 95'], ans: 1,
+        ok: 'About 154 — dropping just 5% of the variance compresses 784 → 154 dims, greatly speeding up downstream models.',
+      },
+    ],
+  },
+  {
+    id: 'cl-l9', title: 'L9 · Clustering', color: '#c084fc', go: 'Clustering',
+    heading: 'Unsupervised Learning',
+    blurb: 'k-means, semi-supervised labelling, and DBSCAN.',
+    concepts: [
+      {
+        id: 'kmeans', title: 'k-Means', file: 'kmeans.py',
+        context: 'k-means clustering. You must choose k; inertia and the silhouette score help.',
+        code: `from sklearn.cluster import KMeans
+from sklearn.datasets import make_blobs
+
+X, y = make_blobs(...)            # 2D blobs, 5 clusters
+k = 5
+kmeans = KMeans(n_clusters=‹k›, random_state=42)
+y_pred = kmeans.fit_predict(X)
+
+kmeans.cluster_centers_           # the k centroid coordinates
+kmeans.inertia_                   # sum of squared distances (lower = tighter)`,
+        notes: { 6: 'k-means loops: assign each point to its nearest centroid → move centroids to the mean → repeat.', 10: 'inertia = Σ‖xᵢ − nearest centroid‖². Pick k via the silhouette score, not by minimising inertia.' },
+      },
+      {
+        id: 'semi-sup', title: 'Semi-supervised: representatives', file: 'semi_supervised.py',
+        context: 'Label one representative per cluster, then propagate — beats labelling 50 random digits (74.8% → 84.9%).',
+        code: `k = 50
+kmeans = KMeans(n_clusters=k, random_state=42)
+X_digits_dist = kmeans.fit_transform(X_train)            # 1400 x 50
+representative_digit_idx = np.‹argmin›(X_digits_dist, axis=0)
+X_representative_digits = X_train[representative_digit_idx]`,
+        notes: { 3: "fit_transform gives each instance's distance to all 50 centroids.", 4: 'argmin picks the instance CLOSEST to each centroid — the most representative digit to hand-label.' },
+      },
+      {
+        id: 'dbscan', title: 'DBSCAN', file: 'dbscan.py',
+        context: 'Density-based clustering: any-shape clusters and anomalies, just two hyperparameters.',
+        code: `from sklearn.cluster import DBSCAN
+from sklearn.datasets import make_moons
+
+X, y = make_moons(n_samples=1000, noise=0.05)
+dbscan = DBSCAN(eps=‹0.05›, min_samples=5)
+dbscan.fit(X)
+
+dbscan.labels_                 # cluster id per point, -1 = anomaly
+dbscan.core_sample_indices_    # indices of the core instances`,
+        notes: { 5: 'eps = neighbourhood radius; min_samples = density needed to be a core point.', 8: 'Label -1 = anomaly. Larger eps → fewer anomalies, but separate clusters may merge.' },
+      },
+      {
+        id: 'dbscan-predict', title: 'DBSCAN — predicting new points', file: 'dbscan_predict.py',
+        context: "DBSCAN has no predict() — fit a k-NN on its core samples to classify new points.",
+        code: `from sklearn.neighbors import KNeighborsClassifier
+
+knn = KNeighborsClassifier(n_neighbors=50)
+knn.fit(dbscan.components_, dbscan.labels_[dbscan.core_sample_indices_])
+
+X_new = np.array([[-0.5, 0], [0, 0.5], [1, -0.1], [2, 1]])
+knn.‹predict›(X_new)            # array([1, 0, 1, 0])`,
+        notes: { 3: 'DBSCAN exposes no predict() method of its own.', 4: 'So train a k-NN on the core samples (components_) and their labels to classify new points.' },
+      },
+    ],
+    predict: [
+      {
+        file: 'dbscan_eps.py',
+        code: `dbscan = DBSCAN(eps=0.05, min_samples=5).fit(X)   # moons, 1000 pts
+print((dbscan.labels_ == -1).sum(), "anomalies")
+# ... then re-run with eps = 0.20`,
+        q: 'Raising eps from 0.05 to 0.20 on the moons data changes the anomaly count from 84 to…',
+        opts: ['Even more (≈200)', '0', 'Unchanged (84)', 'A negative number'], ans: 1,
+        ok: '0 — a bigger ε grows every neighbourhood, so more points reach min_samples and join clusters as core/border, leaving no anomalies (though separate clusters may wrongly merge).',
+      },
+    ],
+  },
+];
+
+function CodeLab({ onOpen }) {
+  const [grp, setGrp] = useState(CODE_GROUPS[0].id);
+  const gi = CODE_GROUPS.findIndex(x => x.id === grp);
+  const g = CODE_GROUPS[gi];
+  return (
+    <div>
+      <div className="m4-sec-hdr">
+        <h2 className="m4-sec-title">Code Lab <span className="m4-badge" style={{ background: 'rgba(167,139,250,0.12)', color: 'var(--violet)', border: '1px solid rgba(167,139,250,0.3)' }}>Lectures 1–9 · learn the implementation</span></h2>
+      </div>
+      <p className="m4-sec-sub">The coding side of CITS5508 — every key scikit-learn / NumPy snippet from the lectures, grouped by concept. Read the annotated walkthrough, then test recall with fill-in-the-blank, line-reordering, predict-the-output and recall modes.</p>
+      <div className="m4-labtabs">
+        {CODE_GROUPS.map(x => (
+          <button key={x.id} className={`m4-labtab ${grp === x.id ? 'm4-labtab--on' : ''}`} onClick={() => setGrp(x.id)}>{x.title}</button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', padding: '0.6rem 0.9rem', borderRadius: 8, background: `linear-gradient(90deg, ${g.color}24 0%, ${g.color}0a 55%, transparent 100%)`, borderLeft: `4px solid ${g.color}`, marginBottom: '1rem' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-0)' }}>{g.heading}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-2)', marginTop: '0.18rem' }}>{g.blurb}</div>
+        </div>
+        <button className="m4-btn" style={{ borderColor: `${g.color}66`, color: g.color, flexShrink: 0 }} onClick={() => onOpen(g.go)}>Open module →</button>
+      </div>
+      {g.concepts.map((c, i) => <ConceptLab key={c.id} c={c} color={g.color} seed={(gi + 1) * 100 + i} />)}
+      {g.predict && g.predict.length > 0 && (
+        <>
+          <div className="cl-sub">Predict the output</div>
+          {g.predict.map((p, i) => <PredictCard key={i} item={p} color={g.color} />)}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ExamSummary({ onOpen }) {
+  const [cheatCode, setCheatCode] = useState(null);
+  return (
+    <div>
+      <div className="m4-sec-hdr">
+        <h2 className="m4-sec-title">Exam Summary <span className="m4-badge" style={{ background: 'rgba(52,211,153,0.12)', color: 'var(--emerald)', border: '1px solid rgba(52,211,153,0.3)' }}>Lectures 1–9 · Revise in one pass</span></h2>
+      </div>
+      <p className="m4-sec-sub">A complete, colour-coded cheat-sheet of every major topic, formula and algorithm in CITS5508 — built for fast memorisation. Jump to any lecture, scan the must-remember boxes, then drill into the interactive modules.</p>
+      <ExamNav />
+
+      {/* ── MASTER ALGORITHM CHEAT-SHEET ─────────────────────────────────── */}
+      <section id="ex-master" style={{ scrollMarginTop: '120px', marginBottom: '2.25rem' }}>
+        <div className="m4-card">
+          <div className="m4-card-h">Master Algorithm Cheat-Sheet — the whole unit on one screen</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="m4-ptable" style={{ minWidth: 720 }}>
+              <thead><tr><th>Algorithm</th><th>Category</th><th>Core idea / formula</th><th>Must-know fact</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Linear Regression</td><td>Supervised · Regression</td><td>ŷ = θᵀx; minimise MSE</td><td>Closed form (Normal Eq) O(n³) in features; else use GD</td></tr>
+                <tr><td className="pk">Logistic Regression</td><td>Supervised · Classification</td><td>p̂ = σ(θᵀx); log loss</td><td>Convex cost → GD finds global min; linear boundary</td></tr>
+                <tr><td className="pk">Softmax Regression</td><td>Supervised · Multiclass</td><td>p̂ₖ = softmax(sₖ); cross-entropy</td><td>Multinomial logistic; predicts argmax score</td></tr>
+                <tr><td className="pk">k-NN</td><td>Supervised · Instance-based</td><td>Majority vote of k nearest (Minkowski)</td><td>No training; must scale features; small k overfits</td></tr>
+                <tr><td className="pk">SVM</td><td>Supervised · Class + Reg</td><td>Widest margin; kernel trick</td><td>Scale-sensitive; SVC is O(m²–m³·n) — small/medium data</td></tr>
+                <tr><td className="pk">Decision Tree</td><td>Supervised · Class + Reg</td><td>CART: greedy axis-aligned splits</td><td>White-box; nonparametric; high variance → overfits</td></tr>
+                <tr><td className="pk">Random Forest</td><td>Ensemble (bagging)</td><td>Many trees + √n feature subset per split</td><td>Reduces variance; feature importance free</td></tr>
+                <tr><td className="pk">AdaBoost / GBRT</td><td>Ensemble (boosting)</td><td>Sequential; reweight / fit residuals</td><td>Reduces bias; cannot parallelise; watch overfitting</td></tr>
+                <tr><td className="pk">PCA</td><td>Unsupervised · DR</td><td>Max-variance linear projection via SVD</td><td>Centre data first; choose d for 95% variance</td></tr>
+                <tr><td className="pk">k-Means</td><td>Unsupervised · Clustering</td><td>Assign ↔ update centroids; minimise inertia</td><td>Pick k via silhouette; spherical clusters only</td></tr>
+                <tr><td className="pk">DBSCAN</td><td>Unsupervised · Clustering</td><td>Density: core / border / noise via ε</td><td>Any shape + anomalies; O(m²n), no predict()</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginTop: '0.8rem' }}>
+            <div style={{ background: 'rgba(34,211,238,0.07)', border: '1px solid rgba(34,211,238,0.3)', borderRadius: 6, padding: '0.7rem 0.85rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', fontWeight: 700, color: 'var(--cyan)', marginBottom: '0.35rem' }}>SUPERVISED (labelled X → y)</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Classification (nominal y) & Regression (real y). Linear/Logistic/Softmax Regression, k-NN, SVM, Decision Trees, Random Forests.</div>
+            </div>
+            <div style={{ background: 'rgba(167,139,250,0.07)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 6, padding: '0.7rem 0.85rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', fontWeight: 700, color: 'var(--violet)', marginBottom: '0.35rem' }}>UNSUPERVISED (no labels)</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-1)', lineHeight: 1.55 }}>Clustering (k-means, DBSCAN, HCA), Dimensionality Reduction / Visualisation (PCA, LLE, t-SNE), Association rules (Apriori, Eclat), Anomaly detection.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════ LECTURE 1 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[0]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">What is Machine Learning?</div>
+            <ul className="m4-bullets">
+              <li><strong>Samuel (1959):</strong> field that lets computers learn "without being explicitly programmed."</li>
+              <li><strong>Mitchell (1997):</strong> learns from experience <strong>E</strong> w.r.t. task <strong>T</strong> and performance <strong>P</strong>, if P on T improves with E.</li>
+              <li>ML = <strong>inductive learning</strong>: infer generic rules from specific examples.</li>
+            </ul>
+            <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>Spam filter as E / T / P</div>
+            <table className="m4-ptable">
+              <tbody>
+                <tr><td className="pk">E</td><td>Example spam & non-spam emails (labelled)</td></tr>
+                <tr><td className="pk">T</td><td>Decide if a new email is spam</td></tr>
+                <tr><td className="pk">P</td><td>Accuracy on new emails</td></tr>
+              </tbody>
+            </table>
+            <ExRemember color="#22d3ee" label="Mnemonic — E / T / P">Read it as "<strong>E</strong>xperience improves <strong>T</strong>ask measured by <strong>P</strong>erformance." Each example = feature vector <Tex src="\vec{x}_i" /> + label <Tex src="y_i" />.</ExRemember>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Formal Model & Simple Linear Classifier</div>
+            <ExF label="Dataset & functions" src="D_i = (\vec{x}_i, y_i),\quad f:\mathcal{X}\to\mathcal{Y},\quad g\in\mathcal{H},\; g\approx f" color="#22d3ee" note="n examples, m attributes. f = unknown target; g = learned hypothesis from hypothesis space H." />
+            <ExF label="Linear decision threshold" src="\sum_{i=1}^{m} w_i x_i > -b \;\Longleftrightarrow\; h(\vec{x}) = \mathrm{sgn}\!\left(\sum_{i=1}^{m} w_i x_i + b\right)" color="#22d3ee" />
+            <ExF label="Sign function" src="\mathrm{sgn}(x) = \begin{cases} -1 & x < 0 \\ +1 & x > 0 \end{cases}" color="#22d3ee" note="Binary case: 𝒳 = ℝᵐ, 𝒴 = {−1, +1}." />
+          </div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">System Types · Challenges · Validation</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+            <div style={{ background: '#22d3ee0c', border: '1px solid #22d3ee30', borderRadius: 6, padding: '0.7rem 0.8rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', fontWeight: 700, color: 'var(--cyan)', marginBottom: '0.4rem' }}>3 WAYS TO CATEGORISE</div>
+              <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <li>Supervised vs Unsupervised (labels?)</li>
+                <li>Batch vs Online (learn incrementally?)</li>
+                <li>Instance-based vs Model-based (how it generalises)</li>
+              </ul>
+            </div>
+            <div style={{ background: '#fb71850c', border: '1px solid #fb718530', borderRadius: 6, padding: '0.7rem 0.8rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', fontWeight: 700, color: 'var(--rose)', marginBottom: '0.4rem' }}>MAIN CHALLENGES</div>
+              <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <li>Insufficient data</li>
+                <li>Non-representative / poor-quality data</li>
+                <li>Irrelevant features</li>
+                <li>Overfitting (deg-15) / Underfitting (deg-1)</li>
+              </ul>
+            </div>
+            <div style={{ background: '#34d3990c', border: '1px solid #34d39930', borderRadius: 6, padding: '0.7rem 0.8rem' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', fontWeight: 700, color: 'var(--emerald)', marginBottom: '0.4rem' }}>TESTING & VALIDATION</div>
+              <ul style={{ margin: 0, paddingLeft: '1rem', fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <li>Train / Test split (~80 / 20)</li>
+                <li>Generalisation = out-of-sample error</li>
+                <li>Validation set for tuning (keep test sealed)</li>
+              </ul>
+            </div>
+          </div>
+          <ExRemember color="#fbbf24">Instance-based <em>memorises</em> examples + similarity (k-NN). Model-based <em>builds a model</em> then predicts. Tuning on the test set leaks information → always use a separate validation set.</ExRemember>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 2 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[1]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Bias Trick, Vectorisation & Workflow</div>
+            <ExF label="Bias trick (b → w₀, x₀ = 1)" src="h(x) = \mathrm{sgn}(w^\top x)" color="#a78bfa" note="Fold bias into the weight vector → one clean dot product. Vectorise with np.sign(X @ w) — no Python loops." />
+            <ExF label="Perceptron update (on misclassification)" src="w \leftarrow w + y_i x_i \quad\text{if } y_i \neq h(x_i)" color="#a78bfa" />
+            <div className="m4-flabel" style={{ marginTop: '0.6rem' }}>End-to-end project — 6 steps</div>
+            <ol style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <li>Understand problem & assumptions</li>
+              <li>Visualise / explore data</li>
+              <li>Prepare data</li>
+              <li>Select, train, validate & fine-tune model</li>
+              <li>Present the solution</li>
+              <li>Launch, monitor & maintain</li>
+            </ol>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Regression Metrics</div>
+            <ExF label="Mean Squared Error" src="\mathrm{MSE} = \frac{1}{m}\sum_{i=1}^{m}\left(h(x^{(i)}) - y^{(i)}\right)^2" color="#fb7185" />
+            <ExF label="Mean Absolute Error" src="\mathrm{MAE} = \frac{1}{m}\sum_{i=1}^{m}\left|h(x^{(i)}) - y^{(i)}\right|" color="#34d399" />
+            <ExRemember color="#fb7185" label="★ MSE vs MAE">MSE <strong>squares</strong> errors → punishes large outliers harder (more sensitive). MAE weights all errors equally (more robust). RMSE = √MSE, same units as target.</ExRemember>
+          </div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Classification Evaluation — MNIST (70k images, 784 = 28×28 features)</div>
+          <div className="m4-two-col" style={{ marginTop: 0 }}>
+            <div>
+              <ExF label="Precision (of predicted +, how many right)" src="\text{precision} = \frac{TP}{TP + FP}" color="#a78bfa" />
+              <ExF label="Recall / TPR / sensitivity (of actual +, how many caught)" src="\text{recall} = \frac{TP}{TP + FN}" color="#34d399" />
+              <ExF label="F₁ — harmonic mean" src="F_1 = \frac{2}{\frac{1}{\text{precision}} + \frac{1}{\text{recall}}}" color="#fbbf24" />
+            </div>
+            <div>
+              <ExRemember color="#fb7185" label="★ Why accuracy lies">On imbalanced data a dumb "always not-5" classifier still scores &gt;90%. Use the <strong>confusion matrix</strong>, precision, recall, F₁ instead.</ExRemember>
+              <ExRemember color="#a78bfa" label="Precision/Recall trade-off">Raise the threshold → ↑precision, ↓recall. Prioritise <strong>precision</strong> when false positives are costly (safe to change lanes); <strong>recall</strong> when false negatives are costly (cancer screening).</ExRemember>
+              <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55, marginTop: '0.5rem' }}><strong>ROC curve:</strong> TPR vs FPR (= 1 − specificity) across thresholds; larger <strong>AUC</strong> = better.</div>
+            </div>
+          </div>
+          <ExRemember color="#fbbf24" label="Mnemonic — Precision vs Recall">"<strong>P</strong>recision's denominator is what you <strong>P</strong>redicted positive (TP+FP); <strong>R</strong>ecall's is what is <strong>R</strong>eally positive (TP+FN)." Sampling bias: 1936 poll predicted Landon, but Roosevelt won 62%. Multiclass: Softmax/RF/Naïve-Bayes handle it directly; SVM is binary → OvA / OvO.</ExRemember>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 3 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[2]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Linear Regression & the Normal Equation</div>
+            <ExF label="Prediction" src="\hat{y} = h_\theta(x) = \theta^\top x = \theta_0 + \theta_1 x_1 + \cdots + \theta_n x_n" color="#34d399" />
+            <ExF label="Cost — minimise MSE (RSS = m · MSE)" src="\mathrm{MSE}(X, h_\theta) = \frac{1}{m}\sum_{i=1}^{m}\left(\theta^\top x^{(i)} - y^{(i)}\right)^2" color="#34d399" />
+            <ExF label="Normal Equation (closed form)" src="\hat{\theta} = (X^\top X)^{-1} X^\top y" color="#34d399" note="Linear in #instances m, but cubic O(n³) in #features — inverting XᵀX is the bottleneck for wide data." />
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Gradient Descent</div>
+            <ExF label="Gradient vector of MSE" src="\nabla_\theta\,\mathrm{MSE}(\theta) = \frac{2}{m} X^\top (X\theta - y)" color="#fbbf24" />
+            <ExF label="Update step (η = learning rate)" src="\theta^{(t+1)} = \theta^{(t)} - \eta\,\nabla_\theta\,\mathrm{MSE}(\theta^{(t)})" color="#fbbf24" note="η too large → overshoot / diverge. Can stall in local minima or plateaus." />
+          </div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">GD Variants</div>
+          <ExVS items={[
+            { title: 'Batch GD', color: '#22d3ee', points: ['Whole training set each step', 'Accurate gradient, stable', 'Slow on large data'] },
+            { title: 'Stochastic GD', color: '#fb7185', points: ['One random instance per step', 'Fast, escapes local minima', 'Noisy — use a learning schedule'] },
+            { title: 'Mini-batch GD', color: '#34d399', points: ['Small random subsets', 'Balances speed & stability', 'Exploits GPU vectorisation'] },
+          ]} />
+        </div>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Polynomial Regression & Learning Curves</div>
+            <ul className="m4-bullets">
+              <li>Add powers of features (x², x³…) then fit a <em>linear</em> model on them.</li>
+              <li>High degree → <strong>overfit</strong> (fits noise); too simple → <strong>underfit</strong>.</li>
+              <li><strong>Learning curves</strong> = train & validation error vs training-set size → diagnose over/underfitting.</li>
+            </ul>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Logistic Regression</div>
+            <ExF label="Sigmoid output" src="\hat{p} = \sigma(\theta^\top x),\qquad \sigma(t) = \frac{1}{1 + e^{-t}}" color="#34d399" note="Predict 1 if p̂ ≥ 0.5 (θᵀx ≥ 0)." />
+            <ExF label="Log loss (cross-entropy)" src="J(\theta) = -\frac{1}{m}\sum_{i=1}^{m}\Big[y^{(i)}\log\hat{p}^{(i)} + (1-y^{(i)})\log(1-\hat{p}^{(i)})\Big]" color="#34d399" />
+            <ExRemember color="#34d399">Log loss is <strong>convex</strong> → GD reaches the global minimum (no closed form). Creates a <em>linear</em> decision boundary (Iris-Virginica example).</ExRemember>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 4 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[3]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Bias / Variance Trade-off</div>
+            <ExF label="Generalisation error decomposes into" src="\text{Error} = \text{Bias}^2 + \text{Variance} + \text{Irreducible}" color="#fbbf24" />
+            <ExVS items={[
+              { title: 'High Bias → Underfit', color: '#22d3ee', points: ['Wrong/too-strong assumptions', 'Too simple, inflexible', 'Fix: richer model, better features, less regularisation'] },
+              { title: 'High Variance → Overfit', color: '#fb7185', points: ['Too sensitive to training data', 'Too flexible / complex', 'Fix: more data, CV, fewer dims, more regularisation'] },
+            ]} />
+            <ExRemember color="#fbbf24" label="★ Memory hook">↑complexity ⇒ ↑variance, ↓bias. Irreducible error = data noise (cannot remove).</ExRemember>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Fine-Tuning: CV, Grid Search, Early Stopping</div>
+            <ul className="m4-bullets">
+              <li><strong>Hyperparameter</strong> = set before training, constant during it (k in k-NN, poly degree, α, threshold).</li>
+              <li><strong>k-fold CV</strong>: split train into k folds; train/validate k times; <code>GridSearchCV</code> / <code>RandomizedSearchCV</code> (large spaces).</li>
+              <li>Retrain best model on the full training set, then evaluate once on the test set.</li>
+              <li><strong>Early stopping</strong>: stop iterative GD when validation error bottoms out.</li>
+            </ul>
+          </div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Regularised Linear Models — constrain the weights</div>
+          <div className="m4-two-col" style={{ marginTop: 0 }}>
+            <div>
+              <ExF label="Ridge — ℓ₂ (squared) penalty" src="J(\theta) = \mathrm{MSE}(\theta) + \alpha\sum_{i=1}^{n}\theta_i^2" color="#22d3ee" />
+              <ExF label="Lasso — ℓ₁ (absolute) penalty" src="J(\theta) = \mathrm{MSE}(\theta) + \alpha\sum_{i=1}^{n}|\theta_i|" color="#fb7185" />
+              <ExF label="Elastic Net — mix (ratio r)" src="J(\theta) = \mathrm{MSE}(\theta) + r\alpha\sum_i|\theta_i| + \tfrac{1-r}{2}\alpha\sum_i\theta_i^2" color="#a78bfa" />
+            </div>
+            <div>
+              <ExRemember color="#fb7185" label="★ Lasso vs Ridge">"<strong>L</strong>asso = <strong>ℓ1</strong> = diamond corners → drives weights to <strong>exactly 0</strong> (feature selection). Ridge = ℓ2 = round → only <strong>shrinks</strong>, never zeroes." Add the penalty <em>during training only</em>.</ExRemember>
+              <div className="m4-flabel" style={{ marginTop: '0.5rem' }}>Softmax Regression (multiclass)</div>
+              <ExF label="Class probability" src="\hat{p}_k = \frac{\exp(s_k(x))}{\sum_{j=1}^{K}\exp(s_j(x))},\quad s_k(x)=(\theta^{(k)})^\top x" color="#34d399" note="Predict argmaxₖ p̂ₖ; trained with cross-entropy." />
+            </div>
+          </div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">k-Nearest Neighbours (instance-based)</div>
+          <div className="m4-two-col" style={{ marginTop: 0 }}>
+            <div>
+              <ExF label="Minkowski distance" src="D(x_i,x_j) = \left(\sum_{l=1}^{n} |x_i[l] - x_j[l]|^{p}\right)^{1/p}" color="#fbbf24" note="p = 1 Manhattan · p = 2 Euclidean." />
+              <ExF label="Distance-weighted vote" src="w_i = \frac{1}{d(x_q, x_i)^2}" color="#fbbf24" />
+            </div>
+            <div>
+              <ExRemember color="#fbbf24">No model is learned — lazy, memory-heavy, slow at prediction. <strong>Must normalise features</strong> (large scales dominate). Small k → overfit (noise); large k → underfit & favours majority class (bad for imbalanced data).</ExRemember>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.55 }}><strong>Advanced tasks:</strong> Multiclass (N&gt;2; OvA/OvO for binary models) · Multilabel (several binary labels) · Multioutput-multiclass (each label many values, e.g. image denoising).</div>
+            </div>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 5 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[4]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Large-Margin Classification</div>
+            <ul className="m4-bullets">
+              <li>Fit the <strong>widest "street"</strong> between classes; boundary decided only by <strong>support vectors</strong> (instances on the edge).</li>
+              <li>Adding points off the street doesn't move the boundary.</li>
+              <li><strong>Scale-sensitive</strong> → use <code>StandardScaler</code> (fit on train only!).</li>
+              <li>Best for complex but <strong>small–medium</strong> datasets; does classification & regression.</li>
+            </ul>
+            <ExVS items={[
+              { title: 'Hard Margin', color: '#fb7185', points: ['No violations allowed', 'Needs linearly separable data', 'Very sensitive to outliers'] },
+              { title: 'Soft Margin', color: '#34d399', points: ['Allows some violations (slack ζ)', 'Balances width vs violations', 'Controlled by C'] },
+            ]} />
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">The C Hyperparameter & Kernels</div>
+            <ExRemember color="#fb7185" label="★ The C rule">Small <strong>C</strong> → wider street, more violations (more regularised). Large <strong>C</strong> → narrow street, fewer violations (risk of overfit). Overfitting? <em>Reduce C.</em></ExRemember>
+            <ExF label="Gaussian RBF similarity / kernel" src="K(a,b) = \exp(-\gamma\lVert a - b\rVert^2)" color="#a78bfa" />
+            <ExF label="Polynomial kernel" src="K(a,b) = (\gamma\, a^\top b + r)^d" color="#a78bfa" />
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-1)', lineHeight: 1.55 }}><strong>Kernel trick:</strong> get the result of adding many polynomial/similarity features <em>without</em> ever computing them. Kernels: Linear, Polynomial, Gaussian RBF, Sigmoid.</div>
+          </div>
+        </div>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Under the Hood — Optimisation</div>
+            <ExF label="Decision function" src="\hat{y} = w^\top x + b \;\;(\ge 0 \Rightarrow 1,\; <0 \Rightarrow 0)" color="#fb7185" />
+            <ExF label="Hard-margin objective" src="\min\; \tfrac{1}{2} w^\top w \;\; \text{s.t. } t^{(i)}(w^\top x^{(i)} + b) \ge 1" color="#fb7185" note="Smaller ‖w‖ ⇒ wider street. t = ±1." />
+            <ExF label="Soft-margin objective" src="\min\; \tfrac{1}{2} w^\top w + C\sum_{i=1}^{m}\zeta^{(i)}" color="#fb7185" />
+            <ExF label="Hinge-loss form (SGDClassifier)" src="J(w,b) = \tfrac{1}{2}w^\top w + C\sum_{i=1}^{m}\max\!\big(0,\, 1 - t^{(i)}(w^\top x^{(i)} + b)\big)" color="#fb7185" />
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-2)', lineHeight: 1.5 }}>Convex QP. The <strong>dual problem</strong> enables the kernel trick (faster when #features &gt; #instances).</div>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Computational Complexity & SVR</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Class</th><th>Time</th><th>Kernel</th><th>Scale?</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">LinearSVC</td><td>O(m·n)</td><td>No</td><td>Yes</td></tr>
+                <tr><td className="pk">SVC</td><td>O(m²n)–O(m³n)</td><td>Yes</td><td>Yes</td></tr>
+                <tr><td className="pk">SGDClassifier</td><td>O(m·n)</td><td>No</td><td>Yes</td></tr>
+              </tbody>
+            </table>
+            <ExRemember color="#fbbf24">Large m → <strong>never</strong> use kernel SVC (cubic). Prefer LinearSVC / SGDClassifier. <strong>SVM Regression</strong> reverses the goal: fit as many points <em>inside</em> the ε-tube as possible.</ExRemember>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 6 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[5]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">CART — Classification & Regression Trees</div>
+            <ul className="m4-bullets">
+              <li><strong>Greedy + top-down:</strong> best <em>local</em> split each node (global optimum is NP-hard).</li>
+              <li><strong>Binary, axis-aligned</strong> splits (Xⱼ ≤ tⱼ); recursive rectangular regions.</li>
+              <li>"Guess Who" = ask the most <strong>informative</strong> question first.</li>
+              <li><strong>White-box</strong> (readable) vs black-box (RF, NN). No feature scaling needed.</li>
+            </ul>
+            <ExF label="Classification split cost (minimise)" src="J(k,t_k) = \frac{m_\text{left}}{m}G_\text{left} + \frac{m_\text{right}}{m}G_\text{right}" color="#60a5fa" />
+            <table className="m4-ptable" style={{ marginTop: '0.5rem' }}>
+              <tbody>
+                <tr><td className="pk">Prediction</td><td>O(log₂ m) — very fast</td></tr>
+                <tr><td className="pk">Training</td><td>O(n·m·log₂ m)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Impurity Measures</div>
+            <ExF label="Gini impurity (default, faster)" src="G_i = 1 - \sum_{k=1}^{n} p_{i,k}^2" color="#60a5fa" note="Pure = 0; 50/50 = 0.5. Isolates the most frequent class." />
+            <ExF label="Entropy (more balanced trees)" src="H_i = -\sum_{k,\,p_{i,k}\neq 0} p_{i,k}\log_2 p_{i,k}" color="#60a5fa" />
+            <ExRemember color="#60a5fa">Both = 0 at a pure node; in practice they give very similar trees. Leaf <code>value</code> array → normalise for class probabilities.</ExRemember>
+          </div>
+        </div>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Regularisation & Pruning</div>
+            <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55, marginBottom: '0.4rem' }}>DTs are <strong>nonparametric</strong> → prone to overfit. Regularise by ↑<code>min_*</code> or ↓<code>max_*</code>:</div>
+            <div style={{ marginBottom: '0.5rem' }}>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: '#60a5fa', background: '#60a5fa14', border: '1px solid #60a5fa3a', borderRadius: 4, padding: '0.18em 0.5em', margin: '0.12rem' }}>max_depth ↓</span>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: '#60a5fa', background: '#60a5fa14', border: '1px solid #60a5fa3a', borderRadius: 4, padding: '0.18em 0.5em', margin: '0.12rem' }}>min_samples_split ↑</span>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: '#60a5fa', background: '#60a5fa14', border: '1px solid #60a5fa3a', borderRadius: 4, padding: '0.18em 0.5em', margin: '0.12rem' }}>min_samples_leaf ↑</span>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: '#60a5fa', background: '#60a5fa14', border: '1px solid #60a5fa3a', borderRadius: 4, padding: '0.18em 0.5em', margin: '0.12rem' }}>max_leaf_nodes ↓</span>
+              <span style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: '#60a5fa', background: '#60a5fa14', border: '1px solid #60a5fa3a', borderRadius: 4, padding: '0.18em 0.5em', margin: '0.12rem' }}>max_features ↓</span>
+            </div>
+            <ExF label="Cost-complexity pruning (grow T₀, then minimise)" src="\sum_{l=1}^{|T|}\sum_{x_i \in R_l}(y_i - \hat{y}_{R_l})^2 + \alpha|T|" color="#60a5fa" note="α = 0 → full tree; α → ∞ → root only. Pick α by k-fold CV." />
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Regression Trees & Limitations</div>
+            <ExF label="Regression split cost (MSE)" src="J(k,t_k) = \frac{m_\text{left}}{m}\mathrm{MSE}_\text{left} + \frac{m_\text{right}}{m}\mathrm{MSE}_\text{right}" color="#60a5fa" note="Leaf predicts the mean response of its region (Hitters: Years/Hits → log salary)." />
+            <ExRemember color="#fb7185" label="★ 3 limitations → fixes">1) Overfitting → regularise/prune. 2) Only axis-aligned → sensitive to rotation → <strong>PCA</strong> first. 3) High variance → <strong>Random Forests</strong>. Use linear models when the true relationship is ~linear.</ExRemember>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 7 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[6]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Voting — Wisdom of the Crowd</div>
+            <ExVS items={[
+              { title: 'Hard Voting', color: '#22d3ee', points: ['Majority class wins', 'Weak learners → strong ensemble', 'Needs enough & diverse models'] },
+              { title: 'Soft Voting', color: '#34d399', points: ['Average predict_proba', 'Confident votes weigh more', 'Usually beats hard voting'] },
+            ]} />
+            <ExRemember color="#f472b6">Diversity is key — train different algorithms, or the same algorithm on different data/features.</ExRemember>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Bagging, Pasting & OOB</div>
+            <ul className="m4-bullets">
+              <li><strong>Bagging</strong> = bootstrap (sample <em>with</em> replacement); <strong>Pasting</strong> = without replacement.</li>
+              <li>Aggregate: mode (classification) / average (regression) → similar bias, <strong>lower variance</strong>.</li>
+              <li><strong>OOB</strong>: ~⅔ sampled per predictor, ~⅓ left out → free validation set (<code>oob_score_</code>).</li>
+              <li><strong>Random Patches</strong> (sample rows + cols) vs <strong>Random Subspaces</strong> (all rows, sample cols).</li>
+            </ul>
+          </div>
+        </div>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Random Forests & Extra-Trees</div>
+            <ul className="m4-bullets">
+              <li><strong>RF</strong> = bagged trees + at each split search a <strong>random subset of features</strong> (≈ √n) → extra diversity.</li>
+              <li><strong>Extra-Trees</strong>: also use <strong>random thresholds</strong> → more bias, less variance, faster.</li>
+              <li><strong>Feature importance</strong> = average (weighted) impurity decrease across all nodes splitting on that feature; normalised to sum 1.</li>
+            </ul>
+            <ExRemember color="#f472b6" label="★ vs plain Bagging">Bagging with <code>max_features</code> fixes the same features per <em>tree</em>; RF resamples features at <strong>every node split</strong>.</ExRemember>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Boosting — sequential, fixes predecessor</div>
+            <ExF label="AdaBoost — weighted error & predictor weight" src="r_j = \!\!\sum_{\hat{y}_j^{(i)}\neq y^{(i)}}\!\! w^{(i)},\qquad \alpha_j = \eta\,\log\frac{1 - r_j}{r_j}" color="#fb7185" note="Boost misclassified weights ×exp(αⱼ), renormalise. Decision stump = max_depth 1." />
+            <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55 }}><strong>Gradient Boosting (GBRT):</strong> fit each new tree to the <em>residuals</em>. Use small <code>learning_rate</code> (shrinkage) + many trees + early stopping (<code>n_iter_no_change</code>). Classification uses log loss.</div>
+            <ExRemember color="#fbbf24" label="★ Bagging vs Boosting">Bagging = <strong>parallel</strong>, reduces <strong>variance</strong>. Boosting = <strong>sequential</strong>, reduces <strong>bias</strong> (can't parallelise across machines).</ExRemember>
+          </div>
+        </div>
+        <div className="m4-card">
+          <div className="m4-card-h">Stacking & Method Summary</div>
+          <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55, marginBottom: '0.5rem' }}><strong>Stacking</strong>: train a <strong>blender</strong> on the base models' <em>out-of-fold</em> predictions (instead of hard voting), then retrain bases on the full set.</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="m4-ptable" style={{ minWidth: 600 }}>
+              <thead><tr><th>Method</th><th>Diversity source</th><th>Training</th><th>Effect</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Voting</td><td>Different algorithms</td><td>Parallel</td><td>Combine diverse models</td></tr>
+                <tr><td className="pk">Bagging / Pasting</td><td>Data subsets</td><td>Parallel</td><td>↓ variance</td></tr>
+                <tr><td className="pk">Random Forest</td><td>Bootstrap + √n features/split</td><td>Parallel</td><td>↓ variance, robust</td></tr>
+                <tr><td className="pk">Extra-Trees</td><td>RF + random thresholds</td><td>Parallel</td><td>Faster, more bias</td></tr>
+                <tr><td className="pk">AdaBoost</td><td>Reweight misclassified</td><td>Sequential</td><td>↓ bias</td></tr>
+                <tr><td className="pk">Gradient Boosting</td><td>Fit residuals (trees only)</td><td>Sequential</td><td>↓ bias, strong</td></tr>
+                <tr><td className="pk">Stacking</td><td>Learned blender</td><td>Base ∥ + blender</td><td>Learns best combo</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 8 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[7]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Curse of Dimensionality & Approaches</div>
+            <ul className="m4-bullets">
+              <li>Thousands of features → slow training, sparse data, hard to find good solutions.</li>
+              <li>DR always <strong>loses information</strong> but speeds training & enables 2D/3D visualisation.</li>
+              <li><strong>Feature selection</strong> (drop features, e.g. MNIST borders) is <em>supervised</em>; the DR here is <em>unsupervised</em>.</li>
+            </ul>
+            <ExVS items={[
+              { title: 'Projection', color: '#22d3ee', points: ['Data near a low-dim subspace', 'Project onto it (z₁,z₂)', 'Fails on twisted manifolds'] },
+              { title: 'Manifold Learning', color: '#a78bfa', points: ['Unroll a curved manifold', 'Swiss roll (d=2 in n=3)', 'Assumes simpler in low-dim'] },
+            ]} />
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">PCA — maximise preserved variance</div>
+            <ExF label="SVD of centred data" src="X = U\,\Sigma\,V^\top" color="#2dd4bf" note="Columns of V = principal axes (1st = max variance, each next ⟂ & next-largest). Sign not unique." />
+            <ExF label="Project to d dims (Wd = first d cols of V)" src="X_{d\text{-proj}} = X\,W_d" color="#2dd4bf" />
+            <ExF label="Reconstruct (→ reconstruction error)" src="X_\text{recovered} = X_{d\text{-proj}}\,W_d^\top" color="#2dd4bf" />
+            <ExRemember color="#2dd4bf">Must <strong>centre</strong> data first. np.linalg.svd returns Vᵀ.</ExRemember>
+          </div>
+        </div>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Choosing d, Compression & Variants</div>
+            <ExF label="Keep 95% of variance" src="d = \arg\max\big(\text{cumsum}(\text{EVR}) \ge 0.95\big) + 1" color="#2dd4bf" note="One-liner: PCA(n_components=0.95). Or look for the elbow in the cumulative-variance curve." />
+            <ul className="m4-bullets">
+              <li>MNIST: 95% variance → 784 → <strong>154</strong> dims.</li>
+              <li><strong>Randomized PCA</strong>: O(md²)+O(d³) ≪ O(mn²)+O(n³) when d ≪ n.</li>
+              <li><strong>Incremental PCA</strong>: mini-batches → online / out-of-memory.</li>
+              <li>Normalise features with different units; correlated features → fine to scale.</li>
+            </ul>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">Kernel PCA & Other Techniques</div>
+            <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55, marginBottom: '0.4rem' }}><strong>Kernel PCA</strong> = kernel trick + PCA → <em>nonlinear</em> projection (separates concentric circles; RBF/linear/sigmoid on Swiss roll).</div>
+            <table className="m4-ptable">
+              <tbody>
+                <tr><td className="pk">LLE</td><td>Manifold learning, no projection</td></tr>
+                <tr><td className="pk">MDS</td><td>Preserves pairwise distances</td></tr>
+                <tr><td className="pk">Isomap</td><td>k-NN graph; preserves geodesic distances</td></tr>
+                <tr><td className="pk">t-SNE</td><td>Keeps similar close / dissimilar far — visualisation (MNIST → 2D clusters)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ════════════════════ LECTURE 9 ════════════════════ */}
+      <ExLec lec={EXAM_LECTURES[8]} onOpen={onOpen} onCheat={setCheatCode}>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">k-Means Clustering</div>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-2)', lineHeight: 1.5, marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-1)' }}>Clustering uses:</strong> fraud / defective-product detection, recommender systems, image segmentation & retrieval, anomaly detection, semi-supervised learning. Clustering is unsupervised (no labels); centroid-based (k-means) vs density-based (DBSCAN).</div>
+            <ul className="m4-bullets">
+              <li>Loop: <strong>assign</strong> each point to nearest centroid → <strong>update</strong> centroids to cluster mean → repeat.</li>
+              <li><strong>Convergence guaranteed</strong>: inertia decreases monotonically, bounded below by 0.</li>
+              <li>Hard clustering = <code>labels_</code>; soft = <code>transform()</code> (distance to every centroid).</li>
+            </ul>
+            <ExF label="Inertia (minimise)" src="\text{inertia} = \sum_{i=1}^{m}\lVert x_i - c_{\text{closest}(i)}\rVert^2" color="#c084fc" note="kmeans.score = −inertia. Voronoi diagram shows the decision cells." />
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">3 Drawbacks → Remedies</div>
+            <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55 }}><strong>1. Init sensitivity</strong> → run <code>n_init</code> times, keep lowest inertia, or use <strong>k-means++</strong>:</div>
+            <ExF label="k-means++ pick-next probability" src="P(x_i) = \frac{D(x_i)^2}{\sum_j D(x_j)^2}" color="#c084fc" note="Favours points far from existing centroids." />
+            <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55 }}><strong>2. Choosing k</strong> → elbow (often misleading) or, better, the silhouette:</div>
+            <ExF label="Silhouette coefficient ∈ [−1, 1]" src="s_i = \frac{b - a}{\max(a, b)}" color="#c084fc" note="a = mean intra-cluster dist; b = mean dist to nearest other cluster. Higher = better." />
+            <div style={{ fontSize: '0.77rem', color: 'var(--text-1)', lineHeight: 1.55 }}><strong>3. Shape</strong> (varying size/density/non-spherical) → use a <strong>Gaussian Mixture Model</strong>.</div>
+          </div>
+        </div>
+        <div className="m4-two-col">
+          <div className="m4-card">
+            <div className="m4-card-h">Clustering for Semi-Supervised Learning</div>
+            <table className="m4-ptable">
+              <thead><tr><th>Approach (digits)</th><th>Test acc</th></tr></thead>
+              <tbody>
+                <tr><td>50 random labels</td><td>74.8%</td></tr>
+                <tr><td>50 cluster-representative labels</td><td>84.9%</td></tr>
+                <tr><td>Full label propagation</td><td>89.4%</td></tr>
+                <tr><td className="pk">Partial propagation (drop 1% outliers)</td><td>90.9%</td></tr>
+                <tr><td>Full ground-truth (1400 labels)</td><td>90.7%</td></tr>
+              </tbody>
+            </table>
+            <ExRemember color="#c084fc">Label cluster <strong>representatives</strong>, then <strong>propagate</strong> within clusters. Partial propagation even beats training on all true labels.</ExRemember>
+          </div>
+          <div className="m4-card">
+            <div className="m4-card-h">DBSCAN — density-based</div>
+            <ul className="m4-bullets">
+              <li>Two params: <strong>ε</strong> (radius) & <strong>min_samples</strong>.</li>
+              <li><strong>Core</strong> (≥ min_samples in ε) · <strong>Border</strong> (in a core's ε) · <strong>Noise/anomaly</strong> (label −1).</li>
+              <li>Chains of cores → one cluster of <strong>any shape</strong>; bigger ε → fewer anomalies (84→0).</li>
+              <li><strong>No predict()</strong> → train k-NN on <code>components_</code>; threshold distance for anomalies.</li>
+            </ul>
+            <ExRemember color="#fb7185" label="★ Pros / Cons">+ Any shape, auto #clusters, built-in anomalies, only 2 params. − Struggles with varying density; O(m²n) → doesn't scale to huge data.</ExRemember>
+          </div>
+        </div>
+      </ExLec>
+
+      {/* ── EXAM-DAY RAPID RECALL ─────────────────────────────────────────── */}
+      <section id="ex-recall" style={{ scrollMarginTop: '120px', marginBottom: '1rem' }}>
+        <div className="m4-card" style={{ borderColor: 'rgba(251,191,36,0.35)' }}>
+          <div className="m4-card-h" style={{ color: 'var(--amber)' }}>⚡ Exam-Day Rapid Recall — the confusions that lose marks</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="m4-ptable" style={{ minWidth: 640 }}>
+              <thead><tr><th>Pair</th><th>One-line discriminator</th></tr></thead>
+              <tbody>
+                <tr><td className="pk">Precision vs Recall</td><td>Precision = TP/(TP+FP) "of predicted +"; Recall = TP/(TP+FN) "of actual +"</td></tr>
+                <tr><td className="pk">Bias vs Variance</td><td>High bias = underfit (too simple); high variance = overfit (too sensitive)</td></tr>
+                <tr><td className="pk">Lasso vs Ridge</td><td>ℓ1 zeroes coefficients (selection); ℓ2 only shrinks</td></tr>
+                <tr><td className="pk">Small vs Large C</td><td>Small C = wide street/more violations; large C = narrow/overfit</td></tr>
+                <tr><td className="pk">Bagging vs Boosting</td><td>Bagging ∥ ↓variance; Boosting sequential ↓bias</td></tr>
+                <tr><td className="pk">Gini vs Entropy</td><td>Both 0 when pure; Gini faster, near-identical trees</td></tr>
+                <tr><td className="pk">Manhattan vs Euclidean</td><td>Minkowski p=1 vs p=2</td></tr>
+                <tr><td className="pk">Elbow vs Silhouette</td><td>Inertia falls forever (elbow); silhouette ∈[−1,1] is maximised</td></tr>
+                <tr><td className="pk">k-means vs DBSCAN</td><td>Centroid/spherical/need k vs density/any-shape/auto-k + noise</td></tr>
+                <tr><td className="pk">Instance vs Model-based</td><td>k-NN memorises; others build a model</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ExRemember color="#34d399" label="✓ Formulas to know cold">
+            sgn(wᵀx) · MSE/MAE · precision/recall/F₁ · θ̂ = (XᵀX)⁻¹Xᵀy · GD step θ − η∇MSE · σ(t)=1/(1+e⁻ᵗ) + log loss · Ridge αΣθ² / Lasso αΣ|θ| · softmax · Minkowski · ½wᵀw + CΣζ (hinge) · Gini 1−Σp² / Entropy −Σp·log₂p · AdaBoost α=η·log((1−r)/r) · PCA X=UΣVᵀ · inertia · silhouette (b−a)/max(a,b).
+          </ExRemember>
+        </div>
+      </section>
+
+      {cheatCode && <CheatsheetModal code={cheatCode} onClose={() => setCheatCode(null)} />}
+    </div>
+  );
+}
+
 export default function CITS5508() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('Overview');
@@ -4811,6 +6669,30 @@ export default function CITS5508() {
                 From Mitchell's formal definition of learning through regression, regularisation, kNN, SVMs, decision trees, ensemble methods, dimensionality reduction, and clustering — covering all core concepts with interactive visualisations.
                 This module covers Lectures 1–9.
               </p>
+            </div>
+            <div
+              onClick={() => setTab('Exam Summary')}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', margin: '0 0 1.5rem', padding: '1.1rem 1.3rem', borderRadius: 10, background: 'linear-gradient(135deg, rgba(52,211,153,0.16) 0%, rgba(34,211,238,0.07) 55%, rgba(167,139,250,0.06) 100%)', border: '1px solid rgba(52,211,153,0.4)' }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--emerald)', flexShrink: 0 }}>★</span>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--emerald)', marginBottom: '0.25rem' }}>// Revise in one pass</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-0)' }}>Exam Summary — every topic, formula &amp; algorithm</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-2)', marginTop: '0.2rem' }}>A colour-coded, memorisation-first cheat-sheet across all nine lectures.</div>
+              </div>
+              <span className="m4-btn m4-btn-g" style={{ flexShrink: 0 }}>Open Exam Summary →</span>
+            </div>
+            <div
+              onClick={() => setTab('Code Lab')}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', margin: '0 0 1.5rem', padding: '1.1rem 1.3rem', borderRadius: 10, background: 'linear-gradient(135deg, rgba(167,139,250,0.16) 0%, rgba(34,211,238,0.07) 55%, rgba(244,114,182,0.06) 100%)', border: '1px solid rgba(167,139,250,0.4)' }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--violet)', flexShrink: 0 }}>{'</>'}</span>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: '0.25rem' }}>// Learn the implementation</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-0)' }}>Code Lab — every key snippet, five ways to practise</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-2)', marginTop: '0.2rem' }}>Annotated walkthroughs, fill-in-the-blank, reorder, recall &amp; predict-the-output — in a real editor.</div>
+              </div>
+              <span className="m4-btn" style={{ flexShrink: 0, borderColor: 'var(--violet)', color: 'var(--violet)' }}>Open Code Lab →</span>
             </div>
             <div className="m4-topic-grid">
               {[
@@ -4879,6 +6761,12 @@ export default function CITS5508() {
             </div>
           </div>
         )}
+
+        {/* ── EXAM SUMMARY ── */}
+        {tab === 'Exam Summary' && <ExamSummary onOpen={setTab} />}
+
+        {/* ── CODE LAB ── */}
+        {tab === 'Code Lab' && <CodeLab onOpen={setTab} />}
 
         {/* ── INTRO TO ML (L1) ── */}
         {tab === 'Intro to ML' && (
