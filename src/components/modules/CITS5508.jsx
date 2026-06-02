@@ -3801,7 +3801,7 @@ function EnsembleMatcher() {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Overview', 'Exam Summary', 'Code Lab', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Dimensionality Reduction', 'Clustering', 'Assignment 1', 'Quiz'];
+const MAIN_TABS = ['Overview', 'Exam Summary', 'Sample Exam', 'Code Lab', 'Intro to ML', 'ML Projects', 'Regression', 'Reg. & kNN', 'SVMs', 'Decision Trees', 'Ensembles', 'Dimensionality Reduction', 'Clustering', 'Assignment 1', 'Quiz'];
 const L6_TABS = ['Overview & CART', 'Impurity Measures', 'Regularisation', 'Regression Trees', 'Limitations'];
 const L7_TABS = ['Ensemble Basics', 'Bagging & OOB', 'Random Forests', 'Boosting', 'Stacking & Summary'];
 const L1_TABS = ['Mitchell\'s Definition', 'ML System Types', 'Challenges & Testing'];
@@ -5261,11 +5261,12 @@ const CHEATSHEETS = {
   },
 };
 
-// Accessible modal: overlay + click-outside + Esc + close button + focus trap + scroll-lock.
-function CheatsheetModal({ code, onClose }) {
-  const sheet = CHEATSHEETS[code];
-  const lec = EXAM_LECTURES.find(l => l.code === code);
-  const ink = CHEAT_INK[code] || '#20303f';
+// Accessible "handwritten on white paper" modal shell — overlay + click-outside
+// + Esc + close button + focus trap + scroll-lock. Shared by the Exam Summary
+// cheatsheets AND the Sample Exam worked-solution modals so the paper aesthetic
+// and behaviour stay identical (onClose held in a ref so internal state changes
+// in callers never re-trigger the focus/scroll-lock effect).
+function HandPaperModal({ title, sub, ink = '#20303f', ariaLabel, footer, onClose, children }) {
   const closeRef = useRef(null);
   const paperRef = useRef(null);
 
@@ -5290,9 +5291,7 @@ function CheatsheetModal({ code, onClose }) {
       document.body.style.overflow = prevOverflow;
       if (prevActive && prevActive.focus) prevActive.focus();
     };
-  }, [onClose, code]);
-
-  if (!sheet) return null;
+  }, [onClose]);
 
   return createPortal(
     <div className="cheat-overlay" onClick={onClose}>
@@ -5301,17 +5300,909 @@ function CheatsheetModal({ code, onClose }) {
         ref={paperRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`${sheet.title} — handwritten cheatsheet`}
+        aria-label={ariaLabel || title}
         onClick={e => e.stopPropagation()}
       >
-        <button ref={closeRef} className="cheat-close" onClick={onClose} aria-label="Close cheatsheet">✕</button>
-        <div className="cheat-title" style={{ color: ink }}>{sheet.title}</div>
-        <div className="cheat-sub">{code} · {lec ? lec.focus : 'handwritten revision notes'}</div>
-        <div className="cheat-cols">{sheet.render(ink)}</div>
-        <div style={{ marginTop: '0.6rem', fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: '#94a3b8', textAlign: 'right' }}>↳ Esc or click outside to close</div>
+        <button ref={closeRef} className="cheat-close" onClick={onClose} aria-label="Close">✕</button>
+        <div className="cheat-title" style={{ color: ink }}>{title}</div>
+        {sub && <div className="cheat-sub">{sub}</div>}
+        {children}
+        <div style={{ marginTop: '0.6rem', fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: '#94a3b8', textAlign: 'right' }}>{footer || '↳ Esc or click outside to close'}</div>
       </div>
     </div>,
     document.body
+  );
+}
+
+function CheatsheetModal({ code, onClose }) {
+  const sheet = CHEATSHEETS[code];
+  const lec = EXAM_LECTURES.find(l => l.code === code);
+  const ink = CHEAT_INK[code] || '#20303f';
+  if (!sheet) return null;
+  return (
+    <HandPaperModal
+      title={sheet.title}
+      sub={`${code} · ${lec ? lec.focus : 'handwritten revision notes'}`}
+      ink={ink}
+      ariaLabel={`${sheet.title} — handwritten cheatsheet`}
+      onClose={onClose}
+    >
+      <div className="cheat-cols">{sheet.render(ink)}</div>
+    </HandPaperModal>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SAMPLE EXAM — attempt-first practice questions with handwritten worked solutions.
+// Reuses the white-paper HandPaperModal + the handwritten building blocks (HSec /
+// HF / HUL / HBox / HNote / Pen / Hi). The five "Question N" items reproduce the
+// CITS5508 sample-exam paper (their wording is reconstructed faithfully from the
+// official worked-solutions file, which is the only surviving copy); the four
+// mid-semester items are verbatim; the topic-practice items are new questions
+// drawn strictly from the lecture notes so the whole unit (L1–L9) is covered.
+// ════════════════════════════════════════════════════════════════════════════
+
+const LEC_BY_CODE = Object.fromEntries(EXAM_LECTURES.map(l => [l.code, l]));
+const SRC_META = {
+  exam:     { label: 'Sample Exam',        color: '#fbbf24' },
+  midsem:   { label: 'Mid-Semester Test',  color: '#34d399' },
+  practice: { label: 'Topic Practice',     color: '#22d3ee' },
+};
+
+// Light code block sized for the white "paper" modal (the dark .m4-pseudocode is
+// for the dark theme; this keeps code legible on the cream background).
+function HCode({ children }) {
+  return (
+    <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', lineHeight: 1.55, background: 'rgba(56,110,168,0.09)', border: '1px solid rgba(56,110,168,0.28)', borderRadius: 6, padding: '0.55rem 0.7rem', overflowX: 'auto', whiteSpace: 'pre', color: '#20303f', margin: '0.35rem 0' }}>{children}</pre>
+  );
+}
+
+// One labelled part — "(a) …" — of a multi-part question prompt (dark theme card).
+function QP({ l, children }) {
+  return (
+    <div className="exq-qp"><span className="exq-qp-l">{l}</span><span className="exq-qp-b">{children}</span></div>
+  );
+}
+
+const SAMPLE_EXAM = [
+  // ───────────────────────── SAMPLE EXAM PAPER (Q1–Q5) ─────────────────────────
+  {
+    id: 'se-q1', src: 'exam', num: 'Question 1', primary: 'L3',
+    tags: [{ c: 'L3', t: 'Logistic Regression' }, { c: 'L4', t: 'Regularisation' }, { c: 'L3', t: 'Polynomial Features' }],
+    short: '(a) Hours to study for a 50% pass probability under a logistic model. (b) Fixing an under-fitting Ridge model. (c) Degree-3 polynomial features of two inputs.',
+    prompt: (
+      <>
+        <p className="exq-intro">A logistic-regression model estimates the probability that a student passes an exam, <Tex src="\hat{p} = \sigma(\theta_0 + \theta_1 x_1 + \theta_2 x_2)" />, where <Tex src="\sigma(t) = \tfrac{1}{1+e^{-t}}" />, <Tex src="\theta_0 = -6" />, <Tex src="\theta_1 = 0.05" />, <Tex src="\theta_2 = 0.5" />. Here <Tex src="x_1" /> = hours studied and <Tex src="x_2" /> = prior assignment score (out of 10).</p>
+        <QP l="(a)">A student has a prior score <Tex src="x_2 = 7" />. How many hours <Tex src="x_1" /> must they study for the model to predict a 50% chance of passing?</QP>
+        <QP l="(b)">A separate <Tex src="\ell_2" />-regularised (Ridge) regression model is found to under-fit the training data. Does it have high bias or high variance, and what would you do to the regularisation strength <Tex src="\alpha" />, and why?</QP>
+        <QP l="(c)">Polynomial regression expands the feature set. Write out all polynomial features, up to and including degree 3, generated from two input features <Tex src="x_1" /> and <Tex src="x_2" />.</QP>
+      </>
+    ),
+    steps: [
+      { t: 'Step 1 — when is p̂ = 0.5?', body: <HNote>The sigmoid equals exactly <Tex src="\tfrac12" /> when its input is 0, since <Tex src="\sigma(0)=\tfrac12" />. So <Tex src="\hat{p}=0.5 \iff \theta^\top x = 0" />.</HNote> },
+      { t: '(a) Step 2 — substitute the knowns', body: <HF ink="#047857" label="set θᵀx = 0 with x₂ = 7" src="-6 + 0.05\,x_1 + 0.5(7) = 0 \;\Rightarrow\; 0.05\,x_1 + 3.5 - 6 = 0" /> },
+      { t: '(a) Step 3 — solve for x₁', body: <HF ink="#047857" label="isolate x₁" src="0.05\,x_1 = 2.5 \;\Rightarrow\; x_1 = \dfrac{2.5}{0.05} = 50" /> },
+      { t: '(b) Diagnose, then fix α', body: <HUL ink="#b45309" items={[<>Under-fitting ⇒ <Pen c="#b45309">high bias</Pen>.</>, <><Tex src="\alpha" /> controls the <Tex src="\ell_2" /> penalty; a large <Tex src="\alpha" /> over-constrains the weights (too simple).</>, <><Hi>Reduce <Tex src="\alpha" /></Hi> → weaker constraint on large weights → a more complex model → lower bias (at the cost of higher variance).</>]} /> },
+      { t: '(c) Degree-3 features of x₁, x₂', body: <HUL ink="#047857" marker="•" items={[<>degree 1: <Tex src="x_1,\; x_2" /></>, <>degree 2: <Tex src="x_1^2,\; x_2^2,\; x_1 x_2" /></>, <>degree 3: <Tex src="x_1^3,\; x_2^3,\; x_1^2 x_2,\; x_1 x_2^2" /></>]} /> },
+    ],
+    answer: <><Pen c="#047857">(a)</Pen> 50 hours.&nbsp; <Pen c="#047857">(b)</Pen> High bias → decrease <Tex src="\alpha" /> to relax the constraint and allow a more complex model.&nbsp; <Pen c="#047857">(c)</Pen> <Tex src="x_1, x_2, x_1^2, x_2^2, x_1x_2, x_1^3, x_2^3, x_1^2x_2, x_1x_2^2" />.</>,
+  },
+  {
+    id: 'se-q2', src: 'exam', num: 'Question 2', primary: 'L4',
+    tags: [{ c: 'L4', t: 'k-Nearest Neighbours' }],
+    short: 'k-NN spam filter: build the feature vector for a new email, then classify it with k = 1 and k = 3 using Euclidean distance.',
+    prompt: (
+      <>
+        <p className="exq-intro">A spam filter uses <strong>k-NN</strong> with raw word-count features over the vocabulary <Tex src="[\text{Money, Free, For, Gambling, Fun, Machine, Learning}]" /> and Euclidean distance. The training set is:</p>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="m4-ptable" style={{ minWidth: 540 }}>
+            <thead><tr><th>i</th><th>Money</th><th>Free</th><th>For</th><th>Gambling</th><th>Fun</th><th>Machine</th><th>Learning</th><th>Spam</th></tr></thead>
+            <tbody>
+              <tr><td className="pk">1</td><td>3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>True</td></tr>
+              <tr><td className="pk">2</td><td>1</td><td>2</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>True</td></tr>
+              <tr><td className="pk">3</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>True</td></tr>
+              <tr><td className="pk">4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>3</td><td>1</td><td>1</td><td>False</td></tr>
+              <tr><td className="pk">5</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>False</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <QP l="(a)">A new email reads <em>"Free Machine Learning — for you!"</em>. Write its feature vector. Can you assign it a label yet?</QP>
+        <QP l="(b)">Using <Tex src="k = 1" />, classify the new email. Show the distance to its nearest neighbour.</QP>
+        <QP l="(c)">Using <Tex src="k = 3" />, classify the new email, computing the Euclidean distance to every training instance.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Vectorise the email', body: <><HF ink="#b45309" label="word counts over the vocabulary" src="q = (\underbrace{0}_{\text{Money}}, \underbrace{1}_{\text{Free}}, \underbrace{1}_{\text{For}}, \underbrace{0}_{\text{Gamb}}, \underbrace{0}_{\text{Fun}}, \underbrace{1}_{\text{Mach}}, \underbrace{1}_{\text{Learn}})" /><HNote>Its label is unknown — that is exactly what k-NN must predict. k-NN does <Hi>no training</Hi>; it just stores the data and compares at prediction time.</HNote></> },
+      { t: '(b) k = 1 — nearest neighbour', body: <><HNote>By eye the closest row is instance 5. Check it:</HNote><HF ink="#b45309" label="d(q, x₅)" src="\sqrt{0^2+0^2+1^2+0^2+0^2+0^2+0^2} = \sqrt{1} = 1" /><HNote>Instance 5 is labelled <Pen c="#be123c">False</Pen> → predict <strong>Not Spam</strong>.</HNote></> },
+      { t: '(c) k = 3 — all five distances', body: <><HF ink="#b45309" label="i = 1" src="\sqrt{3^2+1^2+1^2+0+0+1^2+1^2} = \sqrt{13}" /><HF ink="#b45309" label="i = 2" src="\sqrt{1^2+1^2+0+1^2+1^2+1^2+1^2} = \sqrt{6}" /><HF ink="#b45309" label="i = 3" src="\sqrt{0+1^2+0+1^2+1^2+1^2+1^2} = \sqrt{5}" /><HF ink="#b45309" label="i = 4" src="\sqrt{0+1^2+1^2+0+3^2+0+0} = \sqrt{11}" /><HF ink="#b45309" label="i = 5" src="\sqrt{0+0+1^2+0+0+0+0} = \sqrt{1}" /></> },
+      { t: '(c) Majority vote of the 3 nearest', body: <HNote>The three smallest are <Tex src="i=5\,(\sqrt1)" />, <Tex src="i=3\,(\sqrt5)" />, <Tex src="i=2\,(\sqrt6)" /> → labels <Pen c="#be123c">False</Pen>, <Pen c="#047857">True</Pen>, <Pen c="#047857">True</Pen>. Majority = <Hi>True</Hi> → predict <strong>Spam</strong>.</HNote> },
+    ],
+    answer: <><Pen c="#b45309">(a)</Pen> <Tex src="(0,1,1,0,0,1,1)" />, label unknown.&nbsp; <Pen c="#b45309">(b)</Pen> k = 1 → instance 5 (d = 1) → Not Spam.&nbsp; <Pen c="#b45309">(c)</Pen> k = 3 → {'{'}5, 3, 2{'}'} = {'{'}F, T, T{'}'} → Spam.</>,
+  },
+  {
+    id: 'se-q3', src: 'exam', num: 'Question 3', primary: 'L4',
+    tags: [{ c: 'L1', t: 'Feature / Parameter Space' }, { c: 'L4', t: 'Hyperparameters' }, { c: 'L4', t: 'Multiclass vs Multilabel' }],
+    short: '(a) Define feature space, parameter space and hyperparameters (+ one hyperparameter each for DT / k-NN / Lasso). (b) Multiclass vs multilabel classification with examples.',
+    prompt: (
+      <>
+        <QP l="(a)">Define the <strong>feature space</strong> and the <strong>parameter space</strong> of a model, and explain what a <strong>hyperparameter</strong> is. Give one example hyperparameter for each of: Decision Trees, k-NN, and Lasso Regression.</QP>
+        <QP l="(b)">Explain the difference between <strong>multiclass</strong> and <strong>multilabel</strong> classification. Give one example of each, specifying the features and the response variable.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) The three definitions', body: <HUL ink="#b45309" items={[<><Pen c="#b45309">Feature space</Pen> — the set of all possible input (feature) values.</>, <><Pen c="#b45309">Parameter space</Pen> — the set of all possible values the model's learned parameters can take.</>, <><Pen c="#b45309">Hyperparameters</Pen> — external configurations set <em>before</em> training that govern the learning process (not learned from the data).</>]} /> },
+      { t: '(a) One hyperparameter each', body: <HUL ink="#b45309" marker="•" items={[<>Decision Tree → maximum tree depth (<code>max_depth</code>)</>, <>k-NN → number of neighbours <Tex src="k" /></>, <>Lasso → regularisation strength <Tex src="\alpha" /></>]} /> },
+      { t: '(b) Multiclass (N > 2, one label each)', body: <HNote>Discriminate among more than two <em>mutually exclusive</em> classes. <Pen c="#0e7490">Example:</Pen> handwritten-digit recognition. Features: greyscale image <Tex src="X \in \{0,\dots,255\}^{n\times m}" />; response <Tex src="y \in \{0,\dots,9\}" />.</HNote> },
+      { t: '(b) Multilabel (several binary labels each)', body: <HNote>Output several binary labels per instance. <Pen c="#6d28d9">Example:</Pen> detecting which of several specific faces appear in a photo. Features: image <Tex src="X \in \{0,\dots,255\}^{n\times m\times 3}" />; response <Tex src="y \in \{0,1\}^c" /> (one bit per face).</HNote> },
+    ],
+    answer: <>Feature space = all inputs; parameter space = all parameter values; hyperparameters = pre-set training configs (DT depth, k-NN <Tex src="k" />, Lasso <Tex src="\alpha" />). Multiclass = one of <Tex src="N>2" /> exclusive classes (digits); multilabel = several binary labels at once (faces in a photo).</>,
+  },
+  {
+    id: 'se-q4', src: 'exam', num: 'Question 4', primary: 'L7',
+    tags: [{ c: 'L7', t: 'Random Forests' }, { c: 'L8', t: 'Manifold Learning' }, { c: 'L5', t: 'Kernel Trick' }, { c: 'L7', t: 'Bagging & Pasting' }, { c: 'L1', t: 'Supervised vs Unsupervised' }],
+    short: 'Short answers: (a) random forests & Extra-Trees; (b) manifolds & manifold learning; (c) the kernel trick; (d) bagging & pasting; (e) supervised vs unsupervised.',
+    prompt: (
+      <>
+        <QP l="(a)">Explain what a random forest classifier is and the extra randomness it introduces relative to a single decision tree. What are Extra-Trees?</QP>
+        <QP l="(b)">What is a <Tex src="d" />-dimensional manifold? Explain manifold learning, using the Swiss roll (<Tex src="n=3" />) as an example.</QP>
+        <QP l="(c)">Explain the kernel trick in SVMs, using a 2nd-order polynomial kernel as the example.</QP>
+        <QP l="(d)">Explain bagging and pasting. Give two reasons these ensemble methods are popular.</QP>
+        <QP l="(e)">Explain the difference between supervised and unsupervised learning, with one example task each.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Random forests & Extra-Trees', body: <HUL ink="#be185d" items={[<>An RF is an <strong>ensemble of decision trees</strong> (each a binary tree for multiclass classification).</>, <>Extra randomness: instead of the best split feature among <em>all</em> features, it searches for the best among a <Hi>random subset of features</Hi> at each node.</>, <><strong>Extra-Trees</strong> ("Extremely Randomized Trees") = an RF where even the split <strong>threshold</strong> for each feature is chosen at random.</>]} /> },
+      { t: '(b) Manifolds & manifold learning', body: <HUL ink="#0f766e" items={[<>A <Tex src="d" />-dim manifold (<Tex src="d<n" />) is a part of <Tex src="n" />-dim space that <em>locally</em> looks like a <Tex src="d" />-dim hyperplane (Swiss roll: <Tex src="d=2,\,n=3" />).</>, <>Manifold learning = non-linear DR algorithms that model the manifold the data lie on.</>, <>For the Swiss roll the algorithm learns to <Hi>unroll</Hi> the 2-D sheet out of 3-D.</>]} /> },
+      { t: '(c) The kernel trick', body: <><HNote>SVM is a linear binary classifier; a kernel augments the data to a higher-dim space so a linear boundary there is non-linear in the original space. But the <strong>dual</strong> SVM only needs dot products <Tex src="x_i \cdot x_j" />.</HNote><HF ink="#be123c" label="2nd-order polynomial kernel" src="(x_i \cdot x_j)^2 \;\;\text{instead of}\;\; \phi(x_i)\cdot\phi(x_j)" /><HNote>Same result, but we <Hi>never actually augment</Hi> the data — that is the kernel trick.</HNote></> },
+      { t: '(d) Bagging & pasting', body: <HUL ink="#be185d" items={[<>Both train the <em>same</em> algorithm (usually a decision tree) on random subsets — <Pen c="#be185d">bagging</Pen> samples <strong>with</strong> replacement, <Pen c="#be185d">pasting</Pen> <strong>without</strong>.</>, <>Popular because predictors can be (1) <Hi>trained in parallel</Hi> and (2) <Hi>tested in parallel</Hi> (different CPUs / GPUs / servers).</>]} /> },
+      { t: '(e) Supervised vs unsupervised', body: <HUL ink="#0e7490" marker="•" items={[<><Pen c="#0e7490">Supervised</Pen>: data include the desired outputs (labels) — e.g. training a spam filter to classify emails as spam / not-spam.</>, <><Pen c="#6d28d9">Unsupervised</Pen>: unlabelled data; learn patterns / clusters — e.g. k-means clustering to reveal clusters in the data.</>]} /> },
+    ],
+  },
+  {
+    id: 'se-q5', src: 'exam', num: 'Question 5', primary: 'L5',
+    tags: [{ c: 'L5', t: 'SVM / Large Margin' }, { c: 'L4', t: 'GridSearchCV' }, { c: 'L2', t: 'One-vs-One' }],
+    short: '(a) How an SVM classifies (margin, support vectors, boundary). (b) GridSearchCV code to tune Ridge α and report test MSE. (c) The One-vs-One strategy.',
+    prompt: (
+      <>
+        <QP l="(a)">Explain how a Support Vector Machine performs classification. Define the <strong>margin</strong>, the <strong>support vectors</strong>, and what determines the decision boundary.</QP>
+        <QP l="(b)">Write scikit-learn code that uses <code>GridSearchCV</code> with 3-fold cross-validation to select the best <Tex src="\alpha" /> for Ridge regression from <Tex src="\{0.001, 0.01, 0.1, 1, 10\}" />, refits on the full training set, then reports the Mean Squared Error on the test set. (Assume <code>X_train_scaled, y_train, X_test, y_test</code> and the needed imports exist.)</QP>
+        <QP l="(c)">Explain the One-versus-One (OvO) strategy for multiclass classification. How many binary classifiers are needed for <Tex src="n" /> classes, and how is a prediction made?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) How an SVM classifies', body: <HUL ink="#be123c" items={[<>It fits the <Hi>widest possible "street"</Hi> (hyperplane) between the classes — large-margin classification.</>, <>The <strong>margin</strong> is the distance from the hyperplane to the closest data point.</>, <>The <strong>support vectors</strong> are the instances lying exactly on the edge of the margin — only they define the boundary; other points are irrelevant.</>, <>The boundary is <Tex src="\hat{y} = w^\top x + b" />, with <Tex src="w, b" /> learned in training.</>]} /> },
+      { t: '(b) GridSearchCV for Ridge', body: <><HCode>{`alphas = [0.001, 0.01, 0.1, 1, 10]
+param_grid = {'alpha': alphas}
+grid_search = GridSearchCV(Ridge(), param_grid, cv=3, refit=True)
+grid_search.fit(X_train_scaled, y_train)
+
+best_alpha = grid_search.best_params_['alpha']
+print('Best alpha:', best_alpha)
+
+y_pred = grid_search.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+print('Mean Squared Error:', mse)`}</HCode><HNote><code>cv=3</code> → 3-fold CV; <code>refit=True</code> retrains the best model on the <Hi>full</Hi> training set automatically.</HNote></> },
+      { t: '(c) One-versus-One (OvO)', body: <HUL ink="#6d28d9" items={[<>A way to use <strong>binary</strong> classifiers for multiclass: train one classifier for every <em>pair</em> of classes.</>, <>For <Tex src="n" /> classes that is <Tex src="\tfrac{n(n-1)}{2}" /> classifiers.</>, <>To predict, run the instance through all of them and pick the class that <Hi>wins the most duels</Hi>.</>]} /> },
+    ],
+  },
+  // ───────────────────────── MID-SEMESTER TEST (verbatim) ──────────────────────
+  {
+    id: 'ms-q1', src: 'midsem', num: 'Question 1', marks: '3 marks', primary: 'L1',
+    tags: [{ c: 'L1', t: 'Supervised vs Unsupervised' }],
+    short: 'Difference between supervised and unsupervised learning, with two example tasks of each.',
+    prompt: <p className="exq-intro">Explain the difference between supervised learning and unsupervised learning. Give two examples each of supervised and unsupervised learning tasks.</p>,
+    steps: [
+      { t: 'Definitions [1]', body: <HNote>Supervised learning deals with <Hi>labelled</Hi> data; unsupervised learning uses <Hi>unlabelled</Hi> data and discovers patterns from the features alone.</HNote> },
+      { t: 'Two supervised examples [1]', body: <HNote>classification, regression.</HNote> },
+      { t: 'Two unsupervised examples [1]', body: <HNote>clustering, anomaly detection.</HNote> },
+    ],
+  },
+  {
+    id: 'ms-q2', src: 'midsem', num: 'Question 2', marks: '3 marks', primary: 'L4',
+    tags: [{ c: 'L3', t: 'Logistic Regression' }, { c: 'L4', t: 'Softmax' }],
+    short: 'For a linear model h(x) = f(wᵀx): the right output function f when N = 2 vs N > 2, and how they enable classification.',
+    prompt: (
+      <>
+        <p className="exq-intro">For an <Tex src="N" />-class problem you use a linear model <Tex src="h(x) = f(w^\top x)" /> for some output function <Tex src="f" />.</p>
+        <p className="exq-intro">What is a suitable <Tex src="f" /> when <Tex src="N = 2" />? When <Tex src="N > 2" />? Explain how these help you use the model for classification.</p>
+      </>
+    ),
+    steps: [
+      { t: 'N = 2 → sigmoid [1]', body: <HF ink="#b45309" label="binary classification" src="f(t) = \dfrac{1}{1 + \exp(-t)}" /> },
+      { t: 'N > 2 → softmax [1]', body: <HF ink="#b45309" label="multiclass classification" src="f(t)_i = \dfrac{\exp(f_i)}{\sum_{j=1}^{K} \exp(f_j)}" /> },
+      { t: 'Why this works [1]', body: <HNote>Both provide <Hi>estimates of the probability</Hi> that an instance belongs to a particular class — then predict the class with the highest probability.</HNote> },
+    ],
+  },
+  {
+    id: 'ms-q3', src: 'midsem', num: 'Question 3', marks: '3 marks', primary: 'L4',
+    tags: [{ c: 'L4', t: 'Feature Scaling' }, { c: 'L3', t: 'Gradient Descent' }],
+    short: 'What feature scaling is, an example method, and what can go wrong without it.',
+    prompt: <p className="exq-intro">Explain what feature scaling is, and give an example of how you would scale features for a machine-learning model. What could go wrong if feature scaling is not carried out?</p>,
+    steps: [
+      { t: 'Why scale [1]', body: <HNote>Many ML algorithms perform poorly when numeric features have <Hi>very different scales</Hi>; scaling transforms them into similar ranges across features.</HNote> },
+      { t: 'How — example [1]', body: <HF ink="#b45309" label="min-max scaling (sklearn MinMaxScaler)" src="x' = \dfrac{x - \min(x)}{\max(x) - \min(x)}" /> },
+      { t: 'What goes wrong [1]', body: <><HNote>Gradient descent is slowed when the cost "bowl" is <Hi>elongated</Hi> along one dimension, so the direction of steepest descent doesn't point at the minimum.</HNote><HNote>(Distance-based methods — k-NN, SVM — are also dominated by large-scale features.)</HNote></> },
+    ],
+  },
+  {
+    id: 'ms-q4', src: 'midsem', num: 'Question 4', marks: '3 marks', primary: 'L4',
+    tags: [{ c: 'L4', t: 'Early Stopping' }, { c: 'L3', t: 'SGD' }],
+    short: 'Explain the early-stopping loop for SGDRegressor: its purpose, why partial_fit, and the role of patience.',
+    prompt: (
+      <>
+        <pre className="m4-pseudocode">{`patience, curr = 10, 0
+best_valid_rmse = float('inf')
+sgd_reg = SGDRegressor(penalty=None, eta0=0.002, random_state=42)
+
+for epoch in range(max_iter):
+    sgd_reg.partial_fit(X_train_prep, y_train)
+    y_valid_predict = sgd_reg.predict(X_valid_prep)
+    val_error = root_mean_squared_error(y_valid, y_valid_predict)
+    if val_error < best_valid_rmse:
+        best_valid_rmse = val_error
+        best_model = deepcopy(sgd_reg)
+        curr = 0
+    else:
+        curr += 1
+        if curr >= patience:
+            break`}</pre>
+        <p className="exq-intro">Explain the purpose of the above code. Why do we use <code>partial_fit</code> instead of <code>fit</code>? What is the purpose of the <code>patience</code> variable?</p>
+      </>
+    ),
+    steps: [
+      { t: 'Purpose [1]', body: <HNote>It implements <Hi>early stopping</Hi> for scikit-learn's <code>SGDRegressor</code> — keep the model with the lowest validation RMSE.</HNote> },
+      { t: 'Why partial_fit [1]', body: <HNote><code>partial_fit</code> runs a <Hi>single epoch</Hi> of SGD (so we can re-check the validation error), rather than <code>fit</code> which trains until convergence / <code>max_iter</code> in one call.</HNote> },
+      { t: 'The patience variable [1]', body: <HNote>If more than <code>patience</code> consecutive epochs pass <Hi>without improvement</Hi> on the validation set, break out of the loop and stop training.</HNote> },
+    ],
+  },
+  // ───────────────────────── TOPIC PRACTICE (L1–L9, new) ───────────────────────
+  {
+    id: 'p-l1-types', src: 'practice', num: 'Types of ML systems', primary: 'L1',
+    tags: [{ c: 'L1', t: 'ML System Types' }],
+    short: 'The three ways ML systems are categorised, and instance-based vs model-based learning.',
+    prompt: (
+      <>
+        <QP l="(a)">ML systems can be categorised in three ways — name them.</QP>
+        <QP l="(b)">Distinguish instance-based from model-based learning, with an example algorithm of each.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Three categorisations', body: <HUL ink="#0e7490" marker="•" items={['Supervised vs Unsupervised — is the training data labelled?', 'Batch vs Online — does it learn incrementally?', 'Instance-based vs Model-based — how it generalises.']} /> },
+      { t: '(b) Instance vs model-based', body: <HUL ink="#0e7490" items={[<><Pen c="#0e7490">Instance-based</Pen> — memorise the training examples and generalise to new cases via a <Hi>similarity measure</Hi> (e.g. k-NN).</>, <><Pen c="#0e7490">Model-based</Pen> — build a mathematical model from the data, then predict (e.g. linear / logistic regression).</>]} /> },
+    ],
+  },
+  {
+    id: 'p-l1-valid', src: 'practice', num: 'Generalisation & validation', primary: 'L1',
+    tags: [{ c: 'L1', t: 'Testing & Validation' }],
+    short: 'What the generalisation error is and why a validation set is needed in addition to the test set.',
+    prompt: (
+      <>
+        <QP l="(a)">What is the generalisation error and how is it estimated?</QP>
+        <QP l="(b)">Why is a separate validation set needed in addition to the test set?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Generalisation error', body: <HNote>The error rate on <Hi>new, unseen data</Hi> (the out-of-sample error); estimated on a held-out <strong>test set</strong> (typically ~20% of the data).</HNote> },
+      { t: '(b) Why a validation set', body: <HNote>Tuning hyperparameters on the test set makes the model <Hi>overfit the test set</Hi> (data snooping), so the test error no longer estimates generalisation. Use a separate validation set (or k-fold CV) for tuning, and keep the test set sealed for one final estimate.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l1-etp', src: 'practice', num: "Mitchell's E/T/P & challenges", primary: 'L1',
+    tags: [{ c: 'L1', t: "Mitchell's E/T/P" }, { c: 'L1', t: 'ML Challenges' }],
+    short: 'Identify E, T, P for a spam filter, and list three main challenges of ML.',
+    prompt: (
+      <>
+        <QP l="(a)">Tom Mitchell defines learning via experience E, task T and performance P. For a spam filter, identify E, T and P.</QP>
+        <QP l="(b)">List three of the main challenges of machine learning.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Spam filter as E / T / P', body: <HUL ink="#0e7490" marker="•" items={[<><strong>E</strong> = example spam & non-spam emails (labelled by users)</>, <><strong>T</strong> = decide whether a new email is spam</>, <><strong>P</strong> = accuracy (ratio correctly classified) on new emails</>]} /> },
+      { t: '(b) Three challenges', body: <HUL ink="#be123c" marker="✗" items={['Insufficient quantity of training data', 'Non-representative / poor-quality data', 'Irrelevant features', 'Overfitting / underfitting']} /> },
+    ],
+  },
+  {
+    id: 'p-l2-bias', src: 'practice', num: 'Bias trick & perceptron update', primary: 'L2',
+    tags: [{ c: 'L2', t: 'Bias Trick' }, { c: 'L2', t: 'Perceptron Update' }],
+    short: 'Rewrite the linear model via the bias trick, and state the perceptron weight-update rule.',
+    prompt: (
+      <>
+        <QP l="(a)">The simple linear model is <Tex src="h(x)=\mathrm{sgn}(\sum_i w_i x_i + b)" />. Show how the "bias trick" rewrites it as <Tex src="h(x)=\mathrm{sgn}(w^\top x)" />.</QP>
+        <QP l="(b)">State the perceptron weight-update rule and when it is applied.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Fold bias into the weights', body: <><HNote>Add a dummy feature <Tex src="x_0 = 1" /> and treat the bias as the weight <Tex src="w_0 = b" />. Then:</HNote><HF ink="#6d28d9" label="one clean dot product" src="\sum_{i=1}^{m} w_i x_i + b = \sum_{i=0}^{m} w_i x_i = w^\top x" /><HNote>Vectorise with <Pen c="#6d28d9">np.sign(X @ w)</Pen> — no Python loops.</HNote></> },
+      { t: '(b) Perceptron update', body: <HF ink="#6d28d9" label="only on a misclassification" src="w \leftarrow w + y_i x_i \quad\text{if } y_i \neq h(x_i)" /> },
+    ],
+  },
+  {
+    id: 'p-l2-cm', src: 'practice', num: 'Confusion matrix computation', primary: 'L2',
+    tags: [{ c: 'L2', t: 'Confusion Matrix' }, { c: 'L2', t: 'Precision / Recall / F₁' }],
+    short: 'From TP=80, FP=30, FN=20, TN=870: compute precision, recall, F₁, accuracy — and why accuracy misleads.',
+    prompt: (
+      <>
+        <p className="exq-intro">A binary classifier gives <Tex src="TP = 80,\; FP = 30,\; FN = 20,\; TN = 870" />.</p>
+        <QP l="(a)–(d)">Compute the precision, recall, <Tex src="F_1" /> score and accuracy.</QP>
+        <QP l="(e)">Why might accuracy be a misleading metric here?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Precision', body: <HF ink="#6d28d9" label="of predicted positives" src="\frac{TP}{TP+FP} = \frac{80}{110} \approx 0.727" /> },
+      { t: '(b) Recall', body: <HF ink="#047857" label="of actual positives" src="\frac{TP}{TP+FN} = \frac{80}{100} = 0.80" /> },
+      { t: '(c) F₁ score', body: <HF ink="#b45309" label="harmonic mean" src="\frac{2}{\frac1P + \frac1R} = \frac{2(0.727)(0.80)}{0.727 + 0.80} \approx 0.762" /> },
+      { t: '(d) Accuracy', body: <HF ink="#0e7490" label="all correct / total" src="\frac{TP+TN}{\text{total}} = \frac{80+870}{1000} = 0.95" /> },
+      { t: '(e) Why accuracy misleads', body: <HNote>The data is <Hi>imbalanced</Hi> (only 100 of 1000 are positive); a classifier that always predicts negative still scores 90%. Accuracy hides poor positive detection — prefer precision / recall / <Tex src="F_1" />.</HNote> },
+    ],
+    answer: <>precision ≈ 0.727, recall = 0.80, <Tex src="F_1" /> ≈ 0.762, accuracy = 0.95; accuracy misleads because the classes are imbalanced.</>,
+  },
+  {
+    id: 'p-l2-roc', src: 'practice', num: 'ROC, AUC & the P/R trade-off', primary: 'L2',
+    tags: [{ c: 'L2', t: 'ROC & AUC' }, { c: 'L2', t: 'Precision/Recall Trade-off' }],
+    short: 'What the ROC curve plots (and AUC), plus when to prioritise precision vs recall.',
+    prompt: (
+      <>
+        <QP l="(a)">What does the ROC curve plot, and what does a larger AUC indicate?</QP>
+        <QP l="(b)">Give one task where precision should be prioritised and one where recall should be, with justification.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) ROC & AUC', body: <HNote>ROC plots the <Hi>True Positive Rate (recall)</Hi> against the <Hi>False Positive Rate</Hi> (FPR = 1 − specificity) across all thresholds; a larger Area Under the Curve (AUC) = a better classifier.</HNote> },
+      { t: '(b) Which to prioritise', body: <HUL ink="#6d28d9" marker="•" items={[<><Pen c="#6d28d9">Precision</Pen> when false positives are costly — e.g. deciding it's safe to change lanes while driving.</>, <><Pen c="#be123c">Recall</Pen> when false negatives are costly — e.g. cancer screening.</>, <>Trade-off: raising the threshold ↑precision but ↓recall.</>]} /> },
+    ],
+  },
+  {
+    id: 'p-l3-normal', src: 'practice', num: 'Linear regression & the Normal Equation', primary: 'L3',
+    tags: [{ c: 'L3', t: 'Linear Regression' }, { c: 'L3', t: 'Normal Equation' }],
+    short: 'Write the Normal Equation and discuss its complexity in the number of features.',
+    prompt: (
+      <>
+        <QP l="(a)">Write the Normal Equation and state what it computes.</QP>
+        <QP l="(b)">What is its computational complexity in the number of features, and the practical consequence?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Normal Equation', body: <HF ink="#047857" label="closed-form least-squares solution" src="\hat{\theta} = (X^\top X)^{-1} X^\top y" /> },
+      { t: '(b) Complexity', body: <HNote>Linear in the number of instances, but roughly <Hi c="rgba(248,113,113,0.5)"><Tex src="O(n^3)" /> in the number of features</Hi> <Tex src="n" /> (inverting an <Tex src="n\times n" /> matrix). Consequence: for very many features, prefer <strong>Gradient Descent</strong>.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l3-gd', src: 'practice', num: 'Gradient descent variants', primary: 'L3',
+    tags: [{ c: 'L3', t: 'Gradient Descent' }],
+    short: 'The three GD variants (pro/con each) and the role of the learning rate η.',
+    prompt: (
+      <>
+        <QP l="(a)">Describe the three variants of gradient descent, with one pro/con each.</QP>
+        <QP l="(b)">What is the role of the learning rate <Tex src="\eta" />, and what happens if it is too large?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Three variants', body: <HUL ink="#047857" marker="•" items={[<><strong>Batch</strong> — uses the entire training set each step; stable but slow on large data.</>, <><strong>Stochastic (SGD)</strong> — one random instance per step; fast but noisy (a learning schedule helps it settle).</>, <><strong>Mini-batch</strong> — small random subsets; enables GPU / hardware vectorisation.</>]} /> },
+      { t: '(b) The learning rate η', body: <HNote><Tex src="\eta" /> is the step size along the negative gradient. <Hi>Too large → overshoot / diverge</Hi>; too small → very slow. GD can also stall in a local minimum or plateau.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l3-log', src: 'practice', num: 'Logistic regression & log loss', primary: 'L3',
+    tags: [{ c: 'L3', t: 'Logistic Regression' }],
+    short: 'The logistic hypothesis/sigmoid, the single-instance log loss, and why GD finds the global optimum.',
+    prompt: (
+      <>
+        <QP l="(a)">Write the logistic-regression hypothesis and the sigmoid; when does it predict class 1?</QP>
+        <QP l="(b)">Write the single-instance log-loss cost.</QP>
+        <QP l="(c)">Why is gradient descent guaranteed to reach the global optimum here?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Hypothesis & sigmoid', body: <><HF ink="#047857" label="predict 1 if p̂ ≥ 0.5 (i.e. θᵀx ≥ 0)" src="\hat{p} = \sigma(\theta^\top x), \quad \sigma(t) = \frac{1}{1+e^{-t}}" /></> },
+      { t: '(b) Single-instance log loss', body: <HF ink="#047857" label="high cost when confident & wrong" src="C(\theta) = \begin{cases} -\log(\hat{p}) & y = 1 \\ -\log(1-\hat{p}) & y = 0 \end{cases}" /> },
+      { t: '(c) Why GD finds the global min', body: <HNote>The log-loss cost is <Hi>convex</Hi>, so gradient descent converges to the global minimum (no local minima). There is no closed form, so GD is used.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l4-reg', src: 'practice', num: 'Ridge vs Lasso vs Elastic Net', primary: 'L4',
+    tags: [{ c: 'L4', t: 'Regularised Linear Models' }],
+    short: 'Ridge and Lasso cost functions, the key Lasso-vs-Ridge difference, and Elastic Net.',
+    prompt: (
+      <>
+        <QP l="(a)">Write the cost functions of Ridge and Lasso regression.</QP>
+        <QP l="(b)">What key behavioural difference distinguishes Lasso from Ridge?</QP>
+        <QP l="(c)">What is Elastic Net?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Ridge & Lasso costs', body: <><HF ink="#b45309" label="Ridge — squared ℓ₂ penalty" src="J(\theta) = \mathrm{MSE}(\theta) + \alpha\sum_{i=1}^{n}\theta_i^2" /><HF ink="#b45309" label="Lasso — ℓ₁ penalty" src="J(\theta) = \mathrm{MSE}(\theta) + \alpha\sum_{i=1}^{n}|\theta_i|" /><HNote>The penalty is added during <Hi>training only</Hi>.</HNote></> },
+      { t: '(b) Lasso vs Ridge', body: <HNote>Lasso (<Tex src="\ell_1" />) tends to drive some weights <Hi>exactly to zero</Hi> → automatic feature selection / sparse models; Ridge (<Tex src="\ell_2" />) only shrinks weights towards zero.</HNote> },
+      { t: '(c) Elastic Net', body: <HF ink="#b45309" label="mix of ℓ₁ and ℓ₂ (ratio r, strength α)" src="J(\theta) = \mathrm{MSE}(\theta) + r\alpha\sum|\theta_i| + \tfrac{1-r}{2}\alpha\sum\theta_i^2" /> },
+    ],
+  },
+  {
+    id: 'p-l4-bv', src: 'practice', num: 'The bias/variance trade-off', primary: 'L4',
+    tags: [{ c: 'L4', t: 'Bias / Variance' }],
+    short: 'The three-part error decomposition, the effect of complexity, and remedies for over/under-fitting.',
+    prompt: (
+      <>
+        <QP l="(a)">Into which three parts does the generalisation error decompose?</QP>
+        <QP l="(b)">How does increasing model complexity affect bias and variance?</QP>
+        <QP l="(c)">Give two remedies for overfitting and two for underfitting.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Error decomposition', body: <HF ink="#b45309" label="three sources of error" src="\text{Err} = \text{Bias}^2 + \text{Variance} + \text{Irreducible}" /> },
+      { t: '(b) Effect of complexity', body: <HNote><Hi>↑ complexity → ↓ bias but ↑ variance</Hi>; ↓ complexity → ↑ bias but ↓ variance. Irreducible error = natural data noise.</HNote> },
+      { t: '(c) Remedies', body: <HUL ink="#b45309" marker="•" items={[<><Pen c="#be123c">Overfitting</Pen> (high variance): more training data, k-fold CV, dimensionality reduction / feature selection, more regularisation.</>, <><Pen c="#0e7490">Underfitting</Pen> (high bias): a more powerful model, better features, less regularisation.</>]} /> },
+    ],
+  },
+  {
+    id: 'p-l5-margin', src: 'practice', num: 'Hard vs soft margin & C', primary: 'L5',
+    tags: [{ c: 'L5', t: 'Hard vs Soft Margin' }, { c: 'L5', t: 'C & Scaling' }],
+    short: 'Hard vs soft-margin SVM, what C controls (small vs large), and why SVMs need scaling.',
+    prompt: (
+      <>
+        <QP l="(a)">Distinguish hard-margin from soft-margin SVM classification.</QP>
+        <QP l="(b)">What does the hyperparameter <Tex src="C" /> control (small vs large)?</QP>
+        <QP l="(c)">Why must features be scaled for SVMs?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Hard vs soft margin', body: <HUL ink="#be123c" items={[<><Pen c="#be123c">Hard margin</Pen>: every instance must be off the street and on the correct side — only works if linearly separable, very outlier-sensitive.</>, <><Pen c="#be123c">Soft margin</Pen>: allows margin violations (slack <Tex src="\zeta" />), balancing a wide street against violations → more flexible.</>]} /> },
+      { t: '(b) The C hyperparameter', body: <HNote>Small <Tex src="C" /> → <Hi>wider street, more violations</Hi>; large <Tex src="C" /> → narrower street, fewer violations (overfitting risk). Overfitting? reduce <Tex src="C" />.</HNote> },
+      { t: '(c) Why scale', body: <HNote>SVMs are highly <Hi>scale-sensitive</Hi> — without scaling, large-scale features dominate the margin. Use <Pen c="#be123c">StandardScaler, fit on the training set only</Pen>.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l5-kernel', src: 'practice', num: 'Kernels, the dual & SVR', primary: 'L5',
+    tags: [{ c: 'L5', t: 'Kernels & Dual' }, { c: 'L5', t: 'Complexity & SVR' }],
+    short: 'The four kernels (+ RBF formula), why the dual matters, LinearSVC vs SVC complexity, and SVR.',
+    prompt: (
+      <>
+        <QP l="(a)">Name the four common SVM kernels and give the Gaussian RBF formula.</QP>
+        <QP l="(b)">Why is the dual problem important?</QP>
+        <QP l="(c)">Give the time complexity of LinearSVC vs SVC and the practical implication.</QP>
+        <QP l="(d)">How does SVM Regression differ from SVM classification?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Four kernels', body: <><HUL ink="#be123c" marker="•" items={[<>linear <Tex src="K(a,b)=a^\top b" /></>, <>polynomial <Tex src="K=(\gamma a^\top b + r)^d" /></>, <>sigmoid <Tex src="K=\tanh(\gamma a^\top b + r)" /></>]} /><HF ink="#be123c" label="Gaussian RBF" src="K(a,b) = \exp(-\gamma\lVert a-b\rVert^2)" /></> },
+      { t: '(b) The dual problem', body: <HNote>The dual makes the <Hi>kernel trick</Hi> possible (work in the implicit high-dim space using only dot products), and is faster than the primal when there are fewer instances than features.</HNote> },
+      { t: '(c) Complexity', body: <HUL ink="#be123c" marker="•" items={[<>LinearSVC ≈ <Pen c="#047857"><Tex src="O(m\cdot n)" /></Pen> — scales almost linearly.</>, <>SVC (kernel) <Pen c="#be123c"><Tex src="O(m^2 n)\text{–}O(m^3 n)" /></Pen> → dreadfully slow for large <Tex src="m" /> → small/medium data only.</>]} /> },
+      { t: '(d) SVM Regression', body: <HNote>SVR <Hi>reverses</Hi> the objective: fit as many instances as possible <em>inside</em> the street (the <Tex src="\epsilon" />-tube) while limiting points outside it.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l6-gini', src: 'practice', num: 'Gini impurity & CART cost', primary: 'L6',
+    tags: [{ c: 'L6', t: 'Gini Impurity' }, { c: 'L6', t: 'CART Cost' }],
+    short: 'Compute a node Gini, the CART split cost for a given split, and check whether a child is pure.',
+    prompt: (
+      <>
+        <p className="exq-intro">A node has 40 instances: 30 of class A and 10 of class B.</p>
+        <QP l="(a)">Compute its Gini impurity.</QP>
+        <QP l="(b)">A split yields left = {'{'}20 A, 0 B{'}'} and right = {'{'}10 A, 10 B{'}'}. Compute the CART classification cost <Tex src="J" /> of this split.</QP>
+        <QP l="(c)">Is the left child pure?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Node Gini', body: <HF ink="#1d4ed8" label="p_A = 0.75, p_B = 0.25" src="G = 1 - (0.75^2 + 0.25^2) = 1 - 0.625 = 0.375" /> },
+      { t: '(b) CART split cost', body: <><HF ink="#1d4ed8" label="child impurities" src="G_{\text{left}} = 1-(1^2+0^2) = 0, \quad G_{\text{right}} = 1-(0.5^2+0.5^2) = 0.5" /><HF ink="#1d4ed8" label="size-weighted cost (m_L = m_R = 20, m = 40)" src="J = \tfrac{20}{40}(0) + \tfrac{20}{40}(0.5) = 0.25" /></> },
+      { t: '(c) Is the left child pure?', body: <HNote>Yes — <Tex src="G_{\text{left}} = 0" /> means the left child is <Hi>pure</Hi> (all class A).</HNote> },
+    ],
+    answer: <><Pen c="#1d4ed8">(a)</Pen> 0.375.&nbsp; <Pen c="#1d4ed8">(b)</Pen> J = 0.25.&nbsp; <Pen c="#1d4ed8">(c)</Pen> Yes, the left child is pure.</>,
+  },
+  {
+    id: 'p-l6-entropy', src: 'practice', num: 'Entropy & class probabilities', primary: 'L6',
+    tags: [{ c: 'L6', t: 'Entropy' }, { c: 'L6', t: 'Class Probabilities' }],
+    short: 'The entropy formula, the class probabilities a leaf outputs, and the entropy of a given leaf.',
+    prompt: (
+      <>
+        <QP l="(a)">Write the entropy impurity formula.</QP>
+        <QP l="(b)">A leaf has <Tex src="\text{value} = [0, 49, 5]" /> (samples = 54). What class probabilities does the tree output?</QP>
+        <QP l="(c)">Compute the entropy of this node.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Entropy formula', body: <HF ink="#1d4ed8" label="sum over classes with p ≠ 0" src="H_i = -\sum_{k} p_{i,k} \log_2(p_{i,k})" /> },
+      { t: '(b) Class probabilities', body: <HF ink="#1d4ed8" label="normalise the value array → predict the 2nd class" src="\left[\tfrac{0}{54}, \tfrac{49}{54}, \tfrac{5}{54}\right] = [0,\; 0.907,\; 0.093]" /> },
+      { t: '(c) Entropy of the node', body: <><HF ink="#1d4ed8" label="zero-probability class contributes nothing" src="H = -\tfrac{49}{54}\log_2\!\tfrac{49}{54} - \tfrac{5}{54}\log_2\!\tfrac{5}{54} \approx 0.445" /><HNote>Both Gini and entropy are <Hi>0 at a pure node</Hi>.</HNote></> },
+    ],
+  },
+  {
+    id: 'p-l6-reg', src: 'practice', num: 'Regularising a tree, white box & limits', primary: 'L6',
+    tags: [{ c: 'L6', t: 'Regularisation' }, { c: 'L6', t: 'White Box & Limits' }],
+    short: 'Three regularising hyperparameters (and their direction), why a DT is "white box", and two limitations + fixes.',
+    prompt: (
+      <>
+        <QP l="(a)">List three hyperparameters that regularise a tree and the direction (↑/↓) that reduces overfitting.</QP>
+        <QP l="(b)">Why is a decision tree a "white-box" model?</QP>
+        <QP l="(c)">Give two limitations and a mitigation for each.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Regularising hyperparameters', body: <><HFlow ink="#1d4ed8" steps={['max_depth ↓', 'min_samples_leaf ↑', 'min_samples_split ↑', 'max_leaf_nodes ↓', 'max_features ↓']} /><HNote>Rule of thumb: increasing the <Hi>min_*</Hi> or decreasing the <Hi>max_*</Hi> hyperparameters regularises the tree.</HNote></> },
+      { t: '(b) White box', body: <HNote>Its decisions are <Hi>human-readable</Hi> — you follow the root-to-leaf path of simple split conditions and can explain any prediction (unlike a black-box RF / neural net).</HNote> },
+      { t: '(c) Limitations → fixes', body: <HBox ink="#1d4ed8" title="3 limits → fix">High variance → <Pen c="#be185d">Random Forests</Pen> (average many trees). Axis-aligned splits / rotation sensitivity → <Pen c="#0f766e">PCA</Pen> to align the axes. Overfitting → prune / regularise.</HBox> },
+    ],
+  },
+  {
+    id: 'p-l6-prune', src: 'practice', num: 'Regression trees & pruning', primary: 'L6',
+    tags: [{ c: 'L6', t: 'Regression Trees' }, { c: 'L6', t: 'Cost-Complexity Pruning' }],
+    short: 'What a regression-tree leaf predicts and the split cost, plus cost-complexity pruning and the effect of α.',
+    prompt: (
+      <>
+        <QP l="(a)">For a regression tree, what does a leaf predict and what cost does CART minimise at each split?</QP>
+        <QP l="(b)">Explain cost-complexity pruning and the effect of <Tex src="\alpha" /> (including <Tex src="\alpha = 0" /> and <Tex src="\alpha \to \infty" />).</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Leaf prediction & split cost', body: <><HNote>A leaf predicts the <Hi>mean response</Hi> of the training instances in its region.</HNote><HF ink="#1d4ed8" label="size-weighted MSE" src="J(X_j, t_j) = \tfrac{m_{\text{left}}}{m}\mathrm{MSE}_{\text{left}} + \tfrac{m_{\text{right}}}{m}\mathrm{MSE}_{\text{right}}" /></> },
+      { t: '(b) Cost-complexity pruning', body: <><HF ink="#1d4ed8" label="grow T₀, then prune to minimise" src="\sum_{l=1}^{|T|} \sum_{x_i \in R_l} (y_i - \hat{y}_{R_l})^2 + \alpha |T|" /><HNote><Tex src="|T|" /> = #leaves. <Hi><Tex src="\alpha = 0" /> → full tree</Hi>; increasing <Tex src="\alpha" /> favours smaller trees; <Tex src="\alpha \to \infty" /> → root only. Choose <Tex src="\alpha" /> by k-fold CV.</HNote></> },
+    ],
+  },
+  {
+    id: 'p-l7-vote', src: 'practice', num: 'Voting classifiers', primary: 'L7',
+    tags: [{ c: 'L7', t: 'Hard vs Soft Voting' }],
+    short: 'Hard vs soft voting, when weak learners become strong, and why soft voting often wins.',
+    prompt: (
+      <>
+        <QP l="(a)">Distinguish hard voting from soft voting.</QP>
+        <QP l="(b)">Under what conditions can an ensemble of weak learners become a strong learner?</QP>
+        <QP l="(c)">Why does soft voting often beat hard voting?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Hard vs soft voting', body: <HUL ink="#be185d" items={[<><Pen c="#be185d">Hard</Pen> voting predicts the <Hi>majority class label</Hi> across the classifiers.</>, <><Pen c="#be185d">Soft</Pen> voting averages the predicted class probabilities (<code>predict_proba</code>) and predicts the highest average.</>]} /> },
+      { t: '(b) Weak → strong', body: <HNote>When there are <Hi>enough learners</Hi> and they are <Hi>sufficiently diverse / independent</Hi> (they make different errors) — one way is to train with very different algorithms.</HNote> },
+      { t: '(c) Why soft wins', body: <HNote>Soft voting gives more weight to <Hi>high-confidence votes</Hi>, so confident correct predictions count more.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l7-bag', src: 'practice', num: 'Bagging, pasting & OOB', primary: 'L7',
+    tags: [{ c: 'L7', t: 'Bagging / Pasting' }, { c: 'L7', t: 'Out-of-Bag' }],
+    short: 'Bagging vs pasting, what OOB instances are (and their use), and Random Patches vs Random Subspaces.',
+    prompt: (
+      <>
+        <QP l="(a)">Distinguish bagging from pasting.</QP>
+        <QP l="(b)">What are out-of-bag (OOB) instances, roughly what fraction are they per predictor, and how are they used?</QP>
+        <QP l="(c)">Distinguish Random Patches from Random Subspaces.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Bagging vs pasting', body: <HNote>Both train the same algorithm on random subsets — <Pen c="#be185d">bagging</Pen> samples <Hi>with</Hi> replacement, <Pen c="#be185d">pasting</Pen> <Hi>without</Hi>.</HNote> },
+      { t: '(b) Out-of-bag instances', body: <HNote>With bootstrapping ~<Hi>2/3</Hi> of instances are sampled per predictor, leaving ~<Hi>1/3</Hi> OOB. Each instance is predicted using only the predictors for which it was OOB → a <strong>free validation estimate</strong> (<code>oob_score_</code>).</HNote> },
+      { t: '(c) Patches vs Subspaces', body: <HUL ink="#be185d" marker="•" items={[<><Pen c="#be185d">Random Patches</Pen> — sample both instances and features.</>, <><Pen c="#be185d">Random Subspaces</Pen> — keep all instances, sample features only (good for high-dim data).</>]} /> },
+    ],
+  },
+  {
+    id: 'p-l7-ada', src: 'practice', num: 'AdaBoost computation', primary: 'L7',
+    tags: [{ c: 'L7', t: 'AdaBoost' }],
+    short: 'The AdaBoost predictor-weight formula, a numeric α_j, the instance-weight update, and why it cannot parallelise.',
+    prompt: (
+      <>
+        <p className="exq-intro">In AdaBoost the <Tex src="j" />th predictor has weighted error rate <Tex src="r_j" />.</p>
+        <QP l="(a)">Write the predictor-weight <Tex src="\alpha_j" /> (learning rate <Tex src="\eta" />).</QP>
+        <QP l="(b)">If <Tex src="r_j = 0.25" /> and <Tex src="\eta = 1" />, compute <Tex src="\alpha_j" />.</QP>
+        <QP l="(c)">How are instance weights updated?</QP>
+        <QP l="(d)">Why can't AdaBoost parallelise across machines?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Predictor weight', body: <HF ink="#be185d" label="more accurate (smaller rⱼ) → larger weight" src="\alpha_j = \eta \log\!\left(\frac{1 - r_j}{r_j}\right)" /> },
+      { t: '(b) Numeric value', body: <HF ink="#be185d" label="natural log, as in the text" src="\alpha_j = 1 \cdot \ln\!\left(\frac{0.75}{0.25}\right) = \ln 3 \approx 1.10" /> },
+      { t: '(c) Instance-weight update', body: <HNote>Misclassified instances have weights <Hi>multiplied by <Tex src="\exp(\alpha_j)" /></Hi> (boosted); correct ones unchanged; then all weights are renormalised. The next predictor focuses on the boosted (hard) instances.</HNote> },
+      { t: '(d) Why no parallelism', body: <HNote>Boosting is <Hi>sequential</Hi> — each predictor trains on the re-weighted results of the previous one, so they cannot be trained in parallel.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l7-gb', src: 'practice', num: 'Gradient boosting; bagging vs boosting', primary: 'L7',
+    tags: [{ c: 'L7', t: 'Gradient Boosting' }, { c: 'L7', t: 'Bagging vs Boosting' }],
+    short: 'How gradient boosting differs from AdaBoost, the GBRT recipe, and bagging vs boosting (bias/variance, parallelism).',
+    prompt: (
+      <>
+        <QP l="(a)">How does Gradient Boosting build its ensemble, and how does that differ from AdaBoost?</QP>
+        <QP l="(b)">For GBRT, what is the recommended training recipe?</QP>
+        <QP l="(c)">Contrast bagging and boosting in terms of bias/variance and parallelism.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Gradient boosting vs AdaBoost', body: <HNote>Gradient boosting fits each new predictor to the <Hi>residual errors</Hi> of the current ensemble; AdaBoost instead <Hi>re-weights</Hi> misclassified instances.</HNote> },
+      { t: '(b) GBRT recipe', body: <HNote>Decision-tree base learners + a <Hi>small learning_rate</Hi> (shrinkage) + a <Hi>large n_estimators</Hi>, with <strong>early stopping</strong> (<code>n_iter_no_change</code>). For classification the loss is log loss.</HNote> },
+      { t: '(c) Bagging vs boosting', body: <HBox ink="#be185d" title="key contrast">Bagging = <Pen c="#047857">parallel, ↓ variance</Pen>. Boosting = <Pen c="#be123c">sequential, ↓ bias</Pen> (can't parallelise across machines).</HBox> },
+    ],
+  },
+  {
+    id: 'p-l8-curse', src: 'practice', num: 'Curse of dimensionality; projection vs manifold', primary: 'L8',
+    tags: [{ c: 'L8', t: 'Curse of Dimensionality' }, { c: 'L8', t: 'Projection vs Manifold' }],
+    short: 'What the curse of dimensionality is, projection vs manifold learning (Swiss roll), and which methods are (un)supervised.',
+    prompt: (
+      <>
+        <QP l="(a)">What is the curse of dimensionality, and why is DR useful despite losing information?</QP>
+        <QP l="(b)">Distinguish projection from manifold learning, using the Swiss roll.</QP>
+        <QP l="(c)">Is feature selection supervised or unsupervised? What about the DR methods in this lecture?</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) The curse + why DR', body: <HNote>With thousands–millions of features, training is slow and good solutions are hard to find (data become <Hi>sparse</Hi>). DR always loses some information, but it <Hi>speeds up training</Hi> and enables 2D/3D visualisation.</HNote> },
+      { t: '(b) Projection vs manifold', body: <HBox ink="#0f766e" title="two approaches">Projection assumes the data lie near a lower-dim subspace and projects onto it — it fails when the manifold <Pen c="#be123c">twists</Pen> (dropping a coordinate on the Swiss roll squashes its layers together). Manifold learning <Pen c="#0f766e">unrolls</Pen> the manifold (Swiss roll: d = 2 within n = 3).</HBox> },
+      { t: '(c) Supervised or not?', body: <HNote>Feature selection is <Hi>supervised</Hi>; the DR techniques in this lecture (PCA, kPCA, LLE, t-SNE…) are <Hi>unsupervised</Hi>.</HNote> },
+    ],
+  },
+  {
+    id: 'p-l8-pca', src: 'practice', num: 'PCA, SVD & choosing d', primary: 'L8',
+    tags: [{ c: 'L8', t: 'PCA / SVD' }, { c: 'L8', t: 'Choosing d' }],
+    short: 'What PCA finds (via SVD), the essential preprocessing, how many components keep 95% variance, and project/reconstruct.',
+    prompt: (
+      <>
+        <QP l="(a)">What does PCA find, and via which factorisation are the principal axes obtained?</QP>
+        <QP l="(b)">What preprocessing is essential before PCA?</QP>
+        <QP l="(c)">Given <Tex src="\text{EVR} = [0.84, 0.15, 0.01]" />, how many components retain ≥ 95% of the variance?</QP>
+        <QP l="(d)">Write the projection and reconstruction equations.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) PCA via SVD', body: <><HNote>PCA finds the linear projection preserving <Hi>maximum variance</Hi>; the principal axes are the columns of <Tex src="V" /> from the SVD of the mean-centred data:</HNote><HF ink="#0f766e" label="1st axis = max variance; each next ⟂ with the next-largest" src="X = U\,\Sigma\,V^\top" /></> },
+      { t: '(b) Preprocessing', body: <HNote><Hi>Mean-centre</Hi> the data (origin at the mean); when features have different units, also scale them to unit variance.</HNote> },
+      { t: '(c) Components for 95%', body: <HF ink="#0f766e" label="cumulative = [0.84, 0.99, 1.00] → 0.99 ≥ 0.95 at #2" src="d = \arg\max(\text{cumsum} \ge 0.95) + 1 = 2" /> },
+      { t: '(d) Project & reconstruct', body: <HF ink="#0f766e" label="Wd = first d columns of V" src="X_{d\text{-proj}} = X\,W_d, \qquad X_{\text{rec}} = X_{d\text{-proj}}\,W_d^\top" /> },
+    ],
+    answer: <><Pen c="#0f766e">(c)</Pen> 2 components (cumulative variance 0.99 ≥ 0.95).</>,
+  },
+  {
+    id: 'p-l8-kpca', src: 'practice', num: 'Kernel PCA & other DR methods', primary: 'L8',
+    tags: [{ c: 'L8', t: 'Kernel PCA' }, { c: 'L8', t: 'LLE / MDS / Isomap / t-SNE' }],
+    short: 'What Kernel PCA adds over PCA (concentric circles), and what LLE, MDS, Isomap and t-SNE each do.',
+    prompt: (
+      <>
+        <QP l="(a)">What can Kernel PCA do that ordinary PCA cannot, and how (concentric-circles example)?</QP>
+        <QP l="(b)">Briefly state what each of LLE, MDS, Isomap and t-SNE does.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Kernel PCA', body: <HNote>Ordinary PCA is <Hi>linear</Hi> and cannot unfold non-linear structure such as two concentric circles; Kernel PCA applies the <Hi>kernel trick</Hi> (implicit mapping to a higher-dim space) to perform a non-linear projection that separates them.</HNote> },
+      { t: '(b) Other DR methods', body: <HUL ink="#0f766e" marker="•" items={[<><Pen c="#0f766e">LLE</Pen> — manifold learning without projection.</>, <><Pen c="#0f766e">MDS</Pen> — preserves pairwise distances between instances.</>, <><Pen c="#0f766e">Isomap</Pen> — builds a k-NN graph and preserves geodesic distances.</>, <><Pen c="#0f766e">t-SNE</Pen> — keeps similar instances close / dissimilar apart; mainly for visualisation (MNIST → 2D clusters).</>]} /> },
+    ],
+  },
+  {
+    id: 'p-l9-kmeans', src: 'practice', num: 'k-means, inertia & convergence', primary: 'L9',
+    tags: [{ c: 'L9', t: 'K-Means' }, { c: 'L9', t: 'Inertia' }],
+    short: 'The two repeated k-means steps, what inertia is (and choosing among inits), the convergence guarantee, and hard vs soft clustering.',
+    prompt: (
+      <>
+        <QP l="(a)">Describe the two repeated steps of k-means.</QP>
+        <QP l="(b)">What is inertia, and how does it pick among random initialisations?</QP>
+        <QP l="(c)">Why is convergence guaranteed?</QP>
+        <QP l="(d)">Distinguish hard from soft clustering.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) The two steps', body: <HNote>Initialise <Tex src="k" /> centroids, then repeat: (1) <Hi>assign</Hi> each instance to its closest centroid (Euclidean); (2) <Hi>update</Hi> each centroid to the mean of its assigned instances — until centroids stop moving.</HNote> },
+      { t: '(b) Inertia', body: <><HF ink="#7c3aed" label="lower is better; score = −inertia" src="\text{inertia} = \sum_{i} \lVert x_i - c_{\text{closest}(i)} \rVert^2" /><HNote>Run k-means <code>n_init</code> times and keep the model with the <Hi>lowest inertia</Hi>.</HNote></> },
+      { t: '(c) Convergence', body: <HNote>The mean squared distance <Hi>decreases monotonically</Hi> and is bounded below by 0, so the algorithm converges in finitely many steps (possibly to a local optimum).</HNote> },
+      { t: '(d) Hard vs soft', body: <HNote>Hard = each instance assigned to <Hi>one cluster</Hi> (<code>labels_</code>); soft = a score / distance to <Hi>every centroid</Hi> (<code>transform()</code>).</HNote> },
+    ],
+  },
+  {
+    id: 'p-l9-sil', src: 'practice', num: 'Choosing k: elbow & silhouette', primary: 'L9',
+    tags: [{ c: 'L9', t: 'Choosing k' }, { c: 'L9', t: 'Silhouette' }],
+    short: 'Why you cannot minimise inertia, the silhouette coefficient (formula + range), and a numeric silhouette.',
+    prompt: (
+      <>
+        <QP l="(a)">Why can't you choose <Tex src="k" /> by minimising inertia?</QP>
+        <QP l="(b)">Define the silhouette coefficient <Tex src="s_i" />, its formula and range.</QP>
+        <QP l="(c)">An instance has <Tex src="a = 0.2" /> (intra-cluster) and <Tex src="b = 0.5" /> (nearest other cluster). Compute <Tex src="s_i" /> and interpret it.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Why not minimise inertia', body: <HNote>Inertia falls <Hi>monotonically</Hi> as <Tex src="k" /> grows (more centroids ⇒ smaller distances), so it can't be minimised directly. Use the <strong>elbow</strong> (often misleading) or the <strong>silhouette score</strong>.</HNote> },
+      { t: '(b) Silhouette coefficient', body: <><HF ink="#7c3aed" label="a = intra-cluster, b = nearest other cluster" src="s_i = \frac{b - a}{\max(a, b)} \in [-1, +1]" /><HNote>≈ +1 well inside its cluster; ≈ 0 on a boundary; ≈ −1 likely mis-assigned. Silhouette <em>score</em> = mean of <Tex src="s_i" /> (higher better).</HNote></> },
+      { t: '(c) Compute & interpret', body: <HF ink="#7c3aed" label="comfortably inside its own cluster (good)" src="s_i = \frac{0.5 - 0.2}{\max(0.2, 0.5)} = \frac{0.3}{0.5} = 0.6" /> },
+    ],
+    answer: <><Pen c="#7c3aed">(c)</Pen> <Tex src="s_i = 0.6" /> — a good assignment, well inside its own cluster.</>,
+  },
+  {
+    id: 'p-l9-draw', src: 'practice', num: 'k-means drawbacks & k-means++', primary: 'L9',
+    tags: [{ c: 'L9', t: 'K-Means Drawbacks' }, { c: 'L9', t: 'k-means++' }],
+    short: 'Which cluster shapes break k-means (and the GMM remedy), plus the k-means++ initialisation.',
+    prompt: (
+      <>
+        <QP l="(a)">For what cluster shapes does k-means perform poorly, and what is the remedy?</QP>
+        <QP l="(b)">Outline the k-means++ initialisation and why it helps.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Shape limitation → GMM', body: <HNote>k-means struggles with clusters of <Hi>varying sizes, differing densities, or non-spherical (elliptical) shapes</Hi> — assignment depends only on distance to a single centroid. Remedy: a <strong>Gaussian Mixture Model</strong> (per-cluster covariance → elliptical clusters).</HNote> },
+      { t: '(b) k-means++', body: <><HF ink="#7c3aed" label="pick next centroid with this probability (D = dist to nearest chosen)" src="P(x_i) = \frac{D(x_i)^2}{\sum_{j} D(x_j)^2}" /><HNote>First centroid uniform at random; subsequent ones favour points <Hi>far from existing centroids</Hi> → well-separated init, fewer poor local optima.</HNote></> },
+    ],
+  },
+  {
+    id: 'p-l9-dbscan', src: 'practice', num: 'DBSCAN', primary: 'L9',
+    tags: [{ c: 'L9', t: 'DBSCAN' }],
+    short: 'DBSCAN\'s two hyperparameters and three point types, how it forms any-shape clusters, predicting new points, and a pro/con.',
+    prompt: (
+      <>
+        <QP l="(a)">Name DBSCAN's two hyperparameters and its three point types.</QP>
+        <QP l="(b)">How does it form arbitrary-shaped clusters?</QP>
+        <QP l="(c)">DBSCAN has no <code>predict()</code> — how do you classify new points?</QP>
+        <QP l="(d)">State one pro and one con.</QP>
+      </>
+    ),
+    steps: [
+      { t: '(a) Params & point types', body: <HUL ink="#7c3aed" marker="•" items={[<>Params: <Tex src="\epsilon" /> (<code>eps</code>, radius) and <code>min_samples</code>.</>, <><Pen c="#7c3aed">Core</Pen> — ≥ min_samples within <Tex src="\epsilon" />; <Pen c="#7c3aed">Border</Pen> — in a core's <Tex src="\epsilon" />-neighbourhood; <Pen c="#be123c">Anomaly</Pen> — neither (label −1).</>]} /> },
+      { t: '(b) Any-shape clusters', body: <HNote>Adjacent core instances are <Hi>chained / merged</Hi> into one connected cluster, which can take any shape.</HNote> },
+      { t: '(c) Predicting new points', body: <HNote>Train a <Hi>k-NN classifier on the core samples</Hi> (<code>components_</code>) and predict; optionally threshold the distance to the nearest core to re-flag far points as anomalies.</HNote> },
+      { t: '(d) Pro / con', body: <HBox ink="#7c3aed" title="trade-offs"><Pen c="#047857">+ any shape, auto #clusters, built-in anomalies, only 2 params.</Pen> <Pen c="#be123c">− struggles with varying density; <Tex src="O(m^2 n)" /> → no large data.</Pen></HBox> },
+    ],
+  },
+  {
+    id: 'p-l9-semi', src: 'practice', num: 'Clustering for semi-supervised learning', primary: 'L9',
+    tags: [{ c: 'L9', t: 'Semi-Supervised' }],
+    short: 'How representative-labelling + label propagation push digit accuracy from 74.8% to 90.9% with few labels.',
+    prompt: <p className="exq-intro">Describe how clustering enables semi-supervised learning on a digits dataset with very few labels (representative labelling + label propagation), and give the headline accuracy result.</p>,
+    steps: [
+      { t: 'Step 1 — label cluster representatives', body: <HNote>Run k-means (<Tex src="k = 50" />); label only the 50 <Hi>representative</Hi> instances closest to each centroid. This beats labelling 50 <em>random</em> instances: <Pen c="#7c3aed">84.9%</Pen> vs 74.8% test accuracy.</HNote> },
+      { t: 'Step 2 — propagate labels', body: <HNote>Assign each representative's label to <Hi>every instance in its cluster</Hi> (full propagation → <Pen c="#7c3aed">89.4%</Pen>).</HNote> },
+      { t: 'Step 3 — drop outliers (partial)', body: <HNote>Discard the 1% of instances furthest from their centroid before training → <Hi>90.9%</Hi>, which even beats the 90.7% from training on all 1400 true labels.</HNote> },
+    ],
+  },
+];
+
+// Handwritten worked-solution modal — reveals one step at a time so you can
+// attempt first, then check the method (not just the final answer).
+function SolutionModal({ q, onClose }) {
+  const ink = CHEAT_INK[q.primary] || '#1d4ed8';
+  const steps = q.steps;
+  const [shown, setShown] = useState(0);
+  const allShown = shown >= steps.length;
+  const srcLabel = SRC_META[q.src].label;
+
+  return (
+    <HandPaperModal
+      title={q.num}
+      sub={`${srcLabel}${q.marks ? ' · ' + q.marks : ''} · ${q.tags.map(t => t.c).join(' · ')} · step-by-step`}
+      ink={ink}
+      ariaLabel={`${q.num} — worked solution`}
+      footer="↳ reveal steps one at a time · Esc or click outside to close"
+      onClose={onClose}
+    >
+      <div className="exq-sol-q">{q.short}</div>
+
+      {steps.slice(0, shown).map((s, i) => (
+        <HSec key={i} ink={ink} title={s.t}>{s.body}</HSec>
+      ))}
+
+      {allShown && q.answer && <HBox ink={ink} title="✓ Final answer">{q.answer}</HBox>}
+
+      {!allShown ? (
+        <div className="exq-reveal">
+          <button className="exq-reveal-next" style={{ color: ink, borderColor: ink }} onClick={() => setShown(s => s + 1)}>
+            Reveal {shown === 0 ? 'step 1' : `step ${shown + 1}`} <span className="exq-reveal-ct">({shown}/{steps.length} shown)</span> →
+          </button>
+          {steps.length > 1 && <button className="exq-reveal-all" onClick={() => setShown(steps.length)}>reveal all</button>}
+        </div>
+      ) : (
+        <div className="exq-reveal-done" style={{ color: ink }}>✓ Full worked solution shown — {steps.length} step{steps.length > 1 ? 's' : ''}</div>
+      )}
+    </HandPaperModal>
+  );
+}
+
+// One question card in the Sample Exam list (dark theme): topic tags, the full
+// prompt, an "attempted" toggle, and a button that opens the solution modal.
+function ExamQuestionCard({ q, isAttempted, onToggle, onOpen }) {
+  const accent = LEC_BY_CODE[q.primary]?.color || '#22d3ee';
+  const src = SRC_META[q.src];
+  return (
+    <div className="exq-card" id={q.id} style={{ borderLeft: `4px solid ${accent}` }}>
+      <div className="exq-head">
+        <div className="exq-head-l">
+          <span className="exq-num">{q.num}</span>
+          {q.marks && <span className="exq-marks">{q.marks}</span>}
+          <span className="exq-srcbadge" style={{ color: src.color, background: `${src.color}1a`, borderColor: `${src.color}55` }}>{src.label}</span>
+        </div>
+        <button className={`exq-attempt ${isAttempted ? 'on' : ''}`} onClick={onToggle} aria-pressed={isAttempted}>
+          <span className="exq-attempt-box">{isAttempted ? '✓' : ''}</span>
+          {isAttempted ? 'Attempted' : 'Mark attempted'}
+        </button>
+      </div>
+      <div className="exq-tags">
+        {q.tags.map((t, i) => {
+          const c = LEC_BY_CODE[t.c]?.color || '#94a3b8';
+          return <span key={i} className="exq-tag" style={{ color: c, borderColor: `${c}55`, background: `${c}12` }}>{t.c} · {t.t}</span>;
+        })}
+      </div>
+      <div className="exq-body">{q.prompt}</div>
+      <div className="exq-foot">
+        <button className="exq-sol-open" style={{ color: accent, borderColor: `${accent}66` }} onClick={onOpen}>✎ Reveal worked solution →</button>
+      </div>
+    </div>
+  );
+}
+
+function SampleExam({ onOpen }) {
+  const [openSol, setOpenSol] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [attempted, setAttempted] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cits5508_exam_attempts') || '{}') || {}; }
+    catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('cits5508_exam_attempts', JSON.stringify(attempted)); } catch { /* storage unavailable — tracking stays in-memory */ }
+  }, [attempted]);
+
+  const toggle = id => setAttempted(a => {
+    const n = { ...a };
+    if (n[id]) delete n[id]; else n[id] = 1;
+    return n;
+  });
+
+  const total = SAMPLE_EXAM.length;
+  const doneCount = SAMPLE_EXAM.filter(q => attempted[q.id]).length;
+  const pct = Math.round((doneCount / total) * 100);
+  const countFor = code => SAMPLE_EXAM.filter(q => q.tags.some(t => t.c === code)).length;
+  const visible = SAMPLE_EXAM.filter(q => filter === 'all' || q.tags.some(t => t.c === filter));
+
+  const GROUPS = [
+    { key: 'exam', heading: '① Sample Exam Paper', blurb: 'The five questions from the CITS5508 sample exam (Q1–Q5).' },
+    { key: 'midsem', heading: '② Mid-Semester Test', blurb: 'The four mid-semester sample questions, with per-mark working.' },
+    { key: 'practice', heading: '③ Topic Practice — every lecture (L1–L9)', blurb: 'Extra questions, derived strictly from the lecture notes, covering the whole unit.' },
+  ];
+  const openQ = SAMPLE_EXAM.find(q => q.id === openSol);
+
+  return (
+    <div>
+      <div className="m4-sec-hdr">
+        <h2 className="m4-sec-title">Sample Exam <span className="m4-badge" style={{ background: 'rgba(251,191,36,0.12)', color: 'var(--amber)', border: '1px solid rgba(251,191,36,0.3)' }}>{total} questions · Lectures 1–9 · attempt first, then reveal</span></h2>
+      </div>
+      <p className="m4-sec-sub">Practise under exam conditions: each question hides its solution behind a handwritten, <strong>step-by-step</strong> reveal so you can attempt it first, then check the <em>method</em> — not just the final answer. Tag every question you've tried to track your coverage across the unit.</p>
+
+      <div className="exq-howto">
+        <div><span className="exq-howto-k">Attempt</span> work the question on paper first.</div>
+        <div><span className="exq-howto-k">Reveal</span> open the solution and step through it one move at a time.</div>
+        <div><span className="exq-howto-k">Track</span> hit <em>Mark attempted</em> — your progress is saved on this device.</div>
+      </div>
+
+      <div className="exq-progress">
+        <div className="exq-progress-bar"><div className="exq-progress-fill" style={{ width: `${pct}%` }} /></div>
+        <div className="exq-progress-txt"><strong>{doneCount}</strong> / {total} attempted ({pct}%)</div>
+        {doneCount > 0 && <button className="exq-reset" onClick={() => setAttempted({})}>Reset</button>}
+      </div>
+
+      <div className="exq-filters">
+        <button className={`exq-filter ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>All <span className="exq-filter-n">{total}</span></button>
+        {EXAM_LECTURES.map(l => {
+          const n = countFor(l.code);
+          if (!n) return null;
+          return (
+            <button key={l.code} className={`exq-filter ${filter === l.code ? 'on' : ''}`} onClick={() => setFilter(l.code)}
+              style={filter === l.code ? { color: l.color, borderColor: l.color, background: `${l.color}1a` } : { color: l.color, borderColor: `${l.color}40` }}>
+              {l.code} <span className="exq-filter-n">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="exq-note">↳ Sample-exam wording is reconstructed faithfully from the official worked-solutions file; mid-sem questions are verbatim; practice questions are derived from the lecture notes.</p>
+
+      {GROUPS.map(g => {
+        const items = visible.filter(q => q.src === g.key);
+        if (!items.length) return null;
+        return (
+          <section key={g.key} className="exq-group">
+            <div className="exq-group-hdr">
+              <h3 className="exq-group-h">{g.heading} <span className="exq-group-n">{items.length}</span></h3>
+              <p className="exq-group-blurb">{g.blurb}</p>
+            </div>
+            {items.map(q => (
+              <ExamQuestionCard key={q.id} q={q} isAttempted={!!attempted[q.id]} onToggle={() => toggle(q.id)} onOpen={() => setOpenSol(q.id)} />
+            ))}
+          </section>
+        );
+      })}
+
+      <div className="exq-cta">
+        <span>Want the formulas and algorithms on one page first?</span>
+        <button className="m4-btn m4-btn-g" onClick={() => onOpen('Exam Summary')}>Open Exam Summary →</button>
+      </div>
+
+      {openQ && <SolutionModal q={openQ} onClose={() => setOpenSol(null)} />}
+    </div>
   );
 }
 
@@ -6683,6 +7574,18 @@ export default function CITS5508() {
               <span className="m4-btn m4-btn-g" style={{ flexShrink: 0 }}>Open Exam Summary →</span>
             </div>
             <div
+              onClick={() => setTab('Sample Exam')}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', margin: '0 0 1.5rem', padding: '1.1rem 1.3rem', borderRadius: 10, background: 'linear-gradient(135deg, rgba(251,191,36,0.16) 0%, rgba(244,114,182,0.07) 55%, rgba(34,211,238,0.06) 100%)', border: '1px solid rgba(251,191,36,0.4)' }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--amber)', flexShrink: 0 }}>✎</span>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--amber)', marginBottom: '0.25rem' }}>// Practise, then check your method</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-0)' }}>Sample Exam — attempt first, reveal step-by-step solutions</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-2)', marginTop: '0.2rem' }}>The sample paper, the mid-sem questions and topic practice across all nine lectures — each with a handwritten worked solution.</div>
+              </div>
+              <span className="m4-btn" style={{ flexShrink: 0, borderColor: 'var(--amber)', color: 'var(--amber)' }}>Open Sample Exam →</span>
+            </div>
+            <div
               onClick={() => setTab('Code Lab')}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', margin: '0 0 1.5rem', padding: '1.1rem 1.3rem', borderRadius: 10, background: 'linear-gradient(135deg, rgba(167,139,250,0.16) 0%, rgba(34,211,238,0.07) 55%, rgba(244,114,182,0.06) 100%)', border: '1px solid rgba(167,139,250,0.4)' }}
             >
@@ -6764,6 +7667,9 @@ export default function CITS5508() {
 
         {/* ── EXAM SUMMARY ── */}
         {tab === 'Exam Summary' && <ExamSummary onOpen={setTab} />}
+
+        {/* ── SAMPLE EXAM ── */}
+        {tab === 'Sample Exam' && <SampleExam onOpen={setTab} />}
 
         {/* ── CODE LAB ── */}
         {tab === 'Code Lab' && <CodeLab onOpen={setTab} />}

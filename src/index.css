@@ -3285,3 +3285,69 @@ strong { color: var(--text-0); font-weight: 600; }
 .cl-mv button:disabled { opacity: 0.35; cursor: default; }
 
 @media (max-width: 680px) { .ce-body { font-size: 0.7rem; } }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SAMPLE EXAM — attempt-first practice questions (CITS5508)
+   ════════════════════════════════════════════════════════════════════════════ */
+.exq-howto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin: 0 0 1rem; }
+.exq-howto > div { background: var(--bg-1); border: 1px solid var(--border); border-radius: 7px; padding: 0.6rem 0.75rem; font-size: 0.78rem; color: var(--text-2); line-height: 1.5; }
+.exq-howto-k { display: inline-block; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; margin-right: 0.45rem; }
+
+.exq-progress { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1rem; }
+.exq-progress-bar { flex: 1; height: 8px; background: var(--bg-3); border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+.exq-progress-fill { height: 100%; background: linear-gradient(90deg, var(--amber), var(--emerald)); border-radius: 99px; transition: width 0.3s ease; }
+.exq-progress-txt { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-1); flex-shrink: 0; }
+.exq-progress-txt strong { color: var(--amber); }
+.exq-reset { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border); border-radius: 5px; padding: 0.3rem 0.6rem; cursor: pointer; flex-shrink: 0; }
+.exq-reset:hover { color: var(--rose); border-color: var(--rose); }
+
+.exq-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; }
+.exq-filter { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600; color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border); border-radius: 5px; padding: 0.32rem 0.6rem; cursor: pointer; white-space: nowrap; }
+.exq-filter:hover { color: var(--text-0); }
+.exq-filter.on { background: rgba(255,255,255,0.06); color: var(--text-0); border-color: var(--text-2); }
+.exq-filter-n { opacity: 0.7; margin-left: 0.2rem; }
+
+.exq-note { font-size: 0.72rem; font-style: italic; color: var(--text-2); line-height: 1.5; margin: 0 0 1.4rem; }
+
+.exq-group { margin-bottom: 1.6rem; }
+.exq-group-hdr { margin-bottom: 0.7rem; }
+.exq-group-h { font-size: 0.95rem; font-weight: 700; color: var(--text-0); margin: 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.exq-group-n { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; color: var(--text-2); background: var(--bg-3); border: 1px solid var(--border); border-radius: 99px; padding: 0.1rem 0.5rem; }
+.exq-group-blurb { font-size: 0.76rem; color: var(--text-2); margin: 0.25rem 0 0; line-height: 1.5; }
+
+.exq-card { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1.05rem; margin-bottom: 0.85rem; }
+.exq-head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; }
+.exq-head-l { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+.exq-num { font-size: 0.92rem; font-weight: 700; color: var(--text-0); }
+.exq-marks { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-2); background: var(--bg-3); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.4rem; }
+.exq-srcbadge { font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid; border-radius: 4px; padding: 0.12rem 0.45rem; }
+.exq-attempt { display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600; color: var(--text-2); background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; cursor: pointer; }
+.exq-attempt:hover { color: var(--text-0); border-color: var(--text-2); }
+.exq-attempt.on { color: var(--emerald); border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.1); }
+.exq-attempt-box { display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; border-radius: 3px; border: 1.5px solid currentColor; font-size: 0.6rem; line-height: 1; }
+.exq-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.6rem 0; }
+.exq-tag { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; border: 1px solid; border-radius: 4px; padding: 0.12rem 0.45rem; }
+.exq-body { font-size: 0.84rem; color: var(--text-1); line-height: 1.6; }
+.exq-intro { margin: 0 0 0.5rem; }
+.exq-qp { display: flex; gap: 0.5rem; margin: 0.4rem 0; }
+.exq-qp-l { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--cyan); flex-shrink: 0; min-width: 2.4rem; }
+.exq-qp-b { flex: 1; min-width: 0; }
+.exq-foot { margin-top: 0.7rem; }
+.exq-sol-open { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; background: transparent; border: 1px solid; border-radius: 6px; padding: 0.4rem 0.8rem; cursor: pointer; transition: background 0.15s; }
+.exq-sol-open:hover { background: rgba(255,255,255,0.04); }
+
+.exq-cta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.2rem; border-radius: 9px; background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.25); margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-1); }
+
+/* solution modal internals — rendered on the white "paper" (dark ink) */
+.exq-sol-q { font-style: italic; color: #4a5a6b; border-left: 3px solid rgba(56,110,168,0.4); padding: 0.3rem 0 0.3rem 0.7rem; margin-bottom: 0.9rem; font-size: 0.95rem; line-height: 1.45; }
+.exq-reveal { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin-top: 1rem; }
+.exq-reveal-next { font-family: var(--font-hand); font-size: 1.15rem; font-weight: 700; background: #fffdf5; border: 2px solid currentColor; border-radius: 12px 5px 13px 6px; padding: 0.35rem 0.95rem; cursor: pointer; line-height: 1.1; }
+.exq-reveal-next:hover { background: rgba(56,110,168,0.06); }
+.exq-reveal-ct { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; opacity: 0.7; }
+.exq-reveal-all { font-family: var(--font-mono); font-size: 0.68rem; color: #6b7a8d; background: none; border: none; border-bottom: 1px dashed #6b7a8d; cursor: pointer; padding: 0; }
+.exq-reveal-all:hover { color: #20303f; border-bottom-color: #20303f; }
+.exq-reveal-done { font-family: var(--font-hand); font-size: 1.2rem; font-weight: 700; margin-top: 1rem; }
+
+@media (max-width: 680px) {
+  .exq-howto { grid-template-columns: 1fr; }
+}
