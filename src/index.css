@@ -3339,7 +3339,25 @@ strong { color: var(--text-0); font-weight: 600; }
 .exq-cta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.2rem; border-radius: 9px; background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.25); margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-1); }
 
 /* solution modal internals — rendered on the white "paper" (dark ink) */
-.exq-sol-q { font-style: italic; color: #4a5a6b; border-left: 3px solid rgba(56,110,168,0.4); padding: 0.3rem 0 0.3rem 0.7rem; margin-bottom: 0.9rem; font-size: 0.95rem; line-height: 1.45; }
+/* The full QUESTION shown above the worked solution, in a normal printed (serif)
+   style — only the solution below stays handwritten. Always dark-on-white: the modal
+   portals to <body> (outside .exam-light) and its paper is white in both themes, so
+   this self-styles and overrides the global p/strong colours within the block. */
+.exq-modal-q { font-family: Georgia, "Times New Roman", serif; color: #1b2230; font-size: 0.9rem; line-height: 1.55; margin: 0 0 1rem; padding: 0 0 0.9rem; border-bottom: 1px dashed #c9c6ba; }
+.exq-modal-q-lbl { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: #6b7280; margin-bottom: 0.45rem; }
+.exq-modal-q p { color: #1b2230; margin: 0 0 0.45rem; }
+.exq-modal-q strong { color: #111722; }
+.exq-modal-q em { color: #1b2230; }
+.exq-modal-q .exq-qp-l { font-family: Georgia, "Times New Roman", serif; font-weight: 700; color: #111722; }
+.exq-modal-q .exq-qp-b { color: #1b2230; }
+.exq-modal-q .m4-ptable th { color: #5a626f; border-bottom-color: #cdcabd; }
+.exq-modal-q .m4-ptable td { color: #28303d; border-bottom-color: #e6e3d8; }
+.exq-modal-q .m4-ptable tr:hover td { background: #f5f4ee; }
+.exq-modal-q .pk { color: #161b27; }
+.exq-modal-q .m4-pseudocode { background: #f4f3ee; border-color: #d8d5c8; color: #28303d; }
+.exq-modal-q .m4-pseudocode .kw { color: #7c3aed; }
+.exq-modal-q .m4-pseudocode .cm { color: #6b7a55; }
+.exq-modal-q .m4-pseudocode .num { color: #0e7490; }
 .exq-reveal { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin-top: 1rem; }
 .exq-reveal-next { font-family: var(--font-hand); font-size: 1.15rem; font-weight: 700; background: #fffdf5; border: 2px solid currentColor; border-radius: 12px 5px 13px 6px; padding: 0.35rem 0.95rem; cursor: pointer; line-height: 1.1; }
 .exq-reveal-next:hover { background: rgba(56,110,168,0.06); }
@@ -3351,3 +3369,105 @@ strong { color: var(--text-0); font-weight: 600; }
 @media (max-width: 680px) {
   .exq-howto { grid-template-columns: 1fr; }
 }
+
+/* Exam-paper mode toggle (renders in both the dark default and light mode) */
+.exq-modebar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.exq-modetoggle { display: inline-flex; align-items: center; gap: 0.55rem; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; color: var(--text-1); background: var(--bg-2); border: 1px solid var(--border); border-radius: 7px; padding: 0.4rem 0.75rem; cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s; }
+.exq-modetoggle:hover { color: var(--text-0); border-color: var(--text-2); }
+.exq-modetoggle-sw { position: relative; width: 30px; height: 16px; border-radius: 99px; background: var(--bg-3); border: 1px solid var(--border); flex-shrink: 0; transition: background 0.2s, border-color 0.2s; }
+.exq-modetoggle-knob { position: absolute; top: 1px; left: 1px; width: 12px; height: 12px; border-radius: 50%; background: var(--text-2); transition: transform 0.2s, background 0.2s; }
+.exq-modetoggle[aria-checked="true"] .exq-modetoggle-sw { background: #3f4654; border-color: #3f4654; }
+.exq-modetoggle[aria-checked="true"] .exq-modetoggle-knob { transform: translateX(14px); background: #fff; }
+.exq-modehint { font-size: 0.72rem; color: var(--text-2); font-style: italic; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   EXAM-PAPER (LIGHT) MODE — SCOPED ENTIRELY under `.exam-light`.
+   Nothing here touches :root, body, the global theme, other tabs, or the shared
+   handwritten modal (it portals to <body>, outside this wrapper, so it is never
+   matched by these rules and keeps its own white-paper styling).
+   ════════════════════════════════════════════════════════════════════════════ */
+.exam-light {
+  background: #fcfbf7;
+  color: #1b2230;
+  border: 1px solid #d8d5c8;
+  border-radius: 6px;
+  padding: 1.6rem 1.7rem 1.9rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* Override the GLOBAL element rules `p { color: var(--text-1) }` (light grey) and
+   `strong { color: var(--text-0) }` (near-white) — they are element selectors that
+   beat `.exam-light .exq-body` inheritance, so question paragraphs (incl. their
+   inline KaTeX, e.g. Q1) and bold spans (e.g. Q2's "k-NN") were too light on paper.
+   Scoped to `.exam-light` so the default dark theme is unchanged. `<em>`, `<code>`,
+   `<Tex>` and `<Hi>` text have no global colour, so they inherit these dark values.
+   `<Pen>` keeps its own dark ink (inline colour beats this). The specific UI-paragraph
+   overrides below (.m4-sec-sub / .exq-note / .exq-group-blurb) out-rank `.exam-light p`. */
+.exam-light p { color: #1b2230; }
+.exam-light strong { color: #111722; }
+
+/* header */
+.exam-light .m4-sec-title { color: #161b27; font-family: Georgia, "Times New Roman", serif; }
+.exam-light .m4-sec-sub { color: #3a4250; }
+.exam-light .m4-badge { background: #efeee7 !important; color: #555 !important; border-color: #cdcabd !important; }
+
+/* the toggle, recoloured for paper (the on/off switch itself is driven by aria-checked above) */
+.exam-light .exq-modetoggle { background: #fff; color: #1b2230; border-color: #c8c5b8; }
+.exam-light .exq-modetoggle:hover { border-color: #9a9688; }
+.exam-light .exq-modehint { color: #6b7280; }
+
+/* how-to strip */
+.exam-light .exq-howto > div { background: #f5f4ee; border-color: #ddd9cd; color: #3a4250; }
+.exam-light .exq-howto-k { background: #e8e6db; color: #555; border-color: #cdcabd; }
+
+/* progress — greyscale */
+.exam-light .exq-progress-bar { background: #e7e5da; border-color: #cdcabd; }
+.exam-light .exq-progress-fill { background: #4b5563; }
+.exam-light .exq-progress-txt { color: #3a4250; }
+.exam-light .exq-progress-txt strong { color: #161b27; }
+.exam-light .exq-reset { background: #f1f0e9; color: #555; border-color: #cdcabd; }
+.exam-light .exq-reset:hover { color: #b4453a; border-color: #b4453a; }
+
+/* filter chips — neutralised (override inline lecture colours) */
+.exam-light .exq-filter { background: #f2f1ea !important; color: #4a4f5a !important; border-color: #d0cdc0 !important; }
+.exam-light .exq-filter:hover { color: #161b27 !important; }
+.exam-light .exq-filter.on { background: #2f3540 !important; color: #fff !important; border-color: #2f3540 !important; }
+
+.exam-light .exq-note { color: #6b7280; }
+
+/* group headings */
+.exam-light .exq-group-h { color: #161b27; font-family: Georgia, "Times New Roman", serif; }
+.exam-light .exq-group-n { background: #efeee7; color: #555; border-color: #cdcabd; }
+.exam-light .exq-group-blurb { color: #5a626f; }
+
+/* question cards — white sheets, minimal colour, serif body + clear numbering */
+.exam-light .exq-card { background: #fff; border-color: #d8d5c8; border-left-color: #9a9688 !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+.exam-light .exq-num { color: #111722; font-family: Georgia, "Times New Roman", serif; }
+.exam-light .exq-marks { background: #efeee7; color: #444; border-color: #cdcabd; }
+.exam-light .exq-srcbadge { background: #f0efe8 !important; color: #555 !important; border-color: #cdcabd !important; }
+.exam-light .exq-attempt { background: #f4f3ec; color: #555; border-color: #d0cdc0; }
+.exam-light .exq-attempt:hover { color: #161b27; border-color: #9a9688; }
+.exam-light .exq-attempt.on { background: #ecebe2; color: #1b2230; border-color: #b6b3a4; }
+.exam-light .exq-tag { background: #f2f1ea !important; color: #565d68 !important; border-color: #d3d0c3 !important; }
+.exam-light .exq-body { color: #1b2230; font-family: Georgia, "Times New Roman", serif; font-size: 0.9rem; }
+.exam-light .exq-qp-l { color: #111722; font-family: Georgia, "Times New Roman", serif; }
+.exam-light .exq-qp-b { color: #1b2230; }
+.exam-light .exq-sol-open { background: #f4f3ec !important; color: #1b2230 !important; border-color: #b6b3a4 !important; }
+.exam-light .exq-sol-open:hover { background: #eae8de !important; }
+
+/* prompt tables (Q2 kNN) — printed look */
+.exam-light .m4-ptable th { color: #5a626f; border-bottom-color: #cdcabd; }
+.exam-light .m4-ptable td { color: #28303d; border-bottom-color: #e6e3d8; }
+.exam-light .m4-ptable tr:hover td { background: #f5f4ee; }
+.exam-light .pk { color: #161b27; }
+
+/* prompt code (MS4) — printed look, darker tokens for the light background */
+.exam-light .m4-pseudocode { background: #f5f4ee; border-color: #d8d5c8; color: #28303d; }
+.exam-light .m4-pseudocode .kw { color: #7c3aed; }
+.exam-light .m4-pseudocode .cm { color: #6b7a55; }
+.exam-light .m4-pseudocode .num { color: #0e7490; }
+
+/* bottom CTA — neutralised */
+.exam-light .exq-cta { background: #f4f4ee; border-color: #d6d3c6; color: #3a4250; }
+.exam-light .exq-cta .m4-btn { background: #fff; color: #1b2230; border-color: #b6b3a4; }
+.exam-light .exq-cta .m4-btn:hover { border-color: #6b7280; color: #161b27; }

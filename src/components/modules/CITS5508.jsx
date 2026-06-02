@@ -6061,7 +6061,11 @@ function SolutionModal({ q, onClose }) {
       footer="↳ reveal steps one at a time · Esc or click outside to close"
       onClose={onClose}
     >
-      <div className="exq-sol-q">{q.short}</div>
+      {/* Full question, in a normal printed (serif) style — only the solution below stays handwritten. */}
+      <div className="exq-modal-q">
+        <div className="exq-modal-q-lbl">Question{q.marks ? ` · ${q.marks}` : ''}</div>
+        {q.prompt}
+      </div>
 
       {steps.slice(0, shown).map((s, i) => (
         <HSec key={i} ink={ink} title={s.t}>{s.body}</HSec>
@@ -6118,6 +6122,13 @@ function ExamQuestionCard({ q, isAttempted, onToggle, onOpen }) {
 function SampleExam({ onOpen }) {
   const [openSol, setOpenSol] = useState(null);
   const [filter, setFilter] = useState('all');
+  // Light ("exam-paper") mode is LOCAL to this section: it only toggles the
+  // `.exam-light` class on this component's wrapper, so it never touches the
+  // global theme, other tabs, or the portaled handwritten modal.
+  const [lightMode, setLightMode] = useState(() => {
+    try { return localStorage.getItem('cits5508_exam_lightmode') === '1'; }
+    catch { return false; }
+  });
   const [attempted, setAttempted] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cits5508_exam_attempts') || '{}') || {}; }
     catch { return {}; }
@@ -6125,6 +6136,9 @@ function SampleExam({ onOpen }) {
   useEffect(() => {
     try { localStorage.setItem('cits5508_exam_attempts', JSON.stringify(attempted)); } catch { /* storage unavailable — tracking stays in-memory */ }
   }, [attempted]);
+  useEffect(() => {
+    try { localStorage.setItem('cits5508_exam_lightmode', lightMode ? '1' : '0'); } catch { /* storage unavailable */ }
+  }, [lightMode]);
 
   const toggle = id => setAttempted(a => {
     const n = { ...a };
@@ -6146,11 +6160,26 @@ function SampleExam({ onOpen }) {
   const openQ = SAMPLE_EXAM.find(q => q.id === openSol);
 
   return (
-    <div>
+    <div className={lightMode ? 'exam-light' : undefined}>
       <div className="m4-sec-hdr">
         <h2 className="m4-sec-title">Sample Exam <span className="m4-badge" style={{ background: 'rgba(251,191,36,0.12)', color: 'var(--amber)', border: '1px solid rgba(251,191,36,0.3)' }}>{total} questions · Lectures 1–9 · attempt first, then reveal</span></h2>
       </div>
       <p className="m4-sec-sub">Practise under exam conditions: each question hides its solution behind a handwritten, <strong>step-by-step</strong> reveal so you can attempt it first, then check the <em>method</em> — not just the final answer. Tag every question you've tried to track your coverage across the unit.</p>
+
+      <div className="exq-modebar">
+        <button
+          type="button"
+          className="exq-modetoggle"
+          role="switch"
+          aria-checked={lightMode}
+          aria-label="Exam-paper (light) display mode — scoped to the Sample Exam section"
+          onClick={() => setLightMode(v => !v)}
+        >
+          <span className="exq-modetoggle-sw" aria-hidden="true"><span className="exq-modetoggle-knob" /></span>
+          Exam-paper mode
+        </button>
+        <span className="exq-modehint">{lightMode ? 'Printed-paper look — applies to this section only.' : 'Switch this section to a printed-exam look (this section only).'}</span>
+      </div>
 
       <div className="exq-howto">
         <div><span className="exq-howto-k">Attempt</span> work the question on paper first.</div>
