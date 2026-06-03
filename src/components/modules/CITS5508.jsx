@@ -4915,8 +4915,8 @@ function Hi({ c, children }) {
 }
 function Pen({ c, children }) { return <strong style={{ color: c, fontWeight: 700 }}>{children}</strong>; }
 
-// Cheatsheet content — one dense one-pager per lecture. Content mirrors exactly
-// what each Exam Summary section already states (no new/unverified material).
+// Cheatsheet content — one dense one-pager per lecture. Content stays faithful to
+// the lecture notes / Exam Summary sections (no new/unverified material).
 const CHEATSHEETS = {
   L1: {
     title: 'The ML Landscape',
@@ -4926,7 +4926,7 @@ const CHEATSHEETS = {
           <HUL ink={ink} items={[
             <><Pen c="#0e7490">Samuel ’59</Pen>: learn "without being explicitly programmed".</>,
             <><Pen c="#0e7490">Mitchell ’97</Pen>: improves at task <strong>T</strong>, measured by <strong>P</strong>, with experience <strong>E</strong>.</>,
-            <>= <Hi>inductive learning</Hi> — specific examples → general rule.</>,
+            <>= <Hi>inductive learning</Hi> — logical inference: specific examples → general rule.</>,
           ]} />
           <HBox ink={ink} title="Spam filter = E/T/P">
             <HUL ink={ink} marker="•" items={[
@@ -4935,12 +4935,14 @@ const CHEATSHEETS = {
               <><strong>P</strong> = accuracy on new emails</>,
             ]} />
           </HBox>
+          <HNote>Each example = feature vector + label → build a classifier that labels <em>new unlabelled</em> examples.</HNote>
         </HSec>
         <HSec ink={ink} title="Formal model">
           <HF ink={ink} label="data point (n ex, m attrs)" src="D_i = (\vec{x}_i,\, y_i)" />
           <HF ink={ink} label="target vs hypothesis" src="f:\mathcal{X}\to\mathcal{Y},\;\; g\in\mathcal{H},\;\; g\approx f" />
           <HF ink={ink} label="linear classifier" src="h(\vec{x}) = \mathrm{sgn}\!\Big(\textstyle\sum_i w_i x_i + b\Big)" />
           <HF ink={ink} label="sign" src="\mathrm{sgn}(x)=\begin{cases}-1 & x<0\\ +1 & x>0\end{cases}" />
+          <HNote>Learning = search ℋ for a g ≈ f — f itself is unknown. sgn(·) = the threshold test Σwᵢxᵢ {'>'} −b.</HNote>
         </HSec>
         <HSec ink={ink} title="3 ways to categorise">
           <HUL ink={ink} items={[
@@ -4948,18 +4950,18 @@ const CHEATSHEETS = {
             <>Batch ↔ Online (learn incrementally?)</>,
             <>Instance-based ↔ Model-based</>,
           ]} />
-          <HNote><Pen c="#0e7490">Instance</Pen> = memorise + similarity (kNN). <Pen c="#0e7490">Model</Pen> = build a model, then predict.</HNote>
+          <HNote><Pen c="#0e7490">Instance</Pen> = memorise + generalise via a similarity measure (kNN). <Pen c="#0e7490">Model</Pen> = build a mathematical model from the examples, then predict new cases.</HNote>
         </HSec>
         <HSec ink={ink} title="Supervised vs Unsupervised">
-          <HBox ink="#0e7490" title="Supervised (X→y)">Classification (nominal y) · Regression (real y). Lin/Log/Softmax, kNN, SVM, DT, RF.</HBox>
-          <HBox ink="#6d28d9" title="Unsupervised (no labels)">Clustering (k-means, DBSCAN, HCA) · DR/viz (PCA, LLE, t-SNE) · Association (Apriori, Eclat) · Anomaly detection.</HBox>
+          <HBox ink="#0e7490" title="Supervised (X→y)">Classification (nominal y — e.g. approve/deny credit) · Regression (real y). Lin/Log/Softmax, kNN, SVM, DT, RF.</HBox>
+          <HBox ink="#6d28d9" title="Unsupervised (no labels)">Clustering (k-means, DBSCAN, HCA) · DR/viz (PCA, LLE, t-SNE) · Association (Apriori, Eclat) · Anomaly detection (learn "normal" → flag the abnormal).</HBox>
         </HSec>
         <HSec ink={ink} title="Challenges + validation">
           <HUL ink="#be123c" marker="✗" items={[
             'too little data', 'non-representative / poor quality',
             'irrelevant features', <Hi>overfit (deg-15) / underfit (deg-1)</Hi>,
           ]} />
-          <HBox ink={ink} title="Test & validate">Train/Test ≈ 80/20 · generalisation = <strong>out-of-sample error</strong> · validation set for tuning — <Hi c="rgba(248,113,113,0.5)">tuning on test leaks!</Hi></HBox>
+          <HBox ink={ink} title="Test & validate">Train/Test ≈ 80/20 · generalisation = <strong>out-of-sample error</strong> · validation set for tuning — <Hi c="rgba(248,113,113,0.5)">tuning on test leaks!</Hi> Tune on validation, keep test for the <em>final</em> estimate.</HBox>
         </HSec>
       </>
     ),
@@ -4974,18 +4976,19 @@ const CHEATSHEETS = {
           <HF ink={ink} label="perceptron update (if wrong)" src="w \leftarrow w + y_i x_i \;\;\text{if } y_i \neq h(x_i)" />
           <HNote><strong>6 steps:</strong></HNote>
           <HFlow ink={ink} steps={['understand', 'explore', 'prep data', 'train+tune', 'present', 'launch+monitor']} />
+          <HNote>Check assumptions at the start <em>and</em> after launch (steps 1 + 6).</HNote>
         </HSec>
         <HSec ink={ink} title="Regression metrics">
           <HF ink={ink} label="MSE" src="\mathrm{MSE} = \tfrac1m \textstyle\sum (h(x^{(i)})-y^{(i)})^2" />
           <HF ink={ink} label="MAE" src="\mathrm{MAE} = \tfrac1m \textstyle\sum |h(x^{(i)})-y^{(i)}|" />
-          <HNote><Hi>MSE squares → punishes outliers</Hi>; MAE robust; RMSE=√MSE (target units).</HNote>
+          <HNote><Hi>MSE squares → punishes outliers</Hi>; MAE robust; RMSE=√MSE (target units). Pick the measure to fit the task (California housing).</HNote>
         </HSec>
         <HSec ink={ink} title="Classification eval">
-          <HNote><Pen c="#6d28d9">MNIST</Pen>: 70k images, 784 = 28×28.</HNote>
+          <HNote><Pen c="#6d28d9">MNIST</Pen>: 70k images, 784 = 28×28. Split first — train_test_split(random_state=…) → reproducible, no data-snooping.</HNote>
           <HF ink={ink} label="precision (of predicted +)" src="\mathrm{precision} = \tfrac{TP}{TP+FP}" />
           <HF ink={ink} label="recall / TPR (of actual +)" src="\mathrm{recall} = \tfrac{TP}{TP+FN}" />
           <HF ink={ink} label="F₁ — harmonic mean" src="F_1 = \tfrac{2}{\frac1P + \frac1R}" />
-          <HBox ink="#be123c" title="Watch out!">Accuracy lies on imbalanced data ("always not-5" {'>'}90%). ROC = TPR vs FPR(=1−spec); bigger <strong>AUC</strong> better.</HBox>
+          <HBox ink="#be123c" title="Watch out!">Accuracy lies on imbalanced data ("always not-5" {'>'}90%). ROC = TPR vs FPR(=1−spec) across thresholds; bigger <strong>AUC</strong> better.</HBox>
           <HNote><Hi>Mnemonic:</Hi> <strong>P</strong>recision denom = <strong>P</strong>redicted +; <strong>R</strong>ecall denom = <strong>R</strong>eal +.</HNote>
           <HNote>P/R trade-off: ↑threshold ⇒ ↑precision ↓recall. Precision when FP costly (lane change); recall when FN costly (cancer).</HNote>
           <HNote>Sampling bias: 1936 poll → Landon, but Roosevelt 62%. Multiclass: Softmax/RF/NB direct; SVM binary → OvA/OvO.</HNote>
@@ -5001,7 +5004,7 @@ const CHEATSHEETS = {
           <HF ink={ink} label="prediction" src="\hat{y} = \theta^\top x = \theta_0 + \theta_1 x_1 + \cdots + \theta_n x_n" />
           <HF ink={ink} label="cost (RSS = m·MSE)" src="\mathrm{MSE} = \tfrac1m \textstyle\sum (\theta^\top x^{(i)} - y^{(i)})^2" />
           <HF ink={ink} label="Normal Equation" src="\hat{\theta} = (X^\top X)^{-1} X^\top y" />
-          <HNote><Hi c="rgba(248,113,113,0.5)">O(n³) in #features</Hi> → use GD for wide data.</HNote>
+          <HNote>Training = find θ minimising the cost. <Hi c="rgba(248,113,113,0.5)">O(n³) in #features</Hi> (linear in m) → use GD for wide data.</HNote>
         </HSec>
         <HSec ink={ink} title="Gradient descent">
           <HF ink={ink} label="gradient of MSE" src="\nabla_\theta\,\mathrm{MSE} = \tfrac2m X^\top (X\theta - y)" />
@@ -5009,8 +5012,8 @@ const CHEATSHEETS = {
           <HNote>η too big → <Pen c="#be123c">diverge</Pen>; can stall in local min / plateau.</HNote>
           <HBox ink={ink} title="3 variants">
             <HUL ink={ink} marker="•" items={[
-              <><strong>Batch</strong>: all data — stable, slow</>,
-              <><strong>SGD</strong>: 1 random — fast, noisy → schedule</>,
+              <><strong>Batch</strong>: all data every step — stable, slow</>,
+              <><strong>SGD</strong>: 1 random — fast, noisy → schedule ↓η to settle</>,
               <><strong>Mini-batch</strong>: subset — GPU vectorised</>,
             ]} />
           </HBox>
@@ -5018,14 +5021,14 @@ const CHEATSHEETS = {
         <HSec ink={ink} title="Polynomial + curves">
           <HUL ink={ink} items={[
             'add powers x², x³… then fit a linear model',
-            <>high degree → <strong>overfit</strong>; too simple → <strong>underfit</strong></>,
-            'learning curves = error vs train-set size → diagnose',
+            <>high degree (deg-300!) → <strong>overfit</strong> = fits noise; too simple → <strong>underfit</strong></>,
+            'learning curves = train + validation error vs train-set size → diagnose',
           ]} />
         </HSec>
         <HSec ink={ink} title="Logistic regression">
           <HF ink={ink} label="sigmoid (predict 1 if p̂≥0.5)" src="\hat{p} = \sigma(\theta^\top x),\;\; \sigma(t)=\tfrac{1}{1+e^{-t}}" />
           <HF ink={ink} label="log loss (cross-entropy)" src="J = -\tfrac1m \textstyle\sum [\,y\log\hat{p} + (1-y)\log(1-\hat{p})\,]" />
-          <HNote><Hi>convex → GD finds global min</Hi>; linear boundary (Iris-Virginica).</HNote>
+          <HNote><Hi>convex → GD finds global min</Hi> (no closed form). p̂≥0.5 ⇔ θᵀx≥0 → linear boundary (Iris-Virginica).</HNote>
         </HSec>
       </>
     ),
@@ -5036,14 +5039,14 @@ const CHEATSHEETS = {
       <>
         <HSec ink={ink} title="Bias / Variance">
           <HF ink={ink} label="error decomposes" src="\text{Err} = \text{Bias}^2 + \text{Var} + \text{Irreducible}" />
-          <HBox ink="#0e7490" title="High bias = underfit">too simple → richer model, better features, less reg.</HBox>
-          <HBox ink="#be123c" title="High variance = overfit">too sensitive → more data, CV, fewer dims, more reg.</HBox>
+          <HBox ink="#0e7490" title="High bias = underfit">wrong assumptions (assume linear, truth quadratic) — too simple → richer model, better features, less reg.</HBox>
+          <HBox ink="#be123c" title="High variance = overfit">too sensitive to small data variations — fits every example → more data, CV, fewer dims, more reg.</HBox>
           <HNote><Hi>↑complexity ⇒ ↑variance, ↓bias</Hi>. Irreducible = data noise.</HNote>
         </HSec>
         <HSec ink={ink} title="Tuning">
           <HUL ink={ink} items={[
-            <><strong>hyperparameter</strong>: set before training (k, degree, α, threshold)</>,
-            <><strong>k-fold CV</strong>; GridSearchCV / RandomizedSearchCV</>,
+            <><strong>hyperparameter</strong>: set before training, constant during — of the algorithm, not the model (k, degree, α, threshold)</>,
+            <><strong>k-fold CV</strong>; GridSearchCV / RandomizedSearchCV (big search spaces)</>,
             'retrain best on full train, test ONCE',
             'early stopping at min validation error',
           ]} />
@@ -5052,19 +5055,19 @@ const CHEATSHEETS = {
           <HF ink={ink} label="Ridge — ℓ₂" src="J = \mathrm{MSE} + \alpha \textstyle\sum \theta_i^2" />
           <HF ink={ink} label="Lasso — ℓ₁" src="J = \mathrm{MSE} + \alpha \textstyle\sum |\theta_i|" />
           <HF ink={ink} label="Elastic Net (ratio r)" src="J = \mathrm{MSE} + r\alpha\textstyle\sum|\theta_i| + \tfrac{1-r}{2}\alpha\textstyle\sum\theta_i^2" />
-          <HNote><Hi>Lasso = ℓ1 = corners → zeros</Hi> (selection); Ridge = ℓ2 = round → shrinks. Penalty in training only.</HNote>
+          <HNote><Hi>Lasso = ℓ1 = corners → zeros</Hi> (selection); Ridge = ℓ2 = round → shrinks. α = strength: fit the data <em>while keeping weights small</em>. Penalty in training only.</HNote>
         </HSec>
         <HSec ink={ink} title="Softmax (multiclass)">
           <HF ink={ink} label="probability → argmax" src="\hat{p}_k = \tfrac{\exp(s_k)}{\sum_j \exp(s_j)},\;\; s_k=(\theta^{(k)})^\top x" />
-          <HNote>trained with cross-entropy.</HNote>
+          <HNote>generalises LogReg to K classes directly; trained with cross-entropy (target yₖ = 1 for the true class, else 0).</HNote>
         </HSec>
         <HSec ink={ink} title="kNN (instance-based)">
           <HF ink={ink} label="Minkowski (p=1 Manh, p=2 Eucl)" src="D(x_i,x_j)=\big(\textstyle\sum_l |x_i[l]-x_j[l]|^p\big)^{1/p}" />
-          <HF ink={ink} label="distance-weighted vote" src="w_i = 1/d(x_q,x_i)^2" />
+          <HF ink={ink} label="distance-weighted vote (closer = louder)" src="w_i = 1/d(x_q,x_i)^2" />
           <HUL ink="#be123c" marker="!" items={[
             <Hi>must normalise features</Hi>,
             'small k → overfit; large k → underfit + majority bias',
-            'lazy — no training, slow at predict',
+            'lazy — no training, memory-heavy + slow at predict; noise/outliers hurt',
           ]} />
           <HNote>Multiclass (OvA/OvO) · Multilabel · Multioutput-multiclass.</HNote>
         </HSec>
@@ -5078,7 +5081,7 @@ const CHEATSHEETS = {
         <HSec ink={ink} title="Large margin">
           <HUL ink={ink} items={[
             'fit the widest "street" between classes',
-            <>boundary set by <strong>support vectors</strong> only</>,
+            <>boundary set by <strong>support vectors</strong> only — off-street instances don't move it</>,
             <>scale-sensitive → <Pen c="#be123c">StandardScaler (fit train only)</Pen></>,
             'best for small–medium complex data',
           ]} />
@@ -5088,18 +5091,18 @@ const CHEATSHEETS = {
           <HNote><Hi>small C → wide street / more violations; large C → narrow / overfit.</Hi> Overfit? reduce C.</HNote>
           <HF ink={ink} label="Gaussian RBF" src="K(a,b)=\exp(-\gamma\lVert a-b\rVert^2)" />
           <HF ink={ink} label="polynomial" src="K(a,b)=(\gamma\, a^\top b + r)^d" />
-          <HNote><strong>Kernel trick</strong> = many poly/similarity features without computing them. Kernels: linear, poly, RBF, sigmoid.</HNote>
+          <HNote><strong>Kernel trick</strong> = many poly/similarity features without computing them; RBF = similarity to a landmark. Kernels: linear, poly, RBF, sigmoid.</HNote>
         </HSec>
         <HSec ink={ink} title="Optimisation (under the hood)">
           <HF ink={ink} label="decision function" src="\hat{y} = w^\top x + b" />
           <HF ink={ink} label="hard margin" src="\min \tfrac12 w^\top w \;\text{ s.t. } t^{(i)}(w^\top x^{(i)}+b)\ge 1" />
           <HF ink={ink} label="soft margin" src="\min \tfrac12 w^\top w + C\textstyle\sum \zeta^{(i)}" />
           <HF ink={ink} label="hinge loss" src="J = \tfrac12 w^\top w + C\textstyle\sum \max(0,\,1 - t^{(i)}(w^\top x^{(i)}+b))" />
-          <HNote>Convex QP; the <strong>dual</strong> enables the kernel trick.</HNote>
+          <HNote>Convex QP; ζ = slack = how far a point may violate. The <strong>dual</strong> enables the kernel trick (+ faster when m {'<'} n).</HNote>
         </HSec>
         <HSec ink={ink} title="Complexity + SVR">
           <HUL ink={ink} marker="•" items={[
-            <>LinearSVC <Pen c="#047857">O(m·n)</Pen> · SGDClassifier <Pen c="#047857">O(m·n)</Pen></>,
+            <>LinearSVC <Pen c="#047857">O(m·n)</Pen> · SGDClassifier <Pen c="#047857">O(m·n)</Pen> + out-of-core</>,
             <>SVC (kernel) <Pen c="#be123c">O(m²n)–O(m³n)</Pen> — small data only</>,
           ]} />
           <HNote><Hi>Big m → never kernel SVC.</Hi> SVR: fit as many points <em>inside</em> the ε-tube.</HNote>
@@ -5114,27 +5117,27 @@ const CHEATSHEETS = {
         <HSec ink={ink} title="CART">
           <HUL ink={ink} items={[
             'greedy + top-down (global = NP-hard)',
-            'binary, axis-aligned splits Xⱼ ≤ tⱼ',
+            'binary, axis-aligned splits Xⱼ ≤ tⱼ → non-overlapping rectangles',
             '"Guess Who" = most informative question first',
             <>white-box · <strong>no scaling needed</strong></>,
           ]} />
           <HF ink={ink} label="split cost (classification)" src="J = \tfrac{m_L}{m}G_L + \tfrac{m_R}{m}G_R" />
-          <HNote>predict <strong>O(log₂m)</strong>; train O(n·m·log₂m).</HNote>
+          <HNote>predict <strong>O(log₂m)</strong> — independent of #features; train O(n·m·log₂m).</HNote>
         </HSec>
         <HSec ink={ink} title="Impurity">
           <HF ink={ink} label="Gini (default, faster)" src="G_i = 1 - \textstyle\sum_k p_{i,k}^2" />
           <HF ink={ink} label="Entropy" src="H_i = -\textstyle\sum_k p_{i,k}\log_2 p_{i,k}" />
-          <HNote><Hi>both 0 at a pure node</Hi> (50/50 Gini = 0.5); similar trees. Leaf value → class probs.</HNote>
+          <HNote><Hi>both 0 at a pure node</Hi> (50/50 Gini = 0.5); similar trees — Gini faster, isolates the top class; entropy → more balanced. Leaf value → class probs (49/54 = 0.907).</HNote>
         </HSec>
         <HSec ink={ink} title="Regularise + prune">
           <HNote>nonparametric → overfits. ↑min_* or ↓max_*:</HNote>
           <HFlow ink={ink} steps={['max_depth ↓', 'min_samples_leaf ↑', 'max_leaf_nodes ↓', 'max_features ↓']} />
           <HF ink={ink} label="cost-complexity pruning" src="\textstyle\sum_l \sum_{x_i\in R_l}(y_i-\hat{y}_{R_l})^2 + \alpha|T|" />
-          <HNote>α=0 → full tree; α→∞ → root only. Pick α by CV.</HNote>
+          <HNote>α=0 → full tree; α→∞ → root only. Grow big T₀, prune back — pick α by k-fold CV (Hitters: best ≈ 3 leaves).</HNote>
         </HSec>
         <HSec ink={ink} title="Regression trees + limits">
           <HF ink={ink} label="split cost (MSE)" src="J = \tfrac{m_L}{m}\mathrm{MSE}_L + \tfrac{m_R}{m}\mathrm{MSE}_R" />
-          <HNote>leaf = mean of region (Hitters: Years/Hits → log salary).</HNote>
+          <HNote>leaf = mean of its region (Hitters: Years/Hits → log salary). Depth ↑ → finer steps; unrestricted → memorises every point.</HNote>
           <HBox ink="#be123c" title="3 limits → fix">overfit → prune · axis-aligned (rotation) → <Pen c="#1d4ed8">PCA</Pen> · high variance → <Pen c="#1d4ed8">Random Forests</Pen>.</HBox>
         </HSec>
       </>
@@ -5146,13 +5149,13 @@ const CHEATSHEETS = {
       <>
         <HSec ink={ink} title="Voting — wisdom of crowd">
           <HBox ink={ink} title="Hard vs soft">Hard = majority class. Soft = avg predict_proba (confident votes weigh more, usually better).</HBox>
-          <HNote><Hi>weak learners → strong</Hi> if enough & diverse.</HNote>
+          <HNote><Hi>weak learners → strong</Hi> if enough & diverse (different algorithms ⇒ different errors). Moons: .864/.896/.896 alone → <strong>.912</strong> hard, <strong>.92</strong> soft.</HNote>
         </HSec>
         <HSec ink={ink} title="Bagging / Pasting / OOB">
           <HUL ink={ink} items={[
             <><strong>Bagging</strong> = sample WITH replacement; Pasting = without</>,
-            'aggregate: mode / average → ↓ variance',
-            <><strong>OOB</strong> ≈ ⅓ left out = free validation (oob_score_)</>,
+            'aggregate: mode / average → ↓ variance, similar bias (bagged DTs: deep, unpruned)',
+            <><strong>OOB</strong> ≈ ⅓ a tree never sees (≈⅔ sampled) = free validation (oob_score_)</>,
             'Random Patches (rows+cols) vs Subspaces (cols only)',
           ]} />
         </HSec>
@@ -5160,18 +5163,18 @@ const CHEATSHEETS = {
           <HUL ink={ink} items={[
             <>RF = bagged trees + random <strong>√n features per split</strong></>,
             'Extra-Trees: + random thresholds (faster, more bias)',
-            'feature importance = mean impurity decrease (norm to 1)',
+            'feature importance = mean impurity decrease, norm to 1 (Iris: petals .44+.42 ≈ 86%)',
           ]} />
           <HNote><Hi>Bagging fixes features per tree; RF resamples at every split.</Hi></HNote>
         </HSec>
         <HSec ink={ink} title="Boosting (sequential)">
           <HF ink={ink} label="AdaBoost: error & predictor weight" src="r_j = \!\!\sum_{\hat{y}_j^{(i)}\neq y^{(i)}}\!\! w^{(i)},\;\; \alpha_j = \eta\log\tfrac{1-r_j}{r_j}" />
-          <HNote>boost misclassified ×exp(αⱼ), renorm. Stump = depth 1.</HNote>
-          <HNote><strong>GBRT</strong>: fit residuals; small learning_rate + many trees + early stopping; classification = log loss.</HNote>
+          <HNote>start w⁽ⁱ⁾=1/m; boost misclassified ×exp(αⱼ), renorm — accurate predictor ⇒ bigger αⱼ. Stump = depth 1. Overfit? ↓n_estimators / regularise base.</HNote>
+          <HNote><strong>GBRT</strong>: fit each tree to the previous one's residuals; small learning_rate + many trees + early stopping (n_iter_no_change); classification = log loss.</HNote>
           <HBox ink={ink} title="Bagging vs Boosting">Bagging = <Pen c="#047857">parallel, ↓variance</Pen>. Boosting = <Pen c="#be123c">sequential, ↓bias</Pen> (can't parallelise).</HBox>
         </HSec>
         <HSec ink={ink} title="Stacking">
-          <HNote>train a <strong>blender</strong> on base models' <Hi>out-of-fold</Hi> predictions, then retrain bases on the full set.</HNote>
+          <HNote>train a <strong>blender</strong> on base models' <Hi>out-of-fold</Hi> predictions (5-fold CV), then retrain bases on the full set — <em>learns</em> the combination instead of a fixed vote.</HNote>
         </HSec>
       </>
     ),
@@ -5186,32 +5189,32 @@ const CHEATSHEETS = {
             'DR loses info BUT speeds train + enables 2D/3D viz',
             'feature selection = supervised; DR here = unsupervised',
           ]} />
-          <HBox ink={ink} title="Projection vs Manifold">Projection = data near a low-dim subspace (fails on twists). Manifold = unroll (Swiss roll: d=2 in n=3).</HBox>
+          <HBox ink={ink} title="Projection vs Manifold">Projection = data near a low-dim subspace (fails on twists). Manifold = unroll (Swiss roll: d=2 in n=3) — locally like a d-dim hyperplane; lower-d isn't always <em>simpler</em>.</HBox>
         </HSec>
         <HSec ink={ink} title="PCA — max variance">
           <HF ink={ink} label="SVD of centred data" src="X = U\,\Sigma\,V^\top" />
           <HNote>cols of V = principal axes (1st = max var, ⟂ next); sign not unique.</HNote>
           <HF ink={ink} label="project (Wd = first d cols of V)" src="X_{d\text{-proj}} = X\,W_d" />
           <HF ink={ink} label="reconstruct → recon. error" src="X_\text{rec} = X_{d\text{-proj}}\,W_d^\top" />
-          <HNote><Hi>centre data first</Hi>; np.linalg.svd returns Vᵀ.</HNote>
+          <HNote><Hi>centre data first</Hi>; np.linalg.svd returns Vᵀ (s = singular values, sorted ↓). Mixed units → standardise before PCA.</HNote>
         </HSec>
         <HSec ink={ink} title="Choose d + variants">
           <HF ink={ink} label="keep 95% variance" src="d = \arg\max(\text{cumsum(EVR)} \ge 0.95) + 1" />
           <HUL ink={ink} marker="•" items={[
             <>= <Pen c="#0f766e">PCA(n_components=0.95)</Pen> or the elbow</>,
-            'MNIST 95% → 784 → 154 dims',
+            'MNIST 95% → 784 → 154 dims — compression speeds downstream models',
             'Randomized PCA O(md²)+O(d³) ≪ O(mn²)+O(n³)',
             'Incremental PCA = mini-batches (online)',
           ]} />
         </HSec>
         <HSec ink={ink} title="Kernel PCA + others">
-          <HNote><strong>Kernel PCA</strong> = kernel trick + PCA → nonlinear (separates concentric circles).</HNote>
+          <HNote><strong>Kernel PCA</strong> = kernel trick + PCA → nonlinear (separates concentric circles). Kernel choice reshapes the embedding — linear won't unroll the Swiss roll.</HNote>
           <HBox ink={ink} title="other DR">
             <HUL ink={ink} marker="•" items={[
               'LLE — manifold, no projection',
               'MDS — preserves pairwise distances',
               'Isomap — kNN graph, geodesic distances',
-              't-SNE — visualisation (MNIST → 2D clusters)',
+              't-SNE — similar close, dissimilar far; visualisation (MNIST → 2D clusters; slow → subsample)',
             ]} />
           </HBox>
         </HSec>
@@ -5227,7 +5230,7 @@ const CHEATSHEETS = {
           <HUL ink={ink} items={[
             'loop: assign → update centroid means → repeat',
             'converges (inertia ↓, bounded ≥ 0)',
-            'hard = labels_; soft = transform() distances',
+            'hard = labels_; soft = transform() distances; IDs in arbitrary order',
           ]} />
           <HF ink={ink} label="inertia (score = −inertia)" src="\text{inertia} = \textstyle\sum_i \lVert x_i - c_{\text{closest}(i)}\rVert^2" />
           <HNote>Voronoi diagram shows the cells.</HNote>
@@ -5235,9 +5238,9 @@ const CHEATSHEETS = {
         <HSec ink={ink} title="3 drawbacks → fixes">
           <HNote><Pen c={ink}>① init sensitive</Pen> → n_init / k-means++:</HNote>
           <HF ink={ink} label="k-means++ pick-next" src="P(x_i) = \tfrac{D(x_i)^2}{\sum_j D(x_j)^2}" />
-          <HNote><Pen c={ink}>② choose k</Pen> → elbow (misleading) or silhouette:</HNote>
+          <HNote><Pen c={ink}>② choose k</Pen> → inertia ↓ monotonically with k (can't just minimise) → elbow (misleading) or silhouette:</HNote>
           <HF ink={ink} label="silhouette ∈ [−1,1], higher better" src="s_i = \tfrac{b - a}{\max(a,\, b)}" />
-          <HNote>a = intra-cluster, b = nearest other cluster. <Pen c={ink}>③ shape</Pen> (size/density/non-spherical) → <strong>GMM</strong>.</HNote>
+          <HNote>a = intra-cluster, b = nearest other cluster; +1 well inside · 0 boundary · −1 wrong cluster. <Pen c={ink}>③ shape</Pen> (size/density/non-spherical) → <strong>GMM</strong> (covariance per cluster).</HNote>
         </HSec>
         <HSec ink={ink} title="Semi-supervised (digits)">
           <HUL ink={ink} marker="•" items={[
@@ -5246,13 +5249,14 @@ const CHEATSHEETS = {
             'full propagation → 89.4%',
             <Hi>partial (drop 1%) → 90.9% {'>'} 90.7% (all labels)</Hi>,
           ]} />
+          <HNote>rep = instance closest to each centroid (argmin of fit_transform dists); the partial labels are 97.6% correct.</HNote>
         </HSec>
         <HSec ink={ink} title="DBSCAN (density)">
           <HUL ink={ink} items={[
             'params: ε (radius) + min_samples',
             'Core (≥min in ε) / Border / Noise(−1)',
             'core chains → any-shape cluster; ↑ε → fewer anomalies (84→0)',
-            'no predict() → train kNN on components_',
+            'no predict() → train kNN on components_; far new points (dist beyond threshold) → −1 again',
           ]} />
           <HBox ink={ink} title="Pros / Cons"><Pen c="#047857">+ any shape, auto-k, anomalies, 2 params.</Pen> <Pen c="#be123c">− varying density; O(m²n), no scale.</Pen></HBox>
         </HSec>

@@ -3137,6 +3137,11 @@ strong { color: var(--text-0); font-weight: 600; }
   background: rgba(220, 38, 38, 0.3);
 }
 .cheat-paper .katex { font-size: 1.02em; }
+/* Plain <strong> on the paper was hit by the GLOBAL `strong { color: var(--text-0) }`
+   (near-white) element rule — element selectors beat inheritance, so e.g. the T/P/E
+   letters in L1's Mitchell '97 line were almost invisible on white. Dark-ink override
+   scoped to the paper (dark theme untouched); <Pen>'s inline colours still win. */
+.cheat-paper strong { color: #111722; }
 
 .cheat-title {
   font-family: var(--font-hand);
