@@ -12,6 +12,7 @@ import soundWaves   from '../assets/gifs/sound_waves.gif';
 import cyberStation from '../assets/gifs/cyber_station.gif';
 import redRainCity  from '../assets/gifs/red_rain_city.gif';
 import palmsRain    from '../assets/gifs/palms_rain.gif';
+import fishtank     from '../assets/gifs/fishtank_resturant.gif';
 
 // ── PIN (same as Hub) ─────────────────────────────────────────────
 const GAMES_PIN = '6969';
@@ -52,6 +53,15 @@ const GAMES = [
     gif: palmsRain,
     color: 'violet',
     tag: '2-PLAYER',
+    comingSoon: false,
+  },
+  {
+    id: 'overmind',
+    title: 'Overmind',
+    description: 'A shared dream for 2–6 minds. Vote in secret on impossible questions — sync with the hive or fracture from it — and inscribe the winning answers as laws of a universe only your circle believes in.',
+    gif: fishtank,
+    color: 'violet',
+    tag: 'PASS & PLAY',
     comingSoon: false,
   },
   {
