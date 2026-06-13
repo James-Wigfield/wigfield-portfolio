@@ -1,0 +1,282 @@
+/* ============================================================
+   BEER OLYMPICS — /olympics
+   Self-contained "game-day card" theme. All tokens + selectors
+   are scoped under .oly-root so nothing leaks into the rest of
+   the site (the global --amber etc. stay untouched).
+   ============================================================ */
+
+.oly-root {
+  /* scoped design tokens — deliberately NOT on :root */
+  --ink: #0B0712;
+  --ink-2: #150E26;
+  --paper: #F7EEDC;
+  --muted: rgba(247, 238, 220, .6);
+  --line: rgba(247, 238, 220, .14);
+  --orange: #FF6A1F;
+  --amber: #FFB02E;
+  --magenta: #FF1F6B;
+  --teal: #1FE3B6;
+  --lime: #C9FF49;
+  --indigo: #2A1A52;
+  --purple: #9b87f5;
+
+  --display: 'Anton', system-ui, sans-serif;
+  --body: 'Space Grotesk', system-ui, sans-serif;
+  --mono: 'Space Mono', ui-monospace, monospace;
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--body);
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the day-to-night journey, fixed behind everything (scoped) */
+.oly-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 60% at 80% -5%, rgba(255, 176, 46, .30), transparent 55%),
+    radial-gradient(100% 45% at 10% 8%, rgba(255, 106, 31, .28), transparent 55%),
+    radial-gradient(120% 55% at 90% 42%, rgba(255, 31, 107, .22), transparent 60%),
+    linear-gradient(180deg, #1a0d22 0%, #150b26 32%, #0e0a22 60%, #0b0712 100%);
+}
+
+.oly-root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: .5;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(247, 238, 220, .05) 1px, transparent 1px);
+  background-size: 4px 4px;
+  mix-blend-mode: soft-light;
+}
+
+/* keep all real content above the fixed background layers */
+.oly-topbar,
+.oly-hero,
+.oly-section,
+.oly-footer { position: relative; z-index: 1; }
+
+.oly-wrap { width: min(1120px, 92vw); margin: 0 auto; }
+.oly-root a { color: inherit; text-decoration: none; }
+
+/* ---------- top bar ---------- */
+.oly-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(11, 7, 18, .82), rgba(11, 7, 18, .35));
+  border-bottom: 1px solid var(--line);
+}
+.oly-topbar .oly-wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+.oly-brand { font-family: var(--display); letter-spacing: .06em; font-size: 1.05rem; transition: opacity .2s; }
+.oly-brand:hover { opacity: .8; }
+.oly-brand .oly-dot { color: var(--magenta); }
+.oly-clock { font-family: var(--mono); font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: .5rem; white-space: nowrap; }
+.oly-clock b { color: var(--teal); font-weight: 700; }
+.oly-livepip { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 0 rgba(31, 227, 182, .7); animation: oly-pip 1.8s infinite; }
+@keyframes oly-pip {
+  0% { box-shadow: 0 0 0 0 rgba(31, 227, 182, .55); }
+  70% { box-shadow: 0 0 0 9px rgba(31, 227, 182, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(31, 227, 182, 0); }
+}
+
+/* ---------- hero ---------- */
+.oly-hero { padding: clamp(3rem, 9vw, 7rem) 0 2.5rem; }
+.oly-eyebrow {
+  font-family: var(--mono); font-size: .74rem; letter-spacing: .32em; text-transform: uppercase;
+  color: var(--amber); display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center;
+}
+.oly-eyebrow span { position: relative; padding-left: 1.1rem; }
+.oly-eyebrow span::before { content: ""; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; border-radius: 50%; background: var(--magenta); transform: translateY(-50%); }
+.oly-titleblock { margin: 1.4rem 0 1rem; line-height: .86; }
+.oly-kicker { font-family: var(--display); font-size: clamp(1.6rem, 5vw, 2.6rem); color: var(--amber); letter-spacing: .02em; }
+.oly-megatitle {
+  font-family: var(--display);
+  font-size: clamp(3.6rem, 15vw, 9rem);
+  letter-spacing: .005em;
+  background: linear-gradient(92deg, var(--orange), var(--magenta) 55%, #ff7ab3);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 60px rgba(255, 31, 107, .18);
+}
+.oly-lede { max-width: 52ch; color: var(--muted); font-size: 1.05rem; margin-top: .6rem; }
+.oly-lede strong { color: var(--paper); font-weight: 500; }
+
+.oly-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 2.4rem;
+  background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+}
+.oly-stat { background: rgba(20, 12, 34, .6); padding: 1.1rem 1.2rem; }
+.oly-stat-n { font-family: var(--display); font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1; }
+.oly-stat-n.t { color: var(--teal); }
+.oly-stat-n.o { color: var(--orange); }
+.oly-stat-n.m { color: var(--magenta); }
+.oly-stat-n.a { color: var(--amber); }
+.oly-stat-l { font-family: var(--mono); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: .45rem; }
+
+/* ---------- section frame ---------- */
+.oly-section { padding: 3.6rem 0; }
+.oly-sechead { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+.oly-sechead h2 { font-family: var(--display); font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: .02em; line-height: .9; }
+.oly-idx { font-family: var(--mono); font-size: .8rem; color: var(--magenta); letter-spacing: .2em; }
+.oly-sechead p { color: var(--muted); max-width: 42ch; font-size: .95rem; }
+
+/* ---------- arenas ---------- */
+.oly-arenas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.oly-arena {
+  position: relative; border: 1px solid var(--line); border-radius: 18px; padding: 1.4rem;
+  background: linear-gradient(180deg, rgba(28, 18, 46, .66), rgba(13, 9, 28, .66));
+  overflow: hidden; transition: transform .25s ease, border-color .25s ease;
+}
+.oly-arena:hover { transform: translateY(-4px); border-color: rgba(247, 238, 220, .3); }
+.oly-arena .oly-glow { position: absolute; inset: auto -30% -50% auto; width: 60%; height: 70%; filter: blur(46px); opacity: .5; border-radius: 50%; }
+.oly-tag {
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ink);
+  display: inline-block; padding: .3rem .6rem; border-radius: 999px; font-weight: 700;
+}
+.oly-arena h3 { font-family: var(--display); font-size: 1.55rem; letter-spacing: .02em; margin: .9rem 0 .15rem; }
+.oly-arena .oly-game { font-weight: 700; color: var(--paper); }
+.oly-arena .oly-desc { color: var(--muted); font-size: .9rem; margin-top: .5rem; }
+.oly-arena .oly-meta { font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+.oly-arena .oly-meta b { color: var(--paper); }
+.oly-star { color: var(--lime); }
+
+/* "how to play" mini-steps inside the signature arenas */
+.oly-how { margin-top: 1rem; display: grid; gap: .5rem; }
+.oly-how-step { display: flex; gap: .6rem; font-size: .86rem; color: var(--muted); }
+.oly-how-step .oly-k { font-family: var(--mono); color: var(--amber); font-weight: 700; flex: none; }
+.oly-how-step b { color: var(--paper); font-weight: 700; }
+
+/* ---------- fixtures / run sheet ---------- */
+.oly-filters { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.oly-chip {
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+  padding: .45rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; transition: .2s;
+}
+.oly-chip:hover { color: var(--paper); border-color: rgba(247, 238, 220, .35); }
+.oly-chip[aria-pressed="true"] { background: var(--paper); color: var(--ink); border-color: var(--paper); font-weight: 700; }
+
+.oly-card { display: flex; flex-direction: column; }
+.oly-fixture {
+  display: grid; grid-template-columns: 88px 1fr auto; gap: 1.2rem; align-items: center;
+  padding: 1.15rem 1.2rem; border: 1px solid var(--line); border-radius: 16px; margin-bottom: .7rem;
+  background: linear-gradient(90deg, rgba(20, 12, 34, .5), rgba(13, 9, 28, .35));
+  transition: border-color .25s, background .25s, transform .2s;
+}
+.oly-fixture:hover { transform: translateX(3px); }
+.oly-fixture .oly-t { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: var(--amber); line-height: 1.15; }
+.oly-fixture .oly-t small { display: block; font-size: .64rem; letter-spacing: .14em; color: var(--muted); font-weight: 400; }
+.oly-fixture .oly-name { font-family: var(--display); font-size: 1.5rem; letter-spacing: .02em; line-height: .95; }
+.oly-fixture .oly-fsub { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
+.oly-fixture .oly-where {
+  font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .14em;
+  color: var(--ink); padding: .28rem .55rem; border-radius: 999px; font-weight: 700; white-space: nowrap;
+}
+.oly-fixture.break { border-style: dashed; opacity: .92; background: linear-gradient(90deg, rgba(31, 227, 182, .08), rgba(13, 9, 28, .2)); }
+.oly-fixture.feast { border-color: rgba(255, 176, 46, .45); background: linear-gradient(90deg, rgba(255, 106, 31, .16), rgba(13, 9, 28, .2)); }
+.oly-fixture.headline .oly-name { background: linear-gradient(92deg, var(--orange), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.oly-fixture.live { border-color: var(--teal); box-shadow: 0 0 0 1px rgba(31, 227, 182, .35), 0 14px 40px -18px rgba(31, 227, 182, .5); }
+.oly-nowtag {
+  font-family: var(--mono); font-size: .6rem; letter-spacing: .18em; color: var(--ink); background: var(--teal);
+  padding: .18rem .45rem; border-radius: 6px; font-weight: 700; display: none; margin-left: .5rem; vertical-align: middle;
+}
+.oly-fixture.live .oly-nowtag { display: inline-block; animation: oly-blink 1.4s steps(2, end) infinite; }
+@keyframes oly-blink { 50% { opacity: .35; } }
+.oly-fixture.done { opacity: .42; }
+
+/* ---------- scoring ---------- */
+.oly-scorewrap { display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.2rem; }
+.oly-panel { border: 1px solid var(--line); border-radius: 18px; padding: 1.5rem; background: rgba(13, 9, 28, .5); }
+.oly-panel h3 { font-family: var(--display); letter-spacing: .03em; font-size: 1.35rem; margin-bottom: 1rem; color: var(--amber); }
+.oly-pts { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.oly-pts th, .oly-pts td { text-align: left; padding: .65rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.oly-pts th { font-family: var(--mono); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.oly-pts td.p { font-family: var(--mono); font-weight: 700; color: var(--teal); white-space: nowrap; text-align: right; }
+.oly-pts tr:last-child td { border-bottom: none; }
+.oly-rule { display: flex; gap: .7rem; margin-bottom: .9rem; font-size: .9rem; color: var(--muted); }
+.oly-rule b { color: var(--paper); font-weight: 700; }
+.oly-rule .oly-k { font-family: var(--mono); color: var(--magenta); font-weight: 700; flex: none; }
+.oly-crown {
+  margin-top: 1.2rem; padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid rgba(201, 255, 73, .4);
+  background: linear-gradient(120deg, rgba(201, 255, 73, .12), transparent);
+}
+.oly-crown b { color: var(--lime); }
+
+/* ---------- scoreboard ---------- */
+.oly-board { border: 1px solid var(--line); border-radius: 20px; padding: 1.4rem; background: rgba(13, 9, 28, .55); }
+.oly-addrow { display: flex; gap: .6rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.oly-addrow input {
+  flex: 1; min-width: 180px; background: rgba(247, 238, 220, .06); border: 1px solid var(--line); color: var(--paper);
+  padding: .7rem .9rem; border-radius: 12px; font-family: var(--body); font-size: 1rem; outline: none;
+}
+.oly-addrow input:focus { border-color: var(--teal); }
+.oly-btn {
+  font-family: var(--mono); font-weight: 700; letter-spacing: .04em; cursor: pointer; border: none; border-radius: 12px;
+  padding: .7rem 1.1rem; background: var(--teal); color: var(--ink); transition: .15s; font-size: .85rem;
+}
+.oly-btn:hover { filter: brightness(1.08); }
+.oly-btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.oly-btn.ghost:hover { color: var(--paper); border-color: var(--paper); }
+
+.oly-player {
+  display: grid; grid-template-columns: 34px 1fr auto; gap: .9rem; align-items: center;
+  padding: .8rem .9rem; border-radius: 14px; border: 1px solid var(--line); margin-bottom: .6rem;
+  background: linear-gradient(90deg, rgba(20, 12, 34, .45), transparent); transition: .25s;
+}
+.oly-player.lead { border-color: rgba(201, 255, 73, .5); background: linear-gradient(90deg, rgba(201, 255, 73, .1), transparent); }
+.oly-player .oly-rank { font-family: var(--display); font-size: 1.3rem; color: var(--muted); text-align: center; }
+.oly-player.lead .oly-rank { color: var(--lime); }
+.oly-player .oly-who { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.oly-player .oly-who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oly-player .oly-pscore { font-family: var(--mono); font-weight: 700; font-size: 1.2rem; color: var(--teal); text-align: right; min-width: 3ch; }
+.oly-player.lead .oly-pscore { color: var(--lime); }
+.oly-ctrls { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .55rem; grid-column: 1 / -1; }
+.oly-ctrls button {
+  font-family: var(--mono); font-size: .72rem; padding: .32rem .55rem; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--paper); transition: .15s;
+}
+.oly-ctrls button:hover { background: rgba(247, 238, 220, .1); }
+.oly-ctrls .minus { color: var(--magenta); border-color: rgba(255, 31, 107, .35); }
+.oly-ctrls .rm { margin-left: auto; color: var(--muted); }
+.oly-empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 1.4rem; font-family: var(--mono); }
+
+/* ---------- safety / footer ---------- */
+.oly-safety { border: 1px solid rgba(31, 227, 182, .3); border-radius: 18px; padding: 1.5rem; background: rgba(31, 227, 182, .05); }
+.oly-safety h3 { font-family: var(--display); letter-spacing: .03em; font-size: 1.3rem; color: var(--teal); margin-bottom: .8rem; }
+.oly-safety ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .8rem; }
+.oly-safety li { font-size: .9rem; color: var(--muted); padding-left: 1.3rem; position: relative; }
+.oly-safety li::before { content: ""; position: absolute; left: 0; top: .45em; width: 8px; height: 8px; border-radius: 2px; background: var(--teal); }
+.oly-safety li b { color: var(--paper); }
+
+.oly-footer { padding: 3rem 0 4rem; text-align: center; color: var(--muted); }
+.oly-toast {
+  font-family: var(--display); font-size: clamp(1.6rem, 5vw, 2.4rem);
+  background: linear-gradient(92deg, var(--amber), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: .6rem;
+}
+.oly-footer small { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; }
+
+/* reveal */
+.oly-reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.oly-reveal.oly-in { opacity: 1; transform: none; }
+
+@media (max-width: 760px) {
+  .oly-stats { grid-template-columns: repeat(2, 1fr); }
+  .oly-scorewrap { grid-template-columns: 1fr; }
+  .oly-fixture { grid-template-columns: 64px 1fr; gap: .8rem; }
+  .oly-fixture .oly-where { grid-column: 2; justify-self: start; margin-top: .3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oly-root *, .oly-root *::before, .oly-root *::after { animation: none !important; transition: none !important; }
+  .oly-reveal { opacity: 1; transform: none; }
+}

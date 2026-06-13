@@ -9,6 +9,7 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import Hub from './components/Hub';
 import Games from './components/Games';
+import Olympics from './components/Olympics';
 import UniversityModule from './components/UniversityModule';
 import CITS4404 from './components/modules/CITS4404';
 import CITS5508 from './components/modules/CITS5508';
@@ -43,6 +44,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Portfolio />} />
+      {/* Public party page — intentionally NOT behind the PinGate that protects /hub and /games */}
+      <Route path="/olympics" element={<Olympics />} />
       <Route path="/hub" element={<Hub />} />
       <Route path="/hub/cits4404" element={<CITS4404 />} />
       <Route path="/hub/cits5508" element={<CITS5508 />} />
