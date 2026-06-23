@@ -761,6 +761,13 @@ function RevealScreen({ round, names, onLeave, onComplete }) {
             >
               {isLast ? 'BEGIN DISCUSSION →' : 'I\'VE SEEN IT — NEXT PLAYER →'}
             </button>
+            {isLast && (
+              <p className="pi-hint" style={{ marginTop: '0.85rem' }}>
+                You&apos;re the last to look. This just kicks off the discussion — it
+                does NOT reveal the imposter. You&apos;ll unmask them with a separate
+                button once everyone&apos;s had their say.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -831,13 +838,18 @@ function DiscussionScreen({ round, names, secondsTotal, votingEnabled, onLeave, 
               </li>
             ))}
           </ul>
+          <p className="pi-hint" style={{ marginTop: '1.25rem' }}>
+            {votingEnabled
+              ? 'The imposter is still secret — everyone casts a vote first, then it\'s revealed.'
+              : 'The imposter is still secret — you\'ll reveal it with a button on the next screen.'}
+          </p>
           <button
             className="game-btn game-btn--rose"
-            style={{ marginTop: '1.25rem' }}
+            style={{ marginTop: '1rem' }}
             onClick={onDone}
             type="button"
           >
-            {votingEnabled ? 'ACCUSATIONS — START VOTE →' : 'CALL THE VERDICT →'}
+            {votingEnabled ? 'ACCUSATIONS — START VOTE →' : 'DONE DISCUSSING →'}
           </button>
         </div>
       </div>
@@ -951,6 +963,10 @@ function tallyVotes(votes, names) {
 }
 
 function ResultScreen({ round, names, votes, scores, roundNum, manualVerdict, onManualVerdict, onNextRound, onEndGame, onLeave }) {
+  // Manual-verdict rounds keep the imposter hidden behind an explicit reveal tap, so
+  // ending the discussion never accidentally unmasks anyone. Voting rounds have
+  // already passed through the vote, so they show the result straight away.
+  const [revealed, setRevealed] = useState(!manualVerdict);
   const imposterNames = Array.from(round.imposterIndices).map(i => names[i]);
   const { counts, topNames, topCount } = tallyVotes(votes, names);
 
@@ -962,6 +978,24 @@ function ResultScreen({ round, names, votes, scores, roundNum, manualVerdict, on
   return (
     <Shell onLeave={onLeave}>
       <div className="game-screen">
+        {!revealed ? (
+          <div className="game-card pi-card-night">
+            <p className="pi-round-badge">ROUND {roundNum} · DISCUSSION OVER</p>
+            <p className="pi-section-title">Ready to unmask the imposter?</p>
+            <p className="pi-hint" style={{ margin: '0.85rem 0 1.5rem' }}>
+              The imposter is still secret. Make your accusations out loud first —
+              tapping the button below is the only thing that reveals who it was.
+            </p>
+            <button
+              className="game-btn game-btn--rose"
+              onClick={() => setRevealed(true)}
+              type="button"
+            >
+              REVEAL THE IMPOSTER →
+            </button>
+          </div>
+        ) : (
+          <>
         <div className={`game-card pi-card-result ${manualVerdict ? '' : (crewWins ? 'pi-card-result--crew' : 'pi-card-result--imposter')}`}>
           <p className="pi-round-badge">ROUND {roundNum} · {manualVerdict ? 'REVEAL' : 'VERDICT'}</p>
           {!manualVerdict && (
@@ -1120,6 +1154,8 @@ function ResultScreen({ round, names, votes, scores, roundNum, manualVerdict, on
           </div>
           </div>
         )}
+          </>
+        )}
       </div>
     </Shell>
   );
@@ -1176,10 +1212,10 @@ export default function PartyImposter() {
   };
 
   const handleRevealComplete = () => {
-    const secs = parseInt(config.discussionSecs, 10);
-    if (secs > 0)            setPhase('discuss');
-    else if (config.voting)  setPhase('vote');
-    else                     setPhase('result'); // straight to manual verdict
+    // Always pass through the discussion screen so "BEGIN DISCUSSION" never jumps
+    // straight to unmasking the imposter. The discussion screen handles the
+    // no-timer case ("TALK IT OUT") and routes on to voting or the gated reveal.
+    setPhase('discuss');
   };
 
   const handleDiscussionDone = () => {

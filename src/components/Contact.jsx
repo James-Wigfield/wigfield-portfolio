@@ -1,43 +1,50 @@
-import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
+import Reveal from './Reveal';
 
 export default function Contact() {
-  const [headerRef, headerVisible] = useIntersectionObserver();
-  const [bodyRef, bodyVisible] = useIntersectionObserver();
-
   return (
-    <section id="contact" className="section contact">
-      <div className="container">
-        <div ref={headerRef} className={`section__header${headerVisible ? ' anim-slide-up' : ''}`}>
-          <span className="section__label">// 05</span>
-          <h2 className="section__title">Get In Touch</h2>
-        </div>
-
-        <div ref={bodyRef} className={`contact__body${bodyVisible ? ' anim-slide-up' : ''}`}>
-          <p className="contact__intro">
-            I'm always open to new opportunities, collaborations, or just a great conversation
-            about AI and technology. Whether you have a project in mind or just want to connect —
-            my inbox is open.
-          </p>
-
-          <div className="contact__cards">
-            <a href="mailto:jameswigfield1@gmail.com" className="contact-card glass-card glass-card--cyan">
-              <span className="contact-card__icon">✉️</span>
-              <span className="contact-card__label">Email</span>
-              <span className="contact-card__value">jameswigfield1@gmail.com</span>
-              <span className="contact-card__arrow">→</span>
-            </a>
-            <a href="tel:+61455887910" className="contact-card glass-card glass-card--violet">
-              <span className="contact-card__icon">📱</span>
-              <span className="contact-card__label">Phone</span>
-              <span className="contact-card__value">0455 887 910</span>
-              <span className="contact-card__arrow">→</span>
-            </a>
+    <section id="contact" className="hp-section hp-contact" aria-labelledby="contact-title">
+      <div className="hp-wrap">
+        <Reveal>
+          <div className="hp-chead__bar" aria-hidden="true">
+            <span className="hp-chead__n">06</span>
+            <span className="hp-chead__line" />
           </div>
+          <p className="hp-eyebrow">Contact</p>
+          <h2 id="contact-title" className="hp-contact__title">
+            Let's work on something <em>together</em>.
+          </h2>
+          <p className="hp-contact__lede">
+            A research collaboration, a grad role, or a business drowning in manual processes —
+            if it's an interesting problem, I'd like to hear about it.
+          </p>
+        </Reveal>
 
-          <a href="mailto:jameswigfield1@gmail.com" className="btn btn--primary contact__cta">
-            Say Hello &nbsp;→
+        <Reveal className="hp-contact__lines">
+          <a className="hp-contact__line" href="mailto:jameswigfield1@gmail.com">
+            <span className="hp-contact__k">Email</span>
+            <span className="hp-contact__v">
+              jameswigfield1@gmail.com
+              <span className="hp-btn__arrow" aria-hidden="true">→</span>
+            </span>
           </a>
-        </div>
+          <a className="hp-contact__line" href="tel:+61455887910">
+            <span className="hp-contact__k">Phone</span>
+            <span className="hp-contact__v">
+              0455 887 910
+              <span className="hp-btn__arrow" aria-hidden="true">→</span>
+            </span>
+          </a>
+          <div className="hp-contact__line">
+            <span className="hp-contact__k">Location</span>
+            <span className="hp-contact__v">Perth, Western Australia</span>
+          </div>
+        </Reveal>
+
+        <Reveal className="hp-contact__cta">
+          <a className="hp-btn hp-btn--solid" href="mailto:jameswigfield1@gmail.com">
+            Send me an email <span className="hp-btn__arrow" aria-hidden="true">→</span>
+          </a>
+        </Reveal>
       </div>
     </section>
   );

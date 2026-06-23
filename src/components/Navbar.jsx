@@ -1,64 +1,68 @@
 import { useState, useEffect } from 'react';
+import { SECTIONS } from './sections';
 
-const NAV_LINKS = ['About', 'Experience', 'Projects', 'Skills', 'Contact'];
+const LINKS = SECTIONS;
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('');
+  const [active, setActive] = useState('');
 
   useEffect(() => {
     const onScroll = () => {
-      setScrolled(window.scrollY > 60);
-
-      const sections = NAV_LINKS.map((l) => l.toLowerCase());
+      setScrolled(window.scrollY > 40);
       let current = '';
-      for (const id of sections) {
+      for (const { id } of LINKS) {
         const el = document.getElementById(id);
-        if (el && window.scrollY >= el.offsetTop - 120) current = id;
+        if (el && window.scrollY >= el.offsetTop - 160) current = id;
       }
-      setActiveSection(current);
+      setActive(current);
     };
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const scrollTo = (id) => {
-    document.getElementById(id.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
+  // Lock body scroll while the mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  const go = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     setMenuOpen(false);
   };
 
   return (
     <>
-      <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
-        <div className="navbar__inner">
+      <nav className={`hp-nav${scrolled ? ' hp-nav--scrolled' : ''}`}>
+        <div className="hp-nav__inner">
           <button
-            className="navbar__logo"
+            className="hp-nav__brand"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Go to top"
+            aria-label="Back to top"
           >
-            <span className="navbar__logo-bracket">&lt;</span>
-            JW
-            <span className="navbar__logo-bracket">&nbsp;/&gt;</span>
+            <span className="hp-nav__brand-mark">JW</span>
+            <span className="hp-nav__brand-sub">James Wigfield</span>
           </button>
 
-          <ul className="navbar__links" role="list">
-            {NAV_LINKS.map((link) => (
-              <li key={link}>
-                <button
-                  className={`navbar__link${activeSection === link.toLowerCase() ? ' navbar__link--active' : ''}`}
-                  onClick={() => scrollTo(link)}
-                >
-                  {link}
-                </button>
-              </li>
+          <div className="hp-nav__links">
+            {LINKS.map((l) => (
+              <button
+                key={l.id}
+                className={`hp-nav__link${active === l.id ? ' hp-nav__link--active' : ''}`}
+                onClick={() => go(l.id)}
+              >
+                {l.label}
+              </button>
             ))}
-          </ul>
+          </div>
 
           <button
-            className={`navbar__hamburger${menuOpen ? ' navbar__hamburger--open' : ''}`}
+            className={`hp-nav__burger${menuOpen ? ' hp-nav__burger--open' : ''}`}
             onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Toggle menu"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
           >
             <span />
@@ -68,17 +72,12 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <div className={`mobile-menu${menuOpen ? ' mobile-menu--open' : ''}`} aria-hidden={!menuOpen}>
-        <div className="mobile-menu__inner">
-          {NAV_LINKS.map((link, i) => (
-            <button
-              key={link}
-              className="mobile-menu__link"
-              style={{ animationDelay: `${i * 0.07}s` }}
-              onClick={() => scrollTo(link)}
-            >
-              <span className="mobile-menu__num">0{i + 1}.</span>
-              {link}
+      <div className={`hp-menu${menuOpen ? ' hp-menu--open' : ''}`} aria-hidden={!menuOpen}>
+        <div className="hp-menu__inner">
+          {LINKS.map((l, i) => (
+            <button key={l.id} className="hp-menu__link" onClick={() => go(l.id)}>
+              <span>{String(i + 1).padStart(2, '0')}</span>
+              {l.label}
             </button>
           ))}
         </div>

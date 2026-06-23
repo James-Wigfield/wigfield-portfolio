@@ -1,6 +1,10 @@
+import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import './styles/home.css';
 import Navbar from './components/Navbar';
+import ChapterRail from './components/ChapterRail';
 import Hero from './components/Hero';
+import Research from './components/Research';
 import About from './components/About';
 import Experience from './components/Experience';
 import Projects from './components/Projects';
@@ -24,19 +28,28 @@ import TwinFlames from './components/games/TwinFlames';
 import Overmind from './components/games/Overmind';
 
 function Portfolio() {
+  // Tag <html> while the home route is mounted so home.css can override the
+  // global cyberpunk scrollbar (index.css) for the Reading Room only.
+  useEffect(() => {
+    document.documentElement.classList.add('hp-active');
+    return () => document.documentElement.classList.remove('hp-active');
+  }, []);
+
   return (
-    <>
+    <div className="hp">
       <Navbar />
+      <ChapterRail />
       <main>
         <Hero />
         <About />
         <Experience />
-        <Projects />
         <Skills />
+        <Projects />
+        <Research />
         <Contact />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
 

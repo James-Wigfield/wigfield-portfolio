@@ -4,26 +4,24 @@ export default function Footer() {
   const navigate = useNavigate();
 
   return (
-    <footer className="footer">
-      <div className="container footer__inner">
+    <footer className="hp-footer">
+      <div className="hp-footer__inner">
         <button
-          className="footer__brand"
+          className="hp-footer__brand"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="Back to top"
         >
-          <span className="text-cyan">&lt;</span>JW<span className="text-cyan">&nbsp;/&gt;</span>
+          <span>/</span> James Wigfield
         </button>
-
-        <p className="footer__copy">
-          Designed &amp; built by James Wigfield · {new Date().getFullYear()}
+        <p className="hp-footer__meta">
+          © {new Date().getFullYear()} · Built in Perth with React + Vite<br />
+          Set in Fraunces &amp; IBM Plex Mono
         </p>
-
-        <p className="footer__sub">Made with React + ♥ in Perth, Australia</p>
       </div>
 
-      {/* Hidden hub gate — intentionally low-contrast */}
+      {/* Hidden hub gate — intentionally low-contrast entrance to /hub */}
       <button
-        className="footer__hub-gate"
+        className="hp-footer__gate"
         onClick={() => navigate('/hub')}
         aria-label="hub"
         tabIndex={-1}

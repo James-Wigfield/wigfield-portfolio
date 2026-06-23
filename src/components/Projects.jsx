@@ -1,100 +1,63 @@
-import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
+import Reveal from './Reveal';
+import SectionHead from './SectionHead';
 
 const PROJECTS = [
   {
     title: 'NLP Sentiment Analysis',
-    category: 'Machine Learning',
-    type: 'University Project',
-    icon: '🧠',
-    color: 'violet',
-    description:
-      'Built a deep learning model to classify text sentiment using NLP in PyTorch. Implemented a Variational Siamese Auto-Encoder (VSAE) with a focus on data normalisation, tokenisation, and bespoke architecture design for high validation accuracy.',
-    tags: ['Python', 'PyTorch', 'NLP', 'VSAE', 'Deep Learning'],
+    kind: 'Research',
+    desc: 'A deep-learning model classifying text sentiment in PyTorch, built around a Variational Siamese Auto-Encoder (VSAE) — with a focus on data normalisation, tokenisation, and bespoke architecture design for high validation accuracy.',
+    stack: ['PyTorch', 'NLP', 'VSAE'],
   },
   {
     title: 'RKMRS AI Staff Agent',
-    category: 'AI Development',
-    type: 'Professional',
-    icon: '🤖',
-    color: 'cyan',
-    description:
-      'Developed a custom AI agent that handles internal staff queries at RKMRS, dramatically reducing time spent on manual information retrieval. Integrated with the Staff Portal for a seamless single-interface experience.',
-    tags: ['AI Agent', 'Python', 'JavaScript', 'API Integration'],
+    kind: 'Production',
+    desc: 'A custom AI agent that answers internal staff queries, dramatically cutting time spent on manual information retrieval. Integrated into the Staff Portal for a single, seamless interface.',
+    stack: ['AI Agent', 'Python', 'API'],
   },
   {
     title: 'Digital Staff Portal',
-    category: 'Full-Stack Development',
-    type: 'Professional',
-    icon: '📋',
-    color: 'emerald',
-    description:
-      'Engineered a centralised staff portal for RKMRS that replaced 100% of paper-based workflows. Built dynamic, logic-based digital forms via Jotform and SharePoint integration, eliminating manual paperwork across the organisation.',
-    tags: ['SharePoint', 'Jotform', 'Workflow Automation', 'Logic Forms'],
+    kind: 'Production',
+    desc: 'A centralised portal that replaced 100% of paper-based workflows at RKMRS — dynamic, logic-based digital forms built on Jotform and SharePoint, eliminating manual paperwork across the organisation.',
+    stack: ['SharePoint', 'Jotform', 'Logic forms'],
   },
   {
     title: 'Driver PWA',
-    category: 'Mobile Development',
-    type: 'Professional',
-    icon: '📱',
-    color: 'rose',
-    description:
-      'Created a Progressive Web App for RKMRS delivery drivers, giving instant mobile access to forms, the AI agent, and key resources in the field. Mobile-first design ensures usability under any conditions.',
-    tags: ['PWA', 'JavaScript', 'HTML/CSS', 'Mobile-First'],
+    kind: 'Production',
+    desc: 'A Progressive Web App for delivery drivers — instant mobile access to forms, the AI agent, and key resources in the field. Mobile-first so it holds up under any conditions.',
+    stack: ['PWA', 'JavaScript', 'Mobile-first'],
   },
   {
     title: 'GoFlo Automation Pipelines',
-    category: 'Automation Engineering',
-    type: 'Startup',
-    icon: '⚡',
-    color: 'amber',
-    description:
-      'Designed and deployed multi-step automation pipelines for small business clients at GoFlo Solutions, connecting disparate tools and systems. Each solution is scoped, architected, and delivered end-to-end.',
-    tags: ['n8n', 'Power Automate', 'Google Apps Script', 'JavaScript'],
+    kind: 'Client work',
+    desc: 'Multi-step automation pipelines for small-business clients, connecting tools that were never designed to talk to each other. Each one scoped, architected, and delivered end-to-end.',
+    stack: ['n8n', 'Power Automate', 'Apps Script'],
   },
 ];
 
 export default function Projects() {
-  const [headerRef, headerVisible] = useIntersectionObserver();
-
   return (
-    <section id="projects" className="section projects">
-      <div className="container">
-        <div ref={headerRef} className={`section__header${headerVisible ? ' anim-slide-up' : ''}`}>
-          <span className="section__label">// 03</span>
-          <h2 className="section__title">Projects</h2>
-        </div>
+    <section id="projects" className="hp-section" aria-labelledby="projects-title">
+      <div className="hp-wrap">
+        <SectionHead n="04" eyebrow="Selected Work" title="Things I've shipped" id="projects-title" />
 
-        <div className="projects__grid">
-          {PROJECTS.map((project, i) => (
-            <ProjectCard key={project.title} project={project} index={i} />
+        <div className="hp-index">
+          {PROJECTS.map((p, i) => (
+            <Reveal as="article" className="hp-index__row" key={p.title} delay={i * 60}>
+              <div className="hp-index__num">{String(i + 1).padStart(2, '0')}</div>
+              <div className="hp-index__main">
+                <h3 className="hp-index__title">
+                  {p.title}
+                  <span className="hp-index__kind">{p.kind}</span>
+                </h3>
+                <p className="hp-index__desc">{p.desc}</p>
+              </div>
+              <div className="hp-index__stack">
+                {p.stack.map((s) => <span key={s}>{s}</span>)}
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>
     </section>
-  );
-}
-
-function ProjectCard({ project, index }) {
-  const [ref, isVisible] = useIntersectionObserver();
-
-  return (
-    <div
-      ref={ref}
-      className={`project-card glass-card glass-card--${project.color}${isVisible ? ' anim-slide-up' : ''}`}
-      style={{ animationDelay: `${(index % 3) * 0.1}s` }}
-    >
-      <div className="project-card__top">
-        <span className="project-card__icon">{project.icon}</span>
-        <span className={`pill pill--${project.color} pill--sm`}>{project.type}</span>
-      </div>
-      <p className="project-card__category">{project.category}</p>
-      <h3 className={`project-card__title text-${project.color}`}>{project.title}</h3>
-      <p className="project-card__desc">{project.description}</p>
-      <div className="project-card__tags">
-        {project.tags.map((tag) => (
-          <span key={tag} className="pill pill--ghost">{tag}</span>
-        ))}
-      </div>
-    </div>
   );
 }

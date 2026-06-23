@@ -127,6 +127,62 @@ export const CLASSIC_CATEGORIES = {
     'Berlin Wall', 'Titanic', 'Pearl Harbor', 'Hiroshima', 'D-Day', 'French Revolution', 'American Revolution', 'Civil War',
     'Pyramids', 'Great Wall', 'Colosseum', 'Mona Lisa', 'Sistine Chapel', 'Magna Carta', 'Declaration of Independence', 'Constitution',
   ],
+  Drinks: [
+    'Coffee', 'Espresso', 'Latte', 'Cappuccino', 'Mocha', 'Tea', 'Green Tea', 'Chai',
+    'Hot Chocolate', 'Lemonade', 'Iced Tea', 'Cola', 'Root Beer', 'Ginger Ale', 'Orange Juice', 'Apple Juice',
+    'Smoothie', 'Milkshake', 'Energy Drink', 'Kombucha', 'Coconut Water', 'Sparkling Water', 'Beer', 'Lager',
+    'Cider', 'Wine', 'Champagne', 'Whiskey', 'Vodka', 'Rum', 'Tequila', 'Gin',
+    'Margarita', 'Mojito', 'Martini', 'Sangria', 'Eggnog', 'Pina Colada', 'Bloody Mary', 'Negroni',
+  ],
+  Countries: [
+    'Australia', 'Japan', 'Brazil', 'Canada', 'France', 'Italy', 'Spain', 'Germany',
+    'Mexico', 'India', 'China', 'Egypt', 'Greece', 'Thailand', 'Indonesia', 'Argentina',
+    'Peru', 'Norway', 'Sweden', 'Iceland', 'Ireland', 'Scotland', 'Portugal', 'Morocco',
+    'Kenya', 'South Africa', 'Turkey', 'Vietnam', 'Singapore', 'New Zealand', 'Switzerland', 'Netherlands',
+    'South Korea', 'Cuba', 'Jamaica', 'Fiji', 'Nepal', 'Chile', 'Colombia', 'Croatia',
+  ],
+  Vehicles: [
+    'Car', 'Truck', 'Motorcycle', 'Bicycle', 'Scooter', 'Bus', 'Train', 'Tram',
+    'Subway', 'Airplane', 'Helicopter', 'Jet', 'Hot Air Balloon', 'Boat', 'Yacht', 'Sailboat',
+    'Submarine', 'Canoe', 'Kayak', 'Jet Ski', 'Ferry', 'Cruise Ship', 'Ambulance', 'Fire Truck',
+    'Police Car', 'Taxi', 'Limousine', 'Tractor', 'Bulldozer', 'Forklift', 'Tank', 'Rocket',
+    'Spaceship', 'Skateboard', 'Segway', 'Golf Cart', 'Monster Truck', 'Race Car', 'Snowmobile', 'Hovercraft',
+  ],
+  Clothing: [
+    'T-Shirt', 'Jeans', 'Hoodie', 'Sweater', 'Jacket', 'Coat', 'Blazer', 'Suit',
+    'Tuxedo', 'Dress', 'Skirt', 'Shorts', 'Leggings', 'Socks', 'Shoes', 'Sneakers',
+    'Boots', 'Sandals', 'Heels', 'Flip Flops', 'Hat', 'Cap', 'Beanie', 'Scarf',
+    'Gloves', 'Mittens', 'Belt', 'Tie', 'Bow Tie', 'Pajamas', 'Bathrobe', 'Swimsuit',
+    'Bikini', 'Raincoat', 'Poncho', 'Overalls', 'Cardigan', 'Vest', 'Tank Top', 'Onesie',
+  ],
+  Superheroes: [
+    'Superman', 'Batman', 'Spider-Man', 'Iron Man', 'Captain America', 'Thor', 'Hulk', 'Black Widow',
+    'Hawkeye', 'Wonder Woman', 'Aquaman', 'The Flash', 'Green Lantern', 'Wolverine', 'Deadpool', 'Doctor Strange',
+    'Black Panther', 'Captain Marvel', 'Ant-Man', 'Scarlet Witch', 'Vision', 'Star-Lord', 'Groot', 'Rocket Raccoon',
+    'Daredevil', 'The Punisher', 'Green Arrow', 'Cyclops', 'Storm', 'Jean Grey', 'Professor X', 'Magneto',
+    'Robin', 'Catwoman', 'Nightwing', 'Supergirl', 'Shazam', 'Venom', 'Gambit', 'Silver Surfer',
+  ],
+  Emotions: [
+    'Happy', 'Sad', 'Angry', 'Excited', 'Nervous', 'Scared', 'Jealous', 'Proud',
+    'Embarrassed', 'Confused', 'Bored', 'Curious', 'Surprised', 'Disappointed', 'Grateful', 'Lonely',
+    'Hopeful', 'Anxious', 'Relaxed', 'Frustrated', 'Guilty', 'Confident', 'Shy', 'Overwhelmed',
+    'Content', 'Furious', 'Ecstatic', 'Heartbroken', 'Optimistic', 'Annoyed', 'Peaceful', 'Terrified',
+    'Joyful', 'Insecure', 'Determined', 'Homesick',
+  ],
+  Hobbies: [
+    'Painting', 'Drawing', 'Photography', 'Gardening', 'Cooking', 'Baking', 'Knitting', 'Reading',
+    'Writing', 'Journaling', 'Hiking', 'Camping', 'Fishing', 'Surfing', 'Skateboarding', 'Cycling',
+    'Running', 'Yoga', 'Dancing', 'Singing', 'Gaming', 'Chess', 'Puzzles', 'Pottery',
+    'Woodworking', 'Origami', 'Birdwatching', 'Stargazing', 'Collecting', 'Scrapbooking', 'Calligraphy', 'Juggling',
+    'Magic Tricks', 'Rock Climbing', 'Scuba Diving', 'Skiing',
+  ],
+  Holidays: [
+    'Christmas', 'Halloween', 'Easter', 'Thanksgiving', 'New Year', 'Valentine\'s Day', 'Birthday', 'Wedding',
+    'Anniversary', 'Graduation', 'Diwali', 'Hanukkah', 'Ramadan', 'Lunar New Year', 'St. Patrick\'s Day', 'Mardi Gras',
+    'April Fools', 'Mother\'s Day', 'Father\'s Day', 'Labor Day', 'Independence Day', 'Memorial Day', 'Cinco de Mayo', 'Oktoberfest',
+    'Carnival', 'Day of the Dead', 'Boxing Day', 'Black Friday', 'Super Bowl', 'Coachella', 'Eid', 'Holi',
+    'Songkran', 'Bonfire Night', 'Pancake Day', 'Earth Day',
+  ],
   // 18+ — unlocked only when ADULTS MODE is on in setup.
   Adults: [
     'One Night Stand', 'Threesome', 'Quickie', 'Booty Call', 'Sexting', 'Friends With Benefits',
@@ -139,6 +195,10 @@ export const CLASSIC_CATEGORIES = {
     'Morning Wood', 'Pregnancy Scare', 'Plan B', 'Condom Mishap',
     'Blackout Drunk', 'Bar Crawl', 'Beer Goggles', 'Tequila Shots',
     'Bachelor Party', 'Bachelorette Party', 'Strip Poker', 'Body Shot',
+    'Make-Out Session', 'Netflix and Chill', 'Booty Text', 'Thirst Trap',
+    'DTR Talk', 'Friends to Lovers', 'Slow Burn', 'Speed Dating',
+    'Blind Date', 'Cuddle Puddle', 'Morning After', 'Love Bite',
+    'Naughty List', 'Love Triangle', 'Friend Zone', 'Cougar',
   ],
 };
 
@@ -227,6 +287,48 @@ export const SIMILAR_PAIRS = {
     ['Family Guy', 'American Dad'], ['South Park', 'The Simpsons'], ['Rick and Morty', 'BoJack Horseman'],
     ['SpongeBob', 'Patrick Star'], ['Arcane', 'Castlevania'], ['The Crown', 'Bridgerton'],
   ],
+  Drinks: [
+    ['Coffee', 'Tea'], ['Latte', 'Cappuccino'], ['Espresso', 'Americano'], ['Cola', 'Root Beer'],
+    ['Lemonade', 'Iced Tea'], ['Smoothie', 'Milkshake'], ['Beer', 'Cider'], ['Wine', 'Champagne'],
+    ['Whiskey', 'Bourbon'], ['Vodka', 'Gin'], ['Rum', 'Tequila'], ['Margarita', 'Mojito'],
+    ['Martini', 'Cosmopolitan'], ['Hot Chocolate', 'Mocha'], ['Orange Juice', 'Apple Juice'], ['Energy Drink', 'Soda'],
+    ['Kombucha', 'Sparkling Water'], ['Sangria', 'Punch'],
+  ],
+  Vehicles: [
+    ['Car', 'Truck'], ['Motorcycle', 'Scooter'], ['Bicycle', 'Tricycle'], ['Bus', 'Tram'],
+    ['Train', 'Subway'], ['Airplane', 'Jet'], ['Helicopter', 'Drone'], ['Boat', 'Yacht'],
+    ['Canoe', 'Kayak'], ['Submarine', 'Ship'], ['Ambulance', 'Fire Truck'], ['Taxi', 'Limousine'],
+    ['Tractor', 'Bulldozer'], ['Rocket', 'Spaceship'], ['Jet Ski', 'Speedboat'], ['Ferry', 'Cruise Ship'],
+    ['Van', 'Minivan'], ['SUV', 'Pickup'],
+  ],
+  Clothing: [
+    ['T-Shirt', 'Tank Top'], ['Jeans', 'Trousers'], ['Hoodie', 'Sweater'], ['Jacket', 'Coat'],
+    ['Suit', 'Tuxedo'], ['Dress', 'Gown'], ['Skirt', 'Shorts'], ['Sneakers', 'Trainers'],
+    ['Boots', 'Sandals'], ['Heels', 'Flats'], ['Hat', 'Cap'], ['Beanie', 'Scarf'],
+    ['Gloves', 'Mittens'], ['Belt', 'Suspenders'], ['Tie', 'Bow Tie'], ['Pajamas', 'Bathrobe'],
+    ['Swimsuit', 'Bikini'], ['Cardigan', 'Vest'],
+  ],
+  Superheroes: [
+    ['Superman', 'Batman'], ['Spider-Man', 'Daredevil'], ['Iron Man', 'War Machine'], ['Thor', 'Hercules'],
+    ['Hulk', 'Abomination'], ['Wonder Woman', 'Captain Marvel'], ['Aquaman', 'Namor'], ['The Flash', 'Quicksilver'],
+    ['Wolverine', 'Sabretooth'], ['Deadpool', 'Deathstroke'], ['Black Widow', 'Hawkeye'], ['Doctor Strange', 'Scarlet Witch'],
+    ['Green Lantern', 'Green Arrow'], ['Robin', 'Nightwing'], ['Catwoman', 'Black Cat'], ['Professor X', 'Magneto'],
+    ['Star-Lord', 'Nova'], ['Venom', 'Carnage'],
+  ],
+  Body: [
+    ['Eyes', 'Ears'], ['Hands', 'Feet'], ['Arms', 'Legs'], ['Fingers', 'Toes'],
+    ['Lips', 'Cheeks'], ['Knees', 'Elbows'], ['Wrist', 'Ankle'], ['Heart', 'Lungs'],
+    ['Brain', 'Spine'], ['Hair', 'Beard'], ['Nose', 'Chin'], ['Teeth', 'Tongue'],
+    ['Shoulders', 'Hips'], ['Stomach', 'Chest'], ['Liver', 'Kidney'], ['Skull', 'Ribs'],
+    ['Eyebrows', 'Eyelashes'], ['Thumb', 'Pinky'],
+  ],
+  Countries: [
+    ['Spain', 'Portugal'], ['Norway', 'Sweden'], ['Canada', 'USA'], ['China', 'Japan'],
+    ['India', 'Pakistan'], ['Greece', 'Italy'], ['Brazil', 'Argentina'], ['Egypt', 'Morocco'],
+    ['Thailand', 'Vietnam'], ['Ireland', 'Scotland'], ['Australia', 'New Zealand'], ['Germany', 'Austria'],
+    ['France', 'Belgium'], ['Mexico', 'Cuba'], ['Kenya', 'Tanzania'], ['Peru', 'Chile'],
+    ['Iceland', 'Greenland'], ['Singapore', 'Hong Kong'],
+  ],
   // 18+ — unlocked only when ADULTS MODE is on in setup.
   Adults: [
     ['One Night Stand', 'Situationship'], ['Hookup', 'First Date'],
@@ -241,6 +343,10 @@ export const SIMILAR_PAIRS = {
     ['Vibrator', 'Massage Gun'],          ['Handcuffs', 'Zip Ties'],
     ['Skinny Dipping', 'Hot Tub Night'],  ['Blackout', 'Brownout'],
     ['Drunk Text', 'Drunk Call'],         ['Sex Tape', 'Home Movie'],
+    ['Make-Out', 'First Kiss'],            ['Netflix and Chill', 'Movie Night'],
+    ['Thirst Trap', 'Selfie'],            ['Speed Dating', 'Blind Date'],
+    ['Love Bite', 'Bruise'],              ['Slow Burn', 'Whirlwind Romance'],
+    ['Friends With Benefits', 'Just Friends'], ['Booty Call', 'Wrong Number'],
   ],
 };
 
@@ -324,6 +430,45 @@ export const QUESTION_PAIRS = [
   { category: 'Random',     crew: "Cats or dogs?",                                 imposter: "Indoor pet or outdoor pet?" },
   { category: 'Random',     crew: "Sweet or savory?",                              imposter: "Breakfast or dinner?" },
   { category: 'Random',     crew: "Night owl or early bird?",                      imposter: "Introvert or extrovert?" },
+  { category: 'Random',     crew: "Mountains or ocean?",                           imposter: "Sunrise or sunset?" },
+  { category: 'Random',     crew: "Texting or calling?",                           imposter: "Email or face-to-face?" },
+  { category: 'Random',     crew: "Summer or winter?",                            imposter: "Morning or night?" },
+
+  // Work & career
+  { category: 'Work',       crew: "What's the worst job you've ever had?",         imposter: "What's the best job you've ever had?" },
+  { category: 'Work',       crew: "What would make you quit a job on day one?",    imposter: "What would make you stay at a job forever?" },
+  { category: 'Work',       crew: "Who's the worst boss you've had?",              imposter: "Who's the best mentor you've had?" },
+  { category: 'Work',       crew: "What's your most useless skill?",               imposter: "What's your most useful skill?" },
+
+  // Travel
+  { category: 'Travel',     crew: "What's the best place you've ever travelled?",  imposter: "What's the next place you want to travel?" },
+  { category: 'Travel',     crew: "What's your worst travel horror story?",        imposter: "What's your funniest travel story?" },
+  { category: 'Travel',     crew: "Beach resort or backpacking trip?",            imposter: "City tour or mountain retreat?" },
+  { category: 'Travel',     crew: "What's one thing you always pack?",             imposter: "What's one thing you always forget to pack?" },
+
+  // Food
+  { category: 'Food',       crew: "What's a food you could eat every day?",        imposter: "What's a food you're sick of?" },
+  { category: 'Food',       crew: "What's your signature dish?",                   imposter: "What's a dish you completely ruined?" },
+  { category: 'Food',       crew: "Pineapple on pizza — yes or no?",               imposter: "Ketchup on eggs — yes or no?" },
+  { category: 'Food',       crew: "What's your go-to takeaway order?",             imposter: "What's your go-to hangover meal?" },
+
+  // Deep
+  { category: 'Deep',       crew: "What's something you've changed your mind about?", imposter: "What's something you'll never change your mind about?" },
+  { category: 'Deep',       crew: "What advice would you give your younger self?", imposter: "What advice would you give your future self?" },
+  { category: 'Deep',       crew: "What's a fear you've overcome?",                imposter: "What's a fear you still have?" },
+  { category: 'Deep',       crew: "What makes you feel most alive?",               imposter: "What makes you feel most at peace?" },
+
+  // Money
+  { category: 'Money',      crew: "What's the best money you've ever spent?",      imposter: "What's the worst money you've ever spent?" },
+  { category: 'Money',      crew: "What would you buy if money didn't matter?",    imposter: "What would you do if you never had to work?" },
+
+  // More pop culture
+  { category: 'Pop',        crew: "What show have you rewatched the most?",        imposter: "What movie have you rewatched the most?" },
+  { category: 'Pop',        crew: "What's a trend you actually fell for?",         imposter: "What's a trend you refused to follow?" },
+
+  // More group
+  { category: 'Group',      crew: "Who here gives the best advice?",               imposter: "Who here gives the worst advice?" },
+  { category: 'Group',      crew: "Who here would survive a zombie apocalypse?",   imposter: "Who here would die first in a horror movie?" },
 
   // 18+ — unlocked only when ADULTS MODE is on in setup.
   { category: 'Adults', crew: "What's your worst hookup story?",                       imposter: "What's your worst date story?" },
@@ -346,6 +491,12 @@ export const QUESTION_PAIRS = [
   { category: 'Adults', crew: "What's a sex move you've heard of but never tried?",    imposter: "What's a dance move you've heard of but never tried?" },
   { category: 'Adults', crew: "What's the morning-after worst-case scenario?",         imposter: "What's the brunch-after worst-case scenario?" },
   { category: 'Adults', crew: "What's a hookup app you've actually used?",             imposter: "What's a dating app you've actually used?" },
+  { category: 'Adults', crew: "What's your biggest first-date red flag?",             imposter: "What's your biggest first-date green flag?" },
+  { category: 'Adults', crew: "What's the longest dry spell you've had?",             imposter: "What's the longest relationship you've had?" },
+  { category: 'Adults', crew: "What's your most-used pickup line?",                   imposter: "What's your most-used excuse to leave early?" },
+  { category: 'Adults', crew: "Who was your worst ex?",                               imposter: "Who was your craziest ex?" },
+  { category: 'Adults', crew: "Boldest thing you've done to get someone's attention?", imposter: "Boldest thing you've done to avoid someone?" },
+  { category: 'Adults', crew: "What's your go-to hookup outfit?",                     imposter: "What's your go-to comfort outfit?" },
 ];
 
 // ── 4. CHAMELEON: grid of words, crew has one highlighted ──────────────────
@@ -424,6 +575,78 @@ export const CHAMELEON_GRIDS = [
       'EDM',   'Indie',   'Classical','Funk',
     ],
   },
+  {
+    category: 'Countries',
+    words: [
+      'Japan',    'Brazil',  'France',   'Egypt',
+      'Canada',   'India',   'Mexico',   'Italy',
+      'Spain',    'Greece',  'Norway',   'Kenya',
+      'Thailand', 'Peru',    'Iceland',  'Cuba',
+    ],
+  },
+  {
+    category: 'Drinks',
+    words: [
+      'Coffee',   'Latte',   'Cola',     'Beer',
+      'Wine',     'Whiskey', 'Vodka',    'Mojito',
+      'Lemonade', 'Smoothie','Tea',      'Martini',
+      'Cider',    'Rum',     'Espresso', 'Margarita',
+    ],
+  },
+  {
+    category: 'TV Shows',
+    words: [
+      'Friends',  'Seinfeld', 'Lost',      'Dexter',
+      'Euphoria', 'Severance','Succession','Ozark',
+      'Narcos',   'Fargo',    'Westworld', 'Bridgerton',
+      'Arcane',   'Sherlock', 'Vikings',   'Suits',
+    ],
+  },
+  {
+    category: 'Video Games',
+    words: [
+      'Mario',    'Zelda',    'Minecraft', 'Fortnite',
+      'Halo',     'Tetris',   'Pokémon',   'Sonic',
+      'Doom',     'Skyrim',   'Portal',    'Pac-Man',
+      'Roblox',   'Valorant', 'Among Us',  'Fallout',
+    ],
+  },
+  {
+    category: 'Cars',
+    words: [
+      'Ferrari',  'Lamborghini','Porsche', 'Tesla',
+      'Toyota',   'Ford',     'BMW',       'Audi',
+      'Honda',    'Jeep',     'Bugatti',   'Mustang',
+      'Mini',     'Volvo',    'Mazda',     'Subaru',
+    ],
+  },
+  {
+    category: 'Body Parts',
+    words: [
+      'Heart',    'Brain',    'Eyes',      'Hands',
+      'Feet',     'Knees',    'Elbows',    'Lungs',
+      'Spine',    'Liver',    'Teeth',     'Tongue',
+      'Shoulders','Ankles',   'Ribs',      'Skull',
+    ],
+  },
+  {
+    category: 'Jobs',
+    words: [
+      'Doctor',   'Teacher',  'Chef',      'Pilot',
+      'Lawyer',   'Nurse',    'Artist',    'Police',
+      'Farmer',   'Plumber',  'Actor',     'Scientist',
+      'Barista',  'Soldier',  'Judge',     'Engineer',
+    ],
+  },
+  {
+    category: 'Disney',
+    words: [
+      'Mickey',   'Simba',    'Elsa',      'Ariel',
+      'Stitch',   'Genie',    'Woody',     'Buzz',
+      'Nemo',     'Dory',     'Olaf',      'Moana',
+      'Belle',    'Mulan',    'Aladdin',   'Bambi',
+    ],
+  },
   // 18+ — unlocked only when ADULTS MODE is on in setup.
   {
     category: 'Adults',
@@ -500,6 +723,33 @@ export const WILDCARD_TOPICS = [
   { category: 'Future',       topic: 'Where do you see yourself in ten years?' },
   { category: 'Future',       topic: 'A skill you\'d love to have by this time next year.' },
   { category: 'Future',       topic: 'What does retirement look like for you?' },
+  { category: 'Future',       topic: 'What\'s one thing you want to achieve before you\'re 40?' },
+
+  // Work
+  { category: 'Work',         topic: 'Describe your dream job that doesn\'t exist yet.' },
+  { category: 'Work',         topic: 'What\'s the worst job you could possibly imagine having?' },
+  { category: 'Work',         topic: 'Pitch a business idea you\'d actually fund.' },
+
+  // Money
+  { category: 'Money',        topic: 'You get $1000 you must spend in one hour. Go.' },
+  { category: 'Money',        topic: 'What\'s a purchase you\'ll never regret?' },
+
+  // Deep
+  { category: 'Deep',         topic: 'What\'s something that changed the way you see the world?' },
+  { category: 'Deep',         topic: 'Describe what your perfect ordinary day looks like.' },
+
+  // Embarrassing
+  { category: 'Embarrassing', topic: 'Tell us about a time you completely misread a situation.' },
+  { category: 'Embarrassing', topic: 'What\'s the most awkward text you\'ve ever sent?' },
+
+  // More from existing themes
+  { category: 'Travel',       topic: 'What\'s a place that totally lived up to the hype?' },
+  { category: 'Childhood',    topic: 'What show or movie defined your childhood?' },
+  { category: 'Hypothetical', topic: 'You can master any skill instantly. Which one, and why?' },
+  { category: 'Confessions',  topic: 'What\'s the pettiest hill you\'ll die on?' },
+  { category: 'Pop Culture',  topic: 'What\'s a movie everyone loves that you just don\'t get?' },
+  { category: 'Food',         topic: 'What\'s your ultimate comfort food, and the story behind it?' },
+  { category: 'Group',        topic: 'Who in this room would give the best wedding speech, and why?' },
 
   // 18+ — unlocked only when ADULTS MODE is on in setup.
   { category: 'Adults',       topic: 'Tell us about your worst hookup.' },
@@ -520,6 +770,10 @@ export const WILDCARD_TOPICS = [
   { category: 'Adults',       topic: 'Describe your most chaotic dating app interaction.' },
   { category: 'Adults',       topic: 'The strangest place you\'ve ever woken up.' },
   { category: 'Adults',       topic: 'A red flag you ignored — and how that worked out.' },
+  { category: 'Adults',       topic: 'What\'s the most scandalous rumour you\'ve heard about someone here?' },
+  { category: 'Adults',       topic: 'Describe the most chaotic night out that ended in disaster.' },
+  { category: 'Adults',       topic: 'What\'s a dating-app message that actually made you respond?' },
+  { category: 'Adults',       topic: 'Confess the pettiest reason you\'ve ever ended things with someone.' },
 ];
 
 // 18+ wildcard missions — added to the mission pool ONLY when ADULTS MODE is on.
@@ -555,6 +809,12 @@ export const WILDCARD_ADULT_MISSIONS = [
   "Mention a bachelor or bachelorette party.",
   "Reference a strip club like it's a normal Tuesday.",
   "Slip in a 'that's what she said' joke that actually lands.",
+  "Slip the word 'lipstick' into your turn — naturally.",
+  "Reference a walk of shame.",
+  "Mention a questionable text you sent last weekend.",
+  "Drop a 'no strings attached' reference.",
+  "Compliment someone's outfit a little too enthusiastically.",
+  "Work in a reference to a hot tub.",
 ];
 
 export const WILDCARD_MISSIONS = [
@@ -603,6 +863,29 @@ export const WILDCARD_MISSIONS = [
   "Compliment another player as part of your answer.",
   "Roast another player gently as part of your answer.",
   "Agree out loud with whoever spoke before you, even if it’s a stretch.",
+
+  // More word smuggling
+  "Slip the word 'avalanche' into your turn — naturally.",
+  "Slip the word 'mustard' into your turn — naturally.",
+  "Slip the word 'wizard' into your turn — naturally.",
+  "Slip the word 'tornado' into your turn — naturally.",
+
+  // More themed references
+  "Work in a reference to outer space.",
+  "Mention a famous landmark by name.",
+  "Bring up a board game somehow.",
+  "Reference a decade that isn't this one.",
+  "Mention a fruit that isn't an apple.",
+
+  // More phrasing tics
+  "Use the word 'honestly' at least three times.",
+  "Start your turn with 'So, here's the thing...'",
+  "End every sentence as if it's a question.",
+
+  // More performative
+  "Pause dramatically before your final sentence.",
+  "Use a hand gesture for every point you make.",
+  "Subtly mirror the body language of the person across from you.",
 ];
 
 // ── 6. Convenience exports for UI: category lists per mode ────────────────────
