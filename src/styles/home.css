@@ -514,7 +514,7 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
   text-transform: uppercase;
   color: var(--v-dim);
 }
-.hp-manifest__head { margin: 0 0 1.2rem; }
+.hp-manifest__head { margin: 0 0 1.2rem; padding-left: 1.2rem; }
 .hp-manifest__head::before { content: "// "; color: var(--signal); }
 
 .hp-manifest__list {
@@ -542,6 +542,7 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
   grid-template-columns: 1.8rem 1fr auto;
   align-items: center;
   gap: 0.9rem;
+  padding-left: 1.2rem;
   border-bottom: 1px solid var(--v-line);
 }
 .hp-manifest__row:last-child { border-bottom: 0; }
@@ -569,7 +570,7 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
   text-align: right;
   transition: color 0.4s var(--ease);
 }
-.hp-manifest__row.is-lit .hp-manifest__idx { color: var(--signal); }
+.hp-manifest__row.is-lit .hp-manifest__idx { color: #fff; }
 .hp-manifest__row.is-lit .hp-manifest__title {
   color: #fff;
   text-shadow: 0 0 18px rgba(255, 106, 61, 0.45);
@@ -577,6 +578,7 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
 .hp-manifest__row.is-lit .hp-manifest__meta { color: var(--v-text); }
 .hp-manifest__foot {
   margin: 1.2rem 0 0;
+  padding-left: 1.2rem;
   display: flex;
   justify-content: space-between;
 }

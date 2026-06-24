@@ -11,10 +11,10 @@ export default function Contact() {
           </div>
           <p className="hp-eyebrow">Contact</p>
           <h2 id="contact-title" className="hp-contact__title">
-            Let's work on something <em>together</em>.
+            Let's <em>talk</em>.
           </h2>
           <p className="hp-contact__lede">
-            A research collaboration, a grad role, or a business drowning in manual processes —
+            A grad role, an automation project, or a business drowning in manual processes —
             if it's an interesting problem, I'd like to hear about it.
           </p>
         </Reveal>

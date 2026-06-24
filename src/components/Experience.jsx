@@ -30,8 +30,8 @@ const ROLES = [
     role: 'IT Manager',
     org: 'Rockingham Kwinana Mobility',
     place: 'Rockingham, AU',
-    period: 'Feb 2024 — Present',
-    current: true,
+    period: 'Feb 2024 — Feb 2026',
+    current: false,
     points: [
       'Engineered a centralised Staff Portal, migrating 100% of paper-based forms to dynamic, logic-driven digital workflows via Jotform and SharePoint.',
       'Developed a custom AI agent to answer internal staff queries, cutting information-retrieval time significantly.',

@@ -14,8 +14,7 @@ export default function Footer() {
           <span>/</span> James Wigfield
         </button>
         <p className="hp-footer__meta">
-          © {new Date().getFullYear()} · Built in Perth with React + Vite<br />
-          Set in Fraunces &amp; IBM Plex Mono
+          © {new Date().getFullYear()}
         </p>
       </div>
 

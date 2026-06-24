@@ -6,10 +6,10 @@ import LiveClock from './LiveClock';
    scan-viewport motif (dark inset, glowing signal) repurposed from voxels to
    identity. One orchestrated motion moment, driven by a single index. */
 const ROLES = [
-  { article: 'an', title: 'Honours AI Researcher', meta: 'UWA' },
-  { article: 'an', title: 'Automation Engineer', meta: 'GoFlo' },
-  { article: 'an', title: 'IT Manager', meta: 'RKMRS' },
-  { article: 'a', title: 'Software Developer', meta: 'SafeStyle' },
+  { title: 'Honours AI Researcher', meta: 'UWA' },
+  { title: 'Automation Engineer', meta: 'GoFlo' },
+  { title: 'IT Manager', meta: 'RKMRS' },
+  { title: 'Software Developer', meta: 'SafeStyle' },
 ];
 
 const CYCLE_MS = 2600;
@@ -28,15 +28,14 @@ export default function Hero() {
     <section id="top" className="hp-hero hp-wrap" aria-label="Introduction">
       <div className="hp-hero__grid">
         <div className="hp-hero__intro">
-          <p className="hp-eyebrow hp-hero__eyebrow">Researcher · Engineer · Builder</p>
+          <p className="hp-eyebrow hp-hero__eyebrow">Researcher · AI Engineer · Developer</p>
 
           <h1 className="hp-hero__title">
-            <span className="hp-hero__name">James Wigfield.</span>
+            <span className="hp-hero__name">James Wigfield</span>
             <span className="hp-hero__role-line" aria-hidden="true">
-              <span className="hp-hero__role-prefix">I'm</span>{' '}
               <span className="hp-hero__role-rotator">
                 <span key={active} className="hp-hero__role-word">
-                  {ROLES[active].article} {ROLES[active].title}.
+                  {ROLES[active].title}
                 </span>
               </span>
             </span>
@@ -47,8 +46,9 @@ export default function Hero() {
           </h1>
 
           <p className="hp-hero__lede">
-            I turn messy, manual work into something that just <em>runs</em> — across AI
-            research, automation, and the systems real businesses depend on.
+            A final-year AI honours student at UWA with a foot in <em>research</em> and a foot
+            in <em>industry</em> — from medical-imaging models to automation and software for
+            real businesses.
           </p>
 
           <div className="hp-hero__cta">
@@ -63,10 +63,6 @@ export default function Hero() {
           <div className="hp-hero__meta">
             <LiveClock />
             <span>B.Adv CS (Hons) · UWA</span>
-            <span className="hp-hero__meta-status">
-              <span className="hp-hero__pulse" aria-hidden="true" />
-              Open to grad roles
-            </span>
           </div>
         </div>
 
@@ -89,7 +85,6 @@ export default function Hero() {
             </ul>
 
             <p className="hp-manifest__foot">
-              <span className="hp-manifest__sig">signal locked</span>
               <span>04 / 04 active</span>
             </p>
           </div>
