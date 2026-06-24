@@ -13,12 +13,24 @@ export default function Footer() {
         >
           <span>/</span> James Wigfield
         </button>
-        <p className="hp-footer__meta">
-          © {new Date().getFullYear()}
-        </p>
+        <div className="hp-footer__end">
+          <p className="hp-footer__meta">
+            © {new Date().getFullYear()}
+          </p>
+          {/* Management portal entrance — subtle, but discoverable in the
+              footer row (reveals its label on hover/focus). */}
+          <button
+            className="hp-footer__portal"
+            onClick={() => navigate('/portal')}
+            aria-label="Open management portal"
+          >
+            <span className="hp-footer__portal-dot" aria-hidden="true" />
+            <span className="hp-footer__portal-label">Portal</span>
+          </button>
+        </div>
       </div>
 
-      {/* Hidden hub gate — intentionally low-contrast entrance to /hub */}
+      {/* Hidden hub gate — intentionally low-contrast easter-egg entrance to /hub */}
       <button
         className="hp-footer__gate"
         onClick={() => navigate('/hub')}

@@ -26,6 +26,7 @@ import RapGame from './components/games/RapGame';
 import ChaosReactor from './components/games/ChaosReactor';
 import TwinFlames from './components/games/TwinFlames';
 import Overmind from './components/games/Overmind';
+import Portal from './components/portal/Portal';
 
 function Portfolio() {
   // Tag <html> while the home route is mounted so home.css can override the
@@ -73,6 +74,8 @@ export default function App() {
       <Route path="/games/chaos" element={<ChaosReactor />} />
       <Route path="/games/twin-flames" element={<TwinFlames />} />
       <Route path="/games/overmind" element={<Overmind />} />
+      {/* Private management portal — gated client-side (placeholder for Supabase Auth) */}
+      <Route path="/portal" element={<Portal />} />
     </Routes>
   );
 }

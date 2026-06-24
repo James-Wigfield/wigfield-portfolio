@@ -1100,6 +1100,56 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
 }
 .hp-footer__gate:hover { color: rgba(198, 210, 222, 0.2); cursor: pointer; }
 
+/* Footer right cluster: copyright + the management-portal entrance */
+.hp-footer__end {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+/* Subtle-but-findable portal entrance — a small dot that reveals "Portal" on
+   hover/focus. Sits in the live footer row (not a near-invisible easter egg). */
+.hp-footer__portal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0.3rem 0.2rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--v-dim);
+  transition: color 0.25s var(--ease);
+}
+.hp-footer__portal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--v-dim);
+  transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+.hp-footer__portal-label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.3s var(--ease), opacity 0.25s var(--ease);
+}
+.hp-footer__portal:hover,
+.hp-footer__portal:focus-visible { color: var(--signal); outline: none; }
+.hp-footer__portal:hover .hp-footer__portal-dot,
+.hp-footer__portal:focus-visible .hp-footer__portal-dot {
+  background: var(--signal);
+  box-shadow: 0 0 0 4px rgba(255, 106, 61, 0.18);
+}
+.hp-footer__portal:hover .hp-footer__portal-label,
+.hp-footer__portal:focus-visible .hp-footer__portal-label {
+  max-width: 5rem;
+  opacity: 1;
+}
+
 /* ============================================================================
    CHAPTER HEAD — numbered scanline that "draws" across on reveal
    ========================================================================== */
