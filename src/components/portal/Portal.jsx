@@ -5,6 +5,24 @@ import { getSession, signOut } from './auth';
 import PortalGate from './PortalGate';
 import { MODULES } from './registry';
 
+// Split the flat registry into the top-level (ungrouped) tabs and the named
+// sections, preserving array order within a section and first-seen order across
+// sections. Adding a grouped tool is still a one-line registry edit.
+function buildNav(modules) {
+  const ungrouped = modules.filter((m) => !m.group);
+  const groups = [];
+  for (const m of modules) {
+    if (!m.group) continue;
+    let g = groups.find((x) => x.name === m.group);
+    if (!g) { g = { name: m.group, items: [] }; groups.push(g); }
+    g.items.push(m);
+  }
+  return { ungrouped, groups };
+}
+
+// MODULES is static, so the sidebar shape is computed once at module load.
+const NAV = buildNav(MODULES);
+
 /* ============================================================================
    PORTAL — modular admin shell
    ----------------------------------------------------------------------------
@@ -37,11 +55,26 @@ export default function Portal() {
 
   const active = MODULES.find((m) => m.id === activeId) ?? MODULES[0];
   const ActiveModule = active.component;
+  const { ungrouped, groups } = NAV;
 
   const handleSignOut = () => {
     signOut();
     setAuthed(false);
   };
+
+  // One nav button — shared by the ungrouped tabs and the grouped sections.
+  const navItem = (m) => (
+    <button
+      key={m.id}
+      className={`portal__nav-item${m.id === active.id ? ' portal__nav-item--active' : ''}`}
+      style={{ '--accent': `var(--${m.accent})` }}
+      onClick={() => setActiveId(m.id)}
+      aria-current={m.id === active.id ? 'page' : undefined}
+    >
+      <span className="portal__nav-icon">{m.icon}</span>
+      <span className="portal__nav-label">{m.label}</span>
+    </button>
+  );
 
   return (
     <div className="hp portal">
@@ -55,17 +88,12 @@ export default function Portal() {
         <p className="portal__sys-label">// PRIVATE WORKSPACE v1.0</p>
 
         <nav className="portal__nav" aria-label="Portal tools">
-          {MODULES.map((m) => (
-            <button
-              key={m.id}
-              className={`portal__nav-item${m.id === active.id ? ' portal__nav-item--active' : ''}`}
-              style={{ '--accent': `var(--${m.accent})` }}
-              onClick={() => setActiveId(m.id)}
-              aria-current={m.id === active.id ? 'page' : undefined}
-            >
-              <span className="portal__nav-icon">{m.icon}</span>
-              <span className="portal__nav-label">{m.label}</span>
-            </button>
+          {ungrouped.map(navItem)}
+          {groups.map((g) => (
+            <div className="portal__nav-group" key={g.name}>
+              <p className="portal__nav-group-label">{g.name}</p>
+              {g.items.map(navItem)}
+            </div>
           ))}
         </nav>
 
