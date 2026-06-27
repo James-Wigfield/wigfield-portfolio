@@ -1,53 +1,81 @@
 /* ============================================================================
    PORTAL — MODULE REGISTRY
    ----------------------------------------------------------------------------
-   The portal renders one tab per entry in this array. To add a NEW tool to the
-   portal you do exactly two things — nothing in the layout changes:
+   The portal renders one tab per entry in MODULES. The sidebar is organised
+   into the fixed life-area SECTIONS below; a module joins a section by setting
+   its `group` to that section's name. Adding a NEW tool is two steps — nothing
+   in the layout changes:
 
      1. Create a component file, e.g. ./modules/MyTool.jsx
             export default function MyTool() { return <div className="pt-module">…</div>; }
      2. Add one entry below:
-            { id: 'mytool', label: 'My Tool', icon: '✦', accent: 'amber',
-              group: 'University', component: MyTool }
+            { id: 'mytool', label: 'My Tool', icon: 'business',
+              group: 'Business', component: MyTool }
 
-   Fields:
+   Module fields:
      id        unique slug (used for the active-tab key)
      label     tab text
-     icon      emoji / glyph shown in the tab
-     accent    theme colour token: cyan | violet | emerald | rose | amber
-     group     OPTIONAL section heading in the sidebar (e.g. 'University',
-               'Business'). Omit it and the tab sits at the top, ungrouped.
-               Sections appear in first-seen order; tabs keep array order.
+     icon      name of an icon in ./icons.jsx (single-colour SVG — never emoji)
+     group     section heading (must match a SECTIONS name). Omit for an
+               ungrouped top item (e.g. the Overview).
+     system    OPTIONAL — true pins the tool to the "System" utility cluster at
+               the bottom of the sidebar, outside the life-area sections.
      component the React component to render in the content area
+
+   SECTIONS is the source of truth for sidebar order + section icons. A section
+   with no modules still renders (collapsed-friendly, "no tools yet") so the
+   structure is visible and future-proof.
    ========================================================================== */
 
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
+import Syllabite from './modules/Syllabite';
 import CodebaseTracker from './modules/CodebaseTracker';
+import BackendSetup from './modules/BackendSetup';
+
+// Ordered life-area sections — each may hold zero or more modules.
+export const SECTIONS = [
+  { name: 'University',  icon: 'university',  blurb: 'Degree, honours & coursework' },
+  { name: 'Syllabite',   icon: 'syllabite',   blurb: 'EdTech venture' },
+  { name: 'Business',    icon: 'business',    blurb: 'Ventures & R&D' },
+  { name: 'Personal',    icon: 'personal',    blurb: 'Life, goals & admin' },
+  { name: 'Investments', icon: 'investments', blurb: 'Portfolio & assets' },
+];
 
 export const MODULES = [
   {
     id: 'overview',
     label: 'Overview',
-    icon: '◎',
-    accent: 'cyan',
+    icon: 'overview',
     component: Overview,
   },
   {
     id: 'honours-tracker',
     label: 'Honours Tracker',
-    icon: '⬡',
-    accent: 'rose',
+    icon: 'honours',
     group: 'University',
     component: HonoursTracker,
   },
   {
+    id: 'syllabite',
+    label: 'Overview',
+    icon: 'syllabite',
+    group: 'Syllabite',
+    component: Syllabite,
+  },
+  {
     id: 'codebase-tracker',
     label: 'Codebase Visualizer',
-    icon: '◈',
-    accent: 'violet',
+    icon: 'codebase',
     group: 'Business',
     component: CodebaseTracker,
   },
-  // ⬇ drop new tools here — no other file needs to change.
+  {
+    id: 'backend-setup',
+    label: 'Backend Setup',
+    icon: 'backend',
+    system: true,
+    component: BackendSetup,
+  },
+  // Drop new tools here — set `group` to a SECTIONS name (no other file changes).
 ];

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Icon from '../icons';
 
 /* ============================================================================
    HONOURS PROJECT TRACKER  —  Mamba_PSMA
@@ -64,7 +65,7 @@ const PIPELINE = [
 const BASELINE = {
   source: 'nnU-Net 3D U-Net cascade · Kendrick et al. 2022 · held-out test (n = 128)',
   metrics: [
-    { label: 'Lesion sensitivity', value: 73.0, gap: true, note: '◂ the gap' },
+    { label: 'Lesion sensitivity', value: 73.0, gap: true, note: 'the gap' },
     { label: 'Lesion PPV', value: 88.2 },
     { label: 'Lesion F1', value: 79.9 },
     { label: 'Patient accuracy', value: 94.5 },
@@ -276,7 +277,7 @@ export default function HonoursTracker() {
           <div className="htk-road" aria-label="Project roadmap">
             {ROADMAP.map((r, i) => (
               <div key={r.label} className={`htk-road__step htk-road__step--${r.state}`}>
-                <span className="htk-road__dot">{r.state === 'done' ? '✓' : i + 1}</span>
+                <span className="htk-road__dot">{r.state === 'done' ? <Icon name="check" size={11} /> : i + 1}</span>
                 <span className="htk-road__label">{r.label}</span>
               </div>
             ))}
@@ -413,7 +414,7 @@ function Accordion({ id, label, count, open, onToggle, children }) {
   return (
     <section className="htk-acc">
       <button className="htk-acc__head" aria-expanded={open} aria-controls={`acc-${id}`} onClick={onToggle}>
-        <span className={`htk-acc__caret${open ? ' htk-acc__caret--open' : ''}`}>▸</span>
+        <span className={`htk-acc__caret${open ? ' htk-acc__caret--open' : ''}`}><Icon name="chevron" size={12} /></span>
         <span className="htk-acc__label">{label}</span>
         <span className="htk-acc__count">{count}</span>
       </button>

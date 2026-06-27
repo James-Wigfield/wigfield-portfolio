@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Icon from '../icons';
 
 /* ============================================================================
    CODEBASE VISUALIZER — strategy / direction brief  (Business section)
@@ -289,25 +290,25 @@ export default function CodebaseTracker() {
               <div className="cbt-loop" key="uni">
                 <div className="cbt-loop__row">
                   <div className="cbt-node">Source code</div>
-                  <span className="cbt-arrow">→<em>parse · watch</em></span>
+                  <span className="cbt-arrow"><Icon name="arrowRight" size={15} /><em>parse · watch</em></span>
                   <div className="cbt-node">Static DB</div>
-                  <span className="cbt-arrow">→</span>
+                  <span className="cbt-arrow"><Icon name="arrowRight" size={15} /></span>
                   <div className="cbt-node cbt-node--muted">Read-only graph</div>
                 </div>
                 <p className="cbt-loop__note cbt-loop__note--bad">
-                  ↩ Meanwhile the AI edits code blind to the graph — the view lags behind commits and drift accumulates.
+                  Meanwhile the AI edits code blind to the graph — the view lags behind commits and drift accumulates.
                 </p>
               </div>
             ) : (
               <div className="cbt-loop" key="bi">
                 <div className="cbt-loop__row">
                   <div className="cbt-node cbt-node--accent">Visual graph<small>source of truth</small></div>
-                  <span className="cbt-arrow cbt-arrow--bi">⇄</span>
+                  <span className="cbt-arrow cbt-arrow--bi"><Icon name="swap" size={20} /></span>
                   <div className="cbt-node cbt-node--accent">AI agent<small>MCP client</small></div>
                 </div>
-                <span className="cbt-arrow cbt-arrow--down">compiles ↕ proposes diffs</span>
-                <div className="cbt-gate">⛨ Architectural linter — validates against boundaries before any write</div>
-                <span className="cbt-arrow cbt-arrow--down">↕</span>
+                <span className="cbt-arrow cbt-arrow--down"><Icon name="arrowDown" size={13} /> compiles · proposes diffs</span>
+                <div className="cbt-gate"><Icon name="shield" size={15} /> Architectural linter — validates against boundaries before any write</div>
+                <span className="cbt-arrow cbt-arrow--down"><Icon name="arrowDown" size={13} /></span>
                 <div className="cbt-node cbt-node--wide">Source code files</div>
                 <p className="cbt-loop__note cbt-loop__note--good">
                   Design edits compile to code, code updates the graph, and illegal diffs are blocked at the gate.
@@ -337,7 +338,7 @@ export default function CodebaseTracker() {
                 <div key={r.key} className="pt-card cbt-rival">
                   <button className="cbt-rival__head" aria-expanded={open}
                           onClick={() => setOpenRival(open ? null : r.key)}>
-                    <span className={`cbt-rival__caret${open ? ' cbt-rival__caret--open' : ''}`}>▸</span>
+                    <span className={`cbt-rival__caret${open ? ' cbt-rival__caret--open' : ''}`}><Icon name="chevron" size={12} /></span>
                     <span className="cbt-rival__name">{r.name}{r.vendor && <em> · {r.vendor}</em>}</span>
                     <span className={`cbt-approach cbt-approach--${r.approach}`}>
                       {r.approach === 'analytical' ? 'Analytical' : 'Visual-first'}
@@ -368,7 +369,7 @@ export default function CodebaseTracker() {
           <div className="pt-card cbt-matrixwrap">
             <button className="cbt-matrix__toggle" aria-expanded={showMatrix}
                     onClick={() => setShowMatrix((s) => !s)}>
-              <span className={`cbt-rival__caret${showMatrix ? ' cbt-rival__caret--open' : ''}`}>▸</span>
+              <span className={`cbt-rival__caret${showMatrix ? ' cbt-rival__caret--open' : ''}`}><Icon name="chevron" size={12} /></span>
               Wider market — {MARKET.length} tools mapped
             </button>
             {showMatrix && (

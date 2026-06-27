@@ -8,7 +8,7 @@ import { signIn } from './auth';
    navigating directly to /portal shows only this gate. `onUnlock` lifts the
    authenticated flag to the parent (which persists via sessionStorage in auth.js).
    ========================================================================== */
-export default function PortalGate({ onUnlock }) {
+export default function PortalGate({ onUnlock, theme }) {
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState('idle'); // idle | checking | error
   const [shake, setShake] = useState(false);
@@ -34,7 +34,7 @@ export default function PortalGate({ onUnlock }) {
   };
 
   return (
-    <div className="hp portal-gate">
+    <div className="hp portal-gate" data-portal-theme={theme}>
       <div className="portal-gate__overlay" />
 
       <form
