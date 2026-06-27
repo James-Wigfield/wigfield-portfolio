@@ -30,6 +30,7 @@
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
 import Syllabite from './modules/Syllabite';
+import SyllabiteGTM from './modules/SyllabiteGTM';
 import CodebaseTracker from './modules/CodebaseTracker';
 import BackendSetup from './modules/BackendSetup';
 
@@ -62,6 +63,13 @@ export const MODULES = [
     icon: 'syllabite',
     group: 'Syllabite',
     component: Syllabite,
+  },
+  {
+    id: 'syllabite-gtm',
+    label: 'Go-to-Market',
+    icon: 'investments',
+    group: 'Syllabite',
+    component: SyllabiteGTM,
   },
   {
     id: 'codebase-tracker',
