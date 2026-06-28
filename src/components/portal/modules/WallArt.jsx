@@ -463,6 +463,21 @@ function NeuralNetPoster({ svgRef }) {
           <stop offset="58%" stopColor="#000000" stopOpacity="0" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0.42" />
         </radialGradient>
+        {/* worn ink — erode edges (displace) + knock speckle holes out of the fill */}
+        <filter id="rgTitleWorn" x="-3%" y="-22%" width="106%" height="144%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4" result="warp" />
+          <feDisplacementMap in="SourceGraphic" in2="warp" scale="8" xChannelSelector="R" yChannelSelector="G" result="rough" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="3" seed="9" result="sp" />
+          <feComponentTransfer in="sp" result="speck"><feFuncA type="discrete" tableValues="0 0 0 1" /></feComponentTransfer>
+          <feComposite in="rough" in2="speck" operator="out" />
+        </filter>
+        <filter id="rgPhraseWorn" x="-3%" y="-34%" width="106%" height="168%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="6" result="warp" />
+          <feDisplacementMap in="SourceGraphic" in2="warp" scale="3" xChannelSelector="R" yChannelSelector="G" result="rough" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.2" numOctaves="2" seed="12" result="sp" />
+          <feComponentTransfer in="sp" result="speck"><feFuncA type="discrete" tableValues="0 0 0 0 0 0 1" /></feComponentTransfer>
+          <feComposite in="rough" in2="speck" operator="out" />
+        </filter>
       </defs>
 
       <rect x="0" y="0" width={VW} height={VH} fill={RG_BG} />
@@ -552,8 +567,8 @@ function NeuralNetPoster({ svgRef }) {
       <text x={FX1} y={250} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="23" letterSpacing="4">PLATE 03 · FIG. III</text>
       <text x={FX2} y={250} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="23" letterSpacing="2" textAnchor="end">FORMAT A4 · 210 × 297</text>
 
-      <text x={FX1} y={626} fill={RG_CREAM} fontFamily={RG_FONT_DISPLAY} fontSize="296" textLength={FX2 - FX1} lengthAdjust="spacingAndGlyphs">NEURAL</text>
-      <text x={FX1} y={922} fill={RG_CREAM} fontFamily={RG_FONT_DISPLAY} fontSize="296" textLength={FX2 - FX1} lengthAdjust="spacingAndGlyphs">NETWORK</text>
+      <text x={FX1} y={626} fill={RG_CREAM} fontFamily={RG_FONT_DISPLAY} fontSize="296" textLength={FX2 - FX1} lengthAdjust="spacingAndGlyphs" filter="url(#rgTitleWorn)">NEURAL</text>
+      <text x={FX1} y={922} fill={RG_CREAM} fontFamily={RG_FONT_DISPLAY} fontSize="296" textLength={FX2 - FX1} lengthAdjust="spacingAndGlyphs" filter="url(#rgTitleWorn)">NETWORK</text>
       <text x={FX1} y={1014} fill={RG_DIM} fontFamily={RG_FONT_GROT} fontSize="33" fontWeight="500" letterSpacing="7">AN ILLUSTRATED STUDY OF MACHINE COGNITION</text>
 
       {/* specimen labels */}
@@ -583,7 +598,7 @@ function NeuralNetPoster({ svgRef }) {
       <text x={RG_SCX} y={RG_SCY + 250} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19" textAnchor="middle">OUTPUT</text>
 
       {/* footer: phrase + stats */}
-      <text x={CX} y={2632} fill={RG_CREAM} fontFamily={RG_FONT_GROT} fontSize="40" fontWeight="500" letterSpacing="4" textAnchor="middle">
+      <text x={CX} y={2632} fill={RG_CREAM} fontFamily={RG_FONT_GROT} fontSize="40" fontWeight="500" letterSpacing="4" textAnchor="middle" filter="url(#rgPhraseWorn)">
         THOUGHT IS STRUCTURE, BRIEFLY <tspan fill={RG_ORANGE}>LIT</tspan>.
       </text>
       {RG_STATS.map((s, i) => {
@@ -595,6 +610,171 @@ function NeuralNetPoster({ svgRef }) {
       <rect x="0" y="0" width={VW} height={VH} filter="url(#rgGrainA)" opacity="0.5" style={{ mixBlendMode: 'overlay' }} />
       <rect x="0" y="0" width={VW} height={VH} filter="url(#rgGrainB)" opacity="0.32" style={{ mixBlendMode: 'overlay' }} />
       <rect x="0" y="0" width={VW} height={VH} fill="url(#rgVig)" />
+    </svg>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FIG. 04 — "CORE MEMORY"  (1970s CS-textbook jacket)
+   Deep near-black cloth with a faint woven grain + wear (understated
+   feTurbulence), and a single signal-red technical schematic over a calm
+   cream title block. The hero is a plausible core-memory read path: a ferrite
+   core plane (vertical X-drive lines × horizontal word/sense lines, cores at
+   the intersections) feeding sense amplifiers → strobed AND gates → an OR
+   decode tree → one data output. Strictly two inks (red + cream) on black;
+   everything routes orthogonally on a fixed grid with consistent gate glyphs.
+   ════════════════════════════════════════════════════════════════════════════ */
+const CM_BG = '#0C0C0E', CM_RED = '#C8341F', CM_CREAM = '#E9E2D0';
+const CM_FD = "'Roboto Slab', Rockwell, Georgia, serif"; // heavy slab display
+const CM_FM = "'Space Mono', ui-monospace, monospace";   // mono caption / eyebrow
+const CM_FI = "'Fraunces', Georgia, serif";              // serif italic annotations
+const CM_LX = 200, CM_RX = 1900;
+
+const STUB = 16, BW = 58, BH = 52, GW = 80, GH = 92;
+const CM_VX = Array.from({ length: 9 }, (_, i) => 320 + i * 60); // X-drive lines
+const CM_WY = [1560, 1740, 1920, 2100];                          // word / sense lines
+const CM_PLANE_TOP = 1480, CM_DRIVE_BUS = 2240;
+const STROBEX = 1140, OUTX = 1880;
+const cBuf = 1000, cAnd = 1250, cOr = 1490, cOc = 1710;
+const CM_GATES = [
+  ...CM_WY.map((y, i) => ({ id: 'b' + i, kind: 'buf', cx: cBuf, cy: y })),
+  ...CM_WY.map((y, i) => ({ id: 'a' + i, kind: 'and', cx: cAnd, cy: y })),
+  { id: 'oa', kind: 'or', cx: cOr, cy: 1650 },
+  { id: 'ob', kind: 'or', cx: cOr, cy: 2010 },
+  { id: 'oc', kind: 'or', cx: cOc, cy: 1830 },
+  { id: 'xd', kind: 'buf', cx: 250, cy: CM_DRIVE_BUS },
+];
+const CM_GMAP = Object.fromEntries(CM_GATES.map((g) => [g.id, g]));
+function cmPins(g) {
+  const { kind, cx, cy } = g;
+  if (kind === 'buf') return { in: [[cx - BW / 2 - STUB, cy]], out: [cx + BW / 2 + STUB, cy] };
+  return { in: [[cx - GW / 2 - STUB, cy - 20], [cx - GW / 2 - STUB, cy + 20]], out: [cx + GW / 2 + STUB, cy] };
+}
+
+// Build the orthogonal trace paths + junction dots once (deterministic).
+const CM_TRACE = [], CM_DOT = [];
+const cmZ = (x1, y1, x2, y2, jx) => {
+  if (y1 === y2) { CM_TRACE.push(`M${x1},${y1} L${x2},${y2}`); return; }
+  const j = jx ?? Math.round((x1 + x2) / 2);
+  CM_TRACE.push(`M${x1},${y1} L${j},${y1} L${j},${y2} L${x2},${y2}`);
+};
+CM_WY.forEach((y) => CM_TRACE.push(`M${CM_VX[0]},${y} L800,${y}`));               // word lines
+CM_VX.forEach((x) => CM_TRACE.push(`M${x},${CM_PLANE_TOP} L${x},${CM_DRIVE_BUS}`)); // drive lines
+CM_TRACE.push(`M${CM_VX[0]},${CM_DRIVE_BUS} L800,${CM_DRIVE_BUS}`);               // drive bus
+CM_VX.forEach((x) => CM_DOT.push([x, CM_DRIVE_BUS]));
+cmZ(cmPins(CM_GMAP.xd).out[0], CM_DRIVE_BUS, CM_VX[0], CM_DRIVE_BUS);              // driver → bus
+CM_WY.forEach((y, i) => { const b = cmPins(CM_GMAP['b' + i]); cmZ(800, y, b.in[0][0], b.in[0][1]); CM_DOT.push([800, y]); });
+CM_WY.forEach((y, i) => { const b = cmPins(CM_GMAP['b' + i]), a = cmPins(CM_GMAP['a' + i]); cmZ(b.out[0], b.out[1], a.in[0][0], a.in[0][1], a.in[0][0] - 24); });
+CM_TRACE.push(`M${STROBEX},1520 L${STROBEX},2120`);                               // read-strobe bus
+CM_WY.forEach((_, i) => { const a = cmPins(CM_GMAP['a' + i]); cmZ(STROBEX, a.in[1][1], a.in[1][0], a.in[1][1]); CM_DOT.push([STROBEX, a.in[1][1]]); });
+const cmOa = cmPins(CM_GMAP.oa), cmOb = cmPins(CM_GMAP.ob), cmOc = cmPins(CM_GMAP.oc);
+cmZ(cmPins(CM_GMAP.a0).out[0], 1560, cmOa.in[0][0], cmOa.in[0][1], cmOa.in[0][0] - 24);
+cmZ(cmPins(CM_GMAP.a1).out[0], 1740, cmOa.in[1][0], cmOa.in[1][1], cmOa.in[1][0] - 24);
+cmZ(cmPins(CM_GMAP.a2).out[0], 1920, cmOb.in[0][0], cmOb.in[0][1], cmOb.in[0][0] - 24);
+cmZ(cmPins(CM_GMAP.a3).out[0], 2100, cmOb.in[1][0], cmOb.in[1][1], cmOb.in[1][0] - 24);
+cmZ(cmOa.out[0], cmOa.out[1], cmOc.in[0][0], cmOc.in[0][1], cmOc.in[0][0] - 24);
+cmZ(cmOb.out[0], cmOb.out[1], cmOc.in[1][0], cmOc.in[1][1], cmOc.in[1][0] - 24);
+CM_TRACE.push(`M${cmOc.out[0]},${cmOc.out[1]} L${OUTX},${cmOc.out[1]}`);          // → data out
+const CM_CORES = [];
+CM_VX.forEach((x) => CM_WY.forEach((y) => CM_CORES.push([x, y])));
+
+// One gate glyph (path + input/output stubs) — consistent across the diagram.
+function cmGateEl(g) {
+  const { kind, cx, cy } = g, p = cmPins(g);
+  const st = { stroke: CM_RED, strokeWidth: 2.6, fill: 'none', strokeLinejoin: 'round' };
+  let path, tipX;
+  if (kind === 'buf') { path = `M${cx - BW / 2},${cy - BH / 2} L${cx - BW / 2},${cy + BH / 2} L${cx + BW / 2},${cy} Z`; tipX = cx + BW / 2; }
+  else if (kind === 'and') { const r = GH / 2, bw = GW - r, x = cx - GW / 2, y = cy - GH / 2; path = `M${x},${y} L${x + bw},${y} A${r},${r} 0 0 1 ${x + bw},${y + GH} L${x},${y + GH} Z`; tipX = cx + GW / 2; }
+  else { const w = GW, h = GH, x = cx - w / 2, y = cy - h / 2; path = `M${x},${y} Q${x + 0.62 * w},${y} ${x + w},${cy} Q${x + 0.62 * w},${y + h} ${x},${y + h} Q${x + 0.18 * w},${cy} ${x},${y} Z`; tipX = cx + GW / 2; }
+  const bodyL = kind === 'buf' ? cx - BW / 2 : (kind === 'or' ? cx - GW / 2 + 8 : cx - GW / 2);
+  return (
+    <g key={g.id}>
+      <path d={path} {...st} />
+      <line x1={tipX} y1={cy} x2={p.out[0]} y2={cy} {...st} />
+      {p.in.map(([ix, iy], k) => <line key={k} x1={ix} y1={iy} x2={bodyL} y2={iy} {...st} />)}
+    </g>
+  );
+}
+
+function CoreMemoryPoster({ svgRef }) {
+  return (
+    <svg ref={svgRef} className="wa-art" xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${VW} ${VH}`}
+         role="img" aria-label="Core Memory — a vintage two-colour circuit schematic poster, sized for A4 print"
+         shapeRendering="geometricPrecision">
+      <defs>
+        <filter id="cmCloth" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="11" stitchTiles="stitch" result="n" />
+          <feColorMatrix in="n" type="saturate" values="0" />
+        </filter>
+        <filter id="cmFine" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="2" seed="22" stitchTiles="stitch" result="n" />
+          <feColorMatrix in="n" type="saturate" values="0" />
+        </filter>
+        <radialGradient id="cmVig">
+          <stop offset="62%" stopColor="#000000" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.4" />
+        </radialGradient>
+        {/* worn ink (refined) — gentle edge erosion + sparse speckle ink-loss */}
+        <filter id="cmTitleWorn" x="-3%" y="-20%" width="106%" height="140%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="7" result="warp" />
+          <feDisplacementMap in="SourceGraphic" in2="warp" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="rough" />
+          <feTurbulence type="fractalNoise" baseFrequency="0.13" numOctaves="3" seed="15" result="sp" />
+          <feComponentTransfer in="sp" result="speck"><feFuncA type="discrete" tableValues="0 0 0 0 0 1" /></feComponentTransfer>
+          <feComposite in="rough" in2="speck" operator="out" />
+        </filter>
+      </defs>
+
+      <rect x="0" y="0" width={VW} height={VH} fill={CM_BG} />
+
+      {/* faint wear (very subtle light scuffs) */}
+      <g stroke={CM_CREAM} strokeOpacity="0.05" strokeWidth="1.5" strokeLinecap="round">
+        <line x1="280" y1="560" x2="1760" y2="612" />
+        <line x1="240" y1="2360" x2="1500" y2="2300" />
+      </g>
+
+      {/* ── Title block (cream, calm) ─────────────────────────────────────── */}
+      <text x={CM_LX} y={300} fill={CM_RED} fontFamily={CM_FM} fontSize="26" letterSpacing="7">MACHINE MEMORY — A PRIMER</text>
+      <line x1={CM_LX} y1={332} x2={CM_LX + 232} y2={332} stroke={CM_RED} strokeWidth="3" />
+      <text x={CM_LX} y={642} fill={CM_CREAM} fontFamily={CM_FD} fontWeight="900" fontSize="360" filter="url(#cmTitleWorn)">core</text>
+      <text x={CM_LX} y={878} fill={CM_CREAM} fontFamily={CM_FD} fontWeight="900" fontSize="360" filter="url(#cmTitleWorn)">memory</text>
+      <text x={CM_LX} y={972} fill={CM_CREAM} fontFamily={CM_FD} fontWeight="500" fontSize="46" filter="url(#cmTitleWorn)"><tspan fill={CM_RED}>— </tspan>james wigfield</text>
+      <line x1={760} y1={957} x2={CM_RX} y2={957} stroke={CM_RED} strokeWidth="1.4" strokeOpacity="0.7" />
+
+      {/* ── Schematic (single red ink) ────────────────────────────────────── */}
+      {/* word lines, drive lines, drive bus, traces */}
+      <g stroke={CM_RED} strokeWidth="2.4" fill="none" strokeLinejoin="round">
+        {CM_TRACE.map((d, i) => <path key={i} d={d} />)}
+      </g>
+      {/* ferrite cores at every intersection (threaded at 45°) */}
+      {CM_CORES.map(([x, y], i) => (
+        <ellipse key={i} cx={x} cy={y} rx="8.5" ry="4" fill="none" stroke={CM_RED} strokeWidth="2"
+                 transform={`rotate(-45 ${x} ${y})`} />
+      ))}
+      {/* gates */}
+      {CM_GATES.map((g) => cmGateEl(g))}
+      {/* junction dots */}
+      {CM_DOT.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="5" fill={CM_RED} />)}
+      {/* driver input arrow + output arrow */}
+      <line x1="168" y1={CM_DRIVE_BUS} x2={cmPins(CM_GMAP.xd).in[0][0]} y2={CM_DRIVE_BUS} stroke={CM_RED} strokeWidth="2.4" />
+      <polygon points={`${cmPins(CM_GMAP.xd).in[0][0]},${CM_DRIVE_BUS} ${cmPins(CM_GMAP.xd).in[0][0] - 13},${CM_DRIVE_BUS - 7} ${cmPins(CM_GMAP.xd).in[0][0] - 13},${CM_DRIVE_BUS + 7}`} fill={CM_RED} />
+      <polygon points={`${OUTX},1830 ${OUTX - 16},1822 ${OUTX - 16},1838`} fill={CM_RED} />
+
+      {/* italic annotations (red serif) */}
+      <text x={560} y={1452} fill={CM_RED} fontFamily={CM_FI} fontStyle="italic" fontSize="27" textAnchor="middle">core plane</text>
+      <text x={840} y={1540} fill={CM_RED} fontFamily={CM_FI} fontStyle="italic" fontSize="26">sense lines</text>
+      <text x={STROBEX} y={1498} fill={CM_RED} fontFamily={CM_FI} fontStyle="italic" fontSize="26" textAnchor="middle">read strobe</text>
+      <text x={560} y={2298} fill={CM_RED} fontFamily={CM_FI} fontStyle="italic" fontSize="27" textAnchor="middle">x-drive lines</text>
+      <text x={OUTX + 18} y={1838} fill={CM_RED} fontFamily={CM_FM} fontSize="28" letterSpacing="2">Q</text>
+
+      {/* ── Bottom caption ────────────────────────────────────────────────── */}
+      <line x1={CM_LX} y1={2700} x2={CM_RX} y2={2700} stroke={CM_RED} strokeWidth="1.4" strokeOpacity="0.6" />
+      <text x={CM_LX} y={2748} fill={CM_RED} fontFamily={CM_FM} fontSize="20" letterSpacing="3">PLATE IV · CORE-MEMORY READ PATH</text>
+      <text x={CM_RX} y={2748} fill={CM_RED} fontFamily={CM_FM} fontSize="20" letterSpacing="2" textAnchor="end">210 × 297 MM</text>
+
+      {/* ── Texture overlays (understated) ────────────────────────────────── */}
+      <rect x="0" y="0" width={VW} height={VH} filter="url(#cmCloth)" opacity="0.05" style={{ mixBlendMode: 'overlay' }} />
+      <rect x="0" y="0" width={VW} height={VH} filter="url(#cmFine)" opacity="0.035" style={{ mixBlendMode: 'overlay' }} />
+      <rect x="0" y="0" width={VW} height={VH} fill="url(#cmVig)" />
     </svg>
   );
 }
@@ -630,6 +810,15 @@ const PIECES = [
       { kind: 'ring', color: RG_ORANGE, label: 'Signal field', note: 'concentric propagation' },
     ],
   },
+  {
+    id: 'core-memory', fig: 'FIG. 04', label: 'Core Memory', paper: CM_BG, Component: CoreMemoryPoster,
+    caption: 'A 1970s textbook-jacket plate — a two-ink ferrite core-memory read path on dark cloth: drive lines, sense amps, a strobed gate decode tree, one data output.',
+    legend: [
+      { kind: 'ring', color: CM_RED, label: 'Ferrite core', note: 'one bit, threaded at 45°' },
+      { kind: 'line', color: CM_RED, label: 'Orthogonal traces', note: 'drive · word · sense lines' },
+      { kind: 'dot', color: CM_RED, label: 'Junction', note: 'a connected node' },
+    ],
+  },
 ];
 
 // Standalone, self-contained SVG document string sized to A4.
@@ -644,7 +833,7 @@ function serialize(svg) {
 
 export default function WallArt() {
   const svgRef = useRef(null);
-  const [activeId, setActiveId] = useState('neural-net');
+  const [activeId, setActiveId] = useState('core-memory');
   const piece = PIECES.find((p) => p.id === activeId) ?? PIECES[0];
   const Active = piece.Component;
 
