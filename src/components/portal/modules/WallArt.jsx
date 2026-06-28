@@ -342,6 +342,264 @@ function SelectiveScanArt({ svgRef }) {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+   FIG. 03 — "NEURAL NET"  (risograph / screen-print technical plate)
+   A dark, tactile field-manual poster: warm near-black with SVG grain
+   (feTurbulence) + a hand-printed edge wobble (feDisplacementMap), a two-ink
+   look (bone cream + a single burnt orange spent only on focal hubs & signal),
+   a massive condensed Anton title justified edge-to-edge (textLength), a
+   bordered network "specimen", a fake instrument readout, latent + signal
+   sub-diagrams, a left legend of glyphs, and a footer stat band. All linework
+   is deterministic (shared hash) so it prints identically.
+   ════════════════════════════════════════════════════════════════════════════ */
+const RG_BG = '#17120B', RG_CREAM = '#E8E0CF', RG_DIM = '#988F79', RG_ORANGE = '#C5562A', RG_ORANGE_HOT = '#E2733A';
+const RG_HAIR = 'rgba(232,224,207,0.4)';
+const RG_FONT_DISPLAY = "'Anton', 'Arial Narrow', Impact, sans-serif";
+const RG_FONT_MONO = "'Space Mono', ui-monospace, monospace";
+const RG_FONT_GROT = "'Space Grotesk', 'Helvetica Neue', sans-serif";
+
+const RG_SP = { x1: 300, y1: 1110, x2: 1970, y2: 1748 }; // specimen panel
+const RG_LT = { x1: 300, y1: 1986, x2: 1095, y2: 2432 }; // latent field
+const RG_SG = { x1: 1145, y1: 1986, x2: 1970, y2: 2432 };// signal field
+const RG_SCX = (RG_SG.x1 + RG_SG.x2) / 2, RG_SCY = (RG_SG.y1 + RG_SG.y2) / 2 + 10;
+const RG_RINGS = [46, 96, 150, 206];
+const RG_GLYPHS = ['square', 'ring', 'cross', 'tri', 'wave', 'dots', 'arrow', 'bracket', 'diamond'];
+const RG_READOUT = [
+  { k: 'CYCLES', v: '04 096' }, { k: 'LOSS', v: '0.0173' }, { k: 'PARAMS', v: '1.24 B' },
+  { k: 'ENTROPY', v: '0.681' }, { k: 'DEPTH', v: '48' },
+];
+const RG_STATS = ['REV 02.6', 'INK ×2 — BONE / BURNT', 'PLATE A4', 'EST. MMXXVI', 'J. WIGFIELD'];
+
+// Constellation: nodes + nearest-neighbour edges; the highest-degree nodes are
+// the orange focal hubs.
+function genNetwork(p, n, seed) {
+  const padX = 90, padTop = 110, padBot = 70;
+  const nodes = Array.from({ length: n }, (_, i) => ({
+    x: p.x1 + padX + hash(seed, i, 1) * (p.x2 - p.x1 - 2 * padX),
+    y: p.y1 + padTop + hash(seed, i, 2) * (p.y2 - p.y1 - padTop - padBot),
+    i,
+  }));
+  const seen = new Set(), edges = [], deg = new Array(n).fill(0);
+  nodes.forEach((nd, i) => {
+    nodes.map((o, j) => ({ j, d: (o.x - nd.x) ** 2 + (o.y - nd.y) ** 2 }))
+      .filter((o) => o.j !== i).sort((a, b) => a.d - b.d).slice(0, 2)
+      .forEach(({ j }) => {
+        const k = i < j ? `${i}-${j}` : `${j}-${i}`;
+        if (!seen.has(k)) { seen.add(k); edges.push([i, j]); deg[i]++; deg[j]++; }
+      });
+  });
+  const focalSet = new Set([...deg.keys()].sort((a, b) => deg[b] - deg[a]).slice(0, 4));
+  return { nodes, edges, focalSet };
+}
+function genScatter(p, n, seed) {
+  const pad = 64;
+  const nodes = Array.from({ length: n }, (_, i) => ({
+    x: p.x1 + pad + hash(seed, i, 1) * (p.x2 - p.x1 - 2 * pad),
+    y: p.y1 + pad + hash(seed, i, 2) * (p.y2 - p.y1 - pad - 84),
+    i,
+  }));
+  const edges = [];
+  nodes.forEach((nd, i) => {
+    if (hash(seed, i, 5) > 0.55) return;
+    let best = -1, bd = Infinity;
+    nodes.forEach((o, j) => { if (j !== i) { const d = (o.x - nd.x) ** 2 + (o.y - nd.y) ** 2; if (d < bd) { bd = d; best = j; } } });
+    if (best >= 0) edges.push([i, best]);
+  });
+  return { nodes, edges, orange: new Set([3, 12, 21].filter((k) => k < n)) };
+}
+const RG_NET = genNetwork(RG_SP, 24, 3);
+const RG_SCAT = genScatter(RG_LT, 30, 9);
+
+// One small legend glyph (no fill unless noted) centred at (cx,cy).
+function glyphMark(type, cx, cy, c) {
+  const s = 15;
+  switch (type) {
+    case 'square': return <rect x={cx - s} y={cy - s} width={2 * s} height={2 * s} fill="none" stroke={c} strokeWidth="2" />;
+    case 'ring': return <circle cx={cx} cy={cy} r={s} fill="none" stroke={c} strokeWidth="2" />;
+    case 'cross': return <g stroke={c} strokeWidth="2"><line x1={cx - s} y1={cy} x2={cx + s} y2={cy} /><line x1={cx} y1={cy - s} x2={cx} y2={cy + s} /></g>;
+    case 'tri': return <path d={`M${cx},${cy - s} L${cx + s},${cy + s} L${cx - s},${cy + s} Z`} fill="none" stroke={c} strokeWidth="2" />;
+    case 'wave': return <path d={`M${cx - s},${cy} Q${cx - s / 2},${cy - s} ${cx},${cy} T${cx + s},${cy}`} fill="none" stroke={c} strokeWidth="2" />;
+    case 'dots': return <g fill={c}>{[-s, 0, s].map((d, k) => <circle key={k} cx={cx + d} cy={cy} r="2.6" />)}</g>;
+    case 'arrow': return <g stroke={c} strokeWidth="2" fill="none"><line x1={cx} y1={cy + s} x2={cx} y2={cy - s} /><path d={`M${cx - 6},${cy - s + 8} L${cx},${cy - s} L${cx + 6},${cy - s + 8}`} /></g>;
+    case 'bracket': return <g stroke={c} strokeWidth="2" fill="none"><path d={`M${cx - s + 5},${cy - s} L${cx - s},${cy - s} L${cx - s},${cy + s} L${cx - s + 5},${cy + s}`} /><path d={`M${cx + s - 5},${cy - s} L${cx + s},${cy - s} L${cx + s},${cy + s} L${cx + s - 5},${cy + s}`} /></g>;
+    case 'diamond': return <path d={`M${cx},${cy - s} L${cx + s},${cy} L${cx},${cy + s} L${cx - s},${cy} Z`} fill="none" stroke={c} strokeWidth="2" />;
+    default: return null;
+  }
+}
+// A thin register rule with end + quarter ticks.
+function rgRule(y, x1 = FX1, x2 = FX2, c = RG_HAIR) {
+  const xs = [x1, x1 + (x2 - x1) / 4, (x1 + x2) / 2, x2 - (x2 - x1) / 4, x2];
+  return (
+    <g stroke={c} strokeWidth="1.4">
+      <line x1={x1} y1={y} x2={x2} y2={y} />
+      {xs.map((x, i) => <line key={i} x1={x} y1={y - 6} x2={x} y2={y + 6} />)}
+    </g>
+  );
+}
+
+function NeuralNetPoster({ svgRef }) {
+  return (
+    <svg ref={svgRef} className="wa-art" xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${VW} ${VH}`}
+         role="img" aria-label="Neural Net — a risograph-style technical poster of a neural network, sized for A4 print"
+         shapeRendering="geometricPrecision">
+      <defs>
+        <filter id="rgGrainA" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.42" numOctaves="3" seed="14" stitchTiles="stitch" result="n" />
+          <feColorMatrix in="n" type="saturate" values="0" />
+        </filter>
+        <filter id="rgGrainB" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="29" stitchTiles="stitch" result="n" />
+          <feColorMatrix in="n" type="saturate" values="0" />
+        </filter>
+        <filter id="rgRough" x="-3%" y="-3%" width="106%" height="106%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.014 0.018" numOctaves="2" seed="5" result="w" />
+          <feDisplacementMap in="SourceGraphic" in2="w" scale="6" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+        <radialGradient id="rgGlow">
+          <stop offset="0%" stopColor={RG_ORANGE_HOT} stopOpacity="0.9" />
+          <stop offset="42%" stopColor={RG_ORANGE} stopOpacity="0.34" />
+          <stop offset="100%" stopColor={RG_ORANGE} stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="rgVig">
+          <stop offset="58%" stopColor="#000000" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.42" />
+        </radialGradient>
+      </defs>
+
+      <rect x="0" y="0" width={VW} height={VH} fill={RG_BG} />
+
+      {/* ── all linework, hand-printed wobble ─────────────────────────────── */}
+      <g filter="url(#rgRough)">
+        <rect x={FX1} y={FY1} width={FX2 - FX1} height={FY2 - FY1} fill="none" stroke={RG_CREAM} strokeWidth="2" strokeOpacity="0.6" />
+        {rgRule(288)}
+        {rgRule(1052)}
+
+        {/* legend glyph column (left gutter) */}
+        {RG_GLYPHS.map((g, i) => {
+          const cy = 1188 + i * 150;
+          const c = i === 6 ? RG_ORANGE : RG_CREAM;
+          return <g key={g}>{glyphMark(g, 205, cy, c)}</g>;
+        })}
+
+        {/* specimen panel */}
+        <rect x={RG_SP.x1} y={RG_SP.y1} width={RG_SP.x2 - RG_SP.x1} height={RG_SP.y2 - RG_SP.y1} fill="none" stroke={RG_CREAM} strokeWidth="1.8" strokeOpacity="0.7" />
+        {[[RG_SP.x1, RG_SP.y1, 1, 1], [RG_SP.x2, RG_SP.y1, -1, 1], [RG_SP.x1, RG_SP.y2, 1, -1], [RG_SP.x2, RG_SP.y2, -1, -1]].map(([x, y, sx, sy], i) => (
+          <path key={i} d={`M${x + sx * 26},${y} L${x},${y} L${x},${y + sy * 26}`} fill="none" stroke={RG_ORANGE} strokeWidth="2.4" />
+        ))}
+        {RG_NET.edges.map(([a, b], i) => {
+          const A = RG_NET.nodes[a], B = RG_NET.nodes[b];
+          const both = RG_NET.focalSet.has(a) && RG_NET.focalSet.has(b);
+          return <line key={i} x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke={both ? RG_ORANGE : RG_CREAM} strokeOpacity={both ? 0.62 : 0.32} strokeWidth={both ? 2 : 1.4} />;
+        })}
+        {RG_NET.nodes.map((nd) => {
+          if (RG_NET.focalSet.has(nd.i)) return (
+            <g key={nd.i}>
+              <circle cx={nd.x} cy={nd.y} r="46" fill="url(#rgGlow)" />
+              <circle cx={nd.x} cy={nd.y} r="13" fill="none" stroke={RG_ORANGE} strokeWidth="2" />
+              <circle cx={nd.x} cy={nd.y} r="6" fill={RG_ORANGE_HOT} />
+            </g>
+          );
+          return hash(3, nd.i, 8) > 0.5
+            ? <circle key={nd.i} cx={nd.x} cy={nd.y} r="6" fill="none" stroke={RG_CREAM} strokeWidth="1.8" strokeOpacity="0.85" />
+            : <circle key={nd.i} cx={nd.x} cy={nd.y} r="4.6" fill={RG_CREAM} fillOpacity="0.9" />;
+        })}
+
+        {/* readout rules + dividers */}
+        {rgRule(1788, RG_SP.x1, RG_SP.x2)}
+        {rgRule(1872, RG_SP.x1, RG_SP.x2)}
+        {RG_READOUT.map((_, i) => i > 0 && (
+          <line key={i} x1={RG_SP.x1 + i * ((RG_SP.x2 - RG_SP.x1) / 5)} y1={1800} x2={RG_SP.x1 + i * ((RG_SP.x2 - RG_SP.x1) / 5)} y2={1860} stroke={RG_HAIR} strokeWidth="1.4" />
+        ))}
+
+        {/* latent panel + scatter */}
+        <rect x={RG_LT.x1} y={RG_LT.y1} width={RG_LT.x2 - RG_LT.x1} height={RG_LT.y2 - RG_LT.y1} fill="none" stroke={RG_CREAM} strokeWidth="1.6" strokeOpacity="0.6" />
+        {RG_SCAT.edges.map(([a, b], i) => {
+          const A = RG_SCAT.nodes[a], B = RG_SCAT.nodes[b];
+          return <line key={i} x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke={RG_CREAM} strokeOpacity="0.22" strokeWidth="1.2" />;
+        })}
+        {RG_SCAT.nodes.map((nd) => RG_SCAT.orange.has(nd.i)
+          ? <circle key={nd.i} cx={nd.x} cy={nd.y} r="5.5" fill={RG_ORANGE_HOT} />
+          : <circle key={nd.i} cx={nd.x} cy={nd.y} r="3.4" fill={RG_CREAM} fillOpacity="0.8" />)}
+        {[0, 1, 2, 3, 4].map((i) => <line key={`ax${i}`} x1={RG_LT.x1 + 30 + i * 26} y1={RG_LT.y2 - 40} x2={RG_LT.x1 + 30 + i * 26} y2={RG_LT.y2 - 30} stroke={RG_HAIR} strokeWidth="1.4" />)}
+
+        {/* signal panel + concentric rings */}
+        <rect x={RG_SG.x1} y={RG_SG.y1} width={RG_SG.x2 - RG_SG.x1} height={RG_SG.y2 - RG_SG.y1} fill="none" stroke={RG_CREAM} strokeWidth="1.6" strokeOpacity="0.6" />
+        {RG_RINGS.map((r, i) => <circle key={i} cx={RG_SCX} cy={RG_SCY} r={r} fill="none" stroke={RG_CREAM} strokeOpacity={0.5 - i * 0.09} strokeWidth="1.5" />)}
+        {Array.from({ length: 12 }, (_, i) => {
+          const a = (i / 12) * Math.PI * 2, r0 = 206, r1 = 218;
+          return <line key={`rt${i}`} x1={RG_SCX + Math.cos(a) * r0} y1={RG_SCY + Math.sin(a) * r0} x2={RG_SCX + Math.cos(a) * r1} y2={RG_SCY + Math.sin(a) * r1} stroke={RG_CREAM} strokeOpacity="0.5" strokeWidth="1.5" />;
+        })}
+        {[[-1, 0], [0, -1], [1, 0]].map(([dx, dy], i) => {
+          const a = Math.atan2(dy, dx);
+          const ex = RG_SCX + dx * 150, ey = RG_SCY + dy * 150;
+          const sx = RG_SCX + dx * 240, sy = RG_SCY + dy * 240;
+          const ah1 = `M${ex},${ey} L${ex - 12 * Math.cos(a - 0.5)},${ey - 12 * Math.sin(a - 0.5)}`;
+          const ah2 = `M${ex},${ey} L${ex - 12 * Math.cos(a + 0.5)},${ey - 12 * Math.sin(a + 0.5)}`;
+          return <g key={i} stroke={RG_ORANGE} strokeWidth="2"><line x1={sx} y1={sy} x2={ex} y2={ey} /><path d={ah1} /><path d={ah2} /></g>;
+        })}
+        <circle cx={RG_SCX} cy={RG_SCY} r="40" fill="url(#rgGlow)" />
+        <circle cx={RG_SCX} cy={RG_SCY} r="17" fill="none" stroke={RG_ORANGE} strokeWidth="2.2" />
+        <circle cx={RG_SCX} cy={RG_SCY} r="7" fill={RG_ORANGE_HOT} />
+
+        {/* footer rules + dividers */}
+        {rgRule(2520)}
+        {rgRule(2712)}
+        {RG_STATS.map((_, i) => i > 0 && (
+          <line key={i} x1={FX1 + i * ((FX2 - FX1) / 5)} y1={2762} x2={FX1 + i * ((FX2 - FX1) / 5)} y2={2790} stroke={RG_HAIR} strokeWidth="1.4" />
+        ))}
+      </g>
+
+      {/* ── type (kept crisp, outside the wobble) ─────────────────────────── */}
+      <text x={FX1} y={250} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="23" letterSpacing="4">PLATE 03 · FIG. III</text>
+      <text x={FX2} y={250} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="23" letterSpacing="2" textAnchor="end">FORMAT A4 · 210 × 297</text>
+
+      <text x={FX1} y={626} fill={RG_CREAM} fontFamily={RG_FONT_DISPLAY} fontSize="296" textLength={FX2 - FX1} lengthAdjust="spacingAndGlyphs">NEURAL</text>
+      <text x={FX1} y={922} fill={RG_CREAM} fontFamily={RG_FONT_DISPLAY} fontSize="296" textLength={FX2 - FX1} lengthAdjust="spacingAndGlyphs">NETWORK</text>
+      <text x={FX1} y={1014} fill={RG_DIM} fontFamily={RG_FONT_GROT} fontSize="33" fontWeight="500" letterSpacing="7">AN ILLUSTRATED STUDY OF MACHINE COGNITION</text>
+
+      {/* specimen labels */}
+      <text x={RG_SP.x1 + 30} y={RG_SP.y1 + 56} fill={RG_CREAM} fontFamily={RG_FONT_MONO} fontSize="26" letterSpacing="3">SPECIMEN A — NETWORK TOPOLOGY</text>
+      <text x={RG_SP.x2 - 30} y={RG_SP.y1 + 56} fill={RG_ORANGE} fontFamily={RG_FONT_MONO} fontSize="24" letterSpacing="2" textAnchor="end">fig. A</text>
+
+      {/* readout values */}
+      {RG_READOUT.map((d, i) => {
+        const cw = (RG_SP.x2 - RG_SP.x1) / 5, x = RG_SP.x1 + i * cw + 24;
+        return (
+          <g key={d.k}>
+            <text x={x} y={1828} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19" letterSpacing="2">{d.k}</text>
+            <text x={x} y={1853} fill={i === 1 ? RG_ORANGE : RG_CREAM} fontFamily={RG_FONT_MONO} fontSize="20">{d.v}</text>
+          </g>
+        );
+      })}
+
+      {/* subsystem labels */}
+      <text x={RG_LT.x1 + 26} y={RG_LT.y1 + 52} fill={RG_CREAM} fontFamily={RG_FONT_MONO} fontSize="23" letterSpacing="3">LATENT FIELD</text>
+      <text x={RG_LT.x2 - 26} y={RG_LT.y1 + 52} fill={RG_ORANGE} fontFamily={RG_FONT_MONO} fontSize="22" textAnchor="end">fig. B</text>
+      <text x={RG_LT.x2 - 26} y={RG_LT.y2 - 30} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="20" textAnchor="end">z₁ →</text>
+      <text x={RG_SG.x1 + 26} y={RG_SG.y1 + 52} fill={RG_CREAM} fontFamily={RG_FONT_MONO} fontSize="23" letterSpacing="3">SIGNAL PROPAGATION</text>
+      <text x={RG_SG.x2 - 26} y={RG_SG.y1 + 52} fill={RG_ORANGE} fontFamily={RG_FONT_MONO} fontSize="22" textAnchor="end">fig. C</text>
+      <text x={RG_SCX} y={RG_SCY - 232} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19" textAnchor="middle">INPUT</text>
+      <text x={RG_SCX + 250} y={RG_SCY + 6} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19">GAIN</text>
+      <text x={RG_SCX - 250} y={RG_SCY + 6} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19" textAnchor="end">BIAS</text>
+      <text x={RG_SCX} y={RG_SCY + 250} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19" textAnchor="middle">OUTPUT</text>
+
+      {/* footer: phrase + stats */}
+      <text x={CX} y={2632} fill={RG_CREAM} fontFamily={RG_FONT_GROT} fontSize="40" fontWeight="500" letterSpacing="4" textAnchor="middle">
+        THOUGHT IS STRUCTURE, BRIEFLY <tspan fill={RG_ORANGE}>LIT</tspan>.
+      </text>
+      {RG_STATS.map((s, i) => {
+        const cw = (FX2 - FX1) / 5;
+        return <text key={i} x={FX1 + i * cw + cw / 2} y={2768} fill={RG_DIM} fontFamily={RG_FONT_MONO} fontSize="19" letterSpacing="1" textAnchor="middle">{s}</text>;
+      })}
+
+      {/* ── grain + vignette overlays (on top of everything) ──────────────── */}
+      <rect x="0" y="0" width={VW} height={VH} filter="url(#rgGrainA)" opacity="0.5" style={{ mixBlendMode: 'overlay' }} />
+      <rect x="0" y="0" width={VW} height={VH} filter="url(#rgGrainB)" opacity="0.32" style={{ mixBlendMode: 'overlay' }} />
+      <rect x="0" y="0" width={VW} height={VH} fill="url(#rgVig)" />
+    </svg>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    GALLERY
    ════════════════════════════════════════════════════════════════════════════ */
 const PIECES = [
@@ -363,6 +621,15 @@ const PIECES = [
       { kind: 'ring', color: SS_CYAN, label: 'Segmentation', note: 'the predicted lesion mask' },
     ],
   },
+  {
+    id: 'neural-net', fig: 'FIG. 03', label: 'Neural Net', paper: RG_BG, Component: NeuralNetPoster,
+    caption: 'A risograph-style field plate — a screen-printed diagram of a network’s topology, signal and latent space, in bone and burnt orange with SVG grain.',
+    legend: [
+      { kind: 'dot', color: RG_ORANGE, label: 'Focal node', note: 'hubs where signal gathers' },
+      { kind: 'line', color: RG_CREAM, label: 'Topology', note: 'weighted connections' },
+      { kind: 'ring', color: RG_ORANGE, label: 'Signal field', note: 'concentric propagation' },
+    ],
+  },
 ];
 
 // Standalone, self-contained SVG document string sized to A4.
@@ -377,7 +644,7 @@ function serialize(svg) {
 
 export default function WallArt() {
   const svgRef = useRef(null);
-  const [activeId, setActiveId] = useState('selective-scan');
+  const [activeId, setActiveId] = useState('neural-net');
   const piece = PIECES.find((p) => p.id === activeId) ?? PIECES[0];
   const Active = piece.Component;
 
