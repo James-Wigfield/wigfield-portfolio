@@ -32,6 +32,8 @@ import HonoursTracker from './modules/HonoursTracker';
 import Syllabite from './modules/Syllabite';
 import SyllabiteGTM from './modules/SyllabiteGTM';
 import CodebaseTracker from './modules/CodebaseTracker';
+import CodebaseWorkspace from './modules/CodebaseWorkspace';
+import WallArt from './modules/WallArt';
 import BackendSetup from './modules/BackendSetup';
 
 // Ordered life-area sections — each may hold zero or more modules.
@@ -77,6 +79,20 @@ export const MODULES = [
     icon: 'codebase',
     group: 'Business',
     component: CodebaseTracker,
+  },
+  {
+    id: 'codebase-workspace',
+    label: 'Visualizer · Live',
+    icon: 'workspace',
+    group: 'Business',
+    component: CodebaseWorkspace,
+  },
+  {
+    id: 'wall-art',
+    label: 'Wall Art',
+    icon: 'art',
+    group: 'Personal',
+    component: WallArt,
   },
   {
     id: 'backend-setup',

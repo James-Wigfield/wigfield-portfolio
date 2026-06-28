@@ -21,7 +21,7 @@ const HIGHLIGHTS = {
   University:  { live: 'honours', fallback: 'Honours project in progress' },
   Syllabite:   { static: 'Phase 1 · validating the engine', note: 'Free, syllabus-aligned ATAR study platform' },
   Business:    { static: 'Codebase Visualizer · market validated', note: 'Conversational MCP architectural compiler' },
-  Personal:    { static: null, note: 'Life, goals & admin — set up your first tool' },
+  Personal:    { static: 'Wall Art · 2 print-ready pieces', note: 'Original A4 CS art — incl. the Mamba honours piece' },
   Investments: { static: null, note: 'Portfolio & assets — set up your first tool' },
 };
 

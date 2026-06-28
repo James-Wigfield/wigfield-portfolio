@@ -80,12 +80,29 @@ const PATHS = {
       <path d="M8.1 13.1 15.9 16.9" />
     </>
   ),
+  // Workspace — an app window with a side rail (the live visualizer tool)
+  workspace: (
+    <>
+      <rect x="3" y="4.5" width="18" height="15" rx="2" />
+      <path d="M9 4.5v15" />
+      <path d="M12 9h6" />
+      <path d="M12 13h6" />
+    </>
+  ),
   // Backend — a database / stack
   backend: (
     <>
       <ellipse cx="12" cy="6" rx="7" ry="3" />
       <path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6" />
       <path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" />
+    </>
+  ),
+  // Wall Art — a framed landscape (a picture on the wall)
+  art: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="1.8" />
+      <circle cx="8.8" cy="9" r="1.5" />
+      <path d="M4.7 16.6 9 12l2.7 2.7L15 11l4.3 4.3" />
     </>
   ),
 
@@ -131,6 +148,21 @@ const PATHS = {
     </>
   ),
   cloud: <path d="M7.5 18.5h9.5a4.2 4.2 0 0 0 .4-8.4 6.2 6.2 0 0 0-12-1.1A4.6 4.6 0 0 0 7.5 18.5Z" />,
+  download: (
+    <>
+      <path d="M12 3.5v11" />
+      <path d="M7.5 10 12 14.5 16.5 10" />
+      <path d="M5 19.5h14" />
+    </>
+  ),
+  printer: (
+    <>
+      <path d="M7 8.5V4h10v4.5" />
+      <rect x="4.5" y="8.5" width="15" height="7.5" rx="1.6" />
+      <rect x="7.5" y="13.5" width="9" height="5.8" rx="1" />
+      <circle cx="16.3" cy="11.4" r="0.7" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 18, strokeWidth = 1.6, className, ...rest }) {
