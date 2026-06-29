@@ -1,0 +1,12 @@
+# Copy this file to `.dev.vars` (which is gitignored) and fill in the values.
+# `wrangler dev` loads .dev.vars for LOCAL runs. In production these become
+# Worker secrets via `wrangler secret put <NAME>` instead.
+#
+# SUPABASE_URL is NOT here — it's public, so it lives in wrangler.jsonc `vars`.
+
+# The Supabase SECRET key (sb_secret_... ). Bypasses RLS — keep it off the internet.
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxx
+
+# OPTIONAL: set a long random string to require `Authorization: Bearer <token>`.
+# Leave commented out to run authless while testing.
+# MCP_AUTH_TOKEN=replace-with-a-long-random-string

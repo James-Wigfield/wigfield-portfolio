@@ -1970,6 +1970,11 @@
 .pg-switch__tab--active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(8, 18, 26, 0.08); }
 .pg-switch__fig { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; opacity: 0.7; }
 .pg-switch__label { font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; }
+.pg-switch__empty { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-3); padding: 0.45rem 0.6rem; }
+
+/* Switcher row — saved-GIF tabs on the left, Refresh on the right */
+.pg-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; }
+.pg-switch-row .pg-switch { flex: 1; }
 
 /* Studio: preview + controls */
 .pg-studio {

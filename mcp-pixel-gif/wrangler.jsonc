@@ -1,0 +1,25 @@
+{
+  // Wrangler config for the remote pixel-gif MCP server.
+  // Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pixel-gif-mcp",
+  "main": "src/index.js",
+  "compatibility_date": "2025-03-10",
+  // nodejs_compat lets @supabase/supabase-js run on the Worker runtime.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The MCP server is backed by a Durable Object (it holds the live session).
+  "durable_objects": {
+    "bindings": [{ "name": "MCP_OBJECT", "class_name": "PixelGifMCP" }]
+  },
+  // Durable Objects must be declared in a migration. McpAgent uses SQLite storage.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PixelGifMCP"] }],
+
+  // PUBLIC, non-secret config. Replace YOUR-REF with your Supabase project ref.
+  // (The secret key is NOT here — it's a Worker secret: `wrangler secret put`.)
+  "vars": {
+    "SUPABASE_URL": "https://trcnbmxtudhbuswqmqxy.supabase.co"
+  },
+
+  "observability": { "enabled": true }
+}

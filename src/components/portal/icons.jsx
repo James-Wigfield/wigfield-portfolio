@@ -113,6 +113,13 @@ const PATHS = {
       <rect x="9.5" y="9.5" width="5" height="5" rx="0.4" fill="currentColor" stroke="none" />
     </>
   ),
+  // Link — two chain links (wiring tools together: studio ↔ Supabase ↔ MCP)
+  link: (
+    <>
+      <path d="M10 13.5a3.2 3.2 0 0 0 4.6.3l2.6-2.6a3.2 3.2 0 1 0-4.5-4.5l-1.3 1.3" />
+      <path d="M14 10.5a3.2 3.2 0 0 0-4.6-.3l-2.6 2.6a3.2 3.2 0 1 0 4.5 4.5l1.3-1.3" />
+    </>
+  ),
 
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)

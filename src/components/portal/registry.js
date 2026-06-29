@@ -36,6 +36,7 @@ import CodebaseWorkspace from './modules/CodebaseWorkspace';
 import WallArt from './modules/WallArt';
 import PixelGifStudio from './modules/PixelGifStudio';
 import BackendSetup from './modules/BackendSetup';
+import GifBackend from './modules/GifBackend';
 
 // Ordered life-area sections — each may hold zero or more modules.
 export const SECTIONS = [
@@ -108,6 +109,13 @@ export const MODULES = [
     icon: 'backend',
     system: true,
     component: BackendSetup,
+  },
+  {
+    id: 'gif-backend',
+    label: 'GIF → Supabase & MCP',
+    icon: 'link',
+    system: true,
+    component: GifBackend,
   },
   // Drop new tools here — set `group` to a SECTIONS name (no other file changes).
 ];
