@@ -1005,6 +1005,45 @@
 .htk-flag__title { font-family: var(--font-display); font-weight: 500; font-size: 0.98rem; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 0.3rem; }
 .htk-flag__body { font-size: 0.86rem; color: var(--ink-2); line-height: 1.55; }
 
+/* Briefing (plain-English meeting talk-track) */
+.htk-brief__lead { padding: 1.3rem 1.6rem; border-left: 3px solid var(--accent); }
+.htk-brief__lead p { font-size: 0.98rem; color: var(--ink); line-height: 1.7; margin-top: 0.5rem; }
+.htk-brief__sec {
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+  font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; color: var(--ink);
+  letter-spacing: -0.01em; margin-top: 0.4rem;
+}
+.htk-brief__sec span { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); }
+.htk-bsteps { display: flex; flex-direction: column; gap: 0.7rem; }
+.htk-bstep { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem; padding: 1.05rem 1.25rem; align-items: start; }
+.htk-bstep__n {
+  font-family: var(--font-display); font-weight: 500; font-size: 0.95rem; line-height: 1;
+  width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent-ink); flex: none;
+}
+.htk-bstep__main { min-width: 0; }
+.htk-bstep__name { display: flex; align-items: center; flex-wrap: wrap; gap: 0.55rem; margin-bottom: 0.45rem; }
+.htk-bstep__title { font-family: var(--font-display); font-weight: 500; font-size: 1rem; color: var(--ink); letter-spacing: -0.01em; }
+.htk-bstep__plain { font-size: 0.92rem; color: var(--ink-2); line-height: 1.6; }
+.htk-bstep__tech {
+  margin-top: 0.55rem; padding-left: 0.8rem; border-left: 2px solid var(--line);
+  font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-3); line-height: 1.55;
+}
+.htk-bstep__tech span {
+  display: inline-block; margin-right: 0.45rem; padding: 0.04rem 0.34rem; border-radius: 2px;
+  background: var(--ground-2); color: var(--ink-3); font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.htk-brief__note { font-size: 0.84rem; color: var(--ink-3); line-height: 1.6; font-style: italic; padding: 0 0.2rem; }
+.htk-diff { padding: 1.3rem 1.5rem; }
+.htk-diff__head { font-size: 0.96rem; color: var(--ink); line-height: 1.65; font-weight: 500; }
+.htk-diff__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.9rem; margin: 1.1rem 0; }
+.htk-diff__pt { padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: 3px; background: var(--ground); }
+.htk-diff__k { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-ink); margin-bottom: 0.5rem; }
+.htk-diff__plain { font-size: 0.88rem; color: var(--ink-2); line-height: 1.58; }
+.htk-diff__tech { margin-top: 0.5rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-3); line-height: 1.5; }
+.htk-diff__foot { padding-top: 1rem; border-top: 1px solid var(--line-2); font-size: 0.9rem; color: var(--ink-2); line-height: 1.65; }
+.htk-diff__foot::before { content: "→ "; color: var(--accent); font-weight: 600; }
+
 @media (max-width: 620px) {
   .htk-readouts { grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
   .htk-seg__tab { min-width: 72px; }
@@ -1890,4 +1929,202 @@
     box-shadow: none !important; background: none !important; overflow: visible !important;
   }
   .wa-art { width: 210mm !important; height: 297mm !important; display: block !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PIXEL-ART GIF STUDIO (Personal) — chrome around a looping <img> of a real
+   in-browser-encoded GIF, plus the output controls. Everything consumes the
+   themed tokens; the only special bit is the transparent-checker preview floor.
+   ════════════════════════════════════════════════════════════════════════════ */
+.pg { max-width: 880px; }
+
+.pg-intro { padding: 1.6rem 1.8rem; }
+.pg-intro__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 0.55rem;
+}
+.pg-intro__title {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.01em;
+  color: var(--ink); margin-bottom: 0.7rem;
+}
+.pg-intro__desc { font-size: 0.97rem; line-height: 1.7; color: var(--ink-2); max-width: 66ch; }
+.pg-intro__desc code {
+  font-family: var(--font-mono); font-size: 0.85em;
+  background: var(--ground); border: 1px solid var(--line);
+  border-radius: 3px; padding: 0.05em 0.35em; color: var(--accent-ink);
+}
+
+/* Example switcher (segmented control — mirrors the Wall Art switcher) */
+.pg-switch {
+  display: inline-flex; gap: 4px; padding: 4px; align-self: flex-start; flex-wrap: wrap;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--ground);
+}
+.pg-switch__tab {
+  display: inline-flex; align-items: baseline; gap: 0.45rem;
+  padding: 0.45rem 0.85rem; border: 0; border-radius: 3px; background: none; cursor: pointer;
+  color: var(--ink-3); transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+.pg-switch__tab:hover { color: var(--ink); }
+.pg-switch__tab--active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(8, 18, 26, 0.08); }
+.pg-switch__fig { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; opacity: 0.7; }
+.pg-switch__label { font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; }
+
+/* Studio: preview + controls */
+.pg-studio {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(248px, 320px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pg-stage { padding: 1.1rem; display: flex; flex-direction: column; gap: 0.85rem; }
+.pg-screen {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 3px; overflow: hidden;
+  /* subtle transparency checker so sprite alpha reads */
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, var(--line-2) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--line-2) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--line-2) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--line-2) 75%);
+  background-size: 18px 18px;
+  background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+}
+.pg-gif {
+  width: 84%; height: auto; display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  filter: drop-shadow(0 8px 14px rgba(8, 18, 26, 0.22));
+}
+.pg-live {
+  position: absolute; top: 0.6rem; right: 0.7rem;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  color: var(--accent-ink);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 99px; padding: 0.18rem 0.5rem;
+}
+.pg-live__dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--signal);
+  animation: pt-pulse 1.8s var(--ease) infinite;
+}
+.pg-stage__cap { text-align: center; font-size: 0.84rem; color: var(--ink-2); }
+.pg-stage__cap b { color: var(--ink); font-weight: 600; }
+
+/* Controls panel */
+.pg-controls { padding: 1.3rem 1.4rem; display: flex; flex-direction: column; gap: 1.2rem; }
+.pg-ctl { display: flex; flex-direction: column; gap: 0.5rem; }
+.pg-ctl__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.pg-ctl__label {
+  font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.pg-ctl__val { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink); }
+.pg-ctl__note { font-size: 0.72rem; line-height: 1.45; color: var(--ink-3); }
+
+.pg-presets { display: flex; gap: 0.4rem; }
+.pg-chip {
+  flex: 1;
+  font-family: var(--font-mono); font-size: 0.74rem;
+  padding: 0.4rem 0.3rem; border: 1px solid var(--line); border-radius: 3px;
+  background: var(--ground); color: var(--ink-2); cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.pg-chip:hover { color: var(--ink); border-color: var(--ink-3); }
+.pg-chip--active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.pg-dims { display: flex; align-items: center; gap: 0.5rem; }
+.pg-dim { display: flex; align-items: center; gap: 0.4rem; flex: 1; }
+.pg-dim > span { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-3); }
+.pg-dim input {
+  width: 100%; min-width: 0;
+  background: var(--ground); border: 1px solid var(--line); border-radius: 2px;
+  color: var(--ink); font-family: var(--font-mono); font-size: 0.82rem;
+  padding: 0.4rem 0.5rem; outline: none;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.pg-dim input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.pg-dim__x { font-family: var(--font-mono); color: var(--ink-3); }
+
+.pg-range { width: 100%; accent-color: var(--accent); cursor: pointer; }
+.pg-range:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.pg-palette { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.pg-sw {
+  width: 20px; height: 20px; border-radius: 3px;
+  border: 1px solid var(--line); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.pg-sw--alpha {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, var(--ink-3) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--ink-3) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--ink-3) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--ink-3) 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+  opacity: 0.55;
+}
+
+/* Toolbar */
+.pg-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.8rem;
+}
+.pg-spec {
+  font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em;
+  color: var(--ink-3); text-transform: uppercase;
+  padding: 0.42rem 0.72rem; border: 1px solid var(--line); border-radius: 3px;
+  background: var(--ground);
+}
+.pg-toolbar__actions { display: flex; gap: 0.55rem; }
+.pg-btn {
+  display: inline-flex; align-items: center; gap: 0.42rem;
+  padding: 0.5rem 0.9rem; border: 1px solid var(--line); border-radius: 3px;
+  background: var(--surface); color: var(--ink-2);
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.pg-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+.pg-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pg-btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pg-btn--primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+/* Deferred MCP integration card */
+.pg-hook { padding: 1.4rem 1.6rem; border-style: dashed; }
+.pg-hook__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.7rem; }
+.pg-hook__icon { color: var(--accent-ink); display: inline-flex; }
+.pg-hook__title {
+  font-family: var(--font-display); font-weight: 600; font-size: 1.08rem;
+  letter-spacing: -0.01em; color: var(--ink); flex: 1;
+}
+.pg-hook__tag {
+  font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent-ink); background: var(--accent-soft);
+  border: 1px solid rgba(21, 162, 146, 0.3); border-radius: 99px; padding: 0.18rem 0.55rem;
+}
+.pg-hook__desc { font-size: 0.92rem; line-height: 1.65; color: var(--ink-2); max-width: 64ch; margin-bottom: 0.9rem; }
+.pg-code {
+  font-family: var(--font-mono); font-size: 0.74rem; line-height: 1.6;
+  color: var(--ink-2); background: var(--ground);
+  border: 1px solid var(--line); border-radius: 3px;
+  padding: 0.9rem 1rem; margin: 0 0 1rem; overflow-x: auto; white-space: pre;
+}
+
+@media (max-width: 700px) {
+  .pg-studio { grid-template-columns: 1fr; }
+  .pg-switch { align-self: stretch; }
+  .pg-screen { max-width: 320px; margin: 0 auto; width: 100%; }
+  .pg-toolbar { align-items: stretch; }
+  .pg-toolbar__actions { width: 100%; }
+  .pg-btn { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-live__dot { animation: none; }
 }

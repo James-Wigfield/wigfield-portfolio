@@ -105,6 +105,14 @@ const PATHS = {
       <path d="M4.7 16.6 9 12l2.7 2.7L15 11l4.3 4.3" />
     </>
   ),
+  // Pixel — a sprite canvas (3×3 grid) with one lit pixel
+  pixel: (
+    <>
+      <rect x="4.5" y="4.5" width="15" height="15" rx="1.4" />
+      <path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15" />
+      <rect x="9.5" y="9.5" width="5" height="5" rx="0.4" fill="currentColor" stroke="none" />
+    </>
+  ),
 
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)

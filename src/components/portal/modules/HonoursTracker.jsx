@@ -23,7 +23,7 @@ const PROJECT = {
     'A 3D hybrid CNN–Mamba architecture with an asymmetric Tversky loss, benchmarked ' +
     'against the nnU-Net cascade baseline on whole-body ⁶⁸Ga-PSMA-11 PET/CT.',
   supervisor: 'Dr. Jake Kendrick',
-  updated: '24 Jun 2026',
+  updated: '29 Jun 2026',
   stage: 'Implementation · preprocessing pipeline done',
 };
 
@@ -144,7 +144,78 @@ const FLAGS = {
   ],
 };
 
-const VIEWS = ['Pipeline', 'Status', 'Baseline', 'Comparison', 'Flags'];
+// Plain-English meeting briefing: what's been built since DICOM→NIfTI, and how
+// it differs from the original PSMASegmentator. `plain` = lay terms, `tech` = the
+// technical line to drop in alongside it.
+const BRIEF = {
+  lead:
+    'Since converting the raw scans from DICOM into NIfTI files, I’ve built the full ' +
+    'data-preparation pipeline — everything that turns a patient’s raw CT and PET scans into ' +
+    'clean, standardised, model-ready training batches. It’s the unglamorous plumbing the model ' +
+    'will sit on top of, and it’s now built and tested end-to-end on real scans.',
+  steps: [
+    { name: 'Find & pair the scans', file: 'dataloader.py', verdict: 'new', v: 'Rebuilt',
+      plain: 'Every patient has two scans — a CT (the anatomy) and a PET (where the tracer lights up). ' +
+        'The code automatically finds each pair and matches them by their shared case ID, so the right ' +
+        'CT always goes with the right PET.',
+      tech: 'discover_nifti_pairs() groups flattened _0000 (CT) / _0001 (PET) NIfTIs by case ID via SimpleITK.' },
+    { name: 'Line the two scans up', file: 'registration.py', verdict: 'aligned', v: 'Aligned',
+      plain: 'The CT and PET don’t sit on exactly the same grid. This warps the CT so it overlays the PET ' +
+        'voxel-for-voxel — like aligning two transparencies before stacking them.',
+      tech: 'resample_ct_to_pet() resamples the CT onto the PET grid (identity transform, linear interp, ' +
+        'air = −1024 HU); skips the pass if grids already match. Adapted from PSMASegmentator.' },
+    { name: 'Put everything at one resolution', file: 'resampling.py', verdict: 'new', v: 'New / explicit',
+      plain: 'Scans arrive at all sorts of resolutions. This resizes every scan to one fixed physical voxel ' +
+        'size (~4 mm), so the model always sees the body at a consistent scale.',
+      tech: 'resample_to_spacing() brings both modalities to [4.0, 4.07, 4.07] mm, preserving physical extent. ' +
+        'nnU-Net does this silently inside its predictor — here it’s explicit and config-driven.' },
+    { name: 'Standardise the brightness', file: 'normalisation.py', verdict: 'aligned', v: 'Aligned',
+      plain: 'Raw scanner numbers vary wildly. This rescales the intensities of both scans into a standard ' +
+        'range so the model trains on comparable values, not arbitrary units.',
+      tech: 'CTNormalization (clip to foreground percentiles, then z-score) on both channels using the exact ' +
+        'mean/std/clip from the deployed plans.json.' },
+    { name: 'Split the data fairly', file: 'utils.py', verdict: 'new', v: 'New',
+      plain: 'The data is divided into train / validation / test groups by patient, so no single patient ever ' +
+        'appears in two groups. That stops the model “cheating” by memorising a patient it’ll later be tested on.',
+      tech: 'generate_splits() groups by patient_id (strips the trailing study date so timepoints stay together) ' +
+        'and shuffles at the patient level — leakage-free 70/10/20.' },
+    { name: 'Crop lesion-focused patches', file: 'patch_sampling.py', verdict: 'aligned', v: 'Parity default',
+      plain: 'Tumours are tiny next to a whole body, so feeding entire scans would mostly show empty space. ' +
+        'Instead it cuts out small 3D windows centred on lesions about a third of the time, and randomly ' +
+        'flips/rotates them so the model learns lesions from many angles.',
+      tech: 'MONAI RandCropByPosNegLabeld at pos:neg 1:2 (~33% foreground) on 64×128×64 patches, plus ' +
+        'flips / 90° rotations / intensity jitter.' },
+    { name: 'Assemble the conveyor belt', file: 'dataset.py · preprocess.py', verdict: 'new', v: 'New wiring',
+      plain: 'All of the above is wired into one automated conveyor that hands the model ready-to-train batches. ' +
+        'The slow, deterministic steps are cached so they run once, not every training pass.',
+      tech: 'preprocess_case() runs load→register→resample→normalise→stack into (C,Z,Y,X); PSMADataset + ' +
+        'build_dataloaders batch into (B,2,64,128,64) tensors with an optional on-disk .npz cache.' },
+  ],
+  note:
+    'All of it is driven by one config file (baseline.yaml) carrying the baseline’s exact recipe, and a smoke ' +
+    'test (test_pipeline.py) confirms the shapes, channel order and value ranges on 3 real autoPET cases — all checks pass.',
+  diff: {
+    headline:
+      'The original PSMA Segmentator only runs predictions with an already-trained model. This project has to ' +
+      'train a brand-new one — so the preprocessing nnU-Net used to hide had to be rebuilt by hand.',
+    points: [
+      { k: 'Its job', plain: 'PSMA Segmentator is an inference wrapper — feed it a scan, it returns a prediction ' +
+          'from a finished nnU-Net model.',
+        tech: 'Delegates resampling + normalisation to nnU-Net’s predictor (inference.py) via plans.json.' },
+      { k: 'Our job', plain: 'This pipeline has to train a new model (the CNN–Mamba), which nnU-Net can’t do for ' +
+          'us — so every prep step is exposed and under our control.',
+        tech: 'Standalone PyTorch + MONAI; nnU-Net’s rule-based preprocessing re-implemented explicitly.' },
+      { k: 'Same recipe', plain: 'To keep the comparison against the baseline fair, the new pipeline copies ' +
+          'nnU-Net’s exact recipe rather than inventing its own.',
+        tech: 'Spacing, CTNormalization stats and patch params lifted verbatim from plans.json into baseline.yaml.' },
+    ],
+    takeaway:
+      'In short: same recipe, but fully rebuilt and exposed — which is exactly what lets us drop in the Mamba model ' +
+      'while keeping a fair, like-for-like baseline comparison.',
+  },
+};
+
+const VIEWS = ['Briefing', 'Pipeline', 'Status', 'Baseline', 'Comparison', 'Flags'];
 
 // ── easeOut count-up hook (rAF timestamp; reruns when `run` toggles) ──────────
 function useCountUp(target, { duration = 850, decimals = 0, run = true } = {}) {
@@ -170,7 +241,7 @@ function Num({ value, decimals = 0, run }) {
 }
 
 export default function HonoursTracker() {
-  const [view, setView] = useState('Pipeline');
+  const [view, setView] = useState('Briefing');
   const [stage, setStage] = useState(PIPELINE[0].key);
   const [filter, setFilter] = useState('all');
   const [open, setOpen] = useState({ done: true, caveats: false, todo: true });
@@ -228,6 +299,53 @@ export default function HonoursTracker() {
           </button>
         ))}
       </div>
+
+      {/* ── BRIEFING (plain-English meeting talk-track) ────────────────── */}
+      {view === 'Briefing' && (
+        <div className="htk-panel" role="tabpanel">
+          <div className="pt-card htk-brief__lead">
+            <span className="htk-label htk-label--accent">In plain English</span>
+            <p>{BRIEF.lead}</p>
+          </div>
+
+          <p className="htk-brief__sec">
+            Since DICOM → NIfTI: the data pipeline, step by step
+            <span>plain terms · technical alongside</span>
+          </p>
+          <div className="htk-bsteps">
+            {BRIEF.steps.map((s, i) => (
+              <div key={s.name} className="pt-card htk-bstep">
+                <span className="htk-bstep__n">{i + 1}</span>
+                <div className="htk-bstep__main">
+                  <p className="htk-bstep__name">
+                    <span className="htk-bstep__title">{s.name}</span>
+                    <code>{s.file}</code>
+                    <span className={`htk-verdict htk-verdict--${s.verdict}`}>{s.v}</span>
+                  </p>
+                  <p className="htk-bstep__plain">{s.plain}</p>
+                  <p className="htk-bstep__tech"><span>Technical</span>{s.tech}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="htk-brief__note">{BRIEF.note}</p>
+
+          <p className="htk-brief__sec">How this differs from the original PSMA Segmentator</p>
+          <div className="pt-card htk-diff">
+            <p className="htk-diff__head">{BRIEF.diff.headline}</p>
+            <div className="htk-diff__grid">
+              {BRIEF.diff.points.map((d) => (
+                <div key={d.k} className="htk-diff__pt">
+                  <p className="htk-diff__k">{d.k}</p>
+                  <p className="htk-diff__plain">{d.plain}</p>
+                  <p className="htk-diff__tech">{d.tech}</p>
+                </div>
+              ))}
+            </div>
+            <p className="htk-diff__foot">{BRIEF.diff.takeaway}</p>
+          </div>
+        </div>
+      )}
 
       {/* ── PIPELINE ───────────────────────────────────────────────────── */}
       {view === 'Pipeline' && (

@@ -34,6 +34,7 @@ import SyllabiteGTM from './modules/SyllabiteGTM';
 import CodebaseTracker from './modules/CodebaseTracker';
 import CodebaseWorkspace from './modules/CodebaseWorkspace';
 import WallArt from './modules/WallArt';
+import PixelGifStudio from './modules/PixelGifStudio';
 import BackendSetup from './modules/BackendSetup';
 
 // Ordered life-area sections — each may hold zero or more modules.
@@ -93,6 +94,13 @@ export const MODULES = [
     icon: 'art',
     group: 'Personal',
     component: WallArt,
+  },
+  {
+    id: 'pixel-gif',
+    label: 'Pixel-Art GIF Studio',
+    icon: 'pixel',
+    group: 'Personal',
+    component: PixelGifStudio,
   },
   {
     id: 'backend-setup',
