@@ -20,6 +20,7 @@ import { getProject, listMilestones, listTasks } from '../data/portalApi';
 const HIGHLIGHTS = {
   University:  { live: 'honours', fallback: 'Honours project in progress' },
   Syllabite:   { static: 'Phase 1 · validating the engine', note: 'Free, syllabus-aligned ATAR study platform' },
+  Portara:     { static: 'Pillar 1 · portal MVP shipped', note: 'Custom portals, operated through Claude, run by agents' },
   Business:    { static: 'Codebase Visualizer · market validated', note: 'Conversational MCP architectural compiler' },
   Personal:    { static: 'Wall Art · 4 print-ready pieces', note: 'Original A4 CS art — nets, Mamba scan, riso & core-memory plates' },
   Investments: { static: null, note: 'Portfolio & assets — set up your first tool' },

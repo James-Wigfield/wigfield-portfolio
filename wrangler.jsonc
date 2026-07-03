@@ -1,0 +1,34 @@
+{
+  // Cloudflare Worker config for the portfolio.
+  // The Worker serves the built Vite SPA (the ./dist folder, via the ASSETS
+  // binding) AND hosts a small server-side /api/* layer where secret keys live.
+  // Deploy with: npm run deploy   (= vite build && wrangler deploy)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wigfield-portfolio",
+  "main": "workers/app.js",
+  "compatibility_date": "2026-07-03",
+  // Required for process.env + many npm libs (e.g. @supabase/supabase-js) on Workers.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Static site hosting. The Worker runs FIRST for every request
+  // (run_worker_first: true): it answers /api/* itself and hands everything else
+  // to the static site via env.ASSETS.fetch — real files are served, and any
+  // non-file route falls back to index.html (single-page-application).
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+
+  // Non-secret, committed config (readable as env.SUPABASE_URL in the Worker).
+  // ▶ Replace with YOUR Supabase project URL before deploying.
+  "vars": {
+    "SUPABASE_URL": "https://trcnbmxtudhbuswqmqxy.supabase.co"
+  },
+
+  "observability": { "enabled": true }
+
+  // If your Cloudflare account isn't auto-detected on deploy, add:
+  // "account_id": "<your-cloudflare-account-id>"
+}

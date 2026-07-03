@@ -66,6 +66,14 @@ const PATHS = {
       <path d="M15.4 6.4H21V12" />
     </>
   ),
+  // Portara — a nested gateway / archway (a "portal")
+  portara: (
+    <>
+      <path d="M5 20v-9a7 7 0 0 1 14 0v9" />
+      <path d="M8.5 20v-8a3.5 3.5 0 0 1 7 0v8" />
+      <path d="M3.5 20h17" />
+    </>
+  ),
 
   /* ── Module symbols ─────────────────────────────────────────────────── */
   // Honours — a scan / activity waveform (medical imaging)

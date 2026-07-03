@@ -1,0 +1,14 @@
+# Local Cloudflare Worker secrets — TEMPLATE.
+# Copy this file to `.dev.vars` (gitignored) and fill in real values for local dev.
+# In production these are set once each with:  npx wrangler secret put <NAME>
+#
+# Note: SUPABASE_URL is NOT here — it's non-secret and lives in wrangler.jsonc `vars`.
+# Only the KEY is a secret.
+
+# Supabase secret key (sb_secret_... — server-side only, never expose to the browser).
+# Same convention as mcp-pixel-gif.
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxx
+
+# Add other API secrets below as you wire them up, e.g.:
+# OPENAI_API_KEY=<...>
+# ANTHROPIC_API_KEY=<...>

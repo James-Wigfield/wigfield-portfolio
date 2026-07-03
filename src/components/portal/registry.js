@@ -35,6 +35,7 @@ import CodebaseTracker from './modules/CodebaseTracker';
 import CodebaseWorkspace from './modules/CodebaseWorkspace';
 import WallArt from './modules/WallArt';
 import PixelGifStudio from './modules/PixelGifStudio';
+import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 
@@ -42,6 +43,7 @@ import GifBackend from './modules/GifBackend';
 export const SECTIONS = [
   { name: 'University',  icon: 'university',  blurb: 'Degree, honours & coursework' },
   { name: 'Syllabite',   icon: 'syllabite',   blurb: 'EdTech venture' },
+  { name: 'Portara',     icon: 'portara',     blurb: 'Custom portals · MCP · agents' },
   { name: 'Business',    icon: 'business',    blurb: 'Ventures & R&D' },
   { name: 'Personal',    icon: 'personal',    blurb: 'Life, goals & admin' },
   { name: 'Investments', icon: 'investments', blurb: 'Portfolio & assets' },
@@ -74,6 +76,13 @@ export const MODULES = [
     icon: 'investments',
     group: 'Syllabite',
     component: SyllabiteGTM,
+  },
+  {
+    id: 'portara-business-plan',
+    label: 'Business Plan',
+    icon: 'investments',
+    group: 'Portara',
+    component: PortaraBusinessPlan,
   },
   {
     id: 'codebase-tracker',
