@@ -104,6 +104,67 @@
   --banner-pos:   56%;                          /* fishtank gif framed slightly lower */
 }
 
+/* ── Theme: Arcade (dark charcoal + navy) — overrides the jade tokens above ───
+   The portal's first DARK theme. Reworked from the original all-electric-blue
+   pass (too saturated / eye-straining): the base is now neutral charcoal-grey
+   with only HINTS of navy — surfaces carry a faint blue tint, borders/accents
+   are a softened navy-blue, and text is a neutral off-white rather than bright
+   blue. The vivid blue is reserved for small accents (links, active state) so
+   large areas stay calm. Because the light themes use --ink as a NEAR-BLACK
+   fill (solid "done/completed" chips with white text), a couple of those
+   components are re-pointed below so their text flips dark on the now
+   near-white --ink fill. Higher specificity (two classes + attribute) so it
+   wins regardless of stylesheet order. */
+.hp.portal[data-portal-theme="arcade"],
+.hp.portal-gate[data-portal-theme="arcade"] {
+  /* surfaces — charcoal-grey, a whisper of navy in the tint */
+  --ground:       #15171C;   /* page background — dark neutral charcoal */
+  --ground-2:     #1A1D24;   /* alternate band / chips (raised) */
+  --surface:      #1E212A;   /* cards, panels — charcoal w/ faint blue */
+  --surface-hi:   #262B36;   /* raised / frosted highlight (more navy) */
+
+  /* text — soft neutral off-white (easy on the eyes; not blue-bright) */
+  --ink:          #E7E9EF;   /* headings, titles, strong text, light fills */
+  --ink-2:        #AEB6C4;   /* body / secondary (comfortable for long reads) */
+  --ink-3:        #7E8896;   /* muted captions, mono labels */
+  --text-faint:   #5A6472;   /* disabled / hints */
+
+  /* structure — soft cool-grey hairlines */
+  --line:         rgba(126, 145, 180, 0.22);
+  --line-2:       rgba(126, 145, 180, 0.11);
+
+  /* accent — softened navy-blue (the "hint" of navy), used sparingly */
+  --accent:       #3D7BD1;
+  --accent-hover: #5192E0;
+  --accent-ink:   #6FA8EA;   /* readable link blue on charcoal */
+  --accent-soft:  rgba(61, 123, 209, 0.16);   /* tints, focus rings, active bg */
+  --accent-pale:  #1C2A42;   /* deep navy tinted backgrounds */
+
+  /* status — soft mint "live", muted warn, gentle error (all easy on dark) */
+  --signal:       #6FD3AE;   /* live / scan indicator — soft mint */
+  --warn:         #E5B65C;
+  --error:        #E8737F;
+  --error-soft:   rgba(232, 115, 127, 0.15);
+
+  /* component bits */
+  --topbar-bg:    rgba(24, 27, 34, 0.82);   /* frosted charcoal */
+  --banner-pos:   50%;                       /* arcade gif centred */
+}
+
+/* Arcade only — the solid "done/completed/emphasis" chips fill with --ink and
+   hard-code white text. On this palette --ink is near-white, so flip that text
+   to the dark ground: a faithful light-theme inversion (light chip, dark text). */
+.hp.portal[data-portal-theme="arcade"] .pt-badge--completed,
+.hp.portal[data-portal-theme="arcade"] .pt-task__check--done,
+.hp.portal[data-portal-theme="arcade"] .htk-pill--done,
+.hp.portal[data-portal-theme="arcade"] .htk-road__step--done .htk-road__dot,
+.hp.portal[data-portal-theme="arcade"] .htk-chip,
+.hp.portal[data-portal-theme="arcade"] .cbt-verdict,
+.hp.portal[data-portal-theme="arcade"] .cbt-yes,
+.hp.portal[data-portal-theme="arcade"] .cbt-gate {
+  color: var(--ground);
+}
+
 @keyframes pt-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes pt-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(21, 162, 146, 0.45); }
@@ -325,16 +386,9 @@
 .portal__nav-item--active {
   background: var(--accent-soft);
   color: var(--accent-ink);
-}
-.portal__nav-item--active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.4rem;
-  bottom: 0.4rem;
-  width: 2px;
-  border-radius: 99px;
-  background: var(--accent);
+  /* left accent bar — drawn with an inset shadow so the item's ::before is free
+     for the section subpage tree rail (see below). */
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 .portal__nav-icon {
   display: inline-flex;
@@ -350,6 +404,7 @@
 /* Sidebar sections (collapsible, from registry SECTIONS) */
 .portal__nav-group { display: flex; flex-direction: column; }
 .portal__nav-group-head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -403,6 +458,7 @@
   flex-direction: column;
   gap: 0.12rem;
   padding-top: 0.12rem;
+  padding-left: 1.55rem;   /* gutter for the subpage tree rail + elbows */
 }
 .portal__nav-empty {
   font-family: var(--font-mono);
@@ -410,7 +466,60 @@
   font-style: italic;
   color: var(--ink-3);
   opacity: 0.85;
-  padding: 0.3rem 0.55rem 0.45rem 2.2rem;
+  padding: 0.3rem 0.55rem 0.45rem 0.4rem;
+}
+
+/* ── Section subpage tree ──────────────────────────────────────────────────
+   Each section's subpages hang off a hairline rail that drops out of the
+   section heading and elbows to every child, so at a glance it's obvious which
+   pages are subpages of which tab. Built entirely from the item ::before (the
+   vertical rail) and ::after (the elbow + the run-on to the next child); the
+   heading is bridged to the first child by a stub on the head itself (the inner
+   is overflow:hidden for the collapse animation, so a child can't draw up into
+   the head). Rail x = 0.95rem from the group's left, ~aligned under the head
+   icon. The active-item accent bar is an inset box-shadow (above), leaving both
+   item pseudo-elements free for the tree. */
+
+/* rail: from the item's top down to its centre (the elbow point) */
+.portal__nav-group-inner .portal__nav-item::before {
+  content: "";
+  position: absolute;
+  left: -0.6rem;
+  top: 0;
+  height: 50%;
+  border-left: 1.5px solid var(--line);
+}
+/* elbow out to the item at its vertical centre */
+.portal__nav-group-inner .portal__nav-item::after {
+  content: "";
+  position: absolute;
+  left: -0.6rem;
+  top: 50%;
+  width: 0.5rem;
+  border-top: 1.5px solid var(--line);
+}
+/* every child but the last also runs the rail on down to the next child
+   (the +0.12rem bridges the flex gap so the rail is unbroken) */
+.portal__nav-group-inner .portal__nav-item:not(:last-child)::after {
+  height: calc(50% + 0.12rem);
+  border-left: 1.5px solid var(--line);
+}
+/* active child: light its rail + elbow in the accent so the connection pops */
+.portal__nav-group-inner .portal__nav-item--active::before,
+.portal__nav-group-inner .portal__nav-item--active::after {
+  border-color: var(--accent);
+}
+
+/* heading → first child: a stub dropping from the (open, non-empty) section
+   head down to meet the rail. :has() keeps it off empty sections; the
+   aria-expanded guard keeps it off collapsed ones. */
+.portal__nav-group:has(.portal__nav-item) > .portal__nav-group-head[aria-expanded="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  top: 0.95rem;
+  bottom: -0.12rem;
+  border-left: 1.5px solid var(--line);
 }
 
 /* System utility cluster (registry `system: true`) — outside the life sections */
@@ -2133,3 +2242,380 @@
 @media (prefers-reduced-motion: reduce) {
   .pg-live__dot { animation: none; }
 }
+
+/* ============================================================================
+   MAMBA UPDATES — honours project explainer feed (.mu-*)
+   Reuses the portal tokens; an empty state until entries are appended, then a
+   simple stacked feed of dated explainer cards.
+   ========================================================================== */
+.mu-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 0.55rem;
+}
+
+/* Empty state */
+.mu-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+  padding: 3rem 2rem 3.2rem;
+  border-style: dashed;
+}
+.mu-empty__icon {
+  display: inline-flex;
+  color: var(--accent-ink);
+  margin-bottom: 0.35rem;
+  opacity: 0.9;
+}
+.mu-empty__label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.mu-empty__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.mu-empty__hint {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+  max-width: 46ch;
+}
+
+/* Feed of explainer cards */
+.mu-feed { display: flex; flex-direction: column; gap: 1rem; }
+.mu-entry { padding: 1.5rem 1.7rem; }
+.mu-entry__head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.55rem; }
+.mu-entry__kicker {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.18rem 0.55rem;
+}
+.mu-entry__date {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-3);
+}
+.mu-entry__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 0.6rem;
+}
+.mu-entry__body { font-size: 0.95rem; line-height: 1.7; color: var(--ink-2); }
+.mu-entry__body p { margin-bottom: 0.8rem; }
+.mu-entry__body p:last-child { margin-bottom: 0; }
+.mu-entry__body strong { color: var(--ink); font-weight: 600; }
+.mu-entry__body code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 0.06em 0.36em;
+  white-space: nowrap;
+}
+
+/* Lead sentence — a slightly larger framing line under the title */
+.mu-lead { font-size: 1.02rem; color: var(--ink); line-height: 1.62; }
+
+/* Section sub-heading inside an entry body */
+.mu-h {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 1.5rem 0 0.7rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line-2);
+}
+
+/* Callout box (default / accent / warn / ok) */
+.mu-callout {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink-3);
+  border-radius: 0 8px 8px 0;
+  background: var(--ground-2);
+  padding: 0.9rem 1.05rem;
+  margin: 1rem 0;
+}
+.mu-callout:last-child { margin-bottom: 0; }
+.mu-callout__label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 0.35rem;
+}
+.mu-callout p { margin: 0; font-size: 0.9rem; }
+.mu-callout--accent { border-left-color: var(--accent); background: var(--accent-soft); }
+.mu-callout--accent .mu-callout__label { color: var(--accent-ink); }
+.mu-callout--warn { border-left-color: var(--warn); }
+.mu-callout--ok { border-left-color: var(--accent); }
+
+/* Numbered phase / step list */
+.mu-steps { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+.mu-step {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-hi);
+  padding: 0.85rem 1rem 0.9rem 3rem;
+}
+.mu-step__n {
+  position: absolute;
+  left: 0.8rem;
+  top: 0.85rem;
+  width: 1.55rem;
+  height: 1.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.mu-step__title { color: var(--ink); font-weight: 600; font-size: 0.96rem; }
+.mu-step__title code { margin-left: 0.4rem; }
+.mu-step__meta {
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-left: 0.5rem;
+}
+.mu-step__body { margin: 0.35rem 0 0; font-size: 0.9rem; }
+
+/* Bulleted list */
+.mu-list { margin: 0.6rem 0 0; padding-left: 1.1rem; }
+.mu-list li { margin-bottom: 0.45rem; }
+.mu-list li::marker { color: var(--accent); }
+
+/* Pipeline flow — connected chips */
+.mu-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 1rem 0; }
+.mu-flow__node {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+}
+.mu-flow__node--done { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+.mu-flow__node--next { border-style: dashed; border-color: var(--accent); }
+.mu-flow__arrow { color: var(--ink-3); font-family: var(--font-mono); }
+
+/* Command-line snippet */
+.mu-cmd {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--ground-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+.mu-cmd .mu-cmd__c { color: var(--accent-ink); }
+.mu-cmd .mu-cmd__d { color: var(--ink-3); }
+
+/* Two-up compare grid */
+.mu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin: 1rem 0; }
+.mu-cell {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-hi);
+  padding: 0.85rem 0.95rem;
+}
+.mu-cell__k {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 0.4rem;
+}
+.mu-cell p { margin: 0; font-size: 0.88rem; }
+.mu-cell--accent { border-color: var(--accent); background: var(--accent-soft); }
+
+/* Tag row */
+.mu-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.9rem 0; }
+.mu-tag {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+  background: var(--ground-2);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.2rem 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .mu-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================================
+   SYLLABITE FEEDBACK (.syl-fb*) — live Supabase submissions via the Worker
+   Reuses the portal tokens (themes for free); a filter toolbar + stacked cards.
+   ========================================================================== */
+.syl-fb-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.syl-fb-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.syl-fb-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.syl-fb-filter:hover { color: var(--ink); border-color: var(--ink-3); }
+.syl-fb-filter--active { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.syl-fb-filter__n {
+  font-size: 0.62rem;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.02rem 0.42rem;
+  color: var(--ink-3);
+}
+.syl-fb-filter--active .syl-fb-filter__n { color: var(--accent-ink); }
+
+.syl-fb-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.syl-fb-refresh:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+.syl-fb-refresh:disabled { opacity: 0.55; cursor: wait; }
+
+.syl-fb-list { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1.1rem; }
+.syl-fb { padding: 1.15rem 1.35rem; }
+.syl-fb--resolved { opacity: 0.62; }
+.syl-fb__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+.syl-fb__type {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  background: var(--ground);
+}
+.syl-fb__type--report  { color: var(--error); border-color: var(--error); background: var(--error-soft); }
+.syl-fb__type--request { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft); }
+.syl-fb__type--other   { color: var(--ink-3); }
+.syl-fb__resolved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.14rem 0.5rem;
+}
+.syl-fb__date {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.syl-fb__msg {
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.syl-fb__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line-2);
+}
+.syl-fb__meta-item {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--ink-3);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.syl-fb__meta-item--contact { color: var(--accent-ink); }
+.syl-fb__ua { max-width: min(100%, 40ch); }
+
+.syl-fb-error { padding: 1.2rem 1.4rem; border-color: var(--error); }
+.syl-fb-error__msg {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  margin-top: 0.4rem;
+  word-break: break-word;
+}
+.syl-fb-empty { padding: 1.6rem; text-align: center; color: var(--ink-3); font-style: italic; }

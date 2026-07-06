@@ -128,6 +128,22 @@ const PATHS = {
       <path d="M14 10.5a3.2 3.2 0 0 0-4.6-.3l-2.6 2.6a3.2 3.2 0 1 0 4.5 4.5l1.3-1.3" />
     </>
   ),
+  // Feedback — a speech bubble with message lines (user submissions)
+  feedback: (
+    <>
+      <path d="M20 4.5H4A1.5 1.5 0 0 0 2.5 6v9A1.5 1.5 0 0 0 4 16.5h3v3.4l4.2-3.4H20A1.5 1.5 0 0 0 21.5 15V6A1.5 1.5 0 0 0 20 4.5Z" />
+      <path d="M6.5 9.5h11M6.5 12.5h7" />
+    </>
+  ),
+  // Mamba Updates — a document (a written page) with a scan waveform, tying the
+  // honours-project explainer feed to the tracker's imaging motif.
+  mamba: (
+    <>
+      <path d="M6 3.5h8L18.5 8v11a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5Z" />
+      <path d="M14 3.5V8h4.5" />
+      <path d="M7.5 14h1.7l1 2.6 1.5-4.2 1 1.6h3.3" />
+    </>
+  ),
 
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)

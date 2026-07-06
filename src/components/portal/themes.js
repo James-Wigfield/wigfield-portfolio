@@ -17,10 +17,12 @@
 
 import computerGif from '../../assets/gifs/computer.gif';
 import fishtankGif from '../../assets/gifs/fishtank_resturant.gif';
+import arcadeGif from '../../assets/gifs/arcade_2.gif';
 
 export const THEMES = [
-  { id: 'jade',  label: 'Jade',  gif: computerGif, swatch: { bg: '#bbd2d8', accent: '#15a292' } },
-  { id: 'coral', label: 'Coral', gif: fishtankGif, swatch: { bg: '#ef8268', accent: '#0fa78f' } },
+  { id: 'jade',   label: 'Jade',   gif: computerGif, swatch: { bg: '#bbd2d8', accent: '#15a292' } },
+  { id: 'coral',  label: 'Coral',  gif: fishtankGif, swatch: { bg: '#ef8268', accent: '#0fa78f' } },
+  { id: 'arcade', label: 'Arcade', gif: arcadeGif,   swatch: { bg: '#15171C', accent: '#3D7BD1' } },
 ];
 
 export const DEFAULT_THEME = THEMES[0].id;

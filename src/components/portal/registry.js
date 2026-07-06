@@ -29,8 +29,10 @@
 
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
+import MambaUpdates from './modules/MambaUpdates';
 import Syllabite from './modules/Syllabite';
 import SyllabiteGTM from './modules/SyllabiteGTM';
+import SyllabiteFeedback from './modules/SyllabiteFeedback';
 import CodebaseTracker from './modules/CodebaseTracker';
 import CodebaseWorkspace from './modules/CodebaseWorkspace';
 import WallArt from './modules/WallArt';
@@ -38,6 +40,7 @@ import PixelGifStudio from './modules/PixelGifStudio';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
+import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
 
 // Ordered life-area sections — each may hold zero or more modules.
 export const SECTIONS = [
@@ -64,6 +67,13 @@ export const MODULES = [
     component: HonoursTracker,
   },
   {
+    id: 'mamba-updates',
+    label: 'Mamba Updates',
+    icon: 'mamba',
+    group: 'University',
+    component: MambaUpdates,
+  },
+  {
     id: 'syllabite',
     label: 'Overview',
     icon: 'syllabite',
@@ -76,6 +86,13 @@ export const MODULES = [
     icon: 'investments',
     group: 'Syllabite',
     component: SyllabiteGTM,
+  },
+  {
+    id: 'syllabite-feedback',
+    label: 'Feedback',
+    icon: 'feedback',
+    group: 'Syllabite',
+    component: SyllabiteFeedback,
   },
   {
     id: 'portara-business-plan',
@@ -125,6 +142,13 @@ export const MODULES = [
     icon: 'link',
     system: true,
     component: GifBackend,
+  },
+  {
+    id: 'workers-deploy-playbook',
+    label: 'Workers Deploy Playbook',
+    icon: 'cloud',
+    system: true,
+    component: WorkersDeployPlaybook,
   },
   // Drop new tools here — set `group` to a SECTIONS name (no other file changes).
 ];

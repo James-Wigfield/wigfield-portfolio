@@ -29,7 +29,10 @@ export async function signIn(password) {
   //   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   //   return { data, error };
   if (password === MOCK_PASSWORD) {
-    const session = { token: 'mock-session-token', issued_at: new Date().toISOString() };
+    // Keep the entered password on the session so server-side /api/* routes can
+    // be gated by it (see getPortalKey + workers/app.js). It's the same mock
+    // secret — this just lets the browser prove it passed the gate to the Worker.
+    const session = { token: 'mock-session-token', key: password, issued_at: new Date().toISOString() };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return { data: { session }, error: null };
   }
@@ -58,4 +61,13 @@ export function getSession() {
 
 export function isAuthenticated() {
   return getSession() !== null;
+}
+
+/**
+ * The key the browser sends to gate server-side /api/* routes — the password
+ * entered at the gate (stored on the session by signIn). Null when signed out.
+ * The Worker verifies it against its PORTAL_PASSWORD secret.
+ */
+export function getPortalKey() {
+  return getSession()?.key ?? null;
 }
