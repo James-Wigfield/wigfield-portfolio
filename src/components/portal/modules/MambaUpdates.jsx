@@ -38,6 +38,253 @@ const HEAD = {
 
 // Explainer entries — newest first.
 const UPDATES = [
+  /* === SETUP: THE COMPLETE, TESTED ENVIRONMENT RECIPE (newest) === */
+  {
+    id: 'env-setup-recipe',
+    date: '2026-07-06',
+    kicker: 'Setup · Definitive',
+    title: 'Environment setup: the complete, tested recipe (WSL2 + CUDA + Mamba)',
+    body: (
+      <>
+        <p className="mu-lead">
+          This is the exact, tested recipe that got the training environment working on the home PC
+          (RTX&nbsp;5070&nbsp;Ti). It was a fight - the GPU is brand-new (Blackwell), so a lot of the tooling
+          needed coaxing. Follow Parts A-E in order and you'll skip every dead end we hit; the fixes are already
+          baked in. A future you - or a future Claude instance - can rebuild the whole thing from this page.
+        </p>
+
+        <div className="mu-callout mu-callout--accent">
+          <span className="mu-callout__label">The end state you're aiming for</span>
+          <p>
+            WSL2 Ubuntu&nbsp;22.04, a conda env called <code>mamba</code> (Python&nbsp;3.11), with{' '}
+            <code>torch 2.11.0+cu128</code>, <code>nvcc 12.8</code>, <code>GCC 13</code>, and <code>mamba-ssm</code>{' '}
+            compiled for your Blackwell GPU (sm_120). The finish line is <code>check_env.py</code> printing{' '}
+            <code>ALL CHECKS PASSED</code>.
+          </p>
+        </div>
+
+        <div className="mu-callout mu-callout--warn">
+          <span className="mu-callout__label">Three golden rules (learned the hard way)</span>
+          <ul className="mu-list">
+            <li><strong>Never install an NVIDIA driver inside WSL.</strong> The Windows driver already passes the GPU through to Linux; adding a Linux driver breaks it.</li>
+            <li><strong>Never let pip upgrade torch</strong> while installing mamba-ssm - it silently swaps your working torch for an incompatible one. Always pass <code>--no-deps</code>.</li>
+            <li><strong>Your GPU is Blackwell (sm_120)</strong>, so it needs CUDA <strong>12.8 or newer</strong> tools. Older CUDA (e.g. 12.4) compiles fine but produces kernels that won't run on the card.</li>
+          </ul>
+        </div>
+
+        <p className="mu-h">Part A · WSL2 + Ubuntu (in Windows PowerShell)</p>
+        <ol className="mu-steps">
+          <li className="mu-step">
+            <span className="mu-step__n">1</span>
+            <span className="mu-step__title">Install WSL2 + Ubuntu<span className="mu-step__meta">admin PowerShell</span></span>
+            <p className="mu-step__body">
+              Open PowerShell <strong>as Administrator</strong>, run this, and reboot if it asks. Ubuntu&nbsp;22.04
+              LTS is the safe pick - widest CUDA support and closest to the SCGH HPC.
+            </p>
+            <div className="mu-cmd">{`wsl --install -d Ubuntu-22.04`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">2</span>
+            <span className="mu-step__title">Create your Linux user + update<span className="mu-step__meta">Ubuntu</span></span>
+            <p className="mu-step__body">
+              Launch <strong>Ubuntu</strong> from the Start menu; it asks for a new username + password (separate
+              from Windows). Then update the system:
+            </p>
+            <div className="mu-cmd">{`sudo apt update && sudo apt upgrade -y`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">3</span>
+            <span className="mu-step__title">Confirm the GPU is visible<span className="mu-step__meta">nvidia-smi</span></span>
+            <p className="mu-step__body">
+              You should see &ldquo;NVIDIA GeForce RTX 5070 Ti&rdquo;. If you do, the GPU passes through and no
+              driver install is needed (golden rule #1).
+            </p>
+            <div className="mu-cmd">{`nvidia-smi`}</div>
+          </li>
+        </ol>
+
+        <p className="mu-h">Part B · Conda env + PyTorch (inside Ubuntu)</p>
+        <ol className="mu-steps">
+          <li className="mu-step">
+            <span className="mu-step__n">4</span>
+            <span className="mu-step__title">Miniconda + a clean env<span className="mu-step__meta">python 3.11</span></span>
+            <p className="mu-step__body">
+              Install Miniconda, then make a Python&nbsp;3.11 env. Close and reopen Ubuntu after the installer so{' '}
+              <code>conda</code> is on your path.
+            </p>
+            <div className="mu-cmd">{`wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+conda create -n mamba python=3.11 -y
+conda activate mamba`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">5</span>
+            <span className="mu-step__title">PyTorch - the Blackwell build<span className="mu-step__meta">cu128</span></span>
+            <p className="mu-step__body">
+              The <code>cu128</code> index gives you a torch built for CUDA&nbsp;12.8, which is what your Blackwell
+              card needs.
+            </p>
+            <div className="mu-cmd">{`pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">6</span>
+            <span className="mu-step__title">Verify torch sees the GPU<span className="mu-step__meta">the proof</span></span>
+            <p className="mu-step__body">
+              You want <code>2.11.0+cu128</code>, then <code>12.8</code>, <code>True</code>, and <code>(12, 0)</code>.
+              That <code>(12, 0)</code> is the key - it means torch has kernels for your GPU.
+            </p>
+            <div className="mu-cmd">{`python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available(), torch.cuda.get_device_capability())"`}</div>
+          </li>
+        </ol>
+
+        <p className="mu-h">Part C · The build tools - set these up BEFORE Mamba</p>
+        <p>
+          <code>mamba-ssm</code> compiles CUDA code from scratch, so it needs a matching compiler toolchain ready
+          first. Getting these two right up front is what avoids the confusing build errors (see the last section).
+        </p>
+        <ol className="mu-steps">
+          <li className="mu-step">
+            <span className="mu-step__n">7</span>
+            <span className="mu-step__title">CUDA 12.8 toolkit (gives you nvcc)<span className="mu-step__meta">nvidia channel</span></span>
+            <p className="mu-step__body">
+              A fresh Ubuntu has no CUDA compiler, and any system one is likely too old for Blackwell. Install a
+              matching 12.8 toolkit into the env:
+            </p>
+            <div className="mu-cmd">{`conda install -c nvidia cuda-toolkit=12.8 -y`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">8</span>
+            <span className="mu-step__title">A compatible C++ compiler<span className="mu-step__meta">GCC 13</span></span>
+            <p className="mu-step__body">
+              CUDA&nbsp;12.8 refuses host compilers newer than GCC&nbsp;13. conda envs often ship GCC&nbsp;14, so
+              pin it down to 13:
+            </p>
+            <div className="mu-cmd">{`conda install -c conda-forge gcc_linux-64=13 gxx_linux-64=13 -y`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">9</span>
+            <span className="mu-step__title">Re-activate and verify<span className="mu-step__meta">nvcc + g++</span></span>
+            <p className="mu-step__body">
+              Re-activate so the new tools land on your path, then confirm <code>nvcc</code> reports{' '}
+              <strong>12.8</strong> and the C++ compiler reports <strong>13.x</strong>:
+            </p>
+            <div className="mu-cmd">{`conda deactivate && conda activate mamba
+nvcc --version
+x86_64-conda-linux-gnu-c++ --version`}</div>
+          </li>
+        </ol>
+
+        <p className="mu-h">Part D · Build the Mamba libraries (the exact incantation)</p>
+        <p>
+          This one block forces a clean, from-source compile that targets your GPU and refuses to touch torch.
+          Run it all in one terminal with <code>(mamba)</code> active. It compiles for several minutes - lots of{' '}
+          <code>nvcc</code> output is normal.
+        </p>
+        <div className="mu-cmd">{`export CUDA_HOME=$(dirname $(dirname $(which nvcc)))
+export TORCH_CUDA_ARCH_LIST="12.0+PTX"
+export CAUSAL_CONV1D_FORCE_BUILD=TRUE
+export MAMBA_FORCE_BUILD=TRUE
+export MAX_JOBS=4
+pip install causal-conv1d mamba-ssm --no-build-isolation --no-deps --force-reinstall --no-cache-dir --no-binary :all:`}</div>
+        <p>What each part is for, in plain English:</p>
+        <ul className="mu-list">
+          <li><code>--no-build-isolation</code> - build against <em>your</em> torch, not a random one pip pulls into a sandbox.</li>
+          <li><code>--no-deps</code> - don't let it upgrade or replace torch (golden rule #2).</li>
+          <li><code>--no-cache-dir --no-binary :all:</code> - genuinely recompile from source instead of reusing a stale cached wheel.</li>
+          <li><code>MAMBA_FORCE_BUILD</code> / <code>CAUSAL_CONV1D_FORCE_BUILD</code> - compile from source rather than download a prebuilt wheel that lacks Blackwell.</li>
+          <li><code>TORCH_CUDA_ARCH_LIST="12.0+PTX"</code> - build the kernels for your Blackwell GPU (sm_120), with a PTX fallback for safety.</li>
+          <li><code>CUDA_HOME</code> - point the build at the 12.8 toolkit you just installed.</li>
+          <li><code>MAX_JOBS=4</code> - cap parallel compile jobs so the build doesn't exhaust your RAM.</li>
+        </ul>
+
+        <p className="mu-h">Part E · Project deps + the final check</p>
+        <ol className="mu-steps">
+          <li className="mu-step">
+            <span className="mu-step__n">10</span>
+            <span className="mu-step__title">Install the remaining dependencies<span className="mu-step__meta">explicitly</span></span>
+            <p className="mu-step__body">
+              Install these by name - <strong>not</strong> via <code>pip install -r requirements.txt</code>, which
+              re-lists torch and can trigger the swap from rule #2.
+            </p>
+            <div className="mu-cmd">{`pip install monai SimpleITK nibabel scipy`}</div>
+          </li>
+          <li className="mu-step">
+            <span className="mu-step__n">11</span>
+            <span className="mu-step__title">Run the check<code>check_env.py</code></span>
+            <p className="mu-step__body">
+              From the repo root. It confirms torch + GPU, runs a real mamba-ssm forward pass on the GPU, and
+              checks every dependency.
+            </p>
+            <div className="mu-cmd">{`cd /mnt/c/Users/james/Documents/university/cits4010/Mamba_PSMA
+python check_env.py`}</div>
+          </li>
+        </ol>
+
+        <div className="mu-callout mu-callout--ok">
+          <span className="mu-callout__label">Done</span>
+          <p>
+            When <code>check_env.py</code> prints <code>ALL CHECKS PASSED</code>, the environment is ready.
+            Rebuilding later? Just follow Parts A-E again - every fix is baked in, so you shouldn't see the errors
+            below. Moving to the SCGH HPC? Expect the same class of issues (Blackwell + CUDA + GCC + source build);
+            this recipe transfers directly.
+          </p>
+        </div>
+
+        <p className="mu-h">If something breaks · the errors we actually hit, and the fix</p>
+        <p>These are the real errors from setting this up, in the order they appeared. If one shows up again, here's the cause and the fix.</p>
+        <div className="mu-callout">
+          <span className="mu-callout__label">1 · build-time CUDA mismatch</span>
+          <p>
+            "The detected CUDA version (12.4) mismatches ... PyTorch (13.0)" while building - pip's build isolation
+            pulled a different torch into a sandbox. <strong>Fix:</strong> add <code>--no-build-isolation</code> so
+            it builds against your real torch.
+          </p>
+        </div>
+        <div className="mu-callout">
+          <span className="mu-callout__label">2 · torch silently swapped to 2.12.1</span>
+          <p>
+            You get a "torchvision ... incompatible" warning, and the mamba step later fails. Installing mamba-ssm
+            let its dependencies upgrade torch, breaking the cu128 setup. <strong>Fix:</strong> put the good torch
+            back, then always build mamba with <code>--no-deps</code>:
+          </p>
+          <div className="mu-cmd">{`pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128`}</div>
+        </div>
+        <div className="mu-callout">
+          <span className="mu-callout__label">3 · "no kernel image is available for execution on the device"</span>
+          <p>
+            The kernels were compiled without Blackwell (sm_120) support - usually because nvcc was too old (12.4).
+            <strong> Fix:</strong> install nvcc&nbsp;12.8 (Part&nbsp;C) and rebuild with{' '}
+            <code>TORCH_CUDA_ARCH_LIST="12.0+PTX"</code>.
+          </p>
+        </div>
+        <div className="mu-callout">
+          <span className="mu-callout__label">4 · rebuild changes nothing (same error repeats)</span>
+          <p>
+            pip reused a cached wheel instead of recompiling, so the new flags never applied. <strong>Fix:</strong>{' '}
+            add <code>--no-cache-dir --no-binary :all:</code> plus the <code>*_FORCE_BUILD</code> env vars to force
+            a real source build.
+          </p>
+        </div>
+        <div className="mu-callout">
+          <span className="mu-callout__label">5 · "c++ (14.3.0) is greater than the maximum required by CUDA 12.8 (&lt;14.0)"</span>
+          <p>
+            Your host GCC is too new for CUDA&nbsp;12.8. <strong>Fix:</strong> install GCC&nbsp;13 (Part&nbsp;C,
+            step&nbsp;8):
+          </p>
+          <div className="mu-cmd">{`conda install -c conda-forge gcc_linux-64=13 gxx_linux-64=13 -y`}</div>
+        </div>
+
+        <div className="mu-tags">
+          <span className="mu-tag">torch 2.11.0+cu128</span>
+          <span className="mu-tag">nvcc 12.8</span>
+          <span className="mu-tag">GCC 13.4</span>
+          <span className="mu-tag">sm_120 (Blackwell)</span>
+          <span className="mu-tag">mamba-ssm</span>
+        </div>
+      </>
+    ),
+  },
+
   /* ────────────────────────────────────────────────────────────────────────
      1 · THE FORWARD PLAN
      ──────────────────────────────────────────────────────────────────────── */

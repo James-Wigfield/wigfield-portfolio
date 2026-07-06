@@ -30,6 +30,8 @@
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
 import MambaUpdates from './modules/MambaUpdates';
+import CodeVisualiser from './modules/CodeVisualiser';
+import Presentations from './modules/Presentations';
 import Syllabite from './modules/Syllabite';
 import SyllabiteGTM from './modules/SyllabiteGTM';
 import SyllabiteFeedback from './modules/SyllabiteFeedback';
@@ -37,6 +39,8 @@ import CodebaseTracker from './modules/CodebaseTracker';
 import CodebaseWorkspace from './modules/CodebaseWorkspace';
 import WallArt from './modules/WallArt';
 import PixelGifStudio from './modules/PixelGifStudio';
+import PdReader from './modules/PdReader';
+import DeckStudio from './modules/DeckStudio';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
@@ -72,6 +76,20 @@ export const MODULES = [
     icon: 'mamba',
     group: 'University',
     component: MambaUpdates,
+  },
+  {
+    id: 'code-visualiser',
+    label: 'Code Visualiser',
+    icon: 'codebase',
+    group: 'University',
+    component: CodeVisualiser,
+  },
+  {
+    id: 'presentations',
+    label: 'Presentations',
+    icon: 'presentation',
+    group: 'University',
+    component: Presentations,
   },
   {
     id: 'syllabite',
@@ -128,6 +146,20 @@ export const MODULES = [
     icon: 'pixel',
     group: 'Personal',
     component: PixelGifStudio,
+  },
+  {
+    id: 'pd-reader',
+    label: 'PD Reader Plan',
+    icon: 'eye',
+    group: 'Personal',
+    component: PdReader,
+  },
+  {
+    id: 'deck-studio',
+    label: 'Deck Studio',
+    icon: 'deck',
+    group: 'Personal',
+    component: DeckStudio,
   },
   {
     id: 'backend-setup',

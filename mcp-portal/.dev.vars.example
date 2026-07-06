@@ -1,0 +1,11 @@
+# Copy this file to `.dev.vars` (gitignored) and fill in the real values.
+# `wrangler dev` / `wrangler deploy` read secrets from here locally; in production
+# set them with `wrangler secret put <NAME>`.
+
+# Supabase service/secret key (bypasses RLS — server-side only, never in a client).
+SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxxxxx
+
+# Optional: require `Authorization: Bearer <token>` on every MCP request.
+# Recommended, since this server writes into your private portal. Generate a long
+# random string and use the same value in your Claude Code MCP connection config.
+# MCP_AUTH_TOKEN=choose-a-long-random-string

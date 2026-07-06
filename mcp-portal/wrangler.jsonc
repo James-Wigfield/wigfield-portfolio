@@ -1,0 +1,25 @@
+{
+  // Wrangler config for the general portal MCP server (personal portal tools).
+  // Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portal-mcp",
+  "main": "src/index.js",
+  "compatibility_date": "2025-03-10",
+  // nodejs_compat lets @supabase/supabase-js run on the Worker runtime.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The MCP server is backed by a Durable Object (it holds the live session).
+  "durable_objects": {
+    "bindings": [{ "name": "MCP_OBJECT", "class_name": "PortalMCP" }]
+  },
+  // Durable Objects must be declared in a migration. McpAgent uses SQLite storage.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PortalMCP"] }],
+
+  // PUBLIC, non-secret config (same Supabase project as the portal).
+  // The secret key is NOT here — it's a Worker secret: `wrangler secret put`.
+  "vars": {
+    "SUPABASE_URL": "https://trcnbmxtudhbuswqmqxy.supabase.co"
+  },
+
+  "observability": { "enabled": true }
+}
