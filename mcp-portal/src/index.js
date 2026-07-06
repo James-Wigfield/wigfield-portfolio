@@ -36,6 +36,7 @@ const SLIDE_SPEC = z.object({
   layout: z
     .enum(['title', 'section', 'statement', 'title-bullets', 'title-body', 'two-column', 'quote'])
     .describe(
+      'PREFER title-bullets for most content slides. ' +
       'title = cover (eyebrow/title/subtitle); section = big divider heading; ' +
       'statement = one big centred line; title-bullets = heading + bullet list; ' +
       'title-body = heading + markdown body; two-column = heading + left/right markdown; ' +
@@ -44,10 +45,14 @@ const SLIDE_SPEC = z.object({
   title: z.string().optional().describe('Heading / cover title / statement / section text'),
   subtitle: z.string().optional().describe('Cover subtitle (layout: title)'),
   eyebrow: z.string().optional().describe('Small kicker above a cover title (layout: title)'),
-  body: z.string().optional().describe('Markdown body (layout: title-body / statement fallback)'),
-  bullets: z.array(z.string()).optional().describe('Bullet points (layout: title-bullets)'),
-  left: z.string().optional().describe('Left column markdown (layout: two-column)'),
-  right: z.string().optional().describe('Right column markdown (layout: two-column)'),
+  body: z.string().optional().describe('Markdown body (layout: title-body / statement fallback). Prefer bullet points, and **bold** the key terms.'),
+  bullets: z.array(z.string()).optional().describe(
+    'Bullet points (layout: title-bullets) — the preferred way to present content. ' +
+    'Keep each bullet short (one line), and **bold** the most important word/number/phrase in each using markdown, ' +
+    'e.g. "Cuts inference time by **40%**". Aim for 3–6 bullets per slide.',
+  ),
+  left: z.string().optional().describe('Left column markdown (layout: two-column). Prefer bullets; **bold** key terms.'),
+  right: z.string().optional().describe('Right column markdown (layout: two-column). Prefer bullets; **bold** key terms.'),
   quote: z.string().optional().describe('Quote text (layout: quote)'),
   attribution: z.string().optional().describe('Quote attribution (layout: quote)'),
 });
@@ -127,7 +132,10 @@ export class PortalMCP extends McpAgent {
       'create_presentation',
       'Build a slide deck and save it to the portal Deck Studio (Personal tab). ' +
       'Describe each slide at a high level with a layout + content; the server ' +
-      'positions the elements. Keep slides short and skimmable.',
+      'positions the elements. STYLE: keep slides short and skimmable — lean on ' +
+      'bullet points (the title-bullets layout) rather than paragraphs, keep each ' +
+      'bullet to one line, and **bold** the key term/number in each bullet so the ' +
+      'important parts stand out. Aim for 3–6 bullets a slide.',
       {
         title: z.string().describe('Deck title (also the tab label base)'),
         dateLabel: z.string().optional().describe('Optional short label shown on the tab, e.g. a date'),

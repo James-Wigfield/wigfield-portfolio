@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '../icons';
 import DeckCanvas from './DeckCanvas';
+import DeckEditor from './DeckEditor';
 import { CANVAS, SAMPLE_DECK } from './deckModel';
 import { listPresentations } from '../data/presentationsApi';
+
+// A fresh blank deck for the "New deck" action (saved via POST on first save).
+function blankDeck() {
+  const sid = crypto?.randomUUID ? crypto.randomUUID() : `s${Date.now()}`;
+  return { title: 'New deck', dateLabel: '', canvas: { ...CANVAS }, slides: [{ id: sid, background: { type: 'color', color: 'token:surface' }, elements: [] }] };
+}
 
 /* ============================================================================
    DECK STUDIO — dynamic, AI-built slide decks  (Personal)
@@ -38,6 +45,7 @@ export default function DeckStudio() {
   const [activeId, setActiveId] = useState(null);
   const [idx, setIdx] = useState(0);
   const [isFs, setIsFs] = useState(false);
+  const [editorDeck, setEditorDeck] = useState(null); // non-null → editing
   const stageRef = useRef(null);
 
   // Load decks. setState only ever runs inside the async continuation (not
@@ -89,6 +97,14 @@ export default function DeckStudio() {
 
   const pickDeck = (id) => { setActiveId(id); setIdx(0); };
 
+  // After an editor save: exit, select the saved deck, reload from the backend.
+  const handleSaved = (savedId) => {
+    setEditorDeck(null);
+    if (savedId) { setActiveId(savedId); setIdx(0); }
+    setStatus('loading');
+    load();
+  };
+
   const toggleFs = useCallback(() => {
     const el = stageRef.current;
     if (!el) return;
@@ -127,7 +143,11 @@ export default function DeckStudio() {
         </p>
       </div>
 
-      {/* ── Toolbar: deck tabs + refresh ──────────────────────────────── */}
+      {editorDeck ? (
+        <DeckEditor deck={editorDeck} onDone={handleSaved} onCancel={() => setEditorDeck(null)} />
+      ) : (
+      <>
+      {/* ── Toolbar: deck tabs + actions ──────────────────────────────── */}
       <div className="ds-toolbar">
         <div className="pres-tabs ds-tabs" role="tablist" aria-label="Decks">
           {(decks ?? []).map((d) => (
@@ -144,16 +164,25 @@ export default function DeckStudio() {
             </button>
           ))}
         </div>
-        <button className="pres-btn ds-refresh" onClick={refresh} disabled={status === 'loading'}>
-          <Icon name="swap" size={15} />
-          <span className="pres-btn__label">{status === 'loading' ? 'Loading…' : 'Refresh'}</span>
-        </button>
+        <div className="ds-actions">
+          <button className="pres-btn" onClick={() => setEditorDeck(blankDeck())}>
+            <Icon name="edit" size={14} /><span className="pres-btn__label">New</span>
+          </button>
+          <button className="pres-btn" onClick={() => setEditorDeck(activeDeck)} disabled={!activeDeck}>
+            <Icon name="edit" size={14} /><span className="pres-btn__label">Edit</span>
+          </button>
+          <button className="pres-btn" onClick={refresh} disabled={status === 'loading'}>
+            <Icon name="swap" size={15} />
+            <span className="pres-btn__label">{status === 'loading' ? 'Loading…' : 'Refresh'}</span>
+          </button>
+        </div>
       </div>
 
       {note && (
         <p className="ds-note">
           {status === 'sample' && <span className="ds-note__badge">SAMPLE</span>}
           {note}
+          {status === 'sample' && ' Editing it saves a real copy.'}
         </p>
       )}
 
@@ -202,6 +231,8 @@ export default function DeckStudio() {
           </button>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

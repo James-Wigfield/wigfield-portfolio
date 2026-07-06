@@ -1,6 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
 import { CANVAS, resolveColor } from './deckModel';
 import { renderMarkdown } from './markdownLite';
+import { useFitScale } from './useFitScale';
 
 /* ============================================================================
    DeckCanvas — renders ONE slide of a deck, scaled to fit its container
@@ -12,27 +12,6 @@ import { renderMarkdown } from './markdownLite';
 
    Read-only for now; the in-portal editor (later) will reuse the same geometry.
    ========================================================================== */
-
-// Measure a node's box; recompute the fit-scale for CANVAS inside it.
-function useFitScale(canvas) {
-  const ref = useRef(null);
-  const [box, setBox] = useState({ w: 0, h: 0 });
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const s = box.w && box.h ? Math.min(box.w / canvas.w, box.h / canvas.h) : 0;
-  const left = (box.w - canvas.w * s) / 2;
-  const top = (box.h - canvas.h * s) / 2;
-  return { ref, s, left, top };
-}
 
 function TextElement({ el }) {
   const st = el.style || {};

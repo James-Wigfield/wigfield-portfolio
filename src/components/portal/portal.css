@@ -3266,3 +3266,99 @@
 .dc-md strong { font-weight: 700; }
 .dc-md em { font-style: italic; }
 .dc-md hr { border: none; border-top: 1px solid var(--line); margin: 0.5em 0; }
+
+/* ============================================================================
+   DECK EDITOR (.de-*) — drag/resize/edit + slide rail + inspector (Phase 3)
+   Reuses .dc-canvas/.dc-md for the scaled canvas; adds selection, resize
+   handles, a slide rail (mini DeckCanvas thumbnails) and an inspector panel.
+   ========================================================================== */
+.ds-actions { display: flex; gap: 0.4rem; align-items: flex-end; margin-bottom: 0.4rem; flex-shrink: 0; }
+
+.de { display: flex; flex-direction: column; gap: 0.8rem; }
+.de-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.de-bar__spacer { flex: 1 1 auto; }
+.de .de-input, .de textarea, .de input[type="number"] {
+  font-family: var(--font-body); font-size: 0.85rem; color: var(--ink);
+  background: var(--surface-hi); border: 1px solid var(--line); border-radius: 5px; padding: 0.4rem 0.55rem;
+}
+.de-input--title { font-family: var(--font-display); font-weight: 500; font-size: 1rem; min-width: 220px; flex: 0 1 auto; }
+.de-input--date { width: 150px; }
+.de .de-input:focus, .de textarea:focus, .de input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+
+.de-main { display: flex; gap: 0.9rem; align-items: stretch; min-height: 440px; }
+
+/* Slide rail */
+.de-rail { width: 138px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.55rem; max-height: 620px; overflow-y: auto; padding-right: 2px; }
+.de-thumb { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.de-thumb--active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.de-thumb__canvas { display: block; width: 100%; border: none; background: none; padding: 0; cursor: pointer; position: relative; }
+.de-thumb__mini { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--ground-2); pointer-events: none; }
+.de-thumb__n {
+  position: absolute; top: 4px; left: 4px; z-index: 2;
+  font-family: var(--font-mono); font-size: 0.6rem; line-height: 1; padding: 0.15rem 0.3rem;
+  background: var(--ink); color: var(--ground); border-radius: 3px; opacity: 0.85;
+}
+.de-thumb__ctrls { display: flex; border-top: 1px solid var(--line); }
+.de-thumb__ctrls button {
+  flex: 1; border: none; background: var(--surface); color: var(--ink-3); cursor: pointer;
+  font-size: 0.75rem; padding: 0.25rem 0; transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.de-thumb__ctrls button + button { border-left: 1px solid var(--line); }
+.de-thumb__ctrls button:hover:not(:disabled) { background: var(--accent-soft); color: var(--ink); }
+.de-thumb__ctrls button:disabled { opacity: 0.35; cursor: not-allowed; }
+.de-addslide {
+  border: 1px dashed var(--line); border-radius: 6px; background: none; color: var(--ink-2); cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.72rem; padding: 0.5rem; transition: all 0.15s var(--ease);
+}
+.de-addslide:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+
+/* Editable canvas */
+.de-stagewrap { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.de-stage2 {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none;
+}
+.de-canvas { cursor: default; user-select: none; }
+.de-el { position: absolute; cursor: move; }
+.de-el__content { width: 100%; height: 100%; overflow: hidden; }
+.de-el .dc-md { pointer-events: none; }
+.de-el--sel { outline-style: solid; outline-color: var(--accent); }
+.de-handle {
+  position: absolute; box-sizing: border-box; background: var(--accent);
+  border-style: solid; border-color: var(--surface-hi); border-radius: 2px;
+  transform: translate(-50%, -50%); z-index: 99999;
+}
+.de-hint { font-family: var(--font-mono); font-size: 0.66rem; color: var(--ink-3); }
+
+/* Inspector */
+.de-inspector { width: 244px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem; padding-left: 0.9rem; border-left: 1px solid var(--line); }
+.de-inspector__empty { font-size: 0.85rem; color: var(--ink-3); line-height: 1.5; }
+.de-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.de-field > span { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); }
+.de-textarea { resize: vertical; line-height: 1.4; }
+.de-seg { display: flex; }
+.de-seg__b {
+  flex: 1; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.35rem 0; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink-2);
+}
+.de-seg__b:not(:first-child) { border-left: none; }
+.de-seg__b:first-child { border-radius: 5px 0 0 5px; }
+.de-seg__b:last-child { border-radius: 0 5px 5px 0; }
+.de-seg__b--on { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.de-swatches { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.de-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+.de-swatch--on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--accent-soft); }
+.de-grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.de-grid4 label { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-3); }
+.de-grid4 label em { font-style: normal; width: 0.9em; }
+.de-grid4 input { width: 100%; }
+.de-inspector__row { display: flex; gap: 0.4rem; margin-top: auto; }
+.de-del { color: var(--error); border-color: var(--error) !important; }
+.de-del:hover { background: var(--error-soft); }
+
+@media (max-width: 900px) {
+  .de-main { flex-direction: column; }
+  .de-rail { width: auto; flex-direction: row; max-height: none; overflow-x: auto; }
+  .de-rail .de-thumb { width: 130px; flex-shrink: 0; }
+  .de-inspector { width: auto; border-left: none; border-top: 1px solid var(--line); padding-left: 0; padding-top: 0.9rem; }
+}
