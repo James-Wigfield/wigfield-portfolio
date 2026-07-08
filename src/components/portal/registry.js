@@ -37,6 +37,7 @@ import SyllabiteGTM from './modules/SyllabiteGTM';
 import SyllabiteFeedback from './modules/SyllabiteFeedback';
 import CodebaseTracker from './modules/CodebaseTracker';
 import CodebaseWorkspace from './modules/CodebaseWorkspace';
+import VisualiserMcpPlan from './modules/VisualiserMcpPlan';
 import WallArt from './modules/WallArt';
 import PixelGifStudio from './modules/PixelGifStudio';
 import PdReader from './modules/PdReader';
@@ -132,6 +133,13 @@ export const MODULES = [
     icon: 'workspace',
     group: 'Business',
     component: CodebaseWorkspace,
+  },
+  {
+    id: 'visualiser-mcp-plan',
+    label: 'Visualiser · MCP Plan',
+    icon: 'link',
+    group: 'Business',
+    component: VisualiserMcpPlan,
   },
   {
     id: 'wall-art',
