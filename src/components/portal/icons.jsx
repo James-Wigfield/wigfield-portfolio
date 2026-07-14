@@ -167,6 +167,22 @@ const PATHS = {
       <path d="M7 7V6a1.5 1.5 0 0 1 1.5-1.5H19A1.5 1.5 0 0 1 20.5 6v9.5A1.5 1.5 0 0 1 19 17h-2.5" />
     </>
   ),
+  // Flask — an Erlenmeyer flask (an interactive "lab" / playground explainer)
+  flask: (
+    <>
+      <path d="M9.2 3.5h5.6" />
+      <path d="M10 3.5v5.6L5.1 17.9A1.7 1.7 0 0 0 6.6 20.5h10.8a1.7 1.7 0 0 0 1.5-2.6L14 9.1V3.5" />
+      <path d="M7.6 14.5h8.8" />
+    </>
+  ),
+  // Cube — an isometric box (a 3-D tensor / volume; the shape-tracer tab)
+  cube: (
+    <>
+      <path d="M12 3 20.5 8v8L12 21 3.5 16V8L12 3Z" />
+      <path d="M3.5 8 12 13l8.5-5" />
+      <path d="M12 13v8" />
+    </>
+  ),
 
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)

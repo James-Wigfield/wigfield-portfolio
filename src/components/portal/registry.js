@@ -30,9 +30,12 @@
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
 import MambaUpdates from './modules/MambaUpdates';
+import SelectiveScan from './modules/SelectiveScan';
+import ShapeTracer from './modules/ShapeTracer';
 import CodeVisualiser from './modules/CodeVisualiser';
 import Presentations from './modules/Presentations';
 import Syllabite from './modules/Syllabite';
+import SyllabitePhase3 from './modules/SyllabitePhase3';
 import SyllabiteGTM from './modules/SyllabiteGTM';
 import SyllabiteFeedback from './modules/SyllabiteFeedback';
 import CodebaseTracker from './modules/CodebaseTracker';
@@ -79,6 +82,20 @@ export const MODULES = [
     component: MambaUpdates,
   },
   {
+    id: 'selective-scan',
+    label: 'Selective Scan',
+    icon: 'flask',
+    group: 'University',
+    component: SelectiveScan,
+  },
+  {
+    id: 'shape-tracer',
+    label: 'Shape Tracer',
+    icon: 'cube',
+    group: 'University',
+    component: ShapeTracer,
+  },
+  {
     id: 'code-visualiser',
     label: 'Code Visualiser',
     icon: 'codebase',
@@ -98,6 +115,13 @@ export const MODULES = [
     icon: 'syllabite',
     group: 'Syllabite',
     component: Syllabite,
+  },
+  {
+    id: 'syllabite-phase3',
+    label: 'Phase 3 · Accounts & AI',
+    icon: 'flask',
+    group: 'Syllabite',
+    component: SyllabitePhase3,
   },
   {
     id: 'syllabite-gtm',
