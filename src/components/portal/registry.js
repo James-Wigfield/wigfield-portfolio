@@ -29,6 +29,7 @@
 
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
+import BuildFlow from './modules/BuildFlow';
 import MambaUpdates from './modules/MambaUpdates';
 import SelectiveScan from './modules/SelectiveScan';
 import ShapeTracer from './modules/ShapeTracer';
@@ -73,6 +74,13 @@ export const MODULES = [
     icon: 'honours',
     group: 'University',
     component: HonoursTracker,
+  },
+  {
+    id: 'build-flow',
+    label: 'Build Flow',
+    icon: 'workspace',
+    group: 'University',
+    component: BuildFlow,
   },
   {
     id: 'mamba-updates',
