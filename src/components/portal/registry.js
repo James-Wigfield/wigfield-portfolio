@@ -31,6 +31,7 @@ import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
 import BuildFlow from './modules/BuildFlow';
 import MambaUpdates from './modules/MambaUpdates';
+import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
 import ShapeTracer from './modules/ShapeTracer';
 import CodeVisualiser from './modules/CodeVisualiser';
@@ -88,6 +89,13 @@ export const MODULES = [
     icon: 'mamba',
     group: 'University',
     component: MambaUpdates,
+  },
+  {
+    id: 'loss-check',
+    label: 'Loss Check',
+    icon: 'check',
+    group: 'University',
+    component: LossCheck,
   },
   {
     id: 'selective-scan',
