@@ -30,6 +30,7 @@
 import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
 import BuildFlow from './modules/BuildFlow';
+import TrainingReadiness from './modules/TrainingReadiness';
 import MambaUpdates from './modules/MambaUpdates';
 import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
@@ -82,6 +83,13 @@ export const MODULES = [
     icon: 'workspace',
     group: 'University',
     component: BuildFlow,
+  },
+  {
+    id: 'training-readiness',
+    label: 'Training Readiness',
+    icon: 'flask',
+    group: 'University',
+    component: TrainingReadiness,
   },
   {
     id: 'mamba-updates',
