@@ -1,0 +1,345 @@
+/* ============================================================================
+   PORTARA — PRICING STRATEGY  (.ppx-*)
+   ----------------------------------------------------------------------------
+   Scoped styles for PortaraPricing.jsx: range charts, dumbbells, split bars,
+   pricing-tier cards and tables — all HTML/CSS, driven by the portal theme
+   tokens so they re-skin with jade / coral / arcade.
+
+   Chart colours are theme-specific and validated with the dataviz six-checks
+   script against each theme's --surface: the 3-step ordinal ramps (--ppx-s1/
+   s2/s3) pass `--ordinal` on all three surfaces. The context grey (--ppx-ctx)
+   is a deliberate de-emphasis channel (emphasis form: one accent hue + grey),
+   NOT a categorical slot — every context row therefore carries its own text
+   label so identity is never colour-alone.
+   ========================================================================== */
+
+.ppx {
+  /* jade (default theme) — validated on surface #dde9ec */
+  --ppx-s1:   #4aa798;
+  --ppx-s2:   #17806f;
+  --ppx-s3:   #0a5245;
+  --ppx-main: #0f8578;   /* emphasis series (Portara) */
+  --ppx-soft: #4aa798;   /* dumbbell "draft" end = light ordinal step */
+  --ppx-deep: #0a5245;   /* dumbbell "recommended" end = deep ordinal step */
+  --ppx-ctx:  #7d97a4;   /* de-emphasis context bars (market benchmarks) */
+  --ppx-on-1:   #04251f; /* label ink ON each fill, per-theme for contrast */
+  --ppx-on-2:   #eefaf7;
+  --ppx-on-3:   #eefaf7;
+  --ppx-on-main:#eefaf7;
+  --ppx-on-ctx: #0d222c;
+  --ppx-labelw: 200px;
+  --ppx-labelgap: 0.8rem;
+  --ppx-deltaw: 52px;
+}
+.hp.portal[data-portal-theme="coral"] .ppx {
+  /* validated on surface #fdf5f0 */
+  --ppx-s1:   #5cb8a6;
+  --ppx-s2:   #1d9481;
+  --ppx-s3:   #085f52;
+  --ppx-main: #0d8a76;
+  --ppx-soft: #5cb8a6;
+  --ppx-deep: #085f52;
+  --ppx-ctx:  #ab9289;
+  --ppx-on-1:   #06302a;
+  --ppx-on-2:   #f2fbf8;
+  --ppx-on-3:   #f2fbf8;
+  --ppx-on-main:#f2fbf8;
+  --ppx-on-ctx: #33201b;
+}
+.hp.portal[data-portal-theme="arcade"] .ppx {
+  /* validated on surface #1E212A (dark) */
+  --ppx-s1:   #8fb8ef;
+  --ppx-s2:   #5192e0;
+  --ppx-s3:   #2e62a8;
+  --ppx-main: #5192e0;
+  --ppx-soft: #8fb8ef;
+  --ppx-deep: #2e62a8;
+  --ppx-ctx:  #5a6371;
+  --ppx-on-1:   #10151f;
+  --ppx-on-2:   #0d1420;
+  --ppx-on-3:   #eef3fb;
+  --ppx-on-main:#0d1420;
+  --ppx-on-ctx: #eef3fb;
+}
+
+/* ── Chart card shell ──────────────────────────────────────────────────── */
+.ppx-viz { display: flex; flex-direction: column; gap: 0.85rem; padding: 1.1rem 1.2rem 1.2rem; margin: 0; }
+.ppx-viz__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem 1rem; flex-wrap: wrap; }
+.ppx-viz__note {
+  font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink-3); white-space: nowrap;
+}
+.ppx-viz__cap { font-size: 0.78rem; color: var(--ink-3); line-height: 1.55; margin: 0; }
+
+/* ── Axis ticks ────────────────────────────────────────────────────────── */
+.ppx-ticks { position: relative; height: 0.85rem; margin-left: calc(var(--ppx-labelw) + var(--ppx-labelgap)); }
+.ppx-ticks--dumb { margin-right: calc(var(--ppx-deltaw) + var(--ppx-labelgap)); }
+.ppx-ticks__t {
+  position: absolute; top: 0; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 0.58rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ppx-ticks__t--first { transform: none; }
+.ppx-ticks__t--last { transform: translateX(-100%); }
+
+/* ── Rows: label | track (| delta) ─────────────────────────────────────── */
+.ppx-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+.ppx-row { display: grid; grid-template-columns: var(--ppx-labelw) 1fr; align-items: center; gap: 0 var(--ppx-labelgap); }
+.ppx-row--dumb { grid-template-columns: var(--ppx-labelw) 1fr var(--ppx-deltaw); }
+.ppx-row__label {
+  display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+  font-size: 0.8rem; color: var(--ink-2); line-height: 1.3;
+}
+.ppx-row__you {
+  font-family: var(--font-mono); font-size: 0.52rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent-ink); background: var(--accent-soft);
+  border-radius: 2px; padding: 0.1rem 0.35rem;
+}
+.ppx-row__track { position: relative; height: 30px; border-radius: 2px; outline: none; }
+.ppx-row__track:focus-visible { box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 3px var(--accent); }
+
+.ppx-gridline { position: absolute; top: 3px; bottom: 3px; width: 1px; background: var(--line-2); }
+
+/* Range bar — thin mark, 4px rounded data-ends (a range has no baseline) */
+.ppx-bar {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  height: 14px; border-radius: 4px; background: var(--ppx-ctx);
+}
+.ppx-row__track--accent .ppx-bar { background: var(--ppx-main); }
+.ppx-bar__val {
+  position: absolute; top: 50%; transform: translateY(-50%); padding-left: 8px;
+  font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ppx-bar__val--flip { padding-left: 0; padding-right: 8px; }
+.ppx-point {
+  position: absolute; top: 50%; width: 8px; height: 8px;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: var(--ppx-deep); box-shadow: 0 0 0 2px var(--surface);
+}
+.ppx-nobar {
+  position: absolute; top: 50%; transform: translateY(-50%); left: 0;
+  font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 2px; background: var(--ground);
+  padding: 0.18rem 0.5rem; white-space: nowrap;
+}
+
+/* ── Dumbbell marks ────────────────────────────────────────────────────── */
+.ppx-dumb__link { position: absolute; top: 50%; transform: translateY(-50%); height: 2px; border-radius: 1px; background: var(--ppx-soft); }
+.ppx-dumb__dot {
+  position: absolute; top: 50%; width: 10px; height: 10px;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.ppx-dumb__dot--from { background: var(--ppx-soft); }
+.ppx-dumb__dot--to { background: var(--ppx-deep); }
+.ppx-dumb__val {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: 0.62rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ppx-dumb__val--from { color: var(--ink-3); padding-right: 9px; }
+.ppx-dumb__val--to { color: var(--ink); font-weight: 600; padding-left: 9px; }
+.ppx-row__delta {
+  justify-self: end;
+  font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent-ink);
+  background: var(--accent-soft); border-radius: 2px; padding: 0.14rem 0.4rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* ── Tooltip (hover + keyboard focus; enhances, never gates) ───────────── */
+.ppx-tip {
+  position: absolute; bottom: calc(100% + 4px); left: var(--tipx, 50%);
+  transform: translateX(-50%); z-index: 6; pointer-events: none;
+  display: flex; flex-direction: column; gap: 0.15rem;
+  min-width: 175px; max-width: 250px;
+  background: var(--surface-hi); border: 1px solid var(--line); border-radius: 3px;
+  padding: 0.45rem 0.6rem; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  opacity: 0; visibility: hidden; transition: opacity 0.12s ease;
+}
+.ppx-row__track:hover .ppx-tip,
+.ppx-row__track:focus-visible .ppx-tip { opacity: 1; visibility: visible; }
+.ppx-tip strong { font-size: 0.72rem; color: var(--ink); line-height: 1.3; }
+.ppx-tip span { font-size: 0.7rem; color: var(--ink-2); line-height: 1.45; white-space: normal; }
+
+/* ── Legend ────────────────────────────────────────────────────────────── */
+.ppx-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
+.ppx-legend__item { display: inline-flex; align-items: center; gap: 0.42rem; font-size: 0.74rem; color: var(--ink-2); }
+.ppx-legend__swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.ppx-legend__swatch--dot { border-radius: 50%; }
+.ppx-legend__swatch--main { background: var(--ppx-main); }
+.ppx-legend__swatch--ctx  { background: var(--ppx-ctx); }
+.ppx-legend__swatch--soft { background: var(--ppx-soft); }
+.ppx-legend__swatch--deep { background: var(--ppx-deep); }
+.ppx-legend__swatch--s1 { background: var(--ppx-s1); }
+.ppx-legend__swatch--s2 { background: var(--ppx-s2); }
+.ppx-legend__swatch--s3 { background: var(--ppx-s3); }
+
+/* ── Split bar (single 100% stacked bar, 2px surface gaps) ─────────────── */
+.ppx-split { display: flex; gap: 2px; height: 30px; }
+.ppx-split__seg {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  border-radius: 2px; min-width: 0;
+}
+.ppx-split__seg:first-child { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+.ppx-split__seg:last-child { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.ppx-split__seg--s1 { background: var(--ppx-s1); color: var(--ppx-on-1); }
+.ppx-split__seg--s2 { background: var(--ppx-s2); color: var(--ppx-on-2); }
+.ppx-split__seg--s3 { background: var(--ppx-s3); color: var(--ppx-on-3); }
+.ppx-split__seg--main { background: var(--ppx-main); color: var(--ppx-on-main); }
+.ppx-split__seg--ctx  { background: var(--ppx-ctx); color: var(--ppx-on-ctx); }
+.ppx-split__segval {
+  font-family: var(--font-mono); font-size: 0.64rem; font-weight: 600;
+  font-variant-numeric: tabular-nums; overflow: hidden; white-space: nowrap;
+  padding: 0 0.3rem;
+}
+
+/* ── Pricing tier cards ────────────────────────────────────────────────── */
+.ppx-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; }
+.ppx-tier { position: relative; display: flex; flex-direction: column; gap: 0.5rem; padding: 1.2rem 1.2rem 1.3rem; }
+.ppx-tier--target { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ppx-tier__flag {
+  position: absolute; top: -0.6rem; left: 1rem;
+  font-family: var(--font-mono); font-size: 0.52rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent-ink);
+  background: var(--surface-hi); border: 1px solid var(--accent); border-radius: 2px;
+  padding: 0.14rem 0.45rem;
+}
+.ppx-tier__name { font-size: 0.95rem; color: var(--ink); margin: 0; }
+.ppx-tier__price { font-family: var(--font-body); font-size: 1.7rem; font-weight: 650; color: var(--ink); margin: 0; line-height: 1.1; }
+.ppx-tier__price span { font-size: 0.7rem; font-weight: 400; color: var(--ink-3); margin-left: 0.4rem; }
+.ppx-tier__sub { font-family: var(--font-mono); font-size: 0.64rem; color: var(--accent-ink); margin: 0; }
+.ppx-tier__who { font-size: 0.78rem; color: var(--ink-3); line-height: 1.5; margin: 0; }
+.ppx-tier__list { list-style: none; margin: 0.25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.ppx-tier__list li { position: relative; font-size: 0.8rem; color: var(--ink-2); line-height: 1.45; padding-left: 0.95rem; }
+.ppx-tier__list li::before {
+  content: ''; position: absolute; left: 0; top: 0.48em;
+  width: 5px; height: 5px; border-radius: 1px; background: var(--accent);
+}
+
+/* ── Tables ────────────────────────────────────────────────────────────── */
+.ppx-tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); }
+.ppx-table { width: 100%; border-collapse: collapse; }
+.ppx-table th {
+  text-align: left; font-family: var(--font-mono); font-size: 0.58rem;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3);
+  font-weight: 500; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.ppx-table td { padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line-2); font-size: 0.82rem; color: var(--ink-2); line-height: 1.5; vertical-align: top; }
+.ppx-table tr:last-child td { border-bottom: none; }
+.ppx-table td:first-child { color: var(--ink); font-weight: 500; }
+.ppx-table tbody tr:hover td { background: var(--ground); }
+.ppx-table tr.ppx-table__hot td { background: var(--accent-soft); }
+.ppx-num { font-family: var(--font-mono); font-size: 0.74rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ── Severity chips (status colours + always a text label) ─────────────── */
+.ppx-sev {
+  display: inline-flex; align-items: center; gap: 0.32rem;
+  font-family: var(--font-mono); font-size: 0.56rem; text-transform: uppercase;
+  letter-spacing: 0.08em; border-radius: 2px; border: 1px solid;
+  padding: 0.16rem 0.5rem; white-space: nowrap;
+}
+.ppx-sev::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.ppx-sev--critical { color: var(--error); border-color: var(--error); background: var(--error-soft); }
+.ppx-sev--high { color: rgba(0, 0, 0, 0.72); border-color: var(--warn); background: var(--warn); }
+.ppx-sev--medium { color: var(--ink-3); border-color: var(--line); background: var(--ground); }
+
+/* ── Header source line ────────────────────────────────────────────────── */
+.ppx-src { font-family: var(--font-mono); font-size: 0.58rem; color: var(--ink-3); margin: 0.4rem 0 0; }
+
+/* ── Export-PDF button ─────────────────────────────────────────────────── */
+.ppx-export {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  margin-top: 0.55rem; padding: 0.42rem 0.75rem;
+  font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent-ink);
+  background: transparent; border: 1px solid var(--accent); border-radius: 2px;
+  cursor: pointer; transition: background 0.15s ease;
+}
+.ppx-export:hover { background: var(--accent-soft); }
+.ppx-export:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Sections: all six are always mounted; screen shows only the active one
+      (print reveals them all — see the print block below) ────────────────── */
+.ppx-sec--off { display: none; }
+.ppx-print-title { display: none; }
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ppx-tiers { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .ppx { --ppx-labelw: 0px; --ppx-labelgap: 0rem; }
+  .ppx-row { grid-template-columns: 1fr; gap: 0.15rem 0; }
+  .ppx-row--dumb { grid-template-columns: 1fr var(--ppx-deltaw); }
+  .ppx-row--dumb .ppx-row__label { grid-column: 1 / -1; }
+  .ppx-ticks { margin-left: 0; }
+  .ppx-ticks--dumb { margin-right: var(--ppx-deltaw); }
+}
+@media (max-width: 480px) {
+  .ppx-dumb__val--from { display: none; } /* tooltip + table still carry the draft value */
+}
+
+
+/* ============================================================================
+   PRINT / PDF EXPORT
+   ----------------------------------------------------------------------------
+   The portal-wide print block in portal.css already hides the banner, sidebar
+   and topbar and resets the content containers for ANY module being printed.
+   This block only handles the pricing module itself: hide its interactive
+   chrome, reveal all six sections (one per page, each under a printed title),
+   and force the light jade palette so a coral/arcade-theme user still gets a
+   clean paper document. Palette forcing needs no !important: the portal-level
+   tokens are re-declared ON .ppx (self beats inherited), and the chart tokens
+   below out-cascade the same-specificity theme blocks above. print-color-
+   adjust: exact keeps chart fills and chips without "background graphics".
+   The @page margin override lives in a <style> tag the module mounts, so the
+   Wall Art full-bleed @page rule is untouched when that module prints.
+   ========================================================================== */
+@media print {
+  html, body { background: #fff !important; }
+  /* content containers outside .ppx still paint the theme ground */
+  .portal__body, .portal__main, .portal__content { background: #fff !important; }
+  /* syl-rise / pt-fade-in start at opacity 0; animations never run in print
+     media, so revealed sections would freeze invisible — disable them */
+  .ppx, .ppx .syl-panel, .ppx .portal__content { animation: none !important; transition: none !important; }
+  .syl-seg, .ppx-export, .ppx-tip { display: none !important; }
+
+  .ppx {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    /* jade portal tokens, scoped to the module subtree */
+    --ground: #ffffff; --ground-2: #e9f1f3;
+    --surface: #dde9ec; --surface-hi: #e7faff;
+    --ink: #051b28; --ink-2: #234b5e; --ink-3: #517283; --text-faint: #7c9eae;
+    --line: rgba(53, 86, 105, 0.28); --line-2: rgba(53, 86, 105, 0.14);
+    --accent: #15a292; --accent-hover: #0d7267; --accent-ink: #0d7267;
+    --accent-soft: rgba(21, 162, 146, 0.16); --accent-pale: #c3fad4;
+    --signal: #15a292; --warn: #ffe59c;
+    --error: #c24a52; --error-soft: rgba(194, 74, 82, 0.12);
+  }
+  .hp.portal[data-portal-theme] .ppx {
+    /* jade chart series — same specificity as the coral/arcade blocks above,
+       later in the cascade, so it wins under print for every theme */
+    --ppx-s1: #4aa798; --ppx-s2: #17806f; --ppx-s3: #0a5245;
+    --ppx-main: #0f8578; --ppx-soft: #4aa798; --ppx-deep: #0a5245;
+    --ppx-ctx: #7d97a4;
+    --ppx-on-1: #04251f; --ppx-on-2: #eefaf7; --ppx-on-3: #eefaf7;
+    --ppx-on-main: #eefaf7; --ppx-on-ctx: #0d222c;
+  }
+
+  /* Reveal every section, one per page, each under a printed title. */
+  .ppx-sec--off { display: block !important; }
+  .ppx-sec { break-before: page; }
+  .ppx-sec:first-of-type { break-before: auto; }
+  .ppx-sec + .ppx-sec { margin-top: 0.5rem; }
+  .ppx-print-title {
+    display: block; font-family: var(--font-display); font-size: 1.15rem;
+    color: var(--ink); margin: 0 0 0.6rem; padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Keep cards, charts and table rows whole across page breaks. */
+  .pt-card, .ppx-viz, .ppx-tablewrap, .ppx-tier { break-inside: avoid; }
+  .ppx-table tr { break-inside: avoid; }
+}

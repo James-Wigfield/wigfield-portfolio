@@ -49,6 +49,7 @@ import PixelGifStudio from './modules/PixelGifStudio';
 import PdReader from './modules/PdReader';
 import DeckStudio from './modules/DeckStudio';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
+import PortaraPricing from './modules/PortaraPricing';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -167,6 +168,13 @@ export const MODULES = [
     icon: 'investments',
     group: 'Portara',
     component: PortaraBusinessPlan,
+  },
+  {
+    id: 'portara-pricing',
+    label: 'Pricing Strategy',
+    icon: 'business',
+    group: 'Portara',
+    component: PortaraPricing,
   },
   {
     id: 'codebase-tracker',
