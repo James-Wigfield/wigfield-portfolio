@@ -38,6 +38,13 @@ const SIGNALS = [
 
 const VIEWS = ['Overview', 'Market', 'Packages & Build', 'Recurring & AI', 'Verticals', 'Risks & Terms'];
 
+// ── At a glance — the whole model in one card, always visible above the tabs ──
+const GLANCE_TIERS = [
+  { name: 'Starter', build: '$6,500', mo: '$195' },
+  { name: 'Growth', build: '$14,500', mo: '$395', target: true },
+  { name: 'Scale', build: '$22,000+', mo: '$650' },
+];
+
 // ── Overview ─────────────────────────────────────────────────────────────────
 const VERDICTS = [
   ['Per-tool build prices', '$500 / $1,200 / $2,500', 'change', '$750 / $1,650 / $3,200 — at $150–$200/hr agency rates a $500 tool buys ~3 hours, leaving zero margin for testing or fixes.'],
@@ -472,6 +479,61 @@ export default function PortaraPricing() {
           </button>
         </div>
       </header>
+
+      {/* ── At a glance — the whole model in one view, on every tab ────── */}
+      <div className="pt-card ppx-glance" role="region" aria-label="Pricing structure at a glance">
+        <div className="ppx-viz__head">
+          <span className="syl-kicker syl-kicker--accent">The structure at a glance</span>
+          <span className="ppx-viz__note">how a client pays · AUD</span>
+        </div>
+        <div className="ppx-glance__flow">
+          <div className="ppx-glance__step">
+            <span className="ppx-glance__stepnum">1 · Every deal starts</span>
+            <span className="ppx-glance__stepval">$990 prototype</span>
+            <span className="ppx-glance__stepsub">100% credited against the build within 30 days</span>
+          </div>
+          <span className="ppx-glance__arrow" aria-hidden="true">→</span>
+          <div className="ppx-glance__step ppx-glance__step--tiers">
+            <span className="ppx-glance__stepnum">2 · Pick a package — build once, then subscribe</span>
+            <table className="ppx-glance__table">
+              <thead>
+                <tr>
+                  <td />
+                  {GLANCE_TIERS.map((t) => (
+                    <th key={t.name} scope="col" className={t.target ? 'ppx-glance__hot' : undefined}>
+                      {t.name}
+                      {t.target && <span className="ppx-glance__flag">target</span>}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Build once</th>
+                  {GLANCE_TIERS.map((t) => (
+                    <td key={t.name} className={t.target ? 'ppx-glance__hot' : undefined}>{t.build}</td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row">Then / month</th>
+                  {GLANCE_TIERS.map((t) => (
+                    <td key={t.name} className={t.target ? 'ppx-glance__hot' : undefined}>{t.mo}</td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <span className="ppx-glance__arrow" aria-hidden="true">→</span>
+          <div className="ppx-glance__step">
+            <span className="ppx-glance__stepnum">3 · AI usage</span>
+            <span className="ppx-glance__stepval">Prepaid credits</span>
+            <span className="ppx-glance__stepsub">$30–$60/mo bundled on Growth &amp; Scale · $100 top-up = 2,000 credits</span>
+          </div>
+        </div>
+        <p className="ppx-glance__foot">
+          12-month minimum subscription · $5,000 minimum build · build billed 40% / 35% / 25% at milestones · AI alerts at 80% of quota — never surprise-billed
+        </p>
+      </div>
 
       {/* ── Tabs ────────────────────────────────────────────────────────── */}
       <div className="syl-seg" role="tablist" aria-label="Pricing strategy sections">

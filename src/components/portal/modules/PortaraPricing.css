@@ -248,6 +248,54 @@
 /* ── Header source line ────────────────────────────────────────────────── */
 .ppx-src { font-family: var(--font-mono); font-size: 0.58rem; color: var(--ink-3); margin: 0.4rem 0 0; }
 
+/* ── At a glance (always-visible digest between header and tabs) ──────────
+      Not a data chart — a structural diagram: three journey steps joined by
+      arrows, with the tier×price matrix as step 2. Text/ink tokens only, the
+      accent column highlight carries a "target" text flag so nothing is
+      colour-alone. ─────────────────────────────────────────────────────── */
+.ppx-glance { display: flex; flex-direction: column; gap: 0.85rem; padding: 1.1rem 1.2rem 1rem; }
+.ppx-glance__flow { display: flex; align-items: stretch; gap: 0.65rem; }
+.ppx-glance__arrow { align-self: center; flex: none; color: var(--ink-3); font-size: 1.05rem; line-height: 1; }
+.ppx-glance__step {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem;
+  padding: 0.8rem 0.95rem 0.9rem;
+  border: 1px solid var(--line-2); border-radius: 3px; background: var(--ground);
+}
+.ppx-glance__step--tiers { flex: 1.9 1 0; }
+.ppx-glance__stepnum {
+  font-family: var(--font-mono); font-size: 0.56rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink-3);
+}
+.ppx-glance__stepval { font-size: 1.05rem; font-weight: 650; color: var(--ink); line-height: 1.25; }
+.ppx-glance__stepsub { font-size: 0.72rem; color: var(--ink-3); line-height: 1.5; }
+.ppx-glance__table { width: 100%; border-collapse: collapse; margin-top: 0.1rem; }
+.ppx-glance__table th, .ppx-glance__table td { text-align: left; padding: 0.3rem 0.55rem; }
+.ppx-glance__table thead tr > * { border-bottom: 1px solid var(--line-2); }
+.ppx-glance__table thead th {
+  font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink-2); font-weight: 600; white-space: nowrap;
+}
+.ppx-glance__table tbody th {
+  font-family: var(--font-mono); font-size: 0.56rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--ink-3); font-weight: 500;
+  white-space: nowrap; padding-left: 0;
+}
+.ppx-glance__table tbody td {
+  font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ppx-glance__hot { background: var(--accent-soft); }
+.ppx-glance__flag {
+  margin-left: 0.4rem; font-size: 0.5rem; letter-spacing: 0.08em; color: var(--accent-ink);
+  border: 1px solid var(--accent); border-radius: 2px; padding: 0.06rem 0.3rem;
+  vertical-align: 1px; white-space: nowrap;
+}
+.ppx-glance__foot { font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-3); line-height: 1.7; margin: 0; }
+@media (max-width: 900px) {
+  .ppx-glance__flow { flex-direction: column; }
+  .ppx-glance__arrow { transform: rotate(90deg); margin: -0.1rem 0; }
+}
+
 /* ── Export-PDF button ─────────────────────────────────────────────────── */
 .ppx-export {
   display: inline-flex; align-items: center; gap: 0.45rem;
