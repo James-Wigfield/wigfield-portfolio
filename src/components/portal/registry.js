@@ -31,6 +31,7 @@ import Overview from './modules/Overview';
 import HonoursTracker from './modules/HonoursTracker';
 import BuildFlow from './modules/BuildFlow';
 import TrainingReadiness from './modules/TrainingReadiness';
+import ModelTraining from './modules/ModelTraining';
 import MambaUpdates from './modules/MambaUpdates';
 import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
@@ -91,6 +92,13 @@ export const MODULES = [
     icon: 'flask',
     group: 'University',
     component: TrainingReadiness,
+  },
+  {
+    id: 'model-training',
+    label: 'Model & Training',
+    icon: 'cube',
+    group: 'University',
+    component: ModelTraining,
   },
   {
     id: 'mamba-updates',

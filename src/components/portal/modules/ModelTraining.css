@@ -1,0 +1,490 @@
+/* ============================================================================
+   MODEL & TRAINING — styles  (University · Mamba_PSMA)
+   Scoped under .mt, built on the portal Reading-Room tokens so it re-skins with
+   the active theme. The only hard-coded colours are the two chart series, which
+   are validated against the portal surface for CVD separation and contrast and
+   therefore must not drift with the theme.
+   ========================================================================== */
+
+.mt {
+  color: var(--ink-2);
+  /* chart series — validated pair (light, surface #dde9ec): all checks pass */
+  --s-hot: #c2571f;   /* "too long to scan"  */
+  --s-cool: #15a292;  /* "Mamba runs here"   */
+}
+
+/* ---------- headings ---------- */
+.mt-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-bottom: 0.5rem;
+}
+.mt-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 0.7rem;
+}
+.mt-lede { max-width: 62ch; margin: 0; }
+.mt h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 0.35rem;
+}
+.mt-sub { color: var(--ink-3); max-width: 66ch; margin: 0 0 1.1rem; font-size: 0.94rem; }
+.mt code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  padding: 0.08em 0.34em;
+  border-radius: 3px;
+}
+.mt strong { color: var(--ink); font-weight: 600; }
+
+.mt-section { margin-top: 2.4rem; }
+.mt-section__label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* ---------- readout strip ---------- */
+.mt-readouts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  background: var(--ink);
+  border-radius: 4px;
+  padding: 1.3rem 1.5rem;
+  margin-top: 1.2rem;
+}
+/* The panel deliberately inverts: background is --ink, so every colour on it is
+   drawn from the --surface family. That way it flips correctly on the arcade
+   theme, where --ink is light and --surface is dark. */
+.mt-readout__k {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--surface);
+  opacity: 0.62;
+}
+.mt-readout__v {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.9rem;
+  line-height: 1;
+  margin-top: 0.4rem;
+  color: var(--surface-hi);
+  letter-spacing: -0.02em;
+}
+.mt-readout__v small {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--surface);
+  opacity: 0.66;
+}
+.mt-readfoot {
+  grid-column: 1 / -1;
+  margin-top: 0.4rem;
+  padding-top: 0.9rem;
+  /* neutral translucent — reads as a hairline on both the light and dark fill */
+  border-top: 1px solid rgba(127, 137, 150, 0.42);
+  font-size: 0.88rem;
+  color: var(--surface);
+  opacity: 0.88;
+  max-width: 80ch;
+}
+.mt-readfoot b { color: var(--surface-hi); font-weight: 600; opacity: 1; }
+
+/* ---------- callout ---------- */
+.mt-callout {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 1.1rem 1.3rem;
+  margin-top: 1rem;
+}
+.mt-callout p { margin: 0 0 0.6rem; }
+.mt-callout p:last-child { margin-bottom: 0; }
+
+/* ---------- architecture figure ---------- */
+.mt-figure {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1.4rem 1.3rem 1.1rem;
+  margin-top: 1rem;
+}
+.mt-figure svg { width: 100%; height: auto; display: block; }
+
+/* Figure colours come from theme tokens, not literals, so the diagram inverts
+   correctly on the arcade theme instead of staying a light box on charcoal. */
+.mt-fig__box { fill: var(--surface-hi); stroke: var(--line); stroke-width: 1; }
+.mt-fig__box--mamba { stroke: var(--s-cool); stroke-width: 1.6; }
+.mt-fig__box--out { stroke: var(--s-hot); stroke-width: 1.6; }
+.mt-fig__bottle { fill: var(--ink); }
+.mt-fig__dot { fill: var(--s-cool); }
+.mt-fig__head { fill: var(--ink-3); font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 1.4px; }
+.mt-fig__name { fill: var(--ink); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; }
+.mt-fig__dim { fill: var(--ink-3); font-family: var(--font-mono); font-size: 10px; }
+.mt-fig__dim--out { fill: var(--s-hot); }
+/* on the bottleneck's inverted fill, text is drawn from the surface family */
+.mt-fig__name--inv { fill: var(--surface-hi); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; }
+.mt-fig__dim--inv { fill: var(--surface); opacity: 0.72; font-family: var(--font-mono); font-size: 10px; }
+.mt-fig__arrow { stroke: var(--ink-3); stroke-width: 1.3; fill: none; }
+.mt-fig__arrowhead { fill: var(--ink-3); }
+.mt-fig__skip { stroke: var(--accent-ink); stroke-width: 1.2; fill: none; opacity: 0.6; }
+.mt-fig__skiphead { fill: var(--accent-ink); }
+.mt-fig__skiplabel { fill: var(--accent-ink); font-family: var(--font-mono); font-size: 9px; opacity: 0.85; }
+.mt-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.3rem; margin-top: 0.9rem; }
+.mt-legend span { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; color: var(--ink-3); }
+.mt-legend i { width: 11px; height: 11px; border-radius: 3px; flex: none; display: block; }
+.mt-figure figcaption {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line-2);
+  font-size: 0.86rem;
+  color: var(--ink-3);
+  max-width: 80ch;
+}
+
+/* ---------- file cards ---------- */
+.mt-cards { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 1rem; }
+.mt-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 4px;
+  padding: 1.2rem 1.4rem;
+}
+.mt-card--key { border-left-color: var(--accent); }
+.mt-card--done { border-left-color: var(--ink); }
+.mt-card__top { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 0.5rem; }
+.mt-card__name { font-family: var(--font-mono); font-size: 0.92rem; color: var(--ink); font-weight: 500; }
+.mt-card__plain { font-size: 0.9rem; color: var(--ink-3); }
+.mt-card__loc { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-3); letter-spacing: 0.04em; margin-left: auto; }
+
+.mt-list { margin: 0.6rem 0 0; padding: 0; list-style: none; }
+.mt-list li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.93rem;
+  line-height: 1.62;
+}
+.mt-list li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.65em;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.mt-sayit {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line);
+  font-size: 0.88rem;
+  color: var(--ink-3);
+}
+.mt-sayit b {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-right: 0.55rem;
+  font-weight: 500;
+}
+
+/* ---------- the code-reference chip ---------- */
+.mt-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.42rem 0.1rem 0.34rem;
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.02em;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  vertical-align: baseline;
+  transition: background 0.14s var(--ease), border-color 0.14s var(--ease);
+  white-space: nowrap;
+}
+.mt-ref:hover, .mt-ref:focus-visible {
+  background: var(--accent-pale);
+  border-color: var(--accent);
+  outline: none;
+}
+.mt-ref svg { width: 11px; height: 11px; flex: none; }
+
+/* ---------- code modal ---------- */
+.mt-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(5, 27, 40, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: mt-fade 0.14s var(--ease);
+}
+@keyframes mt-fade { from { opacity: 0; } to { opacity: 1; } }
+.mt-modal__panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  width: min(880px, 100%);
+  max-height: min(84vh, 900px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 30px 80px -30px rgba(5, 27, 40, 0.7);
+  animation: mt-rise 0.16s var(--ease);
+}
+@keyframes mt-rise { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.mt-modal__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.05rem 1.25rem 0.95rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-hi);
+}
+.mt-modal__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.01em;
+}
+.mt-modal__path {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent-ink);
+  letter-spacing: 0.02em;
+}
+.mt-modal__close {
+  margin-left: auto;
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.32rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.mt-modal__close:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.mt-modal__note {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.89rem;
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--line-2);
+  background: var(--surface);
+}
+.mt-modal__body { overflow: auto; background: #0a0f16; }
+
+/* code with a real line-number gutter */
+.mt-code { display: block; font-family: var(--font-mono); font-size: 0.74rem; line-height: 1.68; }
+.mt-code__row { display: flex; }
+.mt-code__ln {
+  flex: none;
+  width: 3.6rem;
+  padding: 0 0.75rem 0 0;
+  text-align: right;
+  color: #4e6072;
+  background: #0d141d;
+  border-right: 1px solid #1b2533;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mt-code__src {
+  padding: 0 1.1rem 0 0.9rem;
+  color: #c6d2de;
+  white-space: pre;
+  tab-size: 2;
+  flex: 1;
+}
+.mt-code__row:first-child .mt-code__ln,
+.mt-code__row:first-child .mt-code__src { padding-top: 0.9rem; }
+.mt-code__row:last-child .mt-code__ln,
+.mt-code__row:last-child .mt-code__src { padding-bottom: 0.9rem; }
+
+/* ---------- bar chart ---------- */
+.mt-chart {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1.3rem 1.4rem 1.1rem;
+  margin-top: 1rem;
+}
+.mt-chart__title { font-family: var(--font-display); font-weight: 500; font-size: 1.08rem; color: var(--ink); letter-spacing: -0.01em; }
+.mt-chart__sub { font-size: 0.86rem; color: var(--ink-3); margin-top: 0.25rem; }
+.mt-chart__legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.3rem; margin: 0.85rem 0 1rem; }
+.mt-chart__legend span { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; color: var(--ink-2); }
+.mt-chart__legend i { width: 11px; height: 11px; border-radius: 3px; flex: none; display: block; }
+
+.mt-bars { border-collapse: collapse; width: 100%; }
+.mt-bars caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mt-bars th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+  padding: 0 0.6rem 0.5rem 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.mt-bars td { padding: 0.5rem 0.6rem 0.5rem 0; vertical-align: middle; border-bottom: 1px solid var(--line-2); font-size: 0.88rem; }
+.mt-bars tr:last-child td { border-bottom: none; }
+.mt-bars__stage { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.mt-bars__dims { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-3); white-space: nowrap; }
+.mt-bars__track { width: 99%; padding-right: 0.85rem !important; }
+.mt-bars__rail { position: relative; height: 18px; display: flex; align-items: center; }
+.mt-bars__fill { height: 14px; border-radius: 0 3px 3px 0; display: block; transition: filter 0.12s var(--ease); }
+.mt-bars__val {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink);
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+  padding-right: 1rem !important;
+}
+.mt-bars__runs { font-size: 0.78rem; color: var(--ink-3); white-space: nowrap; text-align: right; }
+.mt-bars tr:hover .mt-bars__fill { filter: brightness(1.1); }
+.mt-bars__tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 5px);
+  z-index: 20;
+  background: var(--ink);
+  color: var(--surface-hi);
+  border-radius: 4px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+  box-shadow: 0 10px 30px -12px rgba(5, 27, 40, 0.7);
+}
+.mt-bars tr:hover .mt-bars__tip,
+.mt-bars tr:focus-within .mt-bars__tip { opacity: 1; }
+.mt-chart__note {
+  margin-top: 0.95rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line-2);
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  max-width: 80ch;
+}
+
+/* ---------- Tversky seesaw ---------- */
+.mt-seesaw { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-top: 1rem; }
+.mt-pan { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.1rem 1.3rem; }
+.mt-pan__top { display: flex; align-items: baseline; gap: 0.7rem; }
+.mt-pan__top h4 { font-family: var(--font-display); font-weight: 500; font-size: 1rem; color: var(--ink); margin: 0; }
+.mt-pan__w { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-3); margin-left: auto; }
+.mt-pan__bar { height: 8px; border-radius: 4px; background: var(--line-2); margin: 0.7rem 0; overflow: hidden; }
+.mt-pan__bar i { display: block; height: 100%; border-radius: 4px; }
+.mt-pan p { font-size: 0.9rem; margin: 0; }
+
+/* ---------- status ---------- */
+.mt-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin-top: 1rem; }
+.mt-st { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.05rem 1.2rem; }
+.mt-st--done { border-left: 3px solid var(--accent); }
+.mt-st--todo { border-left: 3px solid var(--error); }
+.mt-st__k { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+.mt-st h4 { font-family: var(--font-display); font-weight: 500; font-size: 1rem; color: var(--ink); margin: 0.45rem 0 0.3rem; }
+.mt-st p { font-size: 0.88rem; margin: 0; }
+
+/* ---------- FAQ ---------- */
+.mt-faq { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+.mt-q { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.mt-q[open] { border-color: var(--accent); }
+.mt-q summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--ink);
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+}
+.mt-q summary::-webkit-details-marker { display: none; }
+.mt-q summary::before {
+  content: "?";
+  flex: none;
+  width: 19px; height: 19px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.16em;
+}
+.mt-q[open] summary::before { background: var(--accent); border-color: var(--accent); color: #fff; }
+.mt-q summary:hover { color: var(--accent-ink); }
+.mt-q__a { padding: 0 1.1rem 1rem 2.5rem; }
+.mt-q__a p { font-size: 0.93rem; max-width: 78ch; margin: 0 0 0.55rem; }
+.mt-q__a p:last-child { margin-bottom: 0; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .mt-readouts { grid-template-columns: repeat(2, 1fr); }
+  .mt-status { grid-template-columns: 1fr; }
+  .mt-seesaw { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .mt-title { font-size: 1.6rem; }
+  .mt-bars__dims, .mt-bars__runs { display: none; }
+  .mt-card__loc { margin-left: 0; width: 100%; }
+  .mt-modal { padding: 0.6rem; }
+  .mt-code { font-size: 0.68rem; }
+  .mt-code__ln { width: 2.8rem; }
+}
