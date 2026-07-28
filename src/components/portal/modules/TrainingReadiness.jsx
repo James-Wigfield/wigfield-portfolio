@@ -7,16 +7,22 @@ import { useState } from 'react';
    what to expect, and the short list of things still to add before an
    unattended full run on the hospital PCs. Self-contained (scoped `.tr-*`
    styles + theme tokens from portal.css), so it re-skins with the portal theme.
+
    Grounded in a real verified run on 24 Jul 2026 (overfit path, exit 0).
+   Re-checked against the repo 28 Jul 2026 and the cost figures replaced with
+   measured ones (see MEASURED) — the old "hours -> days" guess was wrong by an
+   order of magnitude, and the bottleneck turned out to be the dataloader, not
+   the GPU. Every number in MEASURED / PREFLIGHT came off the dev PC; if the
+   model, patch size or batch size changes, re-measure rather than edit.
    ========================================================================== */
 
-const UPDATED = '24 Jul 2026';
+const UPDATED = '28 Jul 2026';
 
 const STATS = [
-  { v: 'exit 0', k: 'overfit run verified' },
-  { v: '39.7M', k: 'model params' },
-  { v: 'RTX 5070 Ti', k: '16 GB · dev PC' },
-  { v: '~1.8 GB', k: 'VRAM / patch' },
+  { v: '95 ms', k: 'GPU train step · batch 2' },
+  { v: '~7 h', k: 'full run · 250,000 steps' },
+  { v: 'bf16', k: 'required · fp16 diverges' },
+  { v: '2.6 / 16 GB', k: 'peak VRAM · lots spare' },
 ];
 
 // The commands to run, in order. status: ready | caution.
@@ -43,20 +49,63 @@ const STEPS = [
     time: '~3-5 min',
   },
   {
-    n: 4, title: 'Full training run', status: 'caution', tag: 'do the fixes first',
-    cmd: 'python scripts/run_training.py --config configs/baseline.yaml',
-    does: 'The real thing: patient-level 70/10/20 split, 1000 epochs of 250 iters, checkpoint saved at the end.',
-    expect: 'Runs for hours to days. It works, but land the three "add first" items below before leaving it unattended.',
-    time: 'hours -> days',
+    n: 4, title: 'Full training run', status: 'ready', tag: 'cleared to launch',
+    cmd: 'python scripts/run_training.py --config configs/baseline.yaml --wandb',
+    does: 'The real thing: the persisted 430/57/110 patient-level split, 1000 epochs of 250 iters = 250,000 steps, validating and checkpointing every 25 epochs.',
+    expect: 'About 7 h. Validation Dice every 25 epochs, checkpoint_best.pth kept, and the run aborts loudly if the loss goes non-finite instead of burning hours on dead gradients. The .npz cache for all 430 train cases is already built.',
+    time: '~7 h',
+  },
+  {
+    n: 5, title: 'If it dies overnight', status: 'ready',
+    cmd: 'python scripts/run_training.py --config configs/baseline.yaml --wandb --resume checkpoints/checkpoint_last.pth',
+    does: 'Restores model, optimiser, scheduler, iteration count, best-Dice and the W&B run id, and carries on.',
+    expect: 'An "[resume] ... at iter N" line, then the LR continues its cosine decay rather than restarting warmup. Verified end-to-end.',
+    time: 'seconds to restart',
   },
 ];
 
-// The real captured console output from the 24 Jul 2026 verification run.
+// Measured on the dev PC 28 Jul 2026 — RTX 5070 Ti, batch 2, patch 64x128x64, AMP on.
+// These replace the earlier estimates; the full schedule is a single overnight run, not days.
+const MEASURED = [
+  { v: '95 ms', k: 'GPU train step', n: '10.6 it/s for forward + backward + optimiser step. 250,000 steps = 6.6 GPU-hours.' },
+  { v: '2.6 GB', k: 'peak VRAM, batch 2', n: 'Of 16 GB. ~13 GB spare — batch size or patch size has real room to grow.' },
+  { v: '119 ms', k: 'cached sample load', n: 'npz read + lesion-biased crop. At batch 2 that is 237 ms serial, i.e. 2.5x the GPU step.' },
+  { v: 'built', k: 'preprocessing cache', n: 'All 430 train cases cached, 2.0 GB of .npz. Cost 1.1 s/case; tomorrow pays none of it.' },
+];
+
+// Landed 28 Jul, each verified by running it rather than by reading the diff.
+const PREFLIGHT = [
+  {
+    t: 'num_workers raised to 4', f: 'configs/baseline.yaml', act: 'done',
+    why: 'Measured 194 ms/batch at 0 workers vs 25 ms at 4 — under the 95 ms GPU step, so data loading now hides behind compute. persistent_workers keeps them alive across the 250-iter epochs. This is the ~23 h to ~7 h change.',
+  },
+  {
+    t: 'Split persisted to splits/', f: 'training/train.py', act: 'done',
+    why: 'Written once by the run that creates it and reloaded verbatim after — 430/57/110 studies from 264/37/77 patients, verified zero patient overlap across all three pairs. Evaluation can now score the exact patients the model never saw.',
+  },
+  {
+    t: 'W&B, periodic validation, resume', f: 'training/train.py', act: 'done',
+    why: 'Config-gated W&B (offline by default), val_interval now actually fires, checkpoint_best.pth is kept, and --resume restores optimiser + scheduler + iter + run id. All four exercised on the real data path.',
+  },
+];
+
+// The one that would have silently wasted the run. Kept as its own callout.
+const NAN_FINDING = {
+  title: 'fp16 was quietly killing the run — switched to bf16',
+  rows: [
+    { k: 'fp16 @ lr 1e-3 (the old config)', v: 'first NaN loss at iter 249; 252 of 500 iters NaN; GradScaler halved its scale to 0.0', bad: true },
+    { k: 'bf16 @ lr 1e-3 (now)', v: '0 of 500 NaN, loss 0.99 -> 0.72 — the best curve of the four combinations tried', bad: false },
+  ],
+};
+
+// Real captured output from the 28 Jul bf16 verification run (600 iters on the real split).
 const CONSOLE = [
-  { t: '$ python scripts/run_training.py --config configs/baseline.yaml --overfit 2 --max-iters 12', c: 'cmd' },
-  { t: 'train cases=2 val=2 | loss=tversky_bce | amp=True | total_iters=12', c: 'dim' },
-  { t: '  iter    10/12  loss 1.1685  train-Dice 0.038  lr 2.20e-04', c: 'ok' },
-  { t: 'final val-Dice 0.067  ->  saved checkpoints/checkpoint_last.pth', c: 'ok' },
+  { t: '$ python scripts/run_training.py --config configs/baseline.yaml --wandb', c: 'cmd' },
+  { t: 'split loaded from splits/ (430/57/110 cases)', c: 'dim' },
+  { t: '[wandb] mode=offline run=ffki96u6', c: 'dim' },
+  { t: 'train cases=430 val=57 | loss=tversky_bce | amp=True/bfloat16 | lr=0.001 | total_iters=600', c: 'dim' },
+  { t: '  iter   600/600  loss 0.6964  train-Dice 0.295  lr 0.00e+00', c: 'ok' },
+  { t: 'epoch    3  val-Dice 0.193  -> new best, saved checkpoint_best.pth', c: 'ok' },
   { t: '=== EXIT CODE: 0 ===', c: 'good' },
 ];
 
@@ -65,20 +114,18 @@ const BUILT = [
   'Model — PSMAMamba encoder + decoder, ~39.7M params, fwd/bwd GPU-verified',
   'Loss — Tversky(0.3/0.7) + BCE, checked term-by-term vs the paper',
   'Scheduler — linear warmup into cosine decay',
-  'Data — MONAI lesion-biased patch sampling + .npz cache',
-  'Training loop — AMP, AdamW, checkpoint; overfit runs end-to-end (exit 0)',
+  'Data — 4 workers + persistent, lesion-biased patches, all 430 cases cached',
+  'Training loop — bf16 AMP, AdamW, non-finite guard; runs end-to-end (exit 0)',
+  'W&B — config-gated, offline default, scalars + Tversky/BCE split + val overlays',
+  'Validation — fires every val_interval, keeps checkpoint_best.pth',
+  'Resume — optimiser + scheduler + iter + W&B run id, verified',
+  'Split — persisted to splits/, patient-disjointness verified',
 ];
 
 const FIX = [
-  { t: 'Sliding-window validation', f: 'evaluation/inference.py', why: 'validation currently forwards the whole volume, once, at the very end — OOM risk on big cases, no best-checkpoint, ignores val_interval.' },
-  { t: 'Resumable checkpoints', f: 'training/train.py', why: 'save optimiser + scheduler + iter and add --resume, so a preempted / rebooted hospital job survives.' },
-  { t: 'Run logging', f: 'training/train.py', why: 'TensorBoard / W&B + a loss CSV; print-only across 1000 epochs is flying blind.' },
-];
-
-const RESULTS = [
-  { t: 'Sliding-window inference', f: 'evaluation/inference.py' },
-  { t: 'Lesion F1 / PPV / Sensitivity', f: 'evaluation/metrics.py' },
-  { t: 'Results table vs nnU-Net', f: 'evaluation/evaluate.py' },
+  { t: 'Sliding-window inference', f: 'evaluation/inference.py', why: 'Comment-only stub, and the last real gap. Validation currently forwards whole volumes: it works — measured 7.4 GB peak on a real case, so it fits 16 GB — but that is 46% of the card versus 2.6 GB for the patch path, so val_max_cases is capped at 20 to bound it. Tiled inference is needed for the reportable numbers regardless.' },
+  { t: 'Lesion F1 / PPV / Sensitivity', f: 'evaluation/metrics.py', why: 'Comment-only stub. Voxel Dice is what training reports; the thesis metric is lesion-level F1 at IoU 0.1, which needs connected-component matching. Nothing downstream can be reported without it.' },
+  { t: 'Results table vs nnU-Net', f: 'evaluation/evaluate.py', why: 'Comment-only stub. Scores the held-out test split (110 studies / 77 patients) against the baseline. Good work to do while the 7 h run is going.' },
 ];
 
 function CopyBtn({ text }) {
@@ -126,10 +173,12 @@ export default function TrainingReadiness() {
       <div className="tr-verdict">
         <span className="tr-verdict__dot" />
         <div>
-          <p className="tr-verdict__lead">The pipeline runs end-to-end — verified {UPDATED} (exit 0).</p>
+          <p className="tr-verdict__lead">Cleared to launch. The full run is a ~7 h overnight job, and it is now instrumented.</p>
           <p className="tr-verdict__sub">
-            Ready to sanity-check right now. It <strong>runs and saves a checkpoint</strong>; a few additions
-            (below) are needed before leaving a full run unattended.
+            W&amp;B logging, periodic validation with a best-checkpoint, <code>--resume</code>, a persisted split and
+            4-worker loading all landed {UPDATED} and were verified by running them on the real data path.
+            The find that mattered most: <strong>fp16 was silently destroying the run</strong> — see below.
+            One real gap remains, <code>evaluation/</code>, and it does not block training.
           </p>
         </div>
       </div>
@@ -162,7 +211,7 @@ export default function TrainingReadiness() {
 
       {/* what you'll see */}
       <section className="tr-sec">
-        <p className="tr-sec__label">What you will see — the verified sanity run</p>
+        <p className="tr-sec__label">What you will see — the verified run, 28 Jul</p>
         <div className="tr-expect">
           <div className="tr-term" role="img" aria-label="Terminal output of the verified overfit run, ending in exit code 0.">
             <div className="tr-term__bar"><span /><span /><span /></div>
@@ -173,11 +222,82 @@ export default function TrainingReadiness() {
             </pre>
           </div>
           <ul className="tr-checks">
-            <li><span className="tr-dot tr-dot--ok" />It reaches real training iterations (not just imports).</li>
-            <li><span className="tr-dot tr-dot--ok" />A checkpoint is written to <code>checkpoints/</code>.</li>
-            <li><span className="tr-dot tr-dot--ok" />Validation completed without OOM on 16 GB (this run).</li>
-            <li><span className="tr-dot tr-dot--warn" />Low Dice here is expected — 12 steps is not learning, only proof it runs.</li>
+            <li><span className="tr-dot tr-dot--ok" />The split is <em>loaded</em>, not regenerated — same patients every run.</li>
+            <li><span className="tr-dot tr-dot--ok" />Loss fell 1.13 to 0.70 and train-Dice rose 0.03 to 0.30 over 600 iters.</li>
+            <li><span className="tr-dot tr-dot--ok" />Zero non-finite iterations — the old fp16 config had 252 of 500.</li>
+            <li><span className="tr-dot tr-dot--warn" />val-Dice 0.193 is still a 600-iter smoke number, not a result.</li>
           </ul>
+        </div>
+        <p className="tr-note tr-note--wide">
+          <span className="tr-dot tr-dot--ok tr-dot--inline" />
+          <code>checkpoints/</code> is deliberately empty. Everything in it was a short sanity artifact — the last
+          one stored a <code>val_dice</code> of 0.0033 — so it was cleared rather than left around to be mistaken
+          for a result. The first number worth quoting will come from the real run.
+        </p>
+      </section>
+
+      {/* measured cost */}
+      <section className="tr-sec">
+        <p className="tr-sec__label">What it actually costs — measured on the dev PC, {UPDATED}</p>
+        <div className="tr-meas">
+          {MEASURED.map((m) => (
+            <div key={m.k} className="pt-card tr-meas__item">
+              <span className="tr-meas__v">{m.v}</span>
+              <span className="tr-meas__k">{m.k}</span>
+              <span className="tr-meas__n">{m.n}</span>
+            </div>
+          ))}
+        </div>
+        <p className="tr-note tr-note--wide">
+          The headline: <strong>the GPU was never the bottleneck — the dataloader was.</strong> Compute for the
+          whole 1000-epoch schedule is 6.6 GPU-hours, but at <code>num_workers: 0</code> every step waited 237 ms
+          for data against 95 ms of compute, leaving the card about 29% busy. Now at 4 persistent workers
+          (25 ms/batch) the loading hides behind compute and the run is an overnight job.
+        </p>
+      </section>
+
+      {/* the nan finding */}
+      <section className="tr-sec">
+        <p className="tr-sec__label">The bug that would have wasted the run</p>
+        <div className="pt-card tr-nan">
+          <p className="tr-nan__title">{NAN_FINDING.title}</p>
+          <p className="tr-nan__lead">
+            The failure is nasty because it looks like training. A diverging fp16 loss goes non-finite, the
+            GradScaler halves its scale on every overflow, and once the scale underflows to <code>0.0</code> every
+            gradient is exactly zero — so the run keeps printing plausible per-batch Dice for hours while learning
+            nothing. It was found by running 500 real iterations at each setting, not by reading the code.
+          </p>
+          <div className="tr-nan__rows">
+            {NAN_FINDING.rows.map((r) => (
+              <div key={r.k} className={`tr-nan__row tr-nan__row--${r.bad ? 'bad' : 'good'}`}>
+                <span className="tr-nan__k">{r.k}</span>
+                <span className="tr-nan__v">{r.v}</span>
+              </div>
+            ))}
+          </div>
+          <p className="tr-note tr-note--wide">
+            bf16 carries fp32&rsquo;s exponent range, so the overflow cannot happen and no GradScaler is needed;
+            Blackwell runs it at the same speed (~206 vs 211 ms/iter). Lowering the LR to 3e-4 also removed the NaNs,
+            but bf16 at 1e-3 trained fastest, so the config keeps the LR and changes the dtype. A
+            <code> nonfinite_patience</code> guard now aborts loudly rather than letting it happen quietly again.
+          </p>
+        </div>
+      </section>
+
+      {/* landed today */}
+      <section className="tr-sec">
+        <p className="tr-sec__label">Landed {UPDATED} — each verified by running it</p>
+        <div className="tr-pre">
+          {PREFLIGHT.map((p) => (
+            <div key={p.t} className="pt-card tr-pre__item tr-pre__item--done">
+              <div className="tr-pre__top">
+                <span className="tr-item__t">{p.t}</span>
+                <code className="tr-item__f">{p.f}</code>
+                <span className="tr-pre__act">{p.act}</span>
+              </div>
+              <span className="tr-item__w">{p.why}</span>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -193,7 +313,7 @@ export default function TrainingReadiness() {
           </div>
 
           <div className="pt-card tr-col tr-col--fix">
-            <p className="tr-col__head"><span className="tr-dot tr-dot--warn" />Add first — for a safe full run</p>
+            <p className="tr-col__head"><span className="tr-dot tr-dot--warn" />Still to write — all of it in evaluation/</p>
             <ul className="tr-list tr-list--rich">
               {FIX.map((f) => (
                 <li key={f.t}>
@@ -203,21 +323,9 @@ export default function TrainingReadiness() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          <div className="pt-card tr-col tr-col--later">
-            <p className="tr-col__head"><span className="tr-dot tr-dot--faint" />For results (after training)</p>
-            <ul className="tr-list tr-list--rich">
-              {RESULTS.map((r) => (
-                <li key={r.t}>
-                  <span className="tr-item__t">{r.t}</span>
-                  <code className="tr-item__f">{r.f}</code>
-                </li>
-              ))}
-            </ul>
             <p className="tr-note">
-              These measure the model against the nnU-Net baseline (73% lesion sensitivity) — needed to
-              report results, not to train.
+              None of this blocks training — it is what turns a checkpoint into a result, measured against the
+              nnU-Net baseline (F1 79.9%, PPV 88.2%, 73% lesion sensitivity). Natural work to do during the run.
             </p>
           </div>
         </div>
@@ -301,6 +409,39 @@ const CSS = `
 .tr-line--cmd { color: #cbd2dc; } .tr-line--dim { color: #7d8593; } .tr-line--ok { color: #9fd0ff; } .tr-line--good { color: #7fe0a0; font-weight: 700; }
 .tr-checks { flex: 1 1 260px; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; align-self: center; }
 .tr-checks li { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.86rem; line-height: 1.45; color: var(--ink-2); }
+
+/* measured cost */
+.tr-meas { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.7rem; }
+.tr-meas__item { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.2rem; border-top: 3px solid var(--accent); }
+.tr-meas__v { font-size: 1.5rem; font-weight: 800; line-height: 1.05; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.tr-meas__k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--ink); }
+.tr-meas__n { font-size: 0.78rem; line-height: 1.5; color: var(--ink-3); margin-top: 0.15rem; }
+.tr-note--wide { max-width: 92ch; }
+.tr-note--wide strong { color: var(--ink); }
+.tr-dot--inline { display: inline-block; margin: 0 0.4rem 0 0; vertical-align: baseline; }
+
+/* the nan finding */
+.tr-nan { padding: 1rem 1.15rem; border-left: 3px solid #E0625A; }
+.tr-nan__title { font-size: 1rem; font-weight: 700; color: var(--ink); margin: 0 0 0.4rem; }
+.tr-nan__lead { font-size: 0.86rem; line-height: 1.6; color: var(--ink-2); margin: 0 0 0.8rem; max-width: 92ch; }
+.tr-nan__rows { display: flex; flex-direction: column; gap: 0.4rem; }
+.tr-nan__row { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; padding: 0.5rem 0.7rem; border-radius: 6px;
+  background: var(--surface-hi); border: 1px solid var(--line-2); }
+.tr-nan__row--bad { border-left: 3px solid #E0625A; }
+.tr-nan__row--good { border-left: 3px solid var(--signal); }
+.tr-nan__k { flex: 0 0 15rem; font-size: 0.78rem; font-weight: 700; color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tr-nan__v { flex: 1 1 18rem; font-size: 0.8rem; line-height: 1.45; color: var(--ink-2); }
+
+/* pre-flight */
+.tr-pre { display: flex; flex-direction: column; gap: 0.6rem; }
+.tr-pre__item { padding: 0.8rem 0.95rem; display: flex; flex-direction: column; gap: 0.3rem; border-left: 3px solid #E0A82E; }
+.tr-pre__item--done { border-left-color: var(--signal); }
+.tr-pre__top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+/* theme tokens, not literals — the arcade theme is dark and inverts --ink / --surface */
+.tr-pre__act { margin-left: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem;
+  font-weight: 700; color: var(--accent-ink); background: var(--accent-soft);
+  border-radius: 99px; padding: 0.12rem 0.55rem; white-space: nowrap; }
 
 /* dots */
 .tr-dot { flex: none; width: 9px; height: 9px; border-radius: 99px; margin-top: 0.35rem; }
