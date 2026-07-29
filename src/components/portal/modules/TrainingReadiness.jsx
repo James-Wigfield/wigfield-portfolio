@@ -164,6 +164,131 @@ const REMAINING = [
   { t: 'Results table vs nnU-Net', f: 'evaluation/evaluate.py' },
 ];
 
+/* ---- PDF export ------------------------------------------------------------
+   Builds a standalone print-styled document from the same data arrays and opens
+   the browser print dialog — "Save as PDF" there gives a clean, selectable-text
+   PDF with no extra dependencies. */
+
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function buildPrintHtml() {
+  const step = (s) => `
+    <div class="step">
+      <div class="step-top"><span class="n">${esc(s.n)}</span><strong>${esc(s.title)}</strong>${s.tag ? `<span class="tag">${esc(s.tag)}</span>` : ''}<span class="time">${esc(s.time)}</span></div>
+      <pre class="cmd">${esc(s.cmd)}</pre>
+      <p class="kv"><span>Does</span>${esc(s.does)}</p>
+      <p class="kv"><span>Expect</span>${esc(s.expect)}</p>
+    </div>`;
+
+  const phases = PHASES.map((ph) => `
+    <section>
+      <h2>${esc(ph.label)}<span class="note">${esc(ph.note)}</span></h2>
+      ${ph.steps.map(step).join('')}
+    </section>`).join('');
+
+  const gotchas = GOTCHAS.map((g) => `
+    <div class="gotcha"><strong>${esc(g.t)}</strong><p>${esc(g.why)}</p></div>`).join('');
+
+  const checks = [
+    'Header says bfloat16 — if not, stop and pull.',
+    'Loss falling from ~1.1, train-Dice rising from ~0.03.',
+    'No "[N non-finite skipped]" anywhere in the log.',
+    'The val-Dice 0.193 above is a 600-iter smoke number, not a result.',
+  ].map((c) => `<li>${esc(c)}</li>`).join('');
+
+  const measured = MEASURED.map((m) => `
+    <div class="meas"><span class="v">${esc(m.v)}</span><strong>${esc(m.k)}</strong><p>${esc(m.n)}</p></div>`).join('');
+
+  const remaining = REMAINING.map((r) => `${esc(r.t)} (${esc(r.f)})`).join(' · ');
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mamba_PSMA — Training run book</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font: 10.5pt/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1a1d21; margin: 0; }
+  .kicker { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin: 0 0 5pt; }
+  h1 { font-size: 19pt; margin: 0 0 5pt; }
+  .sub { color: #3f4650; margin: 0 0 10pt; max-width: 68ch; }
+  .stats { display: flex; flex-wrap: wrap; gap: 6pt; margin: 0 0 12pt; }
+  .stat { border: 1pt solid #d5d9df; border-radius: 4pt; padding: 4pt 9pt; font-size: 8pt; color: #6b7280; }
+  .stat b { display: block; font-size: 11pt; color: #111; }
+  .verdict { border: 1pt solid #d5d9df; border-left: 3pt solid #2f7d4f; border-radius: 4pt; padding: 8pt 10pt; margin: 0 0 6pt; break-inside: avoid; }
+  .verdict strong { display: block; margin-bottom: 2pt; }
+  .verdict p { margin: 0; font-size: 9.5pt; color: #3f4650; }
+  h2 { font-size: 12pt; border-bottom: 1pt solid #d5d9df; padding-bottom: 3pt; margin: 16pt 0 8pt; }
+  h2 .note { font-weight: 400; font-size: 9pt; color: #6b7280; margin-left: 7pt; }
+  .step { border: 1pt solid #d5d9df; border-left: 3pt solid #2f7d4f; border-radius: 4pt; padding: 7pt 9pt; margin: 0 0 7pt; break-inside: avoid; }
+  .step-top { display: flex; align-items: baseline; gap: 6pt; margin-bottom: 4pt; }
+  .n { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; font-size: 8pt; background: #2f7d4f; color: #fff; border-radius: 8pt; padding: 1pt 6pt; }
+  .tag { font-size: 7.5pt; font-weight: 700; color: #2f7d4f; border: 1pt solid #2f7d4f; border-radius: 8pt; padding: 0.5pt 5pt; }
+  .time { margin-left: auto; color: #6b7280; font-size: 8pt; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  pre.cmd { background: #f3f4f6; border: 1pt solid #e2e5e9; border-radius: 3pt; padding: 6pt 8pt; margin: 0 0 5pt;
+    font: 8.5pt/1.6 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+  .kv { margin: 0 0 2pt; font-size: 9.5pt; color: #3f4650; }
+  .kv span { display: inline-block; min-width: 46pt; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #6b7280; }
+  .gotcha { border-left: 3pt solid #b8860b; padding: 2pt 0 2pt 9pt; margin: 0 0 9pt; break-inside: avoid; }
+  .gotcha p { margin: 2pt 0 0; font-size: 9.5pt; color: #3f4650; }
+  ul.checks { margin: 6pt 0 0; padding-left: 14pt; font-size: 9.5pt; color: #3f4650; }
+  ul.checks li { margin-bottom: 3pt; }
+  .measgrid { display: flex; flex-wrap: wrap; gap: 7pt; }
+  .meas { flex: 1 1 44%; border: 1pt solid #d5d9df; border-top: 3pt solid #2f7d4f; border-radius: 4pt; padding: 6pt 9pt; break-inside: avoid; }
+  .meas .v { font-size: 13pt; font-weight: 800; margin-right: 6pt; }
+  .meas strong { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.05em; }
+  .meas p { margin: 2pt 0 0; font-size: 9pt; color: #3f4650; }
+  .remaining { margin-top: 10pt; font-size: 9pt; color: #3f4650; border: 1pt dashed #d5d9df; border-radius: 4pt; padding: 6pt 9pt; break-inside: avoid; }
+</style>
+</head>
+<body>
+  <p class="kicker">CITS4010 · Mamba_PSMA · updated ${esc(UPDATED)}</p>
+  <h1>Training run book</h1>
+  <p class="sub">Follow it top to bottom. Phase A sets up a fresh Linux box, Phase B proves it works in five minutes, Phase C is the run itself. Every command in B and C was run for real on 28 Jul.</p>
+  <div class="stats">${STATS.map((s) => `<div class="stat"><b>${esc(s.v)}</b>${esc(s.k)}</div>`).join('')}</div>
+  <div class="verdict">
+    <strong>This run is a pipeline test, not a result.</strong>
+    <p>The goal is one clean end-to-end run on the hospital hardware. The split is a random 70/10/20, not one of the dataset's official 5 folds, so the number it produces is a sanity check rather than something to quote. Cross-validation comes after.</p>
+  </div>
+  ${phases}
+  <section>
+    <h2>Things that will bite you</h2>
+    ${gotchas}
+  </section>
+  <section>
+    <h2>What a healthy run looks like<span class="note">Real captured output from the verified 28 Jul run.</span></h2>
+    <pre class="cmd">${CONSOLE.map((l) => esc(l.t)).join('\n')}</pre>
+    <ul class="checks">${checks}</ul>
+  </section>
+  <section>
+    <h2>Reference — measured on the dev PC, ${esc(UPDATED)}</h2>
+    <div class="measgrid">${measured}</div>
+    <div class="remaining"><strong>Still to write:</strong> ${remaining} — all three are comment-only stubs. None of it blocks training; it is what turns a checkpoint into a result, so it is the natural thing to write while the run is going.</div>
+  </section>
+  <script>window.onload = function () { window.print(); };${'</'}script>
+</body>
+</html>`;
+}
+
+function ExportPdfBtn() {
+  return (
+    <button
+      type="button"
+      className="tr-export"
+      title="Opens the print dialog — choose 'Save as PDF' as the destination"
+      onClick={() => {
+        const w = window.open('', '_blank');
+        if (!w) return; // popup blocked
+        w.document.write(buildPrintHtml());
+        w.document.close();
+      }}
+    >
+      Export PDF
+    </button>
+  );
+}
+
 function CopyBtn({ text }) {
   const [ok, setOk] = useState(false);
   return (
@@ -218,10 +343,13 @@ export default function TrainingReadiness() {
             minutes, Phase C is the run itself. Every command in B and C was run for real on 28 Jul.
           </p>
         </div>
-        <div className="tr-stats">
-          {STATS.map((s) => (
-            <div key={s.k} className="tr-stat"><span className="tr-stat__v">{s.v}</span><span className="tr-stat__k">{s.k}</span></div>
-          ))}
+        <div className="tr-head__side">
+          <div className="tr-stats">
+            {STATS.map((s) => (
+              <div key={s.k} className="tr-stat"><span className="tr-stat__v">{s.v}</span><span className="tr-stat__k">{s.k}</span></div>
+            ))}
+          </div>
+          <ExportPdfBtn />
         </div>
       </header>
 
@@ -313,7 +441,12 @@ const CSS = `
 .tr-kicker { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 0.45rem; }
 .tr-title { font-size: 1.4rem; line-height: 1.2; margin: 0 0 0.5rem; color: var(--ink); }
 .tr-sub { font-size: 0.95rem; line-height: 1.6; color: var(--ink-2); margin: 0; max-width: 58ch; }
+.tr-head__side { display: flex; flex-direction: column; gap: 0.5rem; }
 .tr-stats { display: grid; grid-template-columns: repeat(2, minmax(96px, 1fr)); gap: 0.5rem; }
+.tr-export { border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-3);
+  font: inherit; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  cursor: pointer; border-radius: 4px; padding: 0.45rem 0.8rem; transition: all 0.15s; }
+.tr-export:hover { color: var(--accent-ink); border-color: var(--accent); }
 .tr-stat { background: var(--surface-hi); border: 1px solid var(--line-2); border-radius: 4px; padding: 0.5rem 0.7rem; display: flex; flex-direction: column; gap: 0.1rem; }
 .tr-stat__v { font-size: 1.05rem; font-weight: 800; color: var(--accent-ink); line-height: 1.1; }
 .tr-stat__k { font-size: 0.68rem; color: var(--text-faint); }
