@@ -175,6 +175,14 @@ const PATHS = {
       <path d="M7.6 14.5h8.8" />
     </>
   ),
+  // Chart — axes with a rising curve and an end marker (run-results analysis)
+  chart: (
+    <>
+      <path d="M4 4v14.5A1.5 1.5 0 0 0 5.5 20H20" />
+      <path d="M7.5 14.5 11 10.5l2.8 2.5 4.2-5" />
+      <circle cx="18" cy="8" r="1.3" />
+    </>
+  ),
   // Cube — an isometric box (a 3-D tensor / volume; the shape-tracer tab)
   cube: (
     <>

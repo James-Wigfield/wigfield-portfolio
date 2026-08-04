@@ -32,6 +32,7 @@ import HonoursTracker from './modules/HonoursTracker';
 import BuildFlow from './modules/BuildFlow';
 import TrainingReadiness from './modules/TrainingReadiness';
 import ModelTraining from './modules/ModelTraining';
+import TrainingRuns from './modules/TrainingRuns';
 import MambaUpdates from './modules/MambaUpdates';
 import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
@@ -51,6 +52,7 @@ import PdReader from './modules/PdReader';
 import DeckStudio from './modules/DeckStudio';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import PortaraPricing from './modules/PortaraPricing';
+import PortaraPlatform from './modules/PortaraPlatform';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -99,6 +101,13 @@ export const MODULES = [
     icon: 'cube',
     group: 'University',
     component: ModelTraining,
+  },
+  {
+    id: 'training-runs',
+    label: 'Training Runs',
+    icon: 'chart',
+    group: 'University',
+    component: TrainingRuns,
   },
   {
     id: 'mamba-updates',
@@ -183,6 +192,13 @@ export const MODULES = [
     icon: 'business',
     group: 'Portara',
     component: PortaraPricing,
+  },
+  {
+    id: 'portara-platform',
+    label: 'Platform Architecture',
+    icon: 'cloud',
+    group: 'Portara',
+    component: PortaraPlatform,
   },
   {
     id: 'codebase-tracker',
