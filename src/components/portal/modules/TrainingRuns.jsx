@@ -99,6 +99,13 @@ export default function TrainingRuns() {
 }
 
 const CSS = `
+/* Run analysis pages carry dense figures and charts, so this tab opts out of
+   the portal's 900px reading measure — at 900px the 2-up figure grid renders
+   analytical PNGs around 280px wide, which is unreadable. Body copy keeps its
+   own ch-based measures inside the kit, so widening the shell does not produce
+   over-long text lines. */
+.pt-module.trn { max-width: 1440px; }
+
 .trn code { font-size: 0.82em; color: var(--ink-2); background: var(--surface-hi); padding: 0.05em 0.35em; border-radius: 3px; }
 
 .trn-head { padding: 1.2rem 1.35rem; }

@@ -40,3 +40,10 @@ import valDice from '../figures/run-01-baseline/val-dice.png';
 exports stay legible on the dark arcade theme, and renders a dashed
 placeholder if `src` is omitted — so the page can be written before the
 exports are dropped in.
+
+**Every figure with a `src` is clickable and expands into a lightbox** (Escape or
+the backdrop closes it). That is why the 2x export rule matters: inline, a figure
+renders around 650px wide in the 2-up grid, but expanded it can fill a 1600px
+panel — so a 1x export looks soft exactly when someone is trying to read the
+axis labels. The grid is never 3-up, deliberately: a third column takes these
+charts below the width at which their tick text is legible.

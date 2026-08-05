@@ -9,12 +9,16 @@ import { SECTIONS } from './sections';
 export default function ChapterRail() {
   const [active, setActive] = useState(-1);
   const [progress, setProgress] = useState(0);
+  const [covered, setCovered] = useState(true);
 
   useEffect(() => {
     const onScroll = () => {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+      // The rail belongs to the light "chapters", not the dark cover — it
+      // fades in as the hero hands over to About.
+      setCovered(window.scrollY < window.innerHeight * 0.55);
 
       let current = -1;
       SECTIONS.forEach((s, i) => {
@@ -36,7 +40,7 @@ export default function ChapterRail() {
   const go = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <nav className="hp-rail" aria-label="Section progress">
+    <nav className={`hp-rail${covered ? ' hp-rail--covered' : ''}`} aria-label="Section progress">
       <span className="hp-rail__track" aria-hidden="true">
         <span className="hp-rail__fill" style={{ transform: `scaleY(${progress})` }} />
       </span>

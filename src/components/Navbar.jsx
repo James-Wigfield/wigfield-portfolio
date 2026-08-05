@@ -5,12 +5,15 @@ const LINKS = SECTIONS;
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [overCover, setOverCover] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState('');
 
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 40);
+      // Light-on-dark treatment while the bar sits over the hero cover
+      setOverCover(window.scrollY < window.innerHeight - 90);
       let current = '';
       for (const { id } of LINKS) {
         const el = document.getElementById(id);
@@ -36,7 +39,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`hp-nav${scrolled ? ' hp-nav--scrolled' : ''}`}>
+      <nav className={`hp-nav${scrolled ? ' hp-nav--scrolled' : ''}${overCover ? ' hp-nav--cover' : ''}`}>
         <div className="hp-nav__inner">
           <button
             className="hp-nav__brand"

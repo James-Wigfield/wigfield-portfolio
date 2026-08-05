@@ -11,7 +11,7 @@ import Icon from '../icons';
    artifacts across every tenant. Ends with a tidy-up list for the repo.
 
    Source of truth: C:\Users\james\Documents\business\portara-repo
-   (README.md runbook + CLAUDE.md invariants), reviewed 2026-08-01.
+   (README.md runbook + CLAUDE.md invariants), re-verified 2026-08-04.
    Styled with the shared .pt-* / .bk-* classes in portal.css.
    ========================================================================== */
 
@@ -73,9 +73,9 @@ const OP_RULES = [
 ];
 
 const OP_TIDY = [
-  'Extract the 21 files duplicated between core and HQ into shared packages',
+  'Extract the 25 files duplicated between core and HQ into shared packages',
   'Fix the tenants.tools schema default (phantom "org" tool)',
-  'Split the 612-line CLAUDE.md changelog into docs/ and refresh the README',
+  'Split the 934-line CLAUDE.md changelog into docs/ and refresh the README',
 ];
 
 // ── How It Works - the two request paths ────────────────────────────────────
@@ -234,7 +234,7 @@ const TREE = `portara-repo/
     _example/        overlay starter
     demos/           sales-demo overlay (5 tools, dashboard, 23 MCP tools)
   supabase/
-    migrations/      0001-0021, applied to PortaraDB (ap-southeast-2)
+    migrations/      0001-0023, applied to PortaraDB (ap-southeast-2)
   platform.config.json                     account ids, KV id, namespace (no secrets)
   README.md / CLAUDE.md / architecture.md  runbook / working notes / rationale`;
 
@@ -242,7 +242,7 @@ const TREE_NOTES = [
   { file: 'npm workspaces', tag: 'clean',
     body: 'packages/* + apps/* + fleet, one lockfile, shared tsconfig.base.json. Everything runs from the root: npm run fleet -- <cmd>, npm run typecheck, npm run dev:core.' },
   { file: 'supabase/migrations', tag: 'sequential',
-    body: '21 numbered migrations, each a documented feature step (registry, RLS hardening, MCP OAuth, worker triggers, agent runtime). 0007 was superseded by 0015 (per-tenant record tables) - history preserved, nothing renumbered.' },
+    body: '23 numbered migrations, each a documented feature step (registry, RLS hardening, MCP OAuth, worker triggers, agent runtime; 0022 closed a member column-privilege escalation, 0023 added agent contacts). 0007 was superseded by 0015 (per-tenant record tables) - history preserved, nothing renumbered.' },
   { file: 'apps/core/package.json', tag: 'enforced',
     body: 'Deliberately has NO deploy script - "tenant portals ship only via the fleet CLI" is enforced by structure, not convention. Provision flips the KV route last on the way in; decommission deletes it first on the way out.' },
   { file: 'root', tag: 'tidy',
@@ -257,8 +257,8 @@ const VERDICT =
 
 const IMPROVEMENTS = [
   { n: 1, tag: 'structure', hot: true,
-    title: '21 byte-identical files duplicated between core and HQ',
-    body: 'apps/core/app and apps/control-plane/app share 21 identical files (all of office3d/, agent-trace, confidence, the agent lib, mcp helpers) plus ~35 same-name-but-diverged ones - the classic silent-drift setup. A packages/portal-ui + packages/agent-core would fit the existing packages/* pattern and touches no invariant.' },
+    title: '25 byte-identical files duplicated between core and HQ',
+    body: 'apps/core/app and apps/control-plane/app share 25 identical files (all of office3d/, agent-trace, confidence, the agent lib, mcp helpers) plus ~34 same-name-but-diverged ones, now including the whole worker modal - the classic silent-drift setup, managed today by hand-diffing. A packages/portal-ui + packages/agent-core would fit the existing packages/* pattern and touches no invariant.' },
   { n: 2, tag: 'structure', hot: true,
     title: 'Remove the "keep in lockstep" mirror',
     body: 'HQ registry.server.ts re-implements runtimeConfigFor() and tenantMapEntryFor() verbatim from fleet/src/registry.ts, with a comment demanding they stay in lockstep. Both packages already depend on @portara/tenant-config - move the two pure functions there and the requirement disappears.' },
@@ -267,10 +267,10 @@ const IMPROVEMENTS = [
     body: 'Migration 0001 defaults tenants.tools to ["dashboard","office","org"], but DEFAULT_TOOLS dropped "org" (settings are deliberately not a tool). Any row inserted outside fleet provision gets a phantom org tool. One tiny migration fixes the default.' },
   { n: 4, tag: 'docs drift',
     title: 'README contradicts the code in five places',
-    body: 'Tools documented at /t/<id> (they mount at /portal/<id>; the same paragraph says both), the component table misses email-ingest and trigger-runner, migrations described as "0001-0003" (there are 21), a finished 2026-07-24 setup checklist still tells you to scrub a deleted .env.example, and a "docs/" reference points at a folder that does not exist.' },
+    body: 'Tools documented at /t/<id> (they mount at /portal/<id>; the same paragraph says both), the component table misses email-ingest and trigger-runner, migrations described as "0001-0003" (there are 23), and a finished 2026-07-24 setup checklist still tells you to scrub a deleted .env.example. All re-verified 2026-08-04.' },
   { n: 5, tag: 'docs',
-    title: 'CLAUDE.md is a 612-line dated changelog',
-    body: 'Lines 1-55 (invariants, style, commands) are gold; the other ~550 are an append-only environment-state log. Split: keep CLAUDE.md lean, move history to docs/devlog.md, and put the 44 KB architecture doc in docs/ too. Root becomes code + config only.' },
+    title: 'CLAUDE.md is a 934-line dated changelog (and growing)',
+    body: 'Lines 1-57 (invariants, style, commands) are gold; the other ~880 are an append-only environment-state log that has grown 50% in three days. Split: keep CLAUDE.md lean, move history to docs/devlog.md, and put the 44 KB architecture doc in docs/ too. Root becomes code + config only.' },
   { n: 6, tag: 'ci gap',
     title: 'Overlay typecheck is manual, and there is no CI',
     body: 'tenants/ is not a workspace, so npm run typecheck silently skips overlays - type errors surface at runtime unless someone remembers npx tsc -p tenants/tsconfig.json. Add "typecheck:tenants" at the root, then one GitHub Action running typecheck on push. Cheap insurance for a two-person repo.' },

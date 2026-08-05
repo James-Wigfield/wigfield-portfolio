@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /* ============================================================================
    TRAINING RUNS — ANALYSIS KIT
@@ -16,7 +16,8 @@ import { useRef, useState } from 'react';
      <Prose>…</>                   explanatory paragraph inside a Section
      <StatGrid stats>              headline metric cards  [{ v, k, note? }]
      <LineChart …>                 curves over steps — see contract below
-     <FigureGrid> + <Figure …>     W&B PNG exports (see ../figures/README.md)
+     <FigureGrid> + <Figure …>     W&B PNG exports — click to expand into a
+                                   lightbox (see ../figures/README.md)
      <MetricTable …>               comparison table (e.g. vs nnU-Net)
      <Findings items>              observations  [{ tone, t, why }]
      <NextSteps items>             what the NEXT run changes  [{ t, why? }]
@@ -321,17 +322,92 @@ export function NextSteps({ items }) {
    imported by the run page and passed as `src`. The white frame is deliberate:
    W&B exports have light backgrounds, and the frame keeps them legible on the
    dark arcade theme. Omit `src` to render a dashed placeholder, so a page can
-   be written before the exports are dropped in. */
-export function Figure({ src, caption, alt, source = 'wandb' }) {
+   be written before the exports are dropped in.
+
+   A figure with a `src` is a button that opens a lightbox, because these charts
+   carry real axis text that is not readable inline at grid width. Export at 2x
+   so the expanded view has pixels to show. */
+/* Full-bleed lightbox. Same interaction contract as the portal's code modal:
+   Escape closes, Tab is trapped inside, focus returns to the trigger on close,
+   and the body cannot scroll behind it. */
+function FigureLightbox({ src, alt, caption, source, onClose }) {
+  const panelRef = useRef(null);
+  const closeRef = useRef(null);
+
+  useEffect(() => {
+    const prevFocus = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus();
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
+      if (e.key !== 'Tab') return;
+      const items = panelRef.current?.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
+      if (!items?.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      document.body.style.overflow = prevOverflow;
+      if (prevFocus instanceof HTMLElement) prevFocus.focus();
+    };
+  }, [onClose]);
+
   return (
-    <figure className={`trx-fig${src ? '' : ' trx-fig--empty'}`}>
-      <div className="trx-fig__frame">
-        {src
-          ? <img src={src} alt={alt || caption} loading="lazy" />
-          : <span>png pending — drop it in figures/&lt;run-id&gt;/ and import it here</span>}
+    <div className="trx-lb" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="trx-lb__panel" role="dialog" aria-modal="true" aria-label={alt || caption || 'figure'} ref={panelRef}>
+        <div className="trx-lb__head">
+          {caption
+            ? <p className="trx-lb__cap"><span className="trx-fig__src">{source}</span>{caption}</p>
+            : <span />}
+          <button type="button" className="trx-lb__close" onClick={onClose} ref={closeRef}>
+            Close · Esc
+          </button>
+        </div>
+        <div className="trx-lb__frame">
+          <img src={src} alt={alt || caption} />
+        </div>
       </div>
-      {caption && <figcaption><span className="trx-fig__src">{source}</span>{caption}</figcaption>}
-    </figure>
+    </div>
+  );
+}
+
+export function Figure({ src, caption, alt, source = 'wandb' }) {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+
+  // The lightbox is a SIBLING of <figure>, not a child: figcaption must be the
+  // first or last child of figure, and an open dialog in between would break it.
+  return (
+    <>
+      <figure className={`trx-fig${src ? '' : ' trx-fig--empty'}`}>
+        {src ? (
+          <button
+            type="button"
+            className="trx-fig__btn"
+            onClick={() => setOpen(true)}
+            aria-label={`Expand figure: ${alt || caption || 'figure'}`}
+          >
+            <span className="trx-fig__frame">
+              <img src={src} alt={alt || caption} loading="lazy" />
+              <span className="trx-fig__zoom">expand</span>
+            </span>
+          </button>
+        ) : (
+          <div className="trx-fig__frame">
+            <span>png pending — drop it in figures/&lt;run-id&gt;/ and import it here</span>
+          </div>
+        )}
+        {caption && <figcaption><span className="trx-fig__src">{source}</span>{caption}</figcaption>}
+      </figure>
+      {open && src && (
+        <FigureLightbox src={src} alt={alt} caption={caption} source={source} onClose={close} />
+      )}
+    </>
   );
 }
 
@@ -470,11 +546,48 @@ const KIT_CSS = `
 .trx-next__w { display: block; font-size: 0.82rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.15rem; max-width: 80ch; }
 
 /* figures — W&B PNG exports on a fixed white frame (stays legible on arcade) */
-.trx-figgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.9rem; }
+/* Never 3-up: these are dense analytical charts with real axis labels, and a
+   third column takes them below the width where that text is legible. 1-up
+   until there is genuinely room for two. */
+.trx-figgrid { display: grid; grid-template-columns: 1fr; gap: 1.1rem; }
+@media (min-width: 1000px) { .trx-figgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 .trx-fig { margin: 0; display: flex; flex-direction: column; gap: 0.45rem; }
-.trx-fig__frame { background: #fff; border: 1px solid var(--line-2); border-radius: 4px; padding: 0.5rem; }
+/* display:block because inside the expand button this is a <span> */
+.trx-fig__frame { display: block; position: relative; background: #fff; border: 1px solid var(--line-2);
+  border-radius: 4px; padding: 0.5rem; }
 .trx-fig img { display: block; width: 100%; height: auto; }
-.trx-fig figcaption { font-size: 0.78rem; line-height: 1.5; color: var(--ink-3); padding: 0 0.15rem; }
+.trx-fig figcaption { font-size: 0.8rem; line-height: 1.55; color: var(--ink-3); padding: 0 0.15rem; }
+
+/* expand affordance — the frame is a button when the figure has a src */
+.trx-fig__btn { display: block; width: 100%; padding: 0; border: 0; background: none; font: inherit;
+  cursor: zoom-in; border-radius: 4px; }
+.trx-fig__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.trx-fig__zoom { position: absolute; right: 0.55rem; bottom: 0.55rem; display: inline-flex; align-items: center;
+  gap: 0.3rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; color: #1c1c1c; background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.22); border-radius: 4px; padding: 0.2rem 0.45rem;
+  opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.trx-fig__btn:hover .trx-fig__zoom,
+.trx-fig__btn:focus-visible .trx-fig__zoom { opacity: 1; }
+@media (hover: none) { .trx-fig__zoom { opacity: 1; } }
+
+/* lightbox */
+.trx-lb { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 2.5vh 2.5vw;
+  background: rgba(8, 10, 14, 0.82); backdrop-filter: blur(3px); animation: trx-lb-in 0.14s ease-out; }
+@keyframes trx-lb-in { from { opacity: 0; } to { opacity: 1; } }
+.trx-lb__panel { display: flex; flex-direction: column; gap: 0.7rem; max-width: 1600px; width: 100%;
+  max-height: 95vh; }
+.trx-lb__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.trx-lb__cap { font-size: 0.88rem; line-height: 1.55; color: #f0f0f0; margin: 0; max-width: 100ch; }
+.trx-lb__cap .trx-fig__src { color: #cfcfcf; border-color: rgba(255,255,255,0.35); }
+.trx-lb__close { flex: none; border: 1px solid rgba(255,255,255,0.45); background: transparent; color: #fff;
+  font: inherit; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  cursor: pointer; border-radius: 4px; padding: 0.4rem 0.7rem; transition: all 0.15s; }
+.trx-lb__close:hover { background: rgba(255,255,255,0.14); }
+.trx-lb__frame { background: #fff; border-radius: 6px; padding: 0.75rem; overflow: auto; min-height: 0; }
+.trx-lb__frame img { display: block; width: 100%; height: auto; max-height: calc(95vh - 6rem);
+  object-fit: contain; margin: 0 auto; }
 .trx-fig__src { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.62rem; text-transform: uppercase;
   letter-spacing: 0.05em; color: var(--text-faint); margin-right: 0.5rem; }
 .trx-fig--empty .trx-fig__frame { background: transparent; border-style: dashed; display: grid; place-items: center;

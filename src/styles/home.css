@@ -244,6 +244,20 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
   border-bottom-color: var(--line);
 }
+
+/* Over the dark hero cover the nav flips to light ink; once it also gains a
+   scrolled backdrop it goes dark glass instead of light. Past the cover both
+   classes drop and the standard light treatment returns. */
+.hp-nav--cover .hp-nav__brand { color: var(--v-text); }
+.hp-nav--cover .hp-nav__brand-sub { color: var(--v-dim); }
+.hp-nav--cover .hp-nav__link { color: var(--v-dim); }
+.hp-nav--cover .hp-nav__link:hover,
+.hp-nav--cover .hp-nav__link--active { color: var(--v-text); }
+.hp-nav--cover .hp-nav__burger span { background: var(--v-text); }
+.hp-nav--cover.hp-nav--scrolled {
+  background: rgba(10, 15, 22, 0.62);
+  border-bottom-color: rgba(198, 210, 222, 0.12);
+}
 .hp-nav__inner {
   max-width: var(--maxw);
   margin: 0 auto;
@@ -347,14 +361,129 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
 }
 
 /* ============================================================================
-   HERO
+   HERO — the dark COVER PAGE
+   ----------------------------------------------------------------------------
+   The one dark, full-bleed section of the Reading Room: an amber-phosphor
+   FaultyTerminal shader (signal-orange tint) runs behind the title.
+
+   The hand-off into the light page is a CURTAIN REVEAL: the backdrop is
+   position: fixed (pinned to the viewport) and clip-path on the hero windows
+   it, so scrolling slides the paper page up OVER a stationary terminal — the
+   About sheet (styled below) physically covers the screen like a page laid on
+   an instrument. Hero.jsx dims the terminal toward an ember floor while it is
+   being covered, and hides it entirely once it's fully off screen.
+
+   Text flips light via token overrides on .hp-hero — every hp- component
+   inside re-themes off the same contract, so most rules below are exceptions
+   (buttons, manifest ring), not restyles.
    ========================================================================== */
 .hp-hero {
   position: relative;
   min-height: 100svh;
   display: grid;
   align-items: center;
-  padding-block: clamp(7rem, 12vh, 9rem) clamp(3rem, 6vh, 5rem);
+  padding-block: clamp(7rem, 12vh, 9rem) clamp(6rem, 12vh, 9rem);
+  background: var(--viewport);
+  /* Windows the FIXED backdrop to the hero's on-screen box (and clips like
+     overflow would). Without this the pinned canvas would sit behind the
+     whole page. */
+  clip-path: inset(0);
+
+  /* Light-on-dark token pass — the scan-viewport palette, promoted to a page */
+  --ink:    #eef2f7;
+  --ink-2:  #c6d2de;
+  --ink-3:  #90a0b4;
+  --line:   rgba(198, 210, 222, 0.22);
+  --line-2: rgba(198, 210, 222, 0.10);
+  --accent-ink: #ff7a52;   /* signal-family, readable on dark */
+  --accent-soft: rgba(255, 106, 61, 0.16);
+}
+
+/* The shader layer — pinned to the viewport, visible only through the hero's
+   clip window, so the page appears to slide over a stationary terminal. The
+   mask keeps a gentle falloff toward the seam. Hero.jsx drives opacity down
+   to an ember floor while the sheet covers it. */
+.hp-hero__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+}
+/* Legibility scrim — deepest under the intro column, calm under the nav strip,
+   clear over the manifest so the phosphor stays lively there */
+.hp-hero__backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(10, 15, 22, 0.72), transparent 16%),
+    linear-gradient(97deg, rgba(10, 15, 22, 0.88) 8%, rgba(10, 15, 22, 0.45) 46%, rgba(10, 15, 22, 0.08) 72%),
+    radial-gradient(ellipse 120% 90% at 82% 108%, rgba(10, 15, 22, 0.55), transparent 55%);
+}
+/* Reduced motion / no shader: a still phosphor texture keeps the cover's mood */
+.hp-hero__backdrop--static {
+  background:
+    repeating-linear-gradient(to bottom, rgba(255, 106, 61, 0.045) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse 90% 70% at 62% 38%, #131b27, var(--viewport));
+}
+
+.hp-hero > .hp-hero__grid { position: relative; z-index: 2; }
+
+/* ── The seam: About rides over the cover as a physical sheet of paper ────
+   The first light section is the "page" that covers the instrument: it
+   overlaps the hero, gets the page's rounded top corners, an ember hairline
+   along its edge (the terminal's light leaking around the paper), and a deep
+   lift shadow so the boundary reads as two surfaces, not a gradient. */
+.hp-hero + .hp-section {
+  position: relative;
+  z-index: 3;
+  background: var(--ground);
+  margin-top: calc(-1 * clamp(2.5rem, 5vh, 4rem));
+  border-radius: clamp(14px, 2vw, 22px) clamp(14px, 2vw, 22px) 0 0;
+  border-top: 1px solid rgba(255, 106, 61, 0.38);
+  box-shadow:
+    0 -1px 0 rgba(255, 106, 61, 0.18),
+    0 -14px 34px -8px rgba(255, 106, 61, 0.10),
+    0 -34px 80px -24px rgba(4, 7, 12, 0.85);
+}
+/* A small centred pull-tab notch on the seam — the page's "grab here" cue */
+.hp-hero + .hp-section::before {
+  content: "";
+  position: absolute;
+  top: 0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+/* CTAs on the cover: the primary goes full signal (ink-on-ink would vanish);
+   the ghost inherits the light token pass. */
+.hp-hero .hp-btn--solid {
+  background: var(--accent);
+  color: #fff;
+}
+.hp-hero .hp-btn--solid:hover {
+  background: var(--signal);
+  box-shadow: 0 10px 30px -8px rgba(255, 106, 61, 0.55);
+  transform: translateY(-1px);
+}
+.hp-hero .hp-btn--ghost { color: var(--ink); border-color: var(--line); }
+.hp-hero .hp-btn--ghost:hover { border-color: var(--ink); }
+
+/* The manifest becomes glass over the live terminal: a whisper of shader
+   passes through the blur, and a faint signal ring keys it to the phosphor. */
+.hp-hero .hp-manifest {
+  background: rgba(10, 15, 22, 0.72);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  box-shadow:
+    inset 0 0 0 1px rgba(198, 210, 222, 0.17),
+    0 0 0 1px rgba(255, 106, 61, 0.08),
+    0 40px 90px -32px rgba(0, 0, 0, 0.85);
 }
 .hp-hero__grid {
   display: grid;
@@ -1191,7 +1320,10 @@ html.hp-active::-webkit-scrollbar-thumb:hover { background: #5a6573; }
   transform: translateY(-50%);
   z-index: 90;
   display: none;
+  transition: opacity 0.45s var(--ease);
 }
+/* Hidden while the dark hero cover is on screen (see ChapterRail.jsx) */
+.hp-rail--covered { opacity: 0; pointer-events: none; }
 .hp-rail__track {
   position: absolute;
   left: 0.32rem;
