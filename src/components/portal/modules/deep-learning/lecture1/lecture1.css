@@ -1,0 +1,134 @@
+/* ============================================================================
+   CITS5017 LECTURE 1 — LAB STYLES  (.dl1-*)
+   ----------------------------------------------------------------------------
+   Lecture-1-specific interactives (TLU, perceptron trainer, XOR, backprop
+   tour, heads, softmax) on top of the shared .dl-* page framework.
+   ========================================================================== */
+
+/* ── Network drawing vocabulary (TLU / MLP diagrams) ──────────────────── */
+.dl1-node { fill: var(--surface-hi); stroke: var(--line); stroke-width: 1.6; transition: fill 0.25s, stroke 0.25s; }
+.dl1-node--input { stroke: var(--dlv-green); }
+.dl1-node--tlu { stroke: var(--dlv-blue); }
+.dl1-node--fire { fill: var(--accent-soft); }
+.dl1-node__split { stroke: var(--line); stroke-width: 1; }
+.dl1-stepglyph { fill: none; stroke: var(--ink-3); stroke-width: 1.8; stroke-linecap: round; }
+.dl1-node__sigma { fill: var(--ink); font-size: 15px; font-weight: 700; }
+.dl1-node__k { fill: var(--ink-3); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
+.dl1-node__v { fill: var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; }
+.dl1-wlabel {
+  fill: var(--accent-ink);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10.5px; font-weight: 700;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 3px;
+}
+.dl1-edge { stroke: var(--line); stroke-width: 1.6; transition: stroke 0.25s; }
+.dl1-edge--hot { stroke: var(--accent); }
+.dl1-out { fill: var(--ink-3); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; font-weight: 800; }
+.dl1-out--fire { fill: var(--accent-ink); }
+.dl1-hint { fill: var(--text-faint); font-size: 9.5px; font-style: italic; }
+
+/* ── TLU playground ───────────────────────────────────────────────────── */
+.dl1-tlu {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.25fr) minmax(230px, 300px) minmax(220px, 1fr);
+  gap: 1.1rem;
+  align-items: center;
+}
+.dl1-neuron { width: 100%; height: auto; }
+.dl1-plane {
+  width: 100%; height: auto;
+  border: 1px solid var(--line-2); border-radius: 6px;
+  background: var(--surface-hi);
+  touch-action: none;
+}
+.dl1-plane__pos { fill: var(--dlv-blue); opacity: 0.15; transition: opacity 0.2s; }
+.dl1-plane__pos--warm { fill: var(--dlv-yellow); opacity: 0.2; }
+.dl1-plane__neg { fill: var(--dlv-blue); opacity: 0.06; }
+.dl1-boundary { stroke: var(--ink); stroke-width: 2; }
+.dl1-query { fill: var(--surface); stroke: var(--ink-3); stroke-width: 2.2; cursor: grab; }
+.dl1-query--fire { fill: var(--dlv-blue); stroke: var(--surface); }
+.dl1-tlu__panel { display: flex; flex-direction: column; gap: 0.55rem; }
+.dl1-zline { margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; color: var(--ink); }
+.dl1-zline b { color: var(--accent-ink); }
+
+/* ── Rule anatomy ─────────────────────────────────────────────────────── */
+.dl1-termcard {
+  margin: 0;
+  border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2);
+  padding: 0.6rem 0.15rem;
+  font-size: 0.9rem; line-height: 1.6; color: var(--ink-2);
+  animation: dl-fade 0.25s ease;
+}
+
+/* ── Perceptron trainer ───────────────────────────────────────────────── */
+.dl1-trainbtns { display: flex; gap: 0.35rem; }
+.dl1-trainsvg { width: 100%; height: auto; border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden; }
+.dl1-pt { stroke: var(--surface); stroke-width: 1.2; transform-box: fill-box; transform-origin: center; }
+.dl1-pt--setosa { fill: var(--dlv-yellow); }
+.dl1-pt--other { fill: var(--dlv-blue); }
+.dl1-pt--active { stroke: var(--ink); stroke-width: 2.6; }
+.dl1-pt--flash { animation: dl1-flash 0.45s ease; }
+@keyframes dl1-flash { 0% { transform: scale(2); } 100% { transform: scale(1); } }
+.dl1-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.74rem; color: var(--ink-3); }
+.dl1-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dl1-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.dl1-key--setosa { background: var(--dlv-yellow); border-radius: 99px; }
+.dl1-key--other { background: var(--dlv-blue); }
+.dl1-key--region { background: var(--dlv-yellow); opacity: 0.35; }
+
+/* ── XOR game + XOR MLP ───────────────────────────────────────────────── */
+.dl1-xor { display: grid; grid-template-columns: minmax(250px, 360px) 1fr; gap: 1.2rem; align-items: start; }
+.dl1-xor__panel { display: flex; flex-direction: column; gap: 0.7rem; }
+.dl1-xorpt { stroke: var(--surface); stroke-width: 1.4; transition: opacity 0.2s; }
+.dl1-xorpt--a { fill: var(--dlv-red); }
+.dl1-xorpt--b { fill: var(--dlv-green); }
+.dl1-xorpt--miss { opacity: 0.45; stroke: var(--ink); stroke-dasharray: 3 2; }
+.dl1-mlpsvg { width: 100%; height: auto; }
+.dl1-mlpnode { opacity: 0.4; transition: opacity 0.35s ease; }
+.dl1-mlpnode--show { opacity: 1; }
+.dl1-truth { max-width: 280px; }
+
+/* ── Backprop tour ────────────────────────────────────────────────────── */
+.dl1-bpsvg { width: 100%; max-width: 660px; height: auto; }
+.dl1-bpedge { stroke: var(--line); stroke-width: 1.5; }
+.dl1-bpedge--f { stroke: var(--accent); stroke-dasharray: 6 7; animation: dl1-flow-f 1.1s linear infinite; }
+.dl1-bpedge--r { stroke: var(--dlv-orange); stroke-dasharray: 6 7; animation: dl1-flow-r 1.1s linear infinite; }
+.dl1-bpedge--u { stroke: var(--dlv-green); animation: dl1-pulse 1.2s ease-in-out infinite; }
+@keyframes dl1-flow-f { to { stroke-dashoffset: -26; } }
+@keyframes dl1-flow-r { to { stroke-dashoffset: 26; } }
+@keyframes dl1-pulse { 50% { opacity: 0.45; } }
+.dl1-err { fill: var(--dlv-red); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; font-weight: 800; }
+.dl1-err--hot { animation: dl1-pulse 1s ease-in-out infinite; }
+.dl1-dw {
+  fill: var(--dlv-green);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; font-weight: 700;
+  paint-order: stroke; stroke: var(--surface); stroke-width: 3px;
+  animation: dl-fade 0.4s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl1-bpedge--f, .dl1-bpedge--r, .dl1-bpedge--u, .dl1-err--hot, .dl1-pt--flash { animation: none; }
+}
+
+/* ── Head picker ──────────────────────────────────────────────────────── */
+.dl1-head { border: 1px solid var(--line-2); border-radius: 6px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; animation: dl-fade 0.3s ease; }
+.dl1-head__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; }
+.dl1-head__k { margin: 0 0 0.2rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dl1-head__v { margin: 0; font-size: 1rem; font-weight: 700; color: var(--ink); }
+.dl1-head__shared { margin: 0; font-size: 0.82rem; line-height: 1.6; color: var(--ink-2); }
+
+/* ── Softmax lab ──────────────────────────────────────────────────────── */
+.dl1-smgrid { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 1.4rem; align-items: center; }
+.dl1-smbars { display: flex; flex-direction: column; gap: 0.45rem; }
+.dl1-smsum { margin: 0.2rem 0 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.72rem; color: var(--ink-3); }
+.dl1-smloss { font-size: 0.82rem; color: var(--ink-2); }
+.dl1-smloss b { color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 980px) {
+  .dl1-tlu { grid-template-columns: 1fr 1fr; }
+  .dl1-tlu__panel { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .dl1-tlu, .dl1-xor, .dl1-smgrid { grid-template-columns: 1fr; }
+  .dl1-plane { max-width: 340px; }
+}

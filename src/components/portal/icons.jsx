@@ -191,6 +191,19 @@ const PATHS = {
       <path d="M12 13v8" />
     </>
   ),
+  // Network — a tiny 2-3-2 neural net (nodes + trimmed edges; the DL section)
+  network: (
+    <>
+      <circle cx="4.2" cy="7.2" r="1.7" />
+      <circle cx="4.2" cy="16.8" r="1.7" />
+      <circle cx="12" cy="4.2" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="12" cy="19.8" r="1.7" />
+      <circle cx="19.8" cy="7.2" r="1.7" />
+      <circle cx="19.8" cy="16.8" r="1.7" />
+      <path d="M6.35 6.37 9.85 5.03M6.16 8.41 10.04 10.79M6.16 15.59 10.04 13.21M6.35 17.63 9.85 18.97M14.15 5.03 17.65 6.37M17.84 8.41 13.96 10.79M13.96 13.21 17.84 15.59M14.15 18.97 17.65 17.63" />
+    </>
+  ),
 
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)

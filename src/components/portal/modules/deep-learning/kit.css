@@ -1,0 +1,262 @@
+/* ============================================================================
+   DEEP LEARNING — LECTURE KIT STYLES  (.dlk-*)
+   ----------------------------------------------------------------------------
+   Shared chrome for the interactive lecture pages. Editorial rules + labelled
+   dots (no coloured callout boxes); the code block is an always-dark VS-Code
+   style editor regardless of portal theme.
+   ========================================================================== */
+
+/* ── Section / pane shells ────────────────────────────────────────────── */
+.dlk-section {
+  padding: 1.35rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.dlk-section.dlk-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .dlk-section { opacity: 1; transform: none; transition: none; }
+}
+
+.dlk-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  border-bottom: 1px solid var(--line-2);
+  padding-bottom: 0.75rem;
+}
+.dlk-section__no {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent-ink);
+  line-height: 1;
+}
+.dlk-section__heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.8rem; flex: 1; }
+.dlk-section__title { margin: 0; font-size: 1.15rem; line-height: 1.25; color: var(--ink); }
+.dlk-section__slides {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.dlk-section__lead { margin: 0; font-size: 0.95rem; line-height: 1.65; color: var(--ink-2); max-width: 72ch; }
+
+/* ── Hook: the tab's opening line ─────────────────────────────────────── */
+.dlk-hook { display: flex; flex-direction: column; gap: 0.3rem; }
+.dlk-hook__line {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+  line-height: 1.2;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.dlk-hook__sub { margin: 0; font-size: 0.88rem; color: var(--ink-3); }
+
+/* ── Fact cards ───────────────────────────────────────────────────────── */
+.dlk-fact {
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.dlk-fact__k {
+  margin: 0;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dlk-fact[data-tone='accent'] .dlk-fact__k { color: var(--accent-ink); }
+.dlk-fact__v {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.dlk-fact__sub { font-size: 0.8rem; line-height: 1.55; color: var(--ink-2); }
+.dlk-fact__sub p { margin: 0; }
+
+/* ── Unfold (collapsible detail) ──────────────────────────────────────── */
+.dlk-unfold { border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+.dlk-unfold + .dlk-unfold { border-top: none; }
+.dlk-unfold__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.6rem 0.15rem;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+.dlk-unfold__head:hover { color: var(--accent-ink); }
+.dlk-unfold__plus { position: relative; width: 11px; height: 11px; flex: none; }
+.dlk-unfold__plus::before, .dlk-unfold__plus::after {
+  content: '';
+  position: absolute;
+  background: var(--accent);
+  transition: transform 0.25s ease;
+}
+.dlk-unfold__plus::before { left: 0; right: 0; top: 5px; height: 1.6px; }
+.dlk-unfold__plus::after { top: 0; bottom: 0; left: 5px; width: 1.6px; }
+.dlk-unfold--open .dlk-unfold__plus::after { transform: scaleY(0); }
+.dlk-unfold__body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
+.dlk-unfold--open .dlk-unfold__body { grid-template-rows: 1fr; }
+.dlk-unfold__inner { overflow: hidden; }
+.dlk-unfold__inner > :first-child { margin-top: 0.1rem; }
+.dlk-unfold__inner > :last-child { margin-bottom: 0.75rem; }
+
+/* ── KaTeX ────────────────────────────────────────────────────────────── */
+.dlk-tex-inline { color: var(--ink); }
+.dlk-tex-block { display: block; overflow-x: auto; padding: 0.35rem 0; color: var(--ink); }
+.dlk-tex-block .katex-display { margin: 0.35em 0; }
+
+/* ── Notes ────────────────────────────────────────────────────────────── */
+.dlk-note {
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  padding: 0.7rem 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.dlk-note__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dlk-note__dot { width: 7px; height: 7px; border-radius: 99px; background: var(--accent); }
+.dlk-note[data-tone='warn'] .dlk-note__dot { background: #e0a82e; }
+.dlk-note__body { font-size: 0.88rem; line-height: 1.65; color: var(--ink-2); max-width: 72ch; }
+.dlk-note__body p { margin: 0 0 0.4rem; }
+.dlk-note__body p:last-child { margin-bottom: 0; }
+
+/* ── Footnote popover ─────────────────────────────────────────────────── */
+.dlk-fnote { position: relative; display: inline-block; line-height: 0; }
+.dlk-fnote__btn {
+  font: inherit;
+  font-size: 0.68em;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: none;
+  border: none;
+  padding: 0 0.1em;
+  cursor: help;
+  vertical-align: super;
+  line-height: 1;
+}
+.dlk-fnote__pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: max-content;
+  max-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(14, 22, 32, 0.16);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-style: normal;
+}
+.dlk-fnote__pop-n { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent-ink); font-weight: 700; }
+
+/* ── VS-Code editor block (always dark, on every theme) ───────────────── */
+.dlk-code {
+  margin: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 10px rgba(10, 14, 20, 0.18);
+}
+.dlk-code__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: #252526;
+  padding: 0.45rem 0.8rem;
+  border-bottom: 1px solid #1a1a1a;
+}
+.dlk-code__dots { display: inline-flex; gap: 0.38rem; }
+.dlk-code__dots i { width: 9px; height: 9px; border-radius: 99px; display: block; }
+.dlk-code__dots i:nth-child(1) { background: #ff5f56; }
+.dlk-code__dots i:nth-child(2) { background: #ffbd2e; }
+.dlk-code__dots i:nth-child(3) { background: #27c93f; }
+.dlk-code__file {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: #cccccc;
+}
+.dlk-code__meta {
+  margin-left: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+.dlk-code__pre {
+  margin: 0;
+  padding: 0.75rem 0;
+  overflow-x: auto;
+  background: #1e1e1e;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: #d4d4d4;
+  tab-size: 4;
+}
+.dlk-code__code { counter-reset: dlkline; display: block; min-width: max-content; }
+.dlk-code__line { display: block; counter-increment: dlkline; padding-right: 1rem; transition: opacity 0.25s ease, background 0.25s ease; }
+.dlk-code__line::before {
+  content: counter(dlkline);
+  display: inline-block;
+  width: 2.4em;
+  margin-right: 1.1em;
+  text-align: right;
+  color: #6e7681;
+  user-select: none;
+}
+.dlk-code__line--hl { background: rgba(56, 139, 253, 0.13); box-shadow: inset 2.5px 0 0 #388bfd; }
+.dlk-code__line--hl::before { color: #c6c6c6; }
+.dlk-code__line--dim { opacity: 0.38; }
+
+/* Dark+ token colours */
+.tok-cm { color: #6a9955; font-style: italic; }
+.tok-st { color: #ce9178; }
+.tok-nu { color: #b5cea8; }
+.tok-kw { color: #c586c0; }
+.tok-ct { color: #569cd6; }
+.tok-fn { color: #dcdcaa; }
+.tok-pr { color: #6e7681; }

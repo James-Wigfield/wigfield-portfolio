@@ -33,6 +33,8 @@ import BuildFlow from './modules/BuildFlow';
 import TrainingReadiness from './modules/TrainingReadiness';
 import ModelTraining from './modules/ModelTraining';
 import TrainingRuns from './modules/TrainingRuns';
+import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
+import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import MambaUpdates from './modules/MambaUpdates';
 import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
@@ -60,6 +62,7 @@ import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
 // Ordered life-area sections — each may hold zero or more modules.
 export const SECTIONS = [
   { name: 'University',  icon: 'university',  blurb: 'Degree, honours & coursework' },
+  { name: 'Deep Learning', icon: 'network',   blurb: 'CITS5017 · interactive lectures' },
   { name: 'Syllabite',   icon: 'syllabite',   blurb: 'EdTech venture' },
   { name: 'Portara',     icon: 'portara',     blurb: 'Custom portals · MCP · agents' },
   { name: 'Business',    icon: 'business',    blurb: 'Ventures & R&D' },
@@ -108,6 +111,20 @@ export const MODULES = [
     icon: 'chart',
     group: 'University',
     component: TrainingRuns,
+  },
+  {
+    id: 'dl-lecture-1',
+    label: 'Lecture 1 · Intro to ANNs',
+    icon: 'network',
+    group: 'Deep Learning',
+    component: DeepLearningLecture1,
+  },
+  {
+    id: 'dl-lecture-2',
+    label: 'Lecture 2 · Training DNNs',
+    icon: 'network',
+    group: 'Deep Learning',
+    component: DeepLearningLecture2,
   },
   {
     id: 'mamba-updates',
