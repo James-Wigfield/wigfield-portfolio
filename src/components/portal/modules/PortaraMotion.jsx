@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
+import NeonStage from './PortaraMotionNeon';
 import './PortaraMotion.css';
 
 /* ============================================================================
@@ -50,6 +51,15 @@ const VIEWBOX = '855 976 2980 2824';
 const SVG_CENTER = '2345 2388';
 
 const WORD = [...'Portara'];
+
+const NEON_CUES = [
+  ['0.00', 'Glow trace', 'blurred accent halo + crisp core stroke draw the contours; the neon flickers twice mid-draw'],
+  ['0.95', 'Bloom', 'a radial ember swells behind the mark'],
+  ['1.05', 'Ignition', 'bone fills flood centre-out from each contour’s core'],
+  ['1.45', 'Ember settle', 'glow decays to a faint ambient bloom; mark overshoots and rests ~1.7s'],
+  ['1.90', 'Scanline', 'an accent bar sweeps the right column — characters ignite accent→bone as it passes, 65ms stagger'],
+  ['2.62', 'Terminal', 'the bar collapses into the end dot; “Portals · MCP · Agents” tracks in beneath'],
+];
 
 const CUES = [
   ['0.00', 'Edge trace', 'accent strokes draw the three contours — gate, lintel, base — 80ms stagger'],
@@ -178,9 +188,10 @@ export default function PortaraMotion() {
   return (
     <div className="pt-module pm">
       <p className="pt-module__intro">
-        The Portara brand sting — a 3-second logo reveal built as one orchestrated GSAP
-        timeline. The gate mark's contours trace in, fills flood over an accent echo, and
-        the wordmark resolves per character once the mark has settled.
+        The Portara brand stings — each a ~3-second logo reveal built as one orchestrated
+        GSAP timeline. Motion 01 is the paper piece: contours trace in, fills flood over an
+        accent echo, the wordmark resolves beneath. Motion 02 is its night counterpart: a
+        glowing neon trace ignites the mark and a scanline prints the type to its right.
       </p>
 
       <section className="pm-stage pt-card" ref={stageRef}>
@@ -244,18 +255,28 @@ export default function PortaraMotion() {
         </footer>
       </section>
 
-      <section className="pm-cues">
-        <h2 className="pm-cues__title">Cue sheet</h2>
-        <ol className="pm-cues__list">
-          {CUES.map(([t, name, detail]) => (
-            <li className="pm-cue" key={t}>
-              <span className="pm-cue__time">{t}s</span>
-              <span className="pm-cue__name">{name}</span>
-              <span className="pm-cue__detail">{detail}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <CueSheet title="Cue sheet — 01 Logo sting" cues={CUES} />
+
+      <NeonStage />
+
+      <CueSheet title="Cue sheet — 02 Neon ignition" cues={NEON_CUES} />
     </div>
+  );
+}
+
+function CueSheet({ title, cues }) {
+  return (
+    <section className="pm-cues">
+      <h2 className="pm-cues__title">{title}</h2>
+      <ol className="pm-cues__list">
+        {cues.map(([t, name, detail]) => (
+          <li className="pm-cue" key={t}>
+            <span className="pm-cue__time">{t}s</span>
+            <span className="pm-cue__name">{name}</span>
+            <span className="pm-cue__detail">{detail}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

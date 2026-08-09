@@ -1,0 +1,111 @@
+/* ============================================================================
+   PORTARA — MOTION 02 "NEON IGNITION" (scoped .pn-* + .pm-stage--night)
+   ----------------------------------------------------------------------------
+   Night variant of the motion stage: fixed near-black ground (a glow cannot
+   read on Motion 01's paper), bone mark, accent neon. Reuses .pm-stage chrome
+   from PortaraMotion.css with dark overrides scoped under .pm-stage--night.
+
+   Default state = the FINISHED frame (fills lit, glow/trace hidden, faint
+   ambient bloom, wordmark + dot + tagline resolved, scan bar hidden) — the
+   timeline rewinds everything; reduced motion renders this frame statically.
+   ========================================================================== */
+
+/* Double-class beats .pm-stage's paper background regardless of which CSS
+   file the bundler emits first — never rely on import order. */
+.pm-stage.pm-stage--night {
+  --pn-night: #0f0f13;
+  --pn-bone: #ece7dc;
+  --pn-dim: #8d887c;
+  background:
+    radial-gradient(120% 90% at 50% 42%, rgba(255, 78, 43, 0.05), transparent 60%),
+    var(--pn-night);
+}
+
+/* Dark overrides for the shared stage chrome */
+.pm-stage--night .pm-stage__head,
+.pm-stage--night .pm-stage__foot { border-color: rgba(255, 255, 255, 0.1); }
+.pm-stage--night .pm-stage__label { color: #c9c4b8; }
+.pm-stage--night .pm-stage__meta,
+.pm-stage--night .pm-stage__note { color: #6f6a60; }
+.pm-stage--night .hp-btn { color: var(--pn-bone); border-color: rgba(255, 255, 255, 0.24); }
+.pm-stage--night .hp-btn:hover { border-color: #ff4e2b; color: #ff4e2b; }
+
+/* ── Horizontal lockup: mark left, type right ─────────────────────────────── */
+.pn-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.6rem, 5vw, 3.4rem);
+  padding: clamp(2.2rem, 6vw, 3.6rem) 1.5rem;
+  min-height: 320px;
+}
+
+.pn-svg {
+  width: clamp(130px, 26vmin, 215px);
+  height: auto;
+  display: block;
+  flex: none;
+}
+
+.pn-fill { fill: var(--pn-bone); }
+.pn-glowstroke, .pn-core { opacity: 0; } /* drawn + faded by the timeline */
+.pn-bloom { opacity: 0.22; }             /* faint ambient ember in the final frame */
+
+/* ── Type column ──────────────────────────────────────────────────────────── */
+.pn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+.pn-wordwrap {
+  position: relative;           /* the scan bar travels inside this box */
+  display: inline-flex;
+  align-items: center;
+}
+.pn-word {
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 4.5vw, 2.7rem);
+  letter-spacing: 0.14em;
+  line-height: 1.05;
+  color: var(--pn-bone);
+  white-space: nowrap;
+}
+.pn-ch { display: inline-block; will-change: transform, opacity; }
+.pn-dot {
+  width: 9px;
+  height: 9px;
+  margin-left: 0.55rem;
+  border-radius: 50%;
+  background: #ff4e2b;
+  box-shadow: 0 0 12px rgba(255, 78, 43, 0.8);
+  flex: none;
+}
+.pn-bar {
+  position: absolute;
+  left: 0;
+  top: -10%;
+  height: 120%;
+  width: 3px;
+  border-radius: 2px;
+  background: #ff4e2b;
+  box-shadow: 0 0 16px rgba(255, 78, 43, 0.9);
+  opacity: 0;                   /* only alive during the sweep */
+  pointer-events: none;
+}
+.pn-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  color: var(--pn-dim);
+  white-space: nowrap;
+}
+
+/* Stack the lockup on narrow screens — type drops below the mark. */
+@media (max-width: 620px) {
+  .pn-lockup { flex-direction: column; gap: 1.6rem; }
+  .pn-text { align-items: center; }
+}
