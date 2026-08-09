@@ -1,4 +1,4 @@
-import { RunPage, Verdict, Section, Prose, StatGrid, LineChart, Figure, FigureGrid, MetricTable, Findings, NextSteps, CodeBlock } from '../kit';
+import { RunPage, Verdict, Section, Prose, StatGrid, LineChart, Figure, FigureGrid, MetricTable, Findings, NextSteps, ChangePlan, CodeBlock } from '../kit';
 
 import trainLoss from '../figures/run-02-clipping/train-loss.png';
 import gradNorm from '../figures/run-02-clipping/grad-norm.png';
@@ -119,6 +119,55 @@ const NEXT = [
     why: 'The only way the architectural claim becomes testable. Until the data scale and the ensembling match, every number here is provisional.',
   },
 ];
+
+/* The three changes COMMITTED for run 3 (picked from NEXT above) — pending
+   James's review; nothing has been changed in the Mamba_PSMA repo yet. */
+const PLAN = [
+  {
+    t: 'Halve the voxel size — resample onto the ~2 mm grid',
+    chip: 'target_spacing: [4.0, 4.07, 4.07] → plans parity [3.0, 2.036, 2.036] — verify axis order first',
+    diagram: 'grid',
+    caps: [
+      'run 2 · 4 mm voxels — a median lesion (dashed) is 19 voxels, ~3 across',
+      'run 3 · ~2 mm in-plane — the same lesion becomes ~100–150 voxels',
+    ],
+    tech: 'Matches the baseline plans’ 3d_fullres spacing ([3.0, 2.036, 2.036] per design-decisions.md — the 4 mm value traces to an axis-order misread) and undoes that divergence. The median ground-truth lesion goes 19 → ~100–150 voxels, attacking both structural failures at once: single-voxel misses and neighbouring lesions merging into one blob.',
+    plain: 'Voxels are 3D pixels. At 4 mm a small lesion is a smudge three pixels wide — the model can barely see it, let alone draw its outline. Roughly halving the pixel size gives it 5–8× more detail on exactly the lesions it currently gets wrong.',
+  },
+  {
+    t: 'Grow the patch so the model keeps its context',
+    chip: 'patch_size: [64, 128, 64] → larger — final size set by a VRAM probe',
+    diagram: 'patch',
+    caps: [
+      'run 2 · the training window (blue) spans ≈ 26×52×26 cm of patient',
+      'run 3 · unchanged (grey) it would see ⅛ the volume and lose lesions — grow it (blue)',
+    ],
+    tech: 'A patch is the crop the model trains on. On the 2.04 mm grid the same 64×128×64 voxels span half the millimetres per axis (≈26×52×26 cm → 13×26×13 cm), so field of view must be bought back with more voxels. The 16 GB 5070 Ti sets the ceiling — probe VRAM first; batch may drop 2 → 1.',
+    plain: 'The patch is the window the model looks through while learning. Sharper pixels inside the same window means seeing less of the body at once — like zooming in. A bigger window keeps the whole-torso context that is Mamba’s entire advantage.',
+  },
+  {
+    t: 'Balance the Tversky loss — stop paying the model to over-flag',
+    chip: 'loss.alpha: 0.3 → 0.5 · loss.beta: 0.7 → 0.5 (Tversky at 0.5/0.5 ≡ Dice)',
+    diagram: 'balance',
+    caps: [
+      'run 2 · a miss (orange) costs 0.7, a false alarm (blue) 0.3 — flagging everything pays',
+      'run 3 · 0.5 / 0.5 — both mistakes cost the same (this is exactly Dice loss)',
+    ],
+    tech: 'α weights false positives, β false negatives. The 0.3/0.7 recall bias has done its job — sensitivity 71.2% vs the reference’s 73.0% — but PPV is 28 points short and now the whole gap. Equal weights trade a little recall back for the precision the model lacks.',
+    plain: 'Run 2’s scoring punished a missed lesion about 2.3× harder than a false alarm, so the model learned to flag anything remotely suspicious. Next run both mistakes cost the same — it should stop crying wolf while still finding nearly as much.',
+  },
+];
+
+const PLAN_DIFF = `preprocessing:
+  target_spacing: [4.0, 4.07, 4.07]  ->  [3.0, 2.036, 2.036]  # plans parity — verify axis order
+
+patch_sampling:
+  patch_size: [64, 128, 64]  ->  bigger (e.g. 96x192x96) — set by a VRAM probe
+
+training:
+  loss:
+    alpha: 0.3  ->  0.5   # cost of a false positive
+    beta:  0.7  ->  0.5   # cost of a miss · 0.5/0.5 makes Tversky = Dice`;
 
 const INFERENCE = [
   {
@@ -256,6 +305,19 @@ export default function Run02Clipping({ run }) {
 
       <Section label="What would make the model better" note="ordered by expected value">
         <NextSteps items={NEXT} />
+      </Section>
+
+      <Section label="The plan for run 3" note="the three changes chosen from the list above — the rest stays queued">
+        <ChangePlan items={PLAN} />
+        <CodeBlock label="configs/baseline.yaml — the three deltas (nothing else changes)" text={PLAN_DIFF} />
+        <Prose>
+          Three knobs move at once, so run 3 carries the same attribution caveat flagged in the
+          findings — accepted deliberately, since each change is independently justified and a run
+          costs a 12-hour day. Budget for the side-effects: at ~2&nbsp;mm every case is roughly
+          5&ndash;8&times; the voxels, so the preprocessed cache must be rebuilt and every epoch
+          gets slower. The full execution checklist for the next session lives in the repo at
+          <code>documentation/memory/run3-prep-handoff.md</code>.
+        </Prose>
       </Section>
 
       <Section

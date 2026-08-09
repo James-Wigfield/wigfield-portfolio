@@ -55,6 +55,7 @@ import DeckStudio from './modules/DeckStudio';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import PortaraPricing from './modules/PortaraPricing';
 import PortaraPlatform from './modules/PortaraPlatform';
+import PortaraMotion from './modules/PortaraMotion';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -216,6 +217,13 @@ export const MODULES = [
     icon: 'cloud',
     group: 'Portara',
     component: PortaraPlatform,
+  },
+  {
+    id: 'portara-motion',
+    label: 'Motion Design',
+    icon: 'art',
+    group: 'Portara',
+    component: PortaraMotion,
   },
   {
     id: 'codebase-tracker',

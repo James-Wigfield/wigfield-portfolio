@@ -21,6 +21,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
      <MetricTable …>               comparison table (e.g. vs nnU-Net)
      <Findings items>              observations  [{ tone, t, why }]
      <NextSteps items>             what the NEXT run changes  [{ t, why? }]
+     <ChangePlan items>            the next run's COMMITTED config changes —
+                                   one card per knob with a before/after
+                                   schematic  [{ t, chip, diagram, caps,
+                                   tech, plain }] · diagram: 'grid' | 'patch'
+                                   | 'balance'. Schematics explain the knob;
+                                   they never plot data (data belongs in
+                                   LineChart / Figure).
      <CodeBlock label text>        log / console excerpt with a copy button
 
    CHART RULES (non-negotiable):
@@ -317,6 +324,116 @@ export function NextSteps({ items }) {
   );
 }
 
+/* ---- ChangePlan --------------------------------------------------------------
+   The changes COMMITTED for the next run — distinct from <NextSteps>, which is
+   the candidate list. One card per knob: a before/after schematic on the left,
+   the config delta as a mono chip, then exactly two sentences — one technical,
+   one plain-English — on the right.
+
+   items: [{ t, chip, diagram, caps: [beforeCap, afterCap], tech, plain }]
+
+   Diagram colour code (fixed, name the colours in the caps when it matters):
+     orange (--trx-s2) = lesion / ground truth · blue (--trx-s1) = the model
+     (its window, its predictions) · ink dashes = true anatomy at full detail.
+   The SVGs are schematics of the KNOB, deliberately unscaled — anything with
+   real numbers on an axis goes in LineChart or a Figure instead. */
+
+function GridPanel({ cell }) {
+  const S = 96, R = 24, C = 48;
+  const n = Math.round(S / cell);
+  const lines = Array.from({ length: n - 1 }, (_, i) => (i + 1) * cell);
+  const boxes = [];
+  for (let ix = 0; ix < n; ix++) {
+    for (let iy = 0; iy < n; iy++) {
+      const cx = ix * cell + cell / 2, cy = iy * cell + cell / 2;
+      if ((cx - C) ** 2 + (cy - C) ** 2 <= R * R) boxes.push([ix * cell, iy * cell]);
+    }
+  }
+  return (
+    <svg viewBox={`0 0 ${S} ${S}`} className="trx-plan__svg" aria-hidden="true">
+      {boxes.map(([x, y]) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width={cell} height={cell} className="trx-plan__voxel" />
+      ))}
+      {lines.map((p) => (
+        <g key={p}>
+          <line x1={p} x2={p} y1="0" y2={S} className="trx-plan__grid" />
+          <line x1="0" x2={S} y1={p} y2={p} className="trx-plan__grid" />
+        </g>
+      ))}
+      <rect x="0.5" y="0.5" width={S - 1} height={S - 1} className="trx-plan__framebox" />
+      <circle cx={C} cy={C} r={R} className="trx-plan__true" />
+    </svg>
+  );
+}
+
+function PatchPanel({ after }) {
+  return (
+    <svg viewBox="0 0 96 96" className="trx-plan__svg" aria-hidden="true">
+      <rect x="30" y="6" width="36" height="84" rx="13" className="trx-plan__torso" />
+      <circle cx="34" cy="32" r="2.6" className="trx-plan__les" />
+      <circle cx="60" cy="62" r="2.6" className="trx-plan__les" />
+      {after && <rect x="37" y="35" width="22" height="22" className="trx-plan__patch trx-plan__patch--stale" />}
+      <rect x="26" y="24" width="44" height="44" className="trx-plan__patch" />
+    </svg>
+  );
+}
+
+function BalancePanel({ level }) {
+  const tilt = level ? 0 : -9;
+  const wl = level ? 14 : 18, wr = level ? 14 : 10;
+  const lv = level ? '0.5' : '0.7', rv = level ? '0.5' : '0.3';
+  return (
+    <svg viewBox="0 0 96 96" className="trx-plan__svg" aria-hidden="true">
+      <line x1="28" x2="68" y1="76" y2="76" className="trx-plan__grid" />
+      <path d="M48 60 L41 76 L55 76 Z" className="trx-plan__pivot" />
+      <g transform={`rotate(${tilt} 48 60)`}>
+        <line x1="12" x2="84" y1="60" y2="60" className="trx-plan__beam" />
+        <rect x={24 - wl / 2} y={60 - wl} width={wl} height={wl} className="trx-plan__wfn" />
+        <rect x={72 - wr / 2} y={60 - wr} width={wr} height={wr} className="trx-plan__wfp" />
+        <text x="24" y={60 - wl - 5} textAnchor="middle" className="trx-plan__num">{lv}</text>
+        <text x="72" y={60 - wr - 5} textAnchor="middle" className="trx-plan__num">{rv}</text>
+      </g>
+    </svg>
+  );
+}
+
+const PLAN_DIAGRAMS = {
+  grid: [<GridPanel key="b" cell={16} />, <GridPanel key="a" cell={8} />],
+  patch: [<PatchPanel key="b" />, <PatchPanel key="a" after />],
+  balance: [<BalancePanel key="b" />, <BalancePanel key="a" level />],
+};
+
+export function ChangePlan({ items }) {
+  return (
+    <div className="trx-plan">
+      {items.map((c, i) => {
+        const [before, after] = PLAN_DIAGRAMS[c.diagram];
+        return (
+          <div key={c.t} className="pt-card trx-plan__card">
+            <div className="trx-plan__halves">
+              <div className="trx-plan__half">
+                {before}
+                <span className="trx-plan__cap">{c.caps[0]}</span>
+              </div>
+              <span className="trx-plan__arrow" aria-hidden="true">&rarr;</span>
+              <div className="trx-plan__half">
+                {after}
+                <span className="trx-plan__cap">{c.caps[1]}</span>
+              </div>
+            </div>
+            <div className="trx-plan__text">
+              <p className="trx-plan__t"><span className="trx-plan__n">{String(i + 1).padStart(2, '0')}</span>{c.t}</p>
+              <p className="trx-plan__chip">{c.chip}</p>
+              <p className="trx-plan__line"><span>technical</span>{c.tech}</p>
+              <p className="trx-plan__line"><span>plain english</span>{c.plain}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ---- Figures (W&B PNG exports) ----------------------------------------------
    Files live in ../figures/run-<nn>-<shortname>/ (see the README there), get
    imported by the run page and passed as `src`. The white frame is deliberate:
@@ -544,6 +661,43 @@ const KIT_CSS = `
 .trx-next__n { flex: none; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; font-weight: 700; color: var(--accent-ink); }
 .trx-next__t { display: block; font-weight: 700; color: var(--ink); font-size: 0.88rem; }
 .trx-next__w { display: block; font-size: 0.82rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.15rem; max-width: 80ch; }
+
+/* change plan — the next run's committed knobs; schematic left, words right.
+   Colour code: orange = lesion/truth, blue = the model, ink dashes = anatomy. */
+.trx-plan { display: flex; flex-direction: column; gap: 0.9rem; }
+.trx-plan__card { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 1.2rem; align-items: center;
+  padding: 1rem 1.15rem; }
+.trx-plan__halves { display: flex; align-items: flex-start; gap: 0.55rem; }
+.trx-plan__half { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.trx-plan__svg { display: block; width: 100%; height: auto; }
+.trx-plan__cap { font-size: 0.7rem; line-height: 1.45; color: var(--ink-3); }
+.trx-plan__arrow { flex: none; align-self: center; color: var(--text-faint); font-size: 1.05rem; padding-bottom: 2.2rem; }
+.trx-plan__t { display: flex; align-items: baseline; font-weight: 700; color: var(--ink); font-size: 0.9rem; margin: 0 0 0.45rem; }
+.trx-plan__n { flex: none; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; font-weight: 700;
+  color: var(--accent-ink); margin-right: 0.6rem; }
+.trx-plan__chip { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.72rem;
+  color: var(--ink-2); background: var(--surface-hi); border: 1px solid var(--line-2); border-radius: 4px;
+  padding: 0.22rem 0.5rem; margin: 0 0 0.55rem; }
+.trx-plan__line { font-size: 0.84rem; line-height: 1.55; color: var(--ink-2); margin: 0.3rem 0 0; max-width: 70ch; }
+.trx-plan__line span { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin-right: 0.5rem; }
+/* schematic parts */
+.trx-plan__grid { stroke: var(--line-2); stroke-width: 1; }
+.trx-plan__framebox { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.trx-plan__voxel { fill: var(--trx-s2); opacity: 0.45; }
+.trx-plan__true { fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 3 2.4; }
+.trx-plan__torso { fill: none; stroke: var(--ink-3); stroke-width: 1.4; opacity: 0.85; }
+.trx-plan__les { fill: var(--trx-s2); }
+.trx-plan__patch { fill: var(--trx-s1); fill-opacity: 0.1; stroke: var(--trx-s1); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.trx-plan__patch--stale { fill: none; stroke: var(--text-faint); stroke-width: 1.2; stroke-dasharray: 2.5 2.5; }
+.trx-plan__beam { stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; }
+.trx-plan__pivot { fill: var(--ink-3); }
+.trx-plan__wfn { fill: var(--trx-s2); }
+.trx-plan__wfp { fill: var(--trx-s1); }
+.trx-plan__num { font: 700 9px ui-monospace, Menlo, Consolas, monospace; fill: var(--ink-2); }
+.trx-plan + .trx-code { margin-top: 0.9rem; }
+.trx-code + .trx-prose { margin-top: 0.9rem; }
+@media (max-width: 860px) { .trx-plan__card { grid-template-columns: 1fr; } }
 
 /* figures — W&B PNG exports on a fixed white frame (stays legible on arcade) */
 /* Never 3-up: these are dense analytical charts with real axis labels, and a

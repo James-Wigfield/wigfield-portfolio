@@ -1,0 +1,149 @@
+/* ============================================================================
+   PORTARA — MOTION DESIGN (scoped .pm-*)
+   ----------------------------------------------------------------------------
+   The stage is a FIXED paper ground — deliberately NOT theme tokens — so the
+   black mark + #ff4e2b accent read identically in every portal theme (the
+   Arcade dark theme would otherwise swallow the black fills). Outer chrome
+   (cue sheet, labels) uses the portal tokens as normal.
+
+   Default state = the FINISHED frame (fills shown, traces/echoes invisible,
+   wordmark resolved). The GSAP timeline rewinds everything before first paint;
+   under prefers-reduced-motion no timeline runs and this final frame renders.
+   ========================================================================== */
+
+.pm { --pm-accent: #ff4e2b; --pm-paper: #f6f3ee; --pm-mark-ink: #101010; }
+
+/* ── Stage ─────────────────────────────────────────────────────────────────── */
+.pm-stage {
+  background: var(--pm-paper);
+  overflow: hidden; /* the mark drifts in from below the frame edge */
+}
+
+.pm-stage__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgba(16, 16, 16, 0.12);
+}
+.pm-stage__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pm-accent);
+}
+.pm-stage__label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #3b3b3b;
+}
+.pm-stage__meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: #8a8578;
+}
+
+.pm-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.6rem, 2.5vw, 1.1rem);
+  padding: clamp(2rem, 6vw, 3.5rem) 1.5rem clamp(2.2rem, 6vw, 3.2rem);
+}
+
+/* Scales via viewBox — the box is fluid, never a fixed pixel frame. */
+.pm-svg {
+  width: clamp(140px, 30vmin, 250px);
+  height: auto;
+  display: block;
+}
+
+.pm-fill { fill: var(--pm-mark-ink); }
+.pm-echo { opacity: 0; }  /* covered when in registration; animated offset */
+.pm-trace { opacity: 0; } /* drawn + faded by the timeline */
+
+/* ── Wordmark ──────────────────────────────────────────────────────────────── */
+.pm-word {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+.pm-word__row {
+  display: flex;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.1rem, 5.5vw, 3.3rem);
+  letter-spacing: 0.045em;
+  line-height: 1.1;
+  color: var(--pm-mark-ink);
+}
+.pm-ch {
+  display: inline-block;              /* transforms need a box */
+  will-change: transform, filter, opacity;
+}
+.pm-rule {
+  width: 76%;
+  height: 3px;
+  background: var(--pm-accent);
+  transform-origin: left center;      /* sweeps left → right */
+}
+
+.pm-stage__foot {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(16, 16, 16, 0.12);
+}
+.pm-stage__note {
+  font-size: 0.78rem;
+  color: #8a8578;
+}
+
+/* ── Cue sheet — ruled editorial rows ─────────────────────────────────────── */
+.pm-cues__title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  margin: 0 0 0.4rem;
+}
+.pm-cues__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.pm-cue {
+  display: grid;
+  grid-template-columns: 3.6rem 8.5rem 1fr;
+  gap: 0.9rem;
+  align-items: baseline;
+  padding: 0.55rem 0.15rem;
+  border-bottom: 1px solid var(--line-2);
+}
+.pm-cue__time {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--pm-accent);
+}
+.pm-cue__name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.pm-cue__detail {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .pm-cue { grid-template-columns: 3.2rem 1fr; }
+  .pm-cue__detail { grid-column: 2; }
+}
