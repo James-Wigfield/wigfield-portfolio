@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Tex, Fnote, Code, Section, Hook, Fact, Unfold, RefsProvider } from '../kit';
+import { Tex, Fnote, Code, Section, Hook, Fact, Unfold, RefsProvider, Outline, Sub, Eq, Jot } from '../kit';
 import { TluPlayground, RuleAnatomy, PerceptronTrainer, XorGame, XorMlp } from './labs';
 import { BackpropTour, ActivationGallery, LinearityDemo, HeadPicker, SoftmaxLab, LossLab } from './labs2';
 import { Quiz } from '../lecture2/labs2';
@@ -11,7 +11,11 @@ import './lecture1.css';
    CITS5017 · LECTURE 1 — TOPIC 1: INTRODUCTION TO ARTIFICIAL NEURAL NETWORKS
    ----------------------------------------------------------------------------
    The full content of Documents/cits5017/markdown-lecs/lecture-1.md (all 33
-   slides) as a TABBED interactive page on the shared .dl-* framework:
+   slides) as a TABBED interactive page on the shared .dl-* framework — laid
+   out as a NOTETAKING SPINE: every tab opens with its numbered skeleton
+   (Outline), walks numbered subs (Sub n.m: concept → named Eq → lab), and
+   closes with a tickable "Note it down" recap (Jot) that is exactly what
+   belongs in the notebook.
 
      START        level select + roadmap (slides 1–3) + sources
      PERCEPTRON   slides 4–8    TLU playground, dense-layer anatomy, matrix form
@@ -152,36 +156,68 @@ export default function Lecture1() {
             <Hook sub="Frank Rosenblatt, 1957 — one of the simplest ANN architectures, built on the threshold logic unit (TLU): numbers in, weighted sum, step, decision out.">
               {TABS[1].hook}
             </Hook>
+            <Outline
+              items={[
+                ['1.1', 'The threshold logic unit'],
+                ['1.2', 'From TLU to Perceptron'],
+                ['1.3', 'The layer as one equation'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="The unit" v={<Tex src="z = \mathbf{w}^{\mathsf T}\mathbf{x} + b" />} tone="accent">
-                <p>…then output step(z). Inputs and output are numbers, and every connection carries a weight.</p>
-              </Fact>
-              <Fact k="Step functions" v="heaviside · sign">
-                <p>heaviside: 0 if z &lt; 0, else 1. sign: −1 / 0 / +1. Heaviside is the usual pick.</p>
-              </Fact>
-              <Fact k="One TLU alone" v="a linear classifier">
-                <p>Threshold a weighted sum — just like Logistic Regression or a linear SVM.</p>
-              </Fact>
-            </div>
+            <Sub no="1.1" title="The threshold logic unit (TLU)" slides="slides 4–6">
+              <Eq
+                no="1.1"
+                name="The TLU"
+                src="z = \mathbf{w}^{\mathsf T}\mathbf{x} + b \;\;\longrightarrow\;\; \hat{y} = \operatorname{step}(z)"
+                read="weighted sum of the inputs, plus a bias — then a step function decides"
+              />
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="In & out" v="numbers" tone="accent">
+                  <p>Inputs and output are numbers (not on/off spikes), and every input connection carries a weight.</p>
+                </Fact>
+                <Fact k="Step functions" v="heaviside · sign">
+                  <p>heaviside: 0 if z &lt; 0, else 1. sign: −1 / 0 / +1. Heaviside is the usual pick.</p>
+                </Fact>
+                <Fact k="One TLU alone" v="a linear classifier">
+                  <p>Threshold a weighted sum — just like Logistic Regression or a linear SVM.</p>
+                </Fact>
+              </div>
+              <TluPlayground />
+            </Sub>
 
-            <TluPlayground />
+            <Sub no="1.2" title="From TLU to Perceptron" slides="slides 6–7">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Perceptron" v="one layer of TLUs" tone="accent"><p>Every TLU connected to every input: a <em>fully connected</em> (dense) layer — Fig 10-5 wires 2 inputs to 3 outputs.</p></Fact>
+                <Fact k="Input layer"><p>The inputs themselves — no computation, just the features.</p></Fact>
+                <Fact k="Output layer"><p>The TLU layer produces the final outputs.</p></Fact>
+              </div>
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Perceptron" v="one layer of TLUs"><p>Every TLU connected to every input: a <em>fully connected</em> (dense) layer — Fig 10-5 wires 2 inputs to 3 outputs.</p></Fact>
-              <Fact k="Input layer"><p>The inputs themselves — no computation, just the features.</p></Fact>
-              <Fact k="Output layer"><p>The TLU layer produces the final outputs.</p></Fact>
-            </div>
+            <Sub no="1.3" title="The whole layer, one equation" slides="slide 8">
+              <Eq
+                no="1.2"
+                name="Dense layer, matrix form"
+                src="h_{\mathbf{W},\mathbf{b}}(\mathbf{X}) = \phi(\mathbf{X}\mathbf{W} + \mathbf{b}^{\!\top})"
+                read="one matrix multiply computes every neuron for every instance — φ is the activation function"
+              />
+              <Unfold label="The matrix form, symbol by symbol (slide 8)">
+                <ul className="dl-list">
+                  <li><Tex src="\mathbf{X}" /> — the matrix of input features: one row per instance, one column per feature.</li>
+                  <li><Tex src="\mathbf{W}" /> — the weight matrix: one row per input feature, one column per neuron.</li>
+                  <li><Tex src="\mathbf{b}" /> — the bias vector: one bias per neuron.</li>
+                  <li><Tex src="\phi" /> — the <em>activation function</em>. Linear algebra makes the whole layer one multiply.</li>
+                </ul>
+              </Unfold>
+            </Sub>
 
-            <Tex block src="h_{\mathbf{W},\mathbf{b}}(\mathbf{X}) = \phi(\mathbf{X}\mathbf{W} + \mathbf{b}^{\!\top})" />
-            <Unfold label="The matrix form, symbol by symbol (slide 8)">
-              <ul className="dl-list">
-                <li><Tex src="\mathbf{X}" /> — the matrix of input features: one row per instance, one column per feature.</li>
-                <li><Tex src="\mathbf{W}" /> — the weight matrix: one row per input feature, one column per neuron.</li>
-                <li><Tex src="\mathbf{b}" /> — the bias vector: one bias per neuron.</li>
-                <li><Tex src="\phi" /> — the <em>activation function</em>. Linear algebra makes the whole layer one multiply.</li>
-              </ul>
-            </Unfold>
+            <Jot
+              items={[
+                <>TLU: <Tex src="z=\mathbf{w}^{\mathsf T}\mathbf{x}+b" />, output = step(z) — heaviside gives 0/1, sign gives −1/0/+1.</>,
+                <>One TLU thresholds a weighted sum → a <b>linear classifier</b>; its decision boundary is always a straight line.</>,
+                <>Perceptron = a single <b>fully connected (dense) layer</b> of TLUs; the inputs are the input layer, the TLUs the output layer.</>,
+                <>Whole layer at once: <Tex src="h_{\mathbf{W},\mathbf{b}}(\mathbf{X})=\phi(\mathbf{X}\mathbf{W}+\mathbf{b}^{\top})" /> — rows of X = instances, columns of W = neurons.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -190,21 +226,55 @@ export default function Lecture1() {
             <Hook sub="Rosenblatt’s algorithm was inspired by Hebb’s rule (after Donald Hebb): feed one instance at a time and reinforce the connections that would have got it right.">
               {TABS[2].hook}
             </Hook>
+            <Outline
+              items={[
+                ['2.1', 'Hebb’s intuition'],
+                ['2.2', 'The learning rule'],
+                ['2.3', 'Watch it learn, live'],
+                ['2.4', 'Limits & neighbours'],
+              ]}
+            />
 
-            <RuleAnatomy />
-            <PerceptronTrainer />
+            <Sub no="2.1" title="Hebb’s intuition" slides="slide 9">
+              <p className="dl-body">
+                Hebbian learning: connections between neurons that activate together get <em>stronger</em> —
+                “cells that fire together, wire together.” Rosenblatt’s twist: train on one instance at a
+                time, and only move the weights of output neurons that got it <em>wrong</em>, reinforcing
+                the inputs that would have contributed to the correct answer.
+              </p>
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Convergence theorem" v="separable ⇒ solved" tone="accent">
-                <p>If the data is linearly separable, Rosenblatt proved the rule converges<Fnote n={1} />. The boundary stays linear though — complex patterns are out of reach.</p>
-              </Fact>
-              <Fact k="It’s SGD in disguise" v="SGDClassifier">
-                <p>Scikit-Learn’s <code>Perceptron</code> ≡ <code>SGDClassifier(loss="perceptron", learning_rate="constant", eta0=1, penalty=None)</code>.</p>
-              </Fact>
-              <Fact k="vs Logistic Regression" v="no probabilities">
-                <p>Perceptrons predict on a hard threshold — no class probability. A good reason to prefer Logistic Regression.</p>
-              </Fact>
-            </div>
+            <Sub no="2.2" title="The learning rule, term by term" slides="slides 10–11">
+              <RuleAnatomy />
+            </Sub>
+
+            <Sub no="2.3" title="Rosenblatt’s algorithm, live" slides="slides 9 · 12–13">
+              <PerceptronTrainer />
+            </Sub>
+
+            <Sub no="2.4" title="Limits & neighbours" slides="slides 12 · 14–15">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Convergence theorem" v="separable ⇒ solved" tone="accent">
+                  <p>If the data is linearly separable, Rosenblatt proved the rule converges<Fnote n={1} />. The boundary stays linear though — complex patterns are out of reach.</p>
+                </Fact>
+                <Fact k="It’s SGD in disguise" v="SGDClassifier">
+                  <p>Scikit-Learn’s <code>Perceptron</code> ≡ <code>SGDClassifier(loss="perceptron", learning_rate="constant", eta0=1, penalty=None)</code>.</p>
+                </Fact>
+                <Fact k="vs Logistic Regression" v="no probabilities">
+                  <p>Perceptrons predict on a hard threshold — no class probability. A good reason to prefer Logistic Regression.</p>
+                </Fact>
+              </div>
+            </Sub>
+
+            <Jot
+              items={[
+                <>Hebb’s rule: cells that fire together, wire together — reinforce the connections that help correct predictions.</>,
+                <>Update one instance at a time: <Tex src="w_{i,j} \leftarrow w_{i,j} + \eta\,(y_j-\hat{y}_j)\,x_i" /> — a correct output means zero update.</>,
+                <>Convergence theorem: linearly separable data ⇒ the rule converges (the solution is not unique); the boundary stays linear.</>,
+                <>The rule is SGD on squared error — sklearn’s Perceptron ≡ SGDClassifier(loss="perceptron", eta0=1, penalty=None).</>,
+                <>Hard threshold → no class probabilities — a good reason to prefer Logistic Regression.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -213,8 +283,28 @@ export default function Lecture1() {
             <Hook sub="Minsky & Papert’s 1969 monograph Perceptrons showed a single layer can’t solve trivially easy problems — and connectionism went dark.">
               {TABS[3].hook}
             </Hook>
-            <XorGame />
-            <XorMlp />
+            <Outline
+              items={[
+                ['3.1', 'Try to cut it with one line'],
+                ['3.2', 'Two layers crack it'],
+              ]}
+            />
+
+            <Sub no="3.1" title="Try to cut it with one line" slides="slide 16">
+              <XorGame />
+            </Sub>
+
+            <Sub no="3.2" title="Two layers crack it" slides="slide 17">
+              <XorMlp />
+            </Sub>
+
+            <Jot
+              items={[
+                <>XOR: ▲ at (0,0),(1,1) vs ■ at (0,1),(1,0) — <b>no single line separates them</b>, so a one-layer Perceptron fails (Minsky &amp; Papert, 1969).</>,
+                <>True of any linear model — Logistic Regression included. The result froze connectionism for years.</>,
+                <>Stack two layers (an AND unit and an OR unit, output = OR − AND) and XOR falls. Stacked Perceptrons = a Multi-Layer Perceptron.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -223,14 +313,32 @@ export default function Lecture1() {
             <Hook sub="An MLP: a passthrough input layer, one or more hidden layers of TLUs, and an output layer (Figure 10-7). Training it took a 1986 idea.">
               {TABS[4].hook}
             </Hook>
+            <Outline
+              items={[
+                ['4.1', 'MLP anatomy'],
+                ['4.2', 'Backprop, four phases'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Input layer" v="passthrough"><p>No computation — it just presents the features.</p></Fact>
-              <Fact k="Hidden layers" v="1 or more"><p>Layers of TLUs between input and output — the “deep” in deep learning.</p></Fact>
-              <Fact k="Output layer" v="the final TLUs"><p>Produces the network’s answer.</p></Fact>
-            </div>
+            <Sub no="4.1" title="MLP anatomy" slides="slide 18">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Input layer" v="passthrough"><p>No computation — it just presents the features.</p></Fact>
+                <Fact k="Hidden layers" v="1 or more"><p>Layers of TLUs between input and output — the “deep” in deep learning.</p></Fact>
+                <Fact k="Output layer" v="the final TLUs"><p>Produces the network’s answer.</p></Fact>
+              </div>
+            </Sub>
 
-            <BackpropTour />
+            <Sub no="4.2" title="Backpropagation, four phases" slides="slide 19">
+              <BackpropTour />
+            </Sub>
+
+            <Jot
+              items={[
+                <>MLP = passthrough input layer + one or more hidden TLU layers + an output layer.</>,
+                <>Backprop (Rumelhart–Hinton–Williams, 1986): forward pass → measure the error → reverse pass assigns each connection its error share → Gradient-Descent step. Repeat.</>,
+                <>It is Gradient Descent using reverse-mode autodiff — two passes through the network give every gradient.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -239,21 +347,51 @@ export default function Lecture1() {
             <Hook sub={<>Backprop needs gradients — so Rumelhart et al. swapped the step function for the sigmoid<Fnote n={2} />, which has a well-defined nonzero derivative everywhere.</>}>
               {TABS[5].hook}
             </Hook>
+            <Outline
+              items={[
+                ['5.1', 'Why the step had to go'],
+                ['5.2', 'The classic four, live'],
+                ['5.3', 'Why nonlinearity at all'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="The swap" v="step → σ" tone="accent">
-                <p>step′(z) is 0 everywhere — nothing to descend. σ′(z) = σ(z)(1 − σ(z)) &gt; 0 everywhere.</p>
-              </Fact>
-              <Fact k="tanh" v={<Tex src="2\sigma(2z) - 1" />}>
-                <p>Same S shape, continuous and differentiable, but ranges −1 to +1.</p>
-              </Fact>
-              <Fact k="ReLU" v={<Tex src="\max(0, z)" />}>
-                <p>Not differentiable at 0 — yet fast, and with no maximum output it eases Gradient Descent in practice.</p>
-              </Fact>
-            </div>
+            <Sub no="5.1" title="Why the step had to go" slides="slide 20">
+              <Eq
+                no="5.1"
+                name="The sigmoid (logistic)"
+                src="\sigma(z) = \frac{1}{1+e^{-z}}, \qquad \sigma'(z) = \sigma(z)\big(1-\sigma(z)\big)"
+                read="a smooth S from 0 to 1 — its derivative is nonzero everywhere, so Gradient Descent has something to use"
+              />
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="The swap" v="step → σ" tone="accent">
+                  <p>step′(z) is 0 everywhere — nothing to descend. σ′(z) = σ(z)(1 − σ(z)) &gt; 0 everywhere.</p>
+                </Fact>
+                <Fact k="tanh" v={<Tex src="2\sigma(2z) - 1" />}>
+                  <p>Same S shape, continuous and differentiable, but ranges −1 to +1.</p>
+                </Fact>
+                <Fact k="ReLU" v={<Tex src="\max(0, z)" />}>
+                  <p>Not differentiable at 0 — yet fast, and with no maximum output it eases Gradient Descent in practice.</p>
+                </Fact>
+              </div>
+            </Sub>
 
-            <ActivationGallery />
-            <LinearityDemo />
+            <Sub no="5.2" title="The classic four, live" slides="slides 20–22">
+              <ActivationGallery />
+            </Sub>
+
+            <Sub no="5.3" title="Why nonlinearity at all" slides="slide 23">
+              <LinearityDemo />
+            </Sub>
+
+            <Jot
+              items={[
+                <>step′(z) = 0 everywhere → nothing to descend. Backprop needed a differentiable activation — the sigmoid.</>,
+                <><Tex src="\sigma(z)=1/(1+e^{-z})" />; <Tex src="\sigma'=\sigma(1-\sigma)" /> — nonzero everywhere, max 0.25 at z = 0.</>,
+                <>tanh(z) = 2σ(2z) − 1 — same S shape, range (−1, 1), zero-centred.</>,
+                <>ReLU(z) = max(0, z) — not differentiable at 0, no maximum output, fast: the practical default.</>,
+                <>Without a nonlinearity between layers, any stack of linear layers collapses to one linear layer.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -262,20 +400,54 @@ export default function Lecture1() {
             <Hook sub="Same body, different head: the output layer and loss are chosen by the task — the hidden layers stay ReLU.">
               {TABS[6].hook}
             </Hook>
+            <Outline
+              items={[
+                ['6.1', 'Pick the head'],
+                ['6.2', 'Regression losses'],
+                ['6.3', 'Softmax & cross-entropy'],
+                ['6.4', 'The recipe in code'],
+              ]}
+            />
 
-            <HeadPicker />
-            <LossLab />
-            <SoftmaxLab />
+            <Sub no="6.1" title="Pick the head" slides="slides 24 · 27 · 29 · 31">
+              <HeadPicker />
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--2">
-              <Fact k="The modern template" v="Fig 10-9">
-                <p>ReLU hidden layers + a softmax output block — the standard classification MLP.</p>
-              </Fact>
-              <Fact k="California housing" v="RMSE ≈ 0.505" tone="accent">
-                <p>The slide-26 regressor (3 × 50 hidden). Prices are normalised to [0, 5], so that’s roughly a 10% error.</p>
-              </Fact>
-            </div>
-            <Code code={MLPREG_CODE} label="mlp_regressor.py" meta="slide 26" />
+            <Sub no="6.2" title="Regression losses" slides="slides 25 · 27–28">
+              <LossLab />
+            </Sub>
+
+            <Sub no="6.3" title="Softmax & cross-entropy" slides="slide 29">
+              <Eq
+                no="6.1"
+                name="Softmax"
+                src="\hat{p}_k = \frac{\exp(z_k)}{\sum_{j=1}^{K}\exp(z_j)}"
+                read="exponentiate every logit, then normalise — K probabilities that always sum to 1"
+              />
+              <SoftmaxLab />
+            </Sub>
+
+            <Sub no="6.4" title="The recipe in code" slides="slide 26">
+              <div className="dl-cardgrid dl-cardgrid--2">
+                <Fact k="The modern template" v="Fig 10-9">
+                  <p>ReLU hidden layers + a softmax output block — the standard classification MLP.</p>
+                </Fact>
+                <Fact k="California housing" v="RMSE ≈ 0.505" tone="accent">
+                  <p>The slide-26 regressor (3 × 50 hidden). Prices are normalised to [0, 5], so that’s roughly a 10% error.</p>
+                </Fact>
+              </div>
+              <Code code={MLPREG_CODE} label="mlp_regressor.py" meta="slide 26" />
+            </Sub>
+
+            <Jot
+              items={[
+                <>Same ReLU body everywhere: 1–5 hidden layers, 10–100 neurons each — only the head and the loss change with the task.</>,
+                <>Regression head: 1 neuron per output dimension; activation none (any value), ReLU/softplus (positive), sigmoid/tanh (bounded). Loss: MSE — MAE if outliers, Huber for both.</>,
+                <>Binary / multilabel classification: sigmoid neuron(s) + cross-entropy. Multiclass: softmax over K neurons + cross-entropy.</>,
+                <>Softmax: <Tex src="\hat{p}_k = e^{z_k}/\sum_j e^{z_j}" /> — probabilities summing to 1; cross-entropy −log p̂ blows up when the true class gets low probability.</>,
+                <>California-housing MLP (3 × 50): RMSE ≈ 0.505 on [0, 5]-scaled prices ≈ 10% error.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -284,18 +456,36 @@ export default function Lecture1() {
             <Hook sub="A high-level Deep Learning API for building, training, evaluating and executing all sorts of neural networks — keras.io.">
               {TABS[7].hook}
             </Hook>
+            <Outline
+              items={[
+                ['7.1', 'What Keras is'],
+                ['7.2', 'Version check'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Author" v="François Chollet"><p>Released as open source in March 2015; it quickly gained popularity.</p></Fact>
-              <Fact k="Multibackend era" v="TF · CNTK · Theano"><p>The reference implementation ran on three libraries — “multibackend Keras”.</p></Fact>
-              <Fact k="Since v2.4" v="TensorFlow-only" tone="accent"><p>Keras is now TensorFlow’s official high-level API.</p></Fact>
-            </div>
+            <Sub no="7.1" title="What Keras is" slides="slide 32">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Author" v="François Chollet"><p>Released as open source in March 2015; it quickly gained popularity.</p></Fact>
+                <Fact k="Multibackend era" v="TF · CNTK · Theano"><p>The reference implementation ran on three libraries — “multibackend Keras”.</p></Fact>
+                <Fact k="Since v2.4" v="TensorFlow-only" tone="accent"><p>Keras is now TensorFlow’s official high-level API.</p></Fact>
+              </div>
+            </Sub>
 
-            <Code code={KERAS_CODE} label="version_check.py" meta="slide 33" />
-            <p className="dl-body">
-              Check you have the unit’s versions before the next lecture — where the Sequential and
-              Functional APIs (and hyperparameter fine-tuning) pick up this chapter’s roadmap.
-            </p>
+            <Sub no="7.2" title="Version check" slides="slide 33">
+              <Code code={KERAS_CODE} label="version_check.py" meta="slide 33" />
+              <p className="dl-body">
+                Check you have the unit’s versions before the next lecture — where the Sequential and
+                Functional APIs (and hyperparameter fine-tuning) pick up this chapter’s roadmap.
+              </p>
+            </Sub>
+
+            <Jot
+              items={[
+                <>Keras (François Chollet, open-sourced March 2015): the high-level API for building, training, evaluating and running neural networks — keras.io.</>,
+                <>Was multibackend (TF / CNTK / Theano); since v2.4 it is TensorFlow’s official high-level API.</>,
+                <>Unit versions to have installed: tf 2.17.0 / keras 3.10.0 — check before the next lecture.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -327,7 +517,8 @@ function StartPane({ go, visited }) {
           <p className="dl-hero__lead">
             From a 1957 neuron to your first deep network: perceptrons, the rule that trains them,
             the XOR wall, the backprop breakthrough — and which head to bolt on for any task.
-            Eight playable levels; every figure is a lab.
+            Built for the notebook: every level opens with its numbered skeleton, boxes its
+            equations, and ends with a tickable <em>Note it down</em> list.
           </p>
           <div className="dl-hero__stats">
             <span><b>33</b> slides</span>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Tex, Fnote, Code, Unfold } from '../kit';
+import { Tex, Fnote, Code, Unfold, Eq } from '../kit';
 import { mulberry32 } from '../mathfns';
 import './lecture1.css';
 
@@ -178,7 +178,12 @@ export function RuleAnatomy() {
   return (
     <div className="dl-lab">
       <div className="dl-lab__bar"><span className="dl-lab__name">The learning rule · slide 10 — click a symbol</span></div>
-      <Tex block src="w_{i,j}^{(\text{next step})} = w_{i,j} + \eta\,(y_j - \hat{y}_j)\,x_i" />
+      <Eq
+        no="2.1"
+        name="Perceptron learning rule"
+        src="w_{i,j}^{(\text{next step})} = w_{i,j} + \eta\,(y_j - \hat{y}_j)\,x_i"
+        read="new weight = old weight + learning rate × (target − output) × input"
+      />
       <div className="dl-chips">
         {RULE_TERMS.map((t) => (
           <button key={t.id} type="button" className={`dl-chip${term === t.id ? ' dl-chip--on' : ''}`} onClick={() => setTerm(t.id)} aria-pressed={term === t.id}>

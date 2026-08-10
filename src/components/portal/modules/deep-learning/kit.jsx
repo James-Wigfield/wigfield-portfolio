@@ -19,6 +19,16 @@ import './kit.css';
                 on scroll.
      Note       a labelled editorial aside (ruled, marker dot — never a
                 coloured callout box).
+
+   The NOTETAKING SPINE (so a tab transcribes straight into a notebook):
+     Outline    the "notes skeleton" under a Hook — the tab's numbered subs
+                as clickable jump links; copy it down as your heading list.
+     Sub        a numbered subsection ruler (2.1, 2.2 …) segmenting a tab
+                into notebook-sized ideas, each with its slide receipt.
+     Eq         a named + numbered display equation (EQ 2.1) with an italic
+                plain-words "read" line underneath — built to be copied.
+     Jot        the end-of-tab "Note it down" recap: ruled, tickable lines
+                (□ → ✓) holding exactly what belongs in your notes.
      Code       a VS-Code-style editor block: dark chrome, traffic dots,
                 filename tab, line numbers, real Python syntax colours
                 (Dark+ palette), per-line highlight/dim for steppers.
@@ -90,6 +100,100 @@ export function Section({ n, title, slides, lead, children, id }) {
       {lead && <p className="dlk-section__lead">{lead}</p>}
       {children}
     </section>
+  );
+}
+
+/* ── Notes skeleton: the tab's numbered subs as jump links ───────────────── */
+const subId = (no) => `dl-sub-${String(no).replace(/\./g, '-')}`;
+
+export function Outline({ items }) {
+  const go = (no) => document.getElementById(subId(no))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return (
+    <nav className="dlk-outline" aria-label="Section outline">
+      <span className="dlk-outline__label">
+        <span className="dlk-outline__dot" aria-hidden="true" />
+        Notes skeleton
+      </span>
+      <ol className="dlk-outline__list">
+        {items.map(([no, t]) => (
+          <li key={no}>
+            <button type="button" className="dlk-outline__item" onClick={() => go(no)}>
+              <span className="dlk-outline__no">{no}</span>
+              {t}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+/* ── Numbered subsection ruler — the notetaking spine of a tab ───────────── */
+export function Sub({ no, title, slides, children }) {
+  return (
+    <section className="dlk-sub" id={subId(no)}>
+      <header className="dlk-sub__head">
+        <span className="dlk-sub__no">{no}</span>
+        <h5 className="dlk-sub__title">{title}</h5>
+        {slides && <span className="dlk-sub__slides">{slides}</span>}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+/* ── Named, numbered equation with a plain-words reading ─────────────────── */
+export function Eq({ no, name, src, read }) {
+  return (
+    <figure className="dlk-eq">
+      <figcaption className="dlk-eq__head">
+        <span className="dlk-eq__dot" aria-hidden="true" />
+        <span className="dlk-eq__name">{name}</span>
+        {no && <span className="dlk-eq__no">eq {no}</span>}
+      </figcaption>
+      <Tex block src={src} />
+      {read && <p className="dlk-eq__read">read: {read}</p>}
+    </figure>
+  );
+}
+
+/* ── "Note it down" — the end-of-tab recap, tickable line by line ────────── */
+export function Jot({ label = 'Note it down', items }) {
+  const [done, setDone] = useState(() => new Set());
+  const toggle = (i) =>
+    setDone((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  return (
+    <div className="dlk-jot">
+      <div className="dlk-jot__bar">
+        <span className="dlk-jot__label">
+          <span className="dlk-jot__dot" aria-hidden="true" />
+          {label}
+        </span>
+        <span className="dlk-jot__hint">
+          {done.size}/{items.length} copied — tick a line once it’s in your notebook
+        </span>
+      </div>
+      <ul className="dlk-jot__list">
+        {items.map((it, i) => (
+          <li key={i}>
+            <button
+              type="button"
+              className={`dlk-jot__item${done.has(i) ? ' dlk-jot__item--done' : ''}`}
+              onClick={() => toggle(i)}
+              aria-pressed={done.has(i)}
+            >
+              <span className="dlk-jot__box" aria-hidden="true" />
+              <span className="dlk-jot__text">{it}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

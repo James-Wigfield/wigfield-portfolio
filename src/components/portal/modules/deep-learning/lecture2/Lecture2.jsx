@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Tex, Fnote, Code, Section, Hook, Fact, Unfold, RefsProvider } from '../kit';
+import { Tex, Fnote, Code, Section, Hook, Fact, Unfold, RefsProvider, Outline, Sub, Jot } from '../kit';
 import { SigmoidSaturation, GradientFlowLab, InitLab, ActivationLab, WhichActivation } from './labs';
 import { BNLab, ClipLab, TransferLab, Quiz } from './labs2';
 import { QUIZ, scoreOf } from './quiz';
@@ -9,7 +9,10 @@ import '../common.css';
    CITS5017 · LECTURE 2 — TOPIC 2: TRAINING DEEP NEURAL NETWORKS
    ----------------------------------------------------------------------------
    The full content of Documents/cits5017/markdown-lecs/lecture-2.md (all 32
-   slides) as a TABBED interactive page — no infinite scroll, minimal prose:
+   slides) as a TABBED interactive page — laid out as a NOTETAKING SPINE:
+   every tab opens with its numbered skeleton (Outline), walks numbered subs
+   (Sub n.m: concept → lab), and closes with a tickable "Note it down" recap
+   (Jot) holding exactly what belongs in the notebook.
 
      START        level-select + the deck's roadmap (slides 1–3) + sources
      PROBLEM      slides 4–6    sigmoid saturation + gradient-flow lab
@@ -180,35 +183,59 @@ export default function Lecture2() {
             <Hook sub="Two labs. Drive both, and you’ll know why 2010-era deep nets refused to train.">
               {TABS[1].hook}
             </Hook>
+            <Outline
+              items={[
+                ['1.1', 'Four ways deep nets fail'],
+                ['1.2', 'Vanishing & exploding'],
+                ['1.3', 'Sigmoid saturation, live'],
+                ['1.4', 'Watch a gradient die'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--4">
-              <Fact k="Unstable gradients" tone="accent"><p>Vanishing or exploding — this tab and the next four.</p></Fact>
-              <Fact k="Not enough data"><p>Too little (labelled) data for a big net → <b>Transfer</b> tab.</p></Fact>
-              <Fact k="Slow training"><p>Fixed by faster optimizers — next lecture.</p></Fact>
-              <Fact k="Overfitting"><p>Millions of parameters, noisy or scarce data — next lecture.</p></Fact>
-            </div>
+            <Sub no="1.1" title="Four ways deep nets fail" slides="slide 4">
+              <div className="dl-cardgrid dl-cardgrid--4">
+                <Fact k="Unstable gradients" tone="accent"><p>Vanishing or exploding — this tab and the next four.</p></Fact>
+                <Fact k="Not enough data"><p>Too little (labelled) data for a big net → <b>Transfer</b> tab.</p></Fact>
+                <Fact k="Slow training"><p>Fixed by faster optimizers — next lecture.</p></Fact>
+                <Fact k="Overfitting"><p>Millions of parameters, noisy or scarce data — next lecture.</p></Fact>
+              </div>
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Vanishing" v="grad → 0">
-                <p>Gradients shrink on the way down; lower weights barely move, training stalls or crawls.</p>
-              </Fact>
-              <Fact k="Exploding" v="grad → ∞">
-                <p>The opposite: gradients grow layer after layer until updates blow up.</p>
-              </Fact>
-              <Fact k="The culprit" v="σ + N(0,1)">
-                <p>Sigmoid activations plus the era’s default init — the 2010 diagnosis<Fnote n={1} />.</p>
-              </Fact>
-            </div>
+            <Sub no="1.2" title="Vanishing & exploding gradients" slides="slides 4–5">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Vanishing" v="grad → 0">
+                  <p>Gradients shrink on the way down; lower weights barely move, training stalls or crawls.</p>
+                </Fact>
+                <Fact k="Exploding" v="grad → ∞">
+                  <p>The opposite: gradients grow layer after layer until updates blow up.</p>
+                </Fact>
+                <Fact k="The culprit" v="σ + N(0,1)">
+                  <p>Sigmoid activations plus the era’s default init — the 2010 diagnosis<Fnote n={1} />.</p>
+                </Fact>
+              </div>
+            </Sub>
 
-            <SigmoidSaturation />
+            <Sub no="1.3" title="Sigmoid saturation, live" slides="slide 5">
+              <SigmoidSaturation />
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Why it saturates · 1"><p><Tex src="\mathcal{N}(0,1)" /> init makes each layer’s output variance ≫ its input variance — <Tex src="z" /> blows up.</p></Fact>
+                <Fact k="Why it saturates · 2"><p>Sigmoid’s mean is 0.5, not 0 — the signal drifts off-centre every layer.</p></Fact>
+                <Fact k="Why it saturates · 3"><p>Large <Tex src="|z|" /> → output pinned at 0 or 1, derivative ≈ 0 → nothing to backpropagate.</p></Fact>
+              </div>
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Why it saturates · 1"><p><Tex src="\mathcal{N}(0,1)" /> init makes each layer’s output variance ≫ its input variance — <Tex src="z" /> blows up.</p></Fact>
-              <Fact k="Why it saturates · 2"><p>Sigmoid’s mean is 0.5, not 0 — the signal drifts off-centre every layer.</p></Fact>
-              <Fact k="Why it saturates · 3"><p>Large <Tex src="|z|" /> → output pinned at 0 or 1, derivative ≈ 0 → nothing to backpropagate.</p></Fact>
-            </div>
+            <Sub no="1.4" title="Watch a gradient die" slides="slide 6">
+              <GradientFlowLab />
+            </Sub>
 
-            <GradientFlowLab />
+            <Jot
+              items={[
+                <>Four failure modes of deep nets: <b>unstable gradients</b>, too little labelled data, slow training, overfitting.</>,
+                <>Vanishing = gradients shrink layer by layer on the way down, so lower layers stop learning; exploding = they grow until updates blow up.</>,
+                <>The 2010 diagnosis (Glorot &amp; Bengio): sigmoid activations + N(0,1) init — layer outputs blow up and σ saturates.</>,
+                <>Saturated sigmoid: large |z| pins the output at 0 or 1, σ′ ≈ 0 → nothing to backpropagate. Max slope anywhere: σ′(0) = 0.25.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -217,17 +244,35 @@ export default function Lecture2() {
             <Hook sub={<>Glorot &amp; Bengio’s compromise<Fnote n={2} />: scale each layer’s random weights by its fan-in/fan-out, and variance survives in both directions.</>}>
               {TABS[2].hook}
             </Hook>
+            <Outline
+              items={[
+                ['2.1', 'Match the init to the fan'],
+                ['2.2', 'In Keras'],
+              ]}
+            />
 
-            <InitLab />
+            <Sub no="2.1" title="Match the init to the fan" slides="slides 7–8">
+              <InitLab />
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Keras default" v='"glorot_uniform"'><p>Glorot with a uniform distribution — you get it without asking.</p></Fact>
-              <Fact k="To change it" v="kernel_initializer"><p>One argument on the layer. That’s the whole fix.</p></Fact>
-              <Fact k="Rule of thumb" v="ReLU family → He"><p>sigmoid/tanh/softmax → Glorot · SELU → LeCun.</p></Fact>
-            </div>
+            <Sub no="2.2" title="In Keras" slides="slide 9">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Keras default" v='"glorot_uniform"'><p>Glorot with a uniform distribution — you get it without asking.</p></Fact>
+                <Fact k="To change it" v="kernel_initializer"><p>One argument on the layer. That’s the whole fix.</p></Fact>
+                <Fact k="Rule of thumb" v="ReLU family → He"><p>sigmoid/tanh/softmax → Glorot · SELU → LeCun.</p></Fact>
+              </div>
+              <Code code={INIT_CODE_1} label="he_init.py" meta="slide 9 · example 1" />
+              <Code code={INIT_CODE_2} label="variance_scaling.py" meta="slide 9 · example 2" />
+            </Sub>
 
-            <Code code={INIT_CODE_1} label="he_init.py" meta="slide 9 · example 1" />
-            <Code code={INIT_CODE_2} label="variance_scaling.py" meta="slide 9 · example 2" />
+            <Jot
+              items={[
+                <>Goal: keep the signal variance alive forwards <em>and</em> backwards → Glorot’s compromise scales by fan_avg = (fan_in + fan_out)/2.</>,
+                <>Match init to activation (Table 11-1): none/tanh/sigmoid/softmax → <b>Glorot</b> · ReLU family → <b>He</b> · SELU → <b>LeCun</b>.</>,
+                <>Variances: Glorot <Tex src="\sigma^2 = 1/\mathrm{fan}_{\mathrm{avg}}" /> · He <Tex src="\sigma^2 = 2/\mathrm{fan}_{\mathrm{in}}" /> · LeCun <Tex src="\sigma^2 = 1/\mathrm{fan}_{\mathrm{in}}" />.</>,
+                <>Keras default = "glorot_uniform"; switch per layer with kernel_initializer="he_normal".</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -236,28 +281,49 @@ export default function Lecture2() {
             <Hook sub="Click a chip for its card. Drag α and β. Load the book’s figures with one press.">
               {TABS[3].hook}
             </Hook>
+            <Outline
+              items={[
+                ['3.1', 'ReLU’s disease'],
+                ['3.2', 'A decade of fixes'],
+                ['3.3', 'Which one to use'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="ReLU" v={<Tex src="\max(0, z)" />}>
-                <p>Never saturates for <Tex src="z>0" /><Fnote n={4} /> — cheap, everywhere.</p>
-              </Fact>
-              <Fact k="Its disease" v="dying ReLUs" tone="accent">
-                <p>Input goes negative → output 0, gradient 0 — the neuron can die for good.</p>
-              </Fact>
-              <Fact k="The cure" v="8 variants">
-                <p>Leaky, RReLU, PReLU fix the leak; ELU → Mish make it smooth.</p>
-              </Fact>
-            </div>
+            <Sub no="3.1" title="ReLU’s disease" slides="slide 10">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="ReLU" v={<Tex src="\max(0, z)" />}>
+                  <p>Never saturates for <Tex src="z>0" /><Fnote n={4} /> — cheap, everywhere.</p>
+                </Fact>
+                <Fact k="Its disease" v="dying ReLUs" tone="accent">
+                  <p>Input goes negative → output 0, gradient 0 — the neuron can die for good.</p>
+                </Fact>
+                <Fact k="The cure" v="8 variants">
+                  <p>Leaky, RReLU, PReLU fix the leak; ELU → Mish make it smooth.</p>
+                </Fact>
+              </div>
+            </Sub>
 
-            <ActivationLab />
+            <Sub no="3.2" title="A decade of fixes, explored" slides="slides 10–21">
+              <ActivationLab />
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Kinked at z = 0"><p>ReLU · Leaky · RReLU · PReLU — derivative jumps.</p></Fact>
+                <Fact k="Smooth everywhere"><p>ELU (α=1) · SELU · GELU · Swish · Mish.</p></Fact>
+                <Fact k="In Keras today"><p><code>"gelu"</code> and <code>"silu"</code> ship; Mish, Swish-β and RReLU don’t (slide 21).</p></Fact>
+              </div>
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Kinked at z = 0"><p>ReLU · Leaky · RReLU · PReLU — derivative jumps.</p></Fact>
-              <Fact k="Smooth everywhere"><p>ELU (α=1) · SELU · GELU · Swish · Mish.</p></Fact>
-              <Fact k="In Keras today"><p><code>"gelu"</code> and <code>"silu"</code> ship; Mish, Swish-β and RReLU don’t (slide 21).</p></Fact>
-            </div>
+            <Sub no="3.3" title="Which one to use" slides="slide 22">
+              <WhichActivation />
+            </Sub>
 
-            <WhichActivation />
+            <Jot
+              items={[
+                <>ReLU never saturates for z &gt; 0 and is cheap — but a neuron whose input stays negative outputs 0 with gradient 0: it can <b>die</b> for good.</>,
+                <>Leaky ReLU / RReLU / PReLU keep a small negative slope; ELU, SELU, GELU, Swish and Mish are smooth everywhere.</>,
+                <>Kinked at z = 0: ReLU · Leaky · RReLU · PReLU. Smooth: ELU → Mish. Keras ships "gelu" and "silu"; Mish, Swish-β and RReLU it doesn’t.</>,
+                <>Slide-22 rule of thumb: ReLU stays a solid default for runtime; SELU for deep self-normalising stacks; GELU/Swish/Mish buy accuracy at extra cost.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -266,80 +332,106 @@ export default function Lecture2() {
             <Hook sub={<>Good init only fixes the <em>start</em> of training. BN<Fnote n={10} /> patrols every layer for the whole run — Ioffe &amp; Szegedy, 2015.</>}>
               {TABS[4].hook}
             </Hook>
+            <Outline
+              items={[
+                ['4.1', 'The idea'],
+                ['4.2', 'The algorithm, stepped'],
+                ['4.3', 'What BN buys'],
+                ['4.4', 'BN in Keras'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="The op" v="normalize"><p>One extra operation per hidden layer, before or after the activation: mean 0, variance 1.</p></Fact>
-              <Fact k="The twist" v="γ, β trainable" tone="accent"><p>The network learns to undo exactly as much normalization as it wants.</p></Fact>
-              <Fact k="At test time" v="moving averages"><p>No batch to average — running estimates from training stand in.</p></Fact>
-            </div>
+            <Sub no="4.1" title="The idea" slides="slide 23">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="The op" v="normalize"><p>One extra operation per hidden layer, before or after the activation: mean 0, variance 1.</p></Fact>
+                <Fact k="The twist" v="γ, β trainable" tone="accent"><p>The network learns to undo exactly as much normalization as it wants.</p></Fact>
+                <Fact k="At test time" v="moving averages"><p>No batch to average — running estimates from training stand in.</p></Fact>
+              </div>
+            </Sub>
 
-            <BNLab />
+            <Sub no="4.2" title="The algorithm, stepped" slides="slide 24">
+              <BNLab />
+            </Sub>
 
-            <div className="dl-cardgrid dl-cardgrid--5">
-              <Fact k="ImageNet" v="huge ↑"><p>Their headline result.</p></Fact>
-              <Fact k="Saturating acts" v="usable again"><p>Even tanh worked.</p></Fact>
-              <Fact k="Learning rates" v="much larger"><p>Training got faster.</p></Fact>
-              <Fact k="Regularizer" v="for free"><p>Less need for dropout.</p></Fact>
-              <Fact k="Input scaling" v="not needed"><p>No StandardScaler.</p></Fact>
-            </div>
-            <Unfold label="The cost — and the trick that removes it (slide 25)">
-              <p className="dl-body">
-                BN adds computation at every layer, but convergence is so much faster that fewer
-                epochs usually win the time back. After training you can erase the cost entirely by
-                fusing each BN layer with the layer before it.
-              </p>
-            </Unfold>
-
-            <div className="dl-chips">
-              <button type="button" className={`dl-chip${bnOrder === 'after' ? ' dl-chip--on' : ''}`} onClick={() => setBnOrder('after')} aria-pressed={bnOrder === 'after'}>
-                BN after the activation · slide 26
-              </button>
-              <button type="button" className={`dl-chip${bnOrder === 'before' ? ' dl-chip--on' : ''}`} onClick={() => setBnOrder('before')} aria-pressed={bnOrder === 'before'}>
-                BN before the activation · slide 28
-              </button>
-            </div>
-            {bnOrder === 'after' ? (
-              <>
-                <Code code={BN_CODE_AFTER} label="bn_after_activation.py" meta="slide 26" />
-                <p className="dl-body">BN right after <code>Flatten</code> (standardizing the inputs) and after each hidden layer.</p>
-              </>
-            ) : (
-              <>
-                <Code code={BN_CODE_BEFORE} label="bn_before_activation.py" meta="slide 28" />
+            <Sub no="4.3" title="What BN buys" slides="slide 25">
+              <div className="dl-cardgrid dl-cardgrid--5">
+                <Fact k="ImageNet" v="huge ↑"><p>Their headline result.</p></Fact>
+                <Fact k="Saturating acts" v="usable again"><p>Even tanh worked.</p></Fact>
+                <Fact k="Learning rates" v="much larger"><p>Training got faster.</p></Fact>
+                <Fact k="Regularizer" v="for free"><p>Less need for dropout.</p></Fact>
+                <Fact k="Input scaling" v="not needed"><p>No StandardScaler.</p></Fact>
+              </div>
+              <Unfold label="The cost — and the trick that removes it (slide 25)">
                 <p className="dl-body">
-                  The BN authors preferred it <em>before</em> the activation: activation becomes its
-                  own layer, and <code>use_bias=False</code> drops the now-redundant bias — BN’s β
-                  already does that job.
+                  BN adds computation at every layer, but convergence is so much faster that fewer
+                  epochs usually win the time back. After training you can erase the cost entirely by
+                  fusing each BN layer with the layer before it.
                 </p>
-              </>
-            )}
+              </Unfold>
+            </Sub>
 
-            <Unfold label="model.summary() — where 271,346 parameters come from (slide 27)">
-              <div className="dl-tablewrap">
-                <table className="dl-table dl-table--summary">
-                  <caption className="dl-table__cap">The slide-26 network. BN rows tinted.</caption>
-                  <thead>
-                    <tr><th>Layer (type)</th><th>Output Shape</th><th>Param #</th></tr>
-                  </thead>
-                  <tbody>
-                    {SUMMARY_ROWS.map(([l, s, p]) => (
-                      <tr key={l} className={l.includes('batch_normalization') ? 'dl-table__row--bn' : ''}>
-                        <td className="dl-mono">{l}</td><td className="dl-mono">{s}</td><td className="dl-mono dl-right">{p}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr><td colSpan={2}>Total params</td><td className="dl-mono dl-right">271,346 (1.04 MB)</td></tr>
-                    <tr><td colSpan={2}>Trainable params</td><td className="dl-mono dl-right">268,978 (1.03 MB)</td></tr>
-                    <tr><td colSpan={2}>Non-trainable params</td><td className="dl-mono dl-right">2,368 (9.25 KB)</td></tr>
-                  </tfoot>
-                </table>
+            <Sub no="4.4" title="BN in Keras — after or before the activation" slides="slides 26–28">
+              <div className="dl-chips">
+                <button type="button" className={`dl-chip${bnOrder === 'after' ? ' dl-chip--on' : ''}`} onClick={() => setBnOrder('after')} aria-pressed={bnOrder === 'after'}>
+                  BN after the activation · slide 26
+                </button>
+                <button type="button" className={`dl-chip${bnOrder === 'before' ? ' dl-chip--on' : ''}`} onClick={() => setBnOrder('before')} aria-pressed={bnOrder === 'before'}>
+                  BN before the activation · slide 28
+                </button>
               </div>
-              <div className="dl-cardgrid dl-cardgrid--2">
-                <Fact k="4 params per feature" v="3,136 = 784 × 4"><p>γ + β (trainable) and moving mean + variance (not).</p></Fact>
-                <Fact k="Non-trainable" v="(784+300+100) × 2 = 2,368"><p>The moving statistics — estimated, never learned.</p></Fact>
-              </div>
-            </Unfold>
+              {bnOrder === 'after' ? (
+                <>
+                  <Code code={BN_CODE_AFTER} label="bn_after_activation.py" meta="slide 26" />
+                  <p className="dl-body">BN right after <code>Flatten</code> (standardizing the inputs) and after each hidden layer.</p>
+                </>
+              ) : (
+                <>
+                  <Code code={BN_CODE_BEFORE} label="bn_before_activation.py" meta="slide 28" />
+                  <p className="dl-body">
+                    The BN authors preferred it <em>before</em> the activation: activation becomes its
+                    own layer, and <code>use_bias=False</code> drops the now-redundant bias — BN’s β
+                    already does that job.
+                  </p>
+                </>
+              )}
+
+              <Unfold label="model.summary() — where 271,346 parameters come from (slide 27)">
+                <div className="dl-tablewrap">
+                  <table className="dl-table dl-table--summary">
+                    <caption className="dl-table__cap">The slide-26 network. BN rows tinted.</caption>
+                    <thead>
+                      <tr><th>Layer (type)</th><th>Output Shape</th><th>Param #</th></tr>
+                    </thead>
+                    <tbody>
+                      {SUMMARY_ROWS.map(([l, s, p]) => (
+                        <tr key={l} className={l.includes('batch_normalization') ? 'dl-table__row--bn' : ''}>
+                          <td className="dl-mono">{l}</td><td className="dl-mono">{s}</td><td className="dl-mono dl-right">{p}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr><td colSpan={2}>Total params</td><td className="dl-mono dl-right">271,346 (1.04 MB)</td></tr>
+                      <tr><td colSpan={2}>Trainable params</td><td className="dl-mono dl-right">268,978 (1.03 MB)</td></tr>
+                      <tr><td colSpan={2}>Non-trainable params</td><td className="dl-mono dl-right">2,368 (9.25 KB)</td></tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <div className="dl-cardgrid dl-cardgrid--2">
+                  <Fact k="4 params per feature" v="3,136 = 784 × 4"><p>γ + β (trainable) and moving mean + variance (not).</p></Fact>
+                  <Fact k="Non-trainable" v="(784+300+100) × 2 = 2,368"><p>The moving statistics — estimated, never learned.</p></Fact>
+                </div>
+              </Unfold>
+            </Sub>
+
+            <Jot
+              items={[
+                <>BN normalizes each feature over the current minibatch, then re-scales with trainable γ and shifts with trainable β.</>,
+                <>The four equations: <Tex src="\mu_B" /> and <Tex src="\sigma_B^2" /> over the batch → <Tex src="\hat{\mathbf{x}} = (\mathbf{x}-\mu_B)/\sqrt{\sigma_B^2+\epsilon}" /> → <Tex src="\mathbf{z} = \gamma \otimes \hat{\mathbf{x}} + \beta" />.</>,
+                <>4 parameters per feature: γ and β trainable; moving mean and variance estimated for test time (no batch to average then).</>,
+                <>Buys: much faster convergence, larger learning rates, saturating activations usable again, a mild regularizer, no input scaling needed.</>,
+                <>Before-activation variant: Dense(use_bias=False) → BN → Activation — β replaces the bias. After training, fuse each BN into the previous layer to erase the runtime cost.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -348,7 +440,19 @@ export default function Lecture2() {
             <Hook sub={<>Mostly an RNN trick — batch norm is awkward to use there<Fnote n={11} />. Steer the gradient and watch the two clips disagree.</>}>
               {TABS[5].hook}
             </Hook>
-            <ClipLab />
+
+            <Sub no="5.1" title="clipvalue vs clipnorm" slides="slide 29">
+              <ClipLab />
+            </Sub>
+
+            <Jot
+              items={[
+                <>Exploding-gradient fix, mostly for RNNs (where batch norm is awkward): cap the gradient before the update.</>,
+                <><b>clipvalue=1.0</b> clamps each component to [−1, 1] — it can <em>change the gradient’s direction</em>.</>,
+                <><b>clipnorm=1.0</b> rescales the whole vector when ‖g‖ &gt; 1 — direction preserved.</>,
+                <>One argument on the optimizer: tf.keras.optimizers.SGD(clipvalue=1.0), then compile as usual.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -357,14 +461,33 @@ export default function Lecture2() {
             <Hook sub="A similar net already exists? Reuse its lower layers and replace the head.">
               {TABS[6].hook}
             </Hook>
+            <Outline
+              items={[
+                ['6.1', 'The recipe'],
+                ['6.2', 'Figure 11-5, walked'],
+              ]}
+            />
 
-            <div className="dl-cardgrid dl-cardgrid--3">
-              <Fact k="Always replace" v="the output layer"><p>Almost certainly useless for the new task — wrong number of outputs.</p></Fact>
-              <Fact k="How much to reuse" v="similarity decides"><p>More similar tasks → keep more layers, starting from the bottom.</p></Fact>
-              <Fact k="The ritual" v="freeze → fit → unfreeze" tone="accent"><p>Protect pretrained weights while the new head finds its feet.</p></Fact>
-            </div>
+            <Sub no="6.1" title="The recipe" slides="slide 30">
+              <div className="dl-cardgrid dl-cardgrid--3">
+                <Fact k="Always replace" v="the output layer"><p>Almost certainly useless for the new task — wrong number of outputs.</p></Fact>
+                <Fact k="How much to reuse" v="similarity decides"><p>More similar tasks → keep more layers, starting from the bottom.</p></Fact>
+                <Fact k="The ritual" v="freeze → fit → unfreeze" tone="accent"><p>Protect pretrained weights while the new head finds its feet.</p></Fact>
+              </div>
+            </Sub>
 
-            <TransferLab />
+            <Sub no="6.2" title="Figure 11-5, walked" slides="slides 31–32">
+              <TransferLab />
+            </Sub>
+
+            <Jot
+              items={[
+                <>Always replace the output layer; reuse lower layers from the bottom up — the more similar the task, the more you keep.</>,
+                <>The ritual: freeze the reused layers → fit a few epochs → unfreeze → <b>recompile</b> → fine-tune with a low learning rate. Recompiling after (un)freezing is mandatory.</>,
+                <>Fashion-MNIST demo, 200 images: 91.85% from scratch → 93.85% with transfer ≈ 25% relative error-rate reduction.</>,
+                <>Fine print: transfer learning shines with deep CNNs — not with small dense networks.</>,
+              ]}
+            />
           </Section>
         )}
 
@@ -393,8 +516,9 @@ function StartPane({ go, visited }) {
           <h3 className="dl-hero__title">Training Deep Neural Networks</h3>
           <p className="dl-hero__byline">A/Prof Du Huynh · UWA · Semester 2, 2025</p>
           <p className="dl-hero__lead">
-            Why deep nets refuse to train — and the four fixes. Rebuilt from the 32-slide deck as
-            seven playable levels: everything is a lab you drive, not a slide you read.
+            Why deep nets refuse to train — and the four fixes, rebuilt from the 32-slide deck as
+            seven playable levels. Built for the notebook: every level opens with its numbered
+            skeleton, and ends with a tickable <em>Note it down</em> list.
           </p>
           <div className="dl-hero__stats">
             <span><b>32</b> slides</span>
