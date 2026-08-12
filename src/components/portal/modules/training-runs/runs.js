@@ -50,8 +50,31 @@
 
 import Run00Sample from './runs/Run00Sample';
 import Run02Clipping from './runs/Run02Clipping';
+import Run03Parity2mm from './runs/Run03Parity2mm';
 
 export const RUNS = [
+  {
+    id: 'run-03-parity2mm',
+    n: 3,
+    title: 'Resolution parity · 2 mm grid + balanced Tversky',
+    date: '09–11 Aug 2026',
+    machine: 'dev PC · RTX 5070 Ti 16 GB',
+    config: 'baseline.yaml · spacing [2.04, 2.04, 3.0] · patch 96×192×96 · Tversky 0.5/0.5',
+    status: 'complete',
+    verdict: 'mixed',
+    summary:
+      'The 2 mm grid found 108 more real lesions and pushed sensitivity past the reference, and at a physically matched size filter run 3 beats run 2 on every lesion metric — but the official voxel-count protocol hides that win, and every lesion-free patient now collects a false alarm.',
+    headline: [
+      { v: '0.545', k: 'val Dice' },
+      { v: '72.4%', k: 'lesion F1 · matched filter' },
+      { v: '40.3 h', k: 'wall-clock' },
+    ],
+    meta: [
+      { k: 'data', v: 'AutoPET PSMA v3 · 430/57/110' },
+      { k: 'archive', v: '2026-08-11_run3_parity2mm' },
+    ],
+    component: Run03Parity2mm,
+  },
   {
     id: 'run-02-clipping',
     n: 2,
