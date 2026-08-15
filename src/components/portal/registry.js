@@ -33,6 +33,7 @@ import BuildFlow from './modules/BuildFlow';
 import TrainingReadiness from './modules/TrainingReadiness';
 import ModelTraining from './modules/ModelTraining';
 import TrainingRuns from './modules/TrainingRuns';
+import MetricsTotalSeg from './modules/MetricsTotalSeg';
 import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
 import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import MambaUpdates from './modules/MambaUpdates';
@@ -56,6 +57,7 @@ import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import PortaraPricing from './modules/PortaraPricing';
 import PortaraPlatform from './modules/PortaraPlatform';
 import PortaraMotion from './modules/PortaraMotion';
+import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -68,6 +70,7 @@ export const SECTIONS = [
   { name: 'Portara',     icon: 'portara',     blurb: 'Custom portals · MCP · agents' },
   { name: 'Business',    icon: 'business',    blurb: 'Ventures & R&D' },
   { name: 'Personal',    icon: 'personal',    blurb: 'Life, goals & admin' },
+  { name: 'America',     icon: 'compass',     blurb: 'Dec–Jan snow & road trip' },
   { name: 'Investments', icon: 'investments', blurb: 'Portfolio & assets' },
 ];
 
@@ -112,6 +115,13 @@ export const MODULES = [
     icon: 'chart',
     group: 'University',
     component: TrainingRuns,
+  },
+  {
+    id: 'metrics-totalseg',
+    label: 'Metrics & TotalSeg',
+    icon: 'shield',
+    group: 'University',
+    component: MetricsTotalSeg,
   },
   {
     id: 'dl-lecture-1',
@@ -273,6 +283,13 @@ export const MODULES = [
     icon: 'deck',
     group: 'Personal',
     component: DeckStudio,
+  },
+  {
+    id: 'america-first-plan',
+    label: 'First Plan',
+    icon: 'map',
+    group: 'America',
+    component: AmericaFirstPlan,
   },
   {
     id: 'backend-setup',

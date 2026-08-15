@@ -1,0 +1,352 @@
+/* ============================================================================
+   AMERICA — FIRST PLAN  (.amx-*)
+   ----------------------------------------------------------------------------
+   Scoped styles for AmericaFirstPlan.jsx: the SVG route map + canyon-loop
+   inset, the 26-day strip, chapter cards, day-by-day rows, NYE dot scales,
+   budget bars and the persisted playbook checklist. Everything consumes the
+   portal theme tokens so it re-skins with jade / coral / arcade.
+
+   Chapter (phase) colours are categorical and validated with the dataviz
+   six-checks script (all-pairs) against each theme's --surface:
+     · light themes (jade #dde9ec, coral #fdf5f0): blue / violet / orange /
+       aqua — PASS (orange + aqua sit under 3:1 contrast, so every phase mark
+       carries a visible text label; the map also ships a legs table twin)
+     · arcade dark (#1E212A): the same four families re-stepped — PASS
+       (violet #5b46c9 is the sub-3:1 one there; same label relief applies)
+   ========================================================================== */
+
+.amx {
+  /* jade + coral (light) — validated all-pairs on both light surfaces */
+  --amx-snow:   #2a78d6;   /* ch.1 Calgary & Banff */
+  --amx-neon:   #4a3aa7;   /* ch.2 Las Vegas */
+  --amx-desert: #eb6834;   /* ch.3 canyon loop */
+  --amx-city:   #1baf7a;   /* ch.4 New York */
+  --amx-ghost:  #7d97a4;   /* context: NYE contenders we passed on */
+}
+.hp.portal[data-portal-theme="coral"] .amx {
+  --amx-ghost: #ab9289;
+}
+.hp.portal[data-portal-theme="arcade"] .amx {
+  /* validated all-pairs on surface #1E212A */
+  --amx-snow:   #3987e5;
+  --amx-neon:   #5b46c9;
+  --amx-desert: #d95926;
+  --amx-city:   #199e70;
+  --amx-ghost:  #5a6371;
+}
+
+/* Phase colour plumbing — one place maps phase → colour for dots/segs/legs */
+.amx-dot--snow,   .amx-strip__seg--snow,   .amx-leg--snow,   .amx-stop--snow   { --amx-p: var(--amx-snow); }
+.amx-dot--neon,   .amx-strip__seg--neon,   .amx-leg--neon,   .amx-stop--neon   { --amx-p: var(--amx-neon); }
+.amx-dot--desert, .amx-strip__seg--desert, .amx-leg--desert, .amx-stop--desert { --amx-p: var(--amx-desert); }
+.amx-dot--city,   .amx-strip__seg--city,   .amx-leg--city,   .amx-stop--city   { --amx-p: var(--amx-city); }
+
+/* ── Shared bits ───────────────────────────────────────────────────────── */
+.amx-src { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-3); margin-top: 0.65rem; line-height: 1.6; }
+.amx-note { font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); line-height: 1.7; }
+.amx-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.amx-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--amx-p); flex: none;
+}
+
+/* Ruled editorial list — hairline rules, a labelled dot per line, no boxes */
+.amx-ruled { padding: 1.2rem 1.4rem; }
+.amx-ruled__list { list-style: none; margin: 0; padding: 0; }
+.amx-ruled__list li {
+  position: relative; padding: 0.55rem 0 0.55rem 1.15rem;
+  font-size: 0.85rem; color: var(--ink-2); line-height: 1.55;
+  border-bottom: 1px solid var(--line-2);
+}
+.amx-ruled__list li:last-child { border-bottom: none; padding-bottom: 0.15rem; }
+.amx-ruled__list li::before {
+  content: ''; position: absolute; left: 0; top: 1.05em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+}
+
+/* ── Plan switcher ─────────────────────────────────────────────────────── */
+.amx-plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.amx-plan {
+  display: flex; flex-direction: column; gap: 0.3rem; text-align: left;
+  padding: 1.05rem 1.3rem; cursor: pointer; font: inherit; color: inherit;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.amx-plan:hover { border-color: var(--accent); }
+.amx-plan--on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.amx-plan:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amx-plan__kicker {
+  font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--ink-3);
+}
+.amx-plan--on .amx-plan__kicker { color: var(--accent-ink); }
+.amx-plan__tagline { font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); line-height: 1.15; }
+.amx-plan__sub { font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-3); letter-spacing: 0.02em; line-height: 1.5; }
+@media (max-width: 640px) { .amx-plans { grid-template-columns: 1fr; } }
+
+/* ── Overview: 26-day strip ────────────────────────────────────────────── */
+.amx-strip { padding: 1.1rem 1.3rem 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.amx-strip__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem 1rem; flex-wrap: wrap; }
+.amx-strip__head .syl-kicker { margin-bottom: 0; }
+.amx-strip__bar { display: flex; gap: 2px; }
+.amx-strip__seg {
+  height: 30px; border: none; border-radius: 3px; cursor: pointer;
+  background: var(--amx-p); flex-basis: 0; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--ease), filter 0.15s var(--ease);
+}
+.amx-strip__seg:hover { transform: translateY(-2px); }
+.amx-strip__seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amx-strip__segdays {
+  font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.05em;
+  color: #ffffff; mix-blend-mode: normal;
+}
+.hp.portal[data-portal-theme="arcade"] .amx-strip__segdays { color: #10151f; }
+.amx-strip__ticks { position: relative; height: 0.9rem; }
+.amx-strip__ticks span {
+  position: absolute; top: 0; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 0.58rem; color: var(--ink-3); white-space: nowrap;
+}
+.amx-strip__ticks span:first-child { transform: none; }
+.amx-strip__tick--end { transform: translateX(-100%) !important; }
+
+/* ── Overview: chapter cards ───────────────────────────────────────────── */
+.amx-phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.amx-phase {
+  display: flex; flex-direction: column; gap: 0.45rem; text-align: left;
+  padding: 1.15rem 1.3rem; cursor: pointer; font: inherit; color: inherit;
+  transition: transform 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.amx-phase:hover { transform: translateY(-3px); border-color: var(--accent); }
+.amx-phase:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amx-phase__kicker {
+  display: flex; align-items: center; gap: 0.45rem;
+  font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--ink-3);
+}
+.amx-phase__name { font-family: var(--font-display); font-size: 1.25rem; color: var(--ink); line-height: 1.15; }
+.amx-phase__dates { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-3); letter-spacing: 0.02em; }
+.amx-phase__hook { font-size: 0.83rem; color: var(--ink-2); line-height: 1.5; }
+.amx-phase__go {
+  display: inline-flex; align-items: center; gap: 0.3rem; margin-top: auto; padding-top: 0.4rem;
+  font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent-ink);
+}
+
+/* ── Route map ─────────────────────────────────────────────────────────── */
+.amx-legend { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.amx-legend__btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font: inherit; font-size: 0.78rem; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+  padding: 0.42rem 0.75rem; cursor: pointer;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.amx-legend__btn:hover { border-color: var(--accent); }
+.amx-legend__btn--on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.amx-legend__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amx-legend__days { font-family: var(--font-mono); font-size: 0.56rem; color: var(--ink-3); letter-spacing: 0.02em; }
+.amx-legend__hint { font-family: var(--font-mono); font-size: 0.58rem; color: var(--text-faint); margin-left: auto; }
+
+.amx-maply { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(230px, 1fr); gap: 1rem; align-items: start; }
+.amx-maply--lower { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+.amx-mapcard { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; margin: 0; }
+.amx-map { width: 100%; height: auto; display: block; }
+.amx-map--inset { max-width: 480px; align-self: center; }
+.amx-map__land { fill: var(--ground-2); fill-opacity: 0.5; stroke: var(--line); stroke-width: 1; stroke-linejoin: round; }
+.amx-map__country {
+  font-family: var(--font-mono); font-size: 7px; letter-spacing: 0.35em;
+  fill: var(--ink-3); opacity: 0.55;
+}
+.amx-map__label {
+  font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.02em;
+  fill: var(--ink-2); transition: opacity 0.2s var(--ease); pointer-events: none;
+}
+.amx-map__label--sm { font-size: 7px; }
+.amx-map__label--num { font-size: 8px; fill: var(--ink); font-weight: 600; }
+.amx-map__label--loop { fill: var(--ink-3); font-size: 7.5px; }
+.amx-map__label--dim { opacity: 0.15; }
+
+.amx-leg {
+  fill: none; stroke: var(--amx-p); stroke-width: 2; stroke-linecap: round;
+  stroke-linejoin: round; transition: opacity 0.2s var(--ease);
+}
+.amx-leg--fly { stroke-dasharray: 5 4; animation: amx-march 26s linear infinite; }
+.amx-leg--dim { opacity: 0.12; }
+@keyframes amx-march { to { stroke-dashoffset: -180; } }
+
+.amx-stop { cursor: pointer; transition: opacity 0.2s var(--ease); }
+.amx-stop__hit { fill: transparent; stroke: none; }
+.amx-stop__core { fill: var(--amx-p); stroke: var(--surface); stroke-width: 1.6; }
+.amx-stop__ring {
+  fill: none; stroke: var(--amx-p); stroke-width: 1.2; opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+.amx-stop:hover .amx-stop__ring, .amx-stop:focus-visible .amx-stop__ring { opacity: 0.55; }
+.amx-stop--selected .amx-stop__ring { opacity: 1; }
+.amx-stop--dim { opacity: 0.15; }
+.amx-stop:focus-visible { outline: none; }
+
+.amx-ghost circle { fill: var(--amx-ghost); opacity: 0.75; }
+.amx-ghost text {
+  font-family: var(--font-mono); font-size: 7px; fill: var(--ink-3); opacity: 0.8;
+}
+
+.amx-stopcard { padding: 1.15rem 1.3rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.amx-stopcard__name { font-family: var(--font-display); font-size: 1.3rem; color: var(--ink); margin: 0; line-height: 1.1; }
+.amx-stopcard__stay { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-3); margin: 0 0 0.3rem; letter-spacing: 0.02em; }
+
+.amx-tablecard { padding: 1.15rem 1.3rem; }
+.amx-tablewrap { overflow-x: auto; }
+.amx-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.amx-table th {
+  text-align: left; font-family: var(--font-mono); font-size: 0.58rem;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);
+  font-weight: 500; padding: 0.4rem 0.9rem 0.4rem 0; border-bottom: 1px solid var(--line);
+}
+.amx-table td { padding: 0.5rem 0.9rem 0.5rem 0; color: var(--ink-2); border-bottom: 1px solid var(--line-2); line-height: 1.45; }
+.amx-table tr:last-child td { border-bottom: none; }
+.amx-table__hot td { color: var(--ink); background: var(--accent-soft); }
+.amx-table__hot td:first-child { border-radius: 2px 0 0 2px; padding-left: 0.5rem; }
+.amx-table__hot td:last-child { border-radius: 0 2px 2px 0; }
+
+/* ── Day by day ────────────────────────────────────────────────────────── */
+.amx-days { padding: 0.4rem 1.3rem; }
+.amx-day {
+  display: grid; grid-template-columns: 92px minmax(0, 1fr) 150px;
+  gap: 0 1.2rem; padding: 0.9rem 0; border-bottom: 1px solid var(--line-2);
+  align-items: start;
+}
+.amx-day:last-child { border-bottom: none; }
+.amx-day__when { display: flex; flex-direction: column; gap: 0.15rem; }
+.amx-day__num { font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
+.amx-day__date { font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-3); letter-spacing: 0.03em; }
+.amx-day__title { display: block; font-weight: 600; font-size: 0.9rem; color: var(--ink); margin-bottom: 0.25rem; }
+.amx-day__plan { list-style: none; margin: 0; padding: 0; }
+.amx-day__plan li {
+  position: relative; padding: 0.12rem 0 0.12rem 1rem;
+  font-size: 0.82rem; color: var(--ink-2); line-height: 1.5;
+}
+.amx-day__plan li::before {
+  content: ''; position: absolute; left: 0; top: 0.72em;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+}
+.amx-day__bed { display: flex; flex-direction: column; gap: 0.15rem; text-align: right; }
+.amx-day__bedlabel { font-family: var(--font-mono); font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); }
+.amx-day__bedval { font-family: var(--font-mono); font-size: 0.66rem; color: var(--ink-3); line-height: 1.4; }
+
+/* ── NYE showdown ──────────────────────────────────────────────────────── */
+.amx-nye { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 640px) { .amx-nye { grid-template-columns: 1fr; } }
+.amx-nye__card {
+  display: flex; flex-direction: column; gap: 0.45rem; text-align: left;
+  padding: 1.15rem 1.3rem; cursor: pointer; font: inherit; color: inherit;
+  transition: transform 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.amx-nye__card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.amx-nye__card--on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.amx-nye__card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amx-nye__city {
+  display: flex; align-items: baseline; gap: 0.55rem;
+  font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); line-height: 1.1;
+}
+.amx-nye__flag {
+  font-family: var(--font-mono); font-size: 0.54rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--accent-ink);
+}
+.amx-nye__event { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-3); letter-spacing: 0.03em; }
+.amx-nye__fact { font-size: 0.78rem; color: var(--ink-2); line-height: 1.5; padding-bottom: 0.35rem; border-bottom: 1px solid var(--line-2); }
+.amx-nye__scales { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.amx-scale { display: grid; grid-template-columns: 64px 1fr 30px; align-items: center; gap: 0.55rem; }
+.amx-scale__label { font-family: var(--font-mono); font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.amx-scale__dots { display: flex; gap: 4px; }
+.amx-scale__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1px solid var(--line); background: transparent;
+}
+.amx-scale__dot--on { background: var(--ink); border-color: var(--ink); }
+.amx-scale__val { font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; }
+
+.amx-verdict { padding: 1.2rem 1.4rem; }
+.amx-verdict p { margin: 0; font-size: 0.92rem; color: var(--ink-2); line-height: 1.65; }
+
+/* ── Budget ────────────────────────────────────────────────────────────── */
+.amx-budget__top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: stretch; }
+.amx-hero { padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.amx-hero__num {
+  font-family: var(--font-display); font-size: clamp(2rem, 4.5vw, 2.9rem);
+  color: var(--ink); line-height: 1.05; font-variant-numeric: tabular-nums;
+}
+.amx-hero__sub { font-size: 0.8rem; color: var(--ink-3); }
+.amx-mode { display: flex; flex-direction: column; gap: 0.5rem; justify-content: center; }
+.amx-mode__btn {
+  font: inherit; font-size: 0.8rem; color: var(--ink-2); text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+  padding: 0.65rem 1rem; cursor: pointer; min-width: 170px;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.amx-mode__btn:hover { border-color: var(--accent); }
+.amx-mode__btn--on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.amx-mode__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.amx-bars { padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.65rem; }
+.amx-bar { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) 68px; gap: 0.8rem; align-items: center; }
+.amx-bar__label { font-size: 0.82rem; color: var(--ink-2); line-height: 1.3; }
+.amx-bar__note { display: block; font-family: var(--font-mono); font-size: 0.56rem; color: var(--text-faint); letter-spacing: 0.02em; margin-top: 0.1rem; }
+.amx-bar__track { height: 14px; border-radius: 4px; background: var(--ground-2); overflow: hidden; }
+.amx-bar__fill {
+  display: block; height: 100%; border-radius: 4px; background: var(--accent);
+  transition: width 0.45s var(--ease);
+}
+.amx-bar__val { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Playbook ──────────────────────────────────────────────────────────── */
+.amx-progress { padding: 1.1rem 1.3rem 1.3rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.amx-progress__track { height: 8px; border-radius: 4px; background: var(--ground-2); overflow: hidden; }
+.amx-progress__fill { display: block; height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.35s var(--ease); }
+
+.amx-checks { padding: 0.5rem 1.3rem; }
+.amx-check {
+  display: grid; grid-template-columns: 20px minmax(0, 1.2fr) minmax(0, 1.6fr) 92px;
+  gap: 0.8rem; align-items: baseline; padding: 0.62rem 0;
+  border-bottom: 1px solid var(--line-2); cursor: pointer;
+}
+.amx-check:last-child { border-bottom: none; }
+.amx-check input { position: absolute; opacity: 0; pointer-events: none; }
+.amx-check__box {
+  width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: transparent; background: var(--surface); align-self: center;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.amx-check input:focus-visible + .amx-check__box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amx-check--done .amx-check__box { background: var(--accent); border-color: var(--accent); color: #fff; }
+.hp.portal[data-portal-theme="arcade"] .amx-check--done .amx-check__box { color: #10151f; }
+.amx-check__label { font-size: 0.85rem; color: var(--ink); font-weight: 500; line-height: 1.4; }
+.amx-check--done .amx-check__label { text-decoration: line-through; color: var(--ink-3); font-weight: 400; }
+.amx-check__why { font-size: 0.76rem; color: var(--ink-3); line-height: 1.45; }
+.amx-check__when {
+  font-family: var(--font-mono); font-size: 0.58rem; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--accent-ink); text-align: right;
+}
+.amx-check--done .amx-check__when { color: var(--text-faint); }
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .amx-maply, .amx-maply--lower, .amx-budget__top { grid-template-columns: 1fr; }
+  .amx-mode { flex-direction: row; }
+  .amx-day { grid-template-columns: 72px minmax(0, 1fr); }
+  .amx-day__bed { grid-column: 2; flex-direction: row; gap: 0.5rem; text-align: left; margin-top: 0.35rem; }
+  .amx-check { grid-template-columns: 20px minmax(0, 1fr) 80px; }
+  .amx-check__why { grid-column: 2 / 4; }
+  .amx-legend__hint { display: none; }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .amx-leg--fly { animation: none; }
+  .amx-strip__seg:hover, .amx-phase:hover, .amx-nye__card:hover { transform: none; }
+  .amx-bar__fill, .amx-progress__fill { transition: none; }
+}

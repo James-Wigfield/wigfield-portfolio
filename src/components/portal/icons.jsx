@@ -205,6 +205,23 @@ const PATHS = {
     </>
   ),
 
+  // Compass — a ring with a needle diamond (the America travel section)
+  compass: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M15.4 8.6 13.5 13.5 8.6 15.4 10.5 10.5 15.4 8.6Z" />
+    </>
+  ),
+  // Map — a tri-fold road map with a route dot (trip plans)
+  map: (
+    <>
+      <path d="M3.5 6.6 9 4.5l6 2.1 5.5-2.1v12.9L15 19.5l-6-2.1-5.5 2.1V6.6Z" />
+      <path d="M9 4.5v12.9" />
+      <path d="M15 6.6v12.9" />
+      <circle cx="12" cy="11" r="1.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)
   check: <path d="M5 12.5 10 17.5 19 7" />,
