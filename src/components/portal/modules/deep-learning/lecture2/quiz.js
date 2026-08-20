@@ -1,9 +1,10 @@
 /* ============================================================================
-   DEEP LEARNING — LECTURE 1 QUIZ DATA
+   DEEP LEARNING — LECTURE 2 QUIZ DATA
    ----------------------------------------------------------------------------
-   Ten questions built strictly from the slide content. Kept out of labs2.jsx
-   so the page shell can show a live score on the Quiz tab (and so the data
-   file stays react-refresh-clean).
+   Twenty questions built strictly from the slide content (1–10 cover the
+   first half of the deck, 11–20 the optimizers/schedules/regularization
+   half). Kept out of labs2.jsx so the page shell can show a live score on
+   the Quiz tab (and so the data file stays react-refresh-clean).
    ========================================================================== */
 
 export const QUIZ = [
@@ -116,6 +117,126 @@ export const QUIZ = [
     ans: 0,
     why: 'The slide-32 result (93.85% vs 91.85%, ≈25% relative error reduction) took many trials of configuration; in general transfer learning does not work well with small dense networks but works well with deep CNNs.',
     slide: 32,
+  },
+  {
+    q: 'In momentum optimization, the gradient is used as…',
+    opts: [
+      'a speed term added directly to θ',
+      'an acceleration term feeding the momentum vector m',
+      'a replacement for the learning rate η',
+      'a bias-correction factor',
+    ],
+    ans: 1,
+    why: 'm ← βm − η∇J(θ), then θ ← θ + m: the gradient accelerates a decaying velocity instead of moving θ directly. β < 1 (usually 0.9); the algorithm can roll past local optima and almost always beats plain GD.',
+    slide: 34,
+  },
+  {
+    q: 'Nesterov accelerated gradient differs from plain momentum by measuring the gradient at…',
+    opts: [
+      'the current position θ',
+      'the previous position',
+      'the look-ahead point θ + βm',
+      'the origin',
+    ],
+    ans: 2,
+    why: 'm generally already points toward the optimum, so evaluating ∇J slightly ahead at θ + βm makes the update land slightly closer to it (Figure 11-7). In Keras: SGD(…, momentum=0.9, nesterov=True).',
+    slide: 36,
+  },
+  {
+    q: 'Why should you NOT use AdaGrad to train deep neural networks?',
+    opts: [
+      'it frequently stops too early — the learning rate gets scaled down so much that training halts before the optimum',
+      'it has no Keras implementation',
+      'it explodes the gradients',
+      'it only works with sigmoid activations',
+    ],
+    ans: 0,
+    why: 'AdaGrad accumulates ALL past squared gradients in s, so the effective learning rate keeps shrinking. Fine for simpler tasks like linear regression, but for DNNs it often stops entirely before reaching the optimum.',
+    slide: 40,
+  },
+  {
+    q: 'RMSProp fixes AdaGrad by…',
+    opts: [
+      'removing the square root',
+      'accumulating only the most recent squared gradients, via a decay rate ρ (typically 0.9)',
+      'clipping the gradients',
+      'adding a bias-correction step',
+    ],
+    ans: 1,
+    why: 's ← ρs + (1−ρ)∇J⊗∇J: old gradients decay away instead of piling up, so the step size never collapses. It was the preferred optimizer of many researchers until Adam arrived.',
+    slide: 41,
+  },
+  {
+    q: 'Adam combines the ideas of…',
+    opts: [
+      'momentum optimization and RMSProp',
+      'NAG and gradient clipping',
+      'AdaGrad and batch normalization',
+      'ℓ2 regularization and dropout',
+    ],
+    ans: 0,
+    why: 'β₁ corresponds to momentum’s β (default 0.9) and β₂ to RMSProp’s ρ (default 0.999), plus bias corrections since m and s start near zero. Being adaptive, η = 0.001 often just works.',
+    slide: 43,
+  },
+  {
+    q: 'AdamW extends Adam by integrating…',
+    opts: [
+      'Nesterov momentum',
+      'a max instead of a sum in step 2',
+      'weight decay — multiplying the weights by a decay factor each iteration',
+      'gradient clipping',
+    ],
+    ans: 2,
+    why: 'AdamW adds the regularization technique called weight decay: the model’s weights shrink at each training iteration by a factor such as 0.99. (The max-of-step-2 variant is AdaMax; Adam + Nesterov is Nadam.)',
+    slide: 45,
+  },
+  {
+    q: 'Exponential scheduling η(t) = η₀·r^(t/s) means the learning rate…',
+    opts: [
+      'drops by a factor of r every s steps',
+      'drops by s every r steps',
+      'grows by r every s steps',
+      'is constant for s steps, then zero',
+    ],
+    ans: 0,
+    why: 'With r = 0.1 and s = 15: η(15) = 0.1·η₀, η(30) = 0.01·η₀, and so on. Keras: tf.keras.optimizers.schedules.ExponentialDecay (power scheduling is the InverseTimeDecay cousin: η₀/(1+rt/s)^c).',
+    slide: 52,
+  },
+  {
+    q: 'ReduceLROnPlateau(factor=0.5, patience=5) will…',
+    opts: [
+      'halve the learning rate every 5 epochs no matter what',
+      'multiply the learning rate by 0.5 whenever the best validation loss doesn’t improve for 5 consecutive epochs',
+      'stop training after 5 bad epochs',
+      'double the learning rate on plateaus',
+    ],
+    ans: 1,
+    why: 'That is performance scheduling: measure the validation error and cut η by the factor when it stops dropping — in the slide-58 run, the val loss immediately fell to a new lower plateau after the cut at epoch ≈17.',
+    slide: 57,
+  },
+  {
+    q: 'During training, dropout with rate p applies to…',
+    opts: [
+      'every neuron including the outputs',
+      'only the hidden neurons',
+      'every neuron including the inputs but excluding the outputs',
+      'only the input neurons',
+    ],
+    ans: 2,
+    why: 'Each training step, every input and hidden neuron is temporarily dropped with probability p (typically 10–50%); output neurons never drop. After training nothing drops — and evaluate the training loss WITHOUT dropout, or overfitting can hide.',
+    slide: 63,
+  },
+  {
+    q: 'Slide 65’s default DNN configuration pairs which optimizer and schedule?',
+    opts: [
+      'plain SGD + a constant learning rate',
+      'AdaGrad + exponential scheduling',
+      'RMSProp + piecewise constant scheduling',
+      'Nesterov accelerated gradients or AdamW + performance scheduling or 1cycle',
+    ],
+    ans: 3,
+    why: 'Table 11-3: He init, ReLU if shallow / Swish if deep, batch norm if deep, early stopping (+ weight decay if needed), NAG or AdamW, performance or 1cycle. For a self-normalizing dense stack (Table 11-4): LeCun init + SELU, no normalization, NAG.',
+    slide: 65,
   },
 ];
 

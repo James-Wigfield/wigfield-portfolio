@@ -1,0 +1,225 @@
+/* ============================================================================
+   CITS5017 LECTURE 3 — LAB STYLES  (.dl3-*)
+   ----------------------------------------------------------------------------
+   Lecture-3-specific interactives (cortex hierarchy, convolution stepper,
+   stride/padding lab, feature-map canvases, 3D stacking, hero) on top of the
+   shared .dl-* page framework.
+   ========================================================================== */
+
+.dl3-stagehead {
+  margin: 0 0 0.35rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.dl3-btnrow { display: inline-flex; gap: 0.35rem; }
+
+/* ── Cortex lab (Figure 14-1) ─────────────────────────────────────────── */
+.dl3-cortex {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(260px, 1fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+.dl3-cortex__panel { display: flex; flex-direction: column; gap: 0.6rem; }
+.dl3-glyphs { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.dl3-glyph {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--surface-hi);
+  padding: 8px;
+  animation: dl3-pop 0.4s both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.dl3-glyph path { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dl3-house { width: 100%; max-width: 400px; height: auto; }
+.dl3-house__shape * {
+  fill: var(--accent-soft);
+  stroke: var(--accent-ink);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.dl3-house__shape line { fill: none; }
+.dl3-rf {
+  fill: var(--dlv-orange);
+  fill-opacity: 0.08;
+  stroke: var(--dlv-orange);
+  stroke-width: 2;
+  stroke-dasharray: 7 6;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dl3-pop 0.5s both;
+}
+.dl3-rf__label {
+  fill: var(--dlv-orange);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  animation: dl3-pop 0.5s both;
+}
+@keyframes dl3-pop {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Convolution stepper ──────────────────────────────────────────────── */
+.dl3-conv {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(190px, 240px) minmax(180px, 240px);
+  gap: 1.2rem;
+  align-items: start;
+}
+.dl3-gridsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.dl3-icell { fill: var(--ink); stroke: var(--line-2); stroke-width: 1; transition: fill-opacity 0.25s; }
+.dl3-cellv { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; font-weight: 600; }
+.dl3-win { transition: transform 0.32s cubic-bezier(0.22, 0.9, 0.35, 1); }
+.dl3-win__rect { fill: var(--accent); fill-opacity: 0.14; stroke: var(--accent); stroke-width: 2.5; }
+.dl3-ocell { fill: var(--surface-hi); stroke: var(--line-2); stroke-width: 1; transition: fill-opacity 0.25s; }
+.dl3-ocell--cur { stroke: var(--accent); stroke-width: 2.5; }
+.dl3-outcell { cursor: pointer; }
+
+.dl3-terms { display: flex; flex-direction: column; gap: 0.5rem; }
+.dl3-divbadge {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.62rem;
+  color: var(--accent-ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.dl3-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.dl3-matrix__w {
+  text-align: center;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 0.28rem 0;
+  background: var(--surface-hi);
+}
+.dl3-prod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 0.2rem 0;
+}
+.dl3-prod__ab { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.56rem; color: var(--text-faint); }
+.dl3-prod b { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; color: var(--ink-2); }
+.dl3-prod .dl3-pos { color: var(--dlv-orange); }
+.dl3-prod .dl3-neg { color: var(--dlv-blue); }
+.dl3-sum {
+  margin: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  border-top: 1px solid var(--line-2);
+  padding-top: 0.45rem;
+}
+.dl3-sum b { color: var(--accent-ink); font-size: 1rem; }
+
+/* ── Stride lab (Figure 14-4) ─────────────────────────────────────────── */
+.dl3-stridesvg { display: block; width: 100%; max-width: 640px; height: auto; }
+.dl3-gridtitle { fill: var(--ink-3); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+.dl3-scell { fill: var(--surface-hi); stroke: var(--line); stroke-width: 1; }
+.dl3-scell--out { cursor: pointer; }
+.dl3-scell--out:hover { fill: var(--accent-soft); }
+.dl3-scell--on { fill-opacity: 0.3; stroke-width: 2; }
+.dl3-rfrect { fill-opacity: 0.12; stroke-width: 2; stroke-dasharray: 5 4; pointer-events: none; }
+.dl3-flow {
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+  fill: none;
+  animation: dl3-flowdash 1.6s linear infinite;
+  pointer-events: none;
+}
+.dl3-flow--soft { stroke: var(--ink-3); opacity: 0.75; }
+@keyframes dl3-flowdash { to { stroke-dashoffset: -22; } }
+
+/* ── Feature-map lab (Figure 14-5) ────────────────────────────────────── */
+.dl3-fprevrow { display: flex; gap: 0.8rem; }
+.dl3-fprev { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.dl3-fprev__svg { width: 56px; height: 56px; border: 1px solid var(--line); border-radius: 4px; display: block; }
+.dl3-fprev__cap { font-size: 0.62rem; color: var(--ink-3); text-align: center; max-width: 9rem; }
+.dl3-fmrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  align-items: flex-start;
+  animation: dl-fade 0.4s both;
+}
+.dl3-shot { margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.dl3-shot__cv {
+  width: min(196px, 42vw);
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: block;
+  background: #000;
+}
+.dl3-shot__cap { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--ink-2); max-width: 196px; }
+.dl3-shot__cap b { color: var(--ink); }
+.dl3-shot__cap span { color: var(--text-faint); font-size: 0.64rem; }
+
+/* ── Stacking lab (Figure 14-6) ───────────────────────────────────────── */
+.dl3-stacksvg { display: block; width: 100%; max-width: 720px; height: auto; }
+.dl3-sheet { fill-opacity: 0.16; stroke-width: 1.6; transition: fill-opacity 0.25s, stroke 0.25s; }
+.dl3-sheet--gray { fill: var(--ink-3); fill-opacity: 0.1; stroke: var(--line); }
+.dl3-sheet--on { fill: var(--accent); fill-opacity: 0.2; stroke: var(--accent); }
+.dl3-sheetlabel { font-size: 11px; font-weight: 700; fill: var(--ink-3); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.dl3-sheetlabel--on { fill: var(--accent-ink); }
+.dl3-stacklabel { font-size: 12px; font-weight: 700; fill: var(--ink-2); }
+.dl3-patch { fill: none; stroke-width: 1.8; stroke: var(--dlv-violet); }
+.dl3-patch--s2 { stroke: var(--dlv-aqua); }
+.dl3-neuron { fill: var(--accent); stroke: var(--surface); stroke-width: 1.6; }
+.dl3-stackread { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--line-2); padding-top: 0.7rem; }
+
+/* ── Start hero: the sliding-kernel animation ─────────────────────────── */
+.dl3-hero { width: 100%; max-width: 310px; height: auto; }
+.dl3-hero__icell { fill: var(--accent); stroke: var(--line-2); stroke-width: 1; }
+.dl3-hero__win { transition: transform 0.4s cubic-bezier(0.22, 0.9, 0.35, 1); }
+.dl3-hero__winrect { fill: var(--accent); fill-opacity: 0.18; stroke: var(--accent); stroke-width: 2; }
+.dl3-hero__ocell { fill: var(--surface-hi); stroke: var(--line-2); stroke-width: 1; }
+.dl3-hero__ocell--on { fill: var(--accent); fill-opacity: 0.55; transition: fill-opacity 0.3s; }
+.dl3-hero__arrow { stroke: var(--ink-3); stroke-width: 1.6; fill: none; marker-end: none; }
+.dl3-hero__tag {
+  fill: var(--text-faint);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* ── Responsive + reduced motion ──────────────────────────────────────── */
+@media (max-width: 940px) {
+  .dl3-conv { grid-template-columns: 1fr 1fr; }
+  .dl3-conv > :first-child { grid-column: 1 / -1; max-width: 340px; }
+  .dl3-cortex { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .dl3-conv { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl3-flow { animation: none; }
+  .dl3-glyph, .dl3-rf, .dl3-rf__label, .dl3-fmrow { animation: none; }
+  .dl3-win, .dl3-hero__win { transition: none; }
+}

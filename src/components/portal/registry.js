@@ -36,6 +36,8 @@ import TrainingRuns from './modules/TrainingRuns';
 import MetricsTotalSeg from './modules/MetricsTotalSeg';
 import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
 import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
+import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
+import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
 import MambaUpdates from './modules/MambaUpdates';
 import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
@@ -136,6 +138,20 @@ export const MODULES = [
     icon: 'network',
     group: 'Deep Learning',
     component: DeepLearningLecture2,
+  },
+  {
+    id: 'dl-lecture-3',
+    label: 'Lecture 3 · CNNs',
+    icon: 'network',
+    group: 'Deep Learning',
+    component: DeepLearningLecture3,
+  },
+  {
+    id: 'dl-code-lab',
+    label: 'Code Lab · Search',
+    icon: 'codebase',
+    group: 'Deep Learning',
+    component: DeepLearningCodeLab,
   },
   {
     id: 'mamba-updates',

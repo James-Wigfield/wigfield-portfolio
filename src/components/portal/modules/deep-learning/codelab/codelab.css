@@ -1,0 +1,171 @@
+/* ============================================================================
+   CITS5017 CODE LAB — STYLES  (.dlc-*)
+   ----------------------------------------------------------------------------
+   The searchable code-reference page on top of the shared .dl-* framework.
+   Editorial rules + labelled dots; the search bar is the hero control.
+   ========================================================================== */
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.dlc-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.2rem;
+  align-items: center;
+  padding: 1.2rem 1.4rem;
+  animation: dl-fade 0.45s both;
+}
+.dlc-hero__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.08;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+}
+.dlc-hero__lead { margin: 0; font-size: 0.9rem; line-height: 1.65; color: var(--ink-2); max-width: 58ch; }
+.dlc-hero__stats { display: flex; flex-direction: column; gap: 0.35rem; border-left: 1px solid var(--line-2); padding-left: 1.2rem; }
+.dlc-hero__stats span { font-size: 0.76rem; color: var(--ink-3); white-space: nowrap; }
+.dlc-hero__stats b { font-size: 1.15rem; font-weight: 800; color: var(--accent-ink); margin-right: 0.3rem; }
+
+.dlc-kbd {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.76em;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0.05em 0.4em;
+}
+
+/* ── Sticky search ────────────────────────────────────────────────────── */
+.dlc-search {
+  position: sticky;
+  top: 0.4rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  box-shadow: 0 2px 10px rgba(14, 22, 32, 0.08);
+}
+.dlc-search__row { display: flex; align-items: center; gap: 0.55rem; }
+.dlc-search__icon { width: 18px; height: 18px; flex: none; color: var(--ink-3); }
+.dlc-search__input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: none;
+  border: none;
+  padding: 0.3rem 0;
+}
+.dlc-search__input:focus { outline: none; }
+.dlc-search__input::placeholder { color: var(--text-faint); }
+.dlc-search__input::-webkit-search-cancel-button { display: none; }
+.dlc-search__clear {
+  flex: none;
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-3);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 99px;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+.dlc-search__clear:hover { color: var(--accent-ink); border-color: var(--accent); }
+.dlc-search__count {
+  flex: none;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  border-left: 1px solid var(--line-2);
+  padding-left: 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+.dlc-search__filters { display: flex; flex-direction: column; gap: 0.4rem; border-top: 1px solid var(--line-2); padding-top: 0.55rem; }
+.dlc-quick .dl-chip { font-size: 0.7rem; padding: 0.22rem 0.5rem; }
+
+/* ── Groups (browse mode) ─────────────────────────────────────────────── */
+.dlc-group { display: flex; flex-direction: column; gap: 0.8rem; }
+.dlc-group__head { display: flex; align-items: baseline; gap: 0.6rem; border-bottom: 2px solid var(--ink); padding: 0.4rem 0.1rem; }
+.dlc-group__no { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8rem; font-weight: 800; color: var(--accent-ink); }
+.dlc-group__title { margin: 0; font-size: 1rem; color: var(--ink); }
+.dlc-group__count { margin-left: auto; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.64rem; color: var(--text-faint); }
+
+/* ── Cards ────────────────────────────────────────────────────────────── */
+.dlc-list { display: flex; flex-direction: column; gap: 0.9rem; }
+.dlc-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  animation: dl-fade 0.3s both;
+  scroll-margin-top: 7rem;
+}
+.dlc-card__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.7rem; }
+.dlc-card__topic {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.15rem;
+}
+.dlc-card__title { margin: 0; font-size: 0.98rem; color: var(--ink); }
+.dlc-card__derived {
+  font-size: 0.6rem;
+  font-style: italic;
+  color: var(--ink-3);
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  cursor: help;
+}
+.dlc-card__where {
+  margin-left: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.dlc-copy { flex: none; }
+.dlc-copy--done { color: var(--accent-ink); border-color: var(--accent); }
+.dlc-card__note { margin: 0; font-size: 0.84rem; line-height: 1.6; color: var(--ink-2); max-width: 88ch; }
+.dlc-card .dlk-code { margin: 0; }
+
+.dlc-hi {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 2px;
+  padding: 0 0.08em;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────── */
+.dlc-empty { padding: 1.4rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.dlc-empty__big { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--ink); }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .dlc-hero { grid-template-columns: 1fr; }
+  .dlc-hero__stats { flex-direction: row; gap: 1.2rem; border-left: none; border-top: 1px solid var(--line-2); padding: 0.7rem 0 0; }
+  .dlc-search { position: static; }
+  .dlc-card__where { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dlc-hero, .dlc-card { animation: none; }
+}

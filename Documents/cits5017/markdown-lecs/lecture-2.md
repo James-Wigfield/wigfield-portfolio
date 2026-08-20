@@ -613,3 +613,707 @@ This is an improvement of 2% on the test accuracy.
 - In terms of reduction of the error rate, it is $(8.15 - 6.15)/8.15\,\% = 2/8.15\,\%$, which is almost 25%!
 
 It turned out that the above results came from many trials of configuration (like setting the random seed to different values) of the author. In general, transfer learning does not work well with small dense networks. However, it works well with deep convolution neural networks.
+
+
+# Faster Optimizers
+
+*(Slide 33 / 68)*
+
+Huge speed boost comes from using a faster optimizer than the regular Gradient Descent optimizer. We will look at a few of the most popular algorithms:
+
+- Momentum
+- Nesterov accelerated gradient
+- AdaGrad
+- RMSProp
+- Adam and its variants
+
+---
+
+## Momentum
+
+*(Slide 34 / 68)*
+
+Recall that Gradient Descent simply updates the weights $\theta$ as follows:
+
+$$\theta \leftarrow \theta - \eta \nabla_\theta J(\theta)$$
+
+(where $J$ corresponds to the error or loss that we try to minimize). It does not care about what the earlier gradients were. If the local gradient is tiny, it goes very slowly.
+
+In momentum optimization, a momentum vector $\mathbf{m}$ is used to keep track of gradients in the previous iterations. The updates of the weights involve using only $\mathbf{m}$, which contains information about the past momentum and the current error gradient. That is, the gradient is used as an **acceleration** term, rather than a **speed** term of the update. The algorithm can also help roll past local optima. It introduces a new hyperparameter $\beta < 1$ (usually set to $0.9$).
+
+The update equations are:
+
+$$\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_\theta J(\theta)$$
+
+$$\theta \leftarrow \theta + \mathbf{m}$$
+
+Note that past momentum vector $\mathbf{m}$ exponentially decays over iterations.
+
+### Momentum optimization (cont.)
+
+*(Slide 35 / 68)*
+
+To use momentum optimization in your code, set the `momentum` hyperparameter to an appropriate value, e.g.,
+
+```python
+# standard SGD optimizer
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
+
+# Momentum optimizer
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.001, momentum=0.9)
+```
+
+A drawback of momentum optimization is that it adds yet another hyperparameter to tune. However, the momentum value of $0.9$ usually works well in practice and almost always goes faster than regular gradient descent.
+
+---
+
+## Nesterov Accelerated Gradient (NAG)
+
+*(Slide 36 / 68)*
+
+Also known as **Nesterov momentum optimization**, this optimizer was proposed by Nesterov[^12]. It is a small variant of the momentum optimizer which measures the gradient of the loss function **not** at the local position $\theta$ but slightly ahead in the direction of the momentum, at $\theta + \beta \mathbf{m}$.
+
+$$\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_\theta J(\theta + \beta \mathbf{m})$$
+
+$$\theta \leftarrow \theta + \mathbf{m}$$
+
+This small tweak works because in general the momentum vector will be pointing in the right direction (i.e., toward the optimum), so the update ends up slightly closer to the optimum.
+
+[^12]: Yurii Nesterov, "A Method for Unconstrained Convex Minimization Problem with the Rate of Convergence $O(1/k^2)$," *Doklady AN USSR* 269 (1983): 543-547.
+
+### Nesterov Accelerated Gradient (NAG) (cont.)
+
+*(Slide 37 / 68)*
+
+> **Figure 11-7. Momentum optimization versus Nesterov momentum optimization.**
+>
+> A 2D contour plot of the cost surface, with $\theta_1$ on the horizontal axis and $\theta_2$ on the vertical axis. A legend in the top-right corner is labelled **"Cost"** and shows a graded colour bar (light/white = low cost at the centre, darker orange = higher cost towards the outside). The contours form an irregular blob, with nested dashed contour rings converging on a small white region (the optimum) on the right-hand side of the blob.
+>
+> From a **"Starting point"** (a small dot on the left inside the blob):
+> - A short blue arrow labelled $-\eta\nabla_1$ points down-right from the starting point (the current gradient step).
+> - A long black arrow labelled $\beta\mathbf{m}$ points right from the starting point to an intermediate position (the momentum step), landing near the optimum region.
+> - From the tip of the momentum arrow, a **dashed blue** arrow labelled $-\eta\nabla_1$ points up-right to a blue dot labelled **"Regular momentum update"** — this is the gradient measured at the *original* position $\theta$, which overshoots past the optimum.
+> - Also from the tip of the momentum arrow, a **solid green** arrow labelled $-\eta\nabla_2$ points down-right to a green dot labelled **"Nesterov update"** — this is the gradient measured *ahead* at $\theta + \beta\mathbf{m}$, which lands inside the small white (lowest-cost) contour.
+>
+> Key relationship shown: the Nesterov update ends up closer to the optimum than the regular momentum update, because $\nabla_2$ is evaluated at the look-ahead point rather than at the starting point.
+
+To use NAG, just add the optional parameter `nesterov` and set it to `True` (the default value is `False`).
+
+```python
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
+                                    momentum=0.9, nesterov=True)
+```
+
+---
+
+## AdaGrad
+
+*(Slide 38 / 68)*
+
+Consider the elongated bowl problem again: gradient descent starts by quickly going down the steepest slope, which does not point straight toward the global optimum, then it very slowly goes down to the bottom of the valley. The AdaGrad algorithm[^13] corrects the gradient vector to point a bit more toward the global minimum by scaling it down along the steepest dimensions:
+
+$$\mathbf{s} \leftarrow \mathbf{s} + \nabla_\theta J(\theta) \otimes \nabla_\theta J(\theta)$$
+
+$$\theta \leftarrow \theta - \eta \nabla_\theta J(\theta) \oslash \sqrt{\mathbf{s} + \epsilon}$$
+
+where $\mathbf{s}$ is a vector that accumulates the magnitudes of the error gradients; $\otimes$ and $\oslash$, respectively, denote element-wise multiplication and element-wise division; and $\epsilon$ is a small number (usually $10^{-10}$) used to avoid division by zero.
+
+[^13]: John Duchi et al., "Adaptive Subgradient Methods for Online Learning and Stochastic Optimization", *Journal of Machine Learning Research* 12 (2011): 2121–2159.
+
+### AdaGrad (cont.)
+
+*(Slide 39 / 68)*
+
+> **Figure 11-8. AdaGrad versus gradient descent.**
+>
+> A 2D contour plot of an elongated (elliptical) cost bowl. The vertical axis is $\theta_2$, annotated **"(Steep dimension)"**; the horizontal axis is $\theta_1$, annotated **"(Flatter dimension)"**. A legend in the top-right is labelled **"Cost"** with a graded bar from white (low) to orange (high). The ellipses are nested, with the innermost white ellipse (the global optimum) at the centre-right of the plot.
+>
+> Two trajectories start from the same point near the top of the ellipse (upper-left of centre):
+> - A **red/pink** chain of dots labelled **"AdaGrad"** descends and then heads almost directly toward the centre (the optimum), i.e., it corrects its direction early.
+> - A **blue** chain of dots labelled **"Gradient descent"** first plunges steeply down the $\theta_2$ (steep) direction, then makes slow horizontal progress along the flatter $\theta_1$ direction toward the optimum.
+>
+> Key relationship shown: AdaGrad scales down the gradient along the steep dimension, so its path points more directly at the global optimum than plain gradient descent.
+
+- We can see that if the loss function is steep along the $i^{\text{th}}$ direction then $s_i$ will get larger and larger at each iteration.
+- This algorithm has the effect of decaying the learning rate, but it does so faster for steep dimensions than for dimensions with gentler slopes. This is called an *adaptive learning rate*. One additional benefit is that it requires much less tuning of the learning rate hyperparameter $\eta$.
+
+```python
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
+                                    momentum=0.9, nesterov=True)
+```
+
+### AdaGrad (cont.)
+
+*(Slide 40 / 68)*
+
+Keras has an AdaGrad optimizer:
+
+```python
+optimizer = tf.keras.optimizers.Adagrad(learning_rate=0.001)
+```
+
+A shortcoming of this algorithm is it frequently performs well for simple quadratic problems, but it often stops too early when training neural networks: the learning rate gets scaled down so much that the algorithm ends up stopping entirely before reaching the global optimum.
+
+So even though Keras has an AdaGrad optimizer, you should **not** use it to train deep neural networks (it may be efficient for simpler tasks such as linear regression, though). Still, understanding AdaGrad is helpful to comprehend the other adaptive learning rate optimizers.
+
+---
+
+## RMSProp
+
+*(Slide 41 / 68)*
+
+The problem of slowing down too fast in AdaGrad is overcome in RMSProp[^14]. In this algorithm, $\mathbf{s}$ accumulates the error gradient magnitudes from the **most recent** iterations:
+
+$$\mathbf{s} \leftarrow \rho\,\mathbf{s} + (1 - \rho)\nabla_\theta J(\theta) \otimes \nabla_\theta J(\theta)$$
+
+$$\theta \leftarrow \theta - \eta \nabla_\theta J(\theta) \oslash \sqrt{\mathbf{s} + \epsilon}$$
+
+where the decay rate $\rho$ is typically set to $0.9$. This is another hyperparameter, but $\rho = 0.9$ has been shown to work well, so you may not need to tune it at all.
+
+[^14]: created by Tijmen Tieleman and Geoffrey Hinton in 2012.
+
+### RMSProp (cont.)
+
+*(Slide 42 / 68)*
+
+Keras has an RMSprop optimizer:
+
+```python
+optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001, rho=0.9)
+```
+
+Except on very simple problems, this optimizer almost always performs much better than AdaGrad. In fact, it was the preferred optimization algorithm of many researchers until Adam optimization came around.
+
+---
+
+## Adam
+
+*(Slide 43 / 68)*
+
+Adam (`https://goo.gl/Un8Axa`)[^15], which stands for **adaptive moment estimation**, combines the ideas of momentum optimization and RMSProp. It estimates the mean and variance of the error gradients to keep track of the exponentially decaying average of past squared gradients.
+
+$$
+\begin{aligned}
+&1.\quad \mathbf{m} \leftarrow \beta_1 \mathbf{m} + (1 - \beta_1)\nabla_\theta J(\theta) \\[4pt]
+&2.\quad \mathbf{s} \leftarrow \beta_2 \mathbf{s} + (1 - \beta_2)\nabla_\theta J(\theta) \otimes \nabla_\theta J(\theta) \\[4pt]
+&3.\quad \hat{\mathbf{m}} \leftarrow \mathbf{m} / (1 - \beta_1^{\,t}) \\[4pt]
+&4.\quad \hat{\mathbf{s}} \leftarrow \mathbf{s} / (1 - \beta_2^{\,t}) \\[4pt]
+&5.\quad \theta \leftarrow \theta - \eta\, \hat{\mathbf{m}} \oslash \sqrt{\hat{\mathbf{s}} + \epsilon}
+\end{aligned}
+$$
+
+where steps 3 and 4 are normalization to help increase the magnitude $\mathbf{m}$ and $\mathbf{s}$ as both vectors are initialized at around zero (so may be a bit small); $t$ is the iteration number.
+
+[^15]: "Adam: A Method for Stochastic Optimization," D. Kingma, J. Ba (2014).
+
+### Adam (cont.)
+
+*(Slide 44 / 68)*
+
+Notice that the Adam optimizer has close similarity to both momentum optimization and RMSProp: $\beta_1$ corresponds to $\beta$ in momentum optimization, and $\beta_2$ corresponds to $\rho$ in RMSProp.
+
+Here is how to create an Adam optimizer using Keras:
+
+```python
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001,
+                                     beta_1=0.9, beta_2=0.999)
+```
+
+- The momentum decay hyperparameter $\beta_1$ is typically initialized to $0.9$, while the scaling decay hyperparameter $\beta_2$ is often initialized to $0.999$.
+- Since Adam is an adaptive learning rate algorithm, like AdaGrad and RMSProp, it requires less tuning of the learning rate hyperparameter $\eta$. You can often use the default value $\eta = 0.001$, making Adam even easier to use than gradient descent.
+
+---
+
+## Variants of Adam: AdaMax, Nadam, and AdamW
+
+*(Slide 45 / 68)*
+
+**\* AdaMax**[^16] is the same as Adam except that Step 2 of the algorithm (Slide 43) is replaced by
+
+$$\mathbf{s} \leftarrow \max\!\big(\beta_2 \mathbf{s},\ \text{abs}(\nabla_\theta J(\theta))\big).$$
+
+Its performance seems to depend on the dataset and, in general, Adam performs better.
+
+**\* Nadam**[^17] combines Adam optimization with the Nesterov trick. The author Dozat found that Nadam generally outperforms Adam but is sometimes outperformed by RMSProp.
+
+**\* AdamW**[^18] integrates into Adam a regularization technique called **weight decay**, which reduces the size of the model's weights at each training iteration by multiplying them by a decay factor such as $0.99$.
+
+[^16]: from the same Adam paper.
+[^17]: Timothy Dozat, "Incorporating Nesterov Momentum into Adam" (2016).
+[^18]: Ashia C. Wilson et al., "The Marginal Value of Adaptive Gradient Methods in Machine Learning", *Advances in NIPS* 30 (2017): 4148-4158.
+
+### Variants of Adam: AdaMax, Nadam, and AdamW (cont.)
+
+*(Slide 46 / 68)*
+
+Examples:
+
+To use **AdaMax**:
+
+```python
+optimizer = tf.keras.optimizers.Adamax(learning_rate=0.001,
+                                       beta_1=0.9, beta_2=0.999)
+```
+
+To use **Nadam**:
+
+```python
+optimizer = tf.keras.optimizers.Nadam(learning_rate=0.001,
+                                      beta_1=0.9, beta_2=0.999)
+```
+
+To use **AdamW**:
+
+```python
+optimizer = tf.optimizers.AdamW(weight_decay=1e-5, learning_rate=0.001,
+                                beta_1=0.9, beta_2=0.999)
+```
+
+You may need to also fine tune the `weight_decay` parameter.
+
+---
+
+## Faster Optimizers — Summary
+
+*(Slide 47 / 68)*
+
+| Class | Convergence speed | Convergence quality |
+|---|---|---|
+| `SGD` | `*` | `***` |
+| `SGD(momentum=...)` | `**` | `***` |
+| `SGD(momentum=..., nesterov=True)` | `**` | `***` |
+| `AdaGrad` | `***` | `*` (stops too early) |
+| `RMSprop` | `***` | `**` or `***` |
+| `Adam` | `***` | `**` or `***` |
+| `AdaMax` | `***` | `**` or `***` |
+| `Nadam` | `***` | `**` or `***` |
+| `AdamW` | `***` | `**` or `***` |
+
+*Table 11-2. Optimizer comparison.*
+
+---
+
+# Learning Rate Scheduling
+
+*(Slide 48 / 68)*
+
+Finding a good learning rate is very important. If you set it too high, training may diverge; if you set it too low, training will eventually converge to the optimum, but it will take a very long time.
+
+> **Figure 11-9. Learning curves for various learning rates $\eta$.**
+>
+> A line chart with **Loss** on the vertical axis and **Epoch** on the horizontal axis. Four curves start from the same high loss value on the left:
+> - **Red curve**, labelled *"$\eta$ way too high: diverges"* — dips slightly then sweeps sharply upward off the top of the chart.
+> - **Orange curve**, labelled *"$\eta$ too small: slow"* — decreases very gradually, ending at the highest final loss of the three convergent curves on the right.
+> - **Purple curve**, labelled *"$\eta$ too high: suboptimal"* — drops very steeply at first, then flattens out early at a loss level above the optimum (plateaus).
+> - **Green curve**, labelled *"$\eta$ just right"* — drops quickly and continues descending smoothly to the lowest final loss.
+>
+> A **green dashed** curve tracks slightly below the solid green curve. A vertical black arrow points up at the elbow of the purple curve, with the caption beneath the horizontal axis: **"Start with a high learning rate then reduce it: perfect!"**
+>
+> Key relationship shown: the ideal strategy is a high initial learning rate followed by reduction, which beats any single constant learning rate.
+
+---
+
+*(Slide 49 / 68)*
+
+If you start with a large learning rate and then reduce it once training stops making fast progress, you can reach a good solution faster than with the optimal constant learning rate.
+
+There are many different strategies to reduce the learning rate during training. It can also be beneficial to start with a low learning rate, increase it, then drop it again. These strategies are called **learning schedules**.
+
+---
+
+## Power scheduling
+
+*(Slide 50 / 68)*
+
+Some commonly used learning schedules are listed below.
+
+**Power scheduling**: Setting the learning rate as a function of the step number $t$, as follows:
+
+$$\eta(t) = \frac{\eta_0}{(1 + rt/s)^c}$$
+
+where $\eta_0$ is the initial learning rate, the power $c$ (typically set to $1$), $r$ is the decay rate, and $s$ is the number of decay steps.
+
+So, after $s$ steps (i.e., when $t = s$), the learning rate is down to $\eta_0/(1 + r)$. After another $s$ steps (i.e., when $t = 2s$), it is down to $\eta_0/(1 + 2r)$, and so on.
+
+> **Chart: Power Scheduling: $\eta(t) = \eta_0/(1 + t/s)^c$ with $\eta_0 = 0.01$, $c = 1$**
+>
+> Horizontal axis: **step ($t$)**, from $0$ to $50$. Vertical axis: **learning rate ($\eta$)**, from about $0.002$ to $0.010$.
+>
+> Two marker-dotted decay curves both begin at $\eta = 0.010$ at $t = 0$:
+> - **Blue curve**, legend *"decay = 0.1 ($s = 10$)"* — decays faster; passes through $\eta = 0.005$ at $t = 10$ and $\eta \approx 0.00333$ at $t = 20$; ends near $0.0017$ at $t = 50$.
+> - **Red curve**, legend *"decay = 0.05 ($s = 20$)"* — decays more slowly; passes through $\eta = 0.005$ at $t = 20$ and $\eta \approx 0.00333$ at $t = 40$; ends near $0.0029$ at $t = 50$.
+>
+> Two horizontal dashed reference lines are drawn and labelled at $0.005$ and $0.00333$, marking the $\eta_0/(1+r)$ and $\eta_0/(1+2r)$ levels.
+
+### Implementing power scheduling in Keras
+
+*(Slide 51 / 68)*
+
+```python
+# initial_learning_rate / (1 + decay_rate * step / decay_step)
+
+lr_schedule = tf.keras.optimizers.schedules.InverseTimeDecay(
+    initial_learning_rate=0.01,
+    decay_steps=10_000,
+    decay_rate=1.0,
+    staircase=False
+)
+optimizer = tf.keras.optimizers.SGD(learning_rate=lr_schedule)
+```
+
+> **Chart: Power Scheduling**
+>
+> Horizontal axis: **Step**, from $0$ to about $100{,}000$ (ticks at 0, 20000, 40000, 60000, 80000). Vertical axis: **Learning Rate**, from $0.000$ to $0.010$.
+>
+> - **Blue curve**, legend *"staircase=False"* — a smooth inverse-time decay starting at $0.010$ and falling steeply to about $0.005$ by step $10{,}000$, then flattening gradually toward roughly $0.001$ near step $100{,}000$.
+> - **Orange curve**, legend *"staircase=True"* — a step function that holds $0.010$ until step $10{,}000$, then drops to $0.005$, holds until $20{,}000$, then $\approx 0.0033$, then $\approx 0.0025$, $\approx 0.002$, and so on, with each flat segment $10{,}000$ steps wide. The staircase tracks the smooth curve, coinciding with it more closely as the step number grows.
+
+---
+
+## Exponential scheduling
+
+*(Slide 52 / 68)*
+
+**Exponential scheduling**: Setting the learning rate to:
+
+$$\eta(t) = \eta_0 r^{\,t/s}.$$
+
+makes the learning rate gradually drop by a factor of $r$ every $s$ steps. The hyperparameters $r$ and $s$ are referred to as the *decay rate* and *decay steps*.
+
+So if $r = 0.1$ and $s = 15$, then
+
+- after 15 steps, $\eta(15) = 0.1\,\eta_0$;
+- after 30 steps, $\eta(30) = 0.1\,\eta(15) = 0.01\,\eta_0$ and so on.
+
+> **Chart: Exponential Scheduling: $\eta(t) = \eta_0\, r^{\,t/s}$ with $\eta_0 = 0.1$ and $s = 10$**
+>
+> Horizontal axis: **step ($t$)**, from $0$ to $50$. Vertical axis: **learning rate ($\eta$)**, from $0.00$ to $0.10$.
+>
+> Two marker-dotted curves both start at $\eta = 0.10$ at $t = 0$:
+> - **Blue curve**, legend *"$r = 0.5$"* — decays to $\eta = 0.05$ at $t = 10$ (marked by blue dashed guide lines running horizontally to $0.05$ and vertically down to $t = 10$), then continues down to roughly $0.003$ by $t = 50$.
+> - **Red curve**, legend *"$r = 0.2$"* — decays faster, reaching $\eta = 0.02$ at $t = 10$ (marked by red dotted guide lines), and is essentially flat near $0$ from about $t = 30$ onward.
+>
+> Caption: *Two example exponential scheduling functions.*
+
+### Implementing exponential scheduling in Keras
+
+*(Slide 53 / 68)*
+
+$$\eta(t) = \eta_0\, r^{\,t/s}$$
+
+```python
+# initial_learning_rate * decay_rate ** (step / decay_steps)
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate=0.01,
+    decay_steps=20_000,
+    decay_rate=0.1,
+    staircase=False
+)
+optimizer = tf.keras.optimizers.SGD(learning_rate=lr_schedule)
+```
+
+> **Chart: Exponential Scheduling**
+>
+> Horizontal axis: **Step**, from $0$ to about $100{,}000$. Vertical axis: **Learning Rate**, from $0.000$ to $0.010$.
+>
+> - **Blue curve**, legend *"staircase=False"* — a smooth exponential decay from $0.010$ at step $0$, passing through $0.001$ at step $20{,}000$, and essentially indistinguishable from $0$ beyond about step $40{,}000$.
+> - **Orange curve**, legend *"staircase=True"* — a step function holding $0.010$ until step $20{,}000$, dropping to $0.001$ and holding until step $40{,}000$, then dropping to $0.0001$ (visually on the axis) and remaining flat thereafter.
+
+---
+
+*(Slide 54 / 68)*
+
+You can implement your own exponential scheduler (in fact, any learning scheduler):
+
+```python
+def exponential_decay(lr0, s):
+    def exp_decay_fn(epoch):
+        return lr0 * 0.1**(epoch / s)
+    return exp_decay_fn
+
+my_exp_decay_fn = exponential_decay(lr0=0.01, s=20)
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(my_exp_decay_fn)
+history = model.fit(X_train, y_train, ..., callbacks=[lr_scheduler])
+```
+
+Note that, by default, callback functions are run at the end of each **epoch**, not at each gradient descent update step. An optimizer is still needed.
+
+Another way to implement your own scheduler is to subclass the `tf.keras.optimizers.schedules.LearningRateSchedule` base class.
+
+---
+
+## Piecewise constant scheduling
+
+*(Slide 55 / 68)*
+
+For this learning rate scheduling function, we use a constant learning rate for a number of iterations (e.g., $\eta_0 = 0.1$ for $5$ iterations), then a smaller learning rate for another number of iterations (e.g., $\eta_1 = 0.001$ for the next $50$ iterations), and so on. Although this solution can work very well, it requires fiddling around to figure out the right sequence of learning rates and how long to use each of them.
+
+> **Chart: Piecewise Constant Scheduling**
+>
+> Horizontal axis: **iteration ($t$)**, from $0$ to $50$. Vertical axis: **learning rate ($\eta$)**, from about $0.02$ to $0.10$.
+>
+> A single blue marker-dotted step curve: $\eta = 0.10$ for iterations $0$–$5$; a near-vertical drop to $\eta = 0.04$, held for iterations $\approx 5$–$20$; a drop to $\eta = 0.02$, held for iterations $\approx 20$–$30$; a final drop to $\eta \approx 0.01$, held flat from iteration $\approx 30$ to $50$.
+>
+> Caption: *A example of piecewise constant scheduling.*
+
+### Implementing piecewise constant scheduling in Keras
+
+*(Slide 56 / 68)*
+
+```python
+# An example:
+lr_schedule = tf.keras.optimizers.schedules.PiecewiseConstantDecay(
+    boundaries=[50_000, 80_000],
+    values=[0.01, 0.005, 0.001]
+)
+optimizer = tf.keras.optimizers.SGD(learning_rate=lr_schedule)
+```
+
+> **Chart: Piecewise Constant Scheduling**
+>
+> Horizontal axis: **Step**, from $0$ to about $100{,}000$. Vertical axis: **Learning Rate**, from $0.000$ to $0.010$.
+>
+> A single blue step curve: $\eta = 0.010$ from step $0$ to step $50{,}000$; a vertical drop to $\eta = 0.005$, held from $50{,}000$ to $80{,}000$; a vertical drop to $\eta = 0.001$, held flat from $80{,}000$ to the right edge of the plot. The step boundaries correspond exactly to `boundaries=[50_000, 80_000]` and the plateau heights to `values=[0.01, 0.005, 0.001]`.
+
+---
+
+## Performance scheduling
+
+*(Slide 57 / 68)*
+
+Measure the validation error every $N$ steps (just like for early stopping), and reduce the learning rate by a factor of $\lambda$ when the error stops dropping.
+
+To implement performance scheduling, use the `ReduceLROnPlateau` callback:
+
+```python
+lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(factor=0.5,
+                                                    patience=5)
+history = model.fit(X_train, y_train, [...], callbacks=[lr_scheduler])
+```
+
+The `lr_scheduler` above will reduce the learning rate by $0.5$ whenever the best validation loss does not improve for $5$ consecutive epochs.
+
+### Performance scheduling (cont.)
+
+*(Slide 58 / 68)*
+
+After training is complete, the learning rate versus the validation loss can be visualized using `history.history["learning_rate"]` and `history.history["val_loss"]`.
+
+> **Chart: Reduce LR on Plateau**
+>
+> A dual-axis line chart. Horizontal axis: **Epoch**, from $0$ to about $24$. Left vertical axis (blue): **Learning Rate**, from $0.005$ to $0.010$. Right vertical axis (red): **Validation Loss**, from about $0.35$ to $0.48$.
+>
+> - **Blue curve with circular markers** (learning rate): flat at $0.010$ from epoch $0$ through epoch $\approx 16$, then a near-vertical drop at epoch $\approx 17$ to $0.005$, where it stays flat for the remaining epochs.
+> - **Red curve with triangular markers** (validation loss): starts near $0.48$ at epoch $0$, falls steeply to about $0.39$ by epoch $5$, continues down to a minimum of roughly $0.377$ around epochs $10$–$12$, then *rises* slightly to about $0.385$ by epoch $16$ (the plateau/degradation that triggers the LR reduction), then drops sharply to about $0.355$ at epoch $17$ and stays roughly flat (small fluctuations) through epoch $24$.
+>
+> Key relationship shown: the learning rate is halved once the validation loss stops improving for 5 consecutive epochs, after which the validation loss immediately drops to a new lower plateau.
+>
+> Caption: *(from the training of an MLP classifier on the Fashion MNIST dataset)*
+
+---
+
+## 1Cycle scheduling
+
+*(Slide 59 / 68)*
+
+**1Cycle scheduling**[^19] — Contrary to the other approaches, 1Cycle starts by increasing $\eta_0$, growing linearly up to $\eta_1$ halfway through training, then it decreases the learning rate linearly down to $\eta_0$ again during the second half of training, finishing the last few epochs by dropping the learning rate down by several orders of magnitude (still linearly). The author reported that good validation accuracy was achieved with fewer training epochs on the CIFAR10 image dataset.
+
+[^19]: Leslie N. Smith, "A Disciplined Approach to Neural Network Hyper-Parameters: Part 1 – Learning Rate, Batch Size, Momentum, and Weight Decay," arXiv preprint arXiv:1803.09820 (2018).
+
+---
+
+# Avoiding Overfitting
+
+## $\ell_1$ and $\ell_2$ Regularization
+
+*(Slide 60 / 68)*
+
+Just like you did for simple linear models, you can use $\ell_1$ and $\ell_2$ regularization to constrain a neural network's connection weights.
+
+**Example:** To apply $\ell_2$ regularization to a Keras layer's connection weights, using a regularization factor of $0.01$:
+
+```python
+layer = tf.keras.layers.Dense(100, activation="elu",
+                              kernel_initializer="he_normal",
+                              kernel_regularizer=tf.keras.regularizers.l2(0.01))
+```
+
+At each step during training, the regularization function computes the regularization loss, which is then added to the final loss.
+
+- For the $\ell_1$ regularization, use `tf.keras.regularizers.l2(...)`.
+- For both $\ell_1$ and $\ell_2$ regularization together, use `tf.keras.regularizers.l1_l2(...)`.
+
+### $\ell_1$ and $\ell_2$ Regularization (cont.)
+
+*(Slide 61 / 68)*
+
+If you want the same regularization for every `Dense` layer, you can use Python's `functools.partial()` function:
+
+```python
+from functools import partial
+
+RegularizedDense = partial(tf.keras.layers.Dense,
+                           activation="relu",
+                           kernel_initializer="he_normal",
+                           kernel_regularizer=tf.keras.regularizers.l2(0.01))
+
+model = tf.keras.Sequential([
+    tf.keras.layers.InputLayer(shape=[28, 28]),
+    tf.keras.layers.Flatten(),                  # layer 0
+    RegularizedDense(100),                      # layer 1
+    RegularizedDense(100),                      # layer 2
+    RegularizedDense(10, activation="softmax")  # layer 3
+])
+```
+
+In the code, all the last three layers use the $\ell_2$ regularization and are initialized using He's initialization. `model.layers[1:3]` use ReLU, but `model.layers[3]` uses softmax.
+
+---
+
+## Dropout
+
+*(Slide 62 / 68)*
+
+Dropout is one of the most popular regularization techniques for DNNs.[^20] It has proven to be highly successful: even the state-of-the-art neural networks got a 1% to 2% accuracy boost simply by adding dropout. This may not sound like a lot, but when a model already has 95% accuracy, getting a 2% accuracy boost means dropping the error rate by almost 40% (going from 5% error to roughly 3%).
+
+[^20]: "Improving neural networks by preventing co-adaptation of feature detectors," G. Hinton et al. (2012).
+
+### Dropout (cont.)
+
+*(Slide 63 / 68)*
+
+It is a fairly simple algorithm:
+
+- At each training step, every neuron (including the input neurons but excluding the output neurons) has a probability $p$ of being **temporarily** "dropped out," meaning it will be entirely ignored during this training step; however, it may be active during the next step.
+- The hyperparameter $p$ is called the *dropout rate*, and it is typically set between $10\%$ and $50\%$.
+- After training, neurons don't get dropped anymore. That is, at testing, you simply use the connection weights that have been learned from the training process.
+
+**Figure 11-10. Dropout regularization**
+
+```mermaid
+flowchart BT
+    subgraph INPUT["Input layer"]
+        direction LR
+        X1["x₁ ✗ Dropped"]
+        X2["x₂"]
+    end
+
+    subgraph HIDDEN["Hidden layer"]
+        direction LR
+        H1["h₁"]
+        H2["h₂ ✗ Dropped"]
+        H3["h₃"]
+        H4["h₄ ✗ Dropped"]
+    end
+
+    subgraph OUTPUT["Output layer (never dropped)"]
+        direction LR
+        O1["o₁"]
+        O2["o₂"]
+        O3["o₃"]
+    end
+
+    X2 --> H1
+    X2 --> H3
+    X1 -.dropped.-> H1
+    X1 -.dropped.-> H2
+    X1 -.dropped.-> H3
+    X1 -.dropped.-> H4
+    X2 -.dropped.-> H2
+    X2 -.dropped.-> H4
+
+    H1 --> O1
+    H1 --> O2
+    H1 --> O3
+    H3 --> O1
+    H3 --> O2
+    H3 --> O3
+    H2 -.dropped.-> O1
+    H2 -.dropped.-> O2
+    H2 -.dropped.-> O3
+    H4 -.dropped.-> O1
+    H4 -.dropped.-> O2
+    H4 -.dropped.-> O3
+
+    classDef dropped fill:#f8d7da,stroke:#c0392b,stroke-width:2px;
+    classDef active fill:#cfe2f3,stroke:#333;
+    classDef inputActive fill:#c6e0b4,stroke:#333;
+    class X1,H2,H4 dropped;
+    class H1,H3,O1,O2,O3 active;
+    class X2 inputActive;
+```
+
+> **Original figure detail:** A three-layer network drawn bottom-to-top. The bottom (green) row is the two input neurons $x_1$ and $x_2$, each with an upward arrow entering it from below. The middle (blue) row holds four hidden neurons. The top (blue) row holds three output neurons, each with an upward arrow leaving it. Neurons that are dropped for the current training step are struck through with a large **red X**; in the figure these are the left input neuron and two of the four hidden neurons, with the label **"Dropped"** pointing at the rightmost crossed hidden neuron. All connections leading into or out of a crossed-out neuron are drawn as **dashed** lines (i.e., inactive for this step), while connections between surviving neurons are drawn as **solid** arrows. Output neurons are never crossed out.
+
+### Dropout (cont.)
+
+*(Slide 64 / 68)*
+
+**Example:** The code below applies dropout regularization before every `Dense` layer, using a dropout rate of $0.2$:
+
+```python
+model = tf.keras.models.Sequential([
+    tf.keras.layers.InputLayer(shape=[28, 28]),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dropout(rate=0.2),
+    tf.keras.layers.Dense(100, activation="relu", kernel_initializer="he_normal"),
+    tf.keras.layers.Dropout(rate=0.2),
+    tf.keras.layers.Dense(100, activation="relu", kernel_initializer="he_normal"),
+    tf.keras.layers.Dropout(rate=0.2),
+    tf.keras.layers.Dense(10, activation="softmax")
+])
+```
+
+Since dropout is only active during training, comparing the training loss and the validation loss can be misleading. In particular, a model may be overfitting the training set and yet have similar training and validation losses. So, make sure to evaluate the training loss **without** dropout (e.g., after training).
+
+---
+
+# Summary and Practical Guidelines
+
+*(Slide 65 / 68)*
+
+The configuration below works fine in most cases; however, do not consider them as hard rules!
+
+| Hyperparameter | Default value |
+|---|---|
+| Kernel initializer | He initialization |
+| Activation function | ReLU if shallow; Swish if deep |
+| Normalization | None if shallow; batch norm if deep |
+| Regularization | Early stopping; weight decay if needed |
+| Optimizer | Nesterov accelerated gradients or AdamW |
+| Learning rate schedule | Performance scheduling or 1cycle |
+
+*Table 11-3. Default DNN configuration.*
+
+## Summary and Practical Guidelines (cont.)
+
+*(Slide 66 / 68)*
+
+If the network is a simple stack of dense layers, then it can **self-normalize**, and you should use the configuration in the table below instead.
+
+| Hyperparameter | Default value |
+|---|---|
+| Kernel initializer | LeCun initialization |
+| Activation function | SELU |
+| Normalization | None (self-normalization) |
+| Regularization | Alpha dropout if needed (not covered in CITS5017) |
+| Optimizer | Nesterov accelerated gradients |
+| Learning rate schedule | Performance scheduling or 1cycle |
+
+*Table 11-4. DNN configuration for a self-normalizing net.*
+
+---
+
+# Summary
+
+*(Slide 67 / 68)*
+
+- Understand the vanishing and exploding gradients problems
+- Understand the importance of properly initializing connection weights
+- Know a few unsaturating activation functions
+- Understand when to use batch normalization and how it works
+- Know a few fast optimizers and their associated hyperparameters
+- Understand learning rate scheduling
+- Understand $\ell_1$ and $\ell_2$ regularization
+- Understand the concept of dropout
+
