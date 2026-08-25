@@ -39,6 +39,7 @@ import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
 import MambaUpdates from './modules/MambaUpdates';
+import HpcSetup from './modules/HpcSetup';
 import LossCheck from './modules/LossCheck';
 import SelectiveScan from './modules/SelectiveScan';
 import ShapeTracer from './modules/ShapeTracer';
@@ -152,6 +153,13 @@ export const MODULES = [
     icon: 'codebase',
     group: 'Deep Learning',
     component: DeepLearningCodeLab,
+  },
+  {
+    id: 'hpc-setup',
+    label: 'HPC Setup',
+    icon: 'compass',
+    group: 'University',
+    component: HpcSetup,
   },
   {
     id: 'mamba-updates',
