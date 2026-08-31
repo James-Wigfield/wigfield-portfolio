@@ -25,9 +25,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
                                    one card per knob with a before/after
                                    schematic  [{ t, chip, diagram, caps,
                                    tech, plain }] · diagram: 'grid' | 'patch'
-                                   | 'balance'. Schematics explain the knob;
-                                   they never plot data (data belongs in
-                                   LineChart / Figure).
+                                   | 'balance' | 'folds' | 'corpus'.
+                                   Schematics explain the knob; they never
+                                   plot data (data belongs in LineChart /
+                                   Figure).
      <CodeBlock label text>        log / console excerpt with a copy button
 
    CHART RULES (non-negotiable):
@@ -397,10 +398,74 @@ function BalancePanel({ level }) {
   );
 }
 
+/* Cross-validation: one fixed train/val split becomes k rotating folds. The
+   held-out slice is orange (--trx-s2), the trained-on remainder blue
+   (--trx-s1) — so the after panel reads as "every case is held out once". */
+function FoldsPanel({ cv }) {
+  const W = 96, X = 4, BW = 88;
+  if (!cv) {
+    const vw = BW * 0.117;   // 57 of 487 — the single fixed split, roughly to scale
+    return (
+      <svg viewBox="0 0 96 96" className="trx-plan__svg" aria-hidden="true">
+        <rect x={X} y="42" width={BW - vw} height="13" className="trx-plan__wfp" />
+        <rect x={X + BW - vw} y="42" width={vw} height="13" className="trx-plan__wfn" />
+        <rect x={X + 0.5} y="42.5" width={BW - 1} height="12" className="trx-plan__framebox" />
+        <text x={W / 2} y="34" textAnchor="middle" className="trx-plan__num">1 SPLIT</text>
+      </svg>
+    );
+  }
+  const k = 5, h = 11, gap = 3.5, y0 = 96 / 2 - (k * h + (k - 1) * gap) / 2 + 5;
+  const fw = BW / k;
+  return (
+    <svg viewBox="0 0 96 96" className="trx-plan__svg" aria-hidden="true">
+      <text x={W / 2} y="14" textAnchor="middle" className="trx-plan__num">5 FOLDS</text>
+      {Array.from({ length: k }, (_, i) => {
+        const y = y0 + i * (h + gap);
+        return (
+          <g key={i}>
+            <rect x={X} y={y} width={BW} height={h} className="trx-plan__wfp" />
+            <rect x={X + i * fw} y={y} width={fw} height={h} className="trx-plan__wfn" />
+            <rect x={X + 0.5} y={y + 0.5} width={BW - 1} height={h - 1} className="trx-plan__framebox" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* Corpus size: the existing AutoPET cohort (orange, --trx-s2) plus a second
+   open-source cohort (blue, --trx-s1) merged into one training set. */
+function CorpusPanel({ merged }) {
+  const dot = (x, y, cls, i) => <circle key={`${cls}${i}`} cx={x} cy={y} r="3.1" className={cls} />;
+  const block = (n, x0, y0, cls, cols = 5) =>
+    Array.from({ length: n }, (_, i) =>
+      dot(x0 + (i % cols) * 9, y0 + Math.floor(i / cols) * 9, cls, i));
+  if (!merged) {
+    return (
+      <svg viewBox="0 0 96 96" className="trx-plan__svg" aria-hidden="true">
+        <text x="48" y="20" textAnchor="middle" className="trx-plan__num">430</text>
+        {block(20, 26, 34, 'trx-plan__les')}
+        <rect x="18" y="26" width="60" height="52" rx="4" className="trx-plan__framebox" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 96 96" className="trx-plan__svg" aria-hidden="true">
+      <text x="48" y="20" textAnchor="middle" className="trx-plan__num">430 + N</text>
+      {block(20, 8, 34, 'trx-plan__les', 4)}
+      {block(20, 54, 34, 'trx-plan__wfp', 4)}
+      <rect x="2" y="26" width="42" height="52" rx="4" className="trx-plan__framebox" />
+      <rect x="50" y="26" width="44" height="52" rx="4" className="trx-plan__framebox" />
+    </svg>
+  );
+}
+
 const PLAN_DIAGRAMS = {
   grid: [<GridPanel key="b" cell={16} />, <GridPanel key="a" cell={8} />],
   patch: [<PatchPanel key="b" />, <PatchPanel key="a" after />],
   balance: [<BalancePanel key="b" />, <BalancePanel key="a" level />],
+  folds: [<FoldsPanel key="b" />, <FoldsPanel key="a" cv />],
+  corpus: [<CorpusPanel key="b" />, <CorpusPanel key="a" merged />],
 };
 
 export function ChangePlan({ items }) {

@@ -51,8 +51,31 @@
 import Run00Sample from './runs/Run00Sample';
 import Run02Clipping from './runs/Run02Clipping';
 import Run03Parity2mm from './runs/Run03Parity2mm';
+import Run04OrganSupervision from './runs/Run04OrganSupervision';
 
 export const RUNS = [
+  {
+    id: 'run-04-organ-supervision',
+    n: 4,
+    title: 'Organ supervision · a second head that learns anatomy',
+    date: '25–26 Aug 2026',
+    machine: 'DEMETER · RTX 4090 24 GB',
+    config: 'baseline.yaml · organ_supervision on · 25 classes · loss_weight 1.0',
+    status: 'complete',
+    verdict: 'good',
+    summary:
+      'A 25-class organ head trained alongside the lesion head — never called at inference — cut false lesions 23% and lifted PPV 5.1 points with sensitivity untouched; the one reported regression turned out to be a bug in the patient-accuracy metric, not the model.',
+    headline: [
+      { v: '0.587', k: 'val Dice' },
+      { v: '73.7%', k: 'lesion F1 · protocol' },
+      { v: '21.1 h', k: 'wall-clock' },
+    ],
+    meta: [
+      { k: 'data', v: 'AutoPET PSMA v3 · 430/57/110' },
+      { k: 'archive', v: '2026-08-28_run4_organ-supervision' },
+    ],
+    component: Run04OrganSupervision,
+  },
   {
     id: 'run-03-parity2mm',
     n: 3,
