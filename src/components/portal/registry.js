@@ -34,6 +34,7 @@ import TrainingReadiness from './modules/TrainingReadiness';
 import ModelTraining from './modules/ModelTraining';
 import TrainingRuns from './modules/TrainingRuns';
 import MetricsTotalSeg from './modules/MetricsTotalSeg';
+import Run5Handoff from './modules/Run5Handoff';
 import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
 import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
@@ -125,6 +126,13 @@ export const MODULES = [
     icon: 'shield',
     group: 'University',
     component: MetricsTotalSeg,
+  },
+  {
+    id: 'run5-handoff',
+    label: 'Run 5 Handoff',
+    icon: 'compass',
+    group: 'University',
+    component: Run5Handoff,
   },
   {
     id: 'dl-lecture-1',

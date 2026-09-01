@@ -82,12 +82,12 @@ const BOOTSTRAP = {
 const PATIENT_CMP = {
   columns: ['Patient-level accounting · 50 lesion-positive scans', 'Run 3', 'Run 4', 'Δ'],
   rows: [
-    { cells: ['Scored correct by patient_accuracy (pred_positive)', '49', '46', '−3'] },
+    { cells: ['Scored correct by the OLD rule (any output at all)', '49', '46', '−3'] },
     { cells: ['…of which found NOTHING real (tp = 0)', '5', '2', '−3'], accent: true },
     { cells: ['Genuinely detected (tp > 0)', '44', '44', '0'], accent: true },
     { cells: ['Clean lesion-negative scans (of 7)', '0', '1', '+1'] },
-    { cells: ['Reported patient accuracy', '86.0%', '82.5%', '−3.5'] },
-    { cells: ['Corrected patient accuracy', '77.2%', '78.9%', '+1.7'], accent: true },
+    { cells: ['OLD patient accuracy — as published in runs 1–4', '86.0%', '82.5%', '−3.5'] },
+    { cells: ['NEW patient accuracy — the rule now in metrics.py', '77.2%', '78.9%', '+1.7'], accent: true },
   ],
 };
 
@@ -99,7 +99,41 @@ const BASELINE_CMP = {
     { cells: ['Sensitivity (recall)', '73.1%', '72.0%', '73.0%', '+0.1 raw'], accent: true },
     { cells: ['Training cases', '430', '430', '~1000', '2.3× fewer'] },
     { cells: ['Cross-validation', 'none', 'none', '5-fold + ensemble', 'not matched'] },
-    { cells: ['Post-processing', 'none', 'min-size only', 'TotalSegmentator organ-aware', 'partly closed'] },
+    { cells: ['Post-processing', 'none', 'min-size only', 'TotalSegmentator organ-aware', 'closed — tested, rejected'] },
+  ],
+};
+
+/* ---- segmentation expansion, tested 2026-09-01 --------------------------------
+   The reference's OTHER use of TotalSegmentator: a post-processing pass (-exp_segs)
+   that regrows each predicted lesion into the connected PET hotspot around its
+   SUVmax, fenced by organ boundaries and capped at N x volume. Ported to
+   evaluation/expansion.py and verified voxel-identical to a verbatim transcription
+   of psma_segmentator/post_processing.py:324-554 (60 synthetic cases across all
+   four stages + a real 258x400x400 case). Run on THIS checkpoint, all 57 validation
+   scans, threshold 0.5 + 10-voxel minimum. The `off` row reproduces this page's
+   published numbers to within a single lesion (FP 416 vs 417, PPV 75.5 vs 75.4 — the
+   sweep applies the min-size filter itself rather than reading run_eval's output), which
+   is the harness's own sanity check: the `on` rows are measured against a control that
+   lands where it should. */
+const EXPAND_CMP = {
+  columns: ['Expansion · val, 57 scans, IoU 0.1', 'F1', 'PPV', 'Sens', 'Voxel DSC', 'TP', 'FP'],
+  rows: [
+    { cells: ['off — run 4 as published', '73.7%', '75.5%', '72.0%', '0.525', '1,281', '416'], accent: true },
+    { cells: ['on, 1.2× cap — gentlest tried', '73.8%', '75.9%', '71.9%', '0.525', '1,279', '407'] },
+    { cells: ['on, 2.0× cap', '73.3%', '76.0%', '70.7%', '0.521', '1,257', '396'] },
+    { cells: ['on, 3.5× cap — the reference’s own setting', '73.2%', '76.0%', '70.5%', '0.515', '1,255', '396'], accent: true },
+  ],
+};
+
+/* Same predictions, same expansion settings, scored under the supervisors'
+   any-overlap rule instead of IoU >= 0.1. Growth cannot break an overlap match,
+   so this was the one setup where expansion still had a route to a win. */
+const EXPAND_ANY = {
+  columns: ['Same runs · any-overlap matching', 'F1', 'PPV', 'Sens', 'TP', 'FP'],
+  rows: [
+    { cells: ['off', '75.9%', '77.8%', '74.2%', '1,320', '377'], accent: true },
+    { cells: ['on, 1.2× cap', '76.0%', '78.1%', '74.0%', '1,317', '369'] },
+    { cells: ['on, 3.5× cap — reference setting', '75.5%', '78.4%', '72.8%', '1,295', '356'], accent: true },
   ],
 };
 
@@ -114,7 +148,11 @@ const FINDINGS = [
   },
   {
     tone: 'bad', t: 'The reported patient-accuracy regression is a metric bug, not a model regression',
-    why: 'The handoff flagged patient accuracy falling 86.0% → 82.5% as the run’s one regression and the first thing to chase. It is an artefact. metrics.py scores a lesion-positive scan “correct” when pred_positive is true — when the model outputs any component at all, including one with zero overlap with ground truth. Run 3 collected that credit on 5 scans where it found nothing real; run 4 on only 2. Genuine detection (tp > 0) is 44 of 50 in both runs, identical. The 3.5-point “drop” is run 4 being denied credit for false alarms run 3 was given. Corrected — positives with tp > 0 plus clean negatives — run 3 scores 77.2% and run 4 scores 78.9%, and run 4 is ahead. Every patient-accuracy figure in runs 1–4 is inflated until this is fixed.',
+    why: 'The handoff flagged patient accuracy falling 86.0% → 82.5% as the run’s one regression and the first thing to chase. It is an artefact. metrics.py scores a lesion-positive scan “correct” when pred_positive is true — when the model outputs any component at all, including one with zero overlap with ground truth. Run 3 collected that credit on 5 scans where it found nothing real; run 4 on only 2. Genuine detection (tp > 0) is 44 of 50 in both runs, identical. The 3.5-point “drop” is run 4 being denied credit for false alarms run 3 was given. Corrected — positives with tp > 0 plus clean negatives — run 3 scores 77.2% and run 4 scores 78.9%, and run 4 is ahead. Fixed in metrics.py on 2026-09-01 — the new rule reproduces these corrected figures from the archived CSVs, the old rule is retained as patient_accuracy_legacy for reconciliation, and a self-test guard now blocks a regression. Every patient-accuracy figure in runs 1–4 remains the old definition and reads high by 3–9 points.',
+  },
+  {
+    tone: 'ok', t: 'The reference’s post-processing stage was tested properly and does not help this model',
+    why: 'Its expansion pass (-exp_segs) was ported and verified voxel-identical to a verbatim copy of the reference’s own functions, then run on this checkpoint over all 57 validation scans. At the reference’s own setting it costs 0.5 F1 and 1.5 points of sensitivity; the gentlest setting is +0.1 F1, which is noise. The technique assumes the model under-segments, and this one does not. That makes the last unclosed row of the comparison table a tested-and-rejected result rather than an untried excuse — and the parity proof is what licenses saying so.',
   },
   {
     tone: 'ok', t: 'Segmentation quality improved too, which was not the goal',
@@ -325,6 +363,26 @@ export default function Run04OrganSupervision({ run }) {
           paying run 3 for false alarms, and run 4 lost that payment by making fewer of them.
         </Prose>
         <MetricTable columns={PATIENT_CMP.columns} rows={PATIENT_CMP.rows} />
+        <Prose>
+          <strong>Fixed in code on 2026-09-01</strong>, which is why this section is no longer just an
+          analysis. <code>aggregate()</code> now requires <code>tp&nbsp;&gt;&nbsp;0</code> for a
+          lesion-positive scan; lesion-negative scans are unchanged, because there, predicting nothing
+          <em>is</em> the correct answer. Re-running the archived per-case CSVs through the new code
+          reproduces the two bottom rows above &mdash; 77.2% and 78.9% &mdash; which were derived by
+          hand before the fix existed, so the fix and the analysis independently agree.
+        </Prose>
+        <Prose>
+          The old figures are kept, here and in the code: <code>aggregate()</code> also returns
+          <code>patient_accuracy_legacy</code> and <code>patient_credited_on_nothing</code>, so a
+          number that disagrees with an archived run-card is explainable rather than mysterious.
+          <strong>Every <code>patient_accuracy</code> in runs 1&ndash;4 and in the archived run-cards is
+          the old definition and reads high by 3&ndash;9 points.</strong> Those pages are not being
+          rewritten; the pairing above is the reconciliation. Nothing else moved &mdash; F1, PPV,
+          sensitivity and voxel DSC are untouched, and nothing selects checkpoints on this metric. The
+          module self-test now asserts that an all-miss positive scan scores 0.000 where the old rule
+          gave it 1.000; it had never asserted patient accuracy at all, which is how this survived four
+          runs.
+        </Prose>
       </Section>
 
       <Section label="Against the reference" note="read the bottom three rows before the top three">
@@ -336,6 +394,52 @@ export default function Run04OrganSupervision({ run }) {
           down from 28 points at run 2 to 12.8.
         </Prose>
         <MetricTable columns={BASELINE_CMP.columns} rows={BASELINE_CMP.rows} />
+      </Section>
+
+      <Section label="Segmentation expansion — tested and rejected" note="the reference’s other use of TotalSegmentator, run on this checkpoint · 57 scans · no retraining">
+        <Prose>
+          Run 4 bought organ-awareness <em>inside the weights</em>. The reference also uses
+          TotalSegmentator a second way, at inference: a post-processing pass
+          (<code>-exp_segs</code>) that grows each predicted lesion outward into the bright PET region
+          it already sits on, stopping at organ boundaries and at a brightness cutoff read off the
+          patient’s own liver. It needs no retraining, so it was cheap to settle — and settling it
+          closes the last open row in the table above.
+        </Prose>
+        <Prose>
+          The technique assumes the model paints lesions <em>too small</em>. This one does not, so
+          growing them only spills over the edges. At the reference’s own setting it costs 0.5 F1,
+          1.5 points of sensitivity and a point of voxel DSC, and buys 0.5 PPV. The gentlest setting
+          is +0.1 F1 — noise. Nothing here beats leaving it off.
+        </Prose>
+        <MetricTable columns={EXPAND_CMP.columns} rows={EXPAND_CMP.rows} />
+        <Prose>
+          Read the TP column: found lesions fall 1,281 &rarr; 1,255 as growth increases, while false
+          positives also fall 416 &rarr; 396. Expansion cannot invent a new lesion — it only ever
+          grows blobs that already exist — so those 26 lost detections are <em>merges</em>: two
+          correctly-found lesions grow into one another, and one predicted component can only be
+          credited with one ground-truth lesion. This is the same over-merging already visible in
+          this run’s threshold sweep, arriving by a different route.
+        </Prose>
+        <Prose>
+          Scored under the supervisors’ any-overlap rule the story is unchanged, and that is the
+          informative part. Growth cannot break an <em>overlap</em> match the way it inflates a union
+          past an IoU threshold, so detections should have been safe here — they still fall 1,320
+          &rarr; 1,295. That pins the mechanism on merging specifically, not on the choice of matching
+          rule. The rule is worth 2.2 F1 points on its own, which is a separate thing worth knowing.
+        </Prose>
+        <MetricTable columns={EXPAND_ANY.columns} rows={EXPAND_ANY.rows} />
+        <Prose>
+          Two notes on trusting this. First, the port is verified rather than assumed: a verbatim
+          copy of the reference’s own functions runs beside it in
+          <code>scripts/verify_expansion_parity.py</code> and every voxel matches, so a null result
+          means the technique did nothing rather than that it was mistyped. Second, the brightness
+          cutoff is the whole algorithm, and the reference hard-codes TotalSegmentator’s raw label
+          numbers to find the liver — <code>organ == 5</code>. In this project’s regrouped 25-class
+          maps, 5 is <em>lungs</em>. Lungs are air, so the cutoff collapses from 9.67 SUV to 1.56,
+          masks flood 8.5×, and 40 lesions merge into their neighbours — while voxel DSC still
+          <em>rises</em>, so the mistake reads as a modest success. The floor came from the liver on
+          91% of cases here, and the code now prints that on every run.
+        </Prose>
       </Section>
 
       <Section label="Findings">
@@ -356,9 +460,10 @@ export default function Run04OrganSupervision({ run }) {
           of the <em>experiment</em>, not the network, and run 5 addresses them together.
         </Prose>
         <Prose>
-          Two things land before either card, and neither costs GPU time. The patient-level metric has
+          Two things land before either card, and neither costs GPU time. The patient-level metric had
           to be redefined as <code>tp&nbsp;&gt;&nbsp;0</code>, because cross-validating on top of a
-          metric that rewards false alarms would simply produce five inflated numbers instead of one.
+          metric that rewards false alarms would simply produce five inflated numbers instead of one
+          &mdash; <strong>done 2026-09-01</strong>, see the patient-accuracy section above.
           And the component-merging audit has to run, because if a meaningful share of the 479 missed
           lesions sit inside a prediction already matched to a neighbour, then part of the sensitivity
           gap is recoverable from the probability maps that already exist &mdash; and it would be

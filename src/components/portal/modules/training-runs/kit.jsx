@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Icon from '../../icons';
 
 /* ============================================================================
    TRAINING RUNS — ANALYSIS KIT
@@ -10,7 +11,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
    Components:
      <RunPage run>                 page shell — header built from the run's
-                                   registry entry (single source of truth)
+                                   registry entry (single source of truth),
+                                   plus the Export PDF button — see the PRINT
+                                   block at the foot of KIT_CSS for what the
+                                   exported document looks like
      <Verdict tone lead>…</>       the one-paragraph takeaway banner
      <Section label note>…</>      labelled section wrapper
      <Prose>…</>                   explanatory paragraph inside a Section
@@ -59,14 +63,47 @@ export function RunPage({ run, children }) {
     { k: 'config', v: run.config },
     ...(run.meta || []),
   ];
+
+  /* Export PDF = the browser's own print pipeline, nothing else. A run page
+     keeps its entire analysis in the DOM (no tabs, no toggles, no lazy
+     sections), so print captures the whole document with SELECTABLE text —
+     which is what a document-ingesting tool (NotebookLM and friends) needs to
+     read the run back. Ctrl+P produces the identical PDF; this button only
+     names the file, so the download lands as the run's id rather than the
+     page title. The paper formatting is the PRINT block at the foot of
+     KIT_CSS. afterprint restores the title because print() is not reliably
+     blocking across browsers. */
+  const exportPdf = () => {
+    const prev = document.title;
+    const restore = () => {
+      document.title = prev;
+      window.removeEventListener('afterprint', restore);
+    };
+    document.title = `mamba-psma-${run.id}`;
+    window.addEventListener('afterprint', restore);
+    window.print();
+  };
+
   return (
     <div className="trx">
       <style>{KIT_CSS}</style>
       <header className="pt-card trx-head">
+        {/* print-only: the detail view drops the module header, so the exported
+            document has to say what project it belongs to on its own */}
+        <p className="trx-printhead">CITS4010 · Mamba_PSMA · training-run analysis</p>
         <div className="trx-head__row">
           <span className="trx-runno">RUN {String(run.n).padStart(2, '0')}</span>
           <span className={`trx-status trx-status--${status.cls}`}>{status.label}</span>
           {run.sample && <span className="trx-flag">sample — fabricated numbers</span>}
+          <button
+            type="button"
+            className="trx-export"
+            onClick={exportPdf}
+            title="Print this analysis to a PDF — the whole page: prose, tables, charts, schematics and logs"
+          >
+            <Icon name="printer" size={13} />
+            Export PDF
+          </button>
         </div>
         <h3 className="trx-title">{run.title}</h3>
         <p className="trx-sub">{run.summary}</p>
@@ -191,6 +228,17 @@ export function LineChart({ series, xLabel = 'step', yLabel, yDomain, xFmt = fmt
 
   const flip = hover && sx(hover.ux) > P.l + iw * 0.62;
 
+  /* Print-only readout. An SVG polyline carries no text, so a printed or
+     PDF-exported copy of this page loses the curve completely — and with it
+     anything that reads the PDF back. One line per series with the numbers
+     that matter (first, last, range), hidden on screen where the chart itself
+     and its hover tooltip already say all this. */
+  const readout = series.map((s) => {
+    const ys = s.data.map((d) => d[1]);
+    const a = s.data[0], z = s.data[s.data.length - 1];
+    return `${s.name}: ${yFmt(a[1])} → ${yFmt(z[1])} over ${xLabel} ${xFmt(a[0])}–${xFmt(z[0])} · range ${yFmt(Math.min(...ys))}–${yFmt(Math.max(...ys))}`;
+  });
+
   return (
     <div className="trx-chart">
       {series.length > 1 && (
@@ -269,6 +317,10 @@ export function LineChart({ series, xLabel = 'step', yLabel, yDomain, xFmt = fmt
           </div>
         )}
       </div>
+      <p className="trx-chart__readout">
+        <span>{yLabel ? `${yLabel} · values` : 'series values'}</span>
+        {readout.map((r) => <span key={r}>{r}</span>)}
+      </p>
     </div>
   );
 }
@@ -648,6 +700,17 @@ const KIT_CSS = `
   background: var(--surface-hi); border: 1px solid var(--line-2); border-radius: 4px; padding: 0.22rem 0.5rem; }
 .trx-meta__chip span { color: var(--text-faint); text-transform: uppercase; font-size: 0.62rem; margin-right: 0.4rem; }
 
+/* export → PDF: a run page IS a document, so it can be printed as one */
+.trx-export { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent-ink);
+  background: transparent; border: 1px solid var(--accent); border-radius: 4px;
+  padding: 0.3rem 0.6rem; cursor: pointer; transition: background 0.15s; }
+.trx-export:hover { background: var(--accent-soft); }
+.trx-export:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* print-only elements — the document's own kicker and the charts' numbers */
+.trx-printhead, .trx-chart__readout { display: none; }
+
 /* verdict — a ruled editorial standfirst, not a callout box; the tone lives in
    the labelled dot, never in a coloured border */
 .trx-verdict { padding: 0.85rem 0.2rem 1rem; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line-2); }
@@ -828,5 +891,89 @@ const KIT_CSS = `
 @media (max-width: 620px) {
   .trx-head { padding: 1rem; }
   .trx-title { font-size: 1.15rem; }
+}
+
+/* ============================================================================
+   PRINT / PDF EXPORT
+   ----------------------------------------------------------------------------
+   The header's Export PDF button is window.print() and nothing more, so THIS
+   block is the export format. Four jobs:
+
+     1 · paper — A4 portrait with document margins, overriding the full-bleed
+         @page that Wall Art installs portal-wide (this style is mounted inside
+         the run page, so it out-cascades the bundled sheet and unmounts with
+         the tab — Wall Art's own print stays untouched).
+     2 · one palette — the jade tokens are forced onto the .trx subtree so a
+         coral or arcade reader still exports a light paper document instead of
+         a charcoal one. Re-declared ON .trx (self beats inherited); the series
+         tokens need the theme-level selector to out-cascade the arcade block
+         above, same specificity, later in the file. print-color-adjust: exact
+         keeps the run chip, tone dots and accent table rows without asking the
+         reader to tick "background graphics".
+     3 · nothing clipped — the code blocks and the wide tables SCROLL on screen,
+         and a scroll container prints cropped at the page edge: half of every
+         log line would silently vanish from the PDF. They wrap here instead.
+     4 · nothing split — cards, charts, schematics and table rows stay whole
+         across page breaks, and a section label never orphans from its body.
+
+   The charts also reveal .trx-chart__readout in print (see LineChart) so the
+   curves survive as numbers in a text-extracted PDF.
+   ========================================================================== */
+@media print {
+  @page { size: A4 portrait; margin: 13mm 11mm 15mm; }
+
+  html, body, .portal__body, .portal__main, .portal__content { background: #fff !important; }
+  .portal__content { animation: none !important; }
+  /* screen-only chrome: the shell's back button, the button that started this
+     print, the copy buttons, the chart tooltip, the figure zoom hint, and a
+     lightbox left open when someone hits Ctrl+P */
+  .trn-back, .trx-export, .trx-copy, .trx-tip, .trx-fig__zoom, .trx-lb { display: none !important; }
+
+  .trx { -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    --ground: #ffffff; --ground-2: #eef4f6; --surface: #ffffff; --surface-hi: #f2f8fa;
+    --ink: #051b28; --ink-2: #234b5e; --ink-3: #4f6f80; --text-faint: #6f8fa0;
+    --line: rgba(53, 86, 105, 0.30); --line-2: rgba(53, 86, 105, 0.18);
+    --accent: #15a292; --accent-ink: #0d7267; --accent-soft: rgba(21, 162, 146, 0.14);
+    --signal: #15a292; }
+  .hp.portal[data-portal-theme] .trx {
+    --trx-s1: #2a78d6; --trx-s2: #d4551f; --trx-s3: #14855c; --trx-s4: #a87000;
+    --trx-good: #0d7267; --trx-warn: #a07400; --trx-bad: #b5433d; }
+  .trx .pt-card { box-shadow: none; }
+
+  /* A column flex container is the one thing that fragments badly across
+     printed pages — the page shell and the run page both are one on screen.
+     Stack them as plain blocks for paper and re-space with margins; the style
+     tag is .trx's first child, hence the reset on whatever follows it. */
+  .pt-module.trn, .trx { display: block; }
+  .trx > * + * { margin-top: 1.1rem; }
+  .trx > style + * { margin-top: 0; }
+
+  /* the document names itself */
+  .trx-printhead { display: block; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--ink-3); margin: 0 0 0.6rem; }
+
+  /* 3 · nothing clipped */
+  .trx-code pre { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible;
+    font-size: 0.6rem; line-height: 1.6; }
+  .trx-tablewrap { overflow: visible; }
+  .trx-table { font-size: 0.72rem; }
+  .trx-table th, .trx-table td { padding: 0.36rem 0.45rem; }
+  .trx-table td { white-space: normal; }
+  .trx-table thead { display: table-header-group; }
+
+  /* charts print as their curve PLUS their numbers */
+  .trx-chart__readout { display: block; margin: 0.35rem 0 0; padding: 0 0.2rem;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.6rem; line-height: 1.6;
+    color: var(--ink-3); }
+  .trx-chart__readout span { display: block; }
+  .trx-chart__readout span:first-child { text-transform: uppercase; letter-spacing: 0.07em;
+    font-weight: 700; color: var(--text-faint); }
+
+  /* 4 · nothing split */
+  .trx-verdict, .trx-stat, .trx-chart, .trx-fig, .trx-plan__card, .trx-code,
+  .trx-finding, .trx-next__item, .trx-tablewrap { break-inside: avoid; }
+  .trx-table tr { break-inside: avoid; }
+  .trx-head, .trx-sec__label { break-after: avoid; }
 }
 `;
