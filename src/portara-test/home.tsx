@@ -8,6 +8,10 @@ import { UwaLogo } from "./components/uwa-logo";
 import { HeroScene } from "./components/hero-scene";
 import { HowItWorks } from "./components/how-it-works";
 import { LogoMarquee } from "./components/logo-marquee";
+
+// The 3D hero (toggle at the top of the page) brings three.js with it, so it
+// only loads when chosen.
+const Hero3D = lazy(() => import("./components/hero-3d"));
 import { Reveal, RevealText } from "./components/reveal";
 import { SectionRule } from "./components/section-rule";
 import { ToolboxBuilder } from "./components/toolbox-builder";
@@ -535,7 +539,77 @@ function HomeHeader() {
   );
 }
 
+/**
+ * PORTARA-TEST: the hero comes in two versions while the design is decided -
+ * the 2D brand sting (hero-scene.tsx) and the 3D gate with its orbiting words
+ * (hero-3d.tsx). A small switch pinned under the header picks one; the choice
+ * sticks in localStorage. Switching scrolls to the top first so neither
+ * hero's pinned scroll-trigger is torn down mid-flight.
+ */
+type HeroMode = "2d" | "3d";
+const HERO_KEY = "portara-test:hero";
+function readHeroMode(): HeroMode {
+  try {
+    return localStorage.getItem(HERO_KEY) === "3d" ? "3d" : "2d";
+  } catch {
+    return "2d";
+  }
+}
+
+function HeroToggle({ mode, onChange }: { mode: HeroMode; onChange: (m: HeroMode) => void }) {
+  return (
+    <div className="hero-toggle" role="radiogroup" aria-label="Hero version">
+      <span className="hero-toggle__label">Hero</span>
+      <span className="hero-toggle__track">
+        <span className={"hero-toggle__ink" + (mode === "3d" ? " is-right" : "")} aria-hidden="true" />
+        {(["2d", "3d"] as HeroMode[]).map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={mode === m}
+            className={"hero-toggle__opt" + (mode === m ? " is-on" : "")}
+            onClick={() => onChange(m)}
+          >
+            {m.toUpperCase()}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+/** While the 3D chunk loads: the same hero layout with an empty stage. */
+function HeroLoading() {
+  return (
+    <section className="scene scene--3d scene--loading" aria-hidden="true">
+      <div className="scene__hero">
+        <div className="container scene__grid">
+          <div className="scene__copy">
+            <span className="eyebrow">Custom staff portals · Perth</span>
+            <h1 className="scene__title">
+              Put your business on <span className="hl-sand">autopilot</span>.
+            </h1>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
+  const [heroMode, setHeroMode] = useState<HeroMode>(readHeroMode);
+  const chooseHero = (m: HeroMode) => {
+    if (m === heroMode) return;
+    try {
+      localStorage.setItem(HERO_KEY, m);
+    } catch {
+      /* private mode: the choice just does not stick */
+    }
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    setHeroMode(m);
+  };
+
   // PORTARA-TEST: local state stands in for useNavigation() + actionData.
   const [busy, setBusy] = useState(false);
   const [actionData, setActionData] = useState<LeadResult | null>(null);
@@ -553,8 +627,15 @@ export default function Home() {
       <HomeHeader />
 
       <main id="main">
-        {/* ----- Opening scene: sting, headline, hand-off into the tour ----- */}
-        <HeroScene />
+        {/* ----- Opening scene, in the version the toggle picks ----- */}
+        <HeroToggle mode={heroMode} onChange={chooseHero} />
+        {heroMode === "3d" ? (
+          <Suspense fallback={<HeroLoading />}>
+            <Hero3D key="3d" />
+          </Suspense>
+        ) : (
+          <HeroScene key="2d" />
+        )}
 
         {/* ----- Custom Portal: the toolbox that builds itself ----- */}
         <ToolboxBuilder />

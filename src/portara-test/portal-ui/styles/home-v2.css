@@ -1256,6 +1256,134 @@ h2 {
   vertical-align: middle;
 }
 
+/* ----- 9. The hero switch and the 3D hero ------------------------------- */
+/* A small segmented control pinned under the header, for comparing the two
+   heroes while the design is decided. Sandbox furniture, not page design. */
+.hero-toggle {
+  position: fixed;
+  z-index: 60;
+  right: 20px;
+  bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-surface) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  box-shadow: 0 8px 24px -14px color-mix(in srgb, #000 35%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.hero-toggle__label {
+  color: var(--slate-300);
+}
+.hero-toggle__track {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-text) 6%, transparent);
+}
+.hero-toggle__ink {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--text-0);
+  transition: transform 0.35s var(--ease);
+}
+.hero-toggle__ink.is-right {
+  transform: translateX(100%);
+}
+.hero-toggle__opt {
+  position: relative;
+  z-index: 1;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--slate-300);
+  cursor: pointer;
+  transition: color 0.3s var(--ease);
+}
+.hero-toggle__opt.is-on {
+  color: #fff;
+}
+
+/* The 3D canvas fills the hero behind the copy; the camera puts the gate in
+   the right-hand column. */
+.hero3d {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero3d canvas {
+  display: block;
+}
+.scene__stage--3d {
+  min-height: 1px;
+}
+.scene--loading .scene__hero {
+  min-height: calc(100vh - var(--header-h));
+}
+/* The 3D hero has no pinned jump: it is a normal block a viewport tall and
+   the portal frame simply follows it, visible, favicon and all. These win
+   over the desktop pin layout the 2D scene uses by specificity. */
+.scene--3d .scene__hero {
+  position: relative;
+  height: auto;
+  min-height: calc(100vh - var(--header-h));
+  padding: 0;
+  z-index: 1;
+}
+.scene--3d .scene__frame,
+.scene--3d .scene__favicon {
+  opacity: 1;
+  visibility: visible;
+}
+.scene--3d .scene__frame {
+  padding-top: var(--s-6);
+}
+.scene--3d .scene__favicon {
+  top: calc(var(--s-6) + 1px + 9px);
+}
+@media (max-width: 860px) {
+  /* Narrow: the gate gets its own block under the copy, centred. */
+  .hero3d {
+    position: relative;
+    height: 380px;
+    grid-row: 2;
+  }
+  .scene--3d .scene__grid {
+    display: contents;
+  }
+  .scene--3d .scene__hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-5);
+    padding: var(--s-5) var(--pad-x) var(--s-6);
+    min-height: 0;
+  }
+  .scene--3d .scene__copy {
+    grid-row: 1;
+  }
+  .scene--3d .scene__stage--3d {
+    display: none;
+  }
+  .scene--3d .scene__cue-slot {
+    grid-row: 3;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scene__lead,
   .scene__actions {

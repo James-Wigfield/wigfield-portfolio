@@ -398,51 +398,60 @@ export function HeroScene() {
         </div>
       </div>
 
-      <div className="scene__frame">
-        {/* The mark's last beat: a favicon beside the tour's URL bar. */}
-        <span className="scene__favicon" aria-hidden="true">
-          <GateMark />
-        </span>
-        {showTour ? (
-          <WorkspaceTour />
-        ) : (
-          // The same window, with a quiet skeleton of a portal page, until the
-          // gate is a third open: the tour then mounts and begins on its
-          // dashboard as the pillars clear.
-          <div className="tour scene__placeholder" aria-hidden="true">
-            <div className="tour__frame">
-              <div className="tour__chrome">
-                <span className="tour__dots">
-                  <i />
-                  <i />
-                  <i />
+      <PortalFrame showTour={showTour} />
+    </section>
+  );
+}
+
+/**
+ * The demo portal, as both heroes land on it: the tour in its browser frame,
+ * the favicon slot the mark hands over to, and one caption line. Until
+ * `showTour` is true the frame holds a quiet skeleton of a portal page, so a
+ * reveal never opens onto a blank.
+ */
+export function PortalFrame({ showTour }: { showTour: boolean }) {
+  return (
+    <div className="scene__frame">
+      {/* The mark's last beat: a favicon beside the tour's URL bar. */}
+      <span className="scene__favicon" aria-hidden="true">
+        <GateMark />
+      </span>
+      {showTour ? (
+        <WorkspaceTour />
+      ) : (
+        <div className="tour scene__placeholder" aria-hidden="true">
+          <div className="tour__frame">
+            <div className="tour__chrome">
+              <span className="tour__dots">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="tour__url">demo-industrial-contractor.portara.com.au</span>
+            </div>
+            <div className="tour__stage scene__skeleton">
+              <div className="scene__skeleton-rail" />
+              <div className="scene__skeleton-main">
+                <i className="is-title" />
+                <i />
+                <span className="scene__skeleton-tiles">
+                  <b />
+                  <b />
+                  <b />
+                  <b />
                 </span>
-                <span className="tour__url">demo-industrial-contractor.portara.com.au</span>
-              </div>
-              <div className="tour__stage scene__skeleton">
-                <div className="scene__skeleton-rail" />
-                <div className="scene__skeleton-main">
-                  <i className="is-title" />
-                  <i />
-                  <span className="scene__skeleton-tiles">
-                    <b />
-                    <b />
-                    <b />
-                    <b />
-                  </span>
-                  <i />
-                  <i />
-                  <i />
-                </div>
+                <i />
+                <i />
+                <i />
               </div>
             </div>
           </div>
-        )}
-        <p className="scene__caption">
-          <span className="scene__caption-tick" aria-hidden="true" />A client
-          portal, live. Demo account, snapshot {AS_OF}.
-        </p>
-      </div>
-    </section>
+        </div>
+      )}
+      <p className="scene__caption">
+        <span className="scene__caption-tick" aria-hidden="true" />A client
+        portal, live. Demo account, snapshot {AS_OF}.
+      </p>
+    </div>
   );
 }
