@@ -1,0 +1,266 @@
+/* =========================================================================
+   PORTARA - the loading vocabulary
+   Prefix: `pxl-`. Paired with components/loading.tsx; read the banner there
+   for WHEN each of these is the right answer.
+
+   Imported from tokens.css rather than portal.css, on purpose: portal.css is
+   pulled in per-route by the portal shells, and the auth pages never load it.
+   A sign-in that hands off to a slow /portal is exactly the wait worth
+   covering, so these rules have to be in the document from the first byte.
+
+   Everything here is drawn from the theme roles in tokens.css and from
+   --accent, so a tenant's portal loads in the tenant's own colour and both
+   themes are one set of rules rather than two.
+   ========================================================================= */
+
+:root {
+  /* The glass. Translucent so the page stays faintly legible underneath -
+     which is what stops a load from feeling like a context switch - and near
+     enough to the portal's own surface that the blur reads as frost rather
+     than as a grey box dropped over the app. */
+  --pxl-veil: light-dark(rgba(255, 255, 255, 0.72), rgba(20, 22, 25, 0.76));
+  /* The two z-heights. Above every panel, modal and sticky bar in both apps
+     (the portal's own ceiling is the office stage at 200); the rail sits over
+     the veil so a long wait still shows its progress. */
+  --pxl-z-veil: 9000;
+  --pxl-z-rail: 9001;
+}
+
+/* ── The rail ──────────────────────────────────────────────────────────────
+   Two pixels across the top of the document, for every wait that is more than
+   a blink. It creeps toward the right and finishes when the page does - see
+   loading.tsx for why the width is a transition rather than a keyframe. */
+.pxl-rail {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: var(--pxl-z-rail);
+  pointer-events: none;
+  overflow: hidden;
+}
+.pxl-rail__bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  /* Long and heavily decelerated: the bar covers most of the track early, then
+     inches, so it can never arrive before the page it is describing. */
+  transition: transform 9s cubic-bezier(0.06, 0.72, 0.12, 1);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 55%, transparent) 0%,
+    var(--accent) 70%,
+    var(--accent-hover) 100%
+  );
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+/* The finish: run to the end, then get out of the way. */
+.pxl-rail.is-done .pxl-rail__bar {
+  transition:
+    transform 0.18s ease-out,
+    opacity 0.22s ease-in 0.12s;
+  opacity: 0;
+}
+
+/* ── The screen ────────────────────────────────────────────────────────────
+   Frosted glass over the whole document, with one mark in the middle. It also
+   swallows clicks, which is deliberate: the page underneath is on its way out
+   and a click landing on a control that is about to be replaced is a bug
+   report waiting to happen. */
+.pxl-veil {
+  position: fixed;
+  inset: 0;
+  z-index: var(--pxl-z-veil);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pxl-veil);
+  -webkit-backdrop-filter: blur(14px) saturate(118%);
+  backdrop-filter: blur(14px) saturate(118%);
+  animation: pxl-veil-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pxl-veil.is-leaving {
+  animation: pxl-veil-out 0.26s ease-in forwards;
+}
+.pxl-veil__mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  /* Trails the glass by a beat, so the mark lands ON a settled surface rather
+     than racing it. */
+  animation: pxl-mark-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+.pxl-veil__label {
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  color: var(--c-muted);
+}
+
+@keyframes pxl-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pxl-veil-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pxl-mark-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── The mark ──────────────────────────────────────────────────────────────
+   One ring, every size. Two animations at different easings on purpose: the
+   svg turns at a constant rate while the arc grows and shrinks, and the two
+   together read as something working rather than as a wheel spinning. */
+.pxl-spin {
+  display: inline-flex;
+  flex: none;
+  line-height: 0;
+}
+.pxl-spin svg {
+  width: 100%;
+  height: 100%;
+  animation: pxl-spin-turn 1.5s linear infinite;
+}
+.pxl-spin circle {
+  fill: none;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  transform-origin: center;
+}
+.pxl-spin__track {
+  stroke: color-mix(in srgb, var(--c-text) 16%, transparent);
+}
+.pxl-spin__arc {
+  stroke: var(--accent);
+  /* Circumference at r=10 is 62.8 - the dasharray numbers below are that
+     length carved up, so an arc of `n` is n/62.8 of the ring. */
+  animation: pxl-spin-arc 1.5s ease-in-out infinite;
+}
+@keyframes pxl-spin-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pxl-spin-arc {
+  0% {
+    stroke-dasharray: 1 62;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 40 62;
+    stroke-dashoffset: -13;
+  }
+  100% {
+    stroke-dasharray: 1 62;
+    stroke-dashoffset: -61;
+  }
+}
+
+/* ── In place ──────────────────────────────────────────────────────────────
+   The small stuff: a dropdown filling its options, a panel fetching a detail.
+   Sized to sit inside a control without changing its geometry. */
+.pxl-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.125rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--c-muted);
+}
+
+/* Placeholder rows, for a list whose shape is known before its contents are.
+   They hold the height the real rows will take, so nothing jumps on arrival. */
+.pxl-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+}
+.pxl-rows__row {
+  height: 0.75rem;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c-text) 8%, transparent) 0%,
+    color-mix(in srgb, var(--c-text) 15%, transparent) 50%,
+    color-mix(in srgb, var(--c-text) 8%, transparent) 100%
+  );
+  background-size: 220% 100%;
+  animation: pxl-shimmer 1.5s linear infinite;
+}
+/* Ragged ends, because a stack of identical bars reads as a UI element and a
+   stack of uneven ones reads as text that has not arrived. */
+.pxl-rows__row:nth-child(2) {
+  width: 82%;
+}
+.pxl-rows__row:nth-child(3) {
+  width: 64%;
+}
+.pxl-rows__row:nth-child(5) {
+  width: 74%;
+}
+@keyframes pxl-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/* Announced to a screen reader, invisible to everyone else. Local to this file
+   so the loading states work on pages that never load portal.css. */
+.pxl-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────
+   The states still SHOW - somebody who has turned motion down still needs to
+   know the portal is working - they just stop moving. The ring becomes a
+   steady three-quarter arc, the shimmer a flat tint, and the rail a static
+   bar that appears and disappears rather than travelling. */
+@media (prefers-reduced-motion: reduce) {
+  .pxl-veil,
+  .pxl-veil__mark,
+  .pxl-spin svg,
+  .pxl-spin__arc,
+  .pxl-rows__row {
+    animation: none;
+  }
+  .pxl-spin__arc {
+    stroke-dasharray: 40 62;
+  }
+  .pxl-rows__row {
+    background: color-mix(in srgb, var(--c-text) 11%, transparent);
+  }
+  .pxl-rail__bar {
+    transition: opacity 0.2s ease;
+    transform: scaleX(1) !important;
+  }
+}

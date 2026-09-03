@@ -1,0 +1,41 @@
+/* React Bits - SpotlightCard (ts-default). Vendored from DavidHDev/react-bits
+   main: src/ts-default/Components/SpotlightCard/SpotlightCard.tsx
+   Local edits:
+   [local] the `import './SpotlightCard.css'` line is dropped - the rules live
+           in portal-ui/styles/home-v2.css (restyled to the brand: hairline
+           border, surface colour, square corners) so they enter and leave
+           <head> with the route. */
+import React, { useRef } from 'react';
+
+interface SpotlightCardProps extends React.PropsWithChildren {
+  className?: string;
+  spotlightColor?: `rgba(${number}, ${number}, ${number}, ${number})`;
+}
+
+const SpotlightCard: React.FC<SpotlightCardProps> = ({
+  children,
+  className = '',
+  spotlightColor = 'rgba(255, 255, 255, 0.25)'
+}) => {
+  const divRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = e => {
+    if (!divRef.current) return;
+
+    const rect = divRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    divRef.current.style.setProperty('--mouse-x', `${x}px`);
+    divRef.current.style.setProperty('--mouse-y', `${y}px`);
+    divRef.current.style.setProperty('--spotlight-color', spotlightColor);
+  };
+
+  return (
+    <div ref={divRef} onMouseMove={handleMouseMove} className={`card-spotlight ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+export default SpotlightCard;

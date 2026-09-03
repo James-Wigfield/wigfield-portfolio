@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './styles/home.css';
 import Navbar from './components/Navbar';
@@ -27,6 +27,10 @@ import ChaosReactor from './components/games/ChaosReactor';
 import TwinFlames from './components/games/TwinFlames';
 import Overmind from './components/games/Overmind';
 import Portal from './components/portal/Portal';
+
+// Portara landing-page sandbox (src/portara-test/README.md). Lazy so three.js
+// and the landing stylesheets never load for the rest of the site.
+const PortaraTest = lazy(() => import('./portara-test/index.tsx'));
 
 function Portfolio() {
   // Tag <html> while the home route is mounted so home.css can override the
@@ -76,6 +80,17 @@ export default function App() {
       <Route path="/games/overmind" element={<Overmind />} />
       {/* Private management portal — gated client-side (placeholder for Supabase Auth) */}
       <Route path="/portal" element={<Portal />} />
+      {/* Portara home page sandbox - a mirror of portara-repo's landing page, see src/portara-test.
+          The fallback paints the landing page's ground while the lazy chunk loads, so the
+          first frames are its light grey rather than the portfolio's navy. */}
+      <Route
+        path="/portara-test"
+        element={
+          <Suspense fallback={<div style={{ minHeight: '100vh', background: '#e8edf0' }} />}>
+            <PortaraTest />
+          </Suspense>
+        }
+      />
     </Routes>
   );
 }

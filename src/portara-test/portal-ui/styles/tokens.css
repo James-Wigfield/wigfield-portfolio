@@ -1,0 +1,248 @@
+/* =========================================================================
+   PORTARA - global tokens and the theme switch
+   Imported by every app's app.css. This is the layer BELOW the portal UI kit
+   (styles/portal.css): the brand accent, the theme roles the landing and auth
+   pages read, the Tailwind @theme bridge, and the light/dark machinery.
+
+   It used to be duplicated in apps/core/app/app.css and
+   apps/control-plane/app/app.css, which is how the two apps came to disagree
+   about what a theme even was: HQ grew a working light/dark toggle and core
+   kept a comment telling you to edit one line and rebuild.
+   ========================================================================= */
+
+/* The loading vocabulary (the fleet-wide screen, the rail, the in-place
+   states). Imported HERE rather than from portal.css because portal.css is a
+   per-route stylesheet the auth pages never load, and signing in is one of the
+   waits worth covering. First statement in the file: an @import may not follow
+   another rule. */
+@import "./loading.css";
+
+/* Tailwind's `dark:` variant, driven by the app's OWN theme rather than the
+   viewer's OS - the same `data-theme` attribute everything else here follows.
+   Nothing uses `dark:` today (every colour goes through the `light-dark()`
+   tokens below, which is the better mechanism because it needs no second rule),
+   so this exists to make sure that if someone does reach for it, it is correct.
+
+   It used to read `&:where(.dark, .dark *)` while both apps stamped a permanent
+   `className="dark"` on <html> - so the variant was unconditionally ON and
+   meant nothing. That was harmless only because it had no users. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  /* ═══════════════════════════════════════════════════════════════════════
+     BRAND ACCENT - change this ONE value to reskin the whole site.
+     Everything else (buttons, active tabs, links, focus rings, glows, the
+     landing page) reads from it. The hover shade and glow derive from it
+     automatically, so you only ever touch --accent.
+
+     A tenant's own brand colour overrides it per-request, on <html>, from the
+     registry - see root.tsx in apps/core.
+     ═══════════════════════════════════════════════════════════════════════ */
+  --accent: #ff4e2b; /* Primary */
+  --accent-hover: #ff6a3d; /* Accent */
+  --accent-glow: color-mix(in srgb, var(--accent) 30%, transparent);
+
+  /* ── THE THEME SWITCH ──────────────────────────────────────────────────
+     Every colour in the app is a `light-dark()` pair, so `color-scheme` is the
+     single switch and there is no second set of rules to keep in step.
+
+     DEFAULT: light. Both portals and the landing page start here - one product,
+     one default. Staff who preferred HQ's old dark shell get it back with one
+     click, and the choice sticks (see below).
+
+     Deliberately NOT `light dark`: that would follow the viewer's OS, so the
+     same portal would look different to two people sitting next to each other
+     and a tenant's screenshot wouldn't match their colleague's. The theme is
+     the product's, and the user's explicit choice is the only thing that moves
+     it. */
+  color-scheme: light;
+
+  /* Theme roles, read by the landing page (home.css) and the auth pages. The
+     PORTAL overrides these on `.px-scope` with its own neutral ramp - see
+     styles/portal.css. */
+  --c-bg: light-dark(#e8edf0, #0c131b); /* page / content background */
+  --c-surface: light-dark(#ffffff, #141c26); /* cards, panels, inputs */
+  --c-text: light-dark(#39424d, #cdd5dd); /* body text */
+  --c-heading: light-dark(#0c131b, #f4f7fa); /* strong headings */
+  --c-muted: light-dark(#5c6773, #94a3b8); /* muted / secondary text */
+  --c-hair: light-dark(#39424d24, #ffffff1f); /* hairlines & borders */
+  --c-panel: light-dark(#0c131b, #141c26); /* dark feature panels (hero/footer) */
+}
+
+/* The saved preference. root.tsx stamps `data-theme` on <html> from the cookie
+   (lib/theme.ts), server-side, so the page ARRIVES in the right theme - a
+   client-side flip would show a flash of the wrong one on every navigation.
+   Both attributes are written out, in both directions: an explicit choice has
+   to be able to override the default in either direction, and `light` is not a
+   no-op once we ever change the default again. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* White logo PNGs adapt to the surface they sit on: inverted to solid black on
+   light (brightness(0) forces every pixel black, alpha preserved), left white
+   on dark. */
+.logo-adapt {
+  filter: brightness(0);
+}
+:root[data-theme="dark"] .logo-adapt {
+  filter: brightness(1);
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* `ink`     = surface (panels, nav, cards)
+     `sand`    = foreground / hairline (the body text colour)
+     `neutral` = the far end of the ramp (dark hero/footer panels, headings) */
+  --color-ink: light-dark(#ffffff, #141c26);
+  --color-sand: light-dark(#39424d, #cdd5dd);
+  --color-neutral: light-dark(#0c131b, #f4f7fa);
+
+  --color-cyan: #22d3ee;
+  --color-rose: #fb7185;
+
+  /* Primary accent, exposed as Tailwind utilities: bg-accent, text-accent,
+     border-accent, bg-accent/10, hover:bg-accent-hover, shadow-glow.
+     Driven by --accent above - do not hard-code the colour here. */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+}
+
+html,
+body {
+  background: light-dark(#e8edf0, #0c131b);
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Compact avatar dropdown (the portrait picker on the personal settings
+   pages) ──────────────────────────────────────────────────────────────────
+   A small picker that sits inline on the right of a name field. Styled here
+   (global) so it looks identical on the auth pages and in the portal, which
+   load different stylesheets. */
+.avsel {
+  position: relative;
+  flex: none;
+  display: flex;
+}
+.avsel__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--c-text) 20%, transparent);
+  background: var(--c-bg);
+  color: var(--c-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.avsel__btn:hover {
+  border-color: var(--accent);
+  color: var(--c-text);
+}
+.avsel__btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.avsel__btn img {
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  image-rendering: pixelated;
+  display: block;
+}
+.avsel__caret {
+  transition: transform 0.15s ease;
+}
+.avsel__btn[aria-expanded="true"] .avsel__caret {
+  transform: rotate(180deg);
+}
+.avsel__pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 60;
+  width: 264px;
+  max-width: 78vw;
+  padding: 8px;
+  background: var(--c-surface);
+  border: 1px solid color-mix(in srgb, var(--c-text) 14%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 18px 44px -18px color-mix(in srgb, var(--c-panel) 65%, transparent);
+}
+.avsel__grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.avsel__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.avsel__opt:hover {
+  border-color: color-mix(in srgb, var(--c-text) 25%, transparent);
+}
+.avsel__opt.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.avsel__opt img {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+  display: block;
+}
+
+/* Portlet portrait (components/portlet-portrait.tsx): idle blink + antenna
+   sway, enabled by the --animate modifier. */
+.px-portlet__eyes,
+.px-portlet__bobble {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.px-portlet--animate .px-portlet__eyes {
+  animation: px-portlet-blink 3.6s infinite;
+}
+.px-portlet--animate .px-portlet__bobble {
+  transform-origin: center bottom;
+  animation: px-portlet-sway 2.8s ease-in-out infinite;
+}
+@keyframes px-portlet-blink {
+  0%,
+  91%,
+  97%,
+  100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.12);
+  }
+}
+@keyframes px-portlet-sway {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}

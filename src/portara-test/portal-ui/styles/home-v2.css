@@ -1,0 +1,1271 @@
+/* =========================================================================
+   PORTARA - landing page, second pass (loaded after home.css and portal.css)
+   Everything the overhaul adds or changes sits here, so home.css stays a
+   byte-for-byte mirror of the live one and the whole redesign is one file
+   plus the TSX. Order of business:
+
+     1. Tokens and type - a wider container, section rhythm, a larger h2.
+     2. Section boundaries - the full-width rule that draws in, and the
+        alternating page / surface backgrounds (section-rule.tsx).
+     3. The opening scene - dot grid, headline, the brand stage, the pinned
+        hand-off into the workspace tour (hero-scene.tsx, brand-sting.tsx).
+     4. Custom Portal - the toolbox builder on the product's own chrome
+        (toolbox-builder.tsx).
+     5. Feature rows and the integrations marquee (logo-marquee.tsx).
+     6. How it works - the flow line (how-it-works.tsx).
+     7. The team - two editorial portraits.
+     8. Reveal helpers (reveal.tsx) and the React Bits rules (bits/).
+
+   Same brand discipline as home.css: flat planes, hairlines, Jost only in
+   display slots, the accent doing the pointing.
+   ========================================================================= */
+
+/* ----- 1. Tokens and type ----------------------------------------------- */
+:root {
+  /* home.css caps the page at 1200px, which on a wide monitor is a column
+     down the middle of a lot of nothing. Scale with the viewport instead:
+     90% of it up to 1560px, so a 1440 laptop gets ~1300 of content and a
+     phone still gets the padding below. */
+  --container: min(1560px, 90vw);
+  --pad-x: clamp(1.25rem, 4vw, 4rem);
+  /* Sections sit closer than home.css had them: the rule between them is the
+     separator, the whitespace only has to clear it. */
+  --section-y: clamp(3rem, 5.5vw, 5rem);
+  --fs-h2: clamp(1.9rem, 1.3rem + 2.1vw, 2.9rem);
+}
+h2 {
+  line-height: 1.12;
+}
+.btn--lg {
+  padding: 1em 1.6em;
+  font-size: 1rem;
+}
+/* The header no longer sits over a dark cover; it is always the glass bar. */
+.site-header--scrolled {
+  border-bottom-color: var(--border);
+}
+
+/* ----- 2. Section boundaries -------------------------------------------- */
+/* Sections alternate the page ground and the white surface, so every
+   boundary is a tone change as well as a line. Clip sideways: the rule below
+   runs the full viewport width from inside a centred container. */
+.section {
+  overflow-x: clip;
+}
+.section--surface {
+  background: var(--c-surface);
+}
+/* The rule: a viewport-wide hairline that draws left to right as the section
+   arrives, the section title under its left end. */
+.rule2 {
+  position: relative;
+  padding-top: var(--s-3);
+  margin-bottom: var(--s-6);
+}
+.rule2__line {
+  position: absolute;
+  top: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  height: 1px;
+  background: var(--text-0);
+  transform-origin: left center;
+}
+.rule2__title {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* ----- 3. The opening scene --------------------------------------------- */
+/* Height comes from the frame block alone. The hero layer is absolutely
+   positioned on desktop, so it never adds to the scene's height, and the
+   next section follows the tour with no dead space between them. */
+.scene {
+  position: relative;
+}
+.scene__hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column; /* grid, then the cue beneath it (absolute on desktop) */
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-h));
+  padding: var(--s-6) 0 var(--s-8);
+  /* Once it has faded out it must not sit over the tour catching clicks;
+     the grid inside re-enables them for the copy and stage. */
+  pointer-events: none;
+}
+.scene__copy,
+.scene__stage,
+.scene__cue-slot {
+  pointer-events: auto;
+}
+
+/* -- React Bits DotGrid as the backdrop: the whole hero, behind everything -- */
+.dot-grid.scene__dots {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  height: auto;
+  padding: 0;
+  pointer-events: none;
+  /* Quieter towards the edges so the copy and stage sit on calm ground. */
+  mask-image: radial-gradient(ellipse 70% 80% at 55% 50%, #000 35%, transparent 100%);
+}
+
+.scene__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(var(--s-6), 5vw, var(--s-9));
+  align-items: center;
+}
+
+/* -- The copy: headline there from the first frame, the rest rising behind it -- */
+.scene__copy {
+  max-width: 40rem;
+}
+.scene__copy .eyebrow {
+  display: block;
+}
+.scene__title {
+  margin-top: var(--s-4);
+  font-size: clamp(2.6rem, 1rem + 3.6vw, 4.8rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  max-width: 13ch;
+}
+.scene__lead {
+  margin-top: var(--s-4);
+  font-size: var(--fs-lead);
+  line-height: 1.55;
+  color: var(--slate-300);
+  max-width: 34rem;
+}
+.scene__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+}
+.scene__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  margin-top: var(--s-5);
+}
+.scene__facts li + li::before {
+  content: "·";
+  margin-right: var(--s-4);
+  color: var(--slate-200);
+}
+@media (max-width: 600px) {
+  .scene__facts li + li::before {
+    content: none;
+    margin: 0;
+  }
+}
+.scene__lead,
+.scene__actions,
+.scene__facts {
+  animation: scene-rise 0.8s var(--ease) both;
+}
+.scene__actions {
+  animation-delay: 0.12s;
+}
+.scene__facts {
+  animation-delay: 0.24s;
+}
+@keyframes scene-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* -- The mark, freestanding on the grid. No panel, no label: the customer sees
+   the logo ink itself in and then keep a current running round it. The
+   wrapper is what the tour grows out of on scroll. ------------------------- */
+.scene__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4) 0;
+}
+
+/* -- The sting (ported from portara-motion.tsx; theme-aware ink) ---------- */
+.sting {
+  --sting-w: clamp(180px, 30vh, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.6rem, 2.2vh, 1.1rem);
+}
+.sting__mark {
+  width: var(--sting-w);
+  will-change: transform;
+}
+.sting__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+/* The blueprint outline, there from first paint; the ink settles into it. */
+.sting__ghost path {
+  fill: none;
+  stroke: var(--slate-200);
+  stroke-width: 14;
+  opacity: 0.6;
+}
+.sting__fill {
+  fill: var(--c-heading);
+}
+.sting__echo {
+  fill: var(--accent);
+  opacity: 0; /* covered when in registration; animated offset */
+}
+.sting__trace {
+  stroke: var(--accent);
+  opacity: 0; /* drawn + faded by the timeline */
+}
+/* The orbit: an accent segment per contour, advanced every frame by
+   brand-sting.tsx once the traces have faded. Hidden until then. */
+.sting__orbit {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+.sting__word {
+  --w: clamp(1.4rem, 3vw, 2.1rem);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(var(--w) * 0.34);
+}
+.sting__row {
+  display: flex;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--w);
+  letter-spacing: 0.15em;
+  line-height: 1.05;
+  color: var(--c-heading);
+}
+.sting__ch {
+  display: inline-block;
+  will-change: transform, filter, opacity;
+}
+.sting__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--w) * 1.17);
+  height: 3px;
+  background: var(--accent);
+  transform: scaleX(0); /* transient: absent from the final frame */
+  transform-origin: left center;
+}
+.sting__tag {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(var(--w) * 0.27);
+  line-height: 1;
+  color: var(--c-heading);
+  white-space: nowrap;
+}
+.sting__tch {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+.sting__sp {
+  flex: none;
+  width: 0.45em;
+}
+
+/* -- Under the portal: one line of our own, in place of the tour's caption and
+   margin notes, which belonged to the old layout ------------------------------ */
+.scene__frame .tour__caption,
+.scene__frame .tour-notes {
+  display: none;
+}
+.scene__caption {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.08em;
+  color: var(--slate-300);
+}
+.scene__caption-tick {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: var(--accent);
+  flex: none;
+}
+/* The window shown until the tour mounts: the tour's own frame classes, so
+   the swap is invisible, with a quiet skeleton of a portal page inside so the
+   gate is never opening onto a blank. */
+.scene__skeleton {
+  display: grid;
+  grid-template-columns: 17.4% 1fr;
+  background: #fff;
+  color-scheme: light;
+}
+.scene__skeleton-rail {
+  background: color-mix(in srgb, #39424d 3%, #fff);
+  border-right: 1px solid #39424d24;
+}
+.scene__skeleton-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4.2%;
+  padding: 5% 5% 0;
+}
+.scene__skeleton-main > i {
+  display: block;
+  height: 2.2%;
+  width: 46%;
+  border-radius: 999px;
+  background: #39424d14;
+}
+.scene__skeleton-main > i.is-title {
+  height: 4%;
+  width: 32%;
+  background: #39424d22;
+}
+.scene__skeleton-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3%;
+  height: 16%;
+}
+.scene__skeleton-tiles b {
+  display: block;
+  border: 1px solid #39424d24;
+  border-radius: 8px;
+}
+
+/* -- Scroll cue ------------------------------------------------------------ */
+.scene__cue-slot {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--s-6);
+}
+.scene__cue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--slate-300);
+  opacity: 0;
+  transition: opacity 0.8s var(--ease) 0.4s;
+}
+.scene__hero.is-settled .scene__cue {
+  opacity: 1;
+}
+.scene__cue i {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 36px;
+  background: var(--slate-100);
+  overflow: hidden;
+}
+.scene__cue i::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  animation: cue-drop 1.7s var(--ease) infinite;
+}
+@keyframes cue-drop {
+  to {
+    top: 100%;
+  }
+}
+
+/* -- The portal frame ------------------------------------------------------ */
+.scene__frame {
+  position: relative;
+  z-index: 2;
+  width: min(100%, var(--container));
+  margin: 0 auto;
+  padding: var(--s-4) var(--pad-x) 0;
+  will-change: clip-path;
+}
+/* The favicon slot: sits in the tour's browser chrome, left of the URL, and
+   pushes the URL over to make room. The chrome is 34px tall inside a 1px
+   frame border; the dots run 12px in and are 39px wide with a 16px gap. */
+.scene__favicon {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--s-4) + 1px + 9px);
+  left: calc(var(--pad-x) + 1px + 12px + 39px + 16px);
+  width: 16px;
+  height: 16px;
+  color: var(--c-heading);
+  pointer-events: none;
+}
+.scene__favicon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.scene__frame .tour__url {
+  padding-left: 26px;
+}
+
+/* Desktop with motion: the hero layer covers the first viewport, the frame
+   sits underneath it in layout (parked at the stage's box by the timeline
+   until the scroll grows it into place), and hero-scene.tsx pins the whole
+   scene. MUST match SCENE_MEDIA in hero-scene.tsx. */
+@media (min-width: 861px) and (prefers-reduced-motion: no-preference) {
+  .scene__hero {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - var(--header-h));
+    min-height: 0;
+    padding: 0;
+    /* Above the portal: the gate's pillars have to pass in front of it. */
+    z-index: 3;
+  }
+  /* The portal is hidden until the opening starts to show it, and is only
+     ever seen through that opening (hero-scene.tsx sets the clip-path). */
+  .scene__frame {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .scene__frame {
+    /* Fit the whole stage under the header on the viewport we have. */
+    width: min(
+      100%,
+      var(--container),
+      calc((100vh - var(--header-h) - 150px) * 1240 / 776 + 2 * var(--pad-x))
+    );
+  }
+  .scene__favicon {
+    opacity: 0; /* the flying mark hands over to it */
+    visibility: hidden;
+  }
+  .scene__cue-slot {
+    position: absolute;
+    left: 50%;
+    bottom: var(--s-5);
+    transform: translateX(-50%);
+    margin: 0;
+  }
+}
+@media (max-width: 860px) {
+  .scene__hero {
+    padding: var(--s-5) 0 var(--s-6);
+  }
+  .scene__grid {
+    grid-template-columns: 1fr;
+    gap: var(--s-6);
+  }
+  .scene__copy {
+    max-width: none;
+  }
+  .scene__frame {
+    padding-top: 0;
+  }
+  .scene__favicon {
+    top: calc(1px + 9px);
+  }
+}
+
+/* ----- 4. Custom Portal: the toolbox builder ---------------------------- */
+/* Follows straight on from the tour: a short top padding, the rule, then the
+   builder. The tour's own caption and notes are the breathing room. */
+.builder.section {
+  padding-top: var(--s-6);
+}
+.builder__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(var(--s-6), 5vw, var(--s-8));
+  align-items: start;
+}
+.builder__copy > * + * {
+  margin-top: var(--s-4);
+}
+.builder__copy .lead {
+  max-width: 38ch;
+}
+.builder__tabwrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.builder__tabs {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+/* The active-tab fill is one element that slides between tabs. */
+.builder__ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 0;
+  background: var(--text-0);
+  border-radius: var(--radius);
+  will-change: transform, width, height;
+}
+.builder__tab {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.65em 0.95em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--slate-300);
+  cursor: pointer;
+  transition: color 0.35s var(--ease), border-color 0.35s var(--ease);
+}
+.builder__tab:hover {
+  color: var(--ink);
+  border-color: var(--slate-200);
+}
+.builder__tab.is-active {
+  color: #fff;
+  border-color: transparent;
+}
+/* The auto-cycle timer: fills across each cycle, gone once someone touches. */
+.builder__timer {
+  display: block;
+  height: 2px;
+  background: var(--slate-100);
+  overflow: hidden;
+  transition: opacity 0.3s var(--ease);
+}
+.builder__timer i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.builder__timer.is-off {
+  opacity: 0;
+}
+.builder__hint {
+  color: var(--slate-300);
+}
+
+/* -- The mini portal: the product's own top bar and rail, from portal.css.
+   Only the things that make an app shell into a picture are overridden. -- */
+.mini {
+  position: relative;
+  min-height: 0; /* .px-scope wants a full viewport; this is a picture of one */
+  border: var(--hair);
+  border-radius: calc(var(--radius) + 6px);
+  overflow: hidden;
+  background: var(--c-surface);
+  color-scheme: light;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #000 8%, transparent),
+    0 18px 50px -12px color-mix(in srgb, #000 22%, transparent);
+}
+.mini .px-topbar {
+  position: static;
+  background: var(--c-surface);
+  backdrop-filter: none;
+}
+.mini .px-topbar__inner {
+  gap: 0.75rem;
+  padding-right: 1rem;
+}
+/* The bar is the real 56px bar in a column a third of the page wide: the
+   user's name is the first thing to go, the avatar stays. */
+@media (max-width: 1500px) {
+  .mini .tour__me {
+    display: none;
+  }
+}
+.mini .px-switcher__btn {
+  white-space: nowrap;
+}
+.mini__body.px-portal {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: 0;
+}
+.mini .px-toolbox {
+  position: static;
+  width: auto;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+.mini__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* A rail link that happens to be a button: portal.css draws it, this only
+   strips the button and adds the swap-out hint on hover. */
+.mini__tool {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
+.mini__tool::after {
+  content: "-";
+  margin-left: auto;
+  font-family: var(--px-mono);
+  font-size: 0.75rem;
+  color: var(--c-muted);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.mini__tool:hover::after {
+  opacity: 1;
+}
+.mini .px-shell {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+.mini .px-header {
+  margin-bottom: 1rem;
+}
+.mini .px-title {
+  font-size: 1.375rem;
+}
+.mini__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mini__kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0.85rem 0.9rem;
+  border: var(--px-line);
+  border-radius: var(--px-r);
+}
+.mini__kpi-val {
+  font-family: var(--px-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--c-heading);
+  font-variant-numeric: tabular-nums;
+}
+.mini__kpi-label {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: var(--c-muted);
+}
+/* Three placeholder records, each with a bar of a different length that
+   re-stretches per industry, so the page reads as a page without saying
+   anything. */
+.mini__rows {
+  display: grid;
+  gap: 8px;
+  margin-top: 1rem;
+  list-style: none;
+  padding: 0;
+}
+.mini__row {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  border: var(--px-line);
+  border-radius: var(--px-r);
+}
+.mini__bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c-text) 10%, transparent);
+}
+.mini__pill {
+  display: block;
+  margin-left: auto;
+  width: 44px;
+  height: 10px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* -- The shelf of tools not in the rail ------------------------------------- */
+.builder__shelf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+.builder__pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Flip lifts every tool out of flow while it moves; without a floor the
+     shelf would collapse under them and the note below would jump. */
+  min-height: 200px;
+}
+.mini__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--c-surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+.mini__chip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--slate-300);
+  transition: color 0.2s var(--ease);
+}
+.mini__chip::after {
+  content: "+";
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--slate-300);
+  opacity: 0;
+  transition: opacity 0.2s var(--ease);
+}
+.mini__chip:hover {
+  border-color: var(--accent);
+  color: var(--text-0);
+}
+.mini__chip:hover svg {
+  color: var(--accent);
+}
+.mini__chip:hover::after {
+  opacity: 1;
+}
+.builder__note {
+  margin-top: var(--s-3);
+  font-size: var(--fs-small);
+  color: var(--slate-300);
+}
+/* Tablet and small laptops: the real 56px bar and 216px rail need the full
+   width to read as the product, so the copy goes above the portal. */
+@media (max-width: 1180px) {
+  .builder__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+  }
+  .builder__copy .lead {
+    max-width: 52ch;
+  }
+}
+@media (max-width: 860px) {
+  .builder__grid {
+    /* minmax(0, ...) so the bar's unbreakable pills cannot widen the column
+       past the viewport and push the copy off the edge. */
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-5);
+  }
+  .mini {
+    min-width: 0;
+  }
+  .mini .px-topbar__inner {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .mini .px-switcher__btn {
+    max-width: 150px;
+  }
+  .mini__body.px-portal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mini .px-toolbox {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem 0.75rem;
+    border-right: none;
+    border-bottom: var(--px-line);
+  }
+  .mini__tools {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .mini__tools li {
+    flex: 0 0 auto;
+  }
+  .mini__tool {
+    width: auto;
+  }
+  .mini .px-nav {
+    display: none;
+  }
+  .mini .px-brand {
+    width: 150px;
+    padding: 0 0.6rem;
+  }
+  .mini .px-topbar__right {
+    display: none;
+  }
+}
+
+/* ----- 5. Feature rows and the integrations marquee --------------------- */
+.feature .lead {
+  max-width: 44ch;
+}
+.feature .ticklist {
+  gap: var(--s-3);
+}
+/* The marquee closes the section; only a little air after it. */
+#integrations.section {
+  padding-bottom: var(--s-5);
+}
+.marquee {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+  padding-block: var(--s-4);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.marquee__row {
+  overflow: hidden;
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.marquee__set {
+  display: flex;
+  align-items: center;
+  gap: var(--s-7);
+  padding-right: var(--s-7);
+  margin: 0;
+}
+.marquee__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  white-space: nowrap;
+}
+.marquee__img {
+  height: 28px;
+  width: auto;
+  display: block;
+  filter: grayscale(1);
+  opacity: 0.72;
+  transition: filter 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+.marquee__item:hover .marquee__img {
+  filter: none;
+  opacity: 1;
+}
+.marquee__label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slate-300);
+}
+.marquee__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-0);
+}
+
+/* ----- 6. How it works: the flow line ----------------------------------- */
+/* Defaults below are the FINISHED frame (line drawn, numerals inked, cards in
+   place). how-it-works.tsx rewinds them and scrubs them back with scroll;
+   under prefers-reduced-motion it leaves them alone. */
+.how {
+  background: var(--c-surface);
+}
+.how__head {
+  max-width: 62ch;
+}
+.how__title {
+  margin-top: var(--s-2);
+}
+.how__lead {
+  margin-top: var(--s-4);
+}
+.how__flow {
+  position: relative;
+  margin-top: var(--s-6);
+}
+.how__path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.how__path-bg {
+  fill: none;
+  stroke: var(--slate-100);
+  stroke-width: 2;
+}
+.how__path-ink {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.how__steps {
+  position: relative;
+  display: grid;
+  gap: clamp(var(--s-7), 9vh, var(--s-9));
+  padding-block: var(--s-6) var(--s-7);
+}
+/* Each step is its own three-column row: card | line gutter | card. The
+   numeral sits in the gutter, on the line; the card takes the left column on
+   odd steps and the right on even, hugging the gutter. Both are pinned to row
+   1 - with the card's column before the node's, sparse auto-placement would
+   otherwise drop it to a second row. */
+.how__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 176px 1fr;
+  column-gap: var(--s-5);
+  align-items: center;
+}
+.how__node {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  display: grid;
+  padding: 0.12em 0.22em;
+  background: var(--c-surface); /* the line passes behind, not through */
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(3rem, 2rem + 3vw, 4.75rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.how__node > span {
+  grid-area: 1 / 1;
+}
+.how__num-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--slate-200);
+}
+.how__num-ink {
+  color: var(--accent);
+  clip-path: inset(0 0 0 0);
+  will-change: clip-path;
+}
+.how__card {
+  grid-row: 1;
+  max-width: 44ch;
+  will-change: transform, opacity;
+}
+.how__step:nth-child(odd) .how__card {
+  grid-column: 1;
+  justify-self: end;
+}
+.how__step:nth-child(even) .how__card {
+  grid-column: 3;
+  justify-self: start;
+}
+.how__kicker {
+  display: block;
+  color: var(--accent);
+}
+.how__step-title {
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  margin-top: var(--s-2);
+}
+.how__body {
+  margin-top: var(--s-3);
+  line-height: 1.6;
+  color: var(--slate-300);
+}
+@media (max-width: 860px) {
+  .how__flow {
+    margin-top: var(--s-5);
+  }
+  .how__steps {
+    gap: var(--s-7);
+    padding-block: var(--s-5) var(--s-6);
+  }
+  .how__step {
+    grid-template-columns: 72px 1fr;
+    column-gap: var(--s-4);
+    align-items: start;
+  }
+  .how__node {
+    grid-column: 1;
+    font-size: 2.25rem;
+    padding: 0.15em 0.2em;
+  }
+  .how__step:nth-child(odd) .how__card,
+  .how__step:nth-child(even) .how__card {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+/* ----- 7. The team: two editorial portraits ----------------------------- */
+.team2__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(var(--s-6), 6vw, var(--s-9));
+  align-items: start;
+}
+.team2__intro .lead {
+  max-width: 36ch;
+}
+.team2__place {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  color: var(--slate-300);
+  max-width: 34ch;
+}
+.team2__people {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-6);
+}
+.team2__person:nth-child(2) {
+  margin-top: var(--s-8);
+}
+.team2__photo {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+.team2__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(0.4) contrast(1.02);
+  transition: filter 0.4s var(--ease);
+}
+.team2__person:hover .team2__photo img {
+  filter: none;
+}
+.team2__photo::before,
+.team2__photo::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  transition: width 0.4s var(--ease), height 0.4s var(--ease);
+}
+.team2__photo::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+.team2__photo::after {
+  right: -1px;
+  bottom: -1px;
+  border-left: none;
+  border-top: none;
+}
+.team2__person:hover .team2__photo::before,
+.team2__person:hover .team2__photo::after {
+  width: 48px;
+  height: 48px;
+}
+.team2__name {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-top: var(--s-4);
+}
+.team2__role {
+  margin-top: var(--s-2);
+}
+.team2__does {
+  margin-top: var(--s-4);
+  gap: var(--s-2);
+  font-size: var(--fs-small);
+  line-height: 1.55;
+}
+.team2__proof {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+}
+.team2__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+}
+@media (max-width: 860px) {
+  .team2__grid {
+    grid-template-columns: 1fr;
+    gap: var(--s-6);
+  }
+  .team2__person:nth-child(2) {
+    margin-top: 0;
+  }
+}
+@media (max-width: 600px) {
+  .team2__people {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ----- 8. Reveal helpers and React Bits rules --------------------------- */
+/* reveal.tsx - RevealText: gsap SplitText wraps each line in a clipping mask.
+   A little room under each mask so descenders survive the tight line-height. */
+.rv-text {
+  line-height: 1.15;
+}
+.rv-text [class*="rv-line-mask"] {
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+
+/* React Bits - DotGrid (bits/DotGrid.tsx): its three rules, verbatim. */
+.dot-grid {
+  padding: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+.dot-grid__wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.dot-grid__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* React Bits - ScrollReveal (bits/ScrollReveal.tsx); not on the page since
+   the statement was cut, kept so the rules travel with the component. */
+.scroll-reveal {
+  margin: 0;
+}
+.word {
+  display: inline-block;
+}
+
+/* React Bits - SpotlightCard (bits/SpotlightCard.tsx), on the brand. Not on
+   the page since the team redesign. */
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --spotlight-color: rgba(255, 78, 43, 0.09);
+}
+.card-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    var(--spotlight-color),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+.card-spotlight:hover::before,
+.card-spotlight:focus-within::before {
+  opacity: 1;
+}
+.card-spotlight > * {
+  position: relative;
+}
+
+/* React Bits - Magnet (bits/Magnet.tsx): inline-block wrapper, nothing more. */
+.magnet {
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene__lead,
+  .scene__actions {
+    animation: none;
+  }
+  .scene__cue {
+    opacity: 1;
+    transition: none;
+  }
+  .scene__cue i::after {
+    animation: none;
+  }
+}

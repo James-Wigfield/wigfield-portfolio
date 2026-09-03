@@ -1,0 +1,144 @@
+/* PORTARA-TEST: what apps/control-plane/app/app.css gives the real page.
+
+   There, app.css is `@import "tailwindcss"` plus the shared token layer, so the
+   landing page sits on Tailwind's preflight reset and can use the odd utility
+   class. The portfolio has no Tailwind, so this sheet carries (1) the token
+   layer verbatim and (2) the slice of preflight and the five utilities the
+   copied components actually use. It is injected before home.css and
+   portal.css, and removed with them when the route unmounts. */
+
+@import "../portal-ui/styles/tokens.css";
+
+/* ---- Tailwind v4 preflight, the parts that matter to the landing page ---- */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+}
+html {
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  font-family: var(--font-sans, "Inter", ui-sans-serif, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+hr {
+  height: 0;
+  color: inherit;
+  border-top-width: 1px;
+}
+abbr[title] {
+  text-decoration: underline dotted;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+b,
+strong {
+  font-weight: bolder;
+}
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 1em;
+}
+small {
+  font-size: 80%;
+}
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+sub {
+  bottom: -0.25em;
+}
+sup {
+  top: -0.5em;
+}
+table {
+  text-indent: 0;
+  border-color: inherit;
+  border-collapse: collapse;
+}
+button,
+input,
+select,
+optgroup,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  border-radius: 0;
+  background-color: transparent;
+}
+textarea {
+  resize: vertical;
+}
+::placeholder {
+  opacity: 1;
+  color: color-mix(in oklab, currentColor 50%, transparent);
+}
+summary {
+  display: list-item;
+}
+ol,
+ul,
+menu {
+  list-style: none;
+}
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block;
+  vertical-align: middle;
+}
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+[hidden]:where(:not([hidden="until-found"])) {
+  display: none !important;
+}
+
+/* ---- The utilities the copied components use (confidence.tsx, office3d) ---- */
+.font-semibold {
+  font-weight: 600;
+}
+.mt-0\.5 {
+  margin-top: 0.125rem;
+}
+.shrink-0 {
+  flex-shrink: 0;
+}
+.size-3\.5 {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.size-4 {
+  width: 1rem;
+  height: 1rem;
+}
