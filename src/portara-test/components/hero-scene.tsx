@@ -8,8 +8,15 @@
  * drawn. The sting inks the mark in over that outline; once landed, an accent
  * segment keeps orbiting its contours (brand-sting.tsx).
  *
- * THE SCROLL. The Portara mark is a gate, so the page goes through it. The
- * scene pins for about 1.4 viewports and scroll drives one timeline:
+ * THE JUMP. The Portara mark is a gate, so the page goes through it - and it
+ * goes at once. The scene is pinned for one viewport of scroll, but nothing
+ * is scrubbed: the moment the visitor scrolls past a small threshold the gate
+ * PLAYS - three quarters of a second: the gate is gone in 0.4s and the portal
+ * snaps to size behind it - and the page is driven to the end of the pin over
+ * the same span with wheel, touch and key input held until it lands. There
+ * is no speed at which you can stop half-way through a fifteen-times logo.
+ * Scrolling back up out of the portal does the same in reverse: the gate
+ * closes and the hero is back.
  *
  *   - the headline slides off and the wordmark, outline and dot grid fade;
  *   - the ONE mark - the same element the sting drew - grows towards the
@@ -17,22 +24,22 @@
  *     viewport, until the pillars have slid off both edges;
  *   - the demo portal sits in its final place from the start and is only ever
  *     seen THROUGH the opening: its clip-path is the opening's rectangle,
- *     recomputed from the mark's live transform every frame, so the window
- *     onto the portal widens exactly as the gate does;
- *   - the tour itself mounts half-way through, so its camera begins on the
- *     dashboard as the gate clears rather than mid-flight, and a favicon of
- *     the mark fades into the browser chrome as the last beat.
+ *     recomputed from the mark's live transform every frame;
+ *   - the tour itself mounts a third of the way in, so its camera begins on
+ *     the dashboard as the gate clears, and a favicon of the mark fades into
+ *     the browser chrome as the last beat.
  *
  * No second copy of the logo exists: what grows is what the sting drew. All
  * geometry comes from layout (offsetLeft/Top up the chain), never bounding
  * rects, so transforms in flight never skew the maths, and it re-measures on
  * refresh. Costs per frame: one transform, one stroke-width, one clip-path.
  *
- * Under 861px, or with prefers-reduced-motion, nothing pins: copy, mark,
- * then the tour, in a column.
+ * Under 861px, or with prefers-reduced-motion, nothing pins and nothing
+ * jumps: copy, mark, then the tour, in a column.
  */
 import { useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import DotGrid from "../bits/DotGrid";
@@ -42,7 +49,7 @@ import { BrandSting, GateMark } from "./brand-sting";
 import { WorkspaceTour } from "./workspace-tour";
 import { AS_OF } from "./workspace-tour-pages";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 /** Keep in step with the matching @media block in home-v2.css. */
 const SCENE_MEDIA = "(min-width: 861px) and (prefers-reduced-motion: no-preference)";
@@ -61,6 +68,14 @@ const ORIGIN = { x: (OPEN.l + OPEN.r) / 2, y: (OPEN.t + OPEN.b) / 2 };
 /** How far past the viewport the opening must reach before the pillars are
     considered gone. */
 const CLEARANCE = 1.15;
+/** Scroll progress through the pin that commits the jump (down) and the
+    return (up). Down is a nudge; up wants a clearer intent. */
+const GO_DOWN_AT = 0.05;
+const GO_UP_AT = 0.88;
+/** Timeline seconds: when the gate has cleared the viewport (the window
+    becomes the whole frame), and when the tour is mounted into it. */
+const T_CLEAR = 0.44;
+const T_MOUNT = 0.15;
 
 /** Layout box of `el` relative to `ancestor`, ignoring transforms. */
 function layoutBox(el: HTMLElement, ancestor: HTMLElement) {
@@ -80,10 +95,27 @@ function headerHeight() {
   return parseFloat(v) || 108;
 }
 
+/** Hold the page still while the jump plays: wheel, touch and scroll keys. */
+function holdInput() {
+  const block = (e: Event) => e.preventDefault();
+  const keys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
+  const blockKeys = (e: KeyboardEvent) => {
+    if (keys.has(e.key)) e.preventDefault();
+  };
+  window.addEventListener("wheel", block, { passive: false });
+  window.addEventListener("touchmove", block, { passive: false });
+  window.addEventListener("keydown", blockKeys);
+  return () => {
+    window.removeEventListener("wheel", block);
+    window.removeEventListener("touchmove", block);
+    window.removeEventListener("keydown", blockKeys);
+  };
+}
+
 export function HeroScene() {
   const sceneRef = useRef<HTMLElement>(null);
   const [settled, setSettled] = useState(false);
-  // Desktop with motion mounts the tour half-way through the gate; everything
+  // Desktop with motion mounts the tour part-way through the gate; everything
   // else has it from the start.
   const [showTour, setShowTour] = useState(
     () => typeof window === "undefined" || !window.matchMedia(SCENE_MEDIA).matches,
@@ -130,10 +162,10 @@ export function HeroScene() {
 
       // The window onto the portal: the opening, in the frame's own box.
       let mounted = showTour;
-      const clipToOpening = (progress: number) => {
+      const clipToOpening = (time: number) => {
         // The gate has cleared: the window is the whole frame, and stays so
         // while the (hidden) mark is reset to scale 1 for the release.
-        if (progress >= 0.97) {
+        if (time >= T_CLEAR) {
           frame.style.clipPath = "inset(0px)";
           return;
         }
@@ -151,34 +183,39 @@ export function HeroScene() {
         const bottom = Math.max(0, f.y + f.h - (cy + hh));
         const left = Math.max(0, cx - hw - f.x);
         frame.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px)`;
-        if (!mounted && progress >= 0.5) {
+        if (!mounted && time >= T_MOUNT) {
           mounted = true;
           setShowTour(true);
         }
       };
 
+      // The rush, in seconds. Paused; played forward or in reverse by the
+      // trigger below. EVERY tween states both of its ends: the timeline is
+      // invalidated before each run so the function-based values re-read the
+      // layout, and a plain .to() would then re-record its start from
+      // whatever state it found - on the way back that was a hidden mark at
+      // scale 1, and the return rendered nothing but the window.
+      const still = { immediateRender: false };
       const tl = gsap.timeline({
+        paused: true,
         defaults: { ease: "none" },
-        scrollTrigger: {
-          trigger: scene,
-          start: () => `top ${headerHeight()}`,
-          end: () => `+=${Math.round(window.innerHeight * 1.4)}`,
-          pin: true,
-          scrub: 0.5,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-        onUpdate: () => clipToOpening(tl.progress()),
+        onUpdate: () => clipToOpening(tl.time()),
       });
-
-      tl.to(copy, { x: -60, autoAlpha: 0, duration: 0.28, ease: "power2.in" }, 0)
-        .to(cue, { autoAlpha: 0, duration: 0.1 }, 0)
-        .to(ghost, { autoAlpha: 0, duration: 0.05 }, 0)
-        .to(word, { autoAlpha: 0, y: -10, duration: 0.2, ease: "power2.in" }, 0.04)
-        .to(dots, { autoAlpha: 0, duration: 0.3 }, 0.1)
-        // The portal is in place from the first pixel of the opening.
-        .to(frame, { autoAlpha: 1, duration: 0.02 }, 0.07)
-        // The gate comes at you: the same mark, the same orbit, growing until
+      // Scroll, and you are through: the whole rush is three quarters of a
+      // second. The gate takes 0.4s of it on a cubic ease-in, so it is nearly
+      // still for the first tenth and then simply gone; the portal, a touch
+      // large underneath, snaps to size on an exponential ease-out - the
+      // short, hard stop on the far side.
+      tl.fromTo(copy, { x: 0, autoAlpha: 1 }, { x: -60, autoAlpha: 0, duration: 0.18, ease: "power2.in" }, 0)
+        .fromTo(cue, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.08 }, 0)
+        .fromTo(ghost, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.04 }, 0)
+        .fromTo(word, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -10, duration: 0.14, ease: "power2.in" }, 0.02)
+        .fromTo(dots, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 0.04)
+        // The portal is in place from the first pixel of the opening. (The
+        // pillars cover any spill outside the opening while it is oversize.)
+        .fromTo(frame, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02, ...still }, 0.03)
+        .fromTo(frame, { scale: 1.08 }, { scale: 1, duration: 0.7, ease: "expo.out", ...still }, 0.05)
+        // The gate comes at you - the same mark, the same orbit, growing until
         // the pillars are off both edges. Its stroke thins as it grows so the
         // current stays a hairline on screen.
         .fromTo(
@@ -188,18 +225,97 @@ export function HeroScene() {
             scale: () => finalScale(),
             x: () => shift().x,
             y: () => shift().y,
-            duration: 0.9,
-            ease: "power1.in",
+            duration: 0.4,
+            ease: "power3.in",
           },
-          0.08,
+          0.04,
         )
-        .to(orbits, { attr: { "stroke-width": () => 36 / finalScale() }, duration: 0.9, ease: "power1.in" }, 0.08)
-        .to(fav, { autoAlpha: 1, duration: 0.08 }, 0.9)
-        // Gone, and back to scale 1 while hidden so a 15x mark cannot extend
-        // the page once the pin lets go.
-        .to(mark, { autoAlpha: 0, duration: 0.02 }, 0.98)
-        .set(mark, { scale: 1, x: 0, y: 0 }, 1.0)
-        .set(orbits, { attr: { "stroke-width": 36 } }, 1.0);
+        .fromTo(
+          orbits,
+          { attr: { "stroke-width": 36 } },
+          { attr: { "stroke-width": () => 36 / finalScale() }, duration: 0.4, ease: "power3.in" },
+          0.04,
+        )
+        // Through. The mark is gone, then put back to scale 1 while hidden so
+        // a fifteen-times logo cannot extend the page once the pin lets go.
+        .fromTo(mark, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.01, ...still }, T_CLEAR + 0.01)
+        .fromTo(
+          mark,
+          { scale: () => finalScale(), x: () => shift().x, y: () => shift().y },
+          { scale: 1, x: 0, y: 0, duration: 0.001, ...still },
+          T_CLEAR + 0.05,
+        )
+        .fromTo(
+          orbits,
+          { attr: { "stroke-width": () => 36 / finalScale() } },
+          { attr: { "stroke-width": 36 }, duration: 0.001, ...still },
+          T_CLEAR + 0.05,
+        )
+        .fromTo(fav, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.12, ...still }, T_CLEAR);
+      const RUSH = tl.duration();
+
+      // Where the page is: at the hero, at the portal, or in flight.
+      let state: "hero" | "portal" | "flight" = "hero";
+      let release: (() => void) | null = null;
+      let ride: gsap.core.Tween | null = null;
+
+      const html = document.documentElement;
+      const jump = (to: "portal" | "hero", st: ScrollTrigger) => {
+        state = "flight";
+        release?.();
+        release = holdInput();
+        ride?.kill();
+        // home.css asks the page for smooth scrolling; a tween setting the
+        // position every frame would only ever restart that smooth glide, so
+        // the ride is instant-stepped for its duration and smooth again after.
+        const smooth = html.style.scrollBehavior;
+        html.style.scrollBehavior = "auto";
+        // Leaving the hero re-reads the layout (function-based values) and
+        // re-records every tween's resting state, which is exactly the hero at
+        // rest. The return must NOT invalidate: the later tweens are created
+        // without immediateRender, and GSAP takes their "before" state from
+        // the moment they first render - on a reversed, invalidated timeline
+        // that is the portal end, and the hero would come back with the mark
+        // hidden and the window still open.
+        if (to === "portal") {
+          tl.invalidate();
+          tl.play();
+        } else {
+          tl.reverse();
+        }
+        ride = gsap.to(window, {
+          scrollTo: { y: to === "portal" ? st.end : st.start, autoKill: false },
+          duration: RUSH,
+          ease: "power2.inOut",
+          onComplete: () => {
+            state = to;
+            html.style.scrollBehavior = smooth;
+            release?.();
+            release = null;
+          },
+        });
+      };
+
+      const st = ScrollTrigger.create({
+        trigger: scene,
+        start: () => `top ${headerHeight()}`,
+        end: () => `+=${Math.round(window.innerHeight)}`,
+        pin: true,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          if (state === "hero" && self.direction > 0 && self.progress > GO_DOWN_AT) jump("portal", self);
+          else if (state === "portal" && self.direction < 0 && self.progress < GO_UP_AT) jump("hero", self);
+        },
+        // A reload part-way down the page lands on the side it is nearest.
+        onRefresh: (self) => {
+          if (state !== "flight") {
+            const atPortal = self.progress >= 0.5;
+            tl.progress(atPortal ? 1 : 0);
+            state = atPortal ? "portal" : "hero";
+          }
+        },
+      });
 
       clipToOpening(0);
 
@@ -210,7 +326,9 @@ export function HeroScene() {
 
       return () => {
         cancelled = true;
-        tl.scrollTrigger?.kill();
+        ride?.kill();
+        release?.();
+        st.kill();
         tl.kill();
         frame.style.clipPath = "";
       };
@@ -288,8 +406,9 @@ export function HeroScene() {
         {showTour ? (
           <WorkspaceTour />
         ) : (
-          // The same window, empty, until the gate is half open: the tour
-          // then mounts and begins on its dashboard as the pillars clear.
+          // The same window, with a quiet skeleton of a portal page, until the
+          // gate is a third open: the tour then mounts and begins on its
+          // dashboard as the pillars clear.
           <div className="tour scene__placeholder" aria-hidden="true">
             <div className="tour__frame">
               <div className="tour__chrome">
