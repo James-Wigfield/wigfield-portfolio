@@ -3,7 +3,9 @@
  *
  * The gate mark as a solid object (temp/portara-hero.glb, built in Claude
  * Design: the gate plus the wordmark's three words as rings of extruded
- * letters), standing on the page's own ground and CASTING SHADOWS onto it:
+ * letters - the letters themselves rebuilt here from the Jost font, since the
+ * export's traced outlines were faceted), standing on the page's own ground
+ * and CASTING SHADOWS onto it:
  * the gate's, and every orbiting letter's, from one key light high to the
  * front-left. The three rings orbit at their own radii, heights and speeds,
  * and SCROLLING SPINS THEM UP: every scroll event adds to a boost that decays
@@ -26,9 +28,11 @@
  * after another. Reduced motion: nothing moves; the rings hold still.
  */
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { FontLoader, type Font } from "three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import gsap from "gsap";
 
 import Magnet from "../bits/Magnet";
@@ -36,6 +40,11 @@ import { Link } from "../shim/router";
 import { PortalFrame } from "./hero-scene";
 
 const MODEL = "/portara-test/portara-hero.glb";
+/* The rings' letters are rebuilt from the Jost SemiBold font (true curves);
+   the GLB's traced letters only lend their placement, size and depth. The
+   subset is made by tools/subset-jost.mjs. */
+const FONT = "/portara-test/fonts/jost-600.typeface.json";
+const WORDS: Record<string, string> = { portals: "PORTALS", mcp: "MCP", agents: "AGENTS" };
 const SCENE_MEDIA = "(min-width: 861px)";
 const REDUCE = "(prefers-reduced-motion: reduce)";
 
@@ -146,6 +155,36 @@ function Model({
       }
     });
   }, [gate]);
+
+  // The letters, rebuilt from the font. Each traced glyph in the GLB is
+  // replaced in place: same node, same placement, same cap height (0.156m,
+  // read off the "P"), same depth and baseline - true curves instead of a
+  // handful of straight segments.
+  const font = useLoader(FontLoader, FONT) as Font;
+  useMemo(() => {
+    if (!font) return;
+    const data = font.data as { capHeight?: number; resolution: number };
+    const capUnits = (data.capHeight ?? 700) / data.resolution;
+    let size = 0;
+    for (const m of glyphs) {
+      const match = /^(portals|mcp|agents)-(\d+)$/.exec(m.name);
+      const ch = match ? WORDS[match[1]]?.[Number(match[2]) - 1] : undefined;
+      if (!ch) continue;
+      const old = m.geometry;
+      old.computeBoundingBox();
+      const ob = old.boundingBox!;
+      // One size for every letter, from the flat-topped P; letters with
+      // overshoot keep the font's own proportions.
+      if (!size) size = (ch === "P" ? ob.max.y - ob.min.y : 0.156) / capUnits;
+      const depth = ob.max.z - ob.min.z || 0.03;
+      const geo = new TextGeometry(ch, { font, size, depth, curveSegments: 14, bevelEnabled: false });
+      geo.computeBoundingBox();
+      const nb = geo.boundingBox!;
+      geo.translate((ob.min.x + ob.max.x) / 2 - (nb.min.x + nb.max.x) / 2, 0, ob.min.z - nb.min.z);
+      m.geometry = geo;
+      old.dispose();
+    }
+  }, [font, glyphs]);
 
   const tmp = useMemo(() => new THREE.Vector3(), []);
 
@@ -274,7 +313,9 @@ export function Hero3D() {
         <div className="hero3d" ref={canvasWrap} aria-hidden="true">
           <Canvas
             shadows="soft"
-            dpr={[1, 1.75]}
+            // Full device resolution (capped at 2x): the extruded letters
+            // are the finest thing on the page and looked soft at 1.75x.
+            dpr={[1, 2]}
             gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
             camera={{ fov: 28, near: 0.05, far: 80, position: [4.2, 4.1, 6.8] }}
             frameloop={active ? "always" : "never"}
@@ -335,5 +376,6 @@ export function Hero3D() {
 }
 
 useGLTF.preload(MODEL);
+useLoader.preload(FontLoader, FONT);
 
 export default Hero3D;
