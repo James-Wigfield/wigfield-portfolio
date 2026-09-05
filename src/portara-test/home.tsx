@@ -1,5 +1,5 @@
 import type { FormEvent, ReactElement } from "react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "./shim/router";
 
 import Magnet from "./bits/Magnet";
@@ -8,6 +8,7 @@ import { UwaLogo } from "./components/uwa-logo";
 import { HeroScene } from "./components/hero-scene";
 import { HowItWorks } from "./components/how-it-works";
 import { LogoMarquee } from "./components/logo-marquee";
+import { useNavReveal } from "./components/nav-reveal";
 
 // The 3D hero (toggle at the top of the page) brings three.js with it, so it
 // only loads when chosen.
@@ -426,6 +427,10 @@ function IntegrationsShowcase() {
 function HomeHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // PORTARA-TEST: the header is not there at the top of the page; it rises
+  // from under the hero's title as the page starts to scroll (nav-reveal.ts).
+  const headerRef = useRef<HTMLElement>(null);
+  useNavReveal(headerRef);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -450,7 +455,7 @@ function HomeHeader() {
   // The header used to go transparent over the dark cover image. The page now
   // opens on the light brand sting, so it is always the glass bar.
   return (
-    <header className={"site-header" + (scrolled ? " site-header--scrolled" : "")}>
+    <header ref={headerRef} className={"site-header" + (scrolled ? " site-header--scrolled" : "")}>
       <div className="container site-header__inner">
         <a href="#main" className="site-header__logo" aria-label="Portara home">
           <img

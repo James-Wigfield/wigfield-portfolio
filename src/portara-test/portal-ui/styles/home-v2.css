@@ -1263,7 +1263,7 @@ h2 {
   position: fixed;
   z-index: 60;
   right: 20px;
-  bottom: 20px;
+  top: calc(var(--header-h) + 12px);
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
@@ -1356,31 +1356,77 @@ h2 {
 .scene--3d .scene__favicon {
   top: calc(var(--s-6) + 1px + 9px);
 }
+/* The 3D hero's only copy: one line (the h1) at the foot on the left, the
+   button on the right, the scroll cue between them. */
+.scene__strapline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--s-6);
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-4);
+  pointer-events: none;
+}
+.scene__strapline > * {
+  pointer-events: auto;
+}
+.scene__strap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.scene__strap-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-0);
+}
+.scene__strap-sub {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--slate-300);
+}
+.scene--3d .scene__cue-slot {
+  bottom: var(--s-6);
+}
 @media (max-width: 860px) {
-  /* Narrow: the gate gets its own block under the copy, centred. */
-  .hero3d {
-    position: relative;
-    height: 380px;
-    grid-row: 2;
-  }
-  .scene--3d .scene__grid {
-    display: contents;
-  }
+  /* Narrow: the scene as a block, then the line and the button under it. */
   .scene--3d .scene__hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s-5);
-    padding: var(--s-5) var(--pad-x) var(--s-6);
+    padding: var(--s-4) var(--pad-x) var(--s-6);
     min-height: 0;
   }
-  .scene--3d .scene__copy {
+  .hero3d {
+    position: relative;
+    height: 440px;
     grid-row: 1;
   }
-  .scene--3d .scene__stage--3d {
-    display: none;
+  .scene__strapline {
+    position: static;
+    grid-row: 2;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-4);
+    padding: 0;
   }
   .scene--3d .scene__cue-slot {
+    position: static;
+    transform: none;
     grid-row: 3;
+    margin: 0;
   }
 }
 
@@ -1395,5 +1441,102 @@ h2 {
   }
   .scene__cue i::after {
     animation: none;
+  }
+}
+
+/* ----- 10. The header appears from under the title ---------------------- */
+/* Desktop only (nav-reveal.ts drives --nav-y, --nav-clip and --nav-lift).
+   At the top of the page there is no header and the hero has the whole
+   viewport; the bar is pinned at the top but drawn only below the title's
+   bottom edge, so it is uncovered beneath the letters as they scroll past,
+   then stays. On a phone the header stays where it always was, so the menu
+   is always to hand. */
+@media (min-width: 861px) {
+  #main {
+    padding-top: 0;
+  }
+  .scene__hero,
+  .scene--3d .scene__hero {
+    min-height: 100vh;
+  }
+  .site-header {
+    /* Hidden above until the script places it. */
+    transform: translate3d(0, var(--nav-y, -110%), 0);
+    clip-path: inset(var(--nav-clip, 0px) 0 0 0);
+    will-change: transform, clip-path;
+    box-shadow: 0 12px 32px -22px rgba(0, 0, 0, 0);
+    transition:
+      background 0.3s var(--ease),
+      border-color 0.3s var(--ease),
+      box-shadow 0.5s var(--ease);
+  }
+  .site-header.is-hidden {
+    visibility: hidden;
+  }
+  .site-header.is-docked {
+    box-shadow: 0 12px 32px -22px rgba(0, 0, 0, 0.35);
+  }
+  /* The contents ride a little below their place while being uncovered and
+     rise into it as the letters lift away. */
+  .site-header__inner {
+    transform: translateY(var(--nav-lift, 0px));
+  }
+  /* On arrival: an accent hairline draws out from the centre along the
+     bottom edge, then fades into the ordinary rule. */
+  .site-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--accent, #ff4e2b);
+    transform: scaleX(0);
+    opacity: 1;
+    pointer-events: none;
+  }
+  .site-header.is-docked::after {
+    transform: scaleX(1);
+    opacity: 0;
+    transition:
+      transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.6s var(--ease) 0.45s;
+  }
+  /* The contents also sit a few pixels low while the bar is being uncovered
+     and settle into place in sequence as it completes: logo, links, button. */
+  .site-header__logo,
+  .site-nav__list li,
+  .site-nav__cta {
+    transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .site-header.is-lifting .site-header__logo,
+  .site-header.is-lifting .site-nav__list li,
+  .site-header.is-lifting .site-nav__cta {
+    transform: translateY(7px);
+    transition-duration: 0.25s;
+  }
+  .site-header.is-docked .site-nav__list li:nth-child(1) {
+    transition-delay: 0.04s;
+  }
+  .site-header.is-docked .site-nav__list li:nth-child(2) {
+    transition-delay: 0.08s;
+  }
+  .site-header.is-docked .site-nav__list li:nth-child(3) {
+    transition-delay: 0.12s;
+  }
+  .site-header.is-docked .site-nav__list li:nth-child(4) {
+    transition-delay: 0.16s;
+  }
+  .site-header.is-docked .site-nav__cta {
+    transition-delay: 0.2s;
+  }
+}
+@media (min-width: 861px) and (prefers-reduced-motion: reduce) {
+  .site-header {
+    transform: none;
+    clip-path: none;
+  }
+  .site-header::after {
+    display: none;
   }
 }

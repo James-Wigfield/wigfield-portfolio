@@ -1,0 +1,234 @@
+/* TEMPORARY: the 3D hero's layout tool. Delete with layout-tool.tsx. */
+/* The hero's overlays inherit pointer-events: none (the strapline's rule);
+   the tool must take the pointer itself. */
+.lt,
+.lt-switch {
+  pointer-events: auto;
+}
+.lt-switch {
+  position: fixed;
+  z-index: 60;
+  right: 20px;
+  top: calc(var(--header-h) + 58px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-surface) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  box-shadow: 0 8px 24px -14px color-mix(in srgb, #000 35%, transparent);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  cursor: pointer;
+}
+.lt-switch__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #aab4be;
+}
+.lt-switch.is-on {
+  color: var(--c-heading);
+}
+.lt-switch.is-on .lt-switch__dot {
+  background: #ff4e2b;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #ff4e2b 22%, transparent);
+}
+
+.lt {
+  position: fixed;
+  z-index: 60;
+  left: 20px;
+  top: calc(var(--header-h) + 12px);
+  width: 392px;
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px 13px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-surface) 94%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  box-shadow: 0 18px 44px -22px color-mix(in srgb, #000 55%, transparent);
+  font-family: var(--font-sans);
+  color: var(--c-text);
+}
+.lt__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lt__title {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.lt__objs {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--c-bg);
+}
+.lt__obj {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: transparent;
+  font: 600 12px/1 var(--font-sans);
+  color: var(--c-muted);
+  cursor: pointer;
+}
+.lt__obj.is-on {
+  background: var(--c-heading);
+  color: #fff;
+}
+.lt__obj:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.lt__view {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.lt__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--c-text);
+}
+.lt__check input {
+  accent-color: #ff4e2b;
+}
+.lt__modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.lt__mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 8px 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  font: 600 12px/1 var(--font-sans);
+  color: var(--c-muted);
+  cursor: pointer;
+}
+.lt__mode.is-on {
+  color: var(--c-heading);
+  border-color: #ff4e2b;
+  box-shadow: inset 0 0 0 1px #ff4e2b;
+}
+.lt__mode kbd {
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: var(--c-bg);
+  font: 500 10px/1 var(--font-mono);
+  color: var(--c-muted);
+}
+.lt__row {
+  display: grid;
+  grid-template-columns: 62px repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+.lt__row--scale {
+  grid-template-columns: 62px minmax(0, 1fr) 78px;
+}
+.lt__row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: #ff4e2b;
+}
+.lt__label {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.lt__num {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 2px 6px 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  font: 500 11.5px/1.2 var(--font-mono);
+  color: var(--c-heading);
+  background-image: radial-gradient(circle, var(--ax, transparent) 3px, transparent 3.5px);
+  background-size: 8px 8px;
+  background-repeat: no-repeat;
+  background-position: 5px center;
+}
+.lt__num:focus {
+  outline: 2px solid #ff4e2b;
+  outline-offset: -1px;
+}
+.lt__num--x {
+  --ax: #e5484d;
+}
+.lt__num--y {
+  --ax: #30a46c;
+}
+.lt__num--z {
+  --ax: #3e7bfa;
+}
+.lt__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lt__snap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--c-muted);
+}
+.lt__snap input {
+  accent-color: #ff4e2b;
+}
+.lt__btn {
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  font: 600 12px/1 var(--font-sans);
+  color: var(--c-heading);
+  cursor: pointer;
+}
+.lt__btn--go {
+  background: var(--c-heading);
+  border-color: var(--c-heading);
+  color: #fff;
+}
+.lt__hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--c-muted);
+}
+
+/* While the tool is on, the canvas takes the pointer. */
+.hero3d.is-editing {
+  pointer-events: auto;
+}
+
+@media (max-width: 860px) {
+  .lt,
+  .lt-switch {
+    display: none;
+  }
+}
