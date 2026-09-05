@@ -17,6 +17,13 @@
  * letter crosses the front of its orbit it takes the accent. The camera
  * drifts a hand's width with the pointer.
  *
+ * THROUGH THE PORTAL: scrolling on sends the word into the gate. The letters
+ * lift off in reading order, arc up over the front of the gate and dive
+ * through its opening, shrinking and fading as they pass its plane; scroll
+ * hard and they buffet on the way. It is a pure function of scroll position,
+ * so scrolling back brings them home the same way. The header (nav-reveal.ts)
+ * then appears from under the gate's foot as the gate leaves the top.
+ *
  * The copy is one line and one button along the foot of the scene: the h1
  * stays real text for search and screen readers, the pitch itself now
  * belongs to the section below. No pinned jump here: the page scrolls
@@ -94,6 +101,22 @@ const WORD = "PORTARA";
 const WORD_CAP = 0.55;
 const WORD_DEPTH = 0.18;
 const WORD_TRACKING = 0.15;
+
+/* THROUGH THE PORTAL: as the page scrolls, the letters lift off in reading
+   order, arc up and dive through the gate's opening, shrinking and fading as
+   they pass the gate's plane. Progress is scroll over viewport height: from
+   `start` to `end` of a screen, each letter's own flight offset by `stagger`
+   of the whole. The word stays put for the first stretch of scrolling, then
+   flies. The flight CHASES the scroll position rather than tracking it: it
+   closes the gap at `lag` per second and never moves faster than `maxRate`
+   of the whole per second, so a flick of the wheel still plays out as a
+   glide of a second or so, and stopping mid-way eases to a halt. Scroll
+   speed (the rings' boost) adds turbulence. */
+const FLY = { start: 0.12, end: 0.42, stagger: 0.045, lag: 3.2, maxRate: 0.8 };
+/* In the gate's space: where the letters swing up to, and where they end
+   (just behind the opening). */
+const FLY_OVER: Vec3 = [0, 1.7, 1.5];
+const FLY_THROUGH: Vec3 = [0, 1.0, -0.6];
 
 /* Where the three objects stand. Rotation in degrees; a word's position is
    the middle of its baseline and `curve` the arc its letters bend through.
@@ -393,6 +416,8 @@ function Wordmark({
   entrance,
   onReady,
   groupRef,
+  gateRef,
+  boost,
   xform,
   pick,
 }: {
@@ -400,6 +425,8 @@ function Wordmark({
   entrance: boolean;
   onReady?: () => void;
   groupRef: React.RefObject<THREE.Group | null>;
+  gateRef: React.RefObject<THREE.Group | null>;
+  boost: React.MutableRefObject<number>;
   xform: Xform;
   pick?: Pick;
 }) {
@@ -447,11 +474,104 @@ function Wordmark({
     });
   }, [word, curve]);
 
+  // One material per letter, so each can fade on its own as it goes through.
+  const skins = useMemo(
+    () =>
+      word.letters.map(() => {
+        const solid = mats.solid.clone();
+        solid.transparent = true;
+        const edge = mats.edge.clone();
+        return { solid, edge };
+      }),
+    [word, mats],
+  );
+  // LAYOUT TOOL: the selection shows on the letters' outlines.
+  useEffect(() => {
+    for (const s of skins) s.edge.color.copy(pick?.selected ? ACCENT : EDGE);
+  }, [skins, pick?.selected]);
+
   // Where it stands (LAYOUT TOOL: the stored layout, else the default).
   useLayoutEffect(() => {
     if (groupRef.current) applyXform(groupRef.current, xform);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // THROUGH THE PORTAL. Driven by scroll, smoothed in time; plays backwards too.
+  const flight = useRef({ live: false, p: 0, started: false });
+  const fly = useMemo(
+    () => ({ a: new THREE.Vector3(), c: new THREE.Vector3(), b: new THREE.Vector3(), p: new THREE.Vector3() }),
+    [],
+  );
+  useFrame((_, dt) => {
+    const g = groupRef.current;
+    const gate = gateRef.current;
+    if (!g || !gate) return;
+    const step = Math.min(dt, 0.1);
+    const vh = window.innerHeight;
+    const target = THREE.MathUtils.clamp((window.scrollY / vh - FLY.start) / (FLY.end - FLY.start), 0, 1);
+    const f = flight.current;
+    if (!f.started) {
+      // A page opened part-way down starts where it is, not with a flight.
+      f.started = true;
+      f.p = target;
+    } else {
+      let next = f.p + (target - f.p) * (1 - Math.exp(-FLY.lag * step));
+      const most = FLY.maxRate * step;
+      next = THREE.MathUtils.clamp(next, f.p - most, f.p + most);
+      f.p = Math.abs(next - target) < 0.0015 ? target : next;
+    }
+    const p = f.p;
+    if (p <= 0) {
+      if (!f.live) return;
+      // Back at rest: every letter exactly where the layout puts it.
+      f.live = false;
+      g.children.forEach((m, i) => {
+        const rest = placed[i];
+        m.position.set(rest.pos[0], rest.pos[1], rest.pos[2]);
+        m.rotation.set(0, rest.yaw, 0);
+        m.scale.setScalar(1);
+        m.visible = true;
+        m.castShadow = true;
+        skins[i].solid.opacity = 1;
+        skins[i].edge.opacity = 0.9;
+      });
+      return;
+    }
+    f.live = true;
+    // The two waypoints, in the word's own space.
+    fly.c.set(FLY_OVER[0], FLY_OVER[1], FLY_OVER[2]);
+    gate.localToWorld(fly.c);
+    g.worldToLocal(fly.c);
+    fly.b.set(FLY_THROUGH[0], FLY_THROUGH[1], FLY_THROUGH[2]);
+    gate.localToWorld(fly.b);
+    g.worldToLocal(fly.b);
+    const n = g.children.length;
+    const span = 1 - (n - 1) * FLY.stagger;
+    const gust = boost.current * 0.06;
+    g.children.forEach((m, i) => {
+      const q = THREE.MathUtils.clamp((p - i * FLY.stagger) / span, 0, 1);
+      const e = q * q * q * (q * (q * 6 - 15) + 10); // gentle ease in and out
+      const rest = placed[i];
+      fly.a.set(rest.pos[0], rest.pos[1], rest.pos[2]);
+      // A quadratic arc: rest, up over the front of the gate, through.
+      const u = 1 - e;
+      fly.p.copy(fly.a).multiplyScalar(u * u).addScaledVector(fly.c, 2 * u * e).addScaledVector(fly.b, e * e);
+      // Turbulence only while in flight, and only when scrolling hard.
+      const wob = gust * Math.sin(q * Math.PI);
+      fly.p.x += wob * Math.sin(i * 1.7 + q * 9);
+      fly.p.y += wob * Math.cos(i * 2.3 + q * 7);
+      m.position.copy(fly.p);
+      m.scale.setScalar(1 - 0.6 * e);
+      const side = i % 2 ? 1 : -1;
+      m.rotation.set(-0.55 * Math.sin(q * Math.PI), rest.yaw + 0.4 * e * side, 0.12 * Math.sin(q * Math.PI * 2) * side);
+      // Fade through the gate's plane, over the last third.
+      const fade = THREE.MathUtils.clamp((q - 0.68) / 0.32, 0, 1);
+      skins[i].solid.opacity = 1 - fade;
+      skins[i].edge.opacity = 0.9 * (1 - fade);
+      m.visible = q < 1;
+      m.castShadow = q < 0.55;
+    });
+  });
 
   // Entrance: the letters drop in one after another, once the gate is up.
   useLayoutEffect(() => {
@@ -479,14 +599,14 @@ function Wordmark({
         <mesh
           key={l.key}
           geometry={l.geo}
-          material={mats.solid}
+          material={skins[i].solid}
           position={placed[i].pos}
           rotation-y={placed[i].yaw}
           castShadow
           receiveShadow
         >
           {l.outlines.map((g, j) => (
-            <lineLoop key={j} geometry={g} material={pick?.selected ? mats.edgeHot : mats.edge} />
+            <lineLoop key={j} geometry={g} material={skins[i].edge} />
           ))}
         </mesh>
       ))}
@@ -495,25 +615,48 @@ function Wordmark({
 }
 
 /**
- * Tells the header where the bottom of the letters is (nav-reveal.ts): the
- * lowest of the letters' front baseline points, projected to a viewport y,
- * every frame - so the header is uncovered from under the word as the word
- * scrolls past, wherever the word is, camera drift and all.
+ * Tells the header where the bottom of the monument is (nav-reveal.ts): the
+ * lowest on screen of the letters' front baseline points (while they are
+ * still there) and the gate's own foot, projected to a viewport y every
+ * frame. So the header is uncovered from under the word as the word scrolls
+ * past, or, once the letters have flown through the portal, from under the
+ * gate as it leaves - wherever they are, camera drift and all.
  */
-function NavSourceProbe({ wordRef }: { wordRef: React.RefObject<THREE.Group | null> }) {
+function NavSourceProbe({
+  wordRef,
+  gateRef,
+}: {
+  wordRef: React.RefObject<THREE.Group | null>;
+  gateRef: React.RefObject<THREE.Group | null>;
+}) {
   const { camera, gl } = useThree();
   const v = useMemo(() => new THREE.Vector3(), []);
   useFrame(() => {
     const g = wordRef.current;
     if (!g || !g.children.length) return;
     const rect = gl.domElement.getBoundingClientRect();
+    const screenY = () => rect.top + ((1 - v.y) / 2) * rect.height;
     let bottom = -Infinity;
     for (const m of g.children) {
+      if (!m.visible) continue;
       v.set(0, 0, WORD_DEPTH);
       m.localToWorld(v).project(camera);
-      const py = rect.top + ((1 - v.y) / 2) * rect.height;
-      if (py > bottom) bottom = py;
+      bottom = Math.max(bottom, screenY());
     }
+    // The gate's foot: the bottom corners of every piece of the gate.
+    const gate = gateRef.current?.getObjectByName("gate");
+    gate?.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      const bb = m.geometry.boundingBox!;
+      for (const x of [bb.min.x, bb.max.x]) {
+        for (const z of [bb.min.z, bb.max.z]) {
+          v.set(x, bb.min.y, z).applyMatrix4(m.matrixWorld).project(camera);
+          bottom = Math.max(bottom, screenY());
+        }
+      }
+    });
     if (Number.isFinite(bottom)) setNavSource(bottom);
   });
   useEffect(() => () => setNavSource(null), []);
@@ -600,7 +743,16 @@ function Scene({
         xform={tool.layout.gate}
         pick={pick("gate")}
       />
-      <Wordmark font={font} entrance={entrance} onReady={onReady} groupRef={wordRef} xform={tool.layout.word} pick={pick("word")} />
+      <Wordmark
+        font={font}
+        entrance={entrance}
+        onReady={onReady}
+        groupRef={wordRef}
+        gateRef={gateRef}
+        boost={boost}
+        xform={tool.layout.word}
+        pick={pick("word")}
+      />
       {/* LAYOUT TOOL: the panel's "Show portlets" box; on by default. */}
       {tool.view.dancers && (
         <Portlets groupRef={dancersRef} xform={tool.layout.dancers} pick={pick("dancers")} boost={boost} dance={spin} entrance={entrance} />
@@ -687,7 +839,7 @@ export function Hero3D() {
               />
             </Suspense>
             <Rig cam={cam} parallax={!reduce && !editing} />
-            <NavSourceProbe wordRef={wordRef} />
+            <NavSourceProbe wordRef={wordRef} gateRef={gateRef} />
           </Canvas>
         </div>
         {/* LAYOUT TOOL */}
