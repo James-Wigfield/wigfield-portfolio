@@ -1,8 +1,8 @@
 /**
  * TEMPORARY - the layout tool for the 3D hero.
  *
- * Click the wordmark, the gate or the portlets and move, turn or scale them
- * in place with three.js's transform handles (arrows for moving, rings for
+ * Click the wordmark or the gate and move, turn or scale them in place with
+ * three.js's transform handles (arrows for moving, rings for
  * turning, boxes for scaling; red X is left/right, green Y is up/down, blue Z
  * is nearer/farther), or type the numbers into the panel, or nudge with the
  * keyboard. The wordmark also has a CURVE: the angle its letters bend
@@ -25,7 +25,7 @@ export type Vec3 = [number, number, number];
 /** Rotation in DEGREES, so the numbers read the way a person would say them.
     `curve` (degrees of arc, wordmark only) bends the letters round a circle. */
 export type Xform = { position: Vec3; rotation: Vec3; scale: number; curve?: number };
-export type LayoutId = "word" | "gate" | "dancers";
+export type LayoutId = "word" | "gate";
 export type Layout = Record<LayoutId, Xform>;
 export type Mode = "translate" | "rotate" | "scale";
 type Controls = React.ComponentRef<typeof TransformControls>;
@@ -57,8 +57,8 @@ const TOOL_KEY = "portara-test:layout-tool";
 const VIEW_KEY = "portara-test:layout-view";
 
 /** What to show while judging the layout: the portlets, the ground grid. */
-type View = { dancers: boolean; grid: boolean };
-const VIEW_DEFAULT: View = { dancers: true, grid: true };
+type View = { portlets: boolean; grid: boolean };
+const VIEW_DEFAULT: View = { portlets: true, grid: true };
 
 function readView(): View {
   try {
@@ -68,8 +68,8 @@ function readView(): View {
     return VIEW_DEFAULT;
   }
 }
-const IDS: LayoutId[] = ["word", "gate", "dancers"];
-const NAMES: Record<LayoutId, string> = { word: "Wordmark", gate: "Gate + rings", dancers: "Portlets" };
+const IDS: LayoutId[] = ["word", "gate"];
+const NAMES: Record<LayoutId, string> = { word: "Wordmark", gate: "Gate + rings" };
 const MODES: { id: Mode; label: string; key: string }[] = [
   { id: "translate", label: "Move", key: "W" },
   { id: "rotate", label: "Turn", key: "E" },
@@ -110,7 +110,6 @@ export function readLayout(defaults: Layout): Layout {
     return {
       word: { ...defaults.word, ...saved.word },
       gate: { ...defaults.gate, ...saved.gate },
-      dancers: { ...defaults.dancers, ...saved.dancers },
     };
   } catch {
     return defaults;
@@ -179,8 +178,7 @@ export function useLayoutTool(defaults: Layout, refs: Refs) {
     saveLayout(next);
   }, []);
 
-  /** Show or hide the portlets or the grid; hiding the portlets drops them
-      as the selection too, since there is nothing to hold the handles. */
+  /** Show or hide the portlets or the grid. */
   const setView = useCallback((patch: Partial<View>) => {
     setViewState((v) => {
       const next = { ...v, ...patch };
@@ -191,7 +189,6 @@ export function useLayoutTool(defaults: Layout, refs: Refs) {
       }
       return next;
     });
-    if (patch.dancers === false) setSelected((s) => (s === "dancers" ? null : s));
   }, []);
 
   /** The panel or the keyboard changed a value: push it onto the object. */
@@ -377,7 +374,6 @@ export function LayoutPanel({ tool }: { tool: LayoutTool }) {
                   key={id}
                   type="button"
                   className={"lt__obj" + (selected === id ? " is-on" : "")}
-                  disabled={id === "dancers" && !view.dancers}
                   onClick={() => select(selected === id ? null : id)}
                 >
                   {NAMES[id]}
@@ -389,7 +385,7 @@ export function LayoutPanel({ tool }: { tool: LayoutTool }) {
           <div className="lt__view">
             <span className="lt__label">Show</span>
             <label className="lt__check">
-              <input type="checkbox" checked={view.dancers} onChange={(e) => setView({ dancers: e.target.checked })} />
+              <input type="checkbox" checked={view.portlets} onChange={(e) => setView({ portlets: e.target.checked })} />
               Portlets
             </label>
             <label className="lt__check">
@@ -399,7 +395,7 @@ export function LayoutPanel({ tool }: { tool: LayoutTool }) {
           </div>
 
           {!selected || !x ? (
-            <p className="lt__hint">Click the wordmark, the gate or a portlet in the scene, or pick one above. Then drag the coloured handles.</p>
+            <p className="lt__hint">Click the wordmark or the gate in the scene, or pick one above. Then drag the coloured handles.</p>
           ) : (
             <>
               <div className="lt__modes" role="radiogroup" aria-label="Handles">

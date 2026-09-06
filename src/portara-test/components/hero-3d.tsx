@@ -6,28 +6,21 @@
  * orbit it as rings of letters, one radius for all three and each word three
  * times round its circumference, stacked by height; and PORTARA itself
  * stands on the floor in front, in 3D type bent round the gate so the word
- * wraps the portal. Far behind, a conga line of portlets (temp/portlet.glb)
- * dances round a loop in the distance (portlets.tsx). Every letter is built
- * at load from the Jost SemiBold font (true curves).
+ * wraps the portal. Every so often a portlet (temp/portlet.glb) steps out of
+ * the middle of the opening to look after a letter (workers.tsx). Every
+ * letter is built at load from the Jost SemiBold font (true curves).
  *
  * Everything casts shadows onto the page's own ground from one key light high
  * to the front-left. SCROLLING SPINS THE RINGS UP: every scroll event adds to
  * a boost that decays over a few frames, so scrolling on sends the words
- * whipping round the gate (and turns the portlets' music up). As each ring
+ * whipping round the gate. As each ring
  * letter crosses the front of its orbit it takes the accent. The camera
  * drifts a hand's width with the pointer.
  *
- * THE DELIVERY: on load the crew brings the word out of the portal (INTRO
- * below). The gate rises, the portal flares, and seven
- * portlets step out of the opening in pairs from the middle of the word
- * outwards, each with a letter overhead; they walk them to their places, set
- * them down, pat them and jog back through, the last letter landing crooked
- * and getting straightened, while the camera eases in. The runners' bodies
- * are movers.tsx; the choreography is written into a shared Stage from here,
- * because the letters live here. THROUGH THE PORTAL: once the word is down,
- * scrolling on lifts the letters and glides them back through the opening
- * (FLY below); the header (nav-reveal.ts) then appears from under the gate's
- * foot as the gate leaves the top.
+ * THROUGH THE PORTAL: once the word is down, scrolling on lifts the letters
+ * and glides them back through the opening (FLY below); the header
+ * (nav-reveal.ts) then appears from under the gate's foot as the gate leaves
+ * the top. The camera eases in a step over the first seconds after load.
  *
  * The copy is one line and one button along the foot of the scene: the h1
  * stays real text for search and screen readers, the pitch itself now
@@ -40,12 +33,11 @@
  * than the fill (the wordmark's lines are its face outlines only).
  *
  * ENTRANCE: the gate rises out of the ground, the wordmark's letters drop in
- * one after another, the rings spin in, the portlets pop up. Reduced motion:
- * nothing moves.
+ * one after another, the rings spin in. Reduced motion: nothing moves.
  *
- * LAYOUT TOOL (temporary): the wordmark, the gate-with-rings and the portlets
- * are three objects that can be clicked and moved, turned and scaled in
- * place (the wordmark also bent), with the layout kept in localStorage and a
+ * LAYOUT TOOL (temporary): the wordmark and the gate-with-rings are two
+ * objects that can be clicked and moved, turned and scaled in place (the
+ * wordmark also bent), with the layout kept in localStorage and a
  * "Copy values" button that gives the block to paste over LAYOUT below. Once
  * the layout is locked in, paste it, then remove layout-tool.tsx,
  * layout-tool.css and the lines marked LAYOUT TOOL.
@@ -60,8 +52,7 @@ import gsap from "gsap";
 
 import Magnet from "../bits/Magnet";
 import { PortalFrame } from "./hero-scene";
-import { Portlets } from "./portlets";
-import { Movers, RUNNER_H, makeStage, type Stage } from "./movers";
+import { Workers, makeStage, type Stage } from "./workers";
 import { setNavSource } from "./nav-reveal";
 // LAYOUT TOOL (temporary, see layout-tool.tsx)
 import {
@@ -85,12 +76,13 @@ const FONT = "/portara-test/fonts/jost-600.typeface.json";
 const SCENE_MEDIA = "(min-width: 861px)";
 const REDUCE = "(prefers-reduced-motion: reduce)";
 
-/* The rings: one radius for all three, each word three times round the
-   circumference, stacked by height, well clear of the wordmark's cap (0.55)
-   below them. Rest speeds from the handoff (rad/s). The GLB's own ring nodes
+/* The rings: one radius for all three, each word twice round the
+   circumference (three was a crowd), stacked by height, well clear of the
+   wordmark's cap (0.55) below them and of the workers (0.55 tall) walking
+   under them. Rest speeds from the handoff (rad/s). The GLB's own ring nodes
    are dropped; these are built from the font. */
 const RING_RADIUS = 1.7;
-const RING_REPEATS = 3;
+const RING_REPEATS = 2;
 const RING_CAP = 0.16;
 const RING_DEPTH = 0.03;
 const RING_TRACKING = 0.12;
@@ -108,33 +100,6 @@ const WORD_CAP = 0.55;
 const WORD_DEPTH = 0.18;
 const WORD_TRACKING = 0.15;
 
-/* THE DELIVERY: on page load, the crew brings the word out of the portal. The gate rises; the portal flares; the crew steps out of
-   the opening in pairs, from the middle of the word outwards (T, then R and
-   A, then O and R, then P and A), each with a letter overhead, walks it to
-   its place and sets it down, gives it a pat, and jogs back through. The
-   last letter lands a little crooked and gets straightened. Seconds from
-   load; the gate is up by `firstOut`. Reduced motion gets the plain drop-in
-   instead. */
-const INTRO = {
-  firstOut: 1.45,
-  pairGap: 0.35,
-  fade: 0.25, // stepping out of, or back into, the portal's plane
-  walk: 3.0, // world units per second, carrying
-  jog: 3.5, // back, unladen
-  setDown: 0.5,
-  pat: 0.45,
-  fix: 0.55, // straightening the crooked one
-  crooked: 0.13, // radians the last letter lands off by
-  standBack: 0.55, // a runner sets its letter down this far in front of it
-  standRow: 0.42, // every second runner a row further back, so none clip
-};
-/* Who steps out together, middle of the word first (indices into PORTARA). */
-const ORDER: number[][] = [[3], [2, 4], [1, 5], [0, 6]];
-/* The exit from the opening, in the gate's space: how far in front of the
-   gate's plane, and how far to the side each of a pair steps. */
-const DOOR_Z = 0.2;
-const DOOR_LANE = 0.32;
-
 /* THROUGH THE PORTAL, on scroll: once the word is down, scrolling on lifts
    the letters in reading order, arcs them up over the front of the gate and
    sends them back through the opening, shrinking and fading past the gate's
@@ -149,7 +114,7 @@ const FLY = { start: 0.12, end: 0.42, stagger: 0.045, lag: 3.2, maxRate: 0.8 };
 const THROUGH: Vec3 = [0, 1.0, -0.6];
 const OVER: Vec3 = [0, 1.9, 0.9];
 
-/* Where the three objects stand. Rotation in degrees; a word's position is
+/* Where the two objects stand. Rotation in degrees; a word's position is
    the middle of its baseline and `curve` the arc its letters bend through.
 
    The composition: the gate on the page's centre line, turned 8 degrees
@@ -158,34 +123,21 @@ const OVER: Vec3 = [0, 1.9, 0.9];
    the camera's own heading (31.8 degrees, atan2 of VIEW_DIR's x and z) so
    the whole word sits at one depth and its baseline runs dead level across
    the screen, in line with the page below - James's call, over the earlier
-   arc (the Curve control still bends it if wanted); the portlets' conga
-   line in the distance behind it all.
-   The camera looks along (-0.5, -0.8) on the floor, so "far away, centre
-   screen" is that way from the target: the loop's centre sits about 8.5
-   units out along it, and the loop is turned to lie across the camera's
-   line of sight (its long axis along the screen's own x), so the line walks
-   across the top of the scene, left to right on its near side, passing
-   behind the gate in the middle (the "dancers" position is the loop's
-   centre, its rotation the loop's heading, its scale the loop's size).
+   arc (the Curve control still bends it if wanted). The workers
+   (workers.tsx) find their own way between the two.
    LAYOUT TOOL: these are the defaults the tool starts from and resets to;
    "Copy values" gives the block to paste. */
 const LAYOUT: Layout = {
   word: { position: [1.27, 0, 2.07], rotation: [0, 31.8, 0], scale: 1.17, curve: 0 },
   gate: { position: [-0.2, 0, -0.3], rotation: [0, 8, 0], scale: 1 },
-  dancers: { position: [-3.9, 0, -6.3], rotation: [0, 31.8, 0], scale: 1 },
 };
 /* A phone is portrait; the composition already stacks (gate above, word
    below), so it is the same layout seen from further back, with the word at
-   its natural size so it clears both edges and the conga loop drawn in so
-   its ends stay inside the narrow frame. */
-const LAYOUT_NARROW: Layout = {
-  ...LAYOUT,
-  word: { ...LAYOUT.word, scale: 1 },
-  dancers: { ...LAYOUT.dancers, scale: 0.72 },
-};
+   its natural size so it clears both edges. */
+const LAYOUT_NARROW: Layout = { ...LAYOUT, word: { ...LAYOUT.word, scale: 1 } };
 
 /* The camera stands front-right and above. The target sits at the gate's
-   waist, the distance takes in the arc and the two outer portlets. */
+   waist, the distance takes in the word and the gate with air around them. */
 const VIEW_DIR = new THREE.Vector3(0.62, 0.42, 1).normalize();
 const PERCH = {
   wide: { tx: 0.3, ty: 0.45, tz: 0.5, dist: 8.4 },
@@ -206,7 +158,7 @@ type FontData = {
 
 /** The camera: on its perch, drifting with the pointer, looking at the target.
     With `dolly`, it starts a step further back and eases in over the first
-    five seconds, while the crew delivers the word. */
+    five seconds as the scene assembles. */
 function Rig({ cam, parallax, dolly }: { cam: CamState; parallax: boolean; dolly: boolean }) {
   const { camera } = useThree();
   const pointer = useRef({ x: 0, y: 0 });
@@ -469,7 +421,6 @@ function Wordmark({
   groupRef,
   gateRef,
   stage,
-  crew,
   xform,
   pick,
 }: {
@@ -479,8 +430,6 @@ function Wordmark({
   groupRef: React.RefObject<THREE.Group | null>;
   gateRef: React.RefObject<THREE.Group | null>;
   stage: React.MutableRefObject<Stage>;
-  /** Play the delivery: the crew brings the letters out of the portal. */
-  crew: boolean;
   xform: Xform;
   pick?: Pick;
 }) {
@@ -550,46 +499,23 @@ function Wordmark({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // THE DELIVERY (page load) and THROUGH THE PORTAL (scroll). The letters are
-  // moved here; the crew's positions and pose weights go to the shared stage
-  // for movers.tsx to give bodies to. Everything is in the word's own space.
+  // THROUGH THE PORTAL, on scroll. The flight's progress chases the scroll
+  // position; the workers read it from the stage (nobody comes out while the
+  // word is away). Everything is in the word's own space.
   const show = useRef({
-    t: 0, // seconds into the delivery
-    done: !crew, // the word is down and the crew has gone
-    ready: false, // onReady sent
-    prev: [] as THREE.Vector3[],
     fly: 0, // the scroll flight's progress, chasing the scroll
     flyStarted: false,
     flyLive: false,
   });
-  const v = useMemo(
-    () => ({
-      door: new THREE.Vector3(),
-      through: new THREE.Vector3(),
-      over: new THREE.Vector3(),
-      p: new THREE.Vector3(),
-      a: new THREE.Vector3(),
-    }),
-    [],
-  );
-  // While the crew is to deliver them, the letters start out of sight.
-  useLayoutEffect(() => {
-    if (crew) groupRef.current?.children.forEach((m) => (m.visible = false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const v = useMemo(() => ({ through: new THREE.Vector3(), over: new THREE.Vector3(), a: new THREE.Vector3() }), []);
 
   useFrame((_, dt) => {
     const g = groupRef.current;
     const gate = gateRef.current;
     if (!g || !gate) return;
     const clamp = THREE.MathUtils.clamp;
-    const lerp = THREE.MathUtils.lerp;
-    const smooth = (x: number) => x * x * (3 - 2 * x);
-    const backOut = (x: number) => 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2);
     const step = Math.min(dt, 0.1);
-    const st = stage.current;
     const s = show.current;
-    const sW = g.scale.x || 1;
     const toLocal = (out: THREE.Vector3, x: number, y: number, z: number) => {
       out.set(x, y, z);
       gate.localToWorld(out);
@@ -609,132 +535,6 @@ function Wordmark({
       opacity(i, 1);
     };
 
-    // ----- The delivery -----
-    if (!s.done) {
-      s.t += step;
-      const t = s.t;
-      // The letter rides on top of the head, hands up either side of it.
-      const carryH = (RUNNER_H + 0.03) / sW;
-      let flash = 0;
-      let allGone = true;
-      let firstDown = false;
-      g.children.forEach((m, i) => {
-        const rest = placed[i];
-        const k = st.carriers[i];
-        if (!k) return;
-        const pair = ORDER.findIndex((p) => p.includes(i));
-        const lane = ORDER[pair].length > 1 ? (i < 3 ? -DOOR_LANE : DOOR_LANE) : 0;
-        toLocal(v.door, lane, 0, DOOR_Z);
-        const standX = rest.pos[0];
-        const standBack = INTRO.standBack + (i % 2) * INTRO.standRow;
-        const standZ = rest.pos[2] - standBack;
-        const dist = Math.hypot(standX - v.door.x, standZ - v.door.z) * sW;
-        const outAt = INTRO.firstOut + pair * INTRO.pairGap;
-        const walkAt = outAt + INTRO.fade * 0.6;
-        const arrive = walkAt + dist / INTRO.walk;
-        const downEnd = arrive + INTRO.setDown;
-        const patEnd = downEnd + INTRO.pat;
-        const fixEnd = patEnd + (i === 6 ? INTRO.fix : 0);
-        const back = fixEnd + dist / INTRO.jog;
-        const gone = back + INTRO.fade;
-        if (t < gone) allGone = false;
-
-        // The runner: out of the door, to the stand, back to the door.
-        let rx: number;
-        let rz: number;
-        if (t < walkAt) {
-          rx = v.door.x;
-          rz = v.door.z;
-        } else if (t < arrive) {
-          const u = clamp((t - walkAt) / (arrive - walkAt), 0, 1);
-          const e = 1 - Math.pow(1 - u, 1.6); // eases into the stop
-          rx = lerp(v.door.x, standX, e);
-          rz = lerp(v.door.z, standZ, e);
-        } else if (t < fixEnd) {
-          rx = standX;
-          rz = standZ;
-        } else if (t < back) {
-          const e = smooth(clamp((t - fixEnd) / (back - fixEnd), 0, 1));
-          rx = lerp(standX, v.door.x, e);
-          rz = lerp(standZ, v.door.z, e);
-        } else {
-          rx = v.door.x;
-          rz = v.door.z;
-        }
-        const fadeIn = clamp((t - outAt) / INTRO.fade, 0, 1);
-        const fadeOut = clamp((t - back) / INTRO.fade, 0, 1);
-        k.fade = t < outAt ? 0 : fadeIn * (1 - fadeOut);
-        if (fadeIn > 0 && fadeIn < 1) flash = Math.max(flash, Math.sin(Math.PI * fadeIn));
-        if (fadeOut > 0 && fadeOut < 1) flash = Math.max(flash, Math.sin(Math.PI * fadeOut));
-
-        // To world; speed from the ground actually covered since last frame.
-        v.p.set(rx, 0, rz);
-        g.localToWorld(v.p);
-        const prev = s.prev[i] ?? (s.prev[i] = v.p.clone());
-        const dx = v.p.x - prev.x;
-        const dz = v.p.z - prev.z;
-        const d = Math.hypot(dx, dz);
-        const speed = d > 1.5 ? 0 : d / Math.max(step, 1e-3); // a jump is not a walk
-        if (speed > 0.05 && d > 1e-4) {
-          k.vx = dx / d;
-          k.vz = dz / d;
-        }
-        prev.copy(v.p);
-        k.x = v.p.x;
-        k.z = v.p.z;
-        k.speed = speed;
-        k.yaw = g.rotation.y; // standing: out through the word's face, to the camera
-        const downT = clamp((t - arrive) / INTRO.setDown, 0, 1);
-        const patT = clamp((t - downEnd) / INTRO.pat, 0, 1);
-        const fixT = i === 6 ? clamp((t - patEnd) / INTRO.fix, 0, 1) : 1;
-        k.arms = t < arrive ? 1 : 1 - smooth(downT);
-        k.squat = downT > 0 && downT < 1 ? Math.sin(Math.PI * downT) : 0;
-        // A pat once it is down; the crooked one gets a push as well.
-        k.pat = Math.min(
-          1,
-          (patT > 0 && patT < 1 ? Math.sin(Math.PI * patT) : 0) + (i === 6 && t >= patEnd && fixT < 1 ? Math.sin(Math.PI * fixT) : 0),
-        );
-
-        // The letter: not yet, carried, set down (the last one crooked, then
-        // straightened), at rest.
-        if (t < outAt) {
-          m.visible = false;
-        } else if (t < arrive) {
-          m.position.set(rx, carryH, rz + 0.06);
-          m.rotation.set(-0.08, rest.yaw, 0);
-          m.scale.setScalar(1);
-          m.visible = true;
-          m.castShadow = k.fade > 0.5;
-          opacity(i, k.fade);
-        } else if (downT < 1) {
-          const e = smooth(downT);
-          m.position.set(rest.pos[0], carryH * (1 - e), lerp(standZ + 0.06, rest.pos[2], e));
-          m.rotation.set(-0.08 * (1 - e), rest.yaw, i === 6 ? INTRO.crooked * e : 0);
-          m.visible = true;
-          m.castShadow = true;
-          opacity(i, 1);
-        } else if (i === 6 && fixT < 1) {
-          atRest(m, i);
-          m.rotation.z = INTRO.crooked * (1 - backOut(fixT));
-        } else {
-          atRest(m, i);
-        }
-        if (i === 3 && downT >= 1) firstDown = true;
-      });
-      st.flash = flash;
-      if (firstDown && !s.ready) {
-        s.ready = true;
-        onReady?.();
-      }
-      if (allGone) {
-        s.done = true;
-        st.flash = 0;
-        for (const k of st.carriers) k.fade = 0;
-      }
-      return;
-    }
-
-    // ----- Through the portal, on scroll -----
     const target = clamp((window.scrollY / window.innerHeight - FLY.start) / (FLY.end - FLY.start), 0, 1);
     if (!s.flyStarted) {
       // A page opened part-way down starts where it is, not with a flight.
@@ -747,6 +547,7 @@ function Wordmark({
       s.fly = Math.abs(next - target) < 0.0015 ? target : next;
     }
     const p = s.fly;
+    stage.current.flight = p;
     if (p <= 0) {
       if (!s.flyLive) return;
       s.flyLive = false;
@@ -776,11 +577,10 @@ function Wordmark({
     });
   });
 
-  // Plain entrance (repeat visits, and when the crew is not playing): the
-  // letters drop in one after another, once the gate is up.
+  // Entrance: the letters drop in one after another, once the gate is up.
   useLayoutEffect(() => {
     const g = groupRef.current;
-    if (!g || crew) return;
+    if (!g) return;
     if (!entrance) {
       onReady?.();
       return;
@@ -795,7 +595,7 @@ function Wordmark({
       tl.kill();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entrance, crew]);
+  }, [entrance]);
 
   return (
     <group ref={groupRef} {...pickHandlers(pick)}>
@@ -918,9 +718,7 @@ function Scene({
   onReady,
   wordRef,
   gateRef,
-  dancersRef,
   stage,
-  crew,
   tool,
   editing,
 }: {
@@ -930,9 +728,7 @@ function Scene({
   onReady: () => void;
   wordRef: React.RefObject<THREE.Group | null>;
   gateRef: React.RefObject<THREE.Group | null>;
-  dancersRef: React.RefObject<THREE.Group | null>;
   stage: React.MutableRefObject<Stage>;
-  crew: boolean;
   tool: LayoutTool;
   editing: boolean;
 }) {
@@ -959,16 +755,12 @@ function Scene({
         groupRef={wordRef}
         gateRef={gateRef}
         stage={stage}
-        crew={crew}
         xform={tool.layout.word}
         pick={pick("word")}
       />
-      {/* The crew that carries the word through (movers.tsx). */}
-      <Movers stage={stage} animate={spin} />
-      {/* LAYOUT TOOL: the panel's "Show portlets" box; on by default. */}
-      {tool.view.dancers && (
-        <Portlets groupRef={dancersRef} xform={tool.layout.dancers} pick={pick("dancers")} boost={boost} dance={spin} entrance={entrance} />
-      )}
+      {/* The workers who look after the word (workers.tsx). LAYOUT TOOL: the
+          panel's "Show portlets" box hides them; on by default. */}
+      <Workers wordRef={wordRef} gateRef={gateRef} stage={stage} animate={spin} visible={tool.view.portlets} />
       {editing && <LayoutGizmo tool={tool} />}
     </>
   );
@@ -983,21 +775,17 @@ export function Hero3D() {
   const reduce = typeof window !== "undefined" && window.matchMedia(REDUCE).matches;
   const cam = useMemo<CamState>(() => ({ ...(desktop ? PERCH.wide : PERCH.narrow) }), [desktop]);
 
-  // LAYOUT TOOL: the three objects, and the tool that moves them. Desktop
+  // LAYOUT TOOL: the two objects, and the tool that moves them. Desktop
   // only; while it is on, the camera stops drifting so what you see is what
   // ships.
   const wordRef = useRef<THREE.Group>(null);
   const gateRef = useRef<THREE.Group>(null);
-  const dancersRef = useRef<THREE.Group>(null);
-  const refs = useMemo(() => ({ word: wordRef, gate: gateRef, dancers: dancersRef }), []);
+  const refs = useMemo(() => ({ word: wordRef, gate: gateRef }), []);
   const tool = useLayoutTool(desktop ? LAYOUT : LAYOUT_NARROW, refs);
   const editing = tool.open && desktop;
-  // The shared stage: the wordmark writes the crew's choreography into it
-  // every frame, the movers and the conga line read it.
+  // The shared stage: the portal's glow (the workers stepping through) and
+  // the word's scroll flight (while it is up, nobody comes out).
   const stage = useMemo<{ current: Stage }>(() => ({ current: makeStage() }), []);
-  // The crew delivers the word on every load; under reduced motion the
-  // letters simply drop in.
-  const crew = !reduce;
 
   // Scroll spins the rings up (handoff: boost += |dy|/dt * 2.2, capped at 10).
   useEffect(() => {
@@ -1051,14 +839,12 @@ export function Hero3D() {
                 onReady={() => setSettled(true)}
                 wordRef={wordRef}
                 gateRef={gateRef}
-                dancersRef={dancersRef}
                 stage={stage}
-                crew={crew}
                 tool={tool}
                 editing={editing}
               />
             </Suspense>
-            <Rig cam={cam} parallax={!reduce && !editing} dolly={crew} />
+            <Rig cam={cam} parallax={!reduce && !editing} dolly={!reduce} />
             <NavSourceProbe wordRef={wordRef} gateRef={gateRef} />
           </Canvas>
         </div>
