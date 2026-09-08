@@ -52,8 +52,32 @@ import Run00Sample from './runs/Run00Sample';
 import Run02Clipping from './runs/Run02Clipping';
 import Run03Parity2mm from './runs/Run03Parity2mm';
 import Run04OrganSupervision from './runs/Run04OrganSupervision';
+import Run05CvEnsemble from './runs/Run05CvEnsemble';
 
 export const RUNS = [
+  {
+    id: 'run-05-cv-ensemble',
+    n: 5,
+    title: 'Five-fold CV + DeepPSMA corpus · the sealed test set, ensembled',
+    date: '02–07 Sep 2026',
+    machine: 'DEMETER · RTX 4090s, one fold per GPU · test scored on dev PC RTX 5070 Ti',
+    config: 'baseline.yaml · run 4 recipe unchanged · splits/cv/fold{0..4} · 5 × 250k iters · ensemble = mean of sigmoid maps',
+    status: 'complete',
+    verdict: 'good',
+    summary:
+      'Run 4’s network re-run as a five-fold cross-validation over autoPET + DeepPSMA and ensembled at inference reaches lesion F1 84.3% and sensitivity 82.4% on a sealed 130-case test set under a pre-registered protocol — 9.4 sensitivity points above the nnU-Net baseline at a 2-point PPV cost, with the CV (81.8 pooled F1) not over-estimating; lesion-free scans still false-alarm and the two cohorts fail in opposite directions.',
+    headline: [
+      { v: '84.3%', k: 'test lesion F1 · ensemble' },
+      { v: '82.4%', k: 'test sensitivity' },
+      { v: '4 d 6 h', k: 'wall-clock · 5 folds' },
+    ],
+    meta: [
+      { k: 'data', v: 'autoPET 597 + DeepPSMA 100 · 567 pool / 130 sealed test' },
+      { k: 'protocol', v: 'pre-registered 07 Sep · thr 0.5 · ≥10 vox headline + no-filter row' },
+      { k: 'archive', v: '2026-09-0{4,5,6}_run5_fold{0..4} · run5-test-bundle' },
+    ],
+    component: Run05CvEnsemble,
+  },
   {
     id: 'run-04-organ-supervision',
     n: 4,

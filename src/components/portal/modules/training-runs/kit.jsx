@@ -34,6 +34,18 @@ import Icon from '../../icons';
                                    plot data (data belongs in LineChart /
                                    Figure).
      <CodeBlock label text>        log / console excerpt with a copy button
+     <OnePager run lead>…</>       PRINT-ONLY one-page summary. Pass it to
+                                   RunPage's `onePager` prop and the header
+                                   grows a second button, "Export 1-page PDF",
+                                   which prints ONLY this on a single A4 page.
+                                   Compose it from the ordinary kit components
+                                   inside <OpCols> (two columns) / <OpBlock
+                                   label note> (a labelled mini-section); the
+                                   PRINT block condenses them. Budget for one
+                                   page: ~4 stats, two or three short tables,
+                                   4 + 4 one-line findings / next steps. Check
+                                   the page count in print preview — it is a
+                                   fixed page, not a scrolling one.
 
    CHART RULES (non-negotiable):
      • One measure per chart — a loss chart and a Dice chart, never a dual
@@ -55,8 +67,9 @@ const STATUS = {
   aborted: { label: 'aborted', cls: 'bad' },
 };
 
-export function RunPage({ run, children }) {
+export function RunPage({ run, children, onePager }) {
   const status = STATUS[run.status] || STATUS.complete;
+  const root = useRef(null);
   const meta = [
     { k: 'date', v: run.date },
     { k: 'machine', v: run.machine },
@@ -72,20 +85,28 @@ export function RunPage({ run, children }) {
      names the file, so the download lands as the run's id rather than the
      page title. The paper formatting is the PRINT block at the foot of
      KIT_CSS. afterprint restores the title because print() is not reliably
-     blocking across browsers. */
-  const exportPdf = () => {
+     blocking across browsers.
+       Two modes share the pipeline. 'full' is the whole analysis. 'summary'
+     is available when the run page supplies `onePager`: a data attribute on
+     the page root tells the PRINT block to hide everything except
+     .trx-onepager, which never renders on screen, and to condense it onto one
+     A4 page. The attribute is cleared with the title on afterprint. */
+  const exportPdf = (mode = 'full') => {
     const prev = document.title;
+    const el = root.current;
     const restore = () => {
       document.title = prev;
+      if (el) delete el.dataset.print;
       window.removeEventListener('afterprint', restore);
     };
-    document.title = `mamba-psma-${run.id}`;
+    document.title = `mamba-psma-${run.id}${mode === 'summary' ? '-summary' : ''}`;
+    if (el) el.dataset.print = mode;
     window.addEventListener('afterprint', restore);
     window.print();
   };
 
   return (
-    <div className="trx">
+    <div className="trx" ref={root}>
       <style>{KIT_CSS}</style>
       <header className="pt-card trx-head">
         {/* print-only: the detail view drops the module header, so the exported
@@ -95,10 +116,21 @@ export function RunPage({ run, children }) {
           <span className="trx-runno">RUN {String(run.n).padStart(2, '0')}</span>
           <span className={`trx-status trx-status--${status.cls}`}>{status.label}</span>
           {run.sample && <span className="trx-flag">sample — fabricated numbers</span>}
+          {onePager && (
+            <button
+              type="button"
+              className="trx-export trx-export--summary"
+              onClick={() => exportPdf('summary')}
+              title="Print a ONE-PAGE summary of this run to a PDF — headline numbers, the tables that matter, findings and next steps"
+            >
+              <Icon name="compress" size={13} />
+              Export 1-page PDF
+            </button>
+          )}
           <button
             type="button"
             className="trx-export"
-            onClick={exportPdf}
+            onClick={() => exportPdf('full')}
             title="Print this analysis to a PDF — the whole page: prose, tables, charts, schematics and logs"
           >
             <Icon name="printer" size={13} />
@@ -113,6 +145,8 @@ export function RunPage({ run, children }) {
           ))}
         </div>
       </header>
+      {/* print-only, summary mode only — see OnePager and the PRINT block */}
+      {onePager && <div className="trx-onepager" aria-hidden="true">{onePager}</div>}
       {children}
     </div>
   );
@@ -672,6 +706,48 @@ export function CodeBlock({ label, text }) {
   );
 }
 
+/* ---- one-page summary ------------------------------------------------------
+   Print-only. A run page hands <OnePager> to RunPage's `onePager` prop and the
+   header's second button prints it alone on one A4 page (RunPage sets
+   data-print="summary" on the page root; the PRINT block does the rest). It is
+   built from the same kit components as the page — StatGrid, MetricTable,
+   Findings, NextSteps, Prose — laid out with OpCols / OpBlock and condensed by
+   the .trx-op rules. The lead is the one sentence a reader gets if they read
+   nothing else; the foot is where the provenance line goes. */
+export function OnePager({ run, lead, foot, kicker = 'CITS4010 · Mamba_PSMA · training-run summary', children }) {
+  return (
+    <section className="trx-op">
+      <header className="trx-op__head">
+        <p className="trx-op__kicker">{kicker}</p>
+        <div className="trx-op__row">
+          <span className="trx-runno">RUN {String(run.n).padStart(2, '0')}</span>
+          <h3 className="trx-op__title">{run.title}</h3>
+        </div>
+        {lead && <p className="trx-op__lead">{lead}</p>}
+        <p className="trx-op__meta">{[run.date, run.machine, run.config].filter(Boolean).join('   ·   ')}</p>
+      </header>
+      {children}
+      {foot && <p className="trx-op__foot">{foot}</p>}
+    </section>
+  );
+}
+
+export function OpCols({ children }) {
+  return <div className="trx-op__cols">{children}</div>;
+}
+
+export function OpBlock({ label, note, children }) {
+  return (
+    <div className="trx-op__block">
+      <p className="trx-op__label">
+        {label}
+        {note && <span className="trx-op__note"> · {note}</span>}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 const KIT_CSS = `
 /* Series + tone colours. Light values validated on the jade & coral surfaces,
    the arcade block swaps in the dark-stepped set — same hues, re-stepped. */
@@ -708,8 +784,10 @@ const KIT_CSS = `
   padding: 0.3rem 0.6rem; cursor: pointer; transition: background 0.15s; }
 .trx-export:hover { background: var(--accent-soft); }
 .trx-export:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* print-only elements — the document's own kicker and the charts' numbers */
-.trx-printhead, .trx-chart__readout { display: none; }
+.trx-export + .trx-export { margin-left: 0; }
+/* print-only elements — the document's own kicker, the charts' numbers and the
+   one-page summary (which prints only in summary mode, see the PRINT block) */
+.trx-printhead, .trx-chart__readout, .trx-onepager { display: none; }
 
 /* verdict — a ruled editorial standfirst, not a callout box; the tone lives in
    the labelled dot, never in a coloured border */
@@ -975,5 +1053,52 @@ const KIT_CSS = `
   .trx-finding, .trx-next__item, .trx-tablewrap { break-inside: avoid; }
   .trx-table tr { break-inside: avoid; }
   .trx-head, .trx-sec__label { break-after: avoid; }
+
+  /* ---- 5 · one-page summary mode ------------------------------------------
+     RunPage's second button sets data-print="summary" on .trx. Everything but
+     the style tag and .trx-onepager disappears; the summary itself is set in
+     small type, two columns where the page asks for them, and every kit
+     component inside it is condensed. Nothing here changes the full export. */
+  .trx[data-print="summary"] > :not(style):not(.trx-onepager) { display: none !important; }
+  .trx[data-print="summary"] .trx-onepager { display: block; margin-top: 0; }
+  .trx-op { font-size: 0.68rem; line-height: 1.35; color: var(--ink-2); }
+  .trx-op > * + * { margin-top: 0.5rem; }
+  .trx-op__head { padding-bottom: 0.35rem; border-bottom: 2px solid var(--ink); }
+  .trx-op__kicker { margin: 0 0 0.3rem; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-3); }
+  .trx-op__row { display: flex; align-items: center; gap: 0.5rem; }
+  .trx-op__row .trx-runno { font-size: 0.6rem; padding: 0.1rem 0.5rem; }
+  .trx-op__title { margin: 0; font-size: 1.02rem; line-height: 1.2; color: var(--ink); }
+  .trx-op__lead { margin: 0.35rem 0 0; font-size: 0.72rem; line-height: 1.45; color: var(--ink); font-weight: 600; }
+  .trx-op__meta { margin: 0.25rem 0 0; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.55rem; color: var(--ink-3); white-space: pre-wrap; }
+  .trx-op__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.8rem; align-items: start; }
+  .trx-op__block { break-inside: avoid; }
+  .trx-op__label { margin: 0 0 0.2rem; font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-faint); }
+  .trx-op__note { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink-3); }
+  .trx-op__foot { margin-top: 0.45rem; padding-top: 0.3rem; border-top: 1px solid var(--line-2);
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.52rem; line-height: 1.45; color: var(--ink-3); }
+  /* kit components, condensed */
+  .trx-op .trx-stats { grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+  .trx-op .trx-stat { padding: 0.32rem 0.45rem; gap: 0.05rem; border-top-width: 2px; }
+  .trx-op .trx-stat__v { font-size: 0.98rem; }
+  .trx-op .trx-stat__k { font-size: 0.52rem; }
+  .trx-op .trx-stat__n { font-size: 0.55rem; line-height: 1.3; margin-top: 0.05rem; }
+  .trx-op .trx-tablewrap { padding: 0; }
+  .trx-op .trx-table { font-size: 0.62rem; }
+  .trx-op .trx-table th { font-size: 0.5rem; padding: 0.14rem 0.28rem; }
+  .trx-op .trx-table td { padding: 0.17rem 0.28rem; line-height: 1.25; }
+  /* numbers never wrap in the condensed tables — the label column takes the squeeze */
+  .trx-op .trx-table td:not(:first-child) { white-space: nowrap; }
+  .trx-op .trx-finding { padding: 0.2rem 0; gap: 0.05rem; }
+  .trx-op .trx-finding__t { font-size: 0.62rem; }
+  .trx-op .trx-finding .trx-dot { width: 6px; height: 6px; }
+  .trx-op .trx-finding__w { font-size: 0.6rem; line-height: 1.35; padding-left: 0.85rem; max-width: none; }
+  .trx-op .trx-next__item { padding: 0.2rem 0; gap: 0.4rem; }
+  .trx-op .trx-next__n { font-size: 0.57rem; }
+  .trx-op .trx-next__t { font-size: 0.6rem; }
+  .trx-op .trx-next__w { font-size: 0.58rem; line-height: 1.3; margin-top: 0.05rem; max-width: none; }
+  .trx-op .trx-prose { font-size: 0.6rem; line-height: 1.4; margin: 0 0 0.3rem; max-width: none; }
 }
 `;
