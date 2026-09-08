@@ -226,17 +226,22 @@ function letterGeometry(font: Font, ch: string, size: number, depth: number, seg
   return { geo, mid, left, right };
 }
 
-/** The three rings of letters, spinning inside the gate's group. */
+/** The three rings of letters, spinning inside the gate's group. LAYOUT
+    TOOL: the panel's "Show rings" box hides them. The group stays mounted
+    while hidden, because the scroll boost decays in this component's frame
+    loop and the portlets read it. */
 function Rings({
   font,
   boost,
   spin,
   entrance,
+  visible,
 }: {
   font: Font;
   boost: React.MutableRefObject<number>;
   spin: boolean;
   entrance: boolean;
+  visible: boolean;
 }) {
   const groups = useRef<(THREE.Group | null)[]>([]);
 
@@ -308,7 +313,7 @@ function Rings({
   });
 
   return (
-    <>
+    <group visible={visible}>
       {rings.map((ring, i) => (
         <group
           key={ring.word}
@@ -321,7 +326,7 @@ function Rings({
           ))}
         </group>
       ))}
-    </>
+    </group>
   );
 }
 
@@ -341,6 +346,7 @@ function Gate({
   boost,
   entrance,
   spin,
+  rings,
   groupRef,
   stage,
   xform,
@@ -350,6 +356,7 @@ function Gate({
   boost: React.MutableRefObject<number>;
   entrance: boolean;
   spin: boolean;
+  rings: boolean;
   groupRef: React.RefObject<THREE.Group | null>;
   stage: React.MutableRefObject<Stage>;
   xform: Xform;
@@ -407,7 +414,7 @@ function Gate({
   return (
     <group ref={groupRef} {...pickHandlers(pick)}>
       <primitive object={scene} />
-      <Rings font={font} boost={boost} spin={spin} entrance={entrance} />
+      <Rings font={font} boost={boost} spin={spin} entrance={entrance} visible={rings} />
       <PortalGlow stage={stage} />
     </group>
   );
@@ -738,11 +745,14 @@ function Scene({
     editing ? { selected: tool.selected === id, onSelect: () => tool.select(id) } : undefined;
   return (
     <>
+      {/* The gate, with the three rings of words in orbit. LAYOUT TOOL: the
+          panel's "Show rings" box hides the rings; on by default. */}
       <Gate
         font={font}
         boost={boost}
         entrance={entrance}
         spin={spin}
+        rings={tool.view.rings}
         groupRef={gateRef}
         stage={stage}
         xform={tool.layout.gate}
@@ -759,10 +769,38 @@ function Scene({
         pick={pick("word")}
       />
       {/* The workers who look after the word (workers.tsx). LAYOUT TOOL: the
-          panel's "Show portlets" box hides them; on by default. */}
-      <Workers wordRef={wordRef} gateRef={gateRef} stage={stage} animate={spin} visible={tool.view.portlets} />
+          panel's "Show portlets" box hides them (on by default); "Contacts"
+          draws where their tools may touch the letters and where the tips are. */}
+      <Workers wordRef={wordRef} gateRef={gateRef} stage={stage} animate={spin} visible={tool.view.portlets} debug={tool.view.contacts} />
       {editing && <LayoutGizmo tool={tool} />}
     </>
+  );
+}
+
+/**
+ * LAYOUT TOOL / portlets: the numbers behind the "Contacts" box, read off the
+ * stage a few times a second: who is out, which letters are held, the
+ * renderer's draw calls and memory, and the tool-in-letter checks.
+ */
+function PortletReadout({ stage }: { stage: React.MutableRefObject<Stage> }) {
+  const [s, setS] = useState(() => ({ ...stage.current.stats }));
+  useEffect(() => {
+    const id = setInterval(() => setS({ ...stage.current.stats, reserved: [...stage.current.stats.reserved] }), 250);
+    return () => clearInterval(id);
+  }, [stage]);
+  return (
+    <div className="lt-stats" aria-label="Portlet stats">
+      <span>portlets {s.active}/3</span>
+      <span>letters {s.reserved.length ? s.reserved.join(" ") : "-"}</span>
+      <span>jobs {s.jobs}</span>
+      <span>draws {s.calls}</span>
+      <span>tris {(s.triangles / 1000).toFixed(0)}k</span>
+      <span>geom {s.geometries}</span>
+      <span>fps {s.fps.toFixed(0)}</span>
+      <span className={s.penetrations ? "is-bad" : ""}>
+        inside {s.penetrations}/{s.checks}
+      </span>
+    </div>
   );
 }
 
@@ -850,6 +888,7 @@ export function Hero3D() {
         </div>
         {/* LAYOUT TOOL */}
         {desktop && <LayoutPanel tool={tool} />}
+        {desktop && tool.open && tool.view.contacts && <PortletReadout stage={stage} />}
 
         {/* One line and one button along the foot of the scene. */}
         <div className="container scene__strapline">

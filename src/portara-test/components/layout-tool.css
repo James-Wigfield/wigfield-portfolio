@@ -232,3 +232,30 @@
     display: none;
   }
 }
+
+/* Portlet numbers, shown while the "Contacts" box is on: who is out, which
+   letters are held, draw calls, memory, and the tool-in-letter checks. */
+.lt-stats {
+  position: fixed;
+  z-index: 60;
+  left: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  max-width: 392px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-surface) 94%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--c-text);
+  pointer-events: none;
+}
+.lt-stats .is-bad {
+  color: #d3361b;
+  font-weight: 700;
+}

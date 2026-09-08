@@ -56,9 +56,12 @@ const LAYOUT_KEY = "portara-test:layout";
 const TOOL_KEY = "portara-test:layout-tool";
 const VIEW_KEY = "portara-test:layout-view";
 
-/** What to show while judging the layout: the portlets, the ground grid. */
-type View = { portlets: boolean; grid: boolean };
-const VIEW_DEFAULT: View = { portlets: true, grid: true };
+/** What to show while judging the layout: the portlets, the rings of words
+    orbiting the gate, the ground grid, and the portlets' contact debug
+    (where their tools may touch the letters, where the tips are, the
+    numbers). */
+type View = { portlets: boolean; rings: boolean; grid: boolean; contacts: boolean };
+const VIEW_DEFAULT: View = { portlets: true, rings: true, grid: true, contacts: false };
 
 function readView(): View {
   try {
@@ -178,7 +181,7 @@ export function useLayoutTool(defaults: Layout, refs: Refs) {
     saveLayout(next);
   }, []);
 
-  /** Show or hide the portlets or the grid. */
+  /** Show or hide the portlets, the rings or the grid. */
   const setView = useCallback((patch: Partial<View>) => {
     setViewState((v) => {
       const next = { ...v, ...patch };
@@ -389,8 +392,16 @@ export function LayoutPanel({ tool }: { tool: LayoutTool }) {
               Portlets
             </label>
             <label className="lt__check">
+              <input type="checkbox" checked={view.rings} onChange={(e) => setView({ rings: e.target.checked })} />
+              Rings
+            </label>
+            <label className="lt__check">
               <input type="checkbox" checked={view.grid} onChange={(e) => setView({ grid: e.target.checked })} />
               Grid
+            </label>
+            <label className="lt__check">
+              <input type="checkbox" checked={view.contacts} onChange={(e) => setView({ contacts: e.target.checked })} />
+              Contacts
             </label>
           </div>
 
