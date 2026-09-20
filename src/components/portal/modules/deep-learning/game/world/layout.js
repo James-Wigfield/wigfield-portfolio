@@ -224,11 +224,10 @@ export const ROOMS = {
     n: 6, tile: 1.0, k: 3,
     origin: [HOUSES.eyes.c[0] - 3, HOUSES.eyes.c[1] - 3],
     channelY: [0.14, 0.42, 0.7],
-    sheetY: 3.6,       // layer-1 output sheets + mezzanine deck
-    sheetGap: 0.16,
-    deckY: 3.75,
-    topY: 7.2,         // layer-2 output
-    stair: { x0: 3.9, x1: 5.6, z0: -18.8, z1: -25.8 }, // along the east wall, rising northward
+    sheetY: 3.2,       // layer-1 output sheets, just under the deck
+    sheetGap: 0.12,
+    deckY: 3.5,        // the grille deck: layer 2's floor
+    topY: 7.0,         // layer-2 output, high overhead
     eqWallZ: houseInterior(HOUSES.eyes).z0 + 0.03,
   },
   door: {

@@ -252,3 +252,21 @@
 .dlg-label[data-tone='blue'] { color: #cfe0ff; }
 .dlg-label[data-tone='orange'] { color: #ffd0b8; }
 .dlg-label[data-tone='green'] { color: #cdeed8; }
+
+/* ── The engraved equation (House II north wall) ───────────────────────── */
+.dlg-eq {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0 14px; width: 560px;
+  padding: 18px 26px; border: 2px solid rgba(255, 247, 234, 0.25); border-radius: 6px;
+  background: rgba(40, 30, 24, 0.55); color: rgba(255, 247, 234, 0.45); font-size: 34px; pointer-events: none;
+  transition: color 0.4s, border-color 0.4s;
+}
+.dlg-eq--lit { color: #fff7ea; border-color: rgba(255, 247, 234, 0.55); }
+.dlg-eq__t { display: inline-block; padding: 2px 6px; border-radius: 4px; transition: background 0.3s, color 0.3s, transform 0.3s; }
+.dlg-eq .katex { font-size: 1em; }
+.dlg-eq--lit[data-term='x'] .dlg-eq__t[data-t='x'],
+.dlg-eq--lit[data-term='f'] .dlg-eq__t[data-t='f'],
+.dlg-eq--lit[data-term='z'] .dlg-eq__t[data-t='z'],
+.dlg-eq--lit[data-term='b'] .dlg-eq__t[data-t='b'] {
+  background: rgba(237, 161, 0, 0.28); color: #ffd98a; transform: translateY(-3px);
+}
+.dlg-eq__read { flex-basis: 100%; margin: 10px 0 0; font-size: 15px; letter-spacing: 0.06em; text-align: center; color: #f4d9b6; font-family: inherit; }

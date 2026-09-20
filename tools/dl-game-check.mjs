@@ -217,13 +217,46 @@ const run = async (name) => {
     await measureFps('window');
   }
   if (name === 'eyes') {
-    await teleport(0, -12.5, Math.PI, { pitch: 0.45, dist: 4.5, hint: false });
+    await teleport(0, -12.6, Math.PI, { pitch: 0.45, dist: 4.5, hint: false });
     await keys(['w'], 1500);
-    await sleep(600);
+    await sleep(500);
     await shot('20-inside');
+    await teleport(0.4, -16.2, Math.PI, { pitch: 0.55, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(900);
+    await shot('21-channels-scroll');
+    // push the first filter east twice
+    await teleport(-3.6, -21.5, Math.PI * 0.5, { pitch: 0.5, dist: 5 });
     await page.keyboard.press('e');
     await sleep(700);
-    await shot('21-after-e');
+    await page.keyboard.press('e');
+    await sleep(700);
+    await shot('22-pushed');
+    // second scroll
+    await teleport(-4.4, -23.4, Math.PI, { pitch: 0.5, dist: 4 });
+    await page.keyboard.press('e');
+    await sleep(800);
+    await teleport(-1.5, -14.9, Math.PI, { pitch: 0.35, dist: 6.5 });
+    await shot('23-two-sheets');
+    // climb the stair to the deck
+    await teleport(4.8, -14.6, Math.PI, { pitch: 0.4, dist: 4.5 });
+    await keys(['w'], 3200);
+    await sleep(600);
+    await shot('24-deck');
+    // the equation scroll on the landing, then look at the wall
+    await teleport(5.1, -24.3, Math.PI, { pitch: 0.4, dist: 4 });
+    await sleep(600);
+    await page.keyboard.press('e');
+    await sleep(900);
+    await shot('25-equation');
+    // door
+    await teleport(-5.0, -20, Math.PI * 1.5, { pitch: 0.4, dist: 4 });
+    await page.keyboard.press('e');
+    await sleep(700);
+    await shot('26-door-question');
+    await page.keyboard.press('2');
+    await sleep(1200);
+    await shot('27-after-answer');
     await measureFps('eyes');
   }
   if (name === 'door') {

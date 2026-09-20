@@ -34,10 +34,12 @@ export function Label({ position, children, className = '', tone, distanceFactor
 
 /* ── instanced tiles ─────────────────────────────────────────────────────── */
 const tileGeo = new THREE.BoxGeometry(1, 1, 1);
-export function Tiles({ cells, size = [0.96, 0.08, 0.96], emissive = 0, roughness = 0.85, castShadow = false }) {
-  /* cells: [{ pos:[x,y,z], color:'#hex' | THREE.Color, scale?:[x,y,z] }] */
+export function Tiles({ cells, size = [0.96, 0.08, 0.96], emissive = 0, roughness = 0.85, castShadow = false, limit }) {
+  /* cells: [{ pos:[x,y,z], color:'#hex' | THREE.Color, scale?:[x,y,z] }]
+     `limit` is the buffer size — pass the MOST tiles this grid will ever hold
+     when the count can grow, or the instance buffer overflows. */
   return (
-    <Instances limit={Math.max(1, cells.length)} geometry={tileGeo} castShadow={castShadow} receiveShadow>
+    <Instances limit={Math.max(limit ?? 0, cells.length, 1)} geometry={tileGeo} castShadow={castShadow} receiveShadow>
       <meshStandardMaterial roughness={roughness} emissive="#ffffff" emissiveIntensity={emissive} />
       {cells.map((c, i) => (
         <Instance key={i} position={c.pos} color={c.color} scale={c.scale ?? size} />
