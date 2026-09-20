@@ -28,3 +28,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Blender scratch files (tools/build_village.py regenerates them)
+tools/blender/*.blend
+tools/blender/*.blend1

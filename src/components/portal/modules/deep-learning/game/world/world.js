@@ -19,6 +19,7 @@ export function createWorld() {
       moving: false,
       house: null,             // id of the house he is inside, or null
       walkPhase: 0,            // radians, for the procedural walk
+      scrollPulse: 0,          // 1 → 0 after a pickup; the carried scroll swells
     },
     camera: {
       yaw: SPAWN.yaw,          // the direction the camera looks along (sin, ·, cos)

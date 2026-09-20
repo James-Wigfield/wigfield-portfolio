@@ -17,9 +17,9 @@ import { groundY, houseContaining, houseInterior, HOUSES, SEA } from './layout';
 import { audio } from './audio';
 
 const R = 0.38;
-const WALK = 3.3;
-const RUN = 5.4;
-const HEAD = 1.35;
+const WALK = 2.7; // he is 1.2 m tall; 2.7 m/s reads as a brisk walk
+const RUN = 4.6;
+const HEAD = 1.1; // he is 1.2 m tall
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const lerpAngle = (a, b, t) => {

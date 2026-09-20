@@ -12,6 +12,7 @@ import { Hud } from './Hud';
 import { audio } from './world/audio';
 import { useInput } from './world/input';
 import { Interactions } from './world/interact';
+import { Philosopher } from './world/philosopher';
 import { Player } from './world/player';
 import { summarise } from './world/progress';
 import { createStore } from './world/store';
@@ -86,7 +87,9 @@ export default function Scene({ progress, actions, openLecture, fullscreen, onTo
             <Lighting />
             <Village />
             <Player>
-              <PlaceholderBody />
+              <Suspense fallback={<PlaceholderBody />}>
+                <Philosopher />
+              </Suspense>
             </Player>
             <Interactions />
           </Suspense>
