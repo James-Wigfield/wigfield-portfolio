@@ -2,15 +2,20 @@
    VILLAGE — the world outside the houses
    ----------------------------------------------------------------------------
    Lighting (a low warm sun, a dusk sky, a hemisphere fill that brightens as
-   scrolls are found), the grey-box village for now, and the parts that stay
-   procedural whatever the GLB does: the sea's slow breathing.
+   scrolls are found), the Blender village (village.glb) with the grey box
+   standing in while it streams, instanced trees, and the parts that stay
+   procedural: the sea's slow breathing and every light that progress turns on.
    ========================================================================== */
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Sky, Stars } from '@react-three/drei';
+import { Sky, Stars, useGLTF } from '@react-three/drei';
 import { useGame } from './world';
 import { GreyBoxVillage } from './greybox';
+import { Lamps, Lanterns, Windows } from './lamps';
+import { Trees } from './props';
 import { SEA } from './layout';
+
+export const VILLAGE_URL = '/dl-game/village.glb';
 
 export function Lighting() {
   const { sum } = useGame();
@@ -62,11 +67,32 @@ function Sea() {
   );
 }
 
+function GlbVillage() {
+  const { scene } = useGLTF(VILLAGE_URL);
+  useEffect(() => {
+    scene.traverse((o) => {
+      if (o.isMesh) {
+        o.receiveShadow = true;
+        o.castShadow = !/Terrain|Plaza/.test(o.name);
+      }
+    });
+  }, [scene]);
+  return <primitive object={scene} />;
+}
+
 export function Village() {
   return (
     <group>
-      <GreyBoxVillage />
+      <Suspense fallback={<GreyBoxVillage />}>
+        <GlbVillage />
+        <Trees />
+      </Suspense>
       <Sea />
+      <Lamps />
+      <Windows />
+      <Lanterns />
     </group>
   );
 }
+
+useGLTF.preload(VILLAGE_URL);

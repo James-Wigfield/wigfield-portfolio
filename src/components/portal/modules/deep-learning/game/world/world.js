@@ -42,6 +42,7 @@ export function createWorld() {
     nearest: null,             // id of the interactable currently in reach
     frame: 0,
     clock: 0,
+    seed: Math.random(),       // one roll per session, for the doors' questions
   };
 }
 

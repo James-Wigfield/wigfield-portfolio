@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '../../../icons';
 import { HOUSES, LECTURE, SCROLLS } from './content/scrolls';
 import { summarise, useProgress } from './world/progress';
@@ -61,15 +61,17 @@ export default function DeepLearningGame({ onNavigate }) {
     <div className="pt-module dl dlg">
       <div ref={stageRef} className={`dlg-stage${fs ? ' dlg-stage--fs' : ''}`}>
         {entered ? (
-          <Suspense fallback={<Loading />}>
-            <Scene
-              progress={progress}
-              actions={actions}
-              openLecture={openLecture}
-              fullscreen={fs}
-              onToggleFullscreen={toggleFullscreen}
-            />
-          </Suspense>
+          <SceneBoundary onLeave={() => setEntered(false)}>
+            <Suspense fallback={<Loading />}>
+              <Scene
+                progress={progress}
+                actions={actions}
+                openLecture={openLecture}
+                fullscreen={fs}
+                onToggleFullscreen={toggleFullscreen}
+              />
+            </Suspense>
+          </SceneBoundary>
         ) : (
           <Cover sum={sum} onEnter={() => setEntered(true)} onReset={actions.reset} />
         )}
@@ -190,4 +192,40 @@ function Loading() {
       <p className="dlg-cover__loading">Raising the village…</p>
     </div>
   );
+}
+
+/* A room bug must never blank the portal: catch it on the stage, say so, and
+   offer the cover again. */
+class SceneBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error) {
+    console.error('[dl-game] scene crashed:', error);
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="dlg-cover dlg-cover--loading" role="alert">
+        <div className="dlg-cover__sky" aria-hidden="true" />
+        <div className="dlg-cover__sea" aria-hidden="true" />
+        <div className="dlg-cover__text">
+          <p className="dlg-cover__eyebrow">The village stumbled</p>
+          <h3 className="dlg-cover__title">Something in the scene threw</h3>
+          <p className="dlg-cover__sub">
+            <code>{String(this.state.error?.message || this.state.error)}</code>
+          </p>
+          <div className="dlg-cover__row">
+            <button type="button" className="dlg-btn dlg-btn--primary" onClick={() => { this.setState({ error: null }); this.props.onLeave(); }}>
+              Back to the cover
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

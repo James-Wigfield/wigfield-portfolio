@@ -49,8 +49,8 @@ scene.unit_settings.scale_length = 1.0
 # ----------------------------------------------------------------------------- world plan (mirror of layout.js)
 WALL_T = 0.45
 HOUSES = {
-    'window': dict(c=(-16.5, 0), size=(11, 4.6, 11), door=dict(side='+x', w=1.8, h=2.7, at=0), wall='M_Stucco_Cream'),
-    'eyes':   dict(c=(0, -20),   size=(13, 10.5, 13), door=dict(side='+z', w=2.2, h=3.2, at=0), wall='M_Stucco_Ochre'),
+    'window': dict(c=(-16.5, 0), size=(11, 4.6, 11), door=dict(side='+x', w=1.8, h=2.7, at=0), exit=dict(side='-z', w=1.8, h=2.7, at=0), wall='M_Stucco_Cream'),
+    'eyes':   dict(c=(0, -20),   size=(13, 10.5, 13), door=dict(side='+z', w=2.2, h=3.2, at=0), exit=dict(side='-x', w=2.0, h=3.0, at=0), wall='M_Stucco_Ochre'),
     'door':   dict(c=(19, -3),   size=(20, 5, 9),   door=dict(side='-x', w=1.8, h=2.7, at=0), exit=dict(side='+x', w=1.8, h=2.7, at=0), wall='M_Sandstone'),
 }
 PLAZA_R, PLAZA_LIP = 9.0, 0.12

@@ -9,6 +9,8 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Hud } from './Hud';
+import { Rooms } from './rooms';
+import { Bust } from './world/bust';
 import { audio } from './world/audio';
 import { useInput } from './world/input';
 import { Interactions } from './world/interact';
@@ -91,6 +93,8 @@ export default function Scene({ progress, actions, openLecture, fullscreen, onTo
                 <Philosopher />
               </Suspense>
             </Player>
+            <Rooms />
+            <Bust />
             <Interactions />
           </Suspense>
         </Canvas>

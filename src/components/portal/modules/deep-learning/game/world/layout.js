@@ -14,15 +14,17 @@
 
 export const WALL_T = 0.45;
 
-/* Houses: centre on the ground plane, full outer size [x, y, z], and the
-   face the door is cut in. `exit` is a second door (House III lets you out
-   the far end once the test is passed). */
+/* Houses: centre on the ground plane, full outer size [x, y, z], the face the
+   entry door is cut in, and `exit`: a second door that stays shut until the
+   house's exit test is passed — so nobody is ever locked in, and passing the
+   test visibly opens something. */
 export const HOUSES = {
   window: {
     id: 'window',
     c: [-16.5, 0],
     size: [11, 4.6, 11],
     door: { side: '+x', w: 1.8, h: 2.7, at: 0 },
+    exit: { side: '-z', w: 1.8, h: 2.7, at: 0 },
     wall: 'cream',
   },
   eyes: {
@@ -30,6 +32,7 @@ export const HOUSES = {
     c: [0, -20],
     size: [13, 10.5, 13],
     door: { side: '+z', w: 2.2, h: 3.2, at: 0 },
+    exit: { side: '-x', w: 2.0, h: 3.0, at: 0 },
     wall: 'ochre',
   },
   door: {
@@ -128,6 +131,28 @@ export function houseWalls(h, closed = new Set()) {
   face('+x', b.x1 - t, b.x1, b.z0, b.z1);
   face('-z', b.x0 + t, b.x1 - t, b.z0, b.z0 + t);
   face('+z', b.x0 + t, b.x1 - t, b.z1 - t, b.z1);
+  return out;
+}
+
+/* Two windows per face without a door, at 62 % of the wall height — the same
+   rule tools/build_village.py uses to cut the timber recesses, so the glowing
+   panes the game lays over them land exactly. */
+export function houseWindows(h) {
+  const b = houseBox(h);
+  const [sx, sy, sz] = h.size;
+  const doorSides = new Set([h.door.side, h.exit?.side].filter(Boolean));
+  const out = [];
+  const y = sy * 0.62;
+  for (const side of ['-x', '+x', '-z', '+z']) {
+    if (doorSides.has(side)) continue;
+    if (side === '-x' || side === '+x') {
+      const x = side === '-x' ? b.x0 : b.x1;
+      for (const z of [h.c[1] - sz * 0.28, h.c[1] + sz * 0.28]) out.push({ x, y, z, nx: side === '-x' ? -1 : 1, nz: 0 });
+    } else {
+      const z = side === '-z' ? b.z0 : b.z1;
+      for (const x of [h.c[0] - sx * 0.28, h.c[0] + sx * 0.28]) out.push({ x, y, z, nx: 0, nz: side === '-z' ? -1 : 1 });
+    }
+  }
   return out;
 }
 

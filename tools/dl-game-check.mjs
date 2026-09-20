@@ -105,6 +105,7 @@ async function teleport(x, z, yaw, opts = {}) {
 }
 
 /* ── in ───────────────────────────────────────────────────────────────── */
+try {
 await page.goto(`${URL}/`, { waitUntil: 'domcontentloaded' });
 await page.evaluate(() => {
   sessionStorage.setItem('portal_auth', JSON.stringify({ token: 'mock-session-token', key: 'wiggy1', issued_at: new Date().toISOString() }));
@@ -168,25 +169,51 @@ const run = async (name) => {
     await shot('06-house-door-outside');
     await teleport(-12, -21, Math.PI, { pitch: 0.35, dist: 8 });
     await shot('07-stair-terrace');
-    await teleport(0, -34, Math.PI, { pitch: 0.25, dist: 8 });
+    await teleport(11, -33, 2.2, { pitch: 0.22, dist: 9 });
     await shot('08-colonnade');
     await teleport(0, 4, 0, { pitch: 0.25, dist: 8 });
     await shot('09-sea');
     await measureFps('village');
   }
   if (name === 'window') {
-    await teleport(-9.5, 0, Math.PI * 1.5, { pitch: 0.5, dist: 4.5, hint: false });
+    await teleport(-9.6, 0, Math.PI * 1.5, { pitch: 0.5, dist: 4.5, hint: false });
     await shot('10-doorway');
     await keys(['w'], 1500);
-    await sleep(600);
+    await sleep(500);
     await shot('11-inside');
+    // walk to the kernel scroll and read it
+    await teleport(-13.2, 3.0, Math.PI * 1.5, { pitch: 0.55, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(900);
+    await shot('12-kernel-scroll');
+    // stand on the image: kernel frame + wall
+    await teleport(-16.5, 0.5, Math.PI * 1.5, { pitch: 0.62, dist: 5 });
+    await keys(['w'], 700);
+    await sleep(400);
+    await shot('13-frame');
+    await keys(['a'], 1200);
+    await keys(['w'], 700);
+    await sleep(400);
+    await shot('14-frame-moved');
+    // the filter scrolls
+    await teleport(-20.4, 3.6, Math.PI * 1.5, { pitch: 0.5, dist: 4 });
     await page.keyboard.press('e');
     await sleep(700);
-    await shot('12-after-e');
-    await keys(['w'], 900);
-    await keys(['a'], 700);
-    await sleep(500);
-    await shot('13-moved');
+    await teleport(-12.4, -3.6, Math.PI * 1.5, { pitch: 0.5, dist: 4 });
+    await page.keyboard.press('e');
+    await sleep(700);
+    await teleport(-17.5, 0.5, Math.PI * 1.5, { pitch: 0.5, dist: 5 });
+    await keys(['w'], 1400);
+    await sleep(400);
+    await shot('15-horizontal-wall');
+    // the door
+    await teleport(-16.5, -3.8, Math.PI, { pitch: 0.45, dist: 4 });
+    await page.keyboard.press('e');
+    await sleep(700);
+    await shot('16-door-question');
+    await page.keyboard.press('2');
+    await sleep(1200);
+    await shot('17-after-answer');
     await measureFps('window');
   }
   if (name === 'eyes') {
@@ -221,6 +248,10 @@ report.hud = await page.evaluate(() => {
   return { prompt: s.prompt, room: s.room, line: s.line?.text ?? null, speech: s.speech?.text ?? null, choice: s.choice?.title ?? null,
     player: { x: +d.world.player.pos.x.toFixed(2), y: +d.world.player.pos.y.toFixed(2), z: +d.world.player.pos.z.toFixed(2), house: d.world.player.house } };
 });
+} catch (e) {
+  report.failed = String(e.message || e);
+  try { await shot('99-failed'); } catch { /* fine */ }
+}
 report.errors = [...new Set(report.errors)];
 report.warnings = [...new Set(report.warnings)].filter((w) => !/React DevTools|Download the React/.test(w));
 await browser.close();
