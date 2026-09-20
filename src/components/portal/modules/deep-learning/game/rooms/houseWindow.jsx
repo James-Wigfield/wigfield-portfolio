@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGame } from '../world/world';
-import { HOUSES, houseInterior, ROOMS } from '../world/layout';
+import { HOUSES, ROOMS } from '../world/layout';
 import { audio } from '../world/audio';
 import { ExitDoor, Label, Lectern, ScrollPickup, Tiles } from './kit';
 import { useRoomText, useVerdict } from './roomHooks';
@@ -61,7 +61,6 @@ export function HouseWindow() {
   const [cell, setCell] = useState(null);
   const [visited, setVisited] = useState(() => ({ mean: new Set(), vertical: new Set(), horizontal: new Set() }));
   const lastCell = useRef(null);
-  const interior = useMemo(() => houseInterior(H), []);
 
   useFrame(() => {
     const p = world.player;
@@ -282,12 +281,6 @@ export function HouseWindow() {
         </group>
       </ExitDoor>
 
-      {/* interior guide line on the floor edge */}
-      <mesh position={[H.c[0], 0.005, H.c[1]]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[0, 0.01, 4]} />
-        <meshBasicMaterial color="#000" transparent opacity={0} />
-      </mesh>
-      {interior && null}
     </group>
   );
 }

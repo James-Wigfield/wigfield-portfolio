@@ -260,13 +260,44 @@ const run = async (name) => {
     await measureFps('eyes');
   }
   if (name === 'door') {
-    await teleport(8.2, -3, Math.PI * 0.5, { pitch: 0.45, dist: 4.5, hint: false });
-    await keys(['w'], 1500);
-    await sleep(600);
+    await teleport(8.0, -3, Math.PI * 0.5, { pitch: 0.42, dist: 5, hint: false });
+    await keys(['w'], 1600);
+    await sleep(500);
     await shot('30-inside');
+    // padding scroll then lever → same
+    await teleport(12.4, -0.9, 0, { pitch: 0.5, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(800);
+    await teleport(11.2, -5.0, Math.PI, { pitch: 0.5, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(800);
+    await teleport(10.0, -3, Math.PI * 0.5, { pitch: 0.42, dist: 6.5 });
+    await shot('31-same-padding');
+    // stride scroll then lever → 2
+    await teleport(15.2, -5.0, Math.PI, { pitch: 0.5, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(800);
+    await teleport(15.6, -0.9, 0, { pitch: 0.5, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(800);
+    await teleport(12.5, -3, Math.PI * 0.5, { pitch: 0.42, dist: 6.5 });
+    await shot('32-stride-2');
+    // through gate 1 to gate 2, pooling scroll
+    await teleport(21.2, -0.9, 0, { pitch: 0.5, dist: 4.5 });
+    await page.keyboard.press('e');
+    await sleep(800);
+    await teleport(18.0, -3, Math.PI * 0.5, { pitch: 0.42, dist: 6.5 });
+    await shot('33-pool-gate');
+    // the door
+    await teleport(27.6, -3, Math.PI * 0.5, { pitch: 0.42, dist: 4 });
     await page.keyboard.press('e');
     await sleep(700);
-    await shot('31-after-e');
+    await shot('34-door-question');
+    report.doorQuestion = await page.evaluate(() => window.__dlg?.hud.get().choice?.title ?? null);
+    report.doorOptions = await page.evaluate(() => window.__dlg?.hud.get().choice?.options.map((o) => o.value) ?? null);
+    await page.keyboard.press('1');
+    await sleep(1200);
+    await shot('35-after-answer');
     await measureFps('door');
   }
 };
