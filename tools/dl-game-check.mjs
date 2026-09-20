@@ -300,8 +300,67 @@ const run = async (name) => {
     await shot('35-after-answer');
     await measureFps('door');
   }
+  if (name === 'persist') {
+    // read one scroll, reload, and it must still be read; then a throwing storage must not break the page
+    await teleport(-13.2, 3.0, Math.PI * 1.5, { pitch: 0.55, dist: 4.5, hint: false });
+    await page.keyboard.press('e');
+    await sleep(600);
+    report.persist = { before: await page.evaluate(() => window.__dlg.hud.get().line?.concept ?? null) };
+    await page.reload({ waitUntil: 'networkidle0' });
+    for (const b of await page.$$('button.portal__nav-item')) {
+      const txt = await b.evaluate((el) => el.textContent);
+      if (txt.includes('Scrolls')) { await b.click(); break; }
+    }
+    await sleep(500);
+    report.persist.coverText = await page.evaluate(() => document.querySelector('.dlg-cover__progress')?.textContent ?? null);
+    report.persist.coverButton = await page.evaluate(() => document.querySelector('.dlg-cover .dlg-btn--primary')?.textContent ?? null);
+    // storage that throws
+    await page.evaluate(() => {
+      const proto = Object.getPrototypeOf(window.localStorage);
+      Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); }, configurable: true });
+      void proto;
+    });
+    await page.reload({ waitUntil: 'networkidle0' });
+    await page.evaluate(() => Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); }, configurable: true }));
+    for (const b of await page.$$('button.portal__nav-item')) {
+      const txt = await b.evaluate((el) => el.textContent);
+      if (txt.includes('Scrolls')) { await b.click(); break; }
+    }
+    await sleep(400);
+    const begin2 = await page.$('.dlg-cover .dlg-btn--primary');
+    if (begin2) await begin2.click();
+    await page.waitForSelector('.dlg-scene canvas', { timeout: 30000 });
+    await sleep(1500);
+    report.persist.blockedStorageRenders = !!(await page.$('.dlg-scene canvas'));
+    await shot('40-blocked-storage');
+  }
+  if (name === 'fullscreen') {
+    await page.click('.dlg-fsbtn');
+    await sleep(800);
+    report.fullscreen = await page.evaluate(() => ({
+      element: document.fullscreenElement?.className ?? null,
+      canvas: (() => { const c = document.querySelector('.dlg-scene canvas'); return c ? [c.width, c.height] : null; })(),
+    }));
+    await shot('50-fullscreen');
+    await page.keyboard.press('Escape');
+    await sleep(600);
+    report.fullscreen.afterEscape = await page.evaluate(() => document.fullscreenElement?.className ?? null);
+    // the Lecture 3 button hands over to the 2D lecture on the right tab
+    await teleport(-16.5, 0.5, Math.PI * 1.5, { pitch: 0.5, dist: 5, hint: false });
+    await sleep(300);
+    for (const b of await page.$$('.dlg-hud__btn')) {
+      const txt = await b.evaluate((el) => el.textContent);
+      if (txt.includes('Lecture 3')) { await b.click(); break; }
+    }
+    await sleep(900);
+    report.lectureLink = await page.evaluate(() => ({
+      title: document.querySelector('.portal__topbar-title')?.textContent?.trim() ?? null,
+      tab: document.querySelector('.dl-tab--on .dl-tab__label')?.textContent ?? null,
+    }));
+    await shot('51-lecture-link');
+  }
 };
-if (SCENARIO === 'all') for (const s of ['tour', 'window', 'eyes', 'door']) await run(s);
+if (SCENARIO === 'all') for (const s of ['tour', 'window', 'eyes', 'door', 'fullscreen']) await run(s);
 else await run(SCENARIO);
 
 /* the HUD's own state, for the record */

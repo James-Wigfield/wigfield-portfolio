@@ -13,6 +13,7 @@ import { useGame } from './world';
 import { GreyBoxVillage } from './greybox';
 import { Lamps, Lanterns, Windows } from './lamps';
 import { Trees } from './props';
+import { Colonnade } from './colonnade';
 import { SEA } from './layout';
 
 export const VILLAGE_URL = '/dl-game/village.glb';
@@ -91,6 +92,7 @@ export function Village() {
       <Lamps />
       <Windows />
       <Lanterns />
+      <Colonnade />
     </group>
   );
 }
