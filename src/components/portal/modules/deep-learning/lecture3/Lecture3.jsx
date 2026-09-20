@@ -111,8 +111,20 @@ function ConvHero() {
 
 /* ── The page ────────────────────────────────────────────────────────────── */
 export default function Lecture3() {
-  const [tab, setTab] = useState('start');
-  const [visited, setVisited] = useState(() => new Set(['start']));
+  // The 3D game (game/Game.jsx) can ask for a tab to open on arrival.
+  const [tab, setTab] = useState(() => {
+    try {
+      const want = window.sessionStorage.getItem('dl-lecture-3:open');
+      if (want) {
+        window.sessionStorage.removeItem('dl-lecture-3:open');
+        if (TABS.some((t) => t.id === want)) return want;
+      }
+    } catch {
+      /* storage unavailable — start at the top */
+    }
+    return 'start';
+  });
+  const [visited, setVisited] = useState(() => new Set(['start', tab]));
   const [quizAnswers, setQuizAnswers] = useState({});
   const rootRef = useRef(null);
 
