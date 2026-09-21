@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Southern Lights — Wigfield Arcade</title>
+  <meta name="description" content="Two friends on a headland off the Western Australian coast, trying to work out what keeps appearing over the ocean. A two-phone co-op game." />
+  <meta name="theme-color" content="#05070f" />
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/arcade/shared/arcade.css" />
+  <style>
+
+    /* ── Frame ─────────────────────────────────────────────────────────────── */
+    #game[hidden] { display: none; }
+    .sl {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    .sl-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ar-faint);
+    }
+    .sl-head b { color: var(--ar-ink); font-weight: 600; }
+    .sl-head .sl-spacer { flex: 1; }
+    .sl-code {
+      font-family: var(--ar-display);
+      font-size: 11px;
+      color: var(--ar-amber);
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      background: none;
+      border: 0;
+      padding: 4px;
+    }
+
+    /* ── Meters ────────────────────────────────────────────────────────────── */
+    .sl-meters { display: flex; gap: 12px; padding: 0 12px 8px; }
+    .sl-meter { flex: 1; }
+    .sl-meter__top {
+      display: flex; justify-content: space-between;
+      font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ar-faint); margin-bottom: 4px;
+    }
+    .sl-meter__bar { height: 3px; background: var(--ar-line-soft); overflow: hidden; }
+    .sl-meter__fill { height: 100%; width: 0; transition: width 0.5s ease; }
+    .sl-meter--proof .sl-meter__fill { background: var(--ar-cyan); }
+    .sl-meter--wonder .sl-meter__fill { background: var(--ar-violet); }
+    .sl-meter--proof .sl-meter__top b { color: var(--ar-cyan); }
+    .sl-meter--wonder .sl-meter__top b { color: var(--ar-violet); }
+
+    /* ── Sky ───────────────────────────────────────────────────────────────── */
+    .sl-sky { position: relative; width: 100%; }
+    #sky { display: block; width: 100%; height: auto; background: #04060e; cursor: crosshair; touch-action: none; }
+
+    .sl-banner {
+      position: absolute; left: 0; right: 0; top: 0;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(4,6,14,0.94), rgba(4,6,14,0));
+      pointer-events: none;
+    }
+    .sl-banner h2 {
+      font-family: var(--ar-display);
+      font-size: 12px; line-height: 1.6; margin: 0 0 6px;
+      text-shadow: 0 2px 10px #04060e;
+    }
+    .sl-banner p { margin: 0; font-size: 11px; color: var(--ar-dim); line-height: 1.6; }
+
+    /* ── Phase strip ───────────────────────────────────────────────────────── */
+    .sl-phase {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--ar-line-soft);
+      border-bottom: 1px solid var(--ar-line-soft);
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    }
+    .sl-phase__name { color: var(--ar-amber); }
+    .sl-phase__budget { color: var(--ar-dim); margin-left: auto; }
+    .sl-timer { height: 2px; background: var(--ar-line-soft); }
+    .sl-timer__fill { height: 100%; background: var(--ar-amber); width: 100%; }
+
+    /* ── Deck (controls + notebook) ────────────────────────────────────────── */
+    .sl-deck { flex: 1; padding: 14px 12px calc(20px + env(safe-area-inset-bottom)); }
+
+    .sl-role {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ar-faint); margin: 0 0 10px;
+    }
+    .sl-role b { color: var(--ar-cyan); }
+
+    .sl-hint { font-size: 12px; line-height: 1.7; color: var(--ar-dim); margin: 0 0 14px; }
+
+    /* Instruments */
+    .sl-tools { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    /* An author `display` beats the UA stylesheet's [hidden]{display:none}, so
+       these have to opt back in explicitly or the panels never hide. */
+    .sl-tools[hidden], .sl-verdicts[hidden] { display: none; }
+    .sl-tool {
+      position: relative;
+      appearance: none; -webkit-appearance: none;
+      background: var(--ar-panel);
+      border: 1px solid var(--ar-line);
+      border-radius: var(--ar-radius);
+      color: var(--ar-ink);
+      padding: 14px 8px 12px;
+      font-family: var(--ar-mono);
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; overflow: hidden;
+      touch-action: none;
+      transition: border-color 0.15s;
+    }
+    .sl-tool:disabled { opacity: 0.3; cursor: not-allowed; }
+    .sl-tool[data-holding="1"] { border-color: var(--ar-amber); }
+    .sl-tool__icon { display: block; font-size: 17px; margin-bottom: 7px; }
+    .sl-tool__fill {
+      position: absolute; left: 0; bottom: 0; height: 2px;
+      background: var(--ar-amber); width: 0;
+    }
+    .sl-tool[data-done="1"] { border-color: var(--ar-green); opacity: 0.55; }
+
+    /* Verdict */
+    .sl-verdicts { display: grid; gap: 8px; }
+    .sl-verdict {
+      appearance: none; -webkit-appearance: none;
+      display: flex; align-items: baseline; gap: 10px; text-align: left;
+      background: var(--ar-panel);
+      border: 1px solid var(--ar-line);
+      border-radius: var(--ar-radius);
+      color: var(--ar-ink);
+      padding: 14px 16px;
+      font-family: var(--ar-mono); font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .sl-verdict:hover:not(:disabled) { border-color: #33456b; }
+    .sl-verdict strong {
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; flex: none; width: 82px;
+    }
+    .sl-verdict span { color: var(--ar-dim); font-size: 11px; line-height: 1.6; }
+    .sl-verdict[data-on="1"] { border-color: var(--ar-amber); background: #141a2c; }
+    .sl-verdict:disabled { opacity: 0.4; cursor: not-allowed; }
+    .sl-v-military strong { color: var(--ar-red); }
+    .sl-v-mundane strong  { color: var(--ar-cyan); }
+    .sl-v-anomaly strong  { color: var(--ar-violet); }
+
+    /* Notebook */
+    .sl-book { margin-top: 18px; }
+    .sl-book h3 {
+      font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ar-faint); margin: 0 0 10px; font-weight: 400;
+    }
+    .sl-entry {
+      display: flex; gap: 11px;
+      padding: 10px 0;
+      border-top: 1px solid var(--ar-line-soft);
+      font-size: 12px; line-height: 1.65;
+    }
+    .sl-entry__dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex: none; margin-top: 7px;
+    }
+    .sl-entry__label {
+      display: block; font-size: 9px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--ar-faint); margin-bottom: 3px;
+    }
+    .sl-entry__text { color: var(--ar-ink); }
+    .sl-lean-military { background: var(--ar-red); }
+    .sl-lean-mundane  { background: var(--ar-cyan); }
+    .sl-lean-anomaly  { background: var(--ar-violet); }
+    .sl-book__empty { color: var(--ar-faint); font-size: 12px; line-height: 1.7; }
+
+    /* ── Overlay (reveal / ending / lobby) ─────────────────────────────────── */
+    .sl-over {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(4, 6, 14, 0.96);
+      overflow-y: auto;
+      padding: calc(24px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sl-over[hidden] { display: none; }
+    .sl-over__inner { width: 100%; max-width: 440px; }
+    .sl-over h2 {
+      font-family: var(--ar-display); font-size: 15px; line-height: 1.6; margin: 0 0 4px;
+    }
+    .sl-over p { font-size: 13px; line-height: 1.85; color: var(--ar-dim); margin: 0 0 14px; }
+    .sl-over .sl-truth {
+      font-family: var(--ar-display); font-size: 12px; margin: 0 0 14px; letter-spacing: 0.06em;
+    }
+    .sl-scoreline {
+      display: flex; justify-content: space-between;
+      font-size: 11px; padding: 9px 0;
+      border-top: 1px solid var(--ar-line-soft);
+      color: var(--ar-dim);
+    }
+    .sl-scoreline b { color: var(--ar-ink); }
+    .sl-over .ar-btn { margin-top: 18px; }
+
+    .sl-picks { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+    .sl-pick {
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 7px 11px; border: 1px solid var(--ar-line); border-radius: var(--ar-radius);
+      color: var(--ar-dim);
+    }
+    .sl-pick[data-right="1"] { border-color: var(--ar-green); color: var(--ar-green); }
+    .sl-pick[data-right="0"] { border-color: #3a2430; color: #c98; }
+
+    .sl-log { margin-top: 20px; }
+    .sl-log__row {
+      display: flex; gap: 10px; align-items: baseline;
+      padding: 7px 0; border-top: 1px solid var(--ar-line-soft); font-size: 11px;
+    }
+    .sl-log__row span:last-child { margin-left: auto; color: var(--ar-faint); }
+  </style>
+</head>
+<body>
+  <div id="gate"></div>
+
+  <div id="game" class="sl" hidden>
+    <header class="sl-head">
+      <span>Sighting <b id="h-round">–</b>/<b id="h-total">8</b></span>
+      <span class="sl-spacer"></span>
+      <span>Score <b id="h-score">0</b></span>
+      <button class="sl-code" id="h-code" title="Share this room">·····</button>
+    </header>
+
+    <div class="sl-meters">
+      <div class="sl-meter sl-meter--proof">
+        <div class="sl-meter__top"><span>Proof</span><b id="m-proof">0</b></div>
+        <div class="sl-meter__bar"><div class="sl-meter__fill" id="m-proof-fill"></div></div>
+      </div>
+      <div class="sl-meter sl-meter--wonder">
+        <div class="sl-meter__top"><span>Wonder</span><b id="m-wonder">0</b></div>
+        <div class="sl-meter__bar"><div class="sl-meter__fill" id="m-wonder-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="sl-sky">
+      <canvas id="sky"></canvas>
+      <div class="sl-banner" id="banner" hidden>
+        <h2 id="b-name"></h2>
+        <p id="b-sub"></p>
+      </div>
+    </div>
+
+    <div class="sl-phase">
+      <span class="sl-phase__name" id="p-name">Waiting</span>
+      <span class="sl-phase__budget" id="p-budget"></span>
+    </div>
+    <div class="sl-timer"><div class="sl-timer__fill" id="p-timer"></div></div>
+
+    <div class="sl-deck">
+      <p class="sl-role" id="d-role"></p>
+      <p class="sl-hint" id="d-hint"></p>
+
+      <div class="sl-tools" id="d-tools" hidden>
+        <button class="sl-tool" data-tool="exposure"><span class="sl-tool__icon">◠</span>Exposure<span class="sl-tool__fill"></span></button>
+        <button class="sl-tool" data-tool="scanner"><span class="sl-tool__icon">≋</span>Scanner<span class="sl-tool__fill"></span></button>
+        <button class="sl-tool" data-tool="magnet"><span class="sl-tool__icon">✛</span>Compass<span class="sl-tool__fill"></span></button>
+      </div>
+
+      <div class="sl-verdicts" id="d-verdicts" hidden>
+        <button class="sl-verdict sl-v-military" data-v="military"><strong>Military</strong><span>Ours, or somebody's. Flares, drones, something with a transponder turned off.</span></button>
+        <button class="sl-verdict sl-v-mundane" data-v="mundane"><strong>Mundane</strong><span>Satellites, aircraft, a planet, a rock burning up. Boring, and almost always right.</span></button>
+        <button class="sl-verdict sl-v-anomaly" data-v="anomaly"><strong>Anomaly</strong><span>Nothing we know flies like that. Say so, and mean it.</span></button>
+      </div>
+
+      <div class="ar-players" id="d-players"></div>
+
+      <div class="sl-book">
+        <h3>Field notebook</h3>
+        <div id="d-book"><p class="sl-book__empty">Nothing written down yet.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl-over" id="over" hidden>
+    <div class="sl-over__inner" id="over-inner"></div>
+  </div>
+
+  <script type="module">
+    import { mountArcade, shareRoom, escapeHtml, mulberry32 } from '/arcade/shared/room.js';
+
+    const SLUG = 'southern-lights';
+
+    // ── Elements ───────────────────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+    const gameEl = $('game'), overEl = $('over'), overInner = $('over-inner');
+    const canvas = $('sky'), ctx = canvas.getContext('2d');
+
+    // ── State ──────────────────────────────────────────────────────────────
+    let G = null;              // latest game view from the server
+    let players = [];
+    let mySeat = 0, isHost = false;
+    let msLeftAtSync = null, syncAt = 0, phaseTotal = 1;
+    let sightingKey = '', sightingT0 = performance.now();
+
+    // Optics
+    let reticle = null, charge = 0, lastFrame = performance.now();
+    let flash = 0;
+
+    // Sensors
+    let holding = null, holdStart = 0;
+    const HOLD_MS = { exposure: 2800, scanner: 2000, magnet: 1400 };
+    let trail = [];            // long-exposure streak, built while holding
+
+    const CAPTURE_R = 36;
+    const CHARGE_MS = 1500;
+
+    // ── Backdrop ───────────────────────────────────────────────────────────
+    const headland = new Image();
+    headland.src = '/arcade/southern-lights/art/headland.png';
+    let headlandReady = false;
+    headland.onload = () => { headlandReady = true; };
+
+    // Stars are seeded from the ROOM CODE, so both phones are looking at the
+    // same sky — which matters when you are describing it to each other.
+    let stars = [];
+    function buildStars(seedStr) {
+      let h = 2166136261;
+      for (const ch of seedStr) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+      const rnd = mulberry32(h);
+      stars = Array.from({ length: 170 }, () => ({
+        x: rnd(), y: rnd() * rnd(),        // biased upward, away from the horizon
+        r: 0.4 + rnd() * 1.15,
+        a: 0.25 + rnd() * 0.72,
+        tw: rnd() * 6.28,
+      }));
+    }
+    buildStars('southern');
+
+    // ── Client boot ────────────────────────────────────────────────────────
+    const room = mountArcade({
+      slug: SLUG,
+      title: 'Southern Lights',
+      tagline:
+        "You're on the rocks somewhere south of Perth, watching the sky over the Indian Ocean. One of you has the binoculars. The other has a phone on a rock and a radio scanner. Something keeps happening out there, and you get four pieces of evidence to work out what.",
+      soloNote:
+        'Alone, you carry both instruments and get a little longer to use them. It plays fine — but this one is really about the arguing.',
+      gateEl: $('gate'),
+      onJoined: () => { gameEl.hidden = false; },
+      onState: (msg) => {
+        players = msg.players;
+        mySeat = msg.seat;
+        isHost = msg.host;
+        $('h-code').textContent = msg.code;
+        buildStars(msg.code);
+
+        const g = msg.game;
+        // New sighting? restart the local animation clock and clear the deck.
+        const key = `${g.round}:${g.sighting?.seed ?? ''}`;
+        if (key !== sightingKey) {
+          sightingKey = key;
+          sightingT0 = performance.now();
+          trail = [];
+          charge = 0;
+        }
+        // Phase timer: interpolate between broadcasts rather than freezing.
+        if (g.phase !== G?.phase || g.round !== G?.round) phaseTotal = g.msLeft || 1;
+        msLeftAtSync = g.msLeft;
+        syncAt = performance.now();
+
+        G = g;
+        render();
+      },
+    });
+
+    const msLeft = () =>
+      msLeftAtSync == null ? null : Math.max(0, msLeftAtSync - (performance.now() - syncAt));
+
+    $('h-code').addEventListener('click', async () => {
+      const r = await shareRoom(SLUG, room.code(), 'Southern Lights');
+      if (r === 'copied') {
+        const el = $('h-code'), was = el.textContent;
+        el.textContent = 'LINK COPIED';
+        setTimeout(() => { el.textContent = was; }, 1400);
+      }
+    });
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  THE SKY — ten motion profiles
+    //  Each returns the lights for a given moment. The FIRST light is the one
+    //  the binoculars have to track, so it is always the one worth watching.
+    // ════════════════════════════════════════════════════════════════════════
+    function lightsFor(motion, t, seed, W, sky) {
+      const rnd = mulberry32(seed);
+      const a = rnd(), b = rnd();
+      const out = [];
+      const push = (o) => out.push({ r: 2.6, hue: 45, sat: 60, alpha: 1, glow: 3.2, ...o });
+
+      switch (motion) {
+        // Starlink: a line of identical points, each blinking out at the same spot.
+        case 'train': {
+          const tt = t % 30;
+          for (let i = 0; i < 8; i++) {
+            const p = -0.16 + 0.055 * tt - i * 0.052;
+            if (p < -0.1 || p > 1.1) continue;
+            const fade = p > 0.6 ? Math.max(0, 1 - (p - 0.6) / 0.16) : 1;
+            if (fade <= 0.02) continue;
+            push({ x: W * p, y: sky * (0.3 + a * 0.16) + i * 2.4, r: 2.1, hue: 205, sat: 12, alpha: fade, glow: 2.4 });
+          }
+          break;
+        }
+        // Flares: pairs, born a few seconds apart, sinking under canopies.
+        case 'fall': {
+          for (let k = 0; k < 4; k++) {
+            const age = t - k * 4.4;
+            if (age < 0) continue;
+            const life = Math.max(0, 1 - age / 10);
+            if (life <= 0) continue;
+            for (let j = 0; j < 2; j++) {
+              push({
+                x: W * (0.22 + k * 0.15 + j * 0.045),
+                y: sky * 0.26 + age * sky * 0.045,
+                r: 1.6 + 3.2 * life, hue: 28, sat: 85, alpha: life, glow: 5,
+              });
+            }
+          }
+          break;
+        }
+        // ISS: one steady point, a clean slow arc, no strobe.
+        case 'drift': {
+          const p = (t % 44) / 44;
+          push({
+            x: W * (0.04 + 0.92 * p),
+            y: sky * (0.66 - Math.sin(p * Math.PI) * 0.36),
+            r: 2.4 + Math.sin(p * Math.PI) * 1.4, hue: 45, sat: 18, glow: 5,
+          });
+          break;
+        }
+        // Drone swarm: a rigid 3x3 lattice, rotating as one, nav lights blinking.
+        case 'swarm': {
+          const cx = W * 0.5 + Math.sin(t * 0.11) * W * 0.05;
+          const cy = sky * 0.44;
+          const s = Math.min(W * 0.082, 44);
+          const rot = t * 0.2;
+          for (let gy = -1; gy <= 1; gy++) {
+            for (let gx = -1; gx <= 1; gx++) {
+              const px = gx * s, py = gy * s;
+              push({
+                x: cx + px * Math.cos(rot) - py * Math.sin(rot),
+                y: cy + px * Math.sin(rot) + py * Math.cos(rot),
+                r: 1.9,
+                hue: (gx + gy) % 2 === 0 ? 0 : 135,
+                sat: 90,
+                alpha: 0.45 + 0.55 * Math.abs(Math.sin(t * 2.6 + gx * 1.1 + gy * 0.7)),
+                glow: 2.6,
+              });
+            }
+          }
+          break;
+        }
+        // Venus: nailed to the sky, tearing into colours through thick air.
+        case 'fixed': {
+          const tw = Math.sin(t * 8.3) * Math.sin(t * 13.1);
+          push({
+            x: W * (0.24 + b * 0.5), y: sky - 10,
+            r: 3.1, hue: 30 + tw * 150, sat: 70,
+            alpha: 0.65 + 0.35 * Math.sin(t * 15), glow: 6,
+          });
+          break;
+        }
+        // The Turn: fast, dead stop, then ninety degrees with no arc.
+        case 'angle': {
+          const cyc = 16, tt = t % cyc;
+          const y0 = sky * 0.76, x0 = 0.08, vx = 0.115;
+          let x, y;
+          if (tt < 5.4) { x = x0 + vx * tt; y = y0; }
+          else if (tt < 7.0) { x = x0 + vx * 5.4; y = y0; }
+          else { x = x0 + vx * 5.4; y = y0 - (tt - 7.0) * sky * 0.115; }
+          if (y < -20) break;
+          push({ x: W * x, y, r: 3, hue: 35, sat: 75, glow: 6, alpha: y < 20 ? Math.max(0, y / 20) : 1 });
+          break;
+        }
+        // Airliner: a landing lamp aimed at you, then it banks and becomes three.
+        case 'approach': {
+          const tt = t % 28;
+          const cx = W * 0.5, cy = sky * 0.5;
+          if (tt < 15) {
+            push({ x: cx, y: cy, r: 2 + (tt / 15) * 5, hue: 48, sat: 12, glow: 8 });
+            if (Math.sin(tt * Math.PI * 2) > 0.72)
+              push({ x: cx - 13, y: cy + 4, r: 2.1, hue: 0, sat: 95, glow: 3 });
+          } else {
+            const sp = Math.min(1, (tt - 15) / 5) * W * 0.11;
+            const dy = (tt - 15) * sky * 0.012;
+            push({ x: cx, y: cy + dy, r: 3.4, hue: 48, sat: 12, glow: 6 });
+            push({ x: cx - sp, y: cy + dy + 4, r: 2.4, hue: 0, sat: 95, glow: 3, alpha: Math.sin(tt * 6) > 0 ? 1 : 0.15 });
+            push({ x: cx + sp, y: cy + dy + 4, r: 2.4, hue: 135, sat: 90, glow: 3 });
+          }
+          break;
+        }
+        // The Silent One: you track it by the stars going missing.
+        case 'triangle': {
+          const p = (t % 34) / 34;
+          const cx = W * (-0.2 + 1.4 * p), cy = sky * 0.4;
+          const s = Math.min(W * 0.13, 64);
+          push({ x: cx, y: cy, r: 2.1, hue: 32, sat: 80, alpha: 0.8, glow: 2.6 });
+          push({ x: cx - s * 0.78, y: cy + s * 0.52, r: 2.1, hue: 32, sat: 80, alpha: 0.8, glow: 2.6 });
+          push({ x: cx + s * 0.78, y: cy + s * 0.52, r: 2.1, hue: 32, sat: 80, alpha: 0.8, glow: 2.6 });
+          out.tri = [
+            [cx, cy - s * 0.62], [cx - s * 0.84, cy + s * 0.56], [cx + s * 0.84, cy + s * 0.56],
+          ];
+          break;
+        }
+        // Fireball: gone before you can point at it. Deliberately hard to catch.
+        case 'meteor': {
+          const tt = t % 4.6;
+          if (tt > 1.5) break;
+          const p = tt / 1.5;
+          const x = W * (0.16 + 0.6 * p), y = sky * (0.1 + 0.68 * p);
+          for (let i = 0; i < 9; i++) {
+            const q = Math.max(0, p - i * 0.022);
+            push({
+              x: W * (0.16 + 0.6 * q), y: sky * (0.1 + 0.68 * q),
+              r: 3.2 - i * 0.3, hue: 120, sat: 85,
+              alpha: (1 - i / 9) * (1 - p * 0.35), glow: i === 0 ? 7 : 2,
+            });
+          }
+          out[0].x = x; out[0].y = y;
+          break;
+        }
+        // The Last One: not a light. A disc of sky with nothing in it.
+        case 'void': {
+          const cx = W * 0.5 + Math.sin(t * 0.08) * W * 0.06;
+          const cy = sky * 0.4;
+          const R = Math.min(W * 0.15, 72) * (1 + Math.sin(t * 0.45) * 0.03);
+          out.void = { cx, cy, R };
+          push({ x: cx, y: cy, r: R, hue: 280, sat: 40, alpha: 0, glow: 0, isVoid: true });
+          break;
+        }
+      }
+      return out;
+    }
+
+    // ── Render loop ────────────────────────────────────────────────────────
+    let cw = 0, ch = 0, cdpr = 0;
+    function sizeCanvas() {
+      const dpr = Math.min(3, window.devicePixelRatio || 1);
+      const W = canvas.clientWidth;
+      const H = Math.round(Math.min(Math.max(W * 0.86, 240), window.innerHeight * 0.52));
+      // Assigning canvas.width CLEARS the canvas and reallocates the backing
+      // store, so only touch it when something actually changed.
+      if (W !== cw || H !== ch || dpr !== cdpr) {
+        cw = W; ch = H; cdpr = dpr;
+        canvas.style.height = H + 'px';
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      return { W, H };
+    }
+
+    function draw() {
+      const { W, H } = sizeCanvas();
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastFrame) / 1000);
+      lastFrame = now;
+
+      // The artwork is 400x200 with its horizon 47% down. Draw ONLY the band from
+      // the horizon down (water, rocks, the two of you) so the canvas owns the
+      // whole sky above it — otherwise the artwork's painted sky occludes any
+      // light below the top of the image.
+      const landH = W * 0.265;         // = W * (106/400), the 53% below the horizon
+      const sky = H - landH;           // the waterline
+      const t = (now - sightingT0) / 1000;
+
+      // Sky gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, sky);
+      grad.addColorStop(0, '#03040c');
+      grad.addColorStop(0.62, '#070d22');
+      grad.addColorStop(1, '#0d1733');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      const L = G?.sighting ? lightsFor(G.sighting.motion, t, G.sighting.seed, W, sky) : [];
+
+      // The moon, sat over the moonglade already painted into the artwork's water.
+      // Procedural rather than part of the backdrop so it can never occlude a light.
+      const moonX = W * 0.5, moonY = sky * 0.3, moonR = Math.max(7, W * 0.031);
+      // Keep the halo tight — a wide one washes out the stars and competes with
+      // the very lights the game is about.
+      const halo = ctx.createRadialGradient(moonX, moonY, moonR, moonX, moonY, moonR * 3.4);
+      halo.addColorStop(0, 'rgba(190,215,255,0.13)');
+      halo.addColorStop(1, 'rgba(190,215,255,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(moonX, moonY, moonR * 3.4, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#dce8ff';
+      ctx.beginPath(); ctx.arc(moonX, moonY, moonR, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = 'rgba(150,175,215,0.35)';
+      ctx.beginPath(); ctx.arc(moonX - moonR * 0.3, moonY - moonR * 0.2, moonR * 0.26, 0, 6.2832); ctx.fill();
+      ctx.beginPath(); ctx.arc(moonX + moonR * 0.35, moonY + moonR * 0.3, moonR * 0.18, 0, 6.2832); ctx.fill();
+
+      // Haze on the waterline, so the canvas sky meets the artwork without a seam.
+      const haze = ctx.createLinearGradient(0, sky - 56, 0, sky);
+      haze.addColorStop(0, 'rgba(24,48,96,0)');
+      haze.addColorStop(1, 'rgba(34,62,116,0.34)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, sky - 56, W, 56);
+
+      // Stars — displaced around the void, which is the only "evidence" you can
+      // actually see with your own eyes rather than read off an instrument.
+      ctx.save();
+      for (const s of stars) {
+        let sx = s.x * W, sy = s.y * sky;
+        let alpha = s.a * (0.65 + 0.35 * Math.sin(t * 1.6 + s.tw));
+        if (L.void) {
+          const dx = sx - L.void.cx, dy = sy - L.void.cy;
+          const d = Math.hypot(dx, dy);
+          if (d < L.void.R * 1.02) continue;
+          if (d < L.void.R * 2.1) {
+            const push = (L.void.R * 2.1 - d) * 0.42;
+            sx += (dx / d) * push;
+            sy += (dy / d) * push;
+            alpha *= 0.8;
+          }
+        }
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#dfe8ff';
+        ctx.fillRect(sx, sy, s.r, s.r);
+      }
+      ctx.restore();
+
+      // The dark triangle occludes stars, which is how you notice it at all.
+      if (L.tri) {
+        ctx.beginPath();
+        ctx.moveTo(L.tri[0][0], L.tri[0][1]);
+        ctx.lineTo(L.tri[1][0], L.tri[1][1]);
+        ctx.lineTo(L.tri[2][0], L.tri[2][1]);
+        ctx.closePath();
+        ctx.fillStyle = '#02030a';
+        ctx.fill();
+      }
+
+      // The void: a hole, with a faint rim where the sky is bent.
+      if (L.void) {
+        const { cx, cy, R } = L.void;
+        const rim = ctx.createRadialGradient(cx, cy, R * 0.82, cx, cy, R * 1.3);
+        rim.addColorStop(0, 'rgba(120,80,200,0.30)');
+        rim.addColorStop(1, 'rgba(120,80,200,0)');
+        ctx.fillStyle = rim;
+        ctx.beginPath(); ctx.arc(cx, cy, R * 1.3, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = '#000106';
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill();
+      }
+
+      // Long-exposure trail — the instrument you can actually see working.
+      if (trail.length > 1) {
+        ctx.save();
+        ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(255,200,120,0.55)';
+        ctx.beginPath();
+        ctx.moveTo(trail[0].x, trail[0].y);
+        for (const p of trail.slice(1)) ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Lights
+      for (const l of L) {
+        if (l.isVoid) continue;
+        ctx.save();
+        ctx.globalAlpha = l.alpha;
+        if (l.glow > 0) {
+          const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * l.glow);
+          g.addColorStop(0, `hsla(${l.hue},${l.sat}%,72%,0.55)`);
+          g.addColorStop(1, `hsla(${l.hue},${l.sat}%,60%,0)`);
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(l.x, l.y, l.r * l.glow, 0, 6.2832); ctx.fill();
+        }
+        ctx.fillStyle = `hsl(${l.hue},${l.sat}%,92%)`;
+        ctx.beginPath(); ctx.arc(l.x, l.y, l.r, 0, 6.2832); ctx.fill();
+        ctx.restore();
+      }
+
+      // The headland, the ocean, and the two of you — horizon band down only.
+      if (headlandReady) ctx.drawImage(headland, 0, 94, 400, 106, 0, sky, W, landH);
+
+      // ── Optics: reticle + focus charge ──────────────────────────────────
+      const canScope =
+        G?.phase === 'observe' && G.role?.includes('optics') &&
+        G.spent < G.budget && G.opticsFound < 3;
+
+      if (canScope && reticle) {
+        const target = L[0];
+        const near = target && Math.hypot(target.x - reticle.x, target.y - reticle.y) < CAPTURE_R;
+        charge = near ? Math.min(1, charge + dt * 1000 / CHARGE_MS) : Math.max(0, charge - dt * 1.6);
+
+        if (charge >= 1) {
+          room.send({ t: 'sample', tool: 'optics' });
+          charge = 0; flash = 1;
+        }
+
+        ctx.save();
+        ctx.strokeStyle = near ? 'rgba(255,182,72,0.95)' : 'rgba(180,200,240,0.5)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(reticle.x, reticle.y, CAPTURE_R, 0, 6.2832); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(reticle.x - CAPTURE_R - 7, reticle.y); ctx.lineTo(reticle.x - CAPTURE_R + 5, reticle.y);
+        ctx.moveTo(reticle.x + CAPTURE_R - 5, reticle.y); ctx.lineTo(reticle.x + CAPTURE_R + 7, reticle.y);
+        ctx.moveTo(reticle.x, reticle.y - CAPTURE_R - 7); ctx.lineTo(reticle.x, reticle.y - CAPTURE_R + 5);
+        ctx.moveTo(reticle.x, reticle.y + CAPTURE_R - 5); ctx.lineTo(reticle.x, reticle.y + CAPTURE_R + 7);
+        ctx.stroke();
+        if (charge > 0) {
+          ctx.strokeStyle = 'rgba(255,182,72,0.95)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(reticle.x, reticle.y, CAPTURE_R, -Math.PI / 2, -Math.PI / 2 + charge * 6.2832);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else {
+        charge = 0;
+      }
+
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255,220,150,${flash * 0.22})`;
+        ctx.fillRect(0, 0, W, H);
+        flash = Math.max(0, flash - dt * 2.4);
+      }
+
+      // Feed the exposure trail while the instrument is actually running.
+      if (holding === 'exposure' && L[0]) {
+        trail.push({ x: L[0].x, y: L[0].y });
+        if (trail.length > 260) trail.shift();
+      }
+
+      // Hold progress + phase timer
+      if (holding) {
+        const p = Math.min(1, (now - holdStart) / HOLD_MS[holding]);
+        const btn = document.querySelector(`.sl-tool[data-tool="${holding}"] .sl-tool__fill`);
+        if (btn) btn.style.width = p * 100 + '%';
+        if (p >= 1) { room.send({ t: 'sample', tool: holding }); endHold(); }
+      }
+
+      const left = msLeft();
+      if (left != null && phaseTotal > 0) {
+        $('p-timer').style.width = Math.max(0, Math.min(100, (left / phaseTotal) * 100)) + '%';
+      }
+
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+
+    // ── Optics input ───────────────────────────────────────────────────────
+    function pointAt(ev) {
+      const r = canvas.getBoundingClientRect();
+      const touch = ev.pointerType !== 'mouse';
+      return {
+        x: ev.clientX - r.left,
+        // On a phone your finger covers the thing you are trying to look at.
+        y: ev.clientY - r.top - (touch ? 46 : 0),
+      };
+    }
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.setPointerCapture(e.pointerId);
+      reticle = pointAt(e);
+      e.preventDefault();
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (reticle) reticle = pointAt(e);
+    });
+    const dropReticle = () => { reticle = null; charge = 0; };
+    canvas.addEventListener('pointerup', dropReticle);
+    canvas.addEventListener('pointercancel', dropReticle);
+
+    // ── Sensor input ───────────────────────────────────────────────────────
+    function endHold() {
+      if (!holding) return;
+      const btn = document.querySelector(`.sl-tool[data-tool="${holding}"]`);
+      if (btn) { btn.dataset.holding = '0'; btn.querySelector('.sl-tool__fill').style.width = '0'; }
+      if (holding === 'exposure') trail = [];
+      holding = null;
+    }
+    for (const btn of document.querySelectorAll('.sl-tool')) {
+      btn.addEventListener('pointerdown', (e) => {
+        if (btn.disabled) return;
+        btn.setPointerCapture(e.pointerId);
+        holding = btn.dataset.tool;
+        holdStart = performance.now();
+        btn.dataset.holding = '1';
+        if (holding === 'exposure') trail = [];
+        e.preventDefault();
+      });
+      btn.addEventListener('pointerup', endHold);
+      btn.addEventListener('pointercancel', endHold);
+    }
+
+    // ── Verdict input ──────────────────────────────────────────────────────
+    for (const btn of document.querySelectorAll('.sl-verdict')) {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        room.send({ t: 'pick', verdict: btn.dataset.v });
+      });
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  DOM rendering
+    // ════════════════════════════════════════════════════════════════════════
+    const PHASE_NAME = {
+      lobby: 'Waiting on the rock',
+      brief: 'Something is happening',
+      observe: 'Observe',
+      verdict: 'Call it',
+      reveal: 'What it was',
+      ending: 'Dawn',
+    };
+    const VERDICT_LABEL = { military: 'Military', mundane: 'Mundane', anomaly: 'Anomaly' };
+
+    function render() {
+      if (!G) return;
+
+      $('h-round').textContent = G.phase === 'lobby' ? '–' : G.round + 1;
+      $('h-total').textContent = G.total;
+      $('h-score').textContent = G.score;
+      $('m-proof').textContent = G.proof;
+      $('m-wonder').textContent = G.wonder;
+      $('m-proof-fill').style.width = G.proof + '%';
+      $('m-wonder-fill').style.width = G.wonder + '%';
+      $('p-name').textContent = PHASE_NAME[G.phase] || G.phase;
+
+      // Banner over the sky
+      const banner = $('banner');
+      if (G.sighting && (G.phase === 'brief' || G.phase === 'observe')) {
+        banner.hidden = false;
+        $('b-name').textContent = G.sighting.name;
+        $('b-sub').textContent = G.sighting.sub;
+      } else banner.hidden = true;
+
+      // Budget
+      $('p-budget').textContent =
+        G.phase === 'observe' ? `Evidence ${G.spent}/${G.budget}` : '';
+
+      // Role + hint
+      const solo = G.solo;
+      const optics = G.role?.includes('optics'), sensors = G.role?.includes('sensors');
+      $('d-role').innerHTML = solo
+        ? 'You have <b>both instruments</b> tonight'
+        : optics ? 'You are on the <b>binoculars</b>' : 'You are on the <b>instruments</b>';
+
+      const tools = $('d-tools'), verdicts = $('d-verdicts');
+      tools.hidden = true; verdicts.hidden = true;
+
+      if (G.phase === 'lobby') {
+        $('d-hint').innerHTML = players.length < 2
+          ? 'Read the code at the top to your friend, or tap it to send them the link. You can also start alone — you just carry both instruments.'
+          : 'Both of you are on the rock. Whenever you\'re ready.';
+      } else if (G.phase === 'brief') {
+        $('d-hint').textContent = 'Get ready. Four pieces of evidence between the two of you, and six things worth knowing.';
+      } else if (G.phase === 'observe') {
+        const spentOut = G.spent >= G.budget;
+        $('d-hint').innerHTML = spentOut
+          ? 'That is all the evidence you get. Talk about it.'
+          : optics && sensors
+            ? 'Drag on the sky to hold the glass on it, or spend an instrument below. Four total — choose carefully, and say what you get out loud.'
+            : optics
+              ? 'Drag on the sky. Keep the circle on the light until the ring closes. Tell them what you see.'
+              : 'Hold an instrument to spend one of your four. Ask what they can see before you pick.';
+
+        if (sensors) {
+          tools.hidden = false;
+          for (const btn of tools.querySelectorAll('.sl-tool')) {
+            const used = G.sensorsUsed.includes(btn.dataset.tool);
+            btn.disabled = used || spentOut;
+            btn.dataset.done = used ? '1' : '0';
+          }
+        }
+      } else if (G.phase === 'verdict') {
+        verdicts.hidden = false;
+        const locked = !!G.myPick;
+        for (const btn of verdicts.querySelectorAll('.sl-verdict')) {
+          btn.disabled = locked;
+          btn.dataset.on = G.myPick === btn.dataset.v ? '1' : '0';
+        }
+        $('d-hint').textContent = locked
+          ? (G.picksIn < G.picksNeeded ? 'Locked in. Waiting on them…' : 'Locked in.')
+          : 'Both of you call it, at the same time, without seeing the other. Say it out loud first if you want — that is the point.';
+      }
+
+      // Players
+      $('d-players').innerHTML = players
+        .map(
+          (p) => `<span class="ar-player"><span class="ar-dot" data-on="${p.online ? 1 : 0}"></span>
+            ${escapeHtml(p.name)}${p.seat === mySeat ? ' <span class="ar-you">you</span>' : ''}</span>`,
+        )
+        .join('');
+
+      // Notebook
+      const book = $('d-book');
+      book.innerHTML = G.notebook?.length
+        ? G.notebook
+            .map(
+              (e) => `<div class="sl-entry">
+                <span class="sl-entry__dot sl-lean-${e.lean}"></span>
+                <span><span class="sl-entry__label">${escapeHtml(e.label)}</span>
+                <span class="sl-entry__text">${escapeHtml(e.text)}</span></span>
+              </div>`,
+            )
+            .join('')
+        : '<p class="sl-book__empty">Nothing written down yet.</p>';
+
+      renderOverlay();
+    }
+
+    function renderOverlay() {
+      if (G.phase === 'lobby') return showLobby();
+      if (G.phase === 'reveal') return showReveal();
+      if (G.phase === 'ending') return showEnding();
+      overEl.hidden = true;
+    }
+
+    function showLobby() {
+      overEl.hidden = false;
+      const two = players.length >= 2;
+      overInner.innerHTML = `
+        <h2>Southern Lights</h2>
+        <p>Eight sightings over the water. For each one you get <b>four pieces of evidence between you</b>,
+        out of six that exist — so you cannot have it all, and you have to decide together what is worth knowing.
+        Then you both call it, blind.</p>
+        <p><b>Proof</b> rises when you correctly explain the sky. <b>Wonder</b> rises when you correctly refuse to.
+        Whichever is higher when the sun comes up decides how the night ends.</p>
+        <div class="ar-players">${players
+          .map((p) => `<span class="ar-player"><span class="ar-dot" data-on="${p.online ? 1 : 0}"></span>${escapeHtml(p.name)}</span>`)
+          .join('')}</div>
+        <p style="margin-top:14px">Room <b>${escapeHtml(room.code() || '')}</b> — ${two ? 'both of you are here.' : 'tap the code up top to send the link.'}</p>
+        ${isHost
+          ? `<button class="ar-btn" id="go">${two ? 'Start the night' : 'Start alone'}</button>`
+          : '<p>Waiting for them to start…</p>'}
+      `;
+      $('go')?.addEventListener('click', () => room.send({ t: 'start' }));
+    }
+
+    function showReveal() {
+      overEl.hidden = false;
+      const r = G.lastResult || {};
+      const truth = G.sighting?.truth;
+      const colour = { military: 'var(--ar-red)', mundane: 'var(--ar-cyan)', anomaly: 'var(--ar-violet)' }[truth];
+
+      const picks = Object.entries(r.picks || {})
+        .map(([seat, v]) => {
+          const who = players.find((p) => String(p.seat) === seat);
+          return `<span class="sl-pick" data-right="${v === truth ? 1 : 0}">${escapeHtml(who?.name || 'Seat ' + seat)}: ${VERDICT_LABEL[v] || '—'}</span>`;
+        })
+        .join('');
+
+      overInner.innerHTML = `
+        <h2>${escapeHtml(G.sighting?.name || '')}</h2>
+        <p class="sl-truth" style="color:${colour}">${(VERDICT_LABEL[truth] || '').toUpperCase()}</p>
+        <div class="sl-picks">${picks || '<span class="sl-pick">No call made</span>'}</div>
+        <p>${escapeHtml(G.sighting?.reveal || '')}</p>
+        <div class="sl-scoreline"><span>Evidence gathered</span><b>${r.evidence ?? 0} / ${G.budget}</b></div>
+        ${r.agreed && r.correct === 2 ? '<div class="sl-scoreline"><span>You agreed, and you were right</span><b>+60</b></div>' : ''}
+        <div class="sl-scoreline"><span>This sighting</span><b>+${r.points ?? 0}</b></div>
+        <div class="sl-scoreline"><span>Night total</span><b>${G.score}</b></div>
+        ${isHost ? '<button class="ar-btn" id="go">Keep watching</button>' : '<p style="margin-top:16px">Waiting for them…</p>'}
+      `;
+      $('go')?.addEventListener('click', () => room.send({ t: 'continue' }));
+    }
+
+    function showEnding() {
+      overEl.hidden = false;
+      const e = G.ending || {};
+      overInner.innerHTML = `
+        <p class="ar-eyebrow">The sun comes up behind you</p>
+        <h2>${escapeHtml(e.title || '')}</h2>
+        <p style="color:var(--ar-amber)">${escapeHtml(e.line || '')}</p>
+        <p>${escapeHtml(e.body || '')}</p>
+        <div class="sl-scoreline"><span>Proof</span><b>${G.proof}</b></div>
+        <div class="sl-scoreline"><span>Wonder</span><b>${G.wonder}</b></div>
+        <div class="sl-scoreline"><span>Final score</span><b>${G.score}</b></div>
+        <div class="sl-log">
+          ${(G.log || [])
+            .map((l) => {
+              const right = Object.values(l.picks || {}).filter((v) => v === l.truth).length;
+              return `<div class="sl-log__row">
+                <span class="sl-entry__dot sl-lean-${l.truth}" style="margin-top:5px"></span>
+                <span>${escapeHtml(l.name)}</span>
+                <span>${right}/${Object.keys(l.picks || {}).length || 1} · +${l.points}</span>
+              </div>`;
+            })
+            .join('')}
+        </div>
+        ${isHost ? '<button class="ar-btn" id="go">Another night</button>' : '<p style="margin-top:16px">Waiting for them…</p>'}
+        <button class="ar-btn ar-btn--ghost" style="margin-top:10px" onclick="location.href='/arcade/'">Back to the arcade</button>
+      `;
+      $('go')?.addEventListener('click', () => room.send({ t: 'rematch' }));
+    }
+
+    window.addEventListener('resize', () => { if (G) render(); });
+
+    // Debug/automation hook, in the same spirit as __portletManager elsewhere in
+    // this repo. It is deliberately safe to expose: anyone can open a socket to
+    // the room and send whatever they like, so the ONLY thing standing between a
+    // cheat and a score is the server, which owns the phase, the shared evidence
+    // budget, which instrument each seat may touch, and every point awarded.
+    window.__sl = { room, state: () => G, players: () => players };
+  </script>
+</body>
+</html>

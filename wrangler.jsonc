@@ -21,6 +21,19 @@
     "run_worker_first": true
   },
 
+  // ── Arcade (/arcade) ──────────────────────────────────────────────────────
+  // ONE Durable Object class backs EVERY arcade game; the room id is
+  // idFromName("<slug>:<CODE>"), so rooms are already isolated per game and per
+  // code. This is written once — adding a game touches NO Cloudflare config and
+  // needs NO new migration. See workers/arcade/room.js and ADR-005.
+  //
+  // NOTE: a DO migration only applies on a real `wrangler deploy`, never on
+  // `wrangler versions upload`.
+  "durable_objects": {
+    "bindings": [{ "name": "ARCADE_ROOM", "class_name": "ArcadeRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ArcadeRoom"] }],
+
   // Non-secret, committed config (readable as env.SUPABASE_URL in the Worker).
   // ▶ Replace with YOUR Supabase project URL before deploying.
   "vars": {

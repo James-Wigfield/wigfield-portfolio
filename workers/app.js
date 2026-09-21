@@ -16,6 +16,12 @@
    ========================================================================== */
 
 import { createClient } from '@supabase/supabase-js';
+import { handleArcadeApi } from './arcade/room.js';
+
+// The arcade's Durable Object. One class serves every arcade game — see
+// workers/arcade/room.js and ADR-005. Must be re-exported from the Worker entry
+// point for the ARCADE_ROOM binding in wrangler.jsonc to resolve.
+export { ArcadeRoom } from './arcade/room.js';
 
 export default {
   async fetch(request, env) {
@@ -33,6 +39,14 @@ export default {
 
 // ── /api/* router ────────────────────────────────────────────────────────────
 async function handleApi(request, env, url) {
+  // Arcade — public multiplayer rooms on the ARCADE_ROOM Durable Object.
+  // Deliberately namespaced under /api/arcade/ so a game slug can never shadow
+  // one of the site's own endpoints. No auth: the arcade is public by design and
+  // identity is just a name in localStorage.
+  if (url.pathname.startsWith('/api/arcade/')) {
+    return handleArcadeApi(request, env, url);
+  }
+
   // Health check — confirms the Worker is live and whether Supabase is wired up.
   //   GET /api/health  →  { ok: true, supabaseConfigured: true|false }
   if (url.pathname === '/api/health') {

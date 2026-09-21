@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Arcade — James Wigfield</title>
+  <meta name="description" content="A small public arcade. Pixel-art multiplayer games you can play on two phones by sharing a five-letter room code." />
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/arcade/shared/arcade.css" />
+  <style>
+    .ar-hero { padding: 40px 0 6px; }
+    .ar-hero .ar-wordmark { font-size: clamp(22px, 8vw, 40px); }
+    .ar-hero__rule {
+      height: 1px;
+      background: linear-gradient(90deg, var(--ar-cyan), transparent);
+      margin: 24px 0 0;
+      opacity: 0.5;
+    }
+    .ar-note {
+      margin-top: 40px;
+      padding-top: 18px;
+      border-top: 1px solid var(--ar-line-soft);
+      color: var(--ar-faint);
+      font-size: 11px;
+      line-height: 1.9;
+    }
+    .ar-tag {
+      color: var(--ar-violet);
+    }
+  </style>
+</head>
+<body>
+  <div class="ar-shell">
+    <header class="ar-top">
+      <a class="ar-back" href="/">← wigfield.dev</a>
+      <span class="ar-back">Public · no sign-in</span>
+    </header>
+
+    <section class="ar-hero">
+      <p class="ar-eyebrow">Wigfield</p>
+      <h1 class="ar-wordmark">ARCADE</h1>
+      <p class="ar-sub">
+        Small multiplayer games built for two phones and one room code. Somebody starts a night,
+        reads out five letters, and you are both in. No accounts, no app, nothing to install —
+        just type a name and go.
+      </p>
+      <div class="ar-hero__rule"></div>
+    </section>
+
+    <main class="ar-grid" id="grid">
+      <div class="ar-empty">Loading cabinets…</div>
+    </main>
+
+    <p class="ar-note" id="note"></p>
+  </div>
+
+  <script type="module">
+    import { escapeHtml } from '/arcade/shared/room.js';
+
+    const grid = document.getElementById('grid');
+    const note = document.getElementById('note');
+
+    try {
+      const res = await fetch('/arcade/games.json');
+      const { games } = await res.json();
+      const live = games.filter((g) => g.status === 'live');
+
+      grid.innerHTML = live
+        .map(
+          (g) => `
+        <a class="ar-cab" href="/arcade/${escapeHtml(g.slug)}/">
+          <img class="ar-cab__art" src="/arcade/${escapeHtml(g.art)}" alt="" loading="lazy" />
+          <div class="ar-cab__body">
+            <h2 class="ar-cab__title">${escapeHtml(g.title)}</h2>
+            <p class="ar-cab__tagline">${escapeHtml(g.tagline)}</p>
+            <p class="ar-cab__blurb">${escapeHtml(g.blurb)}</p>
+            <div class="ar-meta">
+              <span>${escapeHtml(g.players)} players</span>
+              <span>${escapeHtml(g.length)}</span>
+              <span class="ar-tag">${g.tags.map(escapeHtml).join(' · ')}</span>
+            </div>
+          </div>
+        </a>`,
+        )
+        .join('');
+
+      note.textContent = `${live.length} cabinet${live.length === 1 ? '' : 's'} plugged in. More get wheeled in as they're built.`;
+    } catch {
+      grid.innerHTML = '<div class="ar-empty">The arcade is dark right now — couldn\'t load the cabinet list.</div>';
+    }
+  </script>
+</body>
+</html>
