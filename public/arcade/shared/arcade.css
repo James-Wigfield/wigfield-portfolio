@@ -1,0 +1,371 @@
+/* ============================================================================
+   ARCADE — shared stylesheet
+   ----------------------------------------------------------------------------
+   Scoped entirely to `ar-` / `.ar` names. The arcade is plain static HTML served
+   straight out of public/ — it never touches src/index.css or src/styles/home.css
+   and react-router never sees these pages.
+
+   Mobile-first and portrait-first: the target is two people holding two phones
+   on a rock in the dark.
+   ========================================================================== */
+
+:root {
+  --ar-bg: #05070f;
+  --ar-bg-2: #0a0f1e;
+  --ar-panel: #0d1424;
+  --ar-line: #1c2740;
+  --ar-line-soft: #141d31;
+  --ar-ink: #e8edf8;
+  --ar-dim: #8e9ab6;
+  --ar-faint: #5b6782;
+
+  --ar-amber: #ffb648;
+  --ar-cyan: #5fd9ff;
+  --ar-violet: #b48cff;
+  --ar-green: #6ee7a5;
+  --ar-red: #ff6b6b;
+
+  --ar-radius: 4px;
+  --ar-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+  --ar-display: "Press Start 2P", var(--ar-mono);
+
+  --ar-gutter: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ar-bg);
+  color: var(--ar-ink);
+  font-family: var(--ar-mono);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+img { image-rendering: pixelated; }
+
+a { color: var(--ar-cyan); }
+
+/* ── Layout ────────────────────────────────────────────────────────────────── */
+
+.ar-shell {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 var(--ar-gutter) 64px;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+.ar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(18px + env(safe-area-inset-top)) 0 18px;
+  border-bottom: 1px solid var(--ar-line-soft);
+}
+
+.ar-back {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ar-faint);
+  text-decoration: none;
+}
+.ar-back:hover { color: var(--ar-cyan); }
+
+/* ── Type ──────────────────────────────────────────────────────────────────── */
+
+.ar-wordmark {
+  font-family: var(--ar-display);
+  font-size: clamp(18px, 6vw, 30px);
+  line-height: 1.5;
+  margin: 0;
+  color: var(--ar-ink);
+  text-shadow: 0 0 22px rgba(95, 217, 255, 0.28);
+}
+
+.ar-sub {
+  color: var(--ar-dim);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 14px 0 0;
+  max-width: 54ch;
+}
+
+.ar-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ar-faint);
+  margin: 0 0 10px;
+}
+
+/* ── Cabinet grid (/arcade) ────────────────────────────────────────────────── */
+
+.ar-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+  margin-top: 28px;
+}
+@media (min-width: 680px) {
+  .ar-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.ar-cab {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--ar-panel);
+  border: 1px solid var(--ar-line);
+  border-radius: var(--ar-radius);
+  overflow: hidden;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.ar-cab:hover {
+  border-color: #2e3d5f;
+  transform: translateY(-2px);
+}
+
+.ar-cab__art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+  background: #060a14;
+  border-bottom: 1px solid var(--ar-line);
+}
+
+.ar-cab__body { padding: 16px 16px 18px; }
+
+.ar-cab__title {
+  font-family: var(--ar-display);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+
+.ar-cab__tagline {
+  color: var(--ar-amber);
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+
+.ar-cab__blurb {
+  color: var(--ar-dim);
+  font-size: 12px;
+  line-height: 1.75;
+  margin: 0 0 14px;
+}
+
+.ar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ar-faint);
+  padding-top: 12px;
+  border-top: 1px solid var(--ar-line-soft);
+}
+
+.ar-empty {
+  border: 1px dashed var(--ar-line);
+  border-radius: var(--ar-radius);
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--ar-faint);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+/* ── Controls ──────────────────────────────────────────────────────────────── */
+
+.ar-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px 18px;
+  font-family: var(--ar-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ar-bg);
+  background: var(--ar-amber);
+  border: 1px solid var(--ar-amber);
+  border-radius: var(--ar-radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: filter 0.15s, opacity 0.15s;
+}
+.ar-btn:hover { filter: brightness(1.1); }
+.ar-btn:active { filter: brightness(0.92); }
+.ar-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.ar-btn--ghost {
+  color: var(--ar-ink);
+  background: transparent;
+  border-color: var(--ar-line);
+}
+.ar-btn--ghost:hover { border-color: #33456b; filter: none; }
+
+.ar-input {
+  width: 100%;
+  padding: 15px 16px;
+  font-family: var(--ar-mono);
+  font-size: 15px;
+  color: var(--ar-ink);
+  background: #070c17;
+  border: 1px solid var(--ar-line);
+  border-radius: var(--ar-radius);
+  outline: none;
+}
+.ar-input:focus { border-color: var(--ar-cyan); }
+.ar-input::placeholder { color: var(--ar-faint); }
+
+.ar-input--code {
+  font-family: var(--ar-display);
+  font-size: 20px;
+  letter-spacing: 0.22em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ar-field { margin-bottom: 12px; }
+
+.ar-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ar-faint);
+  margin-bottom: 8px;
+}
+
+/* ── Landing / join gate ───────────────────────────────────────────────────── */
+
+.ar-gate {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 28px 0 0;
+}
+
+.ar-gate__panel {
+  background: var(--ar-panel);
+  border: 1px solid var(--ar-line);
+  border-radius: var(--ar-radius);
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.ar-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--ar-faint);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.ar-or::before, .ar-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--ar-line);
+}
+
+.ar-code-display {
+  font-family: var(--ar-display);
+  font-size: clamp(26px, 10vw, 40px);
+  letter-spacing: 0.16em;
+  text-align: center;
+  color: var(--ar-amber);
+  padding: 8px 0 4px;
+  text-shadow: 0 0 26px rgba(255, 182, 72, 0.32);
+}
+
+.ar-error {
+  color: var(--ar-red);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 12px 0 0;
+  min-height: 1em;
+}
+
+/* ── Connection banner ─────────────────────────────────────────────────────── */
+
+.ar-conn {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 90;
+  padding: 9px 16px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ar-bg);
+  background: var(--ar-amber);
+  border-radius: var(--ar-radius);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.ar-conn[data-show="1"] { opacity: 1; }
+
+/* ── Presence row ──────────────────────────────────────────────────────────── */
+
+.ar-players {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.ar-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  font-size: 12px;
+  background: #070c17;
+  border: 1px solid var(--ar-line);
+  border-radius: var(--ar-radius);
+}
+
+.ar-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ar-faint);
+  flex: none;
+}
+.ar-dot[data-on="1"] {
+  background: var(--ar-green);
+  box-shadow: 0 0 8px rgba(110, 231, 165, 0.7);
+}
+
+.ar-you {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ar-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

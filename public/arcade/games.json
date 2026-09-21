@@ -1,0 +1,16 @@
+{
+  "_comment": "The single arcade registry. The cabinet grid at /arcade reads this; the slug must match public/arcade/<slug>/ and the key in workers/arcade/games/index.js.",
+  "games": [
+    {
+      "slug": "southern-lights",
+      "title": "Southern Lights",
+      "tagline": "Two friends, one headland, and something over the water.",
+      "blurb": "You are sitting on the rocks somewhere south of Perth with a pair of binoculars between you. Lights keep appearing over the Indian Ocean. One of you works the glass, the other works the instruments, and neither of you can see the whole picture alone. Military? Mundane? Or the other thing?",
+      "art": "southern-lights/art/cabinet.png",
+      "players": "1–2",
+      "length": "~12 min",
+      "tags": ["co-op", "asymmetric", "mystery"],
+      "status": "live"
+    }
+  ]
+}

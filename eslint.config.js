@@ -26,4 +26,11 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Cloudflare Workers runtime globals — not part of globals.browser.
+  {
+    files: ['workers/**/*.js'],
+    languageOptions: {
+      globals: { WebSocketPair: 'readonly', WebSocket: 'readonly' },
+    },
+  },
 ])
