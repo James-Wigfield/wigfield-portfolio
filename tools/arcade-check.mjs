@@ -15,14 +15,16 @@
      npx wrangler dev --port 8788 --local     # in one terminal
      node tools/arcade-check.mjs              # in another
 
-   Set ARCADE_SHOTS=<dir> to write end-of-run screenshots somewhere.
+   ARCADE_BASE=<origin>  run against a deployed Worker instead of localhost
+   ARCADE_SHOTS=<dir>    write end-of-run screenshots somewhere
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
 import path from 'node:path';
 import os from 'node:os';
+import rules from '../workers/arcade/games/southern-lights.js';
 
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const BASE = 'http://127.0.0.1:8788';
+const BASE = process.env.ARCADE_BASE || 'http://127.0.0.1:8788';
 const URL = `${BASE}/arcade/southern-lights/`;
 
 const fails = [];
@@ -44,6 +46,69 @@ async function waitPhase(p, phase, timeout = 45000) {
   }
   throw new Error(`timeout waiting for phase "${phase}" (saw ${(await state(p))?.phase})`);
 }
+
+// ── Rules pass ───────────────────────────────────────────────────────────────
+// The rules module is a pure reducer with no Workers dependencies, so the whole
+// state machine can be driven in-process. This covers the paths a browser run
+// cannot reach in reasonable time — in particular all FOUR endings, which are
+// the headline feature and otherwise need four full 4-minute playthroughs.
+function simulateNight(pickFor, solo = false) {
+  const players = solo ? [0] : [0, 1];
+  const c = (extra = {}) => ({ seat: 0, now: Date.now(), players, seats: [], msg: null, ...extra });
+
+  let st = rules.start(rules.init(), c());
+  for (let r = 0; r < 8; r++) {
+    st = rules.tick(st, c({ now: st.deadline })) ?? st;   // brief   -> observe
+    st = rules.tick(st, c({ now: st.deadline })) ?? st;   // observe -> verdict
+    const [a, b] = pickFor(r);
+    st = rules.action(st, c({ seat: 0, msg: { t: 'pick', verdict: a } })) ?? st;
+    if (!solo) st = rules.action(st, c({ seat: 1, msg: { t: 'pick', verdict: b } })) ?? st;
+    st = rules.action(st, c({ seat: 0, msg: { t: 'continue' } })) ?? st; // reveal -> next
+  }
+  return st;
+}
+
+console.log('--- rules (in-process) ---');
+{
+  const all = (v) => () => [v, v];
+  const seen = new Set();
+
+  const sawIt = simulateNight((r) => (r === 7 ? ['anomaly', 'anomaly'] : ['mundane', 'mundane']));
+  ok(sawIt.ending === 'saw-it-too', 'ending: both call the last one an anomaly', sawIt.ending);
+  seen.add(sawIt.ending);
+
+  const split = simulateNight((r) => (r === 7 ? ['anomaly', 'military'] : ['mundane', 'mundane']));
+  ok(split.ending === 'different-nights', 'ending: disagreeing on the last one', split.ending);
+  seen.add(split.ending);
+
+  const honest = simulateNight((r) => (r === 7 ? ['mundane', 'mundane'] : ['anomaly', 'anomaly']));
+  ok(honest.ending === 'honest-answer', 'ending: wonder outweighs proof', honest.ending);
+  ok(honest.wonder > honest.proof, 'wonder actually exceeded proof', `${honest.wonder} > ${honest.proof}`);
+  seen.add(honest.ending);
+
+  const sky = simulateNight(all('mundane'));
+  ok(sky.ending === 'just-the-sky', 'ending: proof outweighs wonder', sky.ending);
+  seen.add(sky.ending);
+
+  ok(seen.size === 4, 'all four endings are reachable', [...seen].join(', '));
+
+  // The finale is fixed; everything before it is shuffled, and the one guaranteed
+  // mid-night anomaly must always be in there or WONDER is unreachable.
+  const orders = Array.from({ length: 40 }, () => simulateNight(all('mundane')).order);
+  ok(orders.every((o) => o.length === 8), 'every night is eight sightings');
+  ok(orders.every((o) => o[7] === 'the-last-one'), 'the finale is always last');
+  ok(orders.every((o) => o.includes('right-angle')), 'a real anomaly always appears before the finale');
+  ok(orders.every((o) => new Set(o).size === 8), 'no sighting repeats in a night');
+  ok(new Set(orders.map((o) => o.join())).size > 5, 'the order actually varies between nights');
+
+  // Solo is a supported mode, not an afterthought.
+  const alone = simulateNight(all('anomaly'), true);
+  ok(alone.phase === 'ending', 'a solo night reaches an ending', alone.phase);
+  ok(alone.log.length === 8, 'solo plays all eight sightings');
+}
+
+console.log('');
+console.log('--- browser (two phones) ---');
 
 const browser = await puppeteer.launch({
   executablePath: EDGE,
