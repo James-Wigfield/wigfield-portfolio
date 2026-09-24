@@ -78,8 +78,9 @@ export default function App() {
       <Route path="/games/chaos" element={<ChaosReactor />} />
       <Route path="/games/twin-flames" element={<TwinFlames />} />
       <Route path="/games/overmind" element={<Overmind />} />
-      {/* Private management portal — gated client-side (placeholder for Supabase Auth) */}
-      <Route path="/portal" element={<Portal />} />
+      {/* Private management portal — gated client-side (placeholder for Supabase Auth).
+          /portal/<toolId>/<sub> deep-links to a tool (see portal/portalRoute.js). */}
+      <Route path="/portal/:toolId?/*" element={<Portal />} />
       {/* Portara home page sandbox - a mirror of portara-repo's landing page, see src/portara-test.
           The fallback paints the landing page's ground while the lazy chunk loads, so the
           first frames are its light grey rather than the portfolio's navy. */}

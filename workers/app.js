@@ -17,6 +17,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { handleArcadeApi } from './arcade/room.js';
+import { handlePapersApi } from './papers.js';
 
 // The arcade's Durable Object. One class serves every arcade game — see
 // workers/arcade/room.js and ADR-005. Must be re-exported from the Worker entry
@@ -78,6 +79,12 @@ async function handleApi(request, env, url) {
       .order('created_at', { ascending: false });
 
     return error ? json({ error: error.message }, 500) : json({ data });
+  }
+
+  // RSVP Papers — read papers + save reading progress + Bin (see ./papers.js).
+  // Papers are written by the portal MCP server; this is the reader's side.
+  if (url.pathname === '/api/papers' || url.pathname.startsWith('/api/papers/')) {
+    return handlePapersApi(request, env, url, { requirePortalAuth, json, readJson });
   }
 
   // Deck Studio — CRUD over the RLS-locked `presentations` table (the secret key
