@@ -262,6 +262,42 @@ async function main() {
   await page.keyboard.press('Escape');
   await sleep(50);
   ok(!(await exists(page, '.rsv-set')), 'escape closes the panel');
+
+  // read-along mode: the paragraph stays while playing and the marker moves
+  await page.keyboard.press('s');
+  await waitFor(page, '.rsv-set');
+  await page.$$eval('.rsv-seg__btn', (els) => els.find((e) => e.textContent === 'Always').click());
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowRight'); // off the heading card onto words
+  await sleep(100);
+  await page.keyboard.press('Space');
+  await sleep(500);
+  ok(await exists(page, '.rsv-context--live'), 'Always: paragraph stays visible while playing');
+  const live1 = await text(page, '.rsv-context__w--cur');
+  await sleep(700);
+  const live2 = await text(page, '.rsv-context__w--cur');
+  ok(live1 && live2 && live1 !== live2 && live2 === (await text(page, '.rsv-word')), 'Always: the marked word tracks the flashed word', `${live1} → ${live2}`);
+  ok(/Reading along/.test(await text(page, '.rsv-context__label')), 'Always: label says Reading along');
+  await shot(page, '07c-read-along');
+  await page.keyboard.press('Space');
+  await sleep(200);
+  await page.keyboard.press('s');
+  await waitFor(page, '.rsv-set');
+  // "Off" also exists on the Slowdowns row — pick the one in the Context row.
+  const clickContextOption = (label) => page.$$eval('.rsv-set__row', (rows, lbl) => {
+    const row = rows.find((r) => /^Context/.test(r.querySelector('dt')?.textContent || ''));
+    [...row.querySelectorAll('.rsv-seg__btn')].find((b) => b.textContent === lbl).click();
+  }, label);
+  await clickContextOption('Off');
+  await page.keyboard.press('Escape');
+  await sleep(100);
+  ok(!(await exists(page, '.rsv-context')), 'Off: no paragraph even while paused');
+  await page.keyboard.press('s');
+  await waitFor(page, '.rsv-set');
+  await clickContextOption('Paused');
+  await page.keyboard.press('Escape');
+  await sleep(100);
+  ok(await exists(page, '.rsv-context') && !(await exists(page, '.rsv-context--live')), 'Paused: paragraph back, only while paused');
   await page.keyboard.press('c');
   await waitFor(page, '.rsv-toc');
   await shot(page, '07b-contents');

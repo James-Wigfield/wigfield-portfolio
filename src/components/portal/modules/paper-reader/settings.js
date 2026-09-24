@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS = {
   headingMode: 'auto',   // 'auto' | 'stop'
   autoAppendix: false,   // continue into the appendix without stopping
   fontScale: 1,          // 0.85 | 1 | 1.2
-  showContext: true,     // paragraph context while paused
+  showContext: 'paused', // 'paused' (only while paused) | 'always' (read along) | 'off'
 };
 
 export const WPM_MIN = 150;
@@ -40,6 +40,11 @@ export const FONT_OPTIONS = [
   { value: 1, label: 'M' },
   { value: 1.2, label: 'L' },
 ];
+export const CONTEXT_OPTIONS = [
+  { value: 'paused', label: 'Paused' },
+  { value: 'always', label: 'Always' },
+  { value: 'off', label: 'Off' },
+];
 
 export function loadSettings() {
   try {
@@ -47,6 +52,10 @@ export function loadSettings() {
     const saved = raw ? JSON.parse(raw) : {};
     const s = { ...DEFAULT_SETTINGS, ...saved };
     s.wpm = clampWpm(s.wpm);
+    // showContext used to be a boolean (true = while paused).
+    if (s.showContext === true) s.showContext = 'paused';
+    else if (s.showContext === false) s.showContext = 'off';
+    else if (!CONTEXT_OPTIONS.some((o) => o.value === s.showContext)) s.showContext = DEFAULT_SETTINGS.showContext;
     return s;
   } catch {
     return { ...DEFAULT_SETTINGS };

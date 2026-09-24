@@ -8,7 +8,7 @@ import {
   prevSentence, nextSentence, sectionOf, paragraphRange, headingTrail,
 } from './timeline';
 import {
-  WPM_MIN, WPM_MAX, WPM_STEP, INTENSITY_OPTIONS, CARD_OPTIONS, FONT_OPTIONS,
+  WPM_MIN, WPM_MAX, WPM_STEP, INTENSITY_OPTIONS, CARD_OPTIONS, FONT_OPTIONS, CONTEXT_OPTIONS,
   clampWpm, loadLocalProgress, saveLocalProgress, newerProgress,
 } from './settings';
 
@@ -154,8 +154,12 @@ export default function Reader({ paper, settings, onSettings, onBack, onReload }
   if (cardKey !== lastCard) { setLastCard(cardKey); if (expanded) setExpanded(false); }
 
   // ── derived views ───────────────────────────────────────────────────────
+  // The paragraph under the stage: only while paused (default), always (read
+  // along — the current word tracks through it), or never.
   const context = useMemo(() => {
-    if (playing || !settings.showContext || !item || item.t !== 'w') return null;
+    const mode = settings.showContext;
+    if (mode === 'off' || (mode !== 'always' && playing)) return null;
+    if (!item || item.t !== 'w') return null;
     return paragraphRange(items, index);
   }, [playing, settings.showContext, item, items, index]);
 
@@ -235,7 +239,7 @@ export default function Reader({ paper, settings, onSettings, onBack, onReload }
             <Seg label="Headings" options={[{ value: 'auto', label: 'Auto' }, { value: 'stop', label: 'Stop' }]} value={settings.headingMode} onChange={(v) => onSettings({ headingMode: v })} />
             <Seg label="Appendix" hint="at the end of the main body" options={[{ value: false, label: 'Ask' }, { value: true, label: 'Continue' }]} value={settings.autoAppendix} onChange={(v) => onSettings({ autoAppendix: v })} />
             <Seg label="Text size" options={FONT_OPTIONS} value={settings.fontScale} onChange={(v) => onSettings({ fontScale: v })} />
-            <Seg label="Context" hint="paragraph shown while paused" options={[{ value: true, label: 'Show' }, { value: false, label: 'Hide' }]} value={settings.showContext} onChange={(v) => onSettings({ showContext: v })} />
+            <Seg label="Context" hint="the paragraph under the word: while paused, always (read along), or never" options={CONTEXT_OPTIONS} value={settings.showContext} onChange={(v) => onSettings({ showContext: v })} />
           </dl>
         </section>
       )}
@@ -338,8 +342,8 @@ export default function Reader({ paper, settings, onSettings, onBack, onReload }
 
       {/* ── Paused context ───────────────────────────────────────────── */}
       {context && (
-        <section className="rsv-context" aria-label="Surrounding text">
-          <p className="rsv-context__label">Paused · paragraph {items[index].par ?? ''} · click a word to jump</p>
+        <section className={`rsv-context${playing ? ' rsv-context--live' : ''}`} aria-label="Surrounding text">
+          <p className="rsv-context__label">{playing ? 'Reading along' : 'Paused'} · paragraph {items[index].par ?? ''} · click a word to jump</p>
           <p className="rsv-context__text">
             {items.slice(context[0], context[1]).map((w, k) => {
               const i = context[0] + k;
