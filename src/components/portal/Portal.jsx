@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import './portal.css';
 import { getSession, signOut } from './auth';
 import PortalGate from './PortalGate';
 import Icon from './icons';
 import { MODULES, SECTIONS } from './registry';
 import { THEMES, THEME_KEY, DEFAULT_THEME, resolveTheme } from './themes';
+import { portalPath } from './portalRoute';
 
 // Split the flat registry against the fixed SECTIONS order. Ungrouped non-system
 // tools sit at the top; `system: true` tools live in a utility cluster at the
@@ -48,6 +49,9 @@ function loadTheme() {
    PORTAL — modular admin shell
    ----------------------------------------------------------------------------
    • Auth: until `getSession()` returns a session, ONLY <PortalGate> renders.
+   • Deep links: the active tool is read from the URL (/portal/:toolId/*, see
+     portalRoute.js) — never from state — so a link survives the gate and the
+     back button works. Modules own anything after their id (their sub-route).
    • Layout: a thin computer.gif banner spans the top; below it a fixed sidebar
      of COLLAPSIBLE life-area sections (generated from the registry) + a content
      area that mounts the active module. Adding a tool is a one-line registry
@@ -58,8 +62,12 @@ function loadTheme() {
    ========================================================================== */
 export default function Portal() {
   const navigate = useNavigate();
+  const { toolId } = useParams();
   const [authed, setAuthed] = useState(() => getSession() !== null);
-  const [activeId, setActiveId] = useState(MODULES[0]?.id);
+  // The URL is the source of truth for the active tool; unknown ids fall back
+  // to the first module. setActiveId keeps its old name/shape for modules.
+  const activeId = MODULES.some((m) => m.id === toolId) ? toolId : MODULES[0]?.id;
+  const setActiveId = useCallback((id) => navigate(portalPath(id)), [navigate]);
   const [collapsed, setCollapsed] = useState(loadCollapsed);
   const [theme, setTheme] = useState(loadTheme);
 

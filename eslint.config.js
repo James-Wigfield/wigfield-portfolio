@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'mcp-pixel-gif']),
+  // **/.wrangler = wrangler's local dev/build scratch (gitignored), not source.
+  globalIgnores(['dist', 'mcp-pixel-gif', '**/.wrangler/']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -28,9 +29,14 @@ export default defineConfig([
   },
   // Cloudflare Workers runtime globals — not part of globals.browser.
   {
-    files: ['workers/**/*.js'],
+    files: ['workers/**/*.js', 'mcp-portal/src/**/*.js'],
     languageOptions: {
       globals: { WebSocketPair: 'readonly', WebSocket: 'readonly' },
     },
+  },
+  // Node scripts (headless checks, test harnesses).
+  {
+    files: ['tools/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
   },
 ])

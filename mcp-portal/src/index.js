@@ -8,14 +8,27 @@
      Claude Code  ──SSE──▶  this Worker  ──secret key──▶  Supabase
                                                      the portal reads them back
 
-   First domain: DECK STUDIO (presentations). Claude describes slides at a HIGH
-   level (a layout + content); the layout engine here expands each into the
-   positioned-layer model the portal renders + edits. Add more tools (more
-   portal domains) by registering them in init() — one server, one connection.
+   Domains:
+     • DECK STUDIO (presentations) — Claude describes slides at a HIGH level
+       (a layout + content); the layout engine here expands each into the
+       positioned-layer model the portal renders + edits.
+     • RSVP PAPERS (research-paper speed-reader) — see ./papers.js. Claude is
+       the PDF parser; it sends clean, ordered sections in ~100 KB batches
+       (save_paper → append_sections…) and gets back the paper's portal URL.
+   Add more tools (more portal domains) by registering them in init() — one
+   server, one connection.
 
    Backed by a Durable Object (McpAgent), declared in wrangler.jsonc. Endpoints:
      • GET /sse   — SSE transport (what Claude Code connects to)
-     • POST /mcp  — Streamable-HTTP transport (for HTTP-only clients)
+     • POST /mcp  — Streamable-HTTP transport (what claude.ai connects to)
+
+   AUTH: the endpoint runs authless. claude.ai custom connectors only speak
+   OAuth or no-auth (no static bearer header), so the optional MCP_AUTH_TOKEN
+   guard below must stay UNSET for the claude.ai connector to keep working.
+   Consequence for tool design: nothing reachable here may destroy data —
+   delete_paper is a soft delete (portal Bin), and writes are size-capped.
+   Hardening path, if ever needed: front the Worker with
+   @cloudflare/workers-oauth-provider (claude.ai does support OAuth).
 
    NOTE: this is the *personal* portal's MCP. It is NOT the Portara product
    (which sells the same pattern to clients) — keep them separate.
@@ -25,6 +38,7 @@ import { McpAgent } from 'agents/mcp';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { registerPaperTools } from './papers.js';
 
 // ── The logical canvas (must match the portal's deckModel.js) ────────────────
 const CW = 1280;
@@ -216,6 +230,13 @@ export class PortalMCP extends McpAgent {
         return error ? fail(`Error: ${error.message}`) : ok(`Deleted deck ${id}.`);
       },
     );
+
+    // ── RSVP Papers: save_paper / append_sections / list_papers / get_paper /
+    //    delete_paper (see ./papers.js) ─────────────────────────────────────
+    registerPaperTools(this.server, {
+      db: () => this.db(),
+      portalUrl: this.env.PORTAL_URL || 'https://jameswigfield.com',
+    });
   }
 }
 

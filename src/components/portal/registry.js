@@ -58,6 +58,7 @@ import WallArt from './modules/WallArt';
 import PixelGifStudio from './modules/PixelGifStudio';
 import PdReader from './modules/PdReader';
 import DeckStudio from './modules/DeckStudio';
+import PaperReader from './modules/paper-reader/PaperReader';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import PortaraPricing from './modules/PortaraPricing';
 import PortaraPlatform from './modules/PortaraPlatform';
@@ -323,6 +324,14 @@ export const MODULES = [
     icon: 'deck',
     group: 'Personal',
     component: DeckStudio,
+  },
+  {
+    // Deep-linked by the MCP: /portal/paper-rsvp/<paperId> (id must not change).
+    id: 'paper-rsvp',
+    label: 'RSVP Papers',
+    icon: 'rsvp',
+    group: 'Personal',
+    component: PaperReader,
   },
   {
     id: 'america-first-plan',

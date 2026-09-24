@@ -160,6 +160,50 @@ const PATHS = {
       <path d="M7.5 12l3-3.2 2 2L16.5 7" />
     </>
   ),
+  // RSVP Papers — a word on a baseline with the focal letter marked by ticks
+  // above and below (the speed-reader's fixed recognition point)
+  rsvp: (
+    <>
+      <path d="M12 3.5v3.2M12 17.3v3.2" />
+      <path d="M3.5 12h4.6M15.9 12h4.6" />
+      <rect x="10.4" y="9.6" width="3.2" height="4.8" rx="0.7" />
+    </>
+  ),
+  // Transport — play / pause / skip (RSVP reader controls)
+  play: <path d="M7.5 5.2v13.6L18.5 12 7.5 5.2Z" />,
+  pause: (
+    <>
+      <path d="M8 5.5v13" />
+      <path d="M16 5.5v13" />
+    </>
+  ),
+  skipBack: (
+    <>
+      <path d="M17.5 6v12L9 12l8.5-6Z" />
+      <path d="M6.5 6v12" />
+    </>
+  ),
+  skipForward: (
+    <>
+      <path d="M6.5 6v12L15 12 6.5 6Z" />
+      <path d="M17.5 6v12" />
+    </>
+  ),
+  // List — three ruled lines with markers (a table of contents)
+  list: (
+    <>
+      <path d="M8.5 6.5h12M8.5 12h12M8.5 17.5h12" />
+      <path d="M3.5 6.5h1.5M3.5 12h1.5M3.5 17.5h1.5" />
+    </>
+  ),
+  // Sliders — two horizontal controls with knobs (settings)
+  sliders: (
+    <>
+      <path d="M3.5 8h17M3.5 16h17" />
+      <circle cx="9" cy="8" r="2.2" fill="var(--surface, #fff)" />
+      <circle cx="15" cy="16" r="2.2" fill="var(--surface, #fff)" />
+    </>
+  ),
   // Deck Studio — a stack of slides (a front card + one peeking behind it)
   deck: (
     <>
