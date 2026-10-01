@@ -38,6 +38,7 @@ import Run5Handoff from './modules/Run5Handoff';
 import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
 import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
+import DeepLearningLecture3Study from './modules/deep-learning/lecture3-study/Lecture3Study';
 import DeepLearningGame from './modules/deep-learning/game/Game';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
 import MambaUpdates from './modules/MambaUpdates';
@@ -156,6 +157,13 @@ export const MODULES = [
     icon: 'network',
     group: 'Deep Learning',
     component: DeepLearningLecture3,
+  },
+  {
+    id: 'dl-lecture-3-study',
+    label: 'Lecture 3 · CNNs (Study)',
+    icon: 'network',
+    group: 'Deep Learning',
+    component: DeepLearningLecture3Study,
   },
   {
     id: 'dl-game',
