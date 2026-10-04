@@ -192,6 +192,7 @@ export class ArcadeRoom {
     } catch {
       return;
     }
+    if (!msg || typeof msg !== 'object') return;
 
     const att = ws.deserializeAttachment();
     if (!att) return;
@@ -267,6 +268,12 @@ export class ArcadeRoom {
       // No state change (illegal move, wrong phase, not your turn). Still
       // rebroadcast on presence-driven kinds so late joiners settle.
       if (kind !== 'action') this.broadcast();
+      // An alarm that changed nothing has been consumed; re-arm it, or a room
+      // whose last_seen moved on would never get its expiry alarm again.
+      if (kind === 'tick') {
+        const due = rules.nextTickAt ? rules.nextTickAt(state) : null;
+        this.schedule(due && due > Date.now() ? due : null);
+      }
       return;
     }
 
@@ -277,7 +284,9 @@ export class ArcadeRoom {
 
   schedule(at) {
     const expiry = this.lastSeen() + ROOM_TTL_MS;
-    const when = at && at > Date.now() ? Math.min(at, expiry) : expiry;
+    // A deadline that is already due (it can slip past while the rules ran)
+    // fires straight away rather than being dropped in favour of expiry.
+    const when = at ? Math.min(Math.max(at, Date.now() + 10), expiry) : expiry;
     this.ctx.storage.setAlarm(when);
   }
 
@@ -336,13 +345,30 @@ export class ArcadeRoom {
     const rules = GAMES[slug];
     this.setGameState(rules ? rules.init() : {});
     this.touch();
+    // Arm the expiry alarm now: a room that is created and never started
+    // otherwise has no alarm at all, and is never cleaned up.
+    this.schedule(null);
   }
 
   claimSeat(name) {
     const rules = this.rules();
     const max = rules?.seats ?? 2;
     const seats = this.seats();
-    if (seats.length >= max) return null;
+    if (seats.length >= max) {
+      // Full — but you can pick your OWN seat back up from another browser
+      // (the link opened in a chat app's built-in browser first, then in
+      // Safari) if its owner is offline and you join under the same name.
+      // Without this you'd be locked out of your own room. Matching the name
+      // means two people coming back can't land in each other's seats, and a
+      // stranger can't take an empty chair. The old token stops working.
+      const present = new Set(this.presentSeats());
+      const key = sameName(name);
+      const mine = key ? seats.find((s) => !present.has(s.seat) && sameName(s.name) === key) : null;
+      if (!mine) return null;
+      mine.token = crypto.randomUUID();
+      this.setSeats(seats);
+      return mine;
+    }
 
     const taken = new Set(seats.map((s) => s.seat));
     let n = 0;
@@ -442,6 +468,10 @@ function normaliseCode(raw) {
     .toUpperCase()
     .replace(/[^A-Z]/g, '');
   return code.length === CODE_LENGTH ? code : null;
+}
+
+function sameName(raw) {
+  return cleanName(raw).toLowerCase();
 }
 
 function cleanName(raw) {

@@ -28,7 +28,9 @@
    ========================================================================== */
 
 import southernLights from './southern-lights.js';
+import rottoSubHunt from './rotto-sub-hunt.js';
 
 export const GAMES = {
   [southernLights.slug]: southernLights,
+  [rottoSubHunt.slug]: rottoSubHunt,
 };

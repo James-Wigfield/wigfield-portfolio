@@ -19,11 +19,18 @@
    ARCADE_SHOTS=<dir>    write end-of-run screenshots somewhere
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
+import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import rules from '../workers/arcade/games/southern-lights.js';
 
-const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+// First browser that exists: ARCADE_BROWSER, then Mac Chrome, then Windows Edge/Chrome.
+const EDGE = [
+  process.env.ARCADE_BROWSER,
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+].find((p) => p && fs.existsSync(p));
 const BASE = process.env.ARCADE_BASE || 'http://127.0.0.1:8788';
 const URL = `${BASE}/arcade/southern-lights/`;
 
