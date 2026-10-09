@@ -1,0 +1,48 @@
+{
+  "note": "Shortlist for the PSMA motion graphics. Every case was picked from the run 5 ensemble per-case CSV (DEMETER, threshold 0.5, 10-voxel filter) by the rule given, before any image was viewed. 'rule_short' is the line shown on screen. Numbers inside rule_short are written as {name} placeholders and listed in rule_numbers, so the stage renders them from manifest entries (gate G8).",
+  "csv": "Mamba_PSMA/evaluation/results/run5-test/ensemble/ensemble5_test_threshold_sweep_per_case.csv",
+  "cases": [
+    {
+      "case_id": "psma_7e25beff54698eb8_2021-06-21",
+      "slot": "A",
+      "role": "strong",
+      "cohort": "autoPET-III",
+      "label": "Case A",
+      "rule": "Highest per-case F1 among the 32 autoPET-III test scans with at least 20 ground-truth lesions (F1 0.951, 52 lesions). autoPET-III is used for both showcase scans because its labels are expert-drawn, so both share one label convention.",
+      "rule_short": "Picked from the results table before any image was viewed: the best F1 among autoPET-III test scans with {min_gt} or more lesions.",
+      "rule_numbers": {
+        "min_gt": 20
+      }
+    },
+    {
+      "case_id": "psma_37328a98c70706f3_2020-11-06",
+      "slot": "B",
+      "role": "weak",
+      "cohort": "autoPET-III",
+      "label": "Case B",
+      "rule": "Lowest defined per-case F1 among the 113 test scans that have one; the 9 lesion-positive scans with no lesion found have no defined F1 and are not eligible (rule 2 of the qualitative-figure rule in documents/temp/2026-10-06-chapter4-plan.md, section 5). Exactly tied at F1 = 2/9 with psma_798b3279d6980a3b_2019-03-04 (1 of 3 lesions found, 5 false alarms); this case comes first in the CSV and has the lower DSC (7.2 against 11.8).",
+      "rule_short": "Picked from the results table before any image was viewed: the lowest F1 among test scans where at least one lesion was found (tied with one other scan)."
+    },
+    {
+      "case_id": "deeppsma_0014",
+      "slot": "alt",
+      "role": "alternate strong",
+      "cohort": "DEEP-PSMA",
+      "label": "Alternate A",
+      "rule": "Highest per-case F1 among the 49 test scans (either cohort) with at least 20 ground-truth lesions (F1 0.968, 49 lesions).",
+      "rule_short": "Picked from the results table before any image was viewed: the best F1 among all test scans with {min_gt} or more lesions.",
+      "rule_numbers": {
+        "min_gt": 20
+      }
+    },
+    {
+      "case_id": "psma_0934d8468a1c7624_2021-01-11",
+      "slot": "alt",
+      "role": "alternate weak",
+      "cohort": "autoPET-III",
+      "label": "Alternate B",
+      "rule": "Under-calling case: the most missed lesions of any test scan (78 of 128), and the lowest F1 among autoPET-III test scans with at least 20 lesions (0.538).",
+      "rule_short": "Picked from the results table before any image was viewed: the test scan with the most missed lesions."
+    }
+  ]
+}

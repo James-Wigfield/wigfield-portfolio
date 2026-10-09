@@ -32,3 +32,4 @@ dist-ssr
 # Blender scratch files (tools/build_village.py regenerates them)
 tools/blender/*.blend
 tools/blender/*.blend1
+motion-data/

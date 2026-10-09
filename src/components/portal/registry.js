@@ -48,6 +48,7 @@ import SelectiveScan from './modules/SelectiveScan';
 import ShapeTracer from './modules/ShapeTracer';
 import CodeVisualiser from './modules/CodeVisualiser';
 import Presentations from './modules/Presentations';
+import PsmaMotion from './modules/psma-motion/PsmaMotion';
 import Syllabite from './modules/Syllabite';
 import SyllabitePhase3 from './modules/SyllabitePhase3';
 import SyllabiteGTM from './modules/SyllabiteGTM';
@@ -227,6 +228,13 @@ export const MODULES = [
     icon: 'presentation',
     group: 'University',
     component: Presentations,
+  },
+  {
+    id: 'psma-motion',
+    label: 'PSMA Motion',
+    icon: 'play',
+    group: 'University',
+    component: PsmaMotion,
   },
   {
     id: 'syllabite',

@@ -1,0 +1,290 @@
+/* ============================================================================
+   PSMA MOTION (scoped .psm-*)
+   ----------------------------------------------------------------------------
+   The stage is a fixed 1920 x 1080 canvas with fixed colours (looks.js), so it
+   renders the same in every portal theme and every clip. Sizes are stage
+   pixels: labels never below 28 px, key numbers at least 56 px, so they read
+   from the back of a lecture theatre once projected at 1080p.
+   ========================================================================== */
+
+.psm { display: flex; flex-direction: column; gap: 1.1rem; max-width: 1180px; }
+
+/* ── Module chrome (portal side) ─────────────────────────────────────────── */
+.psm-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0b1220;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.psm-frame:fullscreen { border: 0; }
+.psm-fit { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.psm-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+.psm-bar__beats { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.psm-beat {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.psm-beat--on { border-color: var(--accent); color: var(--ink); }
+.psm-keys { font-size: 0.8rem; color: var(--ink-3); }
+.psm-keys kbd {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  border: 1px solid var(--line);
+  padding: 0 0.3rem;
+  margin: 0 0.15rem;
+}
+.psm-progress { height: 3px; background: var(--line-2); }
+.psm-progress span { display: block; height: 100%; background: var(--accent); }
+.psm-notice { padding: 1rem 1.2rem; }
+.psm-notice h2 { margin: 0 0 0.4rem; font-family: var(--font-display); }
+
+/* stage-only mode (?stage=1): bare stage, full viewport, no portal chrome */
+.psm-stage-only {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  overflow: hidden;
+}
+
+/* ── Stage ───────────────────────────────────────────────────────────────── */
+.psm-stage {
+  position: relative;
+  overflow: hidden;
+  font-variant-numeric: lining-nums;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+.psm-layer { position: absolute; left: 0; top: 0; display: block; }
+.psm-type { position: absolute; inset: 0; pointer-events: none; }
+
+.psm-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--psm-ink2);
+}
+
+/* beat 1 */
+.psm-b1 { position: absolute; left: 96px; bottom: 86px; width: 540px; }
+.psm-b1 .psm-title-block { position: static; }
+.psm-b1-rule {
+  width: 64px;
+  height: 4px;
+  margin-top: 14px;
+  background: var(--psm-rule);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.psm-b1-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  margin: 18px 0 16px;
+}
+.psm-b1-sub { font-size: 32px; line-height: 1.3; color: var(--psm-ink2); text-wrap: balance; }
+.psm-layerlabels {
+  position: absolute;
+  right: 96px;
+  bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 22px;
+}
+.psm-layerlabel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--psm-ink2);
+}
+.psm-orgs { position: absolute; inset: 0; }
+.psm-orglabel {
+  position: absolute;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--psm-ink2);
+  white-space: nowrap;
+  text-shadow: 0 0 6px var(--psm-halo, rgba(11, 18, 32, 0.95));
+}
+.psm-swatch { width: 26px; height: 26px; border-radius: 4px; display: inline-block; }
+
+/* right panel */
+.psm-panel { position: absolute; top: 0; bottom: 0; }
+.psm-panel > .psm-eyebrow { position: absolute; top: 88px; left: 0; }
+/* the gold chapter rule: re-draws left to right at every chapter change */
+.psm-chapter-rule {
+  position: absolute;
+  top: 138px;
+  left: 0;
+  width: 64px;
+  height: 4px;
+  background: var(--psm-rule);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.psm-titles { position: absolute; top: 160px; left: 0; right: 0; height: 160px; }
+.psm-title-block { position: absolute; inset: 0; }
+.psm-w { display: inline-block; margin-right: 0.24em; will-change: transform, filter, opacity; }
+.psm-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.92em; }
+.psm-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 60px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.psm-sub { margin-top: 12px; font-size: 32px; line-height: 1.3; color: var(--psm-ink2); text-wrap: balance; }
+
+.psm-label { font-size: 30px; font-weight: 600; color: var(--psm-ink2); }
+.psm-bignum {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  margin: 4px 0;
+}
+.psm-wininfo { position: absolute; width: 440px; }
+.psm-facts { margin-top: 20px; font-size: 32px; line-height: 1.3; color: var(--psm-ink2); white-space: nowrap; }
+.psm-schem { position: absolute; left: 0; }
+.psm-sch-io, .psm-sch-lab {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+}
+.psm-sch-num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.psm-caption {
+  text-wrap: balance;
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.psm-regions {
+  margin-top: 14px;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 60px;
+  font-weight: 700;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.psm-arrow { color: var(--psm-muted); }
+.psm-caption--key { display: flex; align-items: center; gap: 28px; }
+.psm-heatkey { display: inline-flex; align-items: center; gap: 12px; color: var(--psm-ink2); font-weight: 600; }
+.psm-heatbar {
+  display: inline-block;
+  width: 150px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid var(--psm-panel-border);
+}
+
+.psm-count { position: absolute; left: 0; display: flex; flex-direction: column; }
+.psm-hugenum {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 168px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--psm-ink);
+}
+.psm-count-label { font-size: 40px; font-weight: 600; color: var(--psm-ink2); }
+
+.psm-gtlegend {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 34px;
+  font-weight: 600;
+}
+.psm-ringswatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 4px solid;
+  display: inline-block;
+}
+.psm-legend { position: absolute; left: 0; display: flex; flex-direction: column; gap: 22px; }
+.psm-legend-row { display: flex; align-items: center; gap: 22px; }
+.psm-legend-num {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 84px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 128px;
+  text-align: right;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.psm-legend-label { font-size: 40px; font-weight: 600; }
+.psm-rule { position: absolute; left: 0; right: 0; font-size: 34px; font-weight: 600; line-height: 1.3; text-wrap: balance; }
+/* notes are asides to the rule: regular weight, muted, a step smaller (C3) */
+.psm-note { margin-top: 14px; font-size: 32px; font-weight: 400; line-height: 1.3; color: var(--psm-muted); text-wrap: balance; }
+
+.psm-legend-mini { position: absolute; left: 0; right: 0; display: flex; gap: 28px; font-size: 32px; font-weight: 600; }
+.psm-minikey { display: inline-flex; align-items: center; gap: 10px; }
+.psm-shape { flex: none; }
+
+.psm-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.psm-metric {
+  background: var(--psm-panel);
+  border: 2px solid var(--psm-panel-border);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.psm-metric--hero { padding: 12px 26px; border-top: 5px solid var(--psm-rule); }
+.psm-metric--row { padding: 6px 26px; }
+.psm-metric-num {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+  flex: none;
+  width: 250px;
+  text-align: right;              /* % signs line up and never jump as digits are added */
+  transform-origin: right center;
+}
+.psm-metric--hero .psm-metric-num { font-size: 96px; }
+.psm-pct { font-size: 0.6em; margin-left: 4px; color: var(--psm-ink2); }
+.psm-metric-name { font-size: 34px; font-weight: 700; line-height: 1.15; }
+.psm-metric--hero .psm-metric-name { font-size: 36px; }
+.psm-metric-gloss { margin-top: 2px; font-size: 32px; line-height: 1.2; color: var(--psm-ink2); text-wrap: balance; }
+.psm-context { position: absolute; left: 0; right: 0; font-size: 32px; font-weight: 600; line-height: 1.25; }
+.psm-select { position: absolute; left: 0; right: 0; font-size: 32px; line-height: 1.3; color: var(--psm-ink2); text-wrap: pretty; }
