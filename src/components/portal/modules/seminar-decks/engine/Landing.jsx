@@ -65,6 +65,7 @@ export default function Landing({ go }) {
 
       <section className="sd-cards">
         {DECK_LIST.map((d, i) => {
+          if (d.hidden) return null;
           const deck = decks[i];
           if (!deck || deck instanceof Error) {
             return <article key={d.slug} className="sd-card"><p>Loading {d.slug}...</p></article>;
@@ -104,14 +105,14 @@ export default function Landing({ go }) {
           <thead>
             <tr>
               <th>Criterion</th>
-              {DECK_LIST.map((d, i) => <th key={d.slug}>{decks[i] && !(decks[i] instanceof Error) ? decks[i].name : d.slug}</th>)}
+              {DECK_LIST.map((d, i) => d.hidden ? null : <th key={d.slug}>{decks[i] && !(decks[i] instanceof Error) ? decks[i].name : d.slug}</th>)}
             </tr>
           </thead>
           <tbody>
             {MATRIX.rows.map((r) => (
               <tr key={r.criterion} className={r.total ? 'is-total' : ''}>
                 <th scope="row">{r.criterion}</th>
-                {DECK_LIST.map((d) => (
+                {DECK_LIST.filter((d) => !d.hidden).map((d) => (
                   <td key={d.slug}>
                     <b>{r.scores?.[d.slug] ?? '-'}</b>
                     {r.notes?.[d.slug] && <span>{r.notes[d.slug]}</span>}

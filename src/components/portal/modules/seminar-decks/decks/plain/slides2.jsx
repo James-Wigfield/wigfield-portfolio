@@ -678,7 +678,7 @@ export function ResultsSlide({ ctx }) {
         <p className="dp-label" data-role="chart"><span className="dp10-key is-found" aria-hidden="true" />Found</p>
         <p className="dp-label" data-role="chart"><span className="dp10-key is-missed" aria-hidden="true" />Missed</p>
         <p className="dp-label" data-role="chart"><span className="dp10-key is-fa" aria-hidden="true" />False alarm</p>
-        <p className="dp-tag dp10-scannote" data-role="foot">The scan: one sealed DEEP-PSMA test scan, at that cohort&apos;s median <span data-tick="">F1</span></p>
+        <p className="dp-tag dp10-scannote" data-role="foot">The scan: one sealed DEEP-PSMA test scan, its cohort&apos;s median case by <span data-tick="">F1</span></p>
       </div>
 
       {/* By cohort. */}

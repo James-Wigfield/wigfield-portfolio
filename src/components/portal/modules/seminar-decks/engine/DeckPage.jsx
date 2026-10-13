@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Thumb from './Thumb';
 import { buildSequence, deckMedia } from './sequence';
 import { labelOf } from './controller';
 import { fmtMB, runReadyCheck, useReady } from './ready';
-import { loadDeck } from './decks';
+import { loadDeck, useDeckModule } from './decks';
+import PalmCards from './PalmCards';
+import { hasSaid } from './talk';
 import { Script, T } from '../shared/Num';
 import { fill, fmtTime } from '../shared/text';
 import { TALK } from '../shared/meta';
@@ -23,6 +25,26 @@ function Sorter({ deck, go }) {
   const { seq } = buildSequence(deck);
   const main = seq.filter((s) => s.kind === 'main');
   const backups = seq.filter((s) => s.kind === 'backup');
+  // Second options: a deck may name a derived deck (deck.altSlug) that swaps some
+  // slides for a second option (slide.second, slide.secondNote). Each main slide
+  // and the demo slide then shows its second option under the tile, or says it has none.
+  const alt = useDeckModule(deck.altSlug ?? null);
+  const altSeq = alt && !(alt instanceof Error) ? buildSequence(alt).seq : null;
+  const second = (s) => {
+    if (!deck.altSlug || !(s.kind === 'main' || s.backupId === deck.demoId)) return null;
+    const a = altSeq?.find((x) => x.id === s.id);
+    if (!a?.second) return <p className="sd-sorter__alt-none">No second option</p>;
+    const at = labelOf(altSeq, altSeq.indexOf(a)).toLowerCase();
+    return (
+      <div className="sd-sorter__alt">
+        <button type="button" onClick={() => go(`${deck.altSlug}/${at}`)} aria-label={`Play the second option of slide ${labelOf(seq, seq.indexOf(s))}`}>
+          <Thumb deck={alt} slide={a} width={220} />
+        </button>
+        <p className="sd-sorter__alt-note"><b>Second option.</b> {a.secondNote}</p>
+        <button type="button" className="sd-btn sd-btn--small" onClick={() => go(`${deck.altSlug}/${at}`)}>Play the second option</button>
+      </div>
+    );
+  };
   const tile = (s) => {
     const label = labelOf(seq, seq.indexOf(s));
     return (
@@ -31,6 +53,7 @@ function Sorter({ deck, go }) {
           <Thumb deck={deck} slide={s} width={300} />
         </button>
         <p><span className="sd-sorter__no">{label}</span> {fill(s.title ?? s.label ?? '')}</p>
+        {second(s)}
       </li>
     );
   };
@@ -85,14 +108,39 @@ function ScriptRows({ deck, thumbs = true }) {
   );
 }
 
-function ScriptView({ deck }) {
+function ScriptView({ deck, go }) {
+  const [cards, setCards] = useState(false);
   useEffect(() => {
     document.body.classList.add('sd-printing');
     return () => document.body.classList.remove('sd-printing');
   }, []);
+  // Palm cards: lay them out, then print them alone (the script's own print
+  // class is swapped out while the dialog is open, and back afterwards).
+  const printCards = useCallback(() => {
+    const body = document.body;
+    const done = () => {
+      window.removeEventListener('afterprint', done);
+      body.classList.remove('sd-printing-cards');
+      body.classList.add('sd-printing');
+      setCards(false);
+    };
+    body.classList.remove('sd-printing');
+    body.classList.add('sd-printing-cards');
+    window.addEventListener('afterprint', done);
+    window.setTimeout(() => window.print(), 50);
+  }, []);
   return (
     <>
       <p className="sd-note">Print this page (Ctrl+P or Cmd+P) for a clean PDF of the script with a thumbnail per slide.</p>
+      {hasSaid(deck) && (
+        <div className="sd-script__tools">
+          <button type="button" className="sd-btn sd-btn--solid" onClick={() => setCards(true)} disabled={cards}>Export PDF</button>
+          <span className="sd-note">palm cards: A6, four to an A4 sheet; print at 100% scale, single-sided</span>
+          <button type="button" className="sd-btn" onClick={() => go(`${deck.slug}/phone`)}>Phone script</button>
+          <span className="sd-note">the transcript on a phone, one slide a page</span>
+        </div>
+      )}
+      {cards && createPortal(<PalmCards deck={deck} onReady={printCards} />, document.body)}
       <ScriptRows deck={deck} />
       {createPortal(<div className="sd-print-root"><ScriptRows deck={deck} /></div>, document.body)}
     </>
@@ -166,7 +214,7 @@ export default function DeckPage({ deck, tab, go }) {
         ))}
       </nav>
       {tab === 'slides' && <Sorter deck={deck} go={go} />}
-      {tab === 'script' && <ScriptView deck={deck} />}
+      {tab === 'script' && <ScriptView deck={deck} go={go} />}
       {tab === 'ready' && <ReadyPanel deck={deck} />}
       {tab === 'downloads' && <Downloads deck={deck} />}
     </div>

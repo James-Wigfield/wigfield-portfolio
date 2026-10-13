@@ -97,6 +97,16 @@ export default function PresenterView({ deck, onExit }) {
     return CRIB.filter((c) => !q || `${fill(c.q)} ${fill(c.a)}`.toLowerCase().includes(q));
   }, [query]);
 
+  // A deck may bring its own question index (deck.qa: { id, q, backup, facts: [{ t, ref }] })
+  // in place of the shared crib, and a slide to return to between questions (deck.demoId).
+  const qa = deck.qa;
+  const qaList = useMemo(() => {
+    if (!qa) return [];
+    const q = query.trim().toLowerCase();
+    return qa.filter((c) => !q || `${fill(c.q)} ${c.facts.map((f) => fill(f.t)).join(' ')}`.toLowerCase().includes(q));
+  }, [qa, query]);
+  const demoIndex = deck.demoId ? seq.findIndex((s) => s.backupId === deck.demoId) : -1;
+
   const jumpBackup = (label) => {
     const i = seq.findIndex((s) => s.kind === 'backup' && s.backupId === label);
     if (i >= 0) ctl.go(i, 0, 'jump');
@@ -168,6 +178,40 @@ export default function PresenterView({ deck, onExit }) {
           )}
         </section>
 
+        {qa ? (
+          <section className="sd-pv__crib sd-pv__qa" aria-label="Question index">
+            {demoIndex >= 0 && (
+              <button type="button" className="sd-btn sd-btn--solid sd-pv__demo" onClick={() => ctl.go(demoIndex, 0, 'jump')}>
+                Back to the demo slide ({labelOf(seq, demoIndex)})
+              </button>
+            )}
+            <input
+              className="sd-pv__search"
+              type="search"
+              placeholder="Search the questions"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <ol className="sd-pv__crib-list">
+              {qaList.map((c) => {
+                const bi = seq.findIndex((s) => s.backupId === c.backup);
+                return (
+                  <li key={c.id}>
+                    <p className="sd-pv__q">{bi >= 0 && <span className="sd-pv__qno">{labelOf(seq, bi)}</span>}{fill(c.q)}</p>
+                    <ul className="sd-pv__facts">
+                      {c.facts.map((f, i) => <li key={i}>{fill(f.t)} <span className="sd-pv__ref">{f.ref}</span></li>)}
+                    </ul>
+                    {bi >= 0 && (
+                      <button type="button" className="sd-btn sd-btn--small" onClick={() => jumpBackup(c.backup)}>
+                        Show backup {labelOf(seq, bi)}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ) : (
         <section className="sd-pv__crib" aria-label="Q and A crib">
           <input
             className="sd-pv__search"
@@ -190,6 +234,7 @@ export default function PresenterView({ deck, onExit }) {
             ))}
           </ol>
         </section>
+        )}
       </div>
     </div>,
     document.body,

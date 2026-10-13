@@ -15,9 +15,11 @@ import { clipPath, mediaUrl, posterOf, useMediaVersion } from './media';
    of clips cuts without a seam. Outside present mode (thumbnails, previews,
    export) and under reduced motion the clip is its hold frame only. If the
    video fails to load or play, the hold frame shows instead.
+   `loop` (opt-in, default off): while playing, the clip starts again at its
+   end instead of holding; its PNG is then a poster, not the last frame.
    ========================================================================== */
 
-export default function Clip({ src, state = 'start', under, mode = 'present', reduced = false, className = '', style, onEnded, onTime, label }) {
+export default function Clip({ src, state = 'start', under, mode = 'present', reduced = false, className = '', style, onEnded, onTime, label, loop = false }) {
   useMediaVersion();
   const video = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -90,6 +92,7 @@ export default function Clip({ src, state = 'start', under, mode = 'present', re
           className="sd-clip__video"
           src={url}
           muted
+          loop={loop}
           playsInline
           preload="auto"
           disablePictureInPicture

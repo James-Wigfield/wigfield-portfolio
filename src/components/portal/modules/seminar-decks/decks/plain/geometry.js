@@ -1,4 +1,5 @@
 import { FACTS } from '../../shared/facts';
+import { FAIR_POINTS } from './fair.gen';
 import { OPTF_LAYERS, OPTF_VB } from './optf.gen';
 import { SCANS } from './scans.gen';
 
@@ -391,3 +392,112 @@ export const S10 = (() => {
   ].map((g) => ({ ...g, rows: g.keys.map((k, i) => ({ k, y: g.y + 52 + i * 50, w: bar.max * v(k) })) }));
   return { scan, bar, groups };
 })();
+
+/* ── Slide 11: the comparison with PSMASegmentator ────────────────────────
+   Left: the two models, then their pooled bars (100% = bar.max px). Right:
+   one dot per scan, lesions in the scan on a log axis against the hybrid's
+   per-scan F1 minus PSMASegmentator's, in points (fair.gen.js, from the two
+   per-case result files). */
+export const S11 = (() => {
+  const col = { hyb: 96, psm: 560 };
+  const bar = { label: 330, x: 350, max: 360, h: 26, gap: 8 };
+  const rows = [
+    { name: 'F1', keys: ['fair.r4_f1', 'fair.psm_f1'], y: 600 },
+    { name: 'Found', keys: ['fair.r4_sens', 'fair.psm_sens'], y: 712 },
+    { name: 'Flagged and real', keys: ['fair.r4_ppv', 'fair.psm_ppv'], y: 824 },
+  ].map((r) => ({ ...r, w: r.keys.map((k) => bar.max * v(k)) }));
+  const plot = { x0: 1160, x1: 1810, y0: 372, y1: 792 };
+  const n0 = 1.6;
+  const n1 = 260;
+  const dMax = 50;
+  const lx = (n) => plot.x0 + ((Math.log10(n) - Math.log10(n0)) / (Math.log10(n1) - Math.log10(n0))) * (plot.x1 - plot.x0);
+  const ly = (d) => plot.y0 + ((dMax - d) / (2 * dMax)) * (plot.y1 - plot.y0);
+  const r = 8;
+  const pts = FAIR_POINTS.map(([n, d], i) => ({ i, n, d, x: lx(n), y: ly(d), kind: d > 0 ? 'up' : d < 0 ? 'down' : 'tie' }));
+  // Scans with the same lesion count are spread sideways a little, so none hides another.
+  const byN = new Map();
+  pts.forEach((p) => {
+    if (!byN.has(p.n)) byN.set(p.n, []);
+    byN.get(p.n).push(p);
+  });
+  byN.forEach((g) => {
+    g.sort((a, b) => a.y - b.y).forEach((p, j) => {
+      p.x += (j - (g.length - 1) / 2) * 6;
+    });
+  });
+  const count = (kind) => pts.filter((p) => p.kind === kind).length;
+  console.assert(count('up') === v('fair.better') && count('down') === v('fair.worse') && count('tie') === v('fair.tied'), 'slide 11 dot counts');
+  console.assert(pts.filter((p) => p.n < v('fair.lt20_cut')).length === v('fair.lt20_n') && pts.filter((p) => p.n >= v('fair.ge100_cut')).length === v('fair.ge100_n'), 'slide 11 bands');
+  return {
+    col,
+    bar,
+    rows,
+    plot,
+    r,
+    zeroY: ly(0),
+    pts: [...pts].sort((a, b) => a.x - b.x),
+    xTicks: [2, 5, 10, 20, 50, 100, 200].map((n) => ({ n, x: lx(n) })),
+    yTicks: [-40, -20, 0, 20, 40].map((d) => ({ d, y: ly(d) })),
+    low: { x: lx(n0), w: lx(v('fair.lt20_cut') - 0.5) - lx(n0) },
+    high: { x: lx(v('fair.ge100_cut') - 0.5), w: lx(n1) - lx(v('fair.ge100_cut') - 0.5) },
+  };
+})();
+
+/* ── Slide 12: the hybrid and its CNN-only version, at two patch sizes ────
+   Right: F1 on the 100 DEEP-PSMA scans for the four models (a slope from the
+   final model's patch to the larger one), PSMASegmentator as a dashed line.
+   Under each column, its patch drawn to scale (coronal view: left to right by
+   head to toe, from the facts manifest; front to back is 391 mm for both). */
+export const S12 = (() => {
+  const plot = { x0: 960, x1: 1700, y0: 340, y1: 640 };
+  const fMin = 75;
+  const fMax = 83;
+  const fy = (f) => plot.y1 - ((f - fMin) / (fMax - fMin)) * (plot.y1 - plot.y0);
+  const cols = [1150, 1540];
+  const pt = (k, c) => ({ k, x: cols[c], y: fy(v(k)) });
+  const k = 0.3; // px per mm for the patches
+  const top = 742; // the patches hang under their column labels
+  const patch = (zKey, xKey, c) => {
+    const w = v(xKey) * k;
+    const h = v(zKey) * k;
+    return { x: cols[c] - w / 2, y: top, w, h };
+  };
+  return {
+    plot,
+    cols,
+    hyb: [pt('r6.h_small', 0), pt('r6.h_large', 1)],
+    cnn: [pt('r6.c_small', 0), pt('r6.c_large', 1)],
+    psmY: fy(v('fair.psm_f1') * 100),
+    ticks: [76, 78, 80, 82].map((f) => ({ f, y: fy(f) })),
+    small: patch('patch.small_z_mm', 'patch.small_x_mm', 0),
+    large: patch('patch.large_z_mm', 'patch.large_x_mm', 1),
+    top,
+  };
+})();
+
+/* ── Slide 13: discussion, in three columns and a strip of limits ────────── */
+export const S13 = (() => {
+  const c = [96, 690, 1284]; // column left edges
+  const div = [650, 1244]; // the dividers between them
+  // Patch size and batch size: one training batch per frame, the patches to scale.
+  const k = 0.36;
+  const sw = v('patch.small_x_mm') * k;
+  const sh = v('patch.small_z_mm') * k;
+  const lw = v('patch.large_x_mm') * k;
+  const lh = v('patch.large_z_mm') * k;
+  const pad = 18;
+  const base = 650; // the frames' bottom edge
+  const f1 = { x: c[1], w: 2 * sw + 14 + 2 * pad, h: sh + 2 * pad };
+  f1.y = base - f1.h;
+  const f2 = { x: c[1] + f1.w + 62, w: lw + 2 * pad, h: lh + 2 * pad };
+  f2.y = base - f2.h;
+  const small = [0, 1].map((i) => ({ x: f1.x + pad + i * (sw + 14), y: f1.y + pad, w: sw, h: sh }));
+  const large = { x: f2.x + pad, y: f2.y + pad, w: lw, h: lh };
+  // Time per scan: 45 s = 360 px.
+  const sec = 8;
+  const time = { x: c[2], w: { h5: v('eff.h5') * sec, p40: v('eff.p40') * sec, p5: v('eff.p5') * sec } };
+  return { c, div, f1, f2, small, large, base, time };
+})();
+
+/** The figure layers that slide 13's network pictures draw (for the media list). */
+export const S13_MEDIA = [...FIG.skips, ...FIG.enc, ...FIG.dec, ...FIG.mamba].map((n) => `figures/optf/${n}.svg`);

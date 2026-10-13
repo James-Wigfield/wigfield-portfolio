@@ -4,7 +4,11 @@ import { Body, Frame } from './parts';
 import { SKELETON } from './skeleton';
 import { BackgroundSlide, BaselinesSlide, MambaSlide, ProblemSlide, QuestionSlide, TitleSlide } from './slides';
 import { ArchitectureSlide, DesignSlide, ResultsSlide, TestedSlide } from './slides2';
-import { FIG_MEDIA } from './geometry';
+import { CloseSlide, DiscussionSlide, FairSlide, TwinSlide } from './slides3';
+import { CohortsBackup, DemoSlide, FoldsBackup, LabelsBackup, MatchingBackup, NegativesBackup, OneRunBackup, PairedBackup, SetupBackup, SizeBackup, StagesBackup, TimingBackup } from './backups';
+import { DEMO_ID, QA } from './qa';
+import { FIG_MEDIA, S13_MEDIA } from './geometry';
+import { SECOND } from './alts/second';
 import './plain.css';
 
 /* ============================================================================
@@ -69,7 +73,41 @@ const BUILT = {
     media: ['figures/plain-c-pet.png'],
     timeline: 48.6,
   },
+  // Slides 11 to 14 (./slides3.jsx). 11 and 12 draw data only, no scan.
+  'results-fair': { render: (ctx) => <FairSlide ctx={ctx} />, timeline: 46.2 },
+  'results-twin': { render: (ctx) => <TwinSlide ctx={ctx} />, timeline: 54.4 },
+  // The U-Mamba retest (isensee2024, p. 495): Ch5:274-276. The network pictures are Figure 3.3's layers.
+  discussion: { render: (ctx) => <DiscussionSlide ctx={ctx} />, cites: ['isensee2024'], media: S13_MEDIA, timeline: 53.2 },
+  close: { render: (ctx) => <CloseSlide ctx={ctx} />, timeline: 32.0 },
 };
+
+// The demo slide comes straight after slide 14 (one Space press), as the first
+// backup, so it is not counted in the talk's timing; then one backup per likely
+// question (./backups.jsx, ./qa.js); the references stay last.
+const DEMO = {
+  id: DEMO_ID,
+  backupId: DEMO_ID,
+  section: 'Demo',
+  title: 'Recorded Run of the Final Model in the App',
+  stage: true,
+  scans: true,
+  media: ['clips/d1-model-run-loop.mp4', 'data/d1-loop-cues.json'],
+  render: (ctx) => <DemoSlide ctx={ctx} />,
+  cues: ['Leave up during questions: the real recorded run, looping'],
+};
+const QUESTION_BACKUPS = [
+  { id: 'pb-setup', title: 'Setup Differences with PSMASegmentator', render: () => <SetupBackup /> },
+  { id: 'pb-paired', title: 'Paired Differences on the {{fair.n}} DEEP-PSMA Scans', render: () => <PairedBackup /> },
+  { id: 'pb-negatives', title: 'False Alarms on Scans with No Lesions', render: () => <NegativesBackup /> },
+  { id: 'pb-matching', title: 'Lesion Matching Rule and Dice', render: () => <MatchingBackup /> },
+  { id: 'pb-labels', title: 'Labels of the Two Datasets', render: () => <LabelsBackup /> },
+  { id: 'pb-stages', title: 'Mamba Blocks in the Three Deepest Stages', render: () => <StagesBackup /> },
+  { id: 'pb-size', title: 'Size of the CNN-Only Version', render: () => <SizeBackup /> },
+  { id: 'pb-onerun', title: 'Comparisons in the CNN-Only Experiment, with Intervals', render: () => <OneRunBackup /> },
+  { id: 'pb-timing', title: 'Inference Time in the Dissertation and the Abstract', render: () => <TimingBackup /> },
+  { id: 'pb-folds', title: 'Cross-Validation and the Five Folds', render: () => <FoldsBackup /> },
+  { id: 'pb-cohorts', title: 'Test-Set Results by Dataset with Intervals', render: () => <CohortsBackup /> },
+].map((b) => ({ ...b, backupId: b.id, section: 'Backup', cues: [`Question: ${QA.find((q) => q.backup === b.id)?.q ?? ''}`] }));
 
 const slides = SKELETON.map((s) => {
   const built = BUILT[s.id];
@@ -89,6 +127,10 @@ const slides = SKELETON.map((s) => {
   };
 });
 
+// Second options (alts/second.js; previewed on the Slides tab through the hidden
+// plain-alt deck). To present one, add its slide id here, e.g. ['results-fair'].
+const USE_SECOND = [];
+
 export default {
   slug: 'plain',
   name: 'Plain Draft',
@@ -107,7 +149,11 @@ export default {
     { family: 'SD Source Sans', weight: 400, style: 'normal' },
     { family: 'SD Source Sans', weight: 600, style: 'normal' },
   ],
-  slides,
-  // Only the references backup so far: it lists the works the built slides cite.
-  backups: BACKUPS.filter((b) => b.id === 'b-refs').map((b) => ({ ...b, section: 'Backup' })),
+  slides: slides.map((s) => (USE_SECOND.includes(s.id) ? { ...s, ...SECOND[s.id] } : s)),
+  altSlug: 'plain-alt',
+  // The demo slide, the question backups, then the references (which list the works the slides cite).
+  backups: [DEMO, ...QUESTION_BACKUPS, ...BACKUPS.filter((b) => b.id === 'b-refs').map((b) => ({ ...b, section: 'Backup' }))],
+  // The presenter view's question index (in place of the shared crib) and the slide it returns to.
+  qa: QA,
+  demoId: DEMO_ID,
 };

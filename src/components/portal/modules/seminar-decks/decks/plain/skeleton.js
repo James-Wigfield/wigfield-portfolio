@@ -218,7 +218,7 @@ export const SKELETON = [
   {
     id: 'results-fair',
     section: 'Results',
-    title: 'On unseen scans, the autoPET-only hybrid beat PSMASegmentator by finding more lesions',
+    title: 'Comparison with PSMASegmentator',
     purpose: 'The fair head-to-head: the first research question.',
     points: [
       'A single version of the model, trained only on autoPET-III, against PSMASegmentator on the DEEP-PSMA scans neither model trained on',
@@ -230,7 +230,7 @@ export const SKELETON = [
       'sensitivity {{fair.dsens}} points, precision {{fair.dppv}} points',
       'per-scan F1 {{fair.pc_df1}} points ({{fair.pc_lo}} to {{fair.pc_hi}})',
     ],
-    visual: 'Pooled bars, then one dot per scan',
+    visual: 'Built: the two models with the setup as said; pooled bars (F1, found, flagged and real) for the hybrid and PSMASegmentator; then one dot per scan, hybrid minus PSMASegmentator against lesions in the scan, with the bands for few and many lesions',
     seconds: 60,
     said: "So I took a single version of my model, trained only on autoPET, and scored it against PSMASegmentator on all {{fair.n}} DEEP-PSMA scans, which neither model had seen. My model scored an F1 of {{fair.r4_f1}}, against {{fair.psm_f1}} for PSMASegmentator, so about three points higher. And that's despite most of the setup favouring PSMASegmentator: it was trained on more than twice as many scans, and averages five models, against my one. My model found more of the lesions, but raised more false alarms. Scan by scan, it was mixed: better on scans with many lesions, worse on scans with few. But overall, my model found lesions more effectively. So, is that down to Mamba?",
     saidSecs: 65,
@@ -238,7 +238,7 @@ export const SKELETON = [
   {
     id: 'results-twin',
     section: 'Results',
-    title: 'The CNN-only version did as well, so Mamba takes no credit',
+    title: 'Mamba Blocks and Patch Size',
     purpose: 'The second research question: is Mamba the reason?',
     points: [
       'The hybrid and its CNN-only version (every Mamba block removed), both trained only on autoPET-III, each at the final model\'s patch and at a patch almost five times larger',
@@ -250,7 +250,7 @@ export const SKELETON = [
       'CNN-only F1 {{r6.c_small}} against PSMASegmentator {{fair.psm_f1}}',
       'larger patch: hybrid {{r6.h_patch}}, CNN-only {{r6.c_patch}} F1 points; difference {{r6.inter}} ({{r6.inter_lo}} to {{r6.inter_hi}})',
     ],
-    visual: 'A two-by-two chart: the hybrid drops, the CNN-only version barely moves',
+    visual: "Built: the hybrid chip, and the CNN-only version sliding out from behind it; F1 on DEEP-PSMA at the final model's patch and at the larger one, each patch drawn to scale under its column; PSMASegmentator as a dashed line; the hybrid drops, the CNN-only version barely moves",
     seconds: 50,
     said: "To answer the second question, I trained the same network without its Mamba blocks, a CNN-only version, also trained only on autoPET. I trained both at the final model's patch size, and at a patch almost five times larger. At the smaller patch, the Mamba blocks added little: there was no clear difference on DEEP-PSMA, and a gain of under two points on autoPET. And the CNN-only version also scored above PSMASegmentator on DEEP-PSMA, {{r6.c_small}}% against {{fair.psm_f1}}, so the gain over PSMASegmentator can't be credited to Mamba specifically. The larger patch was where Mamba was meant to help. Instead, on the unseen DEEP-PSMA scans, it cost the hybrid about four and a half F1 points, and the CNN-only version only about one: the opposite of what I'd expected. So what does this really mean?",
     saidSecs: 75,
@@ -258,7 +258,7 @@ export const SKELETON = [
   {
     id: 'discussion',
     section: 'Discussion',
-    title: 'The gain over PSMASegmentator is real, but not from Mamba',
+    title: 'Discussion and Limitations',
     purpose: 'What the results mean, and their limits.',
     points: [
       'The gain over PSMASegmentator most likely comes from something both networks share, not Mamba; a {{lit.umamba_year}} retest of U-Mamba found the same',
@@ -269,7 +269,7 @@ export const SKELETON = [
     numbers: [
       'default settings: {{eff.h5}} against {{eff.p40}} per scan; same passes: {{eff.h5}} against {{eff.p5}}; peak memory {{eff.vram_h}} against {{eff.vram_p}}',
     ],
-    visual: "The Mamba slide's memory chip over a sequence that stretches; the U-Mamba citation; the timing pair; the three limits as short labels",
+    visual: "Built: the pooled gain with its interval; the hybrid and the CNN-only version as network pictures, joined; the U-Mamba retest; the patches to scale in one training batch each; time per scan, where PSMASegmentator's bar shrinks at the same number of passes; the limits along the bottom",
     seconds: 60,
     // DRAFT (13 Oct, night): written by Claude from the fact sheet for James to read in the
     // morning. Not yet read aloud or timed by James, so no saidSecs.
@@ -278,7 +278,7 @@ export const SKELETON = [
   {
     id: 'close',
     section: 'Conclusion',
-    title: 'Take-home: the hybrid finds lesions well, but Mamba is not why',
+    title: 'Conclusion and Next Step',
     purpose: 'One message to leave with, the next step, then questions.',
     points: [
       'The ensemble reached F1 {{r5.f1}} on a sealed test set',
@@ -287,7 +287,7 @@ export const SKELETON = [
     ],
     req: [null, null, 'future'],
     numbers: [],
-    visual: 'Thank you and questions; optionally a short clip of the app running the model',
+    visual: "Built: the test-set F1; the research question's two pairs of models from slide six, each with its answer from the transcript; the next step; thank you",
     seconds: 30,
     // DRAFT (13 Oct, night): written by Claude for James to read in the morning. Not yet read
     // aloud or timed by James, so no saidSecs.

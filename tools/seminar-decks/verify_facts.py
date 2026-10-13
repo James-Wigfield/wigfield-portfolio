@@ -103,6 +103,17 @@ S = {
     'b.gt': (int(B['n_gt']), 1, None), 'b.found': (int(B['tp']), 1, None), 'b.fa': (int(B['fp']), 1, None),
     'b.f1': (float(B['f1']), 100, 1), 'b.ppv': (float(B['ppv']), 100, 1), 'b.sens': (float(B['sensitivity']), 100, None), 'b.dsc': (float(B['dsc']), 100, 1),
 }
+# Added 2026-10-14 for the plain deck's backups.
+neg = [m['negative_cases_false_alarm'] for m in rows['pooled']['per_model'].values()]
+S.update({
+    'fair.dppv_lo': (-pd10['pooled_diff']['ppv']['ci95'][1], 100, 1), 'fair.dppv_hi': (-pd10['pooled_diff']['ppv']['ci95'][0], 100, 1),
+    'fair.dsens_lo': (-pd10['pooled_diff']['sens']['ci95'][1], 100, 1), 'fair.dsens_hi': (-pd10['pooled_diff']['sens']['ci95'][0], 100, 1),
+    'fair.ddsc_lo': (-pd10['percase_diff']['dsc']['ci95'][1], 100, 1), 'fair.ddsc_hi': (-pd10['percase_diff']['dsc']['ci95'][0], 100, 1),
+    'r5.neg_fold_min': (min(neg), 1, None), 'r5.neg_fold_max': (max(neg), 1, None),
+    **{f'r5.{m}_{e}': (float(boot[('10', 'pooled')][f'{m}_ci_{e}']), 1, 1) for m in ('ppv', 'sens') for e in ('lo', 'hi')},
+    **{f'r5.{c}_{m}_{e}': (float(boot[('10', coh)][f'{m}_ci_{e}']), 1, 1)
+       for c, coh in (('ap', 'autoPET'), ('dp', 'DeepPSMA')) for m in ('f1', 'ppv', 'sens') for e in ('lo', 'hi')},
+})
 
 
 def shown(display):

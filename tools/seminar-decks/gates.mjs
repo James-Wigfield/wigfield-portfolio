@@ -26,7 +26,8 @@ const gatesWanted = new Set((opt('--gates', 'G1,G2,G3,G4,G5,G7')).split(','));
 const outFile = opt('--out', null);
 const shotsDir = opt('--shots', null);
 
-const TITLE = 'Segmenting Metastatic Prostate Cancer in Whole-Body PET Scans with a Hybrid CNN-Mamba Network';
+// The published title plus "PSMA" (added 14 Oct; see shared/meta.js).
+const TITLE = 'Segmenting Metastatic Prostate Cancer in Whole-Body PSMA PET Scans with a Hybrid CNN-Mamba Network';
 const ALLOW = [/\bF1\b/g, /CC BY 4\.0/g, /\b(?:18F|68Ga|177Lu)\b/g, /\bMamba-[12]\b/g, /\bH[1-4]\b/g, /\b2x2\b/g, /\b3D\b/g, /\b[Rr]uns? [1-6](?:(?:,| to| and) [1-6])*\b/g, /\b(?:19|20)\d\d\b/g, /\bB\d{1,2}\b/g, /\b[1-6]\b(?= to [1-6]\b)/g, /\bfold [0-4]\b/gi, /\bT[1-9]\b/g];
 const stripAllowed = (s) => ALLOW.reduce((a, re) => a.replace(re, ' '), s);
 const report = { base: BASE, when: new Date().toISOString(), decks: {}, crib: null, summary: [] };

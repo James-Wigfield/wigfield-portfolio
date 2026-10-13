@@ -18,6 +18,7 @@ import './shared/engine.css';
      <deck>/presenter           presenter view (opens the audience window)
      <deck>/audience            audience window (follows the presenter)
      <deck>/render/<slide-id>   one slide, finished state, for export and gates
+     <deck>/phone               the transcript on a phone (decks with transcripts)
      __gates                    machine-readable deck summary for the gates
    ========================================================================== */
 
@@ -25,6 +26,7 @@ const PresentMode = lazy(() => import('./engine/PresentMode.jsx'));
 const PresenterView = lazy(() => import('./engine/PresenterView.jsx'));
 const RenderView = lazy(() => import('./engine/RenderView.jsx'));
 const GatesView = lazy(() => import('./engine/GatesView.jsx'));
+const PhoneView = lazy(() => import('./engine/PhoneView.jsx'));
 
 const TABS = ['slides', 'script', 'ready', 'downloads'];
 
@@ -50,10 +52,13 @@ export default function DeckApp() {
   if (mode === 'render') {
     return <Suspense fallback={<Loading />}><RenderView deck={deck} slideId={parts[2]} /></Suspense>;
   }
+  if (mode === 'phone') {
+    return <Suspense fallback={<Loading what="phone script" />}><PhoneView deck={deck} /></Suspense>;
+  }
   if (mode === 'presenter') {
     return (
       <Suspense fallback={<Loading what="presenter view" />}>
-        <PresenterView deck={deck} onExit={() => go(deck.slug)} />
+        <PresenterView deck={deck} onExit={() => go(deck.exitTo ?? deck.slug)} />
       </Suspense>
     );
   }
@@ -71,7 +76,7 @@ export default function DeckApp() {
         <PresentMode
           deck={deck}
           initialIndex={presentAt}
-          onExit={() => go(deck.slug)}
+          onExit={() => go(deck.exitTo ?? deck.slug)}
           onChange={(p) => go(`${deck.slug}/${labelOf(seq, p.index).toLowerCase()}`, { replace: true })}
         />
       </Suspense>

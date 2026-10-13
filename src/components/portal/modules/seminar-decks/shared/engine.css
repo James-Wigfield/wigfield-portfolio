@@ -289,3 +289,21 @@
 .sd-demo__legend li { display: flex; align-items: center; gap: 14px; font-size: 36px; color: var(--sd-ink); }
 .sd-demo__swatch { width: 30px; height: 30px; border-radius: 4px; display: inline-block; flex: none; }
 .sd-demo__note { margin: 0; font-size: 22px; color: var(--sd-muted); }
+
+/* Presenter view: a deck's own question index (deck.qa), in place of the shared crib. */
+.sd-pv__demo { align-self: stretch; }
+.sd-pv__qno { display: inline-block; min-width: 2.6em; margin-right: 0.4rem; padding: 0.05rem 0.35rem; border-radius: 4px; background: #2a323b; color: #fff; font-size: 0.82rem; text-align: center; }
+.sd-pv__facts { margin: 0.3rem 0 0.45rem; padding-left: 1.1rem; color: #c5ced8; font-size: 0.88rem; line-height: 1.45; }
+.sd-pv__crib-list .sd-pv__facts li { border-top: 0; padding-top: 0; }
+.sd-pv__ref { color: #8d99a6; font-size: 0.8rem; white-space: nowrap; }
+
+/* Script tab: palm-card export and the phone script link (decks with transcripts). */
+.sd-script__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin: 0.6rem 0 1rem; }
+@media print { .sd-script__tools { display: none !important; } }
+
+/* Slides tab: a tile's second option (decks with deck.altSlug). */
+.sd-sorter__alt { margin-top: 0.5rem; padding: 0.5rem; border: 1px dashed var(--line, #ccc); border-radius: 6px; background: var(--ground-2, rgba(0, 0, 0, 0.04)); display: flex; flex-direction: column; gap: 0.35rem; }.sd-sorter__alt > button:first-child { padding: 0; border: 0; background: none; cursor: pointer; }
+.sd-sorter__alt-note { margin: 0; font-size: 0.82rem; line-height: 1.4; color: var(--ink-2, #444); }
+.sd-sorter__alt-none { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--ink-3, #888); }
+/* the tile rule above styles every button in a tile as a thumbnail; give this one back its button look */
+.sd-sorter__alt .sd-btn { align-self: flex-start; display: inline-flex; padding: 0.3rem 0.6rem; border: 1px solid var(--line, #ccc); border-radius: 6px; background: var(--surface, #fff); color: var(--ink, #111); overflow: visible; }

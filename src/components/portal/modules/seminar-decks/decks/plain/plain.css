@@ -69,8 +69,9 @@
 .sd-slide.dp .dp-visual__text { margin: 0; font: 400 30px/1.3 var(--sd-font-body); color: var(--sd-muted); }
 
 /* ── References backup ─────────────────────────────────────────────────── */
-.sd-slide.dp .sd-bk-refs { gap: 18px; max-width: 1600px; }
-.sd-slide.dp .sd-bk-refs li { font-size: 24px; color: var(--sd-ink); }
+/* Two columns: the list outgrew one column once slides 11 to 14 added their citation. */
+.sd-slide.dp .sd-bk-refs { display: block; columns: 2; column-gap: 64px; max-width: none; margin-top: -24px; }
+.sd-slide.dp .sd-bk-refs li { font-size: 22px; line-height: 1.3; color: var(--sd-ink); break-inside: avoid; margin-bottom: 16px; }
 .sd-slide.dp .sd-bk-refs__n { font-family: var(--sd-font-body); font-weight: 600; color: var(--dp-accent); }
 
 /* ── Shared parts of the built slides ──────────────────────────────────── */
@@ -356,3 +357,133 @@
 .sd-slide.dp .dp10-bval { position: absolute; font-weight: 600; }
 .sd-slide.dp .dp10-note { left: 1100px; }
 .sd-slide.dp .dp10-fair { font-weight: 600; }
+
+/* ── Slides 11 to 14: shared ───────────────────────────────────────────── */
+/* The hybrid is the accent blue, PSMASegmentator grey, the CNN-only version dark grey (so grey always means PSMASegmentator). */
+.sd-slide.dp { --dp-other: #8c939d; }
+.sd-slide.dp .dp-at { position: absolute; }
+.sd-slide.dp .dp11-sw { display: inline-block; width: 22px; height: 22px; margin-right: 12px; vertical-align: -2px; border-radius: 3px; }
+.sd-slide.dp .dp11-sw.is-hyb { background: var(--dp-accent); }
+.sd-slide.dp .dp11-sw.is-psm { background: var(--dp-other); }
+.sd-slide.dp .dp11-bar { position: absolute; height: 26px; border-radius: 2px; transform-origin: left center; }
+.sd-slide.dp .dp11-bar.is-hyb { background: var(--dp-accent); }
+.sd-slide.dp .dp11-bar.is-psm { background: var(--dp-other); }
+.sd-slide.dp .dp11-val { position: absolute; font-weight: 600; }
+.sd-slide.dp .dp11-val.is-hyb { color: var(--dp-accent); }
+
+/* ── 11. Comparison with PSMASegmentator ───────────────────────────────── */
+.sd-slide.dp .dp11-name { font-weight: 600; }
+.sd-slide.dp .dp11-bname { position: absolute; text-align: right; }
+.sd-slide.dp .dp11-diff { font-weight: 600; color: var(--dp-accent); }
+.sd-slide.dp .dp11-band { fill: #eef1f5; }
+.sd-slide.dp .dp11-axis { fill: none; stroke: var(--sd-muted); stroke-width: 2; }
+.sd-slide.dp .dp11-zero { stroke: var(--sd-ink); stroke-width: 2; }
+.sd-slide.dp .dp11-tick { font: 400 28px/1 var(--sd-font-body); fill: var(--sd-muted); }
+.sd-slide.dp .dp11-axlab { font: 400 28px/1 var(--sd-font-body); fill: var(--sd-muted); }
+.sd-slide.dp .dp11-dot { transform-box: fill-box; transform-origin: center; stroke: #fff; stroke-width: 1.5; }
+.sd-slide.dp .dp11-dot.is-up { fill: var(--dp-accent); }
+.sd-slide.dp .dp11-dot.is-down { fill: var(--dp-other); }
+.sd-slide.dp .dp11-dot.is-tie { fill: #fff; stroke: var(--sd-ink); stroke-width: 2; }
+.sd-slide.dp .dp11-blab.is-right { text-align: right; }
+
+/* ── 12. The hybrid and its CNN-only version ───────────────────────────── */
+.sd-slide.dp .dp12-chips { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; font: 600 28px/1 var(--sd-font-body); }
+.sd-slide.dp .dp12-chips .dp6-chip { display: inline-flex; align-items: center; gap: 12px; }
+.sd-slide.dp .dp12-marker { display: block; overflow: visible; }
+.sd-slide.dp .dp12-pt.is-hyb { fill: var(--dp-accent); }
+.sd-slide.dp .dp12-pt.is-cnn { fill: var(--dp-ink2); }
+.sd-slide.dp .dp12-ptg .dp12-pt { transform-box: fill-box; transform-origin: center; stroke: #fff; stroke-width: 2; }
+.sd-slide.dp .dp12-axis { fill: none; stroke: var(--sd-muted); stroke-width: 2; }
+.sd-slide.dp .dp12-grid { stroke: #e3e6ea; stroke-width: 1.5; }
+.sd-slide.dp .dp12-tick { font: 400 28px/1 var(--sd-font-body); fill: var(--sd-muted); }
+.sd-slide.dp .dp12-line { fill: none; stroke-width: 5; stroke-linecap: round; }
+.sd-slide.dp .dp12-line.is-hyb { stroke: var(--dp-accent); }
+.sd-slide.dp .dp12-line.is-cnn { stroke: var(--dp-ink2); }
+.sd-slide.dp .dp12-psm { stroke: var(--dp-other); stroke-width: 2.5; stroke-dasharray: 12 9; }
+.sd-slide.dp .dp12-ring { fill: none; stroke: var(--dp-ink2); stroke-width: 3; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.sd-slide.dp .dp12-v { position: absolute; font-weight: 600; }
+.sd-slide.dp .dp12-v.is-hyb { color: var(--dp-accent); }
+.sd-slide.dp .dp12-credit { font-weight: 600; }
+.sd-slide.dp .dp12-col { width: 360px; text-align: center; }
+.sd-slide.dp .dp12-patch { fill: var(--dp-accent-wash); stroke: var(--dp-accent); stroke-width: 3; }
+
+/* ── 13. Discussion ────────────────────────────────────────────────────── */
+.sd-slide.dp .dp13-gain { font: 400 30px/1.1 var(--sd-font-body); white-space: nowrap; }
+.sd-slide.dp .dp13-gain__n { font: 600 72px/1 var(--sd-font-display); color: var(--dp-accent); margin-right: 10px; }
+.sd-slide.dp .dp13-net { position: absolute; }
+.sd-slide.dp .dp13-gone { position: absolute; inset: 0; opacity: 0; }
+.sd-slide.dp .dp13-gone img { position: absolute; display: block; max-width: none; }
+.sd-slide.dp .dp13-brace { stroke-width: 2; }
+.sd-slide.dp .dp13-div { width: 2px; height: 560px; background: var(--sd-rule); transform-origin: top center; }
+.sd-slide.dp .dp13-frame { fill: none; stroke: var(--sd-muted); stroke-width: 2; stroke-dasharray: 8 7; }
+.sd-slide.dp .dp13-patch { fill: var(--dp-accent-wash); stroke: var(--dp-accent); stroke-width: 3; transform-box: view-box; }
+.sd-slide.dp .dp13-sw2 { margin-left: 28px; }
+.sd-slide.dp .dp13-h { font-weight: 600; color: var(--sd-muted); }
+.sd-slide.dp .dp13-rule { position: absolute; left: 96px; top: 858px; width: 1728px; height: 2px; background: var(--sd-rule); transform-origin: left center; }
+
+/* ── 14. Conclusion ────────────────────────────────────────────────────── */
+.sd-slide.dp .dp14-thanks { font: 600 72px/1.1 var(--sd-font-display); white-space: nowrap; }
+.sd-slide.dp .dp14-rq { left: 780px; right: 96px; top: 262px; display: flex; flex-direction: column; gap: 44px; }
+.sd-slide.dp .dp14-rq > * { position: relative; }
+.sd-slide.dp .dp14-a { margin-top: 20px !important; font: 400 40px/1.25 var(--sd-font-display); text-wrap: balance; }
+.sd-slide.dp .dp14-n { margin-top: 10px !important; }
+.sd-slide.dp .dp14-n .dp-label { white-space: normal; }
+.sd-slide.dp .dp13-um, .sd-slide.dp .dp13-um .dp-label { font-size: 28px; color: var(--sd-muted); }
+.sd-slide.dp .dp14-rule { position: absolute; left: 780px; top: 812px; width: 1044px; height: 2px; background: var(--sd-rule); transform-origin: left center; }
+.sd-slide.dp .dp14-next { left: 780px; top: 828px; width: 1044px; }
+.sd-slide.dp .dp14-next__t { margin-top: 8px !important; line-height: 1.3; }
+.sd-slide.dp .dp14-next__t + .dp14-next__t { margin-top: 0 !important; }
+.sd-slide.dp .dp12-grow,
+.sd-slide.dp .dp12-psmg { transform-box: view-box; }
+.sd-slide.dp .dp13-mem { margin-top: 8px !important; }
+.sd-slide.dp .dp13-mem__v { font-weight: 600; }
+.sd-slide.dp .dp13-mem__v.is-hyb { color: var(--dp-accent); }
+
+/* ── The demo slide ────────────────────────────────────────────────────── */
+.sd-slide.dp .dpd-panel { overflow: hidden; border-radius: 14px; background: #000; }
+.sd-slide.dp .dpd-panel .sd-clip { position: absolute; }
+.sd-slide.dp .dpd-text { right: 96px; display: flex; flex-direction: column; gap: 22px; }
+.sd-slide.dp .dpd-text p { white-space: normal; }
+.sd-slide.dp .dpd-lead { font: 600 40px/1.2 var(--sd-font-display); text-wrap: balance; }
+.sd-slide.dp .dpd-status { min-height: 1.25em; font: 600 36px/1.25 var(--sd-font-body); color: var(--dp-accent); }
+.sd-slide.dp .dpd-bar { height: 8px; border-radius: 4px; background: #e3e6ea; overflow: hidden; }
+.sd-slide.dp .dpd-bar span { display: block; height: 100%; background: var(--dp-accent); transform-origin: 0 50%; }
+.sd-slide.dp .dpd-legend { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.sd-slide.dp .dpd-legend li { display: flex; align-items: center; gap: 16px; }
+.sd-slide.dp .dpd-sw { display: inline-block; width: 30px; height: 30px; border-radius: 5px; }
+
+/* ── Backups (no motion) ───────────────────────────────────────────────── */
+.sd-slide.dp .dpb { display: flex; flex-direction: column; gap: 30px; height: 100%; }
+.sd-slide.dp .dpb p { margin: 0; white-space: normal; }
+.sd-slide.dp .dpb .dp-label { font-size: 32px; }
+.sd-slide.dp .dpb-table { width: 100%; border-collapse: collapse; font: 400 30px/1.25 var(--sd-font-body); color: var(--sd-ink); }
+.sd-slide.dp .dpb-table th.is-num { width: 280px; }
+.sd-slide.dp .dpb-table--dense td { padding-top: 7px; padding-bottom: 7px; font-size: 28px; }
+.sd-slide.dp .dpb-fig { margin: -12px 0 -8px; }
+.sd-slide.dp .dpb-table th { padding: 0 36px 12px 0; border-bottom: 2px solid var(--sd-rule); font: 600 28px/1.2 var(--sd-font-body); color: var(--sd-muted); text-align: left; }
+.sd-slide.dp .dpb-table td { padding: 11px 36px 11px 0; border-bottom: 1px solid #e3e6ea; vertical-align: top; }
+.sd-slide.dp .dpb-table .is-num { text-align: right; white-space: nowrap; }
+.sd-slide.dp .dpb-table .is-hyb { color: var(--dp-accent); }
+.sd-slide.dp .dpb-table td.is-hyb { font-weight: 600; }
+.sd-slide.dp .dpb-table--second { margin-top: 6px; }
+.sd-slide.dp .dpb-table--ci td.is-num { line-height: 1.15; }
+.sd-slide.dp .dpb-table tr.is-strong td { font-weight: 600; }
+.sd-slide.dp .dpb-ci { display: block; font: 400 24px/1.3 var(--sd-font-body); color: var(--sd-muted); }
+.sd-slide.dp .dpb-notes { display: flex; flex-direction: column; gap: 10px; max-width: 1640px; }
+.sd-slide.dp .dpb-note { max-width: 1640px; font-weight: 600; }
+.sd-slide.dp .dpb--two { display: grid; grid-template-columns: 1fr 1fr; column-gap: 96px; row-gap: 36px; align-content: start; }
+.sd-slide.dp .dpb-col { display: flex; flex-direction: column; gap: 16px; }
+.sd-slide.dp .dpb-wide { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; padding-top: 22px; border-top: 2px solid var(--sd-rule); }
+.sd-slide.dp .dpb--stats { gap: 40px; }
+.sd-slide.dp .dpb-stat { display: flex; align-items: center; gap: 36px; }
+.sd-slide.dp .dpb-stat__n { min-width: 260px; font: 600 72px/1 var(--sd-font-display); white-space: nowrap; }
+.sd-slide.dp .dpb-stat__n.is-hyb { color: var(--dp-accent); }
+.sd-slide.dp .dpb-col .dpb-stat__n { min-width: 200px; font-size: 56px; }
+.sd-slide.dp .dpb-bars { display: flex; flex-direction: column; gap: 24px; }
+.sd-slide.dp .dpb-barrow { display: grid; grid-template-columns: 300px auto; row-gap: 6px; align-items: center; }
+.sd-slide.dp .dpb-barrow__name { grid-row: span 2; }
+.sd-slide.dp .dpb-bar { display: block; height: 30px; border-radius: 2px; }
+.sd-slide.dp .dpb-bar.is-hyb { background: var(--dp-accent); }
+.sd-slide.dp .dpb-bar.is-cnn { background: var(--dp-ink2); }
+.sd-slide.dp .dpb-bar.is-psm { background: var(--dp-other); }
+.sd-slide.dp .dpb-fig img { display: block; max-width: none; }

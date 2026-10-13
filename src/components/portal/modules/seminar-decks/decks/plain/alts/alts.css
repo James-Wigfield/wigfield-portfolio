@@ -1,0 +1,8 @@
+/* ============================================================================
+   PLAIN DECK, SECOND OPTIONS — their own styles (dpx* classes only), so the
+   main slides' rules in ../plain.css are never touched.
+   ========================================================================== */
+
+/* ── Slide 10, second option ───────────────────────────────────────────── */
+/* At rest the turning clip is hidden (the finished state is the main slide's). */
+.sd-slide.dp .dpx10-spin { overflow: hidden; opacity: 0; }

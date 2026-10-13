@@ -1,0 +1,114 @@
+/* ============================================================================
+   SEMINAR DECKS — PHONE SCRIPT AND PALM CARDS (engine/PhoneView.jsx,
+   engine/PalmCards.jsx). Every class here is new (sd-phone*, sd-pcard*), so
+   nothing else in the portal changes.
+   ========================================================================== */
+
+/* ── Phone script ──────────────────────────────────────────────────────── */
+.sd-phone {
+  --ph-bg: #ffffff;
+  --ph-ink: #111418;
+  --ph-muted: #4b5563;
+  --ph-rule: #d7dbe0;
+  --ph-accent: #0067a3;
+  --ph-btn: #eef1f4;
+  position: fixed; inset: 0; z-index: 2147483000;
+  display: flex; flex-direction: column;
+  background: var(--ph-bg); color: var(--ph-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Arial, sans-serif;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+.sd-phone.is-dark {
+  --ph-bg: #000000;
+  --ph-ink: #f3f4f6;
+  --ph-muted: #b4bcc6;
+  --ph-rule: #2b3138;
+  --ph-accent: #7cc4f5;
+  --ph-btn: #1c2127;
+}
+.sd-phone p { margin: 0; color: inherit; }
+.sd-phone button { font: inherit; color: inherit; }
+.sd-phone__top {
+  flex: none;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) calc(env(safe-area-inset-right, 0px) + 16px) 10px calc(env(safe-area-inset-left, 0px) + 16px);
+  border-bottom: 1px solid var(--ph-rule);
+}
+.sd-phone__row { display: flex; align-items: center; gap: 12px; }
+.sd-phone__no { font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; color: var(--ph-accent); min-width: 1.2em; }
+.sd-phone__of { flex: 1; min-width: 0; font-size: 18px; line-height: 1.25; color: var(--ph-muted); }
+.sd-phone__timer, .sd-phone__theme {
+  flex: none; min-height: 48px; padding: 0 14px; border: 0; border-radius: 12px;
+  background: var(--ph-btn); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.sd-phone__timer.is-on { color: var(--ph-accent); }
+.sd-phone__theme { font-size: 17px; font-weight: 500; }
+.sd-phone__title { margin-top: 6px !important; font-size: 20px; font-weight: 600; line-height: 1.3; }
+.sd-phone__body {
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+  padding: 16px calc(env(safe-area-inset-right, 0px) + 20px) 28px calc(env(safe-area-inset-left, 0px) + 20px);
+  font-size: 23px; line-height: 1.55; overflow-wrap: anywhere;
+}
+.sd-phone__space { margin-bottom: 12px !important; font-size: 17px; font-weight: 700; letter-spacing: 0.02em; color: var(--ph-accent); text-transform: uppercase; }
+.sd-phone__s { margin-bottom: 14px !important; }
+.sd-phone__muted { color: var(--ph-muted); }
+.sd-phone__next { margin-top: 22px !important; padding-top: 12px; border-top: 1px solid var(--ph-rule); font-size: 18px; color: var(--ph-muted); }
+.sd-phone__foot { margin-top: 18px !important; font-size: 16px; line-height: 1.4; color: var(--ph-muted); }
+.sd-phone__link { padding: 0; border: 0; background: none; text-decoration: underline; color: var(--ph-accent) !important; }
+.sd-phone__bk { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 20px; line-height: 1.35; }
+.sd-phone__bk li { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; }
+.sd-phone__bk b { font-size: 24px; color: var(--ph-accent); }
+.sd-phone__type { align-self: center; font-size: 16px; color: var(--ph-muted); }
+.sd-phone__bk li > span:last-child { grid-column: 1 / -1; }
+.sd-phone__nav {
+  flex: none; display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px;
+  padding: 10px calc(env(safe-area-inset-right, 0px) + 12px) calc(env(safe-area-inset-bottom, 0px) + 10px) calc(env(safe-area-inset-left, 0px) + 12px);
+  border-top: 1px solid var(--ph-rule); background: var(--ph-bg);
+}
+.sd-phone__btn { min-height: 68px; border: 0; border-radius: 14px; background: var(--ph-btn); font-size: 22px !important; font-weight: 600; touch-action: manipulation; }
+.sd-phone__btn.is-next { background: var(--ph-accent); color: var(--ph-bg) !important; }
+.sd-phone__btn:disabled { opacity: 0.35; }
+
+/* ── Palm cards (print only; A4, four A6 cards a sheet) ────────────────── */
+.sd-pcards-root { display: none; }
+.sd-pcards-measure {
+  position: absolute; left: -10000px; top: 0; visibility: hidden; pointer-events: none;
+  font-family: 'SD Source Sans', 'Segoe UI', Arial, sans-serif;
+}
+.sd-pcard__text { width: 89mm; font-size: 13.5pt; line-height: 1.4; color: #000; }
+.sd-pcard__cap { width: 89mm; height: 106mm; }
+.sd-pcard__ix { width: 89mm; font-size: 13pt; line-height: 1.3; }
+.sd-pcard__foot--measure { width: 89mm; box-sizing: border-box; }
+
+@page cards { size: A4; margin: 0; }
+@media print {
+  body.sd-printing-cards > *:not(.sd-pcards-root) { display: none !important; }
+  body.sd-printing-cards .sd-pcards-root { display: block !important; }
+  body.sd-printing-cards { margin: 0 !important; background: #fff !important; }
+}
+.sd-pcard-sheet {
+  page: cards; position: relative; width: 210mm; height: 297mm; overflow: hidden;
+  display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm;
+  break-after: page; page-break-after: always;
+  font-family: 'SD Source Sans', 'Segoe UI', Arial, sans-serif; color: #000; background: #fff;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.sd-pcard-sheet:last-child { break-after: auto; page-break-after: auto; }
+.sd-pcard-sheet__cut { position: absolute; border: 0 dashed #8a8a8a; }
+.sd-pcard-sheet__cut.is-v { left: 105mm; top: 0; bottom: 0; border-left-width: 0.25mm; }
+.sd-pcard-sheet__cut.is-h { top: 148.5mm; left: 0; right: 0; border-top-width: 0.25mm; }
+.sd-pcard { position: relative; box-sizing: border-box; padding: 6mm 9mm 5mm 7mm; display: flex; flex-direction: column; overflow: hidden; }
+.sd-pcards-root p, .sd-pcards-measure p { margin: 0; color: inherit; }
+.sd-pcards-root .sd-pcard__s, .sd-pcards-measure .sd-pcard__s { margin: 0 0 1.8mm; }
+.sd-pcards-root .sd-pcard__ix p, .sd-pcards-measure .sd-pcard__ix p { margin: 0 0 1.6mm; }
+.sd-pcard__head { flex: none; height: 11mm; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 0.3mm solid #000; }
+.sd-pcard__no { font-size: 20pt; font-weight: 600; line-height: 1; }
+.sd-pcard__meta { text-align: right; font-size: 13pt; line-height: 1.15; }
+.sd-pcard__meta b { font-weight: 600; }
+.sd-pcard__mark { flex: none; height: 6.4mm; padding-top: 1.4mm; font-size: 13pt; font-weight: 600; line-height: 1.2; }
+.sd-pcard__mark.is-cont { font-weight: 400; font-style: italic; color: #333; }
+.sd-pcard__body { flex: none; height: 106mm; overflow: hidden; }
+.sd-pcard__foot { flex: none; margin-top: auto; padding-top: 1.6mm; border-top: 0.2mm solid #999; font-size: 13pt; line-height: 1.2; color: #333; white-space: nowrap; overflow: hidden; }
+.sd-pcard__bar { position: absolute; right: 3.5mm; top: 6mm; bottom: 5mm; width: 1.6mm; background: #e2e2e2; border-radius: 0.8mm; overflow: hidden; }
+.sd-pcard__bar span { position: absolute; left: 0; right: 0; top: 0; background: #000; }
+.sd-pcard__ix b { font-weight: 600; }

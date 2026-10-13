@@ -1,12 +1,14 @@
 /* ============================================================================
    SEMINAR DECKS — TALK METADATA (shared by all three decks)
-   The title is the published seminar abstract's, word for word
+   The title is the published seminar abstract's
    (documents/presentation/abstract/23334375-abstract-and-title.txt; its LaTeX
-   en dash is written as a hyphen on screen).
+   en dash is written as a hyphen on screen), with one word added on 14 Oct:
+   "PSMA" before "PET", because both datasets are PSMA PET/CT only. The
+   submitted abstract itself is unchanged.
    ========================================================================== */
 
 export const TALK = {
-  title: 'Segmenting Metastatic Prostate Cancer in Whole-Body PET Scans with a Hybrid CNN-Mamba Network',
+  title: 'Segmenting Metastatic Prostate Cancer in Whole-Body PSMA PET Scans with a Hybrid CNN-Mamba Network',
   presenter: 'James Wigfield',
   supervisors: ['Dr Jake Kendrick', 'Dr Mubashar Hassan'],
   supervisorsLine: 'Supervised by Dr Jake Kendrick and Dr Mubashar Hassan',

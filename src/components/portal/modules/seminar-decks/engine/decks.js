@@ -9,6 +9,8 @@ export const DECK_LIST = [
   { slug: 'one-scan', load: () => import('../decks/one-scan/index.jsx') },
   { slug: 'verdict', load: () => import('../decks/verdict/index.jsx') },
   { slug: 'context', load: () => import('../decks/context/index.jsx') },
+  // The plain deck with its second options swapped in: previewed from the plain deck's Slides tab, not listed.
+  { slug: 'plain-alt', load: () => import('../decks/plain-alt/index.js'), hidden: true },
 ];
 
 const loaded = new Map(); // slug -> deck | Error
