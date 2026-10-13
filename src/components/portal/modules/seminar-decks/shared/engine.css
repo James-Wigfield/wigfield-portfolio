@@ -94,6 +94,9 @@
 .sd-cue { display: inline-block; font: 600 0.72em/1.3 var(--font-mono, monospace); letter-spacing: 0.02em; color: var(--accent-ink, #0d7267); background: var(--accent-soft, rgba(0,0,0,0.06)); border-radius: 4px; padding: 0.08em 0.4em; margin: 0 0.2em; text-transform: uppercase; }
 .sd-cut { text-decoration: underline dotted 1px; text-underline-offset: 3px; }
 .sd-cut__tag { font: 600 0.7em/1 var(--font-mono, monospace); color: var(--ink-3); margin-left: 0.35em; }
+.sd-script__said { margin-top: 0.8rem; padding: 0.7rem 0.9rem; border-left: 4px solid var(--accent-ink, #0d7267); background: var(--accent-soft, rgba(0,0,0,0.06)); border-radius: 0 6px 6px 0; }
+.sd-script__said-label { margin: 0 0 0.35rem; font: 600 0.72rem/1.3 var(--font-mono, monospace); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.sd-script__said-text { margin: 0; font-size: 1.15rem; line-height: 1.6; font-style: italic; font-weight: 700; color: var(--ink); }
 .sd-print-root { display: none; }
 
 @media print {
@@ -107,6 +110,8 @@
   .sd-print-root .sd-script-text { font-size: 11pt; line-height: 1.5; color: #000; }
   .sd-print-root .sd-script__title { font-size: 12pt; color: #000; }
   .sd-print-root .sd-cue { color: #333; background: #eee; }
+  .sd-print-root .sd-script__said { background: #f2f2f2; border-left-color: #555; }
+  .sd-print-root .sd-script__said-text { font-size: 11.5pt; color: #000; }
   .sd-print-root .sd-script__head h2 { font-size: 16pt; }
   .sd-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

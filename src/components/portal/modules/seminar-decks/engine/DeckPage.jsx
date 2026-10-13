@@ -5,7 +5,7 @@ import { buildSequence, deckMedia } from './sequence';
 import { labelOf } from './controller';
 import { fmtMB, runReadyCheck, useReady } from './ready';
 import { loadDeck } from './decks';
-import { Script } from '../shared/Num';
+import { Script, T } from '../shared/Num';
 import { fill, fmtTime } from '../shared/text';
 import { TALK } from '../shared/meta';
 
@@ -70,6 +70,14 @@ function ScriptRows({ deck, thumbs = true }) {
               <ol className="sd-script__cues">{s.cues.map((c, j) => <li key={j}>{fill(c)}</li>)}</ol>
             )}
             {s.script ? <Script text={s.script.text} /> : <p className="sd-script__none">No transcript.</p>}
+            {s.said && (
+              <div className="sd-script__said">
+                <p className="sd-script__said-label">
+                  Transcript to read{s.saidSecs ? ` · timed at ${s.saidSecs} s (target ${s.target} s)` : ''}
+                </p>
+                <p className="sd-script__said-text">“<T>{s.said}</T>”</p>
+              </div>
+            )}
           </div>
         </article>
       ))}

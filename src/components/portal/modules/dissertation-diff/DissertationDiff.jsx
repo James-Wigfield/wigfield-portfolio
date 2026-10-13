@@ -2,13 +2,21 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import './DissertationDiff.css';
 
 /* ============================================================================
-   DISSERTATION · RED PEN — the CITS4010 dissertation before and after the cuts
+   DISSERTATION · RED PEN — the CITS4010 dissertation before and after an edit
    ----------------------------------------------------------------------------
-   Left: the dissertation as committed before the word cuts. Right: the same text
-   marked up into the post-cut version like a manual edit in red pen: removed
-   text struck through in red (still readable), new or reworded text in red
-   handwriting, removed figures and tables crossed out, redrawn figures shown
-   old (small, crossed) above new (framed).
+   Left: the dissertation as committed. Right: the same text marked up into the
+   edited version like a manual edit in red pen: removed text struck through in
+   red (still readable), new or reworded text in red handwriting, removed
+   figures and tables crossed out, redrawn figures and rebuilt tables shown old
+   (crossed) above new (framed). The wording of the header comes from the
+   manifest (build.py --tags), since a comparison can be applied cuts or a
+   proposal not yet applied.
+
+   Change tags: when the edited version is a proposal whose files carry
+   "% REV <ID>" markers, the manifest lists where each ID landed and the tags
+   are drawn in the right margin of the edited pages, coloured by tier. A
+   click flags a tag (to drop or query it); flags stay in this browser and
+   "Copy IDs" puts the flagged list on the clipboard.
 
    Both columns are page renders (SVG, pdftocairo) of real pdflatex builds, so
    the typography, numbering, equations, citations and figures are the PDF's.
@@ -38,12 +46,29 @@ const VIEWS = [
   { id: 'edited', label: 'Edited' },
 ];
 const PREFS_KEY = 'portal:dissertationDiff';
+const FLAGS_KEY = 'portal:dissertationDiff:flags';
+const TAG_H = 16; // px, the height of a margin tag
+// The page's wording when the manifest has none (the applied word cuts).
+const DEFAULT_PAGE = {
+  kicker: 'CITS4010 · dissertation · word cuts',
+  title: 'The cuts, in red pen',
+  intro: 'Before the word cuts on the left; the same pages marked up into the post-cut version on the right. Both are the compiled PDF.',
+  original: 'before the cuts',
+  edited: 'after the cuts',
+};
 
 function loadPrefs() {
   try {
     return JSON.parse(localStorage.getItem(PREFS_KEY)) || {};
   } catch {
     return {};
+  }
+}
+function loadFlags() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(FLAGS_KEY)) || []);
+  } catch {
+    return new Set();
   }
 }
 
@@ -53,7 +78,17 @@ const shortDate = (iso) =>
 
 function sourceLabel(src) {
   if (src.kind === 'worktree') return `working tree, ${src.date}`;
+  if (src.kind === 'overlay') return `${src.rev} + ${src.overlay.split('/').slice(-2).join('/')}`;
   return `${src.rev} · ${shortDate(src.date)}`;
+}
+const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '±0');
+
+function tagTip(id, t, stages) {
+  if (!t) return id;
+  const words = t.words ? ` · ${signed(t.words)} words` : '';
+  const damage = t.damage ? ` · ${t.damage} damage` : '';
+  const more = t.absorbs?.length ? `\nIncludes ${t.absorbs.join(', ')}` : '';
+  return `${id} · ${stages?.[t.stage] ?? t.stage}${damage}${words}\n${t.title}\n${t.section}${more}\nClick to flag`;
 }
 
 /* Page boxes of one column: every page at the same width, stacked. */
@@ -167,14 +202,18 @@ function Column({ side, title, meta, doc, geo, setScroller, onScroll, scroll, ch
   );
 }
 
-function Legend() {
+function Legend({ tags }) {
   return (
     <ul className="ddf-legend" aria-label="Key">
       <li><span className="ddf-key ddf-key--del">struck</span> removed</li>
       <li><span className="ddf-key ddf-key--add">handwritten</span> added or reworded</li>
-      <li><span className="ddf-key ddf-key--new" aria-hidden="true" /> new figure</li>
+      <li><span className="ddf-key ddf-key--new" aria-hidden="true" /> new figure or table</li>
       <li><span className="ddf-key ddf-key--gone" aria-hidden="true" /> removed or replaced</li>
       <li><span className="ddf-key ddf-key--bar" aria-hidden="true" /> change bar</li>
+      {tags && Object.entries(tags.stages).map(([s, name]) => (
+        <li key={s}><span className={`ddf-tag ddf-tag--key ddf-tag--${s}`} aria-hidden="true">{s}</span> {name}</li>
+      ))}
+      {tags && <li>click a margin tag to flag it</li>}
     </ul>
   );
 }
@@ -188,12 +227,60 @@ function plain(s) {
     .replace(/\$\\geq\s*/g, '≥ ').replace(/\$/g, '').replace(/~/g, ' ').replace(/\\[a-z]+\{?|\}/gi, '');
 }
 
-function Notes({ m }) {
+/* Every change ID: the flagged ones first, then all of them by tier, each a link to
+   its first tag. */
+function TagIndex({ tags, flags, toggle, goToTag, copy, copied }) {
+  const ids = Object.entries(tags.ids);
+  const placed = new Set(tags.placed.map((t) => t.id));
+  const order = new Map(tags.placed.map((t, i) => [t.id, i]).reverse());
+  const flagged = ids.filter(([id]) => flags.has(id)).sort(([a], [b]) => (order.get(a) ?? 1e9) - (order.get(b) ?? 1e9));
+  const row = ([id, t]) => (
+    <li key={id} className={flags.has(id) ? 'is-flagged' : ''}>
+      <button type="button" className={`ddf-tag ddf-tag--${t.stage}${flags.has(id) ? ' is-flagged' : ''}`}
+        aria-pressed={flags.has(id)} title={flags.has(id) ? 'Unflag' : 'Flag'} onClick={() => toggle(id)}>{id}</button>
+      {placed.has(id)
+        ? <button type="button" className="ddf-idlink" onClick={() => goToTag(id)}>{t.title}</button>
+        : <span className="ddf-idtext">{t.title}</span>}
+      <span className="ddf-idwords">{t.words ? signed(t.words) : ''}</span>
+      {t.in && <span className="ddf-muted ddf-idnote">inside {t.in}</span>}
+      {!t.in && !placed.has(id) && <span className="ddf-muted ddf-idnote">not on any page</span>}
+    </li>
+  );
+  return (
+    <article className="pt-card ddf-card ddf-card--ids">
+      <h3>Change IDs</h3>
+      <p>
+        {placed.size} of {ids.length} changes are tagged in the margin. Click a tag, there or here, to flag it for
+        dropping or a question; flags stay in this browser. A title jumps to the change.
+        {tags.source && <span className="ddf-muted"> {tags.source}.</span>}
+      </p>
+      <h4>Flagged ({flagged.length})</h4>
+      {flagged.length ? (
+        <>
+          <ul className="ddf-ids">{flagged.map(row)}</ul>
+          <button type="button" className="ddf-btn" onClick={copy}>{copied ? 'Copied' : 'Copy flagged IDs'}</button>
+        </>
+      ) : <p className="ddf-muted">None yet.</p>}
+      {Object.entries(tags.stages).map(([s, name]) => {
+        const these = ids.filter(([, t]) => t.stage === s);
+        return (
+          <details key={s} className="ddf-idgroup">
+            <summary>{name} <span className="ddf-muted">({these.length})</span></summary>
+            <ul className="ddf-ids">{these.map(row)}</ul>
+          </details>
+        );
+      })}
+    </article>
+  );
+}
+
+function Notes({ m, children }) {
   const f = m.floats;
   const chk = m.check;
   const ok = chk.original.differences.length === 0 && chk.final.differences.length === 0;
   return (
     <section className="ddf-notes">
+      {children}
       <article className="pt-card ddf-card">
         <h3>Check</h3>
         <p className={ok ? 'ddf-ok' : 'ddf-warn'}>
@@ -227,6 +314,22 @@ function Notes({ m }) {
         <ul className="ddf-list">
           {f.added.map((r) => <li key={r.label}><b>{floatName(r)}</b> {plain(r.title)}</li>)}
         </ul>
+        {f.moved?.length > 0 && (
+          <>
+            <h4>Moved ({f.moved.length})</h4>
+            <ul className="ddf-list">
+              {f.moved.map((r) => <li key={r.label}><b>{floatName(r)} → {r.to}</b> {plain(r.title)}</li>)}
+            </ul>
+          </>
+        )}
+        {f.replaced?.length > 0 && (
+          <>
+            <h4>Rebuilt, old above new ({f.replaced.length})</h4>
+            <ul className="ddf-list">
+              {f.replaced.map((r) => <li key={r.label}><b>{floatName(r, r.to)}</b> {plain(r.title)}</li>)}
+            </ul>
+          </>
+        )}
         <h4>Redrawn, same file name ({f.changed.length})</h4>
         <ul className="ddf-list">
           {f.changed.map((r) => <li key={r.label}><b>{floatName(r)}</b> {plain(r.title)}</li>)}
@@ -239,14 +342,17 @@ function Notes({ m }) {
           <li>Figure, table and citation numbers are the final ones. A removed figure or table keeps its old number, struck through, and takes no number of its own.</li>
           <li>Page numbers are the marked-up document’s own; the final PDF has {m.edited.final_pages} pages.</li>
           <li>The List of Figures and List of Tables are marked up too, entry by entry.</li>
+          {f.replaced?.length > 0 && <li>A table whose rows or columns changed is shown whole: the old one crossed out, then the new one framed.</li>}
+          {f.moved?.length > 0 && <li>A moved figure is crossed out where it was and framed as new where it now is.</li>}
+          {m.tags && <li>A tag inside a table sits at the table’s top; one between paragraphs sits at the start of the next.</li>}
         </ul>
         <h4>Renumbered ({f.renumbered.length})</h4>
         <ul className="ddf-list ddf-list--tight">
           {f.renumbered.map((r) => <li key={r.label}>{floatName(r, r.from)} → {r.to}</li>)}
         </ul>
         <p className="ddf-muted">
-          Rebuild after editing the dissertation with <code>python tools/dissertation-diff/build.py</code>
-          {' '}(add <code>--new WORKTREE</code> to compare against uncommitted work).
+          Built with <code>{m.command ?? 'python tools/dissertation-diff/build.py'}</code>; see its docstring for
+          the other comparisons (<code>--new WORKTREE</code> for uncommitted work).
         </p>
       </article>
     </section>
@@ -269,6 +375,9 @@ function DissertationDiffDev() {
   const setScE = useCallback((el) => { els.current.edited = el; setScEState(el); }, []);
   const [scroll, setScroll] = useState({});
   const [flash, setFlash] = useState(-1);
+  const [flags, setFlags] = useState(loadFlags);
+  const [copied, setCopied] = useState(false);
+  const [flashTag, setFlashTag] = useState(null);
   const driver = useRef(null);
   const driverTimer = useRef(0);
   const raf = useRef(0);
@@ -285,6 +394,24 @@ function DissertationDiffDev() {
   useEffect(() => {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify({ view, zoom, sync })); } catch { /* ignore */ }
   }, [view, zoom, sync]);
+  useEffect(() => {
+    try { localStorage.setItem(FLAGS_KEY, JSON.stringify([...flags])); } catch { /* ignore */ }
+  }, [flags]);
+
+  const toggle = useCallback((id) => setFlags((s) => {
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  }), []);
+  // The flagged IDs in page order, as one line to paste into a chat.
+  const copy = useCallback(() => {
+    if (!m?.tags) return;
+    const order = new Map(m.tags.placed.map((t, i) => [t.id, i]).reverse());
+    const ids = [...flags].sort((a, b) => (order.get(a) ?? 1e9) - (order.get(b) ?? 1e9));
+    navigator.clipboard?.writeText(`Flagged on the red-pen page: ${ids.join(', ')}`)
+      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })
+      .catch(() => { /* the flagged list stays on the page */ });
+  }, [m, flags]);
 
   const wO = useWidth(scO);
   const wE = useWidth(scE);
@@ -307,6 +434,24 @@ function DissertationDiffDev() {
   const changes = useMemo(() => {
     if (!m || !geoE) return [];
     return m.changes.map((c) => ({ ...c, at: posOf(geoE, c.page, c.y), to: posOf(geoE, c.page, c.y1) }));
+  }, [m, geoE]);
+
+  // Margin tags: just right of the text block, level with the line each ID landed on,
+  // pushed down where two on one page would overlap.
+  const tagBoxes = useMemo(() => {
+    if (!m?.tags || !geoE) return [];
+    const left = PAD + (m.tags.text ? m.tags.text[1] : 0.86) * geoE.pw + Math.max(4, 0.012 * geoE.pw);
+    const out = [];
+    let floor = -Infinity;
+    let page = 0;
+    for (const t of m.tags.placed) {
+      let top = posOf(geoE, t.page, t.y) - TAG_H + 4;
+      if (t.page === page && top < floor + 2) top = floor + 2;
+      out.push({ ...t, top, left });
+      floor = top + TAG_H;
+      page = t.page;
+    }
+    return out;
   }, [m, geoE]);
 
   // Where each column is, as (page, fraction of page) at its top, so a zoom, a
@@ -418,6 +563,22 @@ function DissertationDiffDev() {
     return () => clearTimeout(t);
   }, [flash]);
 
+  // From the ID list: the edited column to the first tag of an ID.
+  const goToTag = useCallback((id) => {
+    const e = els.current.edited;
+    const t = tagBoxes.find((b) => b.id === id);
+    if (!t) return;
+    if (!e) { setView('both'); return; }
+    raise();
+    e.scrollTo({ top: t.top - LINE * e.clientHeight, behavior: 'smooth' });
+    setFlashTag(id);
+  }, [tagBoxes, raise]);
+  useEffect(() => {
+    if (!flashTag) return undefined;
+    const t = setTimeout(() => setFlashTag(null), 1800);
+    return () => clearTimeout(t);
+  }, [flashTag]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.closest?.('input, select, textarea, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -455,6 +616,8 @@ function DissertationDiffDev() {
   if (!m) return <div className="pt-module ddf"><p className="ddf-muted">Loading the page renders…</p></div>;
 
   const f = m.floats;
+  const P = { ...DEFAULT_PAGE, ...(m.page || {}) };
+  const tagged = m.tags ? new Set(m.tags.placed.map((t) => t.id)).size : 0;
   const okCheck = m.check.original.differences.length === 0 && m.check.final.differences.length === 0;
   const showO = view !== 'edited';
   const showE = view !== 'original';
@@ -479,23 +642,35 @@ function DissertationDiffDev() {
     <span key={i} className={`ddf-cbar${flash === i ? ' is-flash' : ''}`} aria-hidden="true"
       style={{ top: c.at - 10 * pt, height: c.to - c.at + 13 * pt, left: PAD - 10 }} />
   ));
+  const chips = tagBoxes.map((t, i) => {
+    const on = flags.has(t.id);
+    return (
+      <button key={`${t.id}-${i}`} type="button" style={{ top: t.top, left: t.left }}
+        className={`ddf-tag ddf-tag--page ddf-tag--${m.tags.ids[t.id]?.stage ?? 'x'}${on ? ' is-flagged' : ''}${flashTag === t.id ? ' is-flash' : ''}`}
+        title={tagTip(t.id, m.tags.ids[t.id], m.tags.stages)} aria-pressed={on} onClick={() => toggle(t.id)}>
+        {t.id}
+      </button>
+    );
+  });
 
   return (
     <div className="pt-module ddf">
       <header className="ddf-head">
         <div>
-          <p className="ddf-kicker">CITS4010 · dissertation · word cuts</p>
-          <h2 className="ddf-title">The cuts, in red pen</h2>
-          <p className="pt-module__intro">
-            Before the word cuts on the left; the same pages marked up into the post-cut version on the right.
-            Both are the compiled PDF.
-          </p>
+          <p className="ddf-kicker">{P.kicker}</p>
+          <h2 className="ddf-title">{P.title}</h2>
+          <p className="pt-module__intro">{P.intro}</p>
         </div>
         <dl className="ddf-stats">
           <div><dt>Original</dt><dd>{m.original.pages.length} pages</dd></div>
           <div><dt>Final</dt><dd>{m.edited.final_pages} pages</dd></div>
           <div><dt>Changes</dt><dd>{changes.length || m.changes.length}</dd></div>
-          <div><dt>Floats</dt><dd>{f.removed.length} removed · {f.added.length} added · {f.changed.length} redrawn</dd></div>
+          {m.tags && <div><dt>Change IDs</dt><dd>{tagged} tagged · {flags.size} flagged</dd></div>}
+          <div><dt>Floats</dt><dd>
+            {f.removed.length} removed · {f.added.length} added · {f.changed.length} redrawn
+            {f.moved?.length > 0 && ` · ${f.moved.length} moved`}
+            {f.replaced?.length > 0 && ` · ${f.replaced.length} rebuilt`}
+          </dd></div>
           <div><dt>Check</dt><dd className={okCheck ? 'ddf-ok' : 'ddf-warn'}>{okCheck ? 'both readings match' : 'differences found'}</dd></div>
         </dl>
       </header>
@@ -535,31 +710,42 @@ function DissertationDiffDev() {
             <input type="checkbox" checked={sync} disabled={view !== 'both'} onChange={(e) => setSync(e.target.checked)} />
             Sync scroll
           </label>
+          {m.tags && (
+            <div className="ddf-seg" role="group" aria-label="Flagged changes">
+              <span className="ddf-seg__count ddf-seg__count--flags">{flags.size} flagged</span>
+              <button type="button" onClick={copy} disabled={!flags.size} title="Copy the flagged IDs to the clipboard">
+                {copied ? 'Copied' : 'Copy IDs'}
+              </button>
+            </div>
+          )}
           <span className="ddf-pdfs">
             PDF: <a href={`${ROOT}/${m.original.pdf}`} target="_blank" rel="noreferrer">original</a>
             {' · '}<a href={`${ROOT}/${m.edited.pdf}`} target="_blank" rel="noreferrer">marked up</a>
             {' · '}<a href={`${ROOT}/${m.edited.final_pdf}`} target="_blank" rel="noreferrer">final</a>
           </span>
         </div>
-        <Legend />
+        <Legend tags={m.tags} />
 
         <div className={`ddf-cols ddf-cols--${view}`}>
           {showO && (
-            <Column side="original" title="Original" meta={`before the cuts · ${sourceLabel(m.original.source)}`}
+            <Column side="original" title="Original" meta={`${P.original} · ${sourceLabel(m.original.source)}`}
               doc={m.original} geo={geoO || geometry(m.original.pages, 800, 1)} setScroller={setScO}
               onScroll={onScroll('original')} scroll={scroll.original} />
           )}
           {showE && (
-            <Column side="edited" title="Edited, in red pen" meta={`after the cuts · ${sourceLabel(m.edited.source)}`}
+            <Column side="edited" title="Edited, in red pen" meta={`${P.edited} · ${sourceLabel(m.edited.source)}`}
               doc={m.edited} geo={geoE || geometry(m.edited.pages, 800, 1)} setScroller={setScE}
               onScroll={onScroll('edited')} scroll={scroll.edited} rail={rail}>
               {bars}
+              {chips}
             </Column>
           )}
         </div>
       </div>
 
-      <Notes m={m} />
+      <Notes m={m}>
+        {m.tags && <TagIndex tags={m.tags} flags={flags} toggle={toggle} goToTag={goToTag} copy={copy} copied={copied} />}
+      </Notes>
     </div>
   );
 }

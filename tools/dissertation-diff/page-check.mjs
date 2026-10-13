@@ -10,7 +10,10 @@
    Checks that the page gets past the gate, both columns render real page
    images with the markup, "Next" walks the changes and the original column
    follows, the section menu jumps both columns, the single-column views and
-   the dark arcade theme work, and nothing logs a console error.
+   the dark arcade theme work, and nothing logs a console error. For a
+   proposal build (manifest with tags): the margin tags sit right of the text
+   on their pages, a click flags one, "Copy IDs" copies the flagged list and a
+   title in the ID list jumps to its tag.
    DDF_SHOTS=<dir> writes screenshots there.
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
@@ -57,7 +60,9 @@ try {
   await page.evaluateOnNewDocument(() => {
     sessionStorage.setItem('portal_auth', JSON.stringify({ token: 'mock-session-token', key: 'wiggy1', issued_at: new Date().toISOString() }));
     localStorage.removeItem('portal:dissertationDiff');
+    localStorage.removeItem('portal:dissertationDiff:flags');
   });
+  await browser.defaultBrowserContext().overridePermissions(BASE, ['clipboard-read', 'clipboard-write', 'clipboard-sanitized-write']);
 
   await page.goto(`${BASE}/portal/dissertation-red-pen`, { waitUntil: 'networkidle0' });
   await page.waitForSelector('.ddf-col--edited .ddf-page img', { timeout: 20000 });
@@ -131,6 +136,64 @@ try {
   const r = await page.$eval('.ddf-col--edited .ddf-scroll', (el) => el.getBoundingClientRect().toJSON());
   await shot(page, '04-markup-close', { clip: { x: r.x, y: r.y, width: r.width, height: Math.min(r.height, 700) } });
   await page.setViewport({ width: 1680, height: 1000, deviceScaleFactor: 1 });
+
+  // Change tags (a proposal build only).
+  if (man.tags) {
+    const nTags = await page.$$eval('.ddf-tag--page', (t) => t.length);
+    ok(nTags === man.tags.placed.length, 'one margin tag per placed change ID', `${nTags} / ${man.tags.placed.length}`);
+    // Tags in view sit in the right margin of the page they are on.
+    const where = await page.$eval('.ddf-col--edited', (c) => {
+      const pages = [...c.querySelectorAll('.ddf-page')].map((p) => p.getBoundingClientRect());
+      const view = c.querySelector('.ddf-scroll').getBoundingClientRect();
+      return [...c.querySelectorAll('.ddf-tag--page')].map((t) => t.getBoundingClientRect())
+        .filter((r) => r.top > view.top && r.bottom < view.bottom)
+        .map((r) => {
+          const p = pages.find((q) => r.top + r.height / 2 >= q.top && r.top + r.height / 2 <= q.bottom);
+          return p ? [(r.left - p.left) / p.width, (r.right - p.left) / p.width] : null;
+        });
+    });
+    ok(where.length > 0 && where.every((w) => w && w[0] > man.tags.text[1] && w[1] < 1.02),
+      'tags in view sit in the right margin of their page', where.slice(0, 4).map((w) => w && w.map((x) => x.toFixed(2)).join('-')).join(', '));
+    const first = await page.$eval('.ddf-tag--page', (t) => t.textContent.trim());
+    await page.$eval('.ddf-tag--page', (t) => t.click());
+    await sleep(200);
+    const flagged = await page.$$eval('.ddf-tag--page.is-flagged', (t) => t.map((x) => x.textContent.trim()));
+    ok(flagged.length > 0 && flagged.every((x) => x.endsWith(first)), 'a click flags that ID wherever it is tagged', `${first}: ${flagged.length}`);
+    ok(await page.$eval('.ddf-stats', (el) => el.textContent.includes('1 flagged')), 'the header counts the flag');
+    ok(await page.$eval('.ddf-card--ids', (el) => el.textContent.includes('Flagged (1)')), 'the ID list shows the flag');
+    await page.$$eval('.ddf-seg button', (bs) => bs.find((b) => b.textContent === 'Copy IDs').click());
+    await sleep(300);
+    const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => `error: ${e.message}`));
+    ok(clip.includes(first), '"Copy IDs" copies the flagged list', clip);
+    await shot(page, '04b-tag-flagged');
+    await page.$eval('.ddf-tag--page.is-flagged', (t) => t.click());
+    await sleep(200);
+    ok(await page.$$eval('.ddf-tag--page.is-flagged', (t) => t.length) === 0, 'a second click unflags it');
+    // A title in the ID list brings its tag into view.
+    const target = man.tags.placed[man.tags.placed.length - 1].id;
+    await page.$$eval('.ddf-idgroup', (g) => g.forEach((d) => { d.open = true; }));
+    await page.$$eval('.ddf-card--ids li', (lis, id) => {
+      const li = lis.find((l) => l.querySelector('.ddf-tag')?.textContent.trim() === id);
+      li.querySelector('.ddf-idlink').click();
+    }, target);
+    for (let last = -1, now = await scrollTop(page, 'edited'); now !== last; await sleep(250)) {
+      last = now;
+      now = await scrollTop(page, 'edited');
+    }
+    const seen = await page.$eval('.ddf-col--edited', (c, id) => {
+      const view = c.querySelector('.ddf-scroll').getBoundingClientRect();
+      return [...c.querySelectorAll('.ddf-tag--page')].some((t) => {
+        const r = t.getBoundingClientRect();
+        return t.textContent.trim() === id && r.top > view.top && r.bottom < view.bottom;
+      });
+    }, target);
+    ok(seen, 'a title in the ID list jumps to its tag', target);
+    await waitLoaded(page, 'edited');
+    await shot(page, '04c-tag-jump');
+    // back to Chapter 4 for the view checks below
+    await page.select('.ddf-pick select', String(ch4));
+    await sleep(700);
+  }
 
   // Single column views.
   for (const v of ['Edited', 'Original']) {

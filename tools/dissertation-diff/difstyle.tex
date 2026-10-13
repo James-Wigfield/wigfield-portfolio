@@ -61,6 +61,33 @@
 \DeclareRobustCommand\DIFaddbeginFL{\DIFmark{a}\DIFxaddbeginFL}
 \DeclareRobustCommand\DIFdelbeginFL{\DIFmark{d}\DIFxdelbeginFL}
 
+% --- change IDs ------------------------------------------------------------
+% build.py --overlay turns each "% REV <ID>" line into \DIFrevtag{<ID>}, which
+% prints nothing: it writes the ID's page and position to <jobname>.difrev and
+% the page draws the tag in the margin there. In the main vertical list (a
+% marker between paragraphs) a whatsit could sit apart from the text it marks
+% across a page break, so the tag waits for the next paragraph to start.
+% Lists of contents and PDF bookmarks drop it.
+\newwrite\DIFrevout
+\immediate\openout\DIFrevout=\jobname.difrev\relax
+\AtBeginDocument{\immediate\write\DIFrevout{@text
+  \number\dimexpr 1in+\hoffset+\oddsidemargin\relax\space
+  \number\dimexpr 1in+\hoffset+\oddsidemargin+\textwidth\relax}}
+\newcommand\DIFrevwrite[1]{%
+  \pdfsavepos
+  \write\DIFrevout{#1 \the\ReadonlyShipoutCounter\space\the\pdflastxpos\space\the\pdflastypos}}
+\gdef\DIFrevpending{}
+\DeclareRobustCommand\DIFrevtag[1]{%
+  \ifvmode\ifinner\DIFrevwrite{#1}%
+    \else\g@addto@macro\DIFrevpending{\DIFrevwrite{#1}}\fi
+  \else\DIFrevwrite{#1}\fi}
+\AddToHook{para/begin}{%
+  \ifx\DIFrevpending\@empty\else
+    \DIFrevpending\global\let\DIFrevpending\@empty\fi}
+\let\DIFxstarttoc\@starttoc
+\def\@starttoc#1{\begingroup\let\DIFrevtag\@gobble\DIFxstarttoc{#1}\endgroup}
+\pdfstringdefDisableCommands{\let\DIFrevtag\@gobble}
+
 % --- figures -------------------------------------------------------------
 \newsavebox\DIFfigbox
 \newcommand\DIFmarginnote[2]{% #1 node, #2 note
@@ -104,10 +131,16 @@
   \DIFframed{new version}{\DIFOincludegraphics[#1]{#2}}}
 
 % --- removed floats --------------------------------------------------------
-% #1 scale, #2 body (graphics or tabular)
+% #1 scale, #2 body (graphics or tabular); the margin note is \DIFcrossnote,
+% which build.py sets inside a float that moved ("moved to C.1") or was
+% rebuilt ("old version")
+\newcommand\DIFcrossnote{removed}
 \newcommand\DIFcrossbox[2]{%
   \DIFmark{f}%
-  \DIFcrossed{removed}{\color{DIFdelink}\scalebox{#1}{#2}}\par}
+  \DIFcrossed{\DIFcrossnote}{\color{DIFdelink}\scalebox{#1}{#2}}\par}
+% a table whose rows or columns changed, in its new version (build.py's
+% replace_restructured; the old one is a removed float just before it)
+\newcommand\DIFnewtable[1]{\DIFmark{f}\DIFframed{new version}{#1}}
 % a removed box that latexdiff could not mark (\figureplaceholder)
 \newcommand\DIFdelbox[1]{\DIFmark{f}\DIFcrossed{removed}{#1}\par}
 % #1 lof or lot, #2 figure or table, #3 old label text ("Table 3.3"),
@@ -115,6 +148,8 @@
 \newcommand\DIFdelcaption[6]{%
   \caption*{\DIFdel{#3: #5}}%
   \addcontentsline{#1}{#2}{\protect\numberline{\DIFdel{#4}}\DIFdel{#6}}}
+% the removed float's label: only the check build of the original sets it
+\newcommand\DIFoldlabel[1]{}
 
 % A float the markup makes taller than the page, scaled to fit (build.py's
 % fit_floats); #1 is the scale.

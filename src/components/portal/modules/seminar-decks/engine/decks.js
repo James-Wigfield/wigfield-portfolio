@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react';
    ========================================================================== */
 
 export const DECK_LIST = [
+  { slug: 'plain', load: () => import('../decks/plain/index.jsx') },
   { slug: 'one-scan', load: () => import('../decks/one-scan/index.jsx') },
   { slug: 'verdict', load: () => import('../decks/verdict/index.jsx') },
   { slug: 'context', load: () => import('../decks/context/index.jsx') },

@@ -7,6 +7,15 @@ gitignored dissertation-diff-data/ folder, which only the dev server serves
 
     python tools/dissertation-diff/build.py                  # 9875224 -> 2e0a5b3 (the cuts)
     python tools/dissertation-diff/build.py --new WORKTREE   # edited = the working tree
+    python tools/dissertation-diff/build.py --old HEAD --new HEAD \
+        --overlay <dir> --tags <file.json>                   # a proposal: edited copies laid over HEAD
+
+--overlay copies each file of <dir> over the file of the same name in the edited tree
+(chapters/, appendices/ or the root), so a proposal can be shown before it is applied.
+Lines "% REV <ID>" in those files become margin tags: build.py turns each into
+\\DIFrevtag{<ID>} (difstyle.tex), which records where TeX put it, and the page draws
+the ID there. --tags gives the page's wording and each ID's metadata (see the
+revision folder's tools/redpen_tags.py).
 
 Both columns are real pdflatex builds of the dissertation, so typography, numbering,
 equations, citations and figures are exactly what the PDF shows:
@@ -114,6 +123,18 @@ def copy_worktree(dst):
             shutil.copytree(s, dst / k, ignore=shutil.ignore_patterns("archive"))
         else:
             shutil.copy2(s, dst / k)
+
+
+def apply_overlay(tree, overlay):
+    """Copy each file of `overlay` over the file of the same name in the tree."""
+    done = []
+    for src in sorted(p for p in Path(overlay).iterdir() if p.is_file()):
+        hits = [d / src.name for d in (tree, tree / "chapters", tree / "appendices") if (d / src.name).exists()]
+        if len(hits) != 1:
+            sys.exit(f"overlay file {src.name}: {len(hits)} matches in the edited tree")
+        shutil.copy2(src, hits[0])
+        done.append(hits[0].relative_to(tree).as_posix())
+    return done
 
 
 def to_lf(root):
@@ -274,8 +295,11 @@ def find_active(s, needle, start=0):
     return i
 
 
-def rebuild_removed_float(fl, number):
-    """The original float, crossed out, with an unnumbered struck caption."""
+def rebuild_removed_float(fl, number, label):
+    """The original float, crossed out, with an unnumbered struck caption. Its label
+    comes back only in the check build that reads the original (\\DIFoldlabel), where
+    the float is numbered again and the edited version of a moved or rebuilt one is
+    left out."""
     env = fl["env"]
     kind, lst = ("Figure", "lof") if env == "figure" else ("Table", "lot")
     body = re.sub(r"\\label\{[^}]*\}", "", fl["body"])
@@ -291,9 +315,45 @@ def rebuild_removed_float(fl, number):
     long_ = protect_refs(squash(fl["long"]))
     entry = protect_refs(fl["entry"])
     cap = (f"\\DIFdelcaption{{{lst}}}{{{env}}}{{{kind}~{number}}}{{{number}}}"
-           f"{{{long_}}}{{{entry}}}\n")
+           f"{{{long_}}}{{{entry}}}\\DIFoldlabel{{{label}}}\n")
     return (f"\\ifDIFshowremoved\n\\begin{{{env}}}{fl['place']}\n" + visual(body[:c0]) + cap
             + visual(body[c1:]) + f"\\end{{{env}}}\n\\fi\n")
+
+
+def replace_restructured(diff, old_floats, new_floats, old_nums, notes):
+    """Tables kept under the same label whose rows or columns changed (latexdiff had to
+    comment out a removed & or \\\\, or the column spec): the old table crossed out, then
+    the new one from the edited source, framed, with its caption in handwriting."""
+    out, pos = [], 0
+    for m in re.finditer(r"\\begin\{table\}", diff):
+        if m.start() < pos or not active(diff, m.start()):
+            continue
+        e = find_active(diff, "\\end{table}", m.end())
+        if e < 0:
+            continue
+        end = e + len("\\end{table}")
+        body = diff[m.start():end]
+        labels = [x.group(1) for x in re.finditer(r"\\label\{([^}]*)\}", body) if active(body, x.start())]
+        if len(labels) != 1 or labels[0] not in old_floats or labels[0] not in new_floats:
+            continue
+        if not re.search(r"%DIFDELCMD <[^\n]*?(?:(?<!\\)&|\\\\|\\begin\{tabular)", body):
+            continue
+        label = labels[0]
+        nf = new_floats[label]
+        notes["replaced"].append({"label": label, "kind": "table", "number": old_nums[label][0],
+                                  "title": squash(old_floats[label]["entry"])})
+
+        def framed(seg):
+            return re.sub(r"\\begin\{(tabular\*?|tabularx)\}.*?\\end\{\1\}",
+                          lambda t: "\\DIFnewtable{%\n" + t.group(0) + "%\n}", seg, flags=re.S)
+        c0, c1 = nf["cap"]
+        cap = f"\\caption[\\DIFadd{{{nf['entry']}}}]{{\\DIFadd{{{squash(nf['long'])}}}}}"
+        tags = "".join(f"%DIF >  REV {t}\n" for t in REVTAG.findall(body))
+        new = (f"\\ifDIFshowadded\n\\begin{{table}}{nf['place']}\n" + tags + framed(nf["body"][:c0]) + cap
+               + framed(nf["body"][c1:]) + "\\end{table}\n\\fi\n")
+        out += [diff[pos:m.start()], rebuild_removed_float(old_floats[label], old_nums[label][0], label), new]
+        pos = end
+    return "".join(out) + diff[pos:]
 
 
 def vis(s):
@@ -362,7 +422,10 @@ def need(before, after, src):
         return 0
     head = re.search(r"[A-Za-z0-9]+[,.]?\Z", before)
     tail = re.match(r"[A-Za-z0-9]+", after)
-    if head and tail and src.has(head.group(0) + tail.group(0)):
+    # (unless the spaced form is printed too: "patient-bootstrap" hyphenated at a line
+    # end reads back as "patientbootstrap", next to a plain "patient bootstrap")
+    if head and tail and src.has(head.group(0) + tail.group(0)) \
+            and not src.has(head.group(0) + " " + tail.group(0), whole=False):
         return 0  # one word split across the change ("scan" + "s", "10," + "000")
     if (p.isalnum() or p in ",.;:)]}'!?$%") and (n.isalnum() or n in "(\\$`"):
         return 1
@@ -669,7 +732,10 @@ def fix_run_together_words(diff, old_src, new_src):
 
 def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old_src, new_src,
                 old_tex, new_tex):
-    # 0. Spacing inside each changed run, from its own source.
+    # 0. latexdiff comments out a lone [ or ] in removed text as if it were markup, so
+    #    "[177Lu]Lu-PSMA" read "177LuLu-PSMA" when struck. Strike it as text.
+    diff = re.sub(r"%DIFDELCMD < ([\[\]])%%%\n", r"\\DIFdel{\1}", diff)
+    # Spacing inside each changed run, from its own source.
     diff = respace_groups(diff, old_tex, new_tex)
     # 1. Stray spaces latexdiff puts before punctuation inside marked text
     #    ("interpolation . It", "(IoU )", "\releasedbaseline{} 's"). The sources
@@ -723,6 +789,13 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
         pos = k + 1
     diff = "".join(out) + diff[pos:]
 
+    # 1b. A table whose layout changed (a row or column removed, a new column spec)
+    #    cannot be marked cell by cell: latexdiff comments out the removed & and \\, so
+    #    the struck cells run into their neighbours and the rows misalign. Show the old
+    #    table crossed out (as a removed float) and the new one in full beside a "new
+    #    version" frame, its caption in handwriting. Change tags inside it go to its top.
+    diff = replace_restructured(diff, old_floats, new_floats, old_nums, notes)
+
     # 2. Removed floats: latexdiff comments out the environment and leaves the cell
     #    text loose in the paragraph. Swap the whole block for a crossed-out rebuild.
     pat = re.compile(r"%DIFDELCMD < \\begin\{(figure|table)\}[^\n]*\n(.*?)"
@@ -736,8 +809,13 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
         num = old_nums[name][0]
         notes["removed"].append({"label": name, "kind": old_floats[name]["env"],
                                  "number": num, "title": squash(old_floats[name]["entry"])})
-        return "\n" + rebuild_removed_float(old_floats[name], num)
+        return "\n" + rebuild_removed_float(old_floats[name], num, name)
     diff = pat.sub(swap, diff)
+    # A float removed in one place and added in another under the same label has moved:
+    # crossed out where it was (above), and treated as new where it now is (4 and 5).
+    moved = {r["label"] for r in notes["removed"]} & set(new_floats)
+    notes["moved"] = [r for r in notes["removed"] if r["label"] in moved]
+    notes["removed"] = [r for r in notes["removed"] if r["label"] not in moved]
     # A removed figure placeholder (the dissertation's own \figureplaceholder box)
     # is a command latexdiff can only comment out; draw it crossed out instead.
     diff = re.sub(r"%DIFDELCMD < (\\figureplaceholder\{[^\n]*\})[ \t]*\n",
@@ -760,7 +838,7 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
 
     # 4. Floats that are new as a whole sit in \ifDIFshowadded, so the "original
     #    only" check build can leave them out (and not count them).
-    for label in [l for l in new_floats if l not in old_floats]:
+    for label in [l for l in new_floats if l not in old_floats or l in moved]:
         li = find_active(diff, "\\label{" + label + "}")
         env = new_floats[label]["env"]
         b = diff.rfind("\\begin{" + env + "}", 0, li)
@@ -772,9 +850,12 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
     # 5. List of Figures / Tables entries. latexdiff marks the long caption, which
     #    is the entry when neither version has a short one; otherwise mark the entry
     #    here and pass it as the short caption.
+    replaced = {r["label"] for r in notes["replaced"]}
     for label, nf in new_floats.items():
         of = old_floats.get(label)
-        if of is None:
+        if label in replaced:
+            continue
+        if of is None or label in moved:
             entry = f"\\DIFadd{{{nf['entry']}}}"
         elif of["entry"] == nf["entry"] or (of["short"] is None and nf["short"] is None):
             continue
@@ -792,7 +873,94 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
             diff = diff[:j] + "[" + entry + "]" + diff[k:]
         else:
             diff = diff[:j] + "[" + entry + "]" + diff[j:]
+
+    # 6. latexdiff's change marks are commands that do something (they write a position,
+    #    and switch \includegraphics), so at the start of a table row one opens a cell,
+    #    after which a rule (\midrule, \rowsep) or a \multicolumn is an error. Move each
+    #    such mark past the rules, into the \multicolumn's text, or out past the end of
+    #    the tabular. Nothing printed moves.
+    gap = r"((?:[ \t\n]|(?<!\\)%[^\n]*\n)*)"
+    rule = (r"(\\(?:toprule|midrule|bottomrule|hline|rowsep|addlinespace(?:\[[^\]]*\])?"
+            r"|cmidrule(?:\([^)]*\))?\{[^{}]*\}|specialrule\{[^{}]*\}\{[^{}]*\}\{[^{}]*\})(?![A-Za-z]))")
+    mark = r"(\\DIF(?:add|del)(?:begin|end)(?:FL)? ?)"
+    steps = [(re.compile(mark + gap + rule), r"\3\2\1"),
+             (re.compile(mark + gap + r"(\\multicolumn\{[^{}]*\}\{(?:[^{}]|\{[^{}]*\})*\}\{)"), r"\2\3\1"),
+             (re.compile(mark + gap + r"(\\end\{(?:tabular\*?|tabularx)\})"), r"\2\3\1")]
+    for _ in range(10):
+        before = diff
+        for rx, rep in steps:
+            diff = rx.sub(rep, diff)
+        if diff == before:
+            break
     return diff
+
+
+# --------------------------------------------------------------------------- change tags
+MARKER = re.compile(r"^[ \t]*% REV (\S+)[^\n]*\n", re.M)
+TABULAR = re.compile(r"\\begin\{(tabular\*?|tabularx)\}")
+REVTAG = re.compile(r"(?<!\\)%DIF > +REV (\S+)[^\n]*")
+
+
+def code_only(s):
+    """s with every % comment blanked out (same length), so searches skip comments."""
+    return re.sub(r"(?<!\\)%[^\n]*", lambda m: " " * len(m.group(0)), s)
+
+
+def move_table_markers(text):
+    """A "% REV" line inside a tabular would put its tag where the line is: at the start
+    of a row it opens a cell (an error before \\multicolumn or \\midrule), and at the end
+    of a cell it keeps the cell's trailing space from being trimmed, which widens the
+    column. Move each one to the line before \\begin{tabular}, so the tag sits at the
+    top of the table. Moving a comment changes nothing TeX prints."""
+    code = code_only(text)
+    spans = []
+    for m in TABULAR.finditer(code):
+        spans.append((code.rfind("\n", 0, m.start()) + 1, m.end(), code.find("\\end{" + m.group(1) + "}", m.end())))
+    edits = []  # (position, characters removed, text inserted)
+    for mk in MARKER.finditer(text):
+        span = next((s for s in spans if s[1] < mk.start() < s[2]), None)
+        if span:
+            edits += [(mk.start(), len(mk.group(0)), ""), (span[0], 0, mk.group(0).lstrip())]
+    for pos, n, ins in sorted(edits, key=lambda e: (e[0], e[1] > 0), reverse=True):
+        text = text[:pos] + ins + text[pos + n:]
+    return text
+
+
+def place_tags(diff):
+    """latexdiff passes the overlay's "% REV <ID>" lines through as "%DIF >  REV <ID>"
+    comments. Each becomes "\\DIFrevtag{<ID>}%": the comment still ends the line as
+    before, and the tag records where TeX put it (difstyle.tex). A tag that landed in
+    struck text, which ulem sets word by word, moves to just after it."""
+    diff, n = REVTAG.subn(lambda m: "\\DIFrevtag{" + m.group(1) + "}%", diff)
+    for g in reversed(list(re.finditer(r"\\DIFdel(?:FL)?\{", diff))):
+        _, end = read_group(diff, g.end() - 1)
+        inner = diff[g.end():end - 1]
+        tags = re.findall(r"\\DIFrevtag\{[^}]*\}", inner)
+        if tags:
+            inner = re.sub(r"\\DIFrevtag\{[^}]*\}", "", inner)
+            diff = diff[:g.end()] + inner + "}" + "".join(tags) + diff[end:]
+            print(f"  moved {', '.join(tags)} out of struck text")
+    return diff, n
+
+
+def read_tags(path, sizes):
+    """Tag positions from <job>.difrev as fractions of the page (y from the top), and the
+    text block's left and right edges."""
+    k = PT_PER_SP * (72 / 72.27)
+    placed, edges = [], None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        p = line.split()
+        if p[0] == "@text":
+            edges = [round(int(p[1]) * k / sizes[0][0], 4), round(int(p[2]) * k / sizes[0][0], 4)]
+            continue
+        page = int(p[1])
+        w, h = sizes[page - 1]
+        tag = {"id": p[0], "page": page, "x": round(int(p[2]) * k / w, 4), "y": round(1 - int(p[3]) * k / h, 4)}
+        # one tag per ID and spot (several markers of a table all sit at its top)
+        if not any(t["id"] == tag["id"] and t["page"] == page and abs(t["y"] - tag["y"]) < 0.005 for t in placed):
+            placed.append(tag)
+    placed.sort(key=lambda t: (t["page"], t["y"], t["x"]))
+    return placed, edges
 
 
 TEXT_HEIGHT_PT = 592.0  # cshonours.cls
@@ -889,6 +1057,8 @@ MODE_OLD = r"""
 \renewcommand\DIFcrossbox[2]{#2\par}
 \renewcommand\DIFdelbox[1]{#1}
 \renewcommand\DIFdelcaption[6]{\caption[#6]{#5}}
+\renewcommand\DIFoldlabel[1]{\label{#1}}
+\renewcommand\DIFnewtable[1]{#1}
 \renewenvironment{DIFfit}[1]{}{}
 """
 MODE_NEW = r"""
@@ -901,6 +1071,7 @@ MODE_NEW = r"""
 \renewcommand{\DIFdelincludegraphics}[2][]{}
 \renewcommand\DIFchangedgraphics[2][]{\DIFOincludegraphics[#1]{#2}}
 \renewcommand\DIFdelbox[1]{}
+\renewcommand\DIFnewtable[1]{#1}
 \renewenvironment{DIFfit}[1]{}{}
 """
 
@@ -982,7 +1153,10 @@ def main():
     ap.add_argument("--old", default=OLD_REV, help=f"original revision (default {OLD_REV})")
     ap.add_argument("--new", default=NEW_REV,
                     help=f"edited revision, or WORKTREE for uncommitted work (default {NEW_REV})")
+    ap.add_argument("--overlay", help="folder of edited files laid over the edited tree by name")
+    ap.add_argument("--tags", help="JSON with the page's wording and each change ID's metadata")
     args = ap.parse_args()
+    meta = json.loads(Path(args.tags).read_text(encoding="utf-8")) if args.tags else {}
 
     perl, latexdiff = find_perl(), find_latexdiff()
     if WORK.exists():
@@ -999,6 +1173,16 @@ def main():
     else:
         export_rev(args.new, new)
         new_src = rev_label(args.new)
+    if args.overlay:
+        overlay = Path(args.overlay).resolve()
+        files = apply_overlay(new, overlay)
+        for name in files:
+            if name.endswith(".tex"):
+                p = new / name
+                p.write_text(move_table_markers(p.read_text(encoding="utf-8")), encoding="utf-8", newline="\n")
+        where = overlay.relative_to(DISS).as_posix() if overlay.is_relative_to(DISS) else str(overlay)
+        new_src = {**new_src, "kind": "overlay", "overlay": where, "files": files}
+        print(f"  overlay: {len(files)} files from {where}")
     to_lf(old)
     to_lf(new)
 
@@ -1023,9 +1207,20 @@ def main():
                "main.tex", str(new / "main.tex")], old, WORK / "latexdiff.log").stdout
     (WORK / "diff-raw.tex").write_text(raw, encoding="utf-8")
 
-    notes = {"removed": [], "added": [], "changed": [], "renumbered": []}
+    notes = {"removed": [], "moved": [], "replaced": [], "added": [], "changed": [], "renumbered": []}
     diff = postprocess(raw, old_floats, new_floats, old_nums, changed, notes,
                        Source(old_pdf), Source(new_pdf), flatten(old), flatten(new))
+    diff, n_tags = place_tags(diff)
+    if n_tags:
+        print(f"  {n_tags} change tags")
+    # The crossed-out copy of a moved or rebuilt float says so in its margin note.
+    for kind, rows in (("moved", notes["moved"]), ("replaced", notes["replaced"])):
+        for r in rows:
+            note = f"moved to {new_nums[r['label']][0]}" if kind == "moved" else "old version"
+            i = diff.find("\\DIFoldlabel{" + r["label"] + "}")
+            b = diff.rfind("\\ifDIFshowremoved\n\\begin{", 0, i)
+            e = diff.find("\n", b + len("\\ifDIFshowremoved\n")) + 1
+            diff = diff[:e] + f"\\renewcommand\\DIFcrossnote{{{note}}}%\n" + diff[e:]
 
     # Removed floats keep their original numbers for any reference in struck text.
     # \newlabel is preamble-only, so define the r@<label> macros it would make.
@@ -1076,11 +1271,16 @@ def main():
 
     # Floats added, changed and renumbered (from the two plain builds).
     changed_stems = {Path(c).stem for c in changed}
+    moved = {r["label"] for r in notes["moved"]}
+    for r in notes["moved"] + notes["replaced"]:
+        r["to"] = new_nums[r["label"]][0]
     for label, nf in new_floats.items():
         item = {"label": label, "kind": nf["env"], "number": new_nums[label][0],
                 "title": squash(nf["entry"])}
         if label not in old_floats:
             notes["added"].append(item)
+            continue
+        if label in moved:
             continue
         if {Path(g).stem for g in nf["graphics"]} & changed_stems:
             notes["changed"].append(item)
@@ -1131,8 +1331,25 @@ def main():
         else:
             changes.append({"page": page, "y": round(y, 4), "y1": round(y, 4), "kinds": kind})
 
+    # Change tags: where each ID landed, and the IDs that have no place of their own.
+    tags = None
+    if n_tags:
+        placed, edges = read_tags(dif / "build" / "dissertation.difrev", sizes_dif)
+        ids = meta.get("ids", {})
+        unknown = sorted({t["id"] for t in placed} - set(ids))
+        if ids and unknown:
+            print(f"  tags with no metadata: {', '.join(unknown)}")
+        unplaced = sorted(i for i, v in ids.items() if not v.get("in") and i not in {t["id"] for t in placed})
+        tags = {"ids": ids, "stages": meta.get("stages", {}), "placed": placed, "text": edges,
+                "unplaced": unplaced, "source": meta.get("page", {}).get("tagged", "")}
+        print(f"  tags: {len(placed)} placed for {len({t['id'] for t in placed})} IDs; "
+              f"not placed: {', '.join(unplaced) or 'none'}")
+
     manifest = {
         "built": dt.datetime.now().isoformat(timespec="seconds"),
+        "command": subprocess.list2cmdline(["python", "tools/dissertation-diff/build.py"] + sys.argv[1:]),
+        "page": meta.get("page"),
+        "tags": tags,
         "original": {"source": rev_label(args.old), "pages": [list(s) for s in sizes_old],
                      "pdf": "original.pdf", "dir": "original"},
         "edited": {"source": new_src, "pages": [list(s) for s in sizes_dif],
@@ -1149,6 +1366,10 @@ def main():
           f"{len(warnings)} LaTeX warnings")
     for w in warnings:
         print("  ", w)
+    for k, v in notes.items():
+        if v:
+            print(f"  floats {k}: " + ", ".join(f"{r['label']} {r.get('from', r['number'])}"
+                                                + (f" -> {r['to']}" if 'to' in r else "") for r in v))
 
 
 if __name__ == "__main__":

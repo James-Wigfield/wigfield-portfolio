@@ -47,6 +47,8 @@ export const FACTS = {
   'lit.obs_dsc_round': f(33.1, '33%', `${K22}, Table 3, p. 75`, 'chapters/01-introduction.tex:43 (33.1%)', 'rounded for speech and titles'),
   'lit.obs_dsc_sd': f(18.2, '18.2', `${K22}, Table 3, p. 75`, 'chapters/01-introduction.tex:43'),
   'lit.obs_found': f(71.7, '71.7%', `${K22}, Table 3, p. 75 (66/92)`, 'chapters/01-introduction.tex:44', 'the second observer found 71.7% of the first observer\'s lesions'),
+  'lit.obs_found_speech': f(7, '7 out of 10', `${K22}, Table 3, p. 75 (66/92 = 71.7%)`, 'chapters/01-introduction.tex:44 (71.7%)', 'rounded for speech (plain deck, slide 3)'),
+  'dice.identical': f(100, '100%', 'definition of the Dice similarity coefficient (identical masks score 1)', 'chapters/02-background.tex (metrics)', 'what 100% Dice means'),
 
   'lit.segmamba_tokens': f(262144, '262,144', 'documents/research-papers/new-papers/segmamba.pdf, Table 5, p. 585', 'chapters/02-background.tex:229', 'tokens at a 128-cubed input\'s first feature scale, where self-attention ran out of memory'),
   'gpu.dev_mem': f(16, '16 GB', 'documents/mamba-psma-notes/design-decisions.md, 2026-08-09 item 4', 'chapters/03-methodology.tex:190', 'the development GPU (RTX 5070 Ti)'),
