@@ -7,8 +7,8 @@ import { useFit } from './hooks';
 import { fmtMB, runReadyCheck, useReady } from './ready';
 import { labelOf, nextPos } from './controller';
 import { openAudienceWindow } from './sync';
-import { Script } from '../shared/Num';
-import { cutText, fill, fmtTime } from '../shared/text';
+import { Script, T } from '../shared/Num';
+import { cutText, fill, fmtTime, wordCount } from '../shared/text';
 import { CRIB } from '../shared/crib';
 
 /* ============================================================================
@@ -144,16 +144,26 @@ export default function PresenterView({ deck, onExit }) {
           <p className="sd-pv__title">{slide?.title ? fill(slide.title) : slide?.label}</p>
           {slide?.kind === 'main' && (
             <p className="sd-pv__timing">
-              {slide.target} s target · {fmtTime(slide.cumTarget)} cumulative · {slide.words} words
+              {slide.target} s target · {fmtTime(slide.cumTarget)} cumulative · {slide.said ? `${wordCount(slide.said)} words${slide.saidSecs ? `, timed at ${slide.saidSecs} s` : ''}` : `${slide.words} words`}
             </p>
+          )}
+          {slide?.timeline > 0 && (
+            <div className="sd-pv__progress" title={`Slide animation: ${slide.timeline} s`} aria-hidden="true">
+              {/* Restarts when the slide changes; full at once when the slide was entered backwards. */}
+              <span key={pos.index} className={pos.dir === 'backward' ? 'is-done' : ''} style={{ animationDuration: `${slide.timeline}s` }} />
+            </div>
           )}
           {slide?.cues?.length > 0 && (
             <ol className="sd-pv__cues">
               {slide.cues.map((c, i) => <li key={i} className={i === pos.step ? 'is-now' : ''}>{fill(c)}</li>)}
             </ol>
           )}
-          {slide?.script && <Script text={slide.script.text} className="sd-pv__text" />}
-          {slide?.script && cutText(slide.script.text) && (
+          {slide?.said ? (
+            <p className="sd-pv__said">&ldquo;<T>{slide.said}</T>&rdquo;</p>
+          ) : (
+            slide?.script && <Script text={slide.script.text} className="sd-pv__text" />
+          )}
+          {!slide?.said && slide?.script && cutText(slide.script.text) && (
             <p className="sd-pv__cutline">If behind, drop: {cutText(slide.script.text)}</p>
           )}
         </section>

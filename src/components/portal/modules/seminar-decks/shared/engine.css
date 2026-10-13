@@ -165,6 +165,13 @@
 .sd-pv__text { font-size: 1.6rem; line-height: 1.55; color: #f4f6f8; }
 .sd-pv__text .sd-cue { color: #101418; background: #ffd479; font-size: 0.62em; }
 .sd-pv__text .sd-cut__tag { color: #93a0ae; }
+/* A slide's own transcript (slide.said), as the Script tab shows it; and a thin
+   line that fills over the slide's animation (slide.timeline seconds). */
+.sd-pv__said { margin: 0; font-size: 1.6rem; line-height: 1.55; font-style: italic; font-weight: 700; color: #f4f6f8; }
+.sd-pv__progress { height: 4px; margin: 0 0 0.7rem; border-radius: 2px; background: #2a323b; overflow: hidden; }
+.sd-pv__progress span { display: block; height: 100%; background: #9fd8ff; transform-origin: left center; animation: sd-pv-progress linear both; }
+.sd-pv__progress span.is-done { animation: none; }
+@keyframes sd-pv-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .sd-pv__cutline { font-size: 0.95rem; color: #93a0ae; border-top: 1px solid #2a323b; padding-top: 0.6rem; margin-top: 1rem; }
 .sd-pv__crib { display: flex; flex-direction: column; gap: 0.6rem; min-height: 0; }
 .sd-pv__search { width: 100%; padding: 0.55rem 0.7rem; border-radius: 6px; border: 1px solid #39434e; background: #1b222a; color: #e9edf2; font-size: 0.95rem; }

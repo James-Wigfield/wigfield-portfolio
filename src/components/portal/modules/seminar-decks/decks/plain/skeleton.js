@@ -14,6 +14,7 @@
      said      (once approved) the transcript James reads, from his own
                dictation, tidied only for fillers, grammar and facts
      saidSecs  how long that took him when he timed it
+     req       (draft slides) per point, a gate G7 mark: 'limitations', 'future'
 
    Steer-clear list (agreed 13 Oct; from Jake's notes S9 and S10 in
    documents/drafting/revision-guide.html and the final-week handovers):
@@ -45,7 +46,7 @@ export const SKELETON = [
       'One line: teaching a network to find prostate cancer that has spread, in whole-body PET scans',
     ],
     numbers: [],
-    visual: 'Title, name, supervisors, logo',
+    visual: 'Built: title, name, supervisors and logo, with a brief entrance',
     seconds: 20,
     said: "Hello everyone, thank you all for coming. My name is James Wigfield, and this project has been about training a hybrid CNN-Mamba architecture to segment metastatic prostate cancer in whole-body PSMA PET scans. I'd like to thank my supervisors, Dr Jake Kendrick and Dr Mubashar Hassan, for their help throughout this project.",
     saidSecs: 30,
@@ -53,7 +54,7 @@ export const SKELETON = [
   {
     id: 'background',
     section: 'Background',
-    title: 'Prostate cancer can spread, and PSMA PET/CT shows where',
+    title: 'Metastatic Prostate Cancer and PSMA PET/CT',
     purpose: 'Just enough medicine for a computing audience to follow the rest.',
     points: [
       'Prostate cancer is common; when it relapses it can spread, and survival falls',
@@ -64,7 +65,7 @@ export const SKELETON = [
       '{{lit.recurrence}} of patients relapse after treatment',
       'five-year survival {{lit.survival}} or less once it has spread',
     ],
-    visual: 'One whole-body PSMA PET scan: lesions outlined, kidneys and salivary glands labelled',
+    visual: 'Built: the survival figure; a cell with PSMA, then the tracer binding; PET, then CT beside it, then the two fused; lesion outlines; salivary glands, liver and kidney; a ring for the surrounding anatomy',
     seconds: 80,
     said: "Prostate cancer is the second most common solid tumour in men worldwide, and once it spreads, the five-year survival rate drops to {{lit.survival}} or less. Finding the lesions is important, since the number of lesions and their location influence the treatment plan. PSMA stands for prostate-specific membrane antigen. It is a protein that is overexpressed on prostate cancer cells. A radioactive tracer that binds to PSMA is injected, and the PET scan shows where it collects. That is then paired with the CT scan, which shows the anatomy of the patient. PSMA PET/CT is the standard scan for finding where the disease has gone. Lesions show up on the scan, but so do some healthy organs, such as the kidneys, salivary glands and liver, which take up the tracer normally. The challenge is to then train a model to find the lesions, but not get confused by normal uptake. That means it must be able to see the surrounding anatomy.",
     saidSecs: 95,
@@ -72,7 +73,7 @@ export const SKELETON = [
   {
     id: 'problem',
     section: 'The problem',
-    title: 'Outlining every lesion by hand is slow, and experts disagree',
+    title: 'Manual Outlining and Expert Agreement',
     purpose: 'State the problem early and simply.',
     points: [
       'Treatment depends on where the lesions are and how many there are',
@@ -83,7 +84,7 @@ export const SKELETON = [
       'a second expert on {{lit.obs_scans}} scans: outlines overlapped at Dice {{lit.obs_dsc_round}}',
       "the second expert found {{lit.obs_found}} of the first expert's lesions",
     ],
-    visual: 'The same scan with its many small lesions marked; two overlapping outlines shaded, "Dice 33%" beside an identical pair, "100%"',
+    visual: 'Built: a scan from this project with over {{fair.ge100_cut}} outlined lesions; the 2022 study apart on the right: the Dice pair, the identical pair, then ten lesion markers with seven found',
     seconds: 40,
     said: "Outlining the lesions in these scans manually is an extremely labour-intensive task. Some scans can have over {{fair.ge100_cut}} lesions, and the experts also disagree. In a 2022 study led by my supervisor, Dr Jake Kendrick, two experts independently outlined the same {{lit.obs_scans}} scans. On average, their outlines overlapped with a Dice score of only {{lit.obs_dsc_round}}, where {{dice.identical}} would mean identical outlines. The second expert found about {{lit.obs_found_speech}} of the first expert's lesions. So automation reduces the manual work, but any automated method is still scored against these imperfect outlines. There's already a tool that does this, called PSMASegmentator.",
     saidSecs: 58,
@@ -91,7 +92,7 @@ export const SKELETON = [
   {
     id: 'baselines',
     section: 'Baselines',
-    title: 'PSMASegmentator is the tool to beat',
+    title: 'PSMASegmentator and the Patch Size Limit',
     purpose: 'Show what already exists and the gap it leaves.',
     points: [
       'PSMASegmentator: an open-source tool from the UWA Medical Physics Research Group, built on nnU-Net, a self-configuring CNN',
@@ -102,7 +103,7 @@ export const SKELETON = [
       'PSMASegmentator trained on {{psm.train}} scans, including every autoPET-III scan',
       'the 2022 cascade found {{k22.sens}} of lesions on its own test set',
     ],
-    visual: 'Whole-body scan with one PSMASegmentator window drawn to scale',
+    visual: "Built: the name and lines in step with the transcript; PSMASegmentator's patch to scale with the rest dimmed, then it steps down the body",
     seconds: 60,
     said: "PSMASegmentator is an open-source tool developed by Joel Noble, who is a PhD student at the UWA Medical Physics Research Group. It was built using the nnU-Net framework, which is a CNN framework that configures itself to any new dataset. It's been trained on {{psm.train}} cases. However, one limit of 3D CNNs is that they can't see the entire scan at once, because GPU memory limits how big their patch, or window, can be. So that's where Mamba might be able to help.",
     saidSecs: 40,
@@ -110,7 +111,7 @@ export const SKELETON = [
   {
     id: 'mamba',
     section: 'Mamba',
-    title: 'Mamba reads long sequences at linear cost',
+    title: 'Mamba, a Selective State Space Model',
     purpose: 'Mamba in one idea, why it might help, and why that needs testing.',
     points: [
       'Mamba (2023) reads a sequence once, in order, keeping a small memory and choosing what to keep',
@@ -118,7 +119,7 @@ export const SKELETON = [
       "Hoped-for benefit: more of the scan per window for the same memory. Caution: a retest found U-Mamba's Mamba layers added nothing",
     ],
     numbers: [],
-    visual: "Tokens read once in a line, against attention's every-pair web",
+    visual: 'Built: memory hops along a short sequence, keeping or ignoring each input; a 3D feature block flattens into a long sequence; the memory sweeps it; a linear cost line; a dashed bigger patch',
     seconds: 50,
     said: "Mamba reads a sequence one step at a time, carrying a fixed-size memory as it goes. It is selective, which means it chooses what to keep from each input and what to ignore. It was originally built for long sequences like text, which means for a 3D scan, the image features are flattened into a long 1D sequence. The idea is that it could help because it can view across the whole patch, while its cost grows linearly with sequence length. That could free memory for a bigger patch. That is exactly what I set out to test.",
     saidSecs: 50,
@@ -126,15 +127,17 @@ export const SKELETON = [
   {
     id: 'question',
     section: 'My work',
-    title: 'The research question has two parts',
+    title: 'Research Question',
     purpose: 'State exactly what was tested, as the introduction words it.',
     points: [
-      'Does a hybrid CNN-Mamba network find lesions better than PSMASegmentator on scans neither model trained on?',
-      'Do its Mamba blocks add anything over a CNN-only twin without them?',
+      'Whether a hybrid CNN-Mamba network detects lesions better than PSMASegmentator on cases neither model trained on',
+      'Whether its Mamba blocks improve lesion detection over a CNN-only version of the same network',
     ],
     numbers: [],
-    visual: 'Text only',
+    visual: 'Built: the two questions in the transcript\'s words, each with its pair of models (the hybrid against PSMASegmentator; the hybrid against its CNN-only version)',
     seconds: 20,
+    said: "So my research question has two parts. Does a hybrid CNN-Mamba network find lesions more effectively than PSMASegmentator on scans that neither of them was trained on? And do the Mamba blocks really improve lesion detection, compared with a CNN-only version of the same network?",
+    saidSecs: 25,
   },
   {
     id: 'architecture',
@@ -152,42 +155,46 @@ export const SKELETON = [
     ],
     visual: 'The architecture figure from the dissertation, revealed stage by stage',
     seconds: 70,
+    said: "So what I've decided to build is a U-shaped encoder-decoder with skip connections. The encoder downsamples the scan in five stages, and the decoder upsamples the scan back to its full size. The input has two channels, the CT and the PET scan, and the output is a lesion score for every voxel, a voxel being a volumetric pixel. Convolutions run in every stage, but the Mamba blocks sit only in the three deepest stages, where the flattened sequences are shortest. Each stage makes the sequence about eight times shorter, so Mamba is cheap to run there. Each Mamba block reads the features in six directions: up, down, left, right, front and back. So every point gets information from every side.",
+    saidSecs: 60,
   },
   {
     id: 'design',
     section: 'My model',
-    title: 'Three design decisions shaped the final model',
+    title: 'Two design decisions shaped the final model',
     purpose: 'The choices that made the model work, each with its reason.',
     points: [
       'Organ head: a second output learns anatomy during training only, so the network learns what normal uptake looks like',
-      'Loss: a recall-weighted loss found lesions but raised too many false alarms, so later runs used Dice',
-      'Final model: the {{inf.models}} cross-validation models average their predictions, and tiny specks are removed',
+      'Final model: an ensemble of {{inf.models}} versions, each trained on a different portion of the data, averaged voxel by voxel; predicted lesions under {{inf.minvox}} voxels removed',
     ],
     numbers: [
       '{{organ.structures}} anatomical structures',
-      'false alarms on {{organ.neg}} lesion-free validation scans: {{organ.fc3}} before the organ head, {{organ.fc4}} after',
-      'early runs: only {{run2.ppv}} of predictions were real lesions (old scoring rule)',
-      'threshold {{inf.thr}}; specks under {{inf.minvox}} voxels removed',
+      'false alarms on {{organ.neg}} lesion-free scans: {{organ.fc3}} before the organ head, {{organ.fc4}} after',
+      'threshold {{inf.thr}}; predicted lesions under {{inf.minvox}} voxels removed',
     ],
-    visual: 'The architecture figure with the organ head highlighted',
+    visual: 'The architecture figure with the organ head highlighted; then the drop in false alarms; then the ensemble models merging into one',
     seconds: 60,
+    said: "An earlier version flagged lesions in all {{organ.neg}} scans that had no lesions at all. The false alarms were typically in organs with normal physiological uptake, such as the kidneys and salivary glands. So, following PSMASegmentator's training recipe, which also learns organs, I added a second output to the network that learns to outline {{organ.structures}} anatomical structures. It's used during training only. With nothing else changed, false alarms on those {{organ.neg}} scans fell from {{organ.fc3}} to {{organ.fc4}}. For the final model, I trained an ensemble of {{inf.models}} versions of this network, each on a different portion of the data, and averaged their predictions voxel by voxel. Any predicted lesion smaller than {{inf.minvox}} voxels is then removed.",
+    saidSecs: 70,
   },
   {
     id: 'tested',
     section: 'How I tested it',
-    title: 'Public scans, a sealed test set and a CNN-only twin',
+    title: 'Public scans, a sealed test set and one scoring script',
     purpose: 'Give the numbers that follow their meaning.',
     points: [
-      'Two public cohorts, autoPET-III and DEEP-PSMA; labels start from an SUV threshold, then an expert corrects them',
-      'A test set sealed away and scored once, under rules written in advance; the rest split into folds for cross-validation',
-      'A lesion counts as found if the prediction touches it; F1 balances lesions found against false alarms',
+      'Two public cohorts, autoPET-III and DEEP-PSMA; both start from an SUV threshold, then autoPET-III is corrected by an expert and DEEP-PSMA has normal uptake removed',
+      'A test set sealed away, never trained on and scored once; the rest split into folds for cross-validation',
+      'My model and PSMASegmentator scored by the same script; a lesion counts as found if the prediction touches it; F1 balances lesions found against false alarms',
     ],
     numbers: [
       '{{data.total}} scans: {{data.autopet}} autoPET-III and {{data.deeppsma}} DEEP-PSMA',
       '{{data.test}} sealed test scans; {{data.pool}} in {{data.folds}} folds',
     ],
-    visual: 'Scan tiles: the sealed test set put aside, the rest in folds',
+    visual: 'Scan tiles: the sealed test set put aside, the rest in folds; then one lesion touched by a prediction ("found") beside a stray prediction ("false alarm")',
     seconds: 60,
+    said: "Two public datasets were used. The first is autoPET-III: {{data.autopet}} scans, {{data.autopet_neg}} of which have no lesions at all. Its labels came from an SUV threshold, then were corrected by an expert. The second is DEEP-PSMA: {{data.deeppsma}} scans from patients with advanced disease, so every scan has lesions. Its labels also came from an SUV threshold, with normal uptake removed by a physician. For testing, {{data.test}} scans were sealed away, never trained on and only scored once. The rest went into {{data.folds}}-fold cross-validation, which gave the {{inf.models}} versions in the ensemble. For scoring, my model and PSMASegmentator used the same script. A lesion counts as found if any predicted voxel touches it. F1 balances lesions found against false alarms, and Dice shows how well the outlines match.",
+    saidSecs: 70,
   },
   {
     id: 'results-test',
@@ -203,8 +210,10 @@ export const SKELETON = [
       'F1 {{r5.f1}}, precision {{r5.ppv}}, sensitivity {{r5.sens}}, Dice {{r5.dsc}} over {{data.test}} scans',
       'autoPET-III sensitivity {{r5.ap_sens}}; DEEP-PSMA precision {{r5.dp_ppv}}',
     ],
-    visual: 'One test scan: found, missed and false alarm in three colours',
+    visual: 'One test scan: found, missed and false alarm in three colours; then the headline numbers; then the two cohort bars side by side (cohort numbers on screen only)',
     seconds: 60,
+    said: "So, how did the final ensemble model do? On the sealed test set, the ensemble scored an F1 of {{r5.f1}}. It found {{r5.found_round}} of the lesions, and {{r5.prec_round}} of what it flagged were real lesions, with a Dice of {{r5.dsc}}. The F1 was the same on both datasets, but the balance was different. On autoPET, it found more of the lesions, but raised more false alarms. On DEEP-PSMA, it was the other way round: almost everything it flagged was real, but it missed more lesions. And PSMASegmentator was actually trained on the autoPET test scans, and my model was trained on most of DEEP-PSMA, so neither dataset here could give a fair comparison. For that, I needed scans that neither model had seen.",
+    saidSecs: 67,
   },
   {
     id: 'results-fair',
@@ -252,6 +261,7 @@ export const SKELETON = [
       "Mamba's linear cost did not free memory: the large window still forced batch size {{r6.batch_large}} for both networks",
       'Limits: not like-for-like with PSMASegmentator, two label styles, one training run per cell, few lesion-free test scans',
     ],
+    req: [null, null, 'limitations'],
     numbers: [
       '{{data.test_neg}} lesion-free scans in the test set',
     ],
@@ -268,6 +278,7 @@ export const SKELETON = [
       'On unseen scans, run 4 beat PSMASegmentator in pooled F1, and the CNN-only twin did as well',
       'Next step: retrain and score it on the Sir Charles Gairdner Hospital cohort',
     ],
+    req: [null, null, 'future'],
     numbers: [],
     visual: 'Thank you and questions; optionally a short clip of the app running the model',
     seconds: 30,
