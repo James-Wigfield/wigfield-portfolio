@@ -223,7 +223,7 @@
 .sd-slide.dp .dp5-schem { right: 96px; top: 930px; }
 
 /* ── 6. The research question ──────────────────────────────────────────── */
-.sd-slide.dp .dp6-rq { left: 96px; right: 160px; top: 262px; display: flex; flex-direction: column; gap: 120px; }
+.sd-slide.dp .dp6-rq { left: 96px; right: 160px; top: 312px; display: flex; flex-direction: column; gap: 120px; }
 .sd-slide.dp .dp6-rq > * { position: relative; }
 .sd-slide.dp .dp6-part { position: relative; padding-left: 40px; }
 .sd-slide.dp .dp6-bar { position: absolute; left: 0; top: 4px; bottom: 4px; width: 6px; border-radius: 3px; background: var(--dp-accent); transform-origin: top center; }
@@ -233,6 +233,126 @@
   color: var(--sd-ink); white-space: nowrap; background: #fff;
 }
 .sd-slide.dp .dp6-chip.is-hybrid { z-index: 2; border-color: var(--dp-accent); color: var(--dp-accent); }
-.sd-slide.dp .dp6-chip--twin { z-index: 1; }
+.sd-slide.dp .dp6-chip--cnn { z-index: 1; }
+.sd-slide.dp .dp6-chip__ring { position: absolute; inset: -2px; border: 2px solid var(--dp-accent); border-radius: 999px; opacity: 0; pointer-events: none; }
 .sd-slide.dp .dp6-vs { font-weight: 400; color: var(--sd-muted); }
 .sd-slide.dp .dp6-q { margin-top: 26px !important; font: 400 50px/1.25 var(--sd-font-display); max-width: 1560px; text-wrap: balance; }
+
+/* ── Slides 7 to 10: shared ────────────────────────────────────────────── */
+.sd-slide.dp { --dp-found: #0072b2; --dp-missed: #cc79a7; --dp-fa: #e69f00; } /* Figure 4.7's colours */
+.sd-slide.dp .dp-label--muted { color: var(--sd-muted); }
+/* The architecture figure, in layers (dissertation Figure 3.3). */
+.sd-slide.dp .dp-fig { overflow: hidden; transform-origin: 0 0; }
+.sd-slide.dp .dp-fig__layer { position: absolute; top: 0; display: block; max-width: none; user-select: none; }
+.sd-slide.dp .dp-fig__wipe { position: absolute; overflow: hidden; }
+/* A small picture of the network's blocks (slides 8 and 9). */
+.sd-slide.dp .dp-thumb { display: block; overflow: hidden; transform-origin: center; }
+.sd-slide.dp .dp-thumb img { position: absolute; display: block; max-width: none; user-select: none; }
+
+/* ── 7. Architecture ───────────────────────────────────────────────────── */
+.sd-slide.dp .dp7-lab--right { text-align: right; }
+.sd-slide.dp .dp7-swatch { display: inline-block; width: 24px; height: 24px; margin-right: 12px; vertical-align: -3px; border-radius: 2px; }
+.sd-slide.dp .dp7-swatch--conv { background: #d9d9d9; box-shadow: inset 0 0 0 2px #808080; }
+.sd-slide.dp .dp7-swatch--mamba { background: var(--dp-accent); box-shadow: inset 0 0 0 2px #003f63; }
+.sd-slide.dp .dp7-blue { color: var(--dp-accent); }
+.sd-slide.dp .dp7-indent { padding-left: 36px; }
+.sd-slide.dp .dp7-r { position: absolute; }
+.sd-slide.dp .dp7-bar { position: absolute; height: 26px; border-radius: 2px; background: var(--dp-pale); transform-origin: left center; }
+.sd-slide.dp .dp7-bar.is-mamba { background: var(--dp-accent); }
+.sd-slide.dp .dp7-costly { line-height: 26px; color: var(--dp-ink2); }
+.sd-slide.dp .dp7-cube { transform-box: view-box; }
+.sd-slide.dp .dp7-cube__top { fill: #c6e1f1; }
+.sd-slide.dp .dp7-cube__left { fill: #e2eff8; }
+.sd-slide.dp .dp7-cube__right { fill: #b3ccdb; }
+.sd-slide.dp .dp7-cube path { stroke: #3f6f8f; stroke-width: 1.4; stroke-linejoin: round; }
+.sd-slide.dp .dp7-cube .dp7-cube__grid { fill: none; stroke: #7fa6be; stroke-width: 0.9; }
+.sd-slide.dp .dp7-dir { fill: none; stroke: var(--dp-accent); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.sd-slide.dp .dp7-sum { transform-box: view-box; }
+.sd-slide.dp .dp7-sum__arrow { fill: none; stroke: var(--sd-muted); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.sd-slide.dp .dp7-sum__ring { fill: #fff; stroke: var(--sd-ink); stroke-width: 2.5; }
+.sd-slide.dp .dp7-sum__glyph { font: 600 34px/1 var(--sd-font-body); fill: var(--sd-ink); }
+.sd-slide.dp .dp7-dirlab { width: 100px; text-align: center; }
+.sd-slide.dp .dp7-sum ~ .dp7-dirlab { width: 120px; }
+
+/* ── 8. Organ head and ensemble ────────────────────────────────────────── */
+.sd-slide.dp .dp8-callout { text-align: left; }
+.sd-slide.dp .dp8-boxwash { background: var(--dp-accent-wash); border-radius: 2px; }
+.sd-slide.dp .dp8-leader-case { stroke: #fff; stroke-width: 5; }
+.sd-slide.dp .dp8-versions { display: flex; margin: 8px 0 10px; }
+.sd-slide.dp .dp8-versions .dp-thumb { position: relative; flex: none; }
+.sd-slide.dp .dp8-mark { transform-box: view-box; }
+.sd-slide.dp .dp8-mark__ring { fill: #fff; stroke: var(--dp-fa); stroke-width: 2; }
+.sd-slide.dp .dp8-mark__fill { fill: var(--dp-fa); }
+.sd-slide.dp .dp8-mark__fill.is-gone { opacity: 0; }
+.sd-slide.dp .dp8-count { margin: 0; font: 600 64px/1.1 var(--sd-font-display); white-space: nowrap; }
+.sd-slide.dp .dp8-count__n.is-before { position: relative; color: var(--sd-muted); }
+/* the "21" in ink while it is the current count; it greys as the 7 arrives */
+.sd-slide.dp .dp8-count__ink { position: absolute; left: 0; top: 0; color: var(--sd-ink); opacity: 0; }
+.sd-slide.dp .dp8-count__n { position: relative; }
+.sd-slide.dp .dp8-count__lab { position: absolute; left: 2px; top: 74px; font-weight: 400; white-space: nowrap; }
+.sd-slide.dp .dp8-count__arrow { display: inline-block; margin: 0 20px; font-weight: 400; color: var(--sd-muted); }
+.sd-slide.dp .dp8-count > span { display: inline-block; }
+.sd-slide.dp .dp8-uptake { text-align: right; }
+.sd-slide.dp .dp8-organ { text-align: right; transform: translateY(-50%); }
+
+/* ── 9. Data and testing ───────────────────────────────────────────────── */
+.sd-slide.dp .dp9-legend { left: 96px; top: 262px; }
+.sd-slide.dp .dp9-sub { margin: 0 0 10px 34px !important; font-size: 28px; }
+.sd-slide.dp .dp9-key { display: inline-block; width: 18px; height: 18px; margin-right: 14px; border-radius: 3px; vertical-align: -1px; box-sizing: border-box; }
+.sd-slide.dp .dp9-key.is-pos { background: var(--dp-ink2); }
+.sd-slide.dp .dp9-key.is-neg { border: 2.5px solid var(--dp-ink2); background: #fff; margin-left: 4px; }
+.sd-slide.dp .dp9-key.is-dp { background: var(--dp-accent); }
+.sd-slide.dp .dp9-t { width: 12px; height: 12px; border-radius: 2px; box-sizing: border-box; }
+.sd-slide.dp .dp9-t.is-pos { background: var(--dp-ink2); }
+.sd-slide.dp .dp9-t.is-neg { border: 2px solid var(--dp-ink2); background: #fff; }
+.sd-slide.dp .dp9-t__fill { position: absolute; inset: -2px; border-radius: 2px; background: var(--dp-ink2); opacity: 0; }
+.sd-slide.dp .dp9-t.is-dp { background: var(--dp-accent); }
+.sd-slide.dp .dp9-box { background: var(--dp-accent-wash); border-radius: 10px; }
+.sd-slide.dp .dp9-box__line { fill: none; stroke: var(--sd-ink); stroke-width: 2.5; }
+.sd-slide.dp .dp9-lock { transform-box: view-box; }
+.sd-slide.dp .dp9-lock__shackle { fill: none; stroke: var(--sd-ink); stroke-width: 3.5; }
+.sd-slide.dp .dp9-lock__body { fill: var(--sd-ink); }
+.sd-slide.dp .dp9-center { text-align: center; }
+.sd-slide.dp .dp9-score { left: 1180px; }
+.sd-slide.dp .dp9-tag { position: absolute; }
+.sd-slide.dp .dp9-les { fill: none; stroke: var(--sd-ink); stroke-width: 3; stroke-dasharray: 8 6; }
+.sd-slide.dp .dp9-les.is-found { fill: rgba(0, 114, 178, 0.12); stroke: var(--dp-found); stroke-dasharray: none; }
+.sd-slide.dp .dp9-pred { fill: #9aa1ab; }
+.sd-slide.dp .dp9-pred.is-found { fill: var(--dp-found); }
+.sd-slide.dp .dp9-pred.is-fa { fill: var(--dp-fa); }
+.sd-slide.dp .dp9-popb { transform-box: fill-box; transform-origin: center; }
+.sd-slide.dp .dp9-schem { position: absolute; }
+.sd-slide.dp .dp9-metric { left: 1180px; }
+
+/* ── 10. Test-set results ──────────────────────────────────────────────── */
+.sd-slide.dp .dp10-o .dp-les__casing { stroke-width: 3.4; }
+.sd-slide.dp .dp10-o .dp-les__edge { stroke-width: 2.2; }
+.sd-slide.dp .dp10-o--missed .dp-les__casing { stroke-width: 5; }
+.sd-slide.dp .dp10-o--missed .dp-les__edge { stroke-width: 3; }
+.sd-slide.dp .dp10-o--missed .dp-les__fill { fill: var(--dp-missed); }
+.sd-slide.dp .dp10-o--missed .dp-les__edge { stroke: var(--dp-missed); }
+.sd-slide.dp .dp10-o--fa .dp-les__fill { fill: var(--dp-fa); }
+.sd-slide.dp .dp10-o--fa .dp-les__edge { stroke: var(--dp-fa); }
+.sd-slide.dp .dp10-mid { left: 520px; }
+.sd-slide.dp .dp10-f1 { display: flex; align-items: baseline; gap: 26px; }
+.sd-slide.dp .dp10-f1__k { font: 600 52px/1 var(--sd-font-display); }
+.sd-slide.dp .dp10-f1__n { font: 600 112px/1 var(--sd-font-display); color: var(--dp-accent); letter-spacing: -0.01em; }
+.sd-slide.dp .dp10-row { display: flex; align-items: baseline; gap: 18px; }
+.sd-slide.dp .dp10-row__n { min-width: 150px; font: 600 52px/1.1 var(--sd-font-display); }
+.sd-slide.dp .dp10-dicenote { margin-left: 168px !important; }
+.sd-slide.dp .dp10-legend p { display: flex; align-items: center; gap: 14px; margin-bottom: 8px !important; }
+.sd-slide.dp .dp10-key { width: 26px; height: 26px; border: 3px solid; border-radius: 4px; box-sizing: border-box; }
+.sd-slide.dp .dp10-key.is-found { border-color: var(--dp-found); background: rgba(0, 114, 178, 0.15); }
+.sd-slide.dp .dp10-key.is-missed { border-color: var(--dp-missed); background: rgba(204, 121, 167, 0.18); }
+.sd-slide.dp .dp10-key.is-fa { border-color: var(--dp-fa); background: rgba(230, 159, 0, 0.18); }
+.sd-slide.dp .dp10-scannote { display: block !important; width: 520px; margin-top: 14px !important; white-space: normal; }
+.sd-slide.dp .dp10-group { left: 1100px; }
+.sd-slide.dp .dp10-bname { position: absolute; text-align: right; }
+.sd-slide.dp .dp10-bar { position: absolute; height: 28px; border-radius: 2px; transform-origin: left center; }
+/* neutral greys: on slide 9, dark and blue already mean the two datasets */
+.sd-slide.dp .dp10-bar.is-f1 { background: var(--dp-ink2); }
+.sd-slide.dp .dp10-bar.is-found { background: #8c939d; }
+.sd-slide.dp .dp10-bar.is-real { background: #aab0b8; }
+.sd-slide.dp .dp10-bval { position: absolute; font-weight: 600; }
+.sd-slide.dp .dp10-note { left: 1100px; }
+.sd-slide.dp .dp10-fair { font-weight: 600; }

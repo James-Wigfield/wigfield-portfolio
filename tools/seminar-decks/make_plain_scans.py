@@ -21,7 +21,12 @@ dissertation script's own functions (imported, not copied). This script adds:
     mask projection (8-connected), in projection pixels;
   - for A, organ leader anchors by the dissertation's rule (organ_anchors), plus the
     patient's left kidney by the same rule, and the lesion nearest the two kidneys.
-Writes public/seminar-decks/figures/plain-{a,b}-pet.png, plain-a-ct.png and
+
+  C  deeppsma_0004                      slide 10: Figure 4.7 (b), the DEEP-PSMA sealed test
+     case at the median per-case F1. Found, missed and false-alarm outlines from the app's
+     saved run (Mamba_PSMA/outputs/gui-predictions/, the five run 5 fold models at the
+     protocol settings), classed as the app and Figure 4.7 class them (study_c).
+Writes public/seminar-decks/figures/plain-{a,b,c}-pet.png, plain-a-ct.png and
 src/components/portal/modules/seminar-decks/decks/plain/scans.gen.js.
 
 Usage (Windows Python with numpy, SimpleITK and Pillow):
@@ -50,6 +55,12 @@ FIG_OUT = PORTFOLIO / "public" / "seminar-decks" / "figures"
 JS_OUT = PORTFOLIO / "src" / "components" / "portal" / "modules" / "seminar-decks" / "decks" / "plain" / "scans.gen.js"
 
 CASE_A = "psma_26154a761c528fdd_2016-10-22"
+# Study C (slide 10): Figure 4.7 (b), the DEEP-PSMA test case at the median per-case F1,
+# with the app's saved run of the five run 5 fold models at the protocol settings.
+CASE_C = "deeppsma_0004"
+TEST_DP = DATASETS / "DeepPSMA-test-nnunet"
+APP_RUNS = REPO / "outputs" / "gui-predictions"
+APP_TRUTH = REPO / "outputs" / "qualitative-figure" / "truth.json"
 SUV_MAX = 10.0
 INK = (20, 23, 28)        # --sd-ink of the plain deck
 CT_INK = (96, 104, 112)   # the CT layer, a cool grey under the PET ink
@@ -152,8 +163,8 @@ def loops(mask: np.ndarray) -> list[list[tuple[int, int]]]:
     return out
 
 
-def outlines(p: dict) -> list[dict]:
-    m = p["mproj"][::-1]                                         # row 0 = head
+def outlines(p: dict, mproj: np.ndarray | None = None) -> list[dict]:
+    m = (p["mproj"] if mproj is None else mproj)[::-1]           # row 0 = head
     lab = regions(m)
     res = []
     for k in range(1, int(lab.max()) + 1):
@@ -186,6 +197,79 @@ def anchors_a(case: dict, p: dict) -> dict:
     got["kidney_left"] = (float(px[ok][j] + 0.5 * dx), float(pz[ok][j] + 0.5 * dz))
     H = p["mip"].shape[0]
     return {k: [round(x / p["dx"], 2), round(H - z / p["dz"], 2)] for k, (x, z) in got.items()}
+
+
+def study_c() -> dict:
+    """Slide 10: found, missed and false alarm on Figure 4.7 (b)'s case, as the figure draws them.
+
+    The prediction is the app's saved run (five release/run5 fold models, threshold 0.5,
+    minimum 0.124 mL = 10 voxels on the working grid), on the scan's own PET grid. The classes
+    follow gui/viz.py comparison_map: lesions and predicted blobs are 26-connected components;
+    found = lesions any predicted voxel touches, with the blobs that touch a lesion; missed =
+    untouched lesions; false alarm = blobs that touch no lesion. The counts must equal the
+    app's (outputs/qualitative-figure/truth.json), or nothing is written.
+    """
+    run = APP_RUNS / CASE_C
+    settings = json.loads((run / "gui_settings.json").read_text())["settings"]
+    meta = json.loads((run / f"{CASE_C}_predict.json").read_text())
+    assert settings["threshold"] == 0.5 and settings["min_voxels"] == 10 and not settings["tta"], settings
+    assert settings["folds"] is None and meta["model"]["n_folds"] == 5, meta["model"]
+    assert [c["path"].split("/")[-3:-1] for c in meta["model"]["checkpoints"]] == \
+        [["run5", f"fold{k}"] for k in range(5)], meta["model"]["checkpoints"]
+    test = set(json.loads((REPO / "splits/test.json").read_text()))
+    assert CASE_C in test, f"{CASE_C} is not a sealed test case"
+
+    pet_path = TEST_DP / "imagesTr" / f"{CASE_C}_0001.nii.gz"
+    gt_path = TEST_DP / "labelsTr" / f"{CASE_C}.nii.gz"
+    pr_img = sitk.ReadImage(str(run / f"{CASE_C}.nii.gz"))
+    gt_img = sitk.ReadImage(str(gt_path))
+    pet_img = sitk.ReadImage(str(pet_path))
+    for im in (gt_img, pet_img):
+        assert im.GetSize() == pr_img.GetSize(), (im.GetSize(), pr_img.GetSize())
+        assert np.allclose(im.GetSpacing(), pr_img.GetSpacing(), atol=1e-3)
+        assert np.allclose(im.GetOrigin(), pr_img.GetOrigin(), atol=1e-2)
+        assert np.allclose(im.GetDirection(), pr_img.GetDirection(), atol=1e-4)
+
+    def cc(img):
+        lab = sitk.ConnectedComponent(sitk.Cast(img > 0, sitk.sitkUInt8), True)   # 26-connected
+        a = sitk.GetArrayFromImage(lab)
+        return a, int(a.max())
+
+    gt_lab, n_gt = cc(gt_img)
+    pr_lab, n_pr = cc(pr_img)
+    gt, pr = gt_lab > 0, pr_lab > 0
+    hit_lesions = np.unique(gt_lab[pr & gt])
+    hit_blobs = np.unique(pr_lab[gt & pr])
+    found = np.isin(gt_lab, hit_lesions) & gt
+    true_blobs = np.isin(pr_lab, hit_blobs) & pr
+    classes = np.zeros(gt.shape, np.uint8)
+    classes[gt & ~found] = 2
+    classes[pr & ~true_blobs] = 3
+    classes[found | true_blobs] = 1
+    counts = {"found": int(hit_lesions.size), "missed": int(n_gt - hit_lesions.size),
+              "falseAlarm": int(n_pr - hit_blobs.size)}
+    truth = json.loads(APP_TRUTH.read_text())["cases"][CASE_C]["overlay_counts"]
+    assert (counts["found"], counts["missed"], counts["falseAlarm"]) == \
+        (truth["found"], truth["missed"], truth["false_alarm"]), (counts, truth)
+
+    # Display: LAS, coronal MIP cropped to the body, as for A and B.
+    cls_img = sitk.GetImageFromArray(classes)
+    cls_img.CopyInformation(pr_img)
+    cls = sitk.GetArrayFromImage(sitk.DICOMOrient(cls_img, pce.ORIENT))
+    case = pce.load(pet_path, gt_path)
+    assert cls.shape == case["mask"].shape and np.array_equal(cls == 2, case["mask"] & (cls != 1) & (cls != 3)), \
+        "the reoriented classes do not line up with the reoriented label"
+    case["mask"] = cls > 0
+    p = pce.project(case)
+    c0, c1 = p["cols"]
+    proj = {k: (cls == v).any(axis=1)[:, c0:c1] for k, v in (("found", 1), ("missed", 2), ("falseAlarm", 3))}
+    pet_png(p, FIG_OUT / "plain-c-pet.png")
+    out = {"case": CASE_C, **geometry(p), "counts": counts,
+           **{k: outlines(p, m) for k, m in proj.items()}}
+    print(f"C: {CASE_C} {p['mip'].shape} {p['height_mm']:.0f} x {p['width_mm']:.0f} mm; lesions {n_gt}, "
+          f"found {counts['found']}, missed {counts['missed']}, false alarms {counts['falseAlarm']} "
+          f"(app: {truth}); projected regions " + ", ".join(f"{k} {len(out[k])}" for k in proj))
+    return out
 
 
 def geometry(p: dict) -> dict:
@@ -227,11 +311,15 @@ def main() -> None:
     print(f"B: {cid} n_gt {n_gt}, {case['n_components_native']} native components, {p['mip'].shape} "
           f"{p['height_mm']:.0f} x {p['width_mm']:.0f} mm, {len(les)} projected regions")
 
+    # Study C (slide 10).
+    out["C"] = study_c()
+
     header = (
         "/* GENERATED by tools/seminar-decks/make_plain_scans.py: do not edit.\n"
         "   Projection geometry, lesion outlines (closed pixel-edge polygons in projection\n"
         "   pixels, row 0 at the head) and organ anchors for the plain deck's scan layers\n"
-        "   (public/seminar-decks/figures/plain-a-pet.png, plain-a-ct.png, plain-b-pet.png).\n"
+        "   (public/seminar-decks/figures/plain-a-pet.png, plain-a-ct.png, plain-b-pet.png,\n"
+        "   plain-c-pet.png). C holds found, missed and false-alarm outlines instead of lesions.\n"
         "   dx and dz are mm per projection pixel across and head to toe. */\n"
     )
     JS_OUT.write_text(header + "export const SCANS = " + json.dumps(out, separators=(",", ":")) + ";\n",

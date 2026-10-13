@@ -1,4 +1,5 @@
 import { FACTS } from '../../shared/facts';
+import { OPTF_LAYERS, OPTF_VB } from './optf.gen';
 import { SCANS } from './scans.gen';
 
 /* ============================================================================
@@ -179,4 +180,214 @@ export const S5 = (() => {
     chart: { x: 1404, y: 610, w: 420, h: 250 },
     chipEnd: Math.min(lane.x0 + (N - 1) * lane.pitch, 1824 - 38), // the memory chip stops inside the margin
   };
+})();
+
+/* ── Slides 7 and 8: the architecture figure (dissertation Figure 3.3) ─────
+   Its layers (optf.gen.js, tools/seminar-decks/split_optf.mjs) are drawn at one
+   scale, the figure's input cube at the slide's left margin. Slide 8 shows the
+   same figure smaller (a CSS transform of the same layers, so it stays sharp). */
+export const FIG = (() => {
+  const L = OPTF_LAYERS;
+  const s = 2.3; // px per figure unit on slide 7
+  const left = L.input.x0;
+  const top = L.input.y0;
+  const ox = 96 - left * s;
+  const oy = 280 - top * s;
+  const at = (fx, fy) => ({ x: ox + fx * s, y: oy + fy * s });
+  const box = (name) => {
+    const b = L[name];
+    const p = at(b.x0, b.y0);
+    return { x: p.x, y: p.y, w: (b.x1 - b.x0) * s, h: (b.y1 - b.y0) * s };
+  };
+  // The layers draw nothing left of x 40 or below y 300 (figure units), so the
+  // box that holds them stops there and stays inside the slide.
+  const crop = { x0: 40, y1: 300 };
+  const holder = { left: ox + crop.x0 * s, top: oy, w: (OPTF_VB.w - crop.x0) * s, h: crop.y1 * s, inset: -crop.x0 * s };
+  // Slide 8: the same holder scaled by k about its top-left, the input cube at (96, 300).
+  const s8 = 1.5;
+  const k = s8 / s;
+  const ox8 = 96 - left * s8;
+  const oy8 = 300 - top * s8;
+  const at8 = (fx, fy) => ({ x: ox8 + fx * s8, y: oy8 + fy * s8 });
+  return {
+    s,
+    ox,
+    oy,
+    w: OPTF_VB.w * s,
+    h: OPTF_VB.h * s,
+    holder,
+    at,
+    box,
+    pose8: { k, dx: ox8 + crop.x0 * s8 - holder.left, dy: oy8 - oy },
+    at8,
+    // the output cube's left edge (figure units)
+    cubeX0: L.output.x0,
+    // the network's blocks (the `body` composite), for thumbnails
+    body: { x0: L.body.x0, y0: L.body.y0, w: L.body.x1 - L.body.x0, h: L.body.y1 - L.body.y0 },
+    // The U's layers, in the order they are built.
+    enc: ['enc1', 'enc2', 'enc3', 'enc4', 'enc5'],
+    mamba: ['mb3', 'mb4', 'mb5'],
+    dec: ['dec4', 'dec3', 'dec2', 'dec1'],
+    skips: ['skip1', 'skip2', 'skip3', 'skip4'],
+    // Each Mamba layer starts where its stage's convolution block sits.
+    mambaFrom: { mb3: L.enc3.x0 - L.mb3.x0, mb4: L.enc4.x0 - L.mb4.x0, mb5: L.enc5.x0 - L.mb5.x0 },
+  };
+})();
+
+/** All layers of the architecture figure that slides 7 and 8 draw (for the media list). */
+export const FIG_MEDIA = ['input', 'output', 'headlab', 'skiplab1', 'organ', 'body', ...FIG.enc, ...FIG.mamba, ...FIG.dec, ...FIG.skips]
+  .map((n) => `figures/optf/${n}.svg`);
+
+/* ── Slide 7, right: sequence length per stage, to scale, and six directions ─ */
+export const S7 = (() => {
+  const x0 = 1080;
+  const barX = 1276;
+  const barMax = 1824 - barX;
+  const keyY = 268; // the key: convolution and Mamba blocks
+  const seqY = 384; // the title of the sequence lengths
+  const len = ['net.tok2', 'net.tok3', 'net.tok4', 'net.tok5'].map((k) => v(k));
+  const rows = len.map((n, i) => ({ y: seqY + 58 + i * 44, w: (barMax * n) / len[0], ratio: i ? len[i - 1] / n : 1 }));
+  // Six small cubes, each read in one direction (screen vectors on an isometric view).
+  const e = 22; // half the cube's edge
+  const c30 = Math.cos(Math.PI / 6);
+  const iso = (cx, cy) => (x, y, z) => [cx + (x - y) * c30, cy + (x + y) * 0.5 - z];
+  const cubeY = 806;
+  const dirs = [
+    ['up', [0, -1]], ['down', [0, 1]], ['left', [-c30, -0.5]], ['right', [c30, 0.5]], ['front', [-c30, 0.5]], ['back', [c30, -0.5]],
+  ];
+  const pt = ([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`;
+  const cubeFaces = (cx, cy) => {
+    const P = iso(cx, cy);
+    return {
+      top: `M ${pt(P(-e, -e, e))} L ${pt(P(e, -e, e))} L ${pt(P(e, e, e))} L ${pt(P(-e, e, e))} Z`,
+      left: `M ${pt(P(-e, e, e))} L ${pt(P(e, e, e))} L ${pt(P(e, e, -e))} L ${pt(P(-e, e, -e))} Z`,
+      right: `M ${pt(P(e, -e, e))} L ${pt(P(e, e, e))} L ${pt(P(e, e, -e))} L ${pt(P(e, -e, -e))} Z`,
+      // grid lines on the three faces, a third of the edge apart
+      grid: [-e / 3, e / 3].flatMap((g) => [
+        `M ${pt(P(g, -e, e))} L ${pt(P(g, e, e))}`, `M ${pt(P(-e, g, e))} L ${pt(P(e, g, e))}`,
+        `M ${pt(P(g, e, e))} L ${pt(P(g, e, -e))}`, `M ${pt(P(-e, e, g))} L ${pt(P(e, e, g))}`,
+        `M ${pt(P(e, g, e))} L ${pt(P(e, g, -e))}`, `M ${pt(P(e, -e, g))} L ${pt(P(e, e, g))}`,
+      ]).join(' '),
+    };
+  };
+  const reach = 50; // the arrow runs through the cube, this far each side of its centre
+  const cubes = dirs.map(([name, [ux, uy]], i) => {
+    const cx = 1130 + i * 102;
+    const cy = cubeY;
+    const a = [cx - ux * reach, cy - uy * reach];
+    const b = [cx + ux * reach, cy + uy * reach];
+    const head = (() => {
+      const [hx, hy] = b;
+      const px = -uy;
+      const py = ux;
+      return `M ${pt([hx - ux * 12 + px * 7, hy - uy * 12 + py * 7])} L ${pt(b)} L ${pt([hx - ux * 12 - px * 7, hy - uy * 12 - py * 7])}`;
+    })();
+    return { name, cx, cy, faces: cubeFaces(cx, cy), line: `M ${pt(a)} L ${pt(b)}`, head };
+  });
+  const sum = { x: 1752, y: cubeY };
+  return { x0, barX, barMax, keyY, seqY, rows, cubes, sum, cubeY };
+})();
+
+/* ── Slide 8: the earlier version's false alarms, and normal uptake ─────── */
+export const S8 = (() => {
+  const x0 = 720; // the middle column
+  const marks = Array.from({ length: v('organ.fc3') }, (_, i) => ({ x: x0 + 8 + i * 21.4, y: 470, kept: i < v('organ.fc4') }));
+  const k = 610 / SCANS.A.heightMm;
+  const scan = placeScan(SCANS.A, { x: 1824 - SCANS.A.w * SCANS.A.dx * k, y: 330, k }); // right-aligned to the margin
+  const a = SCANS.A.anchors;
+  const organs = {
+    sal: [scan.at(a.parotid), scan.at(a.submandibular)],
+    kidney: [scan.at(a.kidney), scan.at(a.kidney_left)],
+  };
+  return { x0, marks, scan, organs };
+})();
+
+/* ── Slide 9: one tile per scan; the sealed test set and the five folds ─── */
+export const S9 = (() => {
+  const T = 12; // tile edge
+  const P = 15; // tile pitch
+  const nA = v('data.autopet');
+  const nD = v('data.deeppsma');
+  const folds = [0, 1, 2, 3, 4].map((k) => ({ pos: v(`data.fold${k}_pos`), neg: v(`data.fold${k}_neg`), dp: v(`data.fold${k}_dp`) }));
+  const test = { dp: v('data.test_deeppsma'), neg: v('data.test_neg') };
+  test.pos = v('data.test_autopet') - test.neg;
+  // The fold and test counts must add up to the cohorts and the fold sizes.
+  const sum = (key) => folds.reduce((t, f) => t + f[key], 0) + test[key];
+  console.assert(sum('pos') + sum('neg') === nA && sum('neg') === v('data.autopet_neg') && sum('dp') === nD, 'slide 9 tile counts');
+  console.assert(folds.every((f, k) => f.pos + f.neg + f.dp === (k ? v('data.fold_n') : v('data.fold0'))), 'slide 9 fold sizes');
+
+  // Destinations, interleaved by a fixed hash so each cohort block looks mixed.
+  const hash = (i) => {
+    let h = (i + 1) * 2654435761;
+    h ^= h >>> 15;
+    h = Math.imul(h, 2246822519);
+    h ^= h >>> 13;
+    return (h >>> 0) / 4294967296;
+  };
+  const destA = [];
+  const destD = [];
+  const groups = [{ dest: 'test', ...test }, ...folds.map((f, k) => ({ dest: k, ...f }))];
+  groups.forEach((g) => {
+    for (let i = 0; i < g.pos; i += 1) destA.push({ dest: g.dest, kind: 'pos' });
+    for (let i = 0; i < g.neg; i += 1) destA.push({ dest: g.dest, kind: 'neg' });
+    for (let i = 0; i < g.dp; i += 1) destD.push({ dest: g.dest, kind: 'dp' });
+  });
+  const shuffle = (arr, salt) => arr.map((d, i) => ({ d, r: hash(i + salt) })).sort((p, q) => p.r - q.r).map((o) => o.d);
+  const a = shuffle(destA, 0);
+  const d = shuffle(destD, 5000);
+
+  // Phase 1: two cohort blocks. Final: the sealed box and five fold columns.
+  const blockA = { x: 96, y: 476, cols: 30 };
+  const blockD = { x: 600, y: 476, cols: 10 };
+  // The box sits clear of the starting blocks, so it can appear before the folds form.
+  const box = { x: 904, y: 498, cols: 10 };
+  const fold = { x: 100, y: 498, cols: 8, gap: 150 };
+  const counters = { test: 0, 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+  // Within each destination: autoPET-III with lesions, then without, then DEEP-PSMA.
+  const order = { pos: 0, neg: 1, dp: 2 };
+  const all = [...a.map((t, i) => ({ ...t, from: { x: blockA.x + (i % blockA.cols) * P, y: blockA.y + Math.floor(i / blockA.cols) * P } })),
+    ...d.map((t, i) => ({ ...t, from: { x: blockD.x + (i % blockD.cols) * P, y: blockD.y + Math.floor(i / blockD.cols) * P } }))];
+  const placed = [...all].sort((p, q) => order[p.kind] - order[q.kind]).map((t) => {
+    const n = counters[t.dest];
+    counters[t.dest] += 1;
+    const g = t.dest === 'test' ? box : { ...fold, x: fold.x + t.dest * fold.gap };
+    return { ...t, to: { x: g.x + (n % g.cols) * P, y: g.y + Math.floor(n / g.cols) * P } };
+  });
+  const tiles = placed.map((t, i) => ({ ...t, i, r: hash(i + 9000) }));
+  const boxRows = Math.ceil((test.pos + test.neg + test.dp) / box.cols);
+  const foldRows = Math.ceil(Math.max(...folds.map((f) => f.pos + f.neg + f.dp)) / fold.cols);
+  // The five versions: one row centred under the folds, not one under each fold
+  // (each version trained on the other four folds).
+  const thumb = 0.36; // px per figure unit
+  const vw = FIG.body.w * thumb;
+  const vgap = 22;
+  const foldsMid = (fold.x + fold.x + 4 * fold.gap + fold.cols * P - (P - T)) / 2;
+  const versions = Array.from({ length: v('inf.models') }, (_, k) => ({
+    x: foldsMid - (5 * vw + 4 * vgap) / 2 + k * (vw + vgap),
+    y: fold.y + foldRows * P + 22,
+  }));
+  return {
+    T,
+    P,
+    tiles,
+    box: { x: box.x - 22, y: box.y - 22, w: box.cols * P + 32, h: boxRows * P + 32 },
+    folds: folds.map((f, k) => ({ x: fold.x + k * fold.gap, w: fold.cols * P - (P - T), y: fold.y })),
+    foldBottom: fold.y + foldRows * P,
+    thumb,
+    versions,
+    blockA,
+    blockD,
+    blockABottom: blockA.y + Math.ceil(nA / blockA.cols) * P,
+  };
+})();
+
+/* ── Slide 10: the test scan (Figure 4.7 (b)) and the cohort bars ────────── */
+export const S10 = (() => {
+  const scan = placeScan(SCANS.C, { x: 96, y: 262, k: 680 / SCANS.C.heightMm });
+  const bar = { x: 1392, max: 330 }; // 100% = max px
+  const groups = [
+    { name: 'autoPET-III', y: 268, keys: ['r5.ap_f1', 'r5.ap_sens', 'r5.ap_ppv'] },
+    { name: 'DEEP-PSMA', y: 568, keys: ['r5.dp_f1', 'r5.dp_sens', 'r5.dp_ppv'] },
+  ].map((g) => ({ ...g, rows: g.keys.map((k, i) => ({ k, y: g.y + 52 + i * 50, w: bar.max * v(k) })) }));
+  return { scan, bar, groups };
 })();

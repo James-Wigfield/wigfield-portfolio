@@ -142,7 +142,7 @@ export const SKELETON = [
   {
     id: 'architecture',
     section: 'My model',
-    title: 'Convolutions near the pixels, Mamba only in the deepest stages',
+    title: 'Hybrid CNN-Mamba Network Architecture',
     purpose: 'Show the network and why Mamba sits where it does.',
     points: [
       'A U-shaped encoder-decoder: PET and CT in, a lesion mask out',
@@ -153,7 +153,7 @@ export const SKELETON = [
       '{{net.stages}} stages, {{net.params}} parameters',
       'up to {{net.tok3}} tokens per Mamba block',
     ],
-    visual: 'The architecture figure from the dissertation, revealed stage by stage',
+    visual: "Built: the dissertation's architecture figure assembled in layers (no patch or sequence sizes); flattened sequence length per stage, to scale; six reading directions, summed (schematic)",
     seconds: 70,
     said: "So what I've decided to build is a U-shaped encoder-decoder with skip connections. The encoder downsamples the scan in five stages, and the decoder upsamples the scan back to its full size. The input has two channels, the CT and the PET scan, and the output is a lesion score for every voxel, a voxel being a volumetric pixel. Convolutions run in every stage, but the Mamba blocks sit only in the three deepest stages, where the flattened sequences are shortest. Each stage makes the sequence about eight times shorter, so Mamba is cheap to run there. Each Mamba block reads the features in six directions: up, down, left, right, front and back. So every point gets information from every side.",
     saidSecs: 60,
@@ -161,7 +161,7 @@ export const SKELETON = [
   {
     id: 'design',
     section: 'My model',
-    title: 'Two design decisions shaped the final model',
+    title: 'Organ Head and Five-Model Ensemble',
     purpose: 'The choices that made the model work, each with its reason.',
     points: [
       'Organ head: a second output learns anatomy during training only, so the network learns what normal uptake looks like',
@@ -172,7 +172,7 @@ export const SKELETON = [
       'false alarms on {{organ.neg}} lesion-free scans: {{organ.fc3}} before the organ head, {{organ.fc4}} after',
       'threshold {{inf.thr}}; predicted lesions under {{inf.minvox}} voxels removed',
     ],
-    visual: 'The architecture figure with the organ head highlighted; then the drop in false alarms; then the ensemble models merging into one',
+    visual: "Built: the network carries over and its organ head comes forward; the scans with no lesions, all flagged, and their false alarms as a count; normal uptake on the scan of slide two; five versions of the network",
     seconds: 60,
     said: "An earlier version flagged lesions in all {{organ.neg}} scans that had no lesions at all. The false alarms were typically in organs with normal physiological uptake, such as the kidneys and salivary glands. So, following PSMASegmentator's training recipe, which also learns organs, I added a second output to the network that learns to outline {{organ.structures}} anatomical structures. It's used during training only. With nothing else changed, false alarms on those {{organ.neg}} scans fell from {{organ.fc3}} to {{organ.fc4}}. For the final model, I trained an ensemble of {{inf.models}} versions of this network, each on a different portion of the data, and averaged their predictions voxel by voxel. Any predicted lesion smaller than {{inf.minvox}} voxels is then removed.",
     saidSecs: 70,
@@ -180,7 +180,7 @@ export const SKELETON = [
   {
     id: 'tested',
     section: 'How I tested it',
-    title: 'Public scans, a sealed test set and one scoring script',
+    title: 'Datasets, Test Set and Scoring',
     purpose: 'Give the numbers that follow their meaning.',
     points: [
       'Two public cohorts, autoPET-III and DEEP-PSMA; both start from an SUV threshold, then autoPET-III is corrected by an expert and DEEP-PSMA has normal uptake removed',
@@ -191,7 +191,7 @@ export const SKELETON = [
       '{{data.total}} scans: {{data.autopet}} autoPET-III and {{data.deeppsma}} DEEP-PSMA',
       '{{data.test}} sealed test scans; {{data.pool}} in {{data.folds}} folds',
     ],
-    visual: 'Scan tiles: the sealed test set put aside, the rest in folds; then one lesion touched by a prediction ("found") beside a stray prediction ("false alarm")',
+    visual: 'Built: one tile per scan; the sealed test set put aside, the rest in five folds with their real mix; one scoring script; a lesion touched by a prediction ("found") beside a stray prediction ("false alarm"), schematic',
     seconds: 60,
     said: "Two public datasets were used. The first is autoPET-III: {{data.autopet}} scans, {{data.autopet_neg}} of which have no lesions at all. Its labels came from an SUV threshold, then were corrected by an expert. The second is DEEP-PSMA: {{data.deeppsma}} scans from patients with advanced disease, so every scan has lesions. Its labels also came from an SUV threshold, with normal uptake removed by a physician. For testing, {{data.test}} scans were sealed away, never trained on and only scored once. The rest went into {{data.folds}}-fold cross-validation, which gave the {{inf.models}} versions in the ensemble. For scoring, my model and PSMASegmentator used the same script. A lesion counts as found if any predicted voxel touches it. F1 balances lesions found against false alarms, and Dice shows how well the outlines match.",
     saidSecs: 70,
@@ -199,7 +199,7 @@ export const SKELETON = [
   {
     id: 'results-test',
     section: 'Results',
-    title: 'On the sealed test set, the ensemble scored F1 {{r5.f1}}',
+    title: 'Results on the Sealed Test Set',
     purpose: 'The headline result, on scans held back to the end.',
     points: [
       'Scored once, on scans no model had trained on',
@@ -210,7 +210,7 @@ export const SKELETON = [
       'F1 {{r5.f1}}, precision {{r5.ppv}}, sensitivity {{r5.sens}}, Dice {{r5.dsc}} over {{data.test}} scans',
       'autoPET-III sensitivity {{r5.ap_sens}}; DEEP-PSMA precision {{r5.dp_ppv}}',
     ],
-    visual: 'One test scan: found, missed and false alarm in three colours; then the headline numbers; then the two cohort bars side by side (cohort numbers on screen only)',
+    visual: "Built: the qualitative figure's DEEP-PSMA test scan with found, missed and false alarm in its three colours; the headline numbers; the two cohorts' bars (cohort numbers on screen only)",
     seconds: 60,
     said: "So, how did the final ensemble model do? On the sealed test set, the ensemble scored an F1 of {{r5.f1}}. It found {{r5.found_round}} of the lesions, and {{r5.prec_round}} of what it flagged were real lesions, with a Dice of {{r5.dsc}}. The F1 was the same on both datasets, but the balance was different. On autoPET, it found more of the lesions, but raised more false alarms. On DEEP-PSMA, it was the other way round: almost everything it flagged was real, but it missed more lesions. And PSMASegmentator was actually trained on the autoPET test scans, and my model was trained on most of DEEP-PSMA, so neither dataset here could give a fair comparison. For that, I needed scans that neither model had seen.",
     saidSecs: 67,
@@ -218,12 +218,12 @@ export const SKELETON = [
   {
     id: 'results-fair',
     section: 'Results',
-    title: 'On unseen scans, run 4 beat PSMASegmentator by finding more lesions',
+    title: 'On unseen scans, the autoPET-only hybrid beat PSMASegmentator by finding more lesions',
     purpose: 'The fair head-to-head: the first research question.',
     points: [
-      'Run 4, the autoPET-only hybrid, against PSMASegmentator on DEEP-PSMA scans neither model trained on',
-      'Higher pooled F1: it found more lesions, at the cost of more false alarms',
-      'Per scan, no clear difference: run 4 did better on scans with many lesions, worse on scans with few',
+      'A single version of the model, trained only on autoPET-III, against PSMASegmentator on the DEEP-PSMA scans neither model trained on',
+      'Higher pooled F1, despite most of the setup favouring PSMASegmentator; it found more lesions, at the cost of more false alarms',
+      'Per scan, mixed: better on scans with many lesions, worse on scans with few',
     ],
     numbers: [
       '{{fair.n}} scans; pooled F1 {{fair.r4_f1}} against {{fair.psm_f1}}, {{fair.df1}} points ({{fair.df1_lo}} to {{fair.df1_hi}})',
@@ -232,24 +232,28 @@ export const SKELETON = [
     ],
     visual: 'Pooled bars, then one dot per scan',
     seconds: 60,
+    said: "So I took a single version of my model, trained only on autoPET, and scored it against PSMASegmentator on all {{fair.n}} DEEP-PSMA scans, which neither model had seen. My model scored an F1 of {{fair.r4_f1}}, against {{fair.psm_f1}} for PSMASegmentator, so about three points higher. And that's despite most of the setup favouring PSMASegmentator: it was trained on more than twice as many scans, and averages five models, against my one. My model found more of the lesions, but raised more false alarms. Scan by scan, it was mixed: better on scans with many lesions, worse on scans with few. But overall, my model found lesions more effectively. So, is that down to Mamba?",
+    saidSecs: 65,
   },
   {
     id: 'results-twin',
     section: 'Results',
-    title: 'The CNN-only twin did as well, so Mamba takes no credit',
+    title: 'The CNN-only version did as well, so Mamba takes no credit',
     purpose: 'The second research question: is Mamba the reason?',
     points: [
-      'Run 6: the hybrid and its twin, each trained with a small and a large window',
-      'The larger window hurt the hybrid far more than the twin, the opposite of the hoped-for benefit',
-      'The twin also beat PSMASegmentator, and at equal passes the hybrid was no faster on average and no lighter',
+      'The hybrid and its CNN-only version (every Mamba block removed), both trained only on autoPET-III, each at the final model\'s patch and at a patch almost five times larger',
+      'At the smaller patch the Mamba blocks added little; the CNN-only version also scored above PSMASegmentator, so the gain is not credited to Mamba',
+      'On DEEP-PSMA the larger patch hurt the hybrid far more than the CNN-only version, the opposite of what was expected',
     ],
     numbers: [
-      'larger window: hybrid {{r6.h_patch}}, twin {{r6.c_patch}} F1 points; difference {{r6.inter}} ({{r6.inter_lo}} to {{r6.inter_hi}})',
-      'twin F1 {{r6.c_small}} against PSMASegmentator {{fair.psm_f1}}',
-      'time {{eff.h5}} against {{eff.p5}} per scan; memory {{eff.vram_h}} against {{eff.vram_p}}',
+      'smaller patch, hybrid minus CNN-only: {{r6.gap_small_dp}} on DEEP-PSMA (no clear effect), {{r6.gap_small_ap}} on autoPET-III',
+      'CNN-only F1 {{r6.c_small}} against PSMASegmentator {{fair.psm_f1}}',
+      'larger patch: hybrid {{r6.h_patch}}, CNN-only {{r6.c_patch}} F1 points; difference {{r6.inter}} ({{r6.inter_lo}} to {{r6.inter_hi}})',
     ],
-    visual: 'A two-by-two chart: the hybrid drops, the twin barely moves',
+    visual: 'A two-by-two chart: the hybrid drops, the CNN-only version barely moves',
     seconds: 50,
+    said: "To answer the second question, I trained the same network without its Mamba blocks, a CNN-only version, also trained only on autoPET. I trained both at the final model's patch size, and at a patch almost five times larger. At the smaller patch, the Mamba blocks added little: there was no clear difference on DEEP-PSMA, and a gain of under two points on autoPET. And the CNN-only version also scored above PSMASegmentator on DEEP-PSMA, {{r6.c_small}}% against {{fair.psm_f1}}, so the gain over PSMASegmentator can't be credited to Mamba specifically. The larger patch was where Mamba was meant to help. Instead, on the unseen DEEP-PSMA scans, it cost the hybrid about four and a half F1 points, and the CNN-only version only about one: the opposite of what I'd expected. So what does this really mean?",
+    saidSecs: 75,
   },
   {
     id: 'discussion',
@@ -257,16 +261,19 @@ export const SKELETON = [
     title: 'The gain over PSMASegmentator is real, but not from Mamba',
     purpose: 'What the results mean, and their limits.',
     points: [
-      'The hybrid traded false alarms for found lesions, and its CNN-only twin did as well',
-      "Mamba's linear cost did not free memory: the large window still forced batch size {{r6.batch_large}} for both networks",
-      'Limits: not like-for-like with PSMASegmentator, two label styles, one training run per cell, few lesion-free test scans',
+      'The gain over PSMASegmentator most likely comes from something both networks share, not Mamba; a {{lit.umamba_year}} retest of U-Mamba found the same',
+      "Mamba's linear cost did not pay off: the larger patch still forced batch size {{r6.batch_large}} for both networks, and at the same number of passes PSMASegmentator was slightly faster and lighter",
+      'Limits: one training run per model in the CNN-only comparison, a smaller CNN-only version, not like-for-like with PSMASegmentator',
     ],
     req: [null, null, 'limitations'],
     numbers: [
-      '{{data.test_neg}} lesion-free scans in the test set',
+      'default settings: {{eff.h5}} against {{eff.p40}} per scan; same passes: {{eff.h5}} against {{eff.p5}}; peak memory {{eff.vram_h}} against {{eff.vram_p}}',
     ],
-    visual: 'Text only, or the two-by-two again',
+    visual: "The Mamba slide's memory chip over a sequence that stretches; the U-Mamba citation; the timing pair; the three limits as short labels",
     seconds: 60,
+    // DRAFT (13 Oct, night): written by Claude from the fact sheet for James to read in the
+    // morning. Not yet read aloud or timed by James, so no saidSecs.
+    said: "It means the gain over PSMASegmentator is real, but it most likely comes from something both of my networks share, not from Mamba. A {{lit.umamba_year}} retest of U-Mamba, another Mamba network, found the same: its Mamba layers had no effect once it was compared with a strong CNN. Mamba's linear cost also didn't pay off in practice. The larger patch still forced a batch size of one. My abstract says my model takes about half PSMASegmentator's time per scan, but that's only because PSMASegmentator runs test-time augmentation, with eight times as many passes. With the same number of passes, PSMASegmentator was slightly faster, and used slightly less memory. The main limits are that each model in the CNN-only comparison was trained only once, and the comparison with PSMASegmentator isn't like-for-like.",
   },
   {
     id: 'close',
@@ -275,12 +282,15 @@ export const SKELETON = [
     purpose: 'One message to leave with, the next step, then questions.',
     points: [
       'The ensemble reached F1 {{r5.f1}} on a sealed test set',
-      'On unseen scans, run 4 beat PSMASegmentator in pooled F1, and the CNN-only twin did as well',
-      'Next step: retrain and score it on the Sir Charles Gairdner Hospital cohort',
+      'On unseen scans, the autoPET-only hybrid beat PSMASegmentator in pooled F1, and the CNN-only version did about as well',
+      'Next step: the code released open source, so the UWA Medical Physics Research Group can retrain and score it on the Sir Charles Gairdner Hospital cohort',
     ],
     req: [null, null, 'future'],
     numbers: [],
     visual: 'Thank you and questions; optionally a short clip of the app running the model',
     seconds: 30,
+    // DRAFT (13 Oct, night): written by Claude for James to read in the morning. Not yet read
+    // aloud or timed by James, so no saidSecs.
+    said: "To wrap up: on the sealed test set, my final model scored an F1 of {{r5.f1}}. On scans neither model had seen, my network found lesions more effectively than PSMASegmentator overall, but a CNN-only version did about as well, so the credit doesn't go to Mamba. Next, the code will be released open source, so the UWA Medical Physics Research Group can retrain and test it on Sir Charles Gairdner Hospital data. Thank you, and I'm happy to take any questions.",
   },
 ];

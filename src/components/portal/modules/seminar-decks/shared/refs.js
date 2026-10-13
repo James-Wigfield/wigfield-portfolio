@@ -36,6 +36,10 @@ export const REFS = {
     short: 'Ma et al., arXiv 2024',
     ieee: 'J. Ma, F. Li, and B. Wang, "U-Mamba: Enhancing long-range dependency for biomedical image segmentation," arXiv preprint arXiv:2401.04722, 2024.',
   },
+  xing2024: {
+    short: 'Xing et al., IEEE Trans Med Imaging 2026',
+    ieee: 'Z. Xing, T. Ye, Y. Yang, D. Cai, B. Gai, X.-J. Wu, F. Gao, and L. Zhu, "SegMamba-V2: Long-range sequential modeling Mamba for general 3-D medical image segmentation," IEEE Transactions on Medical Imaging, vol. 45, no. 1, pp. 4-15, 2026.',
+  },
   xing2024a: {
     short: 'Xing et al., MICCAI 2024',
     ieee: 'Z. Xing, T. Ye, Y. Yang, G. Liu, and L. Zhu, "SegMamba: Long-range sequential modeling Mamba for 3D medical image segmentation," in Medical Image Computing and Computer Assisted Intervention (MICCAI 2024), 2024.',

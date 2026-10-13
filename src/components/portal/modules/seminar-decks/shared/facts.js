@@ -48,6 +48,7 @@ export const FACTS = {
   'lit.obs_dsc_sd': f(18.2, '18.2', `${K22}, Table 3, p. 75`, 'chapters/01-introduction.tex:43'),
   'lit.obs_found': f(71.7, '71.7%', `${K22}, Table 3, p. 75 (66/92)`, 'chapters/01-introduction.tex:44', 'the second observer found 71.7% of the first observer\'s lesions'),
   'lit.obs_found_speech': f(7, '7 out of 10', `${K22}, Table 3, p. 75 (66/92 = 71.7%)`, 'chapters/01-introduction.tex:44 (71.7%)', 'rounded for speech (plain deck, slide 3)'),
+  'lit.umamba_year': f(2024, '2024', 'references.bib, isensee2024 (MICCAI 2024), p. 495', 'chapters/05-discussion.tex:274-276', 'year of the nnU-Net Revisited retest of U-Mamba (plain deck, slide 13)'),
   'dice.identical': f(100, '100%', 'definition of the Dice similarity coefficient (identical masks score 1)', 'chapters/02-background.tex (metrics)', 'what 100% Dice means'),
 
   'lit.segmamba_tokens': f(262144, '262,144', 'documents/research-papers/new-papers/segmamba.pdf, Table 5, p. 585', 'chapters/02-background.tex:229', 'tokens at a 128-cubed input\'s first feature scale, where self-attention ran out of memory'),
@@ -94,6 +95,15 @@ export const FACTS = {
   'data.folds': f(5, 'five', 'Mamba_PSMA/hpc-documentation/hpc-design-decisions.md, 2026-09-02', 'chapters/03-methodology.tex:28-30'),
   'data.fold0': f(67, '67', `${CV}, per_fold`, 'tab:results-cv (chapters/04-results.tex:72)'),
   'data.fold_n': f(125, '125', `${CV}, per_fold`, 'tab:results-cv (chapters/04-results.tex:73-76)', 'folds 1 to 4'),
+  // Each fold's validation mix: autoPET-III lesion-positive, lesion-negative, DEEP-PSMA. Checked
+  // 2026-10-13 against Mamba_PSMA/splits/cv/fold<k>/val.json with n_gt from
+  // evaluation/results/run5-fold<k>/checkpoint_best_val_threshold_sweep_per_case.csv. Drawn as
+  // tiles on the plain deck's slide 9; never shown as digits.
+  ...Object.fromEntries([[50, 7, 10], [96, 12, 17], [99, 9, 17], [95, 12, 18], [97, 10, 18]].flatMap(([pos, neg, dp], k) => [
+    [`data.fold${k}_pos`, f(pos, String(pos), 'Mamba_PSMA/hpc-documentation/hpc-design-decisions.md, "Fold composition (seed 42)"', 'tab:app-fold-composition (appendices/b-configuration.tex:139-143)', `fold ${k}, autoPET-III lesion-positive`)],
+    [`data.fold${k}_neg`, f(neg, String(neg), 'Mamba_PSMA/hpc-documentation/hpc-design-decisions.md, "Fold composition (seed 42)"', 'tab:app-fold-composition (appendices/b-configuration.tex:139-143)', `fold ${k}, autoPET-III lesion-negative`)],
+    [`data.fold${k}_dp`, f(dp, String(dp), 'Mamba_PSMA/hpc-documentation/hpc-design-decisions.md, "Fold composition (seed 42)"', 'tab:app-fold-composition (appendices/b-configuration.tex:139-143)', `fold ${k}, DEEP-PSMA`)],
+  ])),
   'data.dp_components': f(68, '68', 'Mamba_PSMA/evaluation/results/run4-vs-baseline-deeppsma/REPORT.md, section 4', 'chapters/03-methodology.tex:126', 'about 68 components per DEEP-PSMA scan'),
   'data.suv': f(3, '3', 'jackson2025, p. 11 (SUV >= 3)', 'tab:method-datasets', 'DEEP-PSMA labels: SUV >= 3 threshold'),
 

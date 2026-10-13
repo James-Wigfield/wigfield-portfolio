@@ -610,33 +610,31 @@ export function MambaSlide({ ctx }) {
 }
 
 /* ── 6. The research question ──────────────────────────────────────────────
-   About 20 s, no transcript yet: part one, then part two at 7 s (part two's
-   latest start, read evenly at 20 s with the 0.85 factor, is 9.7 s), done by
-   8.6 s. The wording is chapter 1's (chapters/01-introduction.tex, last
-   sentence of the Problem Statement), split into its two "whether" parts. */
+   25 s read (45 words); latest starts: first question 3.3 s, second 12.8,
+   CNN-only version 18.4; all over by 18.8 s. On screen: the two questions in
+   James's words (the transcript with "So..." and "really" dropped), each
+   with its pair of models. */
 function questionTimeline(root, add) {
-  add(track(one(root, 'bar1'), [{ t: 0.2, transform: 'scaleY(0)' }, { t: 0.9, transform: 'scaleY(1)' }], EASE.inOut));
-  add(rise(one(root, 'chips1'), 0.3, 0.8, 12));
-  add(rise(one(root, 'q1'), 0.5, 0.9, 18));
-  add(track(one(root, 'bar2'), [{ t: 7.0, transform: 'scaleY(0)' }, { t: 7.7, transform: 'scaleY(1)' }], EASE.inOut));
-  add(rise(one(root, 'hyb2'), 7.1, 0.7, 12));
-  add(fadeIn(one(root, 'vs2'), 8.1, 0.5));
-  add(rise(one(root, 'q2'), 7.4, 0.9, 18));
-  // The twin: a copy slides out from behind the hybrid and greys as it goes (no
-  // Mamba); its name shows once it is clear of the hybrid.
-  const twin = one(root, 'twin');
+  add(track(one(root, 'bar1'), [{ t: 2.6, transform: 'scaleY(0)' }, { t: 3.3, transform: 'scaleY(1)' }], EASE.inOut));
+  add(rise(one(root, 'chips1'), 2.7, 0.8, 12));
+  add(rise(one(root, 'q1'), 2.9, 0.9, 18));
+  add(track(one(root, 'bar2'), [{ t: 12.2, transform: 'scaleY(0)' }, { t: 12.9, transform: 'scaleY(1)' }], EASE.inOut));
+  add(rise(one(root, 'hyb2'), 12.3, 0.7, 12));
+  add(rise(one(root, 'q2'), 12.5, 0.9, 18));
+  // The CNN-only version, as "compared with a CNN-only version" is said: a copy
+  // slides out from behind the hybrid and loses the hybrid's blue as it goes; its
+  // name shows once it is clear of the hybrid.
+  add(fadeIn(one(root, 'vs2'), 17.1, 0.5));
+  const cnn = one(root, 'cnn');
   const hyb = one(root, 'hyb2');
-  const dx = hyb && twin ? hyb.offsetLeft - twin.offsetLeft : 0;
-  add(track(twin, [
-    { t: 7.2, opacity: 0, transform: `translateX(${dx}px)` },
-    { t: 7.4, opacity: 1, transform: `translateX(${dx}px)`, e: EASE.inOut },
-    { t: 8.3, opacity: 1, transform: 'translateX(0px)' },
+  const dx = hyb && cnn ? hyb.offsetLeft - cnn.offsetLeft : 0;
+  add(track(cnn, [
+    { t: 16.4, opacity: 0, transform: `translateX(${dx}px)` },
+    { t: 16.6, opacity: 1, transform: `translateX(${dx}px)`, e: EASE.inOut },
+    { t: 17.6, opacity: 1, transform: 'translateX(0px)' },
   ]));
-  add(track(twin, [
-    { t: 7.2, borderColor: KEPT, color: 'rgba(20, 23, 28, 0)' },
-    { t: 7.9, borderColor: KEPT, color: 'rgba(20, 23, 28, 0)', e: EASE.inOut },
-    { t: 8.6, borderColor: '#8c939d', color: 'rgba(20, 23, 28, 1)' },
-  ]));
+  add(track(one(root, 'cnn-ring'), [{ t: 17.1, opacity: 1 }, { t: 17.9, opacity: 0 }], EASE.inOut));
+  add(track(one(root, 'cnn-text'), [{ t: 17.2, opacity: 0 }, { t: 17.9, opacity: 1 }], EASE.inOut));
 }
 
 export function QuestionSlide({ ctx }) {
@@ -651,16 +649,19 @@ export function QuestionSlide({ ctx }) {
             <span className="dp6-vs">vs</span>
             <span className="dp6-chip">PSMASegmentator</span>
           </p>
-          <p className="dp6-q" data-a="q1" data-role="body">Whether a hybrid CNN-Mamba network detects lesions better than PSMASegmentator on cases neither model trained on</p>
+          <p className="dp6-q" data-a="q1" data-role="body">Does a hybrid CNN-Mamba network find lesions more effectively than PSMASegmentator on scans neither was trained on?</p>
         </section>
         <section className="dp6-part">
           <span className="dp6-bar" data-a="bar2" aria-hidden="true" />
           <p className="dp6-chips" data-role="chart">
             <span className="dp6-chip is-hybrid" data-a="hyb2">Hybrid CNN-Mamba</span>
             <span className="dp6-vs" data-a="vs2">vs</span>
-            <span className="dp6-chip dp6-chip--twin" data-a="twin">CNN-only twin</span>
+            <span className="dp6-chip dp6-chip--cnn" data-a="cnn">
+              <span className="dp6-chip__ring" data-a="cnn-ring" aria-hidden="true" />
+              <span data-a="cnn-text">CNN-only version</span>
+            </span>
           </p>
-          <p className="dp6-q" data-a="q2" data-role="body">Whether its Mamba blocks add anything over a CNN-only twin without them</p>
+          <p className="dp6-q" data-a="q2" data-role="body">Do the Mamba blocks improve lesion detection, compared with a CNN-only version of the same network?</p>
         </section>
       </div>
     </div>
