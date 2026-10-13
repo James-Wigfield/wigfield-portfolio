@@ -1,0 +1,77 @@
+/* ============================================================================
+   SEMINAR DECKS — SELF-HOSTED FONTS (SIL Open Font License; public/seminar-decks/fonts)
+   Latin subsets as variable fonts, under deck-only family names so they never
+   clash with the site's Google Fonts. The Ready check loads every face a deck
+   uses into the document, so they survive the network dropping.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'SD Fraunces';
+  src: url('/seminar-decks/fonts/fraunces-normal-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Fraunces';
+  src: url('/seminar-decks/fonts/fraunces-italic-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Hanken';
+  src: url('/seminar-decks/fonts/hanken-normal-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Plex Mono';
+  src: url('/seminar-decks/fonts/plexmono-normal-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Plex Mono';
+  src: url('/seminar-decks/fonts/plexmono-normal-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Plex Mono';
+  src: url('/seminar-decks/fonts/plexmono-normal-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Plex Sans';
+  src: url('/seminar-decks/fonts/plexsans-normal-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Source Serif';
+  src: url('/seminar-decks/fonts/sourceserif-normal-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Source Serif';
+  src: url('/seminar-decks/fonts/sourceserif-italic-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: block;
+}
+@font-face {
+  font-family: 'SD Source Sans';
+  src: url('/seminar-decks/fonts/sourcesans-normal-400-700.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}

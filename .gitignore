@@ -33,3 +33,6 @@ dist-ssr
 tools/blender/*.blend
 tools/blender/*.blend1
 motion-data/
+# page renders of the unsubmitted dissertation (tools/dissertation-diff); local only
+dissertation-diff-data/
+seminar-export/

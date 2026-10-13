@@ -1,0 +1,81 @@
+{
+ "about": "D1 overlay cues. Times are in the clip (seconds). Stage names are the app's own status lines from the captured run (motion-data/app-guide/manifest.json, C01-C25), with \"(1 of 5)\" counts dropped and \"5\" written as \"five\". No numbers from the app are shown.",
+ "speed": 6,
+ "duration": 18.233,
+ "run": {
+  "start": 1.5,
+  "end": 11.233
+ },
+ "result_at": 11.233,
+ "mip_at": 13.633,
+ "stages": [
+  {
+   "t": 0.0,
+   "phase": "scan",
+   "text": "Scan loaded, ground truth shown"
+  },
+  {
+   "t": 1.5,
+   "phase": "run",
+   "text": "Starting Python and CUDA"
+  },
+  {
+   "t": 3.233,
+   "phase": "run",
+   "text": "Loading the models"
+  },
+  {
+   "t": 4.033,
+   "phase": "run",
+   "text": "Segmenting the scan with all five models"
+  },
+  {
+   "t": 9.633,
+   "phase": "run",
+   "text": "Writing the mask"
+  },
+  {
+   "t": 11.233,
+   "phase": "result",
+   "text": "Result over the scan"
+  },
+  {
+   "t": 12.833,
+   "phase": "mip",
+   "text": "Result in the app's 3D view"
+  }
+ ],
+ "colours": {
+  "found": "#2ECC71",
+  "missed": "#22D3EE",
+  "false_alarm": "#FF4FD8",
+  "ground_truth": "#22D3EE"
+ },
+ "legend": {
+  "scan": [
+   {
+    "key": "ground_truth",
+    "label": "Ground truth (expert outline)"
+   }
+  ],
+  "result": [
+   {
+    "key": "found",
+    "label": "Found"
+   },
+   {
+    "key": "missed",
+    "label": "Missed"
+   },
+   {
+    "key": "false_alarm",
+    "label": "False alarm"
+   }
+  ]
+ },
+ "source": {
+  "captures": "motion-data/app-guide/manifest.json",
+  "run": "runs.protocol",
+  "mip": "S-MIP-CMP"
+ }
+}

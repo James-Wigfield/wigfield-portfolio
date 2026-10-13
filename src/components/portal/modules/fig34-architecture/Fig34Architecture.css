@@ -1,0 +1,272 @@
+/* ============================================================================
+   FIG 3.4 · ARCHITECTURE — styles  (University · dissertation figure)
+   Scoped under .f34 and built on the portal tokens so the chrome re-skins with
+   the theme (jade, coral, arcade). The only fixed colours are the "paper" the
+   figures sit on, which stays white in every theme because these are print
+   figures, and the serif caption ink on that paper.
+   ========================================================================== */
+
+.f34 {
+  max-width: 1180px;
+  color: var(--ink-2);
+  --paper: #ffffff;
+  --paper-ink: #111111;
+  --paper-edge: rgba(0, 0, 0, 0.12);
+}
+
+.f34-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.5rem;
+}
+.f34-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 0.7rem;
+}
+.f34 h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.2rem;
+  color: var(--ink);
+  margin: 0 0 0.5rem;
+}
+.f34 h4 {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 0.4rem;
+}
+.f34 code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  padding: 0.06em 0.32em;
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- brief ---------- */
+.f34-brief { padding: 1.1rem 1.3rem; }
+.f34-brief__cap { margin: 0 0 0.6rem; max-width: 80ch; }
+.f34-brief ol { margin: 0 0 0.6rem; padding-left: 1.3rem; }
+.f34-brief li { margin: 0.15rem 0; }
+.f34-brief__rule { margin: 0; color: var(--ink-3); font-size: 0.9rem; }
+
+/* ---------- toolbar ---------- */
+.f34-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  align-items: center;
+}
+.f34-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.f34-seg button {
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line-2);
+  padding: 0.45rem 0.8rem;
+  min-height: 2.25rem;
+  cursor: pointer;
+}
+.f34-seg button:last-child { border-right: 0; }
+.f34-seg__item { display: inline-flex; }
+.f34-seg__sep {
+  width: 3px;
+  background: var(--line);
+}
+.f34-seg button:hover { background: var(--accent-soft); }
+.f34-seg button.is-active {
+  background: var(--accent);
+  color: #ffffff;
+}
+.f34-seg button:focus-visible,
+.f34-toggle input:focus-visible,
+.f34-compare__pick select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.f34-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.f34-toggle input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+
+.f34-caption-note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+/* ---------- the A4 sheet (true proportions) ---------- */
+.f34-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 210 / 297;
+  margin: 0 auto;
+  background: var(--paper);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.12);
+  container-type: inline-size;
+}
+.f34-sheet__frame {
+  position: absolute;
+  border: 1px dashed var(--paper-edge);
+  pointer-events: none;
+}
+.f34-sheet__block { position: absolute; }
+.f34-sheet__fig { display: block; width: 100%; height: auto; }
+.f34 .f34-sheet__cap {
+  /* 12 pt on a 595.3 pt-wide page; 10 pt above, as cshonours.cls sets it.
+     Two classes, so it outranks home.css's `.hp p` colour in every theme. */
+  margin: calc(10 / 595.3 * 100cqw) 0 0;
+  font-family: 'Latin Modern Roman', 'CMU Serif', 'Computer Modern Serif', Georgia, 'Times New Roman', serif;
+  font-size: calc(12 / 595.3 * 100cqw);
+  line-height: 1.21;
+  color: var(--paper-ink);
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* ---------- true size and zoom ---------- */
+.f34-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--ground-2);
+  padding: 1rem;
+}
+.f34-paper {
+  display: inline-block;
+  background: var(--paper);
+  padding: 6mm;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.f34-paper__fig { display: block; height: auto; max-width: none; }
+
+/* ---------- option detail ---------- */
+.f34-detail { padding: 1.2rem 1.35rem; display: flex; flex-direction: column; gap: 1rem; }
+.f34-detail__head { display: flex; gap: 0.9rem; align-items: flex-start; }
+.f34-badge {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 3px;
+  background: var(--accent);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.f34-detail__title { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.f34-chosen {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+}
+.f34-detail__concept { margin: 0; max-width: 75ch; }
+.f34-detail__main { margin: 0; font-style: italic; }
+.f34-detail__main span { font-style: normal; color: var(--ink-3); margin-right: 0.3rem; }
+.f34-detail__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; }
+.f34-detail ul { margin: 0; padding-left: 1.1rem; }
+.f34-detail li { margin: 0.2rem 0; }
+.f34-detail__links { margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; font-size: 0.9rem; }
+.f34-detail__links a { color: var(--accent-ink); }
+
+.f34-score {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+.f34-score div {
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface-hi);
+}
+.f34-score dt {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.f34-score dd { margin: 0.15rem 0 0; font-size: 1rem; color: var(--ink); }
+
+.f34-chips { list-style: none; padding: 0 !important; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.f34-chips li {
+  margin: 0 !important;
+  font-size: 0.84rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+.f34-chips li.is-on { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.f34-chips li.is-off { color: var(--ink-3); }
+.f34-verdicts li { line-height: 1.5; }
+
+/* ---------- compare ---------- */
+.f34-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+.f34-compare__col { display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+.f34-compare__pick { display: flex; gap: 0.5rem; align-items: center; font-size: 0.88rem; }
+.f34-compare__pick select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.35rem 0.5rem;
+  min-height: 2.25rem;
+  max-width: 100%;
+}
+.f34-compare__concept { margin: 0; font-size: 0.9rem; }
+
+/* ---------- recommendation ---------- */
+.f34-reco { padding: 1.1rem 1.3rem; border-left: 3px solid var(--accent); }
+.f34-reco h3 span { font-size: 0.85rem; color: var(--ink-3); font-family: var(--font-body); }
+.f34-reco__pick { margin: 0 0 0.4rem; color: var(--ink); font-weight: 600; }
+.f34-reco ul { margin: 0; padding-left: 1.1rem; }
+.f34-reco__note { margin: 0.6rem 0 0; color: var(--ink-3); font-size: 0.9rem; }
+
+/* ---------- greyscale toggle: the figure only, never the caption or chrome ---------- */
+.f34-grey img { filter: grayscale(1); }
+
+@media (max-width: 760px) {
+  .f34-title { font-size: 1.5rem; }
+  .f34-detail__cols { grid-template-columns: 1fr; }
+  .f34-compare { grid-template-columns: 1fr; }
+}

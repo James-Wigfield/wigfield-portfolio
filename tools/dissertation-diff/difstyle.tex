@@ -1,0 +1,133 @@
+% difstyle.tex -- red-pen markup for the dissertation diff (tools/dissertation-diff/build.py).
+%
+% build.py inserts this file at the end of the preamble of latexdiff's output,
+% after latexdiff's own markup definitions, so everything here overrides them:
+%
+%   removed text      original ink with a red line through it
+%   added text        red ink in a handwriting face (ECF Augie, from emerald)
+%   new figure        red frame, "new figure" in the left margin
+%   changed figure    old version shrunk and crossed out, new version framed
+%   removed float     the original float, crossed out, caption struck through,
+%                     with no number of its own so the edited column keeps the
+%                     final numbering
+%
+% \DIFmark writes the page and height of every change to <jobname>.difpos,
+% which build.py turns into the page's "next change" list. build.py's check
+% builds (verify-old, verify-new) load <jobname>.mode at the end of this file to
+% print only one version's text.
+
+\usepackage{tikz}
+\usepackage{emerald}
+\definecolor{DIFpen}{RGB}{200,16,46}
+% Removed text is printed in 1/255 grey: black to the eye, but verify.py can
+% tell it apart from unchanged text when it reads the PDF back.
+\definecolor{DIFdelink}{RGB}{1,1,1}
+% Margin notes ("new figure", "removed") are one step off the pen colour for
+% the same reason: they belong to neither version of the text.
+\definecolor{DIFnote}{RGB}{200,16,47}
+
+\makeatletter
+
+% --- text ----------------------------------------------------------------
+% Handwriting at 90% of the surrounding size so it sits on the same line.
+\DeclareRobustCommand\DIFpenfont{%
+  \fontfamily{fau}\fontseries{m}\fontshape{n}%
+  \fontsize{\strip@pt\dimexpr 0.9\dimexpr\f@size pt\relax\relax}{\f@baselineskip}%
+  \selectfont}
+\newcommand\DIFstrikeon{%
+  \bgroup\markoverwith{\textcolor{DIFpen}{\rule[0.52ex]{2pt}{0.8pt}}}\ULon}
+\DeclareRobustCommand\DIFstrike[1]{%
+  \ifmmode\text{\DIFstrikeon{\ensuremath{#1}}}\else\DIFstrikeon{#1}\fi}
+
+\renewcommand{\DIFaddtex}[1]{{\protect\color{DIFpen}\ifmmode\else\protect\DIFpenfont\fi #1}}
+\renewcommand{\DIFdeltex}[1]{{\protect\color{DIFdelink}\protect\DIFstrike{#1}}}
+% build.py puts this between a removal and the addition that replaces it, so
+% struck and handwritten words never touch.
+\DeclareRobustCommand\DIFgap{\ifhmode\ifdim\lastskip=0pt\hskip0.3em\relax\fi\fi}
+
+% --- change positions ----------------------------------------------------
+\newwrite\DIFposout
+\immediate\openout\DIFposout=\jobname.difpos\relax
+\DeclareRobustCommand\DIFmark[1]{%
+  \pdfsavepos
+  \write\DIFposout{#1 \the\ReadonlyShipoutCounter\space\the\pdflastypos}}
+
+\LetLtxMacro\DIFxaddbegin\DIFaddbegin
+\LetLtxMacro\DIFxdelbegin\DIFdelbegin
+\LetLtxMacro\DIFxaddbeginFL\DIFaddbeginFL
+\LetLtxMacro\DIFxdelbeginFL\DIFdelbeginFL
+\DeclareRobustCommand\DIFaddbegin{\DIFmark{a}\DIFxaddbegin}
+\DeclareRobustCommand\DIFdelbegin{\DIFmark{d}\DIFxdelbegin}
+\DeclareRobustCommand\DIFaddbeginFL{\DIFmark{a}\DIFxaddbeginFL}
+\DeclareRobustCommand\DIFdelbeginFL{\DIFmark{d}\DIFxdelbeginFL}
+
+% --- figures -------------------------------------------------------------
+\newsavebox\DIFfigbox
+\newcommand\DIFmarginnote[2]{% #1 node, #2 note
+  \node[overlay, anchor=north east, inner sep=0pt, text width=27mm, align=right,
+        text=DIFnote, font=\DIFpenfont] at ([xshift=-9pt]#1.north west) {#2};}
+
+% #1 note, #2 content: a red frame drawn outside the content (takes no space)
+\newcommand\DIFframed[2]{%
+  \sbox\DIFfigbox{#2}%
+  \begin{tikzpicture}[baseline=(b.base)]
+    \node[inner sep=0pt, outer sep=0pt] (b) {\usebox\DIFfigbox};
+    \draw[overlay, DIFpen, line width=1pt, rounded corners=1.5pt]
+      ([shift={(-3pt,-3pt)}]b.south west) rectangle ([shift={(3pt,3pt)}]b.north east);
+    \DIFmarginnote{b}{#1}
+  \end{tikzpicture}}
+
+% #1 note, #2 content: framed and crossed corner to corner
+\newcommand\DIFcrossed[2]{%
+  \sbox\DIFfigbox{#2}%
+  \begin{tikzpicture}[baseline=(b.base)]
+    \node[inner sep=0pt, outer sep=0pt] (b) {\usebox\DIFfigbox};
+    \draw[overlay, DIFpen, line width=0.8pt]
+      ([shift={(-3pt,-3pt)}]b.south west) rectangle ([shift={(3pt,3pt)}]b.north east);
+    \draw[overlay, DIFpen, line width=1.1pt, line cap=round]
+      (b.south west) -- (b.north east) (b.north west) -- (b.south east);
+    \DIFmarginnote{b}{#1}
+  \end{tikzpicture}}
+
+\renewcommand{\DIFaddincludegraphics}[2][]{%
+  \DIFframed{new figure}{\DIFOincludegraphics[#1]{#2}}}
+\renewcommand{\DIFdelincludegraphics}[2][]{%
+  \DIFcrossed{removed}{\scalebox{0.6}{\DIFOincludegraphics[#1]{#2}}}}
+
+% Same file name, new content: old version (from figures/difold/) shrunk and
+% crossed out, then the new version framed.
+\newcommand\DIFchangedgraphics[2][]{%
+  \DIFmark{f}%
+  \DIFcrossed{old version}{\DIFOincludegraphics[width=0.48\linewidth,
+    height=0.26\textheight,keepaspectratio]{difold/#2}}\par
+  \vspace{10pt}%
+  \DIFframed{new version}{\DIFOincludegraphics[#1]{#2}}}
+
+% --- removed floats --------------------------------------------------------
+% #1 scale, #2 body (graphics or tabular)
+\newcommand\DIFcrossbox[2]{%
+  \DIFmark{f}%
+  \DIFcrossed{removed}{\color{DIFdelink}\scalebox{#1}{#2}}\par}
+% a removed box that latexdiff could not mark (\figureplaceholder)
+\newcommand\DIFdelbox[1]{\DIFmark{f}\DIFcrossed{removed}{#1}\par}
+% #1 lof or lot, #2 figure or table, #3 old label text ("Table 3.3"),
+% #4 old number, #5 caption, #6 list-of entry
+\newcommand\DIFdelcaption[6]{%
+  \caption*{\DIFdel{#3: #5}}%
+  \addcontentsline{#1}{#2}{\protect\numberline{\DIFdel{#4}}\DIFdel{#6}}}
+
+% A float the markup makes taller than the page, scaled to fit (build.py's
+% fit_floats); #1 is the scale.
+\newsavebox\DIFfitbox
+\newenvironment{DIFfit}[1]
+  {\def\DIFfitscale{#1}\begin{lrbox}{\DIFfitbox}\begin{minipage}{\linewidth}}
+  {\end{minipage}\end{lrbox}\centering\scalebox{\DIFfitscale}{\usebox\DIFfitbox}}
+
+% Whole floats that were removed or added; build.py's check builds switch these off.
+\newif\ifDIFshowremoved \DIFshowremovedtrue
+\newif\ifDIFshowadded \DIFshowaddedtrue
+
+\makeatother
+
+% Check builds (verify-old, verify-new) bring their overrides in here.
+\InputIfFileExists{\jobname.mode}{}{}

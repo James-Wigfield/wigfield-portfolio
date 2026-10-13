@@ -1,0 +1,349 @@
+/* ============================================================================
+   DISSERTATION · RED PEN — styles  (University · dissertation)
+   Scoped under .ddf and built on the portal tokens so the chrome re-skins with
+   the theme (jade, coral, arcade). The fixed colours are the paper the pages
+   sit on, which stays white in every theme because these are print pages, and
+   the pen red, which matches the red in the renders (RGB 200, 16, 46).
+   ========================================================================== */
+
+.ddf {
+  max-width: none;
+  color: var(--ink-2);
+  --paper: #ffffff;
+  --pen: #c8102e;
+  --col-h: max(480px, calc(100vh - 286px));
+}
+
+.ddf-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.5rem;
+}
+.ddf-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 0.7rem;
+}
+.ddf h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.15rem;
+  color: var(--ink);
+  margin: 0 0 0.5rem;
+}
+.ddf h4 {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0.9rem 0 0.35rem;
+}
+.ddf code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  padding: 0.06em 0.32em;
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+.ddf-muted { color: var(--ink-3); font-size: 0.86rem; }
+.ddf .ddf-ok { color: var(--accent-ink); }
+.ddf .ddf-warn { color: var(--error); }
+
+/* ---------- header ---------- */
+.ddf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem 2rem;
+}
+.ddf-head .pt-module__intro { margin: 0; max-width: 62ch; }
+.ddf-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.6rem;
+  margin: 0;
+}
+.ddf-stats div { display: flex; flex-direction: column; gap: 0.1rem; }
+.ddf-stats dt {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ddf-stats dd { margin: 0; color: var(--ink); font-size: 0.95rem; }
+
+/* ---------- viewer: toolbar, key and columns, sized to fill the screen under the
+   portal's sticky top bar once scrolled up to it ---------- */
+.ddf-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  scroll-margin-top: 7.4rem;
+}
+
+/* ---------- toolbar ---------- */
+.ddf-bar-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.9rem;
+  align-items: center;
+}
+.ddf-seg {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.ddf-seg button {
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line-2, var(--line));
+  padding: 0.42rem 0.75rem;
+  min-height: 2.2rem;
+  cursor: pointer;
+}
+.ddf-seg button:last-child { border-right: 0; }
+.ddf-seg button:hover:not(:disabled) { background: var(--accent-soft); }
+.ddf-seg button:disabled { color: var(--text-faint); cursor: default; }
+.ddf-seg button.is-active { background: var(--accent); color: #ffffff; }
+.ddf-seg__count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink);
+  border-right: 1px solid var(--line-2, var(--line));
+  min-width: 5.5rem;
+  justify-content: center;
+}
+.ddf-seg button:focus-visible,
+.ddf-pick select:focus-visible,
+.ddf-toggle input:focus-visible,
+.ddf-scroll:focus-visible,
+.ddf-rail__tick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ddf-pick { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.86rem; }
+.ddf-pick span {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ddf-pick select {
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.38rem 0.5rem;
+  min-height: 2.2rem;
+  max-width: 22rem;
+}
+.ddf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ddf-toggle input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+.ddf-pdfs { font-size: 0.84rem; color: var(--ink-3); }
+.ddf-pdfs a { color: var(--accent-ink); }
+
+/* ---------- key ---------- */
+.ddf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.84rem;
+  color: var(--ink-3);
+}
+.ddf-legend li { display: inline-flex; align-items: center; gap: 0.45rem; }
+.ddf-key {
+  display: inline-block;
+  background: var(--paper);
+  color: #111111;
+  border-radius: 2px;
+  padding: 0.05rem 0.4rem;
+  font-family: 'Latin Modern Roman', 'CMU Serif', Georgia, serif;
+  font-size: 0.92rem;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.ddf-key--del { text-decoration: line-through 2px var(--pen); }
+.ddf-key--add { color: var(--pen); font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; font-size: 0.85rem; }
+.ddf-key--new,
+.ddf-key--gone { width: 1.6rem; height: 1.05rem; padding: 0; }
+.ddf-key--new { box-shadow: inset 0 0 0 1.5px var(--pen), 0 0 0 1px var(--line); }
+.ddf-key--gone {
+  box-shadow: inset 0 0 0 1.5px var(--pen), 0 0 0 1px var(--line);
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), var(--pen) calc(50% - 1px), var(--pen) calc(50% + 1px), transparent calc(50% + 1px)),
+    linear-gradient(to bottom right, transparent calc(50% - 1px), var(--pen) calc(50% - 1px), var(--pen) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--paper);
+}
+.ddf-key--bar { width: 4px; height: 1.05rem; padding: 0; background: var(--pen); box-shadow: none; }
+
+/* ---------- the two columns ---------- */
+.ddf-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.ddf-cols--original,
+.ddf-cols--edited { grid-template-columns: minmax(0, 960px); justify-content: center; }
+.ddf-col { min-width: 0; display: flex; flex-direction: column; }
+.ddf-col__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0 0.15rem 0.45rem;
+}
+.ddf-col__head h3 { margin: 0; }
+.ddf-col--edited .ddf-col__head h3 { color: var(--pen); }
+.ddf-col__head span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-3); }
+.ddf-col__body { position: relative; }
+.ddf-col--edited .ddf-col__body { padding-right: 14px; }
+
+.ddf-scroll {
+  height: var(--col-h);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--ground-2, var(--ground));
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.ddf-pages { position: relative; min-width: 100%; }
+.ddf-page {
+  position: absolute;
+  left: 18px;
+  background: var(--paper);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 8px 22px rgba(0, 0, 0, 0.1);
+}
+.ddf-page img { display: block; width: 100%; height: 100%; user-select: none; }
+.ddf-page__blank {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #c4c4c4;
+}
+.ddf-page__no {
+  position: absolute;
+  right: 0;
+  bottom: -14px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--ink-3);
+}
+
+/* change bars in the gutter */
+.ddf-cbar {
+  position: absolute;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--pen);
+  opacity: 0.8;
+  pointer-events: none;
+}
+.ddf-cbar.is-flash { animation: ddf-flash 1.8s var(--ease, ease) both; }
+@keyframes ddf-flash {
+  0%, 30%, 60% { width: 7px; opacity: 1; box-shadow: 0 0 0 4px rgba(200, 16, 46, 0.25); }
+  15%, 45% { width: 3px; box-shadow: none; }
+  100% { width: 3px; opacity: 0.8; box-shadow: none; }
+}
+
+/* the overview rail beside the edited column */
+.ddf-rail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: var(--col-h);
+  border-radius: 3px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ddf-rail__view {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.ddf-rail__tick {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  height: 3px;
+  margin-top: -1px;
+  padding: 0;
+  border: 0;
+  background: var(--pen);
+  opacity: 0.55;
+  cursor: pointer;
+}
+.ddf-rail__tick:hover,
+.ddf-rail__tick.is-current { opacity: 1; left: -3px; right: -3px; }
+
+/* ---------- notes ---------- */
+.ddf-notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.ddf-card { padding: 1.1rem 1.25rem; }
+.ddf-card p { margin: 0 0 0.6rem; }
+.ddf-list { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+.ddf-list li { margin: 0.18rem 0; }
+.ddf-list--tight { columns: 2; column-gap: 1.2rem; }
+.ddf-cmd {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.6rem 0.8rem;
+  overflow-x: auto;
+}
+.ddf-notice { padding: 1.2rem 1.35rem; max-width: 760px; }
+
+@media (max-width: 760px) {
+  .ddf { --col-h: max(420px, calc(100vh - 200px)); }
+  .ddf-cols--both { grid-template-columns: minmax(0, 1fr); }
+  .ddf-list--tight { columns: 1; }
+}

@@ -1,0 +1,340 @@
+/* ============================================================================
+   PSMA APP GUIDE (scoped .pag-*)
+   ----------------------------------------------------------------------------
+   The stage is a fixed 1920 x 1080 canvas with fixed colours (looks.js). Sizes
+   are stage pixels at 1080p and allow for the help dialog's 0.6x: captions
+   48 px, callout labels 40 px (second lines 36 px), labels 36 px. All text
+   keeps inside the 80 px safe margins and ends by y 930, above the zone the
+   dialog's video controls cover when the film is paused (critic C4). Gold
+   means "look here now": the rings, leaders, callout edges, app names in
+   captions, and the chapter card's number and rule (critic C2).
+   ========================================================================== */
+
+.pag { display: flex; flex-direction: column; gap: 1.1rem; max-width: 1180px; }
+
+/* ── Module chrome (portal side) ─────────────────────────────────────────── */
+.pag-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0b1220;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.pag-frame:fullscreen { border: 0; }
+.pag-fit { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.pag-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; }
+.pag-bar__chapters { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.pag-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.pag-chip--on { border-color: var(--accent); color: var(--ink); }
+.pag-keys { font-size: 0.8rem; color: var(--ink-3); }
+.pag-keys kbd {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  border: 1px solid var(--line);
+  padding: 0 0.3rem;
+  margin: 0 0.15rem;
+}
+.pag-loading {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.8rem 1rem;
+  color: #c9d2e3;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+.pag-notice { padding: 1rem 1.2rem; }
+.pag-notice h2 { margin: 0 0 0.4rem; font-family: var(--font-display); }
+
+/* stage-only mode (?stage=1): bare stage, full viewport, no portal chrome */
+.pag-stage-only {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  overflow: hidden;
+  background: #0b1220;
+}
+
+/* ── Stage ───────────────────────────────────────────────────────────────── */
+.pag-stage {
+  position: relative;
+  overflow: hidden;
+  background: #0b1220;
+  color: #f4f6fa;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-variant-numeric: lining-nums;
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+.pag-ground {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 38%, #15233f 0%, rgba(21, 35, 63, 0) 70%),
+    #0b1220;
+}
+.pag-layer { position: absolute; left: 0; top: 0; display: block; }
+.pag-type { position: absolute; inset: 0; pointer-events: none; }
+
+/* the caption band's scrim: 0 at y 770, 0.9 by 815, all but solid from 845; it follows the captions */
+.pag-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 770px;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(11, 18, 32, 0) 0, rgba(11, 18, 32, 0.9) 45px, rgba(11, 18, 32, 0.985) 75px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Title card ───────────────────────────────────────────────────────────── */
+.pag-logo-plate {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.pag-logo { position: absolute; left: 0; top: 0; overflow: hidden; }
+.pag-logo svg { display: block; }
+.pag-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 372px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transform-origin: 50% 30%;
+}
+.pag-title-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c9d2e3;
+}
+.pag-title-rule {
+  width: 120px;
+  height: 5px;
+  margin: 26px 0 22px;
+  background: #d6b12b;
+  transform-origin: center;
+}
+.pag-title-main {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 150px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.015em;
+}
+.pag-title-sub {
+  margin-top: 26px;
+  font-size: 60px;
+  font-weight: 500;
+  color: #c9d2e3;
+}
+
+/* ── Chapter card: a curtain with soft edges sweeps across; the title rises on it ── */
+.pag-card {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  overflow: hidden;
+}
+.pag-curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -360px;
+  width: calc(100% + 720px);
+  background:
+    linear-gradient(90deg, rgba(11, 18, 32, 0) 0, #0b1220 360px, #0b1220 calc(100% - 360px), rgba(11, 18, 32, 0) 100%);
+}
+.pag-curtain::after {
+  content: "";
+  position: absolute;
+  inset: 0 360px;
+  background: radial-gradient(ellipse 70% 60% at 40% 45%, #15233f 0%, rgba(21, 35, 63, 0) 70%);
+}
+.pag-card-body {
+  position: absolute;
+  inset: 0;
+  padding: 330px 0 0 160px;
+}
+.pag-card-num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 48px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #d6b12b;
+}
+.pag-card-rule {
+  width: 120px;
+  height: 5px;
+  margin: 26px 0 30px;
+  background: #d6b12b;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.pag-card-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 120px;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.012em;
+  max-width: 1000px;
+}
+.pag-w { display: inline-block; margin-right: 0.24em; will-change: transform, filter, opacity; }
+/* the film's chapters beside the card; a gold marker steps to this one */
+.pag-agenda-wrap { position: absolute; inset: 0; }
+.pag-agenda {
+  position: absolute;
+  left: 1236px;
+  top: 236px;
+  margin: 0;
+  padding: 0 0 0 40px;
+  list-style: none;
+  border-left: 2px solid #2a3754;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: #98a4bc;
+}
+.pag-agenda li { display: flex; align-items: baseline; gap: 22px; white-space: nowrap; }
+.pag-agenda-num { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 36px; color: inherit; min-width: 44px; }
+.pag-agenda--done::after { content: "✓"; margin-left: 4px; color: #98a4bc; }
+.pag-agenda--on { color: #f4f6fa; font-weight: 600; }
+.pag-agenda--on .pag-agenda-num { color: #d6b12b; }
+.pag-agenda-marker {
+  position: absolute;
+  left: 1234px;
+  top: 236px;
+  width: 6px;
+  height: 41px;
+  background: #d6b12b;
+}
+
+/* ── Callouts: positioned by Stage.jsx at the leader's end; shrink-wrapped (C2) ── */
+.pag-callout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max-content;
+  max-width: 760px;
+  padding: 16px 26px 18px 28px;
+  background: rgba(17, 27, 48, 0.97);
+  border: 1px solid #2a3754;
+  border-left: 6px solid #d6b12b;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+}
+.pag-callout--right { border-left: 1px solid #2a3754; border-right: 6px solid #d6b12b; text-align: right; }
+.pag-callout-text { font-size: 40px; font-weight: 600; line-height: 1.2; }
+.pag-callout-sub { margin-top: 4px; font-size: 36px; font-weight: 500; line-height: 1.25; color: #c9d2e3; }
+.pag-ui { color: #d6b12b; font-weight: 600; }
+.pag-glyph { display: inline-block; min-width: 1.1em; }
+
+.pag-panel { position: absolute; opacity: 0; }
+
+/* panels: the comparison legend, score definitions, the sped-up tag, credits */
+.pag-legend, .pag-defs {
+  background: rgba(17, 27, 48, 0.97);
+  border: 1px solid #2a3754;
+  border-left: 6px solid #d6b12b;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  padding: 20px 30px 22px;
+}
+.pag-legend { display: flex; flex-direction: column; gap: 14px; font-size: 40px; font-weight: 600; }
+.pag-legend-row { display: flex; align-items: center; gap: 18px; white-space: nowrap; }
+.pag-legend-sw { width: 40px; height: 40px; flex: none; box-sizing: border-box; border: 3px solid; }
+.pag-legend-glyph { width: 40px; text-align: center; color: #c9d2e3; }
+.pag-defs { display: flex; flex-direction: column; gap: 14px; width: 880px; }
+.pag-defs-counts { display: flex; gap: 30px; font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.pag-defs-value { margin-left: 12px; color: #d6b12b; font-variant-numeric: tabular-nums; }
+.pag-defs-name { font-size: 40px; font-weight: 700; line-height: 1.15; }
+.pag-defs-text { font-size: 36px; font-weight: 500; line-height: 1.25; color: #c9d2e3; }
+.pag-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 22px;
+  background: rgba(11, 18, 32, 0.94);
+  border: 2px solid #c9d2e3;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 36px;
+  font-weight: 500;
+  color: #f4f6fa;
+  white-space: nowrap;
+}
+.pag-tag-mark { color: #c9d2e3; font-size: 36px; letter-spacing: -0.2em; }
+.pag-credits { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; width: 1560px; }
+.pag-credits-group { font-size: 44px; font-weight: 600; }
+.pag-credits-data { font-size: 38px; line-height: 1.3; color: #c9d2e3; text-wrap: balance; }
+.pag-credits-note { font-size: 38px; color: #c9d2e3; }
+
+/* ── The caption band (text ends at y 930) ────────────────────────────────── */
+.pag-caption {
+  position: absolute;
+  left: 96px;
+  bottom: 158px; /* glyph boxes end by y 926: clear of the player's controls (C4) */
+  width: 1240px;
+  font-size: 48px;
+  font-weight: 500;
+  line-height: 1.22;
+  color: #f4f6fa;
+  text-wrap: balance;
+  opacity: 0;
+  visibility: hidden;
+}
+.pag-label {
+  position: absolute;
+  right: 80px;
+  bottom: 144px;
+  padding: 8px 16px 10px;
+  background: rgba(11, 18, 32, 0.88);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 36px;
+  line-height: 1.2;
+  color: #c9d2e3;
+  opacity: 0;
+}
+.pag-label-num { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 500; letter-spacing: 0.06em; }
+.pag-label-name { font-weight: 600; }
+.pag-strip {
+  position: absolute;
+  left: 96px;
+  right: 96px;
+  top: 1044px;
+  height: 6px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+}
+.pag-strip::before {
+  content: "";
+  position: absolute;
+  inset: -7px -12px;
+  background: rgba(11, 18, 32, 0.82);
+}
+.pag-seg { position: relative; overflow: hidden; background: rgba(244, 246, 250, 0.35); }
+.pag-seg-fill { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); background: #d6b12b; }

@@ -49,6 +49,7 @@ import ShapeTracer from './modules/ShapeTracer';
 import CodeVisualiser from './modules/CodeVisualiser';
 import Presentations from './modules/Presentations';
 import PsmaMotion from './modules/psma-motion/PsmaMotion';
+import PsmaAppGuide from './modules/psma-app-guide/PsmaAppGuide';
 import Syllabite from './modules/Syllabite';
 import SyllabitePhase3 from './modules/SyllabitePhase3';
 import SyllabiteGTM from './modules/SyllabiteGTM';
@@ -69,6 +70,9 @@ import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
+import Fig34Architecture from './modules/fig34-architecture/Fig34Architecture';
+import DissertationDiff from './modules/dissertation-diff/DissertationDiff';
+import SeminarDecks from './modules/seminar-decks/SeminarDecks';
 
 // Ordered life-area sections — each may hold zero or more modules.
 export const SECTIONS = [
@@ -237,6 +241,13 @@ export const MODULES = [
     component: PsmaMotion,
   },
   {
+    id: 'psma-app-guide',
+    label: 'PSMA App Guide',
+    icon: 'compass',
+    group: 'University',
+    component: PsmaAppGuide,
+  },
+  {
     id: 'syllabite',
     label: 'Overview',
     icon: 'syllabite',
@@ -377,5 +388,15 @@ export const MODULES = [
     system: true,
     component: WorkersDeployPlaybook,
   },
+  { id: 'fig34-architecture', label: 'Fig 3.4 · Architecture', icon: 'network', group: 'University', component: Fig34Architecture },
+  {
+    // Local only: the page renders come from tools/dissertation-diff/build.py.
+    id: 'dissertation-red-pen',
+    label: 'Dissertation · Red Pen',
+    icon: 'edit',
+    group: 'University',
+    component: DissertationDiff,
+  },
   // Drop new tools here — set `group` to a SECTIONS name (no other file changes).
+  { id: 'seminar-decks', label: 'Seminar · Three Decks', icon: 'presentation', group: 'University', component: SeminarDecks },
 ];

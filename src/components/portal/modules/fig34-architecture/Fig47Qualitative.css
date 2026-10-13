@@ -1,0 +1,82 @@
+/* ============================================================================
+   FIG 4.7 · QUALITATIVE EXAMPLES — styles (University · dissertation figure)
+   Builds on Fig34Architecture.css: the page wraps itself in .f34 so the shared
+   sheet, toolbar, scorecard and card styles apply, and adds only what Figure
+   4.7 needs here, under .f47 and f47- classes. Portal tokens throughout; the
+   figures stay on white paper in every theme because they are print figures.
+   ========================================================================== */
+
+/* ---------- figure switcher (Fig34Architecture.jsx) ---------- */
+.f47-switch {
+  max-width: 1180px;
+  margin: 0 0 1.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.8rem;
+  align-items: center;
+}
+.f47-switch__label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---------- local-only and missing-data notices ---------- */
+.f47-notice { padding: 1.1rem 1.3rem; border-left: 3px solid var(--accent); }
+.f47-notice h2,
+.f47-notice h3 { margin: 0 0 0.5rem; }
+.f47-notice p { margin: 0; max-width: 75ch; }
+
+/* ---------- the dissertation page render ---------- */
+.f47-diss {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--paper);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.f47-diss img { display: block; width: 100%; height: auto; }
+.f47-grey img { filter: grayscale(1); }
+
+/* ---------- detail additions ---------- */
+.f47-view { margin: 0.4rem 0 0; font-size: 0.86rem; color: var(--ink-3); max-width: 80ch; }
+.f47-view span { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.f47-para { margin: 0; max-width: 85ch; line-height: 1.55; }
+.f47-caption {
+  font-family: 'Latin Modern Roman', 'CMU Serif', 'Computer Modern Serif', Georgia, 'Times New Roman', serif;
+  border-left: 2px solid var(--line);
+  padding-left: 0.8rem;
+}
+
+/* ---------- cases and provenance cards ---------- */
+.f47-card { padding: 1.1rem 1.3rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.f47-card h3,
+.f47-card h4 { margin: 0; }
+.f47-card ul { margin: 0; padding-left: 1.1rem; }
+.f47-card li { margin: 0.2rem 0; line-height: 1.5; }
+.f47-tablewrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line-2); border-radius: 3px; }
+.f47-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.f47-table th,
+.f47-table td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line-2); }
+.f47-table th {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: var(--surface-hi);
+}
+.f47-table tr:last-child td { border-bottom: 0; }
+.f47-table td:nth-child(2) { min-width: 13rem; }
+.f47-table--small { font-size: 0.78rem; }
+.f47-table--small td:nth-child(2) { min-width: 0; }
+.f47-ne { color: var(--accent-ink); font-weight: 600; }
+.f47-details summary { cursor: pointer; color: var(--accent-ink); font-size: 0.9rem; }
+.f47-details[open] summary { margin-bottom: 0.6rem; }
+
+@media (max-width: 760px) {
+  .f47-card { padding: 0.9rem 1rem; }
+  .f47-table { font-size: 0.8rem; }
+}
