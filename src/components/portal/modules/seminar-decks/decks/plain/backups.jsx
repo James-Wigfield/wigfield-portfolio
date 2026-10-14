@@ -8,8 +8,9 @@ import { Num, T } from '../../shared/Num';
    PLAIN DECK — THE DEMO SLIDE AND THE BACKUP SLIDES
    ----------------------------------------------------------------------------
    The demo slide follows slide 14 (one Space press) and is left up during
-   questions: the real recorded run of the five-model ensemble in the app,
-   looping (clips/d1-model-run-loop.mp4, tools/seminar-decks/make_d1_loop.py).
+   questions: a direct recording of the whole app running the five-model
+   ensemble on a sealed test scan, looping (clips/plain-gui-demo.mp4, filmed by
+   tools/seminar-decks/record_gui_demo.py, cut by make_gui_demo.py).
    The backups answer likely questions, one message each, with no motion.
    Words come from the dissertation; every digit is a manifest key. The
    question index for the presenter view, the phone page and the palm cards
@@ -17,55 +18,52 @@ import { Num, T } from '../../shared/Num';
    ========================================================================== */
 
 /* ── The demo slide ─────────────────────────────────────────────────────── */
-// The app's own overlay colours (tools/seminar-decks/make_d1.py, APP_COLOURS).
+// The app's own overlay colours (as in its legend; tools/seminar-decks/make_d1.py, APP_COLOURS).
 const APP = { found: '#2ECC71', missed: '#22D3EE', fa: '#FF4FD8' };
-// The app's image panel inside the 1920 x 1080 clip, in clip pixels (measured
-// on its frames: x 554 to 1366, y 40 to 1040), shown at DEMO.k.
-const DEMO = { x0: 554, y0: 40, w: 812, h: 1000, k: 0.68 };
-const MIP_TEXT = 'Result in the app\'s 3D view'; // the cues' last stage (finished state)
+// The whole app, 1600 x 900 in the clip, shown at DEMO.k with the notes beside it.
+const DEMO = { left: 96, top: 236, w: 1600, h: 900, k: 0.8 };
 
-function stageAt(cues, t) {
-  let cur = cues.stages[0];
-  cues.stages.forEach((s) => {
-    if (t + 1e-6 >= s.t) cur = s;
+function cueAt(cues, t) {
+  let cur = cues.cues[0];
+  cues.cues.forEach((c) => {
+    if (t + 1e-6 >= c.t) cur = c;
   });
   return cur;
 }
 
 export function DemoSlide({ ctx }) {
-  const cues = useJson('data/d1-loop-cues.json');
+  const cues = useJson('data/plain-gui-demo-cues.json');
   const live = ctx.mode === 'present' && ctx.phase === 'current' && !ctx.still;
   const state = live ? 'play' : ctx.phase === 'next' ? 'start' : 'hold';
-  const [stage, setStage] = useState(null);
+  const [cue, setCue] = useState(null);
   const bar = useRef(null);
-  // Called every frame while playing: the bar moves directly; the status line
-  // re-renders only when the app's stage changes.
+  // Called every frame while playing: the bar shows the place in the loop; the
+  // status line re-renders only when the recording moves to its next part.
   const onTime = useCallback((t) => {
     if (!cues) return;
-    const frac = Math.max(0, Math.min(1, (t - cues.run.start) / (cues.run.end - cues.run.start)));
-    if (bar.current) bar.current.style.transform = `scaleX(${frac.toFixed(4)})`;
-    const s = stageAt(cues, t);
-    setStage((cur) => (cur?.t === s.t ? cur : s));
+    if (bar.current) bar.current.style.transform = `scaleX(${Math.max(0, Math.min(1, t / cues.duration)).toFixed(4)})`;
+    const c = cueAt(cues, t);
+    setCue((cur) => (cur?.t === c.t ? cur : c));
   }, [cues]);
-  const text = live && stage ? stage.text : MIP_TEXT;
-  const k = DEMO.k;
+  const text = live && cue ? cue.label : cues?.hold ?? 'The result: found, missed and false alarms';
+  const { k } = DEMO;
+  const textLeft = DEMO.left + DEMO.w * k + 48;
   return (
     <div className="dp-stage dpd">
-      <div className="dpd-panel" style={{ left: 96, top: 262, width: DEMO.w * k, height: DEMO.h * k }}>
+      <div className="dpd-panel dpd-panel--app" style={{ left: DEMO.left, top: DEMO.top, width: DEMO.w * k, height: DEMO.h * k }}>
         <Clip
-          src="d1-model-run-loop"
+          src="plain-gui-demo"
           state={state}
           mode={ctx.mode}
           reduced={ctx.reduced}
           loop
           onTime={onTime}
-          label="A real run of the five-model ensemble in the app on a sealed test scan, sped up; then the result in the app's 3D view"
-          style={{ left: -DEMO.x0 * k, top: -DEMO.y0 * k, width: 1920 * k, height: 1080 * k, right: 'auto', bottom: 'auto' }}
+          label="A recording of the whole app running the five-model ensemble on a sealed test scan: the scan, the run (sped up), the result on the slices, then the result in the app's 3D view"
+          style={{ left: 0, top: 0, width: DEMO.w * k, height: DEMO.h * k, right: 'auto', bottom: 'auto' }}
         />
       </div>
-      <div className="dpd-text" style={{ left: 96 + DEMO.w * k + 72, top: 262 }}>
-        <p className="dpd-lead" data-role="body">The five-model ensemble in my app, on a sealed test scan</p>
-        <p className="dp-label dp-label--muted dpd-speed" data-role="chart"><T>{'Sped up {{d1.speed}} while it runs; the result then turns in the app\'s 3D view'}</T></p>
+      <div className="dpd-text dpd-text--app" style={{ left: textLeft, top: DEMO.top }}>
+        <p className="dpd-lead dpd-lead--app" data-role="body">My app running the five-model ensemble on a sealed test scan</p>
         <p className="dpd-status" data-role="body">{text}</p>
         <div className="dpd-bar" aria-hidden="true"><span ref={bar} style={{ transform: live ? 'scaleX(0)' : 'scaleX(1)' }} /></div>
         <ul className="dpd-legend">
@@ -73,8 +71,9 @@ export function DemoSlide({ ctx }) {
           <li className="dp-label" data-role="chart"><span className="dpd-sw" style={{ background: APP.missed }} />Missed</li>
           <li className="dp-label" data-role="chart"><span className="dpd-sw" style={{ background: APP.fa }} />False alarm</li>
         </ul>
-        <p className="dp-tag" data-role="foot">The app&apos;s own colours. Before the run, cyan shows the ground truth.</p>
-        <p className="dp-tag" data-role="foot">Threshold and size filter as written down beforehand; no test-time augmentation.</p>
+        <p className="dp-tag" data-role="foot">The app&apos;s own colours; before the run, cyan shows the ground truth.</p>
+        <p className="dp-tag" data-role="foot"><T>{'Waiting for the app is sped up {{gui.speed}}; clicks, scrolling and the 3D turn play in real time.'}</T></p>
+        <p className="dp-tag" data-role="foot">Threshold and size filter as written down beforehand; no test-time augmentation. The case id is blurred.</p>
       </div>
     </div>
   );

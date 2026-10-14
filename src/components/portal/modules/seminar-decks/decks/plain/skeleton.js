@@ -67,7 +67,7 @@ export const SKELETON = [
     ],
     visual: 'Built: the survival figure; a cell with PSMA, then the tracer binding; PET, then CT beside it, then the two fused; lesion outlines; salivary glands, liver and kidney; a ring for the surrounding anatomy',
     seconds: 80,
-    said: "Prostate cancer is the second most common solid tumour in men worldwide, and once it spreads, the five-year survival rate drops to {{lit.survival}} or less. Finding the lesions is important, since the number of lesions and their location influence the treatment plan. PSMA stands for prostate-specific membrane antigen. It is a protein that is overexpressed on prostate cancer cells. A radioactive tracer that binds to PSMA is injected, and the PET scan shows where it collects. That is then paired with the CT scan, which shows the anatomy of the patient. PSMA PET/CT is the standard scan for finding where the disease has gone. Lesions show up on the scan, but so do some healthy organs, such as the kidneys, salivary glands and liver, which take up the tracer normally. The challenge is to then train a model to find the lesions, but not get confused by normal uptake. That means it must be able to see the surrounding anatomy.",
+    said: "Prostate cancer is the second most common solid tumour in men worldwide, and once it spreads, the five-year survival rate drops to {{lit.survival}} or less. Finding the lesions is important, since the number of lesions and their location influence the treatment plan. PSMA stands for prostate-specific membrane antigen. It is a protein that is overexpressed on prostate cancer cells. A radioactive tracer that binds to PSMA is injected, and the PET scan shows where it collects. That is then paired with the CT scan, which shows the anatomy of the patient. PSMA PET/CT is the standard scan for finding where the disease has gone when it comes back. Lesions show up on the scan, but so do some healthy organs, such as the kidneys, salivary glands and liver, which take up the tracer normally. The challenge is to then train a model to find the lesions, but not get confused by normal uptake. That likely means it must be able to see the surrounding anatomy.",
     saidSecs: 95,
   },
   {
@@ -155,7 +155,7 @@ export const SKELETON = [
     ],
     visual: "Built: the dissertation's architecture figure assembled in layers (no patch or sequence sizes); flattened sequence length per stage, to scale; six reading directions, summed (schematic)",
     seconds: 70,
-    said: "So what I've decided to build is a U-shaped encoder-decoder with skip connections. The encoder downsamples the scan in five stages, and the decoder upsamples the scan back to its full size. The input has two channels, the CT and the PET scan, and the output is a lesion score for every voxel, a voxel being a volumetric pixel. Convolutions run in every stage, but the Mamba blocks sit only in the three deepest stages, where the flattened sequences are shortest. Each stage makes the sequence about eight times shorter, so Mamba is cheap to run there. Each Mamba block reads the features in six directions: up, down, left, right, front and back. So every point gets information from every side.",
+    said: "So what I've decided to build is a U-shaped encoder-decoder with skip connections. The encoder has five stages, downsampling the scan between them, and the decoder upsamples the scan back to its full size. The input has two channels, the CT and the PET scan, and the output is a lesion score for every voxel, a voxel being a volumetric pixel. Convolutions run in every stage, but the Mamba blocks sit only in the three deepest stages, where the flattened sequences are shortest. Each step down makes the sequence about eight times shorter, so Mamba is cheap to run there. Each Mamba block reads the features in six directions: up, down, left, right, front and back. So every point gets information from every side.",
     saidSecs: 60,
   },
   {
@@ -212,7 +212,7 @@ export const SKELETON = [
     ],
     visual: "Built: the qualitative figure's DEEP-PSMA test scan with found, missed and false alarm in its three colours; the headline numbers; the two cohorts' bars (cohort numbers on screen only)",
     seconds: 60,
-    said: "So, how did the final ensemble model do? On the sealed test set, the ensemble scored an F1 of {{r5.f1}}. It found {{r5.found_round}} of the lesions, and {{r5.prec_round}} of what it flagged were real lesions, with a Dice of {{r5.dsc}}. The F1 was the same on both datasets, but the balance was different. On autoPET, it found more of the lesions, but raised more false alarms. On DEEP-PSMA, it was the other way round: almost everything it flagged was real, but it missed more lesions. And PSMASegmentator was actually trained on the autoPET test scans, and my model was trained on most of DEEP-PSMA, so neither dataset here could give a fair comparison. For that, I needed scans that neither model had seen.",
+    said: "So, how did the final ensemble model do? On the sealed test set, the ensemble scored an F1 of {{r5.f1}}. It found {{r5.found_round}} of the lesions, and {{r5.prec_round}} of what it flagged were real lesions, with a Dice of {{r5.dsc}}. The F1 was the same on both datasets, but the balance was different. On autoPET, it found more of the lesions, but raised more false alarms. On DEEP-PSMA, it was the other way round: almost everything it flagged was real, but it missed more lesions. And PSMASegmentator was actually trained on the autoPET test scans, and my model was trained on most of DEEP-PSMA, so neither dataset here could give a fair comparison. For that, I needed a dataset that neither model had been trained on.",
     saidSecs: 67,
   },
   {
@@ -232,7 +232,7 @@ export const SKELETON = [
     ],
     visual: 'Built: the two models with the setup as said; pooled bars (F1, found, flagged and real) for the hybrid and PSMASegmentator; then one dot per scan, hybrid minus PSMASegmentator against lesions in the scan, with the bands for few and many lesions',
     seconds: 60,
-    said: "So I took a single version of my model, trained only on autoPET, and scored it against PSMASegmentator on all {{fair.n}} DEEP-PSMA scans, which neither model had seen. My model scored an F1 of {{fair.r4_f1}}, against {{fair.psm_f1}} for PSMASegmentator, so about three points higher. And that's despite most of the setup favouring PSMASegmentator: it was trained on more than twice as many scans, and averages five models, against my one. My model found more of the lesions, but raised more false alarms. Scan by scan, it was mixed: better on scans with many lesions, worse on scans with few. But overall, my model found lesions more effectively. So, is that down to Mamba?",
+    said: "So I took a single version of my model, trained only on autoPET, and scored it against PSMASegmentator on all {{fair.n}} DEEP-PSMA scans, which neither model had seen. My model scored an F1 of {{fair.r4_f1}}, against {{fair.psm_f1}} for PSMASegmentator, so about three points higher. And that's despite most of the setup favouring PSMASegmentator: it was trained on more than twice as many scans, and averages five models, against my one. My model found more of the lesions, but raised more false alarms. Scan by scan, it was mixed: better on scans with many lesions, worse on scans with few. But pooled over all the scans, my model scored higher. So, is that down to Mamba?",
     saidSecs: 65,
   },
   {
@@ -262,7 +262,7 @@ export const SKELETON = [
     purpose: 'What the results mean, and their limits.',
     points: [
       'The gain over PSMASegmentator most likely comes from something both networks share, not Mamba; a {{lit.umamba_year}} retest of U-Mamba found the same',
-      "Mamba's linear cost did not pay off: the larger patch still forced batch size {{r6.batch_large}} for both networks, and at the same number of passes PSMASegmentator was slightly faster and lighter",
+      "Mamba's linear cost did not pay off: the larger patch still forced batch size {{r6.batch_large}} for both networks, and at the same number of passes the two took about the same time on average, with PSMASegmentator slightly lighter",
       'Limits: one training run per model in the CNN-only comparison, a smaller CNN-only version, not like-for-like with PSMASegmentator',
     ],
     req: [null, null, 'limitations'],
@@ -273,7 +273,7 @@ export const SKELETON = [
     seconds: 60,
     // DRAFT (13 Oct, night): written by Claude from the fact sheet for James to read in the
     // morning. Not yet read aloud or timed by James, so no saidSecs.
-    said: "It means the gain over PSMASegmentator is real, but it most likely comes from something both of my networks share, not from Mamba. A {{lit.umamba_year}} retest of U-Mamba, another Mamba network, found the same: its Mamba layers had no effect once it was compared with a strong CNN. Mamba's linear cost also didn't pay off in practice. The larger patch still forced a batch size of one. My abstract says my model takes about half PSMASegmentator's time per scan, but that's only because PSMASegmentator runs test-time augmentation, with eight times as many passes. With the same number of passes, PSMASegmentator was slightly faster, and used slightly less memory. The main limits are that each model in the CNN-only comparison was trained only once, and the comparison with PSMASegmentator isn't like-for-like.",
+    said: "It means my network does score higher overall than PSMASegmentator, but that most likely comes from something both of my networks share, not from Mamba. A {{lit.umamba_year}} retest of U-Mamba, another Mamba network, found the same: its Mamba layers had no effect once it was compared with a strong CNN. Mamba's linear cost also didn't pay off in practice. The larger patch still forced a batch size of one. My abstract says my model takes about half PSMASegmentator's time per scan, but that's only because PSMASegmentator runs test-time augmentation, with eight times as many passes. With the same number of passes, the two took about the same time on average, and PSMASegmentator used slightly less memory. The main limits are that each model in the CNN-only comparison was trained only once, and the comparison with PSMASegmentator isn't like-for-like.",
   },
   {
     id: 'close',
@@ -291,6 +291,6 @@ export const SKELETON = [
     seconds: 30,
     // DRAFT (13 Oct, night): written by Claude for James to read in the morning. Not yet read
     // aloud or timed by James, so no saidSecs.
-    said: "To wrap up: on the sealed test set, my final model scored an F1 of {{r5.f1}}. On scans neither model had seen, my network found lesions more effectively than PSMASegmentator overall, but a CNN-only version did about as well, so the credit doesn't go to Mamba. Next, the code will be released open source, so the UWA Medical Physics Research Group can retrain and test it on Sir Charles Gairdner Hospital data. Thank you, and I'm happy to take any questions.",
+    said: "To wrap up: on the sealed test set, my final model scored an F1 of {{r5.f1}}. On scans neither model had seen, my network found more lesions than PSMASegmentator, but a CNN-only version scored just as well, so the credit doesn't go to Mamba. Next, the code will be released open source, so the UWA Medical Physics Research Group can retrain and test it on Sir Charles Gairdner Hospital data. Thank you, and I'm happy to take any questions.",
   },
 ];

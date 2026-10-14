@@ -4,6 +4,8 @@ import { useAllDecks, DECK_LIST } from './decks';
 import { buildSequence } from './sequence';
 import { fmtTime } from '../shared/text';
 import { MATRIX, RECOMMENDATION } from '../shared/matrix';
+import RemoteBoundary from './RemoteBoundary';
+import RemoteJoin from './RemoteJoin';
 
 /* ============================================================================
    SEMINAR DECKS — LANDING: the three decks side by side
@@ -55,6 +57,10 @@ export default function Landing({ go }) {
           They differ in the story they tell and how they look.
         </p>
       </header>
+
+      <RemoteBoundary>
+        <RemoteJoin go={go} />
+      </RemoteBoundary>
 
       {RECOMMENDATION && (
         <section className="sd-reco" aria-label="Recommendation">

@@ -405,6 +405,8 @@ export const FACTS = {
   /* ── D1, the recorded demo (filled once the cut is rendered) ─────────── */
   'd1.speed': f(6, '6x', 'tools/seminar-decks/make_d1.py: frame times = t_since_click / 6 (motion-data/app-guide/manifest.json, captures C01-C25)', 'n/a', 'time-lapse factor of the run section'),
   'd1.len': f(18.23, '18 s', 'public/seminar-decks/clips/d1-model-run.mp4 (ffprobe 18.23 s; make_d1.py, 547 frames at 30 fps)', 'n/a', 'clip length, rounded'),
+  // The plain deck's demo: a direct recording of the whole app (record_gui_demo.py, make_gui_demo.py).
+  'gui.speed': f(20, '20x', 'public/seminar-decks/data/plain-gui-demo-cues.json speed (tools/seminar-decks/make_gui_demo.py SPEED: the model run and the 3D view\'s rendering play 20 times faster; everything else in real time)', 'n/a', 'time-lapse factor of the demo clip\'s two waits'),
 
   /* ── Hypotheses, misc ────────────────────────────────────────────────── */
   'hyp.n': f(4, 'four', 'chapters/01-introduction.tex:101-143 (H1-H4)', 'sec:intro-hypotheses'),

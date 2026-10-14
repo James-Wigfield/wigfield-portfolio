@@ -322,12 +322,14 @@ export function TwinSlide({ ctx }) {
 }
 
 /* ── 13. Discussion (draft transcript) ─────────────────────────────────────
-   About 72 s read (130 words, untimed: words / 108 a minute); latest starts:
-   is real 2.8 s, something both 6.6, not from Mamba 9.4, a 2024 retest 10.9,
-   its Mamba layers 16.1, linear cost 23.1, larger patch still 27.4, a batch size
-   of one 29.3, my abstract 31.6, about half 34.5, test-time augmentation 40.1,
-   eight times 41.6, same number of passes 44.9, slightly faster 47.7, slightly
-   less memory 49.6, main limits 51.5; all over by 54.2 s. Three columns for the
+   About 77 s read (James's 14 Oct wording, 138 words, untimed: words / 108 a
+   minute); latest starts: score higher 2.4 s, something both 7.6, not from Mamba
+   10.4, a 2024 retest 11.8, its Mamba layers 17.0, linear cost 24.1, larger
+   patch still 28.3, a batch size of one 30.2, my abstract 32.6, about half 35.4,
+   test-time augmentation 41.1, eight times 42.5, same number of passes 45.8,
+   about the same time 49.1, slightly less memory 53.4, main limits 55.2; all
+   over by 57.5 s. Most beats were set against the earlier 130-word text, so
+   they have slack. Three columns for the
    three parts of the transcript, then the limits. Times are on the
    dissertation's RTX 4090 benchmark (the abstract's home-PC figures are kept
    off this slide). */
@@ -360,8 +362,8 @@ function MiniNet({ t, mamba, a, fadeA, style }) {
 function discussionTimeline(root, add) {
   // The gain over PSMASegmentator, and where it most likely comes from.
   add(rise(one(root, 'k1'), 0.3, 0.8, 10));
-  add(rise(one(root, 'gain'), 2.0, 0.8, 14));
-  add(fadeIn(one(root, 'gain-ci'), 2.6, 0.6));
+  add(rise(one(root, 'gain'), 1.6, 0.8, 14));
+  add(fadeIn(one(root, 'gain-ci'), 2.2, 0.6));
   add(pop(one(root, 'net-hyb'), 5.4, 0.5, 0.7));
   add(pop(one(root, 'net-cnn'), 5.7, 0.5, 0.7));
   add(track(one(root, 'net-cnn-mb'), [{ t: 5.7, opacity: 1 }, { t: 6.3, opacity: 1 }, { t: 7.1, opacity: 0 }], EASE.inOut));
@@ -504,7 +506,7 @@ export function DiscussionSlide({ ctx }) {
           <p className={`dp-label dp11-val${m ? '' : ' is-hyb'}`} data-a={`v-${g.a}-${m}`} data-role="chart" style={{ left: tx + g.w[m] + 12, top: g.y + m * 34 - 5 }}><Num k={g.k[m]} /></p>
         </div>
       )))}
-      <p className="dp-label" data-a="faster" data-role="chart" style={{ left: tx, top: 662 }}>PSMASegmentator slightly faster</p>
+      <p className="dp-label" data-a="faster" data-role="chart" style={{ left: tx, top: 662 }}>About the same time on average</p>
       <div data-a="memory" style={{ left: tx, top: 724 }}>
         <p className="dp-label dp13-h" data-role="chart">Peak memory</p>
         <p className="dp-label dp13-mem" data-role="chart">
@@ -531,10 +533,10 @@ export function DiscussionSlide({ ctx }) {
 }
 
 /* ── 14. Conclusion (draft transcript) ─────────────────────────────────────
-   About 45 s read (81 words, untimed: words / 108 a minute); latest starts:
-   sealed test set 2.4 s, 84.3% 7.1, on scans neither 7.6, found lesions more
-   effectively 11.3, a CNN-only version did 15.1, so the credit 18.4, next 21.7,
-   open source 24.6, can retrain 28.8, Sir Charles Gairdner 31.6, thank you 34.0; all over by 33.75 s.
+   About 44 s read (79 words, untimed: words / 108 a minute); latest starts:
+   sealed test set 2.4 s, 84.3% 7.1, on scans neither 7.6, found more lesions
+   11.3, a CNN-only version scored 14.2, so the credit 17.5, next 20.8, open source 23.6,
+   can retrain 27.9, Sir Charles Gairdner 30.7, thank you 33.1; all over by 32.9 s.
    Slide 6's two questions return with their pairs of models, each now with
    the transcript's answer. */
 function closeTimeline(root, add) {
@@ -544,23 +546,23 @@ function closeTimeline(root, add) {
   add(rise(one(root, 'chips1'), 6.8, 0.8, 12));
   add(rise(one(root, 'a1'), 10.4, 0.9, 16));
   add(fadeIn(one(root, 'n1'), 11.4, 0.6));
-  add(track(one(root, 'bar2'), [{ t: 14.2, transform: 'scaleY(0)' }, { t: 14.9, transform: 'scaleY(1)' }], EASE.inOut));
-  add(rise(one(root, 'hyb2'), 14.3, 0.7, 12));
-  add(fadeIn(one(root, 'vs2'), 15.0, 0.5));
+  add(track(one(root, 'bar2'), [{ t: 13.3, transform: 'scaleY(0)' }, { t: 14.0, transform: 'scaleY(1)' }], EASE.inOut));
+  add(rise(one(root, 'hyb2'), 13.4, 0.7, 12));
+  add(fadeIn(one(root, 'vs2'), 14.1, 0.5));
   const cnn = one(root, 'cnn');
   const hyb = one(root, 'hyb2');
   const dx = hyb && cnn ? hyb.offsetLeft - cnn.offsetLeft : 0;
   add(track(cnn, [
-    { t: 14.6, opacity: 0, transform: `translateX(${dx}px)` },
-    { t: 14.8, opacity: 1, transform: `translateX(${dx}px)`, e: EASE.inOut },
-    { t: 15.8, opacity: 1, transform: 'translateX(0px)' },
+    { t: 13.7, opacity: 0, transform: `translateX(${dx}px)` },
+    { t: 13.9, opacity: 1, transform: `translateX(${dx}px)`, e: EASE.inOut },
+    { t: 14.9, opacity: 1, transform: 'translateX(0px)' },
   ]));
-  add(rise(one(root, 'a2'), 14.9, 0.9, 16));
-  add(fadeIn(one(root, 'a2-credit'), 18.1, 0.7));
-  add(fadeIn(one(root, 'n2'), 16.2, 0.6));
-  add(track(one(root, 'next-rule'), [{ t: 20.8, transform: 'scaleX(0)' }, { t: 21.6, transform: 'scaleX(1)' }], EASE.inOut));
-  add(rise(one(root, 'next'), 21.0, 0.9, 12));
-  add(rise(one(root, 'next-2'), 27.6, 0.9, 10));
+  add(rise(one(root, 'a2'), 14.0, 0.9, 16));
+  add(fadeIn(one(root, 'a2-credit'), 17.2, 0.7));
+  add(fadeIn(one(root, 'n2'), 15.3, 0.6));
+  add(track(one(root, 'next-rule'), [{ t: 19.9, transform: 'scaleX(0)' }, { t: 20.7, transform: 'scaleX(1)' }], EASE.inOut));
+  add(rise(one(root, 'next'), 20.1, 0.9, 12));
+  add(rise(one(root, 'next-2'), 26.7, 0.9, 10));
   add(rise(one(root, 'thanks'), 31.0, 1.0, 20));
 }
 
@@ -583,10 +585,10 @@ export function CloseSlide({ ctx }) {
             <span className="dp6-vs">vs</span>
             <span className="dp6-chip">PSMASegmentator</span>
           </p>
-          <p className="dp14-a" data-a="a1" data-role="body">Found lesions more effectively overall, on scans neither model had seen</p>
+          <p className="dp14-a" data-a="a1" data-role="body">Found more lesions, on scans neither model had seen</p>
           <div className="dp14-n" data-a="n1">
             <p className="dp-label dp-label--muted" data-role="chart"><T>{'single version trained only on autoPET: pooled F1 {{fair.r4_f1}} against {{fair.psm_f1}}'}</T></p>
-            <p className="dp-label dp-label--muted" data-role="chart">found more lesions, with more false alarms</p>
+            <p className="dp-label dp-label--muted" data-role="chart">at the cost of more false alarms</p>
           </div>
         </section>
         <section className="dp6-part">
@@ -597,7 +599,7 @@ export function CloseSlide({ ctx }) {
             <span className="dp6-chip dp6-chip--cnn" data-a="cnn">CNN-only version</span>
           </p>
           <p className="dp14-a" data-a="a2" data-role="body">
-            A CNN-only version did about as well,<span data-a="a2-credit"> so the credit doesn&apos;t go to Mamba</span>
+            A CNN-only version scored just as well,<span data-a="a2-credit"> so the credit doesn&apos;t go to Mamba</span>
           </p>
           <p className="dp-label dp-label--muted dp14-n" data-a="n2" data-role="chart">
             <T>{'F1 {{r6.c_small}}% for the CNN-only version, {{r6.h_small}}% for the hybrid'}</T>

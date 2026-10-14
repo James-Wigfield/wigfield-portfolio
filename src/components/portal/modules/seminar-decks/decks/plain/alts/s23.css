@@ -1,0 +1,12 @@
+/* ============================================================================
+   PLAIN DECK, SECOND OPTIONS FOR SLIDES 2 AND 3 — their own styles (dpx2*,
+   dpx3* only), so the main slides' rules in ../plain.css are never touched.
+   ========================================================================== */
+
+/* The turning clips: hidden at rest (the finished state is the main slide's).
+   Each sits above its still, which appears underneath it before it fades, so
+   the hand-over is a plain cross-fade between two matching pictures (layering
+   semi-transparent scan layers over the clip would darken the overlap). Their
+   side margins are set so they never reach a label while they show. */
+.sd-slide.dp .dpx2-turn,
+.sd-slide.dp .dpx3-turn { overflow: hidden; opacity: 0; }

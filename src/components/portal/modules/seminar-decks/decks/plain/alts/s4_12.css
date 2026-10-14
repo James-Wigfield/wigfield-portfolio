@@ -1,0 +1,12 @@
+/* ============================================================================
+   PLAIN DECK, SECOND OPTIONS FOR SLIDES 4 AND 12 — their own styles (dpx4-*,
+   dpx12-* only), so the main slides' rules in ../plain.css are never touched.
+   ========================================================================== */
+
+/* Slide 4: the turning clip is hidden at rest (the finished state is the main slide's). */
+.sd-slide.dp .dpx4-turn { overflow: hidden; opacity: 0; }
+
+/* Slide 12: the patches on the scan; the clip shows only while it plays. */
+.sd-slide.dp .dpx12-still img { display: block; width: 100%; height: 100%; max-width: none; user-select: none; }
+.sd-slide.dp .dpx12-clip { overflow: hidden; opacity: 0; }
+.sd-slide.dp .dpx12-tag { text-align: right; }

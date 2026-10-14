@@ -5,6 +5,8 @@ import { S10 } from '../geometry';
 import { Layer } from '../scan';
 import { EASE, all, fadeIn, isLive, one, rise, track, useTimeline } from '../motion';
 import { SPIN } from './spin.gen';
+import { TURN10 } from './s10.gen';
+import { useAt } from './useAt';
 import './alts.css';
 
 /* ============================================================================
@@ -15,8 +17,12 @@ import './alts.css';
    CC BY scan by tools/seminar-decks/make_plain_spin.py) while the opening
    question is asked, then cross-fades into the slide's own projection, which
    is the turn's last frame. Everything after is the main slide's timeline:
-   found, missed and false alarm are drawn as they are named. The finished
-   state (thumbnails, export, going back, reduced motion) is the main slide's.
+   found, missed and false alarm are drawn as they are named. Once all three
+   are on screen, the scan turns once more with them drawn on every angle
+   (clips/plain-c-turn.mp4, tools/seminar-decks/make_plain_3d_s10.py; 14 Oct),
+   fading in and out over the still's own outlines on its front view, and is
+   gone before the cohort bars. The finished state (thumbnails, export, going
+   back, reduced motion) is the main slide's.
    ========================================================================== */
 
 function OutlineSet({ list, kind, a }) {
@@ -36,9 +42,11 @@ function OutlineSet({ list, kind, a }) {
 
 function timeline(root, add) {
   // The turn (the clip plays from entry: SPIN.turn s, then holds the front
-  // view), fading in as the main slide's scan does (0.3 s over 1 s), then the
-  // slide's own scan over it, and the clip leaves.
-  add(track(one(root, 'scan'), [{ t: SPIN.turn + 0.05, opacity: 0 }, { t: SPIN.turn + 0.45, opacity: 1 }], EASE.inOut));
+  // view), fading in as the main slide's scan does (0.3 s over 1 s). The clip
+  // sits above the slide's own scan, which appears under it once the turn has
+  // landed on the same front view; then the clip fades out (a plain
+  // cross-fade, no darker overlap).
+  add(track(one(root, 'scan'), [{ t: SPIN.turn + 0.05, opacity: 0 }, { t: SPIN.turn + 0.1, opacity: 1 }], EASE.inOut));
   add(track(one(root, 'spin'), [{ t: 0.3, opacity: 0 }, { t: 1.3, opacity: 1 }, { t: SPIN.turn + 0.35, opacity: 1 }, { t: SPIN.turn + 0.75, opacity: 0 }], EASE.inOut));
   // From here, the main slide's timeline unchanged.
   add(rise(one(root, 'kick'), 3.4, 0.8, 10));
@@ -49,6 +57,11 @@ function timeline(root, add) {
   add(rise(one(root, 'real'), 12.0, 0.8, 14));
   add(fadeIn(one(root, 'o-fa'), 13.0, 0.8));
   add(fadeIn(one(root, 'legend'), 13.0, 0.8));
+  // The second turn, with the result drawn on it: in on its front view (the
+  // still's own projection), one turn, out again before the cohort bars (18.4).
+  const t2 = TURN10.start;
+  const back = t2 + TURN10.lead + TURN10.turn;
+  add(track(one(root, 'turn'), [{ t: t2, opacity: 0 }, { t: t2 + TURN10.lead, opacity: 1 }, { t: back + 0.1, opacity: 1 }, { t: back + 0.5, opacity: 0 }], EASE.inOut));
   add(rise(one(root, 'dice'), 16.6, 0.8, 14));
   all(root, 'group').forEach((el, i) => add(rise(el, 18.4 + i * 0.2, 0.8, 10)));
   all(root, 'bname').forEach((el, i) => add(fadeIn(el, 18.5 + i * 0.12, 0.6)));
@@ -70,22 +83,28 @@ export function ResultsSlideB({ ctx }) {
   const live = isLive(ctx);
   // The clip exists only while it can play: live, or preloading as the next slide.
   const next = ctx.mode === 'present' && ctx.phase === 'next' && !ctx.still;
+  const turn = useAt(live, TURN10.start);
   const sc = S10.scan;
   const { bar } = S10;
   const names = ['F1', 'Found', 'Flagged and real'];
   return (
     <div className="dp-stage dp10" ref={root}>
+      <div className="dp-fill" data-a="scan">
+        <Layer src="figures/plain-c-pet.png" box={sc} alt="Whole-body PSMA PET projection of a sealed test scan, with found, missed and false-alarm outlines" />
+      </div>
       {(live || next) && (
         <div className="dpx10-spin" data-a="spin" style={{ left: sc.x - SPIN.padCols * sc.sx, top: sc.y, width: SPIN.cols * sc.sx, height: sc.h }}>
           <Clip src="plain-c-spin" state={live ? 'play' : 'start'} mode={ctx.mode} reduced={ctx.reduced} label="The sealed test scan turning once in 3D: the PET projection front to back at each angle" />
         </div>
       )}
-      <div className="dp-fill" data-a="scan">
-        <Layer src="figures/plain-c-pet.png" box={sc} alt="Whole-body PSMA PET projection of a sealed test scan, with found, missed and false-alarm outlines" />
-      </div>
       <OutlineSet list={SCANS.C.found} kind="found" a="o-found" />
       <OutlineSet list={SCANS.C.missed} kind="missed" a="o-missed" />
       <OutlineSet list={SCANS.C.falseAlarm} kind="fa" a="o-fa" />
+      {(live || next) && (
+        <div className="dpx10-spin dpx10-turn" data-a="turn" style={{ left: sc.x - TURN10.padCols * sc.sx, top: sc.y, width: TURN10.cols * sc.sx, height: sc.h }}>
+          <Clip src="plain-c-turn" state={turn ? 'play' : 'start'} mode={ctx.mode} reduced={ctx.reduced} label="The sealed test scan turning once in 3D with found, missed and false-alarm lesions drawn at each angle" />
+        </div>
+      )}
 
       <p className="dp-kicker dp10-mid" data-a="kick" data-role="chart" style={{ top: 268 }}><T>{'Sealed test set, {{data.test}} scans'}</T></p>
       <div className="dp10-mid dp10-f1" data-a="f1" style={{ top: 316 }}>

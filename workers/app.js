@@ -17,12 +17,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { handleArcadeApi } from './arcade/room.js';
+import { handleDeckRemoteApi } from './deck-remote.js';
 import { handlePapersApi } from './papers.js';
 
 // The arcade's Durable Object. One class serves every arcade game — see
 // workers/arcade/room.js and ADR-005. Must be re-exported from the Worker entry
 // point for the ARCADE_ROOM binding in wrangler.jsonc to resolve.
 export { ArcadeRoom } from './arcade/room.js';
+// The seminar deck's phone remote (DECK_REMOTE binding) — see
+// workers/deck-remote.js and ADR-007.
+export { DeckRemote } from './deck-remote.js';
 
 export default {
   async fetch(request, env) {
@@ -46,6 +50,13 @@ async function handleApi(request, env, url) {
   // identity is just a name in localStorage.
   if (url.pathname.startsWith('/api/arcade/')) {
     return handleArcadeApi(request, env, url);
+  }
+
+  // Seminar deck phone remote — the phone's script page moves the laptop's
+  // slides through the DECK_REMOTE Durable Object. create/join/end are
+  // portal-password gated; the WebSocket is authorised by a room token.
+  if (url.pathname.startsWith('/api/deck-remote/')) {
+    return handleDeckRemoteApi(request, env, url, { requirePortalAuth, json, readJson });
   }
 
   // Health check — confirms the Worker is live and whether Supabase is wired up.

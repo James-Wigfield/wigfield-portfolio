@@ -10,6 +10,8 @@ import { openAudienceWindow } from './sync';
 import { Script, T } from '../shared/Num';
 import { cutText, fill, fmtTime, wordCount } from '../shared/text';
 import { CRIB } from '../shared/crib';
+import RemoteBoundary from './RemoteBoundary';
+import RemoteScreen from './RemoteScreen';
 
 /* ============================================================================
    SEMINAR DECKS — PRESENTER VIEW  (/portal/seminar-decks/<deck>/presenter)
@@ -126,6 +128,10 @@ export default function PresenterView({ deck, onExit }) {
         <span className={`sd-pv__ready is-${ready.state}`}>
           {ready.state === 'ready' ? `Ready: ${ready.done} files, ${fmtMB(ready.bytes)} in memory` : ready.state === 'running' ? `Loading ${ready.done} / ${ready.total}` : ready.state === 'failed' ? `Ready check failed (${ready.failed.length})` : 'Not checked'}
         </span>
+        {/* Phone remote: a plain status here on the laptop only; nothing reaches the projector. */}
+        <RemoteBoundary>
+          <RemoteScreen slug={deck.slug} seq={seq} ctl={ctl} chip />
+        </RemoteBoundary>
         <button type="button" className="sd-btn" onClick={openAudience}>{audienceOpen ? 'Re-open audience window' : 'Open audience window'}</button>
         <button type="button" className="sd-btn" onClick={ctl.toggleBlack}>Blackout (B)</button>
         <button type="button" className="sd-btn sd-btn--ghost" onClick={onExit}>Exit</button>

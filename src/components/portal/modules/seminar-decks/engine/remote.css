@@ -1,0 +1,107 @@
+/* ============================================================================
+   SEMINAR DECKS — PHONE REMOTE (RemoteBar, RemotePanel, RemoteJoin,
+   RemoteScreen). Every class here is new (sd-phone__remote*, sd-phone__link*,
+   sd-remote*, sd-join*), so nothing else in the portal changes. Status always
+   shows as a coloured dot AND words, never colour alone.
+   ========================================================================== */
+
+/* ── Phone: status line, link field, button states ─────────────────────── */
+.sd-phone {
+  --ph-good: #0a7a35;
+  --ph-warn: #a35a00;
+  --ph-bad: #b42318;
+  --ph-idle: #5b6470;
+}
+.sd-phone.is-dark {
+  --ph-good: #5ad17f;
+  --ph-warn: #f2b54a;
+  --ph-bad: #ff8a80;
+  --ph-idle: #b4bcc6;
+}
+.sd-phone__remote { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.sd-phone__remote-text { flex: 1; min-width: 0; font-size: 16px; line-height: 1.3; color: var(--ph-ink); }
+.sd-phone__remote-text i {
+  display: inline-block; width: 10px; height: 10px; margin-right: 7px; border-radius: 50%;
+  background: var(--ph-idle); vertical-align: 1px;
+}
+.sd-phone__remote-text b { font-weight: 700; }
+.sd-phone__remote.is-good .sd-phone__remote-text i { background: var(--ph-good); }
+.sd-phone__remote.is-good .sd-phone__remote-text b { color: var(--ph-good); }
+.sd-phone__remote.is-warn .sd-phone__remote-text i { background: var(--ph-warn); }
+.sd-phone__remote.is-warn .sd-phone__remote-text b { color: var(--ph-warn); }
+.sd-phone__remote.is-bad .sd-phone__remote-text i { background: var(--ph-bad); }
+.sd-phone__remote.is-bad .sd-phone__remote-text b { color: var(--ph-bad); }
+.sd-phone .sd-phone__remote-btn {
+  flex: none; min-height: 36px; padding: 0 12px; border: 1px solid var(--ph-rule); border-radius: 10px;
+  background: transparent; font-size: 15px; font-weight: 600; color: var(--ph-accent);
+}
+
+.sd-phone__linkrow { margin-top: 14px !important; font-size: 16px; }
+.sd-phone__linkform { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--ph-rule); }
+.sd-phone__linklabel { display: block; font-size: 16px; color: var(--ph-muted); margin-bottom: 6px; }
+.sd-phone__linkrow2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sd-phone__code {
+  width: 5.2em; min-height: 52px; padding: 0 10px; border: 2px solid var(--ph-rule); border-radius: 12px;
+  background: var(--ph-bg); color: var(--ph-ink); font: 700 28px/1 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
+.sd-phone__code:focus { outline: none; border-color: var(--ph-accent); }
+.sd-phone .sd-phone__linkbtn {
+  min-height: 52px; padding: 0 20px; border: 0; border-radius: 12px;
+  background: var(--ph-accent); color: var(--ph-bg); font-size: 18px; font-weight: 600;
+}
+.sd-phone .sd-phone__linkbtn:disabled { background: var(--ph-btn); color: var(--ph-muted); }
+.sd-phone__linkerr { margin-top: 8px !important; font-size: 16px; line-height: 1.35; color: var(--ph-bad); }
+
+/* Linked: the same Next, with a ring; pressed while the laptop answers. */
+.sd-phone__btn.is-linked { box-shadow: inset 0 0 0 3px var(--ph-bg), inset 0 0 0 5px var(--ph-accent); }
+.sd-phone__btn.is-pending { opacity: 0.7; transform: scale(0.98); }
+
+/* The backup on the laptop's screen, in the backup index. */
+.sd-phone__bk li.is-here { margin: -6px -8px; padding: 6px 8px; border-radius: 10px; background: var(--ph-btn); }
+.sd-phone__here {
+  margin-left: 8px; padding: 1px 7px; border-radius: 6px; font-style: normal; font-weight: 700;
+  background: var(--ph-accent); color: var(--ph-bg);
+}
+
+/* ── Laptop: presenter view chip (dark bar) ────────────────────────────── */
+.sd-remote-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; color: #e9edf2; }
+.sd-remote-chip i { width: 9px; height: 9px; border-radius: 50%; background: #9aa4b0; }
+.sd-remote-chip.is-good i { background: #5ad17f; }
+.sd-remote-chip.is-warn i { background: #f2b54a; }
+
+/* ── Laptop: deck page panel (Ready check tab) ─────────────────────────── */
+.sd-remote {
+  border: 1px solid var(--line, #ccc); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1.2rem;
+  background: var(--surface, #fff); max-width: 80ch;
+}
+.sd-remote__title { margin: 0 0 0.5rem; font: 600 1.05rem/1.2 var(--font-display, serif); color: var(--ink); }
+.sd-remote__help { margin: 0 0 0.7rem; color: var(--ink-2); line-height: 1.5; }
+.sd-remote__live { display: flex; flex-wrap: wrap; gap: 1.2rem 1.6rem; align-items: center; }
+.sd-remote__code {
+  margin: 0; font: 700 4.5rem/1 var(--font-mono, ui-monospace, monospace); letter-spacing: 0.16em;
+  color: var(--ink); padding: 0.3rem 0.6rem 0.3rem 0.8rem; border: 2px solid var(--ink); border-radius: 10px;
+}
+.sd-remote__side { display: grid; gap: 0.45rem; min-width: 16rem; }
+.sd-remote__side .sd-remote__help { margin: 0; }
+.sd-remote__status { margin: 0; display: flex; align-items: center; gap: 0.5rem; font: 600 1.15rem/1.3 var(--font-body, system-ui); color: var(--ink); }
+.sd-remote__status i { width: 12px; height: 12px; border-radius: 50%; background: var(--ink-3, #888); flex: none; }
+.sd-remote__status.is-good i { background: #1a8a46; }
+.sd-remote__status.is-warn i { background: #d08a1c; }
+.sd-remote__sub { margin: 0; color: var(--ink-2); font-size: 0.92rem; }
+.sd-remote__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.sd-remote__note { margin: 0.7rem 0 0; color: var(--ink-2); font-size: 0.92rem; }
+
+/* ── Landing: Join presentation ────────────────────────────────────────── */
+.sd-join { border: 1px solid var(--line, #ccc); border-radius: 10px; padding: 0.9rem 1rem; background: var(--surface, #fff); max-width: 34rem; }
+.sd-join h3 { margin: 0 0 0.3rem; font: 600 1.05rem/1.2 var(--font-display, serif); color: var(--ink); }
+.sd-join__help { margin: 0 0 0.6rem; color: var(--ink-2); font-size: 0.9rem; line-height: 1.45; }
+.sd-join__form { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.sd-join__code {
+  width: 6.5em; min-height: 3rem; padding: 0 0.6rem; border: 2px solid var(--line, #ccc); border-radius: 8px;
+  background: var(--ground, #fff); color: var(--ink); font: 700 1.6rem/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
+.sd-join__code:focus { outline: none; border-color: var(--accent); }
+.sd-join .sd-btn { min-height: 3rem; padding: 0 1.2rem; font-size: 1rem; }
+.sd-join__err { margin: 0.5rem 0 0; color: var(--error, #b42318); font-size: 0.92rem; line-height: 1.4; }

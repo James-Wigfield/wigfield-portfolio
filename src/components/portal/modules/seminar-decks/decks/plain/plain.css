@@ -451,6 +451,11 @@
 .sd-slide.dp .dpd-legend { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .sd-slide.dp .dpd-legend li { display: flex; align-items: center; gap: 16px; }
 .sd-slide.dp .dpd-sw { display: inline-block; width: 30px; height: 30px; border-radius: 5px; }
+/* the whole app (light), framed like a window on the white slide */
+.sd-slide.dp .dpd-panel--app { border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px #d5dae1, 0 12px 32px rgba(17, 20, 24, 0.12); }
+.sd-slide.dp .dpd-text--app { gap: 18px; }
+.sd-slide.dp .dpd-lead--app { font-size: 36px; }
+.sd-slide.dp .dpd-text--app .dpd-status { min-height: 3.75em; }
 
 /* ── Backups (no motion) ───────────────────────────────────────────────── */
 .sd-slide.dp .dpb { display: flex; flex-direction: column; gap: 30px; height: 100%; }

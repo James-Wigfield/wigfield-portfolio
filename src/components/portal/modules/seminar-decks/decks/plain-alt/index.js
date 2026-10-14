@@ -14,7 +14,7 @@ import { SECOND } from '../plain/alts/second';
 export default {
   ...plain,
   slug: 'plain-alt',
-  name: 'Plain Draft, second options',
+  name: 'Final Version, second options',
   concept: 'The plain deck with every second option swapped in, to preview them in place. Not listed on the landing page.',
   hidden: true,
   exitTo: 'plain',

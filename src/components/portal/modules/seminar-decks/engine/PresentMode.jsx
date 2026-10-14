@@ -6,6 +6,8 @@ import { useDeck } from './useDeck';
 import { useFit } from './hooks';
 import { runReadyCheck, useReady } from './ready';
 import { labelOf } from './controller';
+import RemoteBoundary from './RemoteBoundary';
+import RemoteScreen from './RemoteScreen';
 
 /* ============================================================================
    SEMINAR DECKS — PRESENT MODE (also the audience window)
@@ -84,7 +86,15 @@ export default function PresentMode({ deck, initialIndex = 0, initialStep = 0, s
     slots.push({ slide, phase, step });
   }
 
-  return createPortal(
+  // The phone remote (not in the audience window, which follows over the
+  // BroadcastChannel): draws nothing and sits outside the overlay.
+  const remote = !audience && (
+    <RemoteBoundary>
+      <RemoteScreen slug={deck.slug} seq={seq} ctl={ctl} />
+    </RemoteBoundary>
+  );
+
+  return <>{remote}{createPortal(
     <div
       ref={rootRef}
       className={`sd-present${cursorHidden ? ' sd-present--nocursor' : ''}${audience ? ' sd-present--audience' : ''}`}
@@ -115,5 +125,5 @@ export default function PresentMode({ deck, initialIndex = 0, initialStep = 0, s
       )}
     </div>,
     document.body,
-  );
+  )}</>;
 }

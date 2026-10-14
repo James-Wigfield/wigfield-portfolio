@@ -7,6 +7,8 @@ import { fmtMB, runReadyCheck, useReady } from './ready';
 import { loadDeck, useDeckModule } from './decks';
 import PalmCards from './PalmCards';
 import { hasSaid } from './talk';
+import RemoteBoundary from './RemoteBoundary';
+import RemotePanel from './RemotePanel';
 import { Script, T } from '../shared/Num';
 import { fill, fmtTime } from '../shared/text';
 import { TALK } from '../shared/meta';
@@ -204,6 +206,7 @@ export default function DeckPage({ deck, tab, go }) {
         <div className="sd-deckpage__go">
           <button type="button" className="sd-btn sd-btn--solid" onClick={() => go(`${deck.slug}/present`)}>Present</button>
           <button type="button" className="sd-btn" onClick={() => go(`${deck.slug}/presenter`)}>Presenter view</button>
+          {hasSaid(deck) && <button type="button" className="sd-btn" onClick={() => go(`${deck.slug}/ready`)}>Phone remote</button>}
         </div>
       </header>
       <nav className="sd-tabs" aria-label="Deck views">
@@ -215,6 +218,7 @@ export default function DeckPage({ deck, tab, go }) {
       </nav>
       {tab === 'slides' && <Sorter deck={deck} go={go} />}
       {tab === 'script' && <ScriptView deck={deck} go={go} />}
+      {tab === 'ready' && hasSaid(deck) && <RemoteBoundary><RemotePanel deck={deck} /></RemoteBoundary>}
       {tab === 'ready' && <ReadyPanel deck={deck} />}
       {tab === 'downloads' && <Downloads deck={deck} />}
     </div>

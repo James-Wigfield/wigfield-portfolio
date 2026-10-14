@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { talkPlan } from './talk';
 import { fmtTime } from '../shared/text';
+import RemoteBoundary from './RemoteBoundary';
+import { PhoneRemote, RemoteLinkForm, RemoteStatus } from './RemoteBar';
 import './talk.css';
 
 /* ============================================================================
@@ -14,8 +16,10 @@ import './talk.css';
    to type on the Mac. No slide renders or images, so it loads fast.
    Kept across a reload (localStorage, guarded): the page, the theme choice
    and the elapsed timer. The screen is kept awake with the Wake Lock API
-   where the browser has it. There is no sync with the Mac (that would need a
-   network service); the phone is turned by hand.
+   where the browser has it. Sync with the Mac is the phone remote
+   (RemoteBar.jsx, through the DECK_REMOTE Durable Object): linked, Next and
+   Previous move the Mac's slides and the page follows the Mac; unlinked, or
+   whenever the link is down, the phone is turned by hand as before.
    ========================================================================== */
 
 const read = (key, fallback) => {
@@ -64,6 +68,20 @@ export default function PhoneView({ deck }) {
   const lock = useRef(null);
   const systemDark = usePrefersDark();
   const dark = theme === 'dark' || (theme === 'auto' && systemDark);
+  // Phone remote (RemoteBar.jsx): its API, and what it shows (null: no remote).
+  const remote = useRef(null);
+  const [rv, setRv] = useState(null);
+  const following = Boolean(rv?.following);
+  const setApi = useCallback((a) => {
+    remote.current = a;
+  }, []);
+  const dropRemote = useCallback(() => {
+    remote.current = null;
+    setRv(null);
+  }, []);
+  const follow = useCallback((p) => {
+    if (Number.isInteger(p)) setPage(Math.min(pages.length - 1, Math.max(0, p)));
+  }, [pages.length]);
 
   useEffect(() => write(key, { page, theme, timer }), [key, page, theme, timer]);
 
@@ -121,24 +139,38 @@ export default function PhoneView({ deck }) {
     requestWake();
   }, [pages.length, requestWake]);
 
+  // Next and Previous: the remote first (linked, it moves the Mac and the page
+  // follows); when it says no, this phone's own page turns, as before.
+  const turn = useCallback((d) => {
+    let handled = false;
+    try {
+      handled = remote.current?.tap?.(d > 0 ? 'next' : 'prev') === true;
+    } catch {
+      handled = false;
+    }
+    if (handled) requestWake();
+    else go(d);
+  }, [go, requestWake]);
+
   useEffect(() => {
     body.current?.scrollTo?.(0, 0);
   }, [page]);
 
-  // Arrow keys and Space (for testing on a computer).
+  // Arrow keys and Space (for testing on a computer); not while typing a code.
   useEffect(() => {
     const onKey = (e) => {
+      if (e.target?.tagName === 'INPUT') return;
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
-        go(1);
+        turn(1);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        go(-1);
+        turn(-1);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go]);
+  }, [turn]);
 
   // A horizontal swipe on the transcript turns the page.
   const touch = useRef(null);
@@ -149,7 +181,7 @@ export default function PhoneView({ deck }) {
   const onTouchEnd = (e) => {
     const s = touch.current;
     touch.current = null;
-    if (!s) return;
+    if (!s || following) return; // linked, a swipe does nothing: a scroll can never move the Mac
     const t = e.changedTouches[0];
     const dx = t.clientX - s.x;
     const dy = t.clientY - s.y;
@@ -171,7 +203,7 @@ export default function PhoneView({ deck }) {
   const big = s ? String(s.no) : cur.kind === 'demo' ? plan.demo.label : 'Q';
 
   return createPortal(
-    <div className={`sd-phone${dark ? ' is-dark' : ''}`} data-page={page} data-kind={cur.kind} data-slide={s?.no ?? ''}>
+    <div className={`sd-phone${dark ? ' is-dark' : ''}`} data-page={page} data-kind={cur.kind} data-slide={s?.no ?? ''} data-remote={rv?.code ?? 'off'}>
       <header className="sd-phone__top">
         <div className="sd-phone__row">
           <p className="sd-phone__no" aria-label={s ? `Slide ${s.no} of ${plan.total}` : cur.kind === 'demo' ? 'Demo slide' : 'Questions'}>{big}</p>
@@ -188,6 +220,9 @@ export default function PhoneView({ deck }) {
           </button>
         </div>
         <p className="sd-phone__title">{s ? s.title : cur.kind === 'demo' ? plan.demo.title : 'Backup slides'}</p>
+        <RemoteBoundary onError={dropRemote}>
+          <RemoteStatus view={rv} apiRef={remote} />
+        </RemoteBoundary>
       </header>
 
       <main className="sd-phone__body" ref={body} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
@@ -206,7 +241,7 @@ export default function PhoneView({ deck }) {
               <li><b>{plan.demo.label}</b> <span className="sd-phone__type">type {plan.demo.typed}, Enter</span><span>Demo: leave up during questions</span></li>
             )}
             {plan.backups.map((b) => (
-              <li key={b.id}><b>{b.label}</b> <span className="sd-phone__type">type {b.typed}, Enter</span><span>{b.q || b.title}</span></li>
+              <li key={b.id} className={rv?.mark === b.label ? 'is-here' : undefined}><b>{b.label}</b> <span className="sd-phone__type">type {b.typed}, Enter{rv?.mark === b.label && <em className="sd-phone__here">On screen</em>}</span><span>{b.q || b.title}</span></li>
             ))}
           </ol>
         )}
@@ -221,12 +256,18 @@ export default function PhoneView({ deck }) {
           {' '}
           {wake === 'on' ? 'Screen stays on.' : wake === 'unsupported' ? 'Keep-awake is not available here: set Auto-Lock to Never.' : wake === 'off' ? 'Tap Next to keep the screen on.' : ''}
         </p>
+        <RemoteBoundary>
+          <RemoteLinkForm view={rv} apiRef={remote} />
+        </RemoteBoundary>
       </main>
 
       <nav className="sd-phone__nav" aria-label="Turn the page">
-        <button type="button" className="sd-phone__btn" onClick={() => go(-1)} disabled={page === 0}>Previous</button>
-        <button type="button" className="sd-phone__btn is-next" onClick={() => go(1)} disabled={page === pages.length - 1}>Next</button>
+        <button type="button" className={`sd-phone__btn${rv?.pending === 'prev' ? ' is-pending' : ''}`} onClick={() => turn(-1)} disabled={following ? Boolean(rv.atStart) : page === 0}>Previous</button>
+        <button type="button" className={`sd-phone__btn is-next${following ? ' is-linked' : ''}${rv?.pending === 'next' ? ' is-pending' : ''}`} onClick={() => turn(1)} disabled={following ? Boolean(rv.atEnd) : page === pages.length - 1}>Next</button>
       </nav>
+      <RemoteBoundary onError={dropRemote}>
+        <PhoneRemote deck={deck} plan={plan} pages={pages} onApi={setApi} onView={setRv} onFollow={follow} onLocalTurn={go} requestWake={requestWake} />
+      </RemoteBoundary>
     </div>,
     document.body,
   );

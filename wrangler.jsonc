@@ -29,10 +29,21 @@
   //
   // NOTE: a DO migration only applies on a real `wrangler deploy`, never on
   // `wrangler versions upload`.
+  //
+  // ── Seminar deck phone remote (/api/deck-remote/*) ────────────────────────
+  // A second, separate class: one room per four-letter code, linking the phone's
+  // script page to the presenting laptop. See workers/deck-remote.js and ADR-007.
+  // Migration v2 adds it; v1 is untouched.
   "durable_objects": {
-    "bindings": [{ "name": "ARCADE_ROOM", "class_name": "ArcadeRoom" }]
+    "bindings": [
+      { "name": "ARCADE_ROOM", "class_name": "ArcadeRoom" },
+      { "name": "DECK_REMOTE", "class_name": "DeckRemote" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ArcadeRoom"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ArcadeRoom"] },
+    { "tag": "v2", "new_sqlite_classes": ["DeckRemote"] }
+  ],
 
   // Non-secret, committed config (readable as env.SUPABASE_URL in the Worker).
   // ▶ Replace with YOUR Supabase project URL before deploying.

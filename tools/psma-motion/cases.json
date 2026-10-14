@@ -43,6 +43,15 @@
       "label": "Alternate B",
       "rule": "Under-calling case: the most missed lesions of any test scan (78 of 128), and the lowest F1 among autoPET-III test scans with at least 20 lesions (0.538).",
       "rule_short": "Picked from the results table before any image was viewed: the test scan with the most missed lesions."
+    },
+    {
+      "case_id": "deeppsma_0004",
+      "slot": "alt",
+      "role": "plain deck study C",
+      "cohort": "DEEP-PSMA",
+      "label": "Study C",
+      "rule": "Figure 4.7 (b) of the dissertation: the DEEP-PSMA sealed test scan at the median per-case F1 (the plain seminar deck's slide 10 scan; tools/seminar-decks/make_plain_scans.py, CASE_C). Added 14 Oct 2026 for the plain deck's 3D second options.",
+      "rule_short": "The dissertation's qualitative figure: the DEEP-PSMA test scan at its cohort's median F1."
     }
   ]
 }

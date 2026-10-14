@@ -12,13 +12,13 @@ import { SECOND } from './alts/second';
 import './plain.css';
 
 /* ============================================================================
-   DECK 4 — PLAIN DRAFT (slug plain)
+   DECK 4 — FINAL VERSION (slug plain)
    ----------------------------------------------------------------------------
    The talk rebuilt from the bare basics, in the dissertation's order. Content
-   lives in ./skeleton.js. Slides 1 to 10 are built (./slides.jsx, ./slides2.jsx):
-   one build step each, with a timeline that plays once on entry (./motion.js)
-   and a finished state everywhere else. Slides 11 to 14 keep the draft layout
-   (./parts.jsx): points, numbers and a dashed box for the planned visual.
+   lives in ./skeleton.js. Slides 1 to 14 are built (./slides.jsx, ./slides2.jsx,
+   ./slides3.jsx): one build step each, with a timeline that plays once on entry
+   (./motion.js) and a finished state everywhere else. The demo slide and the
+   backups are in ./backups.jsx.
    Purpose, numbers and visual show as cues in the presenter and script views;
    the presenter view reads `said` (James's transcript) where a slide has one.
    ========================================================================== */
@@ -91,9 +91,9 @@ const DEMO = {
   title: 'Recorded Run of the Final Model in the App',
   stage: true,
   scans: true,
-  media: ['clips/d1-model-run-loop.mp4', 'data/d1-loop-cues.json'],
+  media: ['clips/plain-gui-demo.mp4', 'clips/plain-gui-demo.png', 'data/plain-gui-demo-cues.json'],
   render: (ctx) => <DemoSlide ctx={ctx} />,
-  cues: ['Leave up during questions: the real recorded run, looping'],
+  cues: ['Leave up during questions: a recording of the whole app on a sealed test scan, looping'],
 };
 const QUESTION_BACKUPS = [
   { id: 'pb-setup', title: 'Setup Differences with PSMASegmentator', render: () => <SetupBackup /> },
@@ -133,8 +133,8 @@ const USE_SECOND = [];
 
 export default {
   slug: 'plain',
-  name: 'Plain Draft',
-  concept: "The talk in the dissertation's order on plain white slides. Slides 1 to 10 are built, each with one timed animation that plays once on entry; slides 11 to 14 are still the draft layout with talking points and a target time.",
+  name: 'Final Version',
+  concept: "The talk in the dissertation's order on plain white slides. Slides 1 to 14 are built, each with one timed animation that plays once on entry; the recorded demo and the question backups follow slide 14.",
   wow: [
     'Slide 2: PET and CT fused, then the anatomy around a lesion',
     'Slide 5: a 3D feature block flattened into one long sequence',

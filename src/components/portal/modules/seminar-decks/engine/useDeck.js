@@ -170,5 +170,6 @@ export function useDeck(seq, {
     return () => window.removeEventListener('keydown', onKey);
   }, [keys, seq, next, prev, go, toggleBlack]);
 
-  return { pos, typed, next, prev, go, toggleBlack, send: (m) => syncRef.current?.send(m), syncRef };
+  // posRef: the position as of the last change, synchronously (the phone remote's guard reads it).
+  return { pos, typed, next, prev, go, toggleBlack, send: (m) => syncRef.current?.send(m), syncRef, posRef };
 }
