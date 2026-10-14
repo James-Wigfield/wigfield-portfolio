@@ -271,9 +271,9 @@ export const SKELETON = [
     ],
     visual: "Built: the pooled gain with its interval; the hybrid and the CNN-only version as network pictures, joined; the U-Mamba retest; the patches to scale in one training batch each; time per scan, where PSMASegmentator's bar shrinks at the same number of passes; the limits along the bottom",
     seconds: 60,
-    // DRAFT (13 Oct, night): written by Claude from the fact sheet for James to read in the
-    // morning. Not yet read aloud or timed by James, so no saidSecs.
-    said: "It means my network does score higher overall than PSMASegmentator, but that most likely comes from something both of my networks share, not from Mamba. A {{lit.umamba_year}} retest of U-Mamba, another Mamba network, found the same: its Mamba layers had no effect once it was compared with a strong CNN. Mamba's linear cost also didn't pay off in practice. The larger patch still forced a batch size of one. My abstract says my model takes about half PSMASegmentator's time per scan, but that's only because PSMASegmentator runs test-time augmentation, with eight times as many passes. With the same number of passes, the two took about the same time on average, and PSMASegmentator used slightly less memory. The main limits are that each model in the CNN-only comparison was trained only once, and the comparison with PSMASegmentator isn't like-for-like.",
+    // Tidied from James's first read (14 Oct, 90 s at 158 words); approved, not yet re-timed, so
+    // no saidSecs (about 70 s at his pace).
+    said: "It means that my network does score higher overall than PSMASegmentator, but that most likely comes from something both of my networks share, not from Mamba. A {{lit.umamba_year}} retest of U-Mamba, another Mamba network, found the same. Mamba's linear cost also didn't pay off in practice: the larger patch still forced a batch size of one. My abstract says my model takes about half of PSMASegmentator's time per scan, but that's only because PSMASegmentator runs test-time augmentation, with eight times as many passes. With the same number of passes, the two took about the same time on average. The main limits are that each model in the CNN-only comparison was trained only once, and the comparison with PSMASegmentator isn't like-for-like.",
   },
   {
     id: 'close',

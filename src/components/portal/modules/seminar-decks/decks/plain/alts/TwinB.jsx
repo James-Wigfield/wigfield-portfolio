@@ -11,15 +11,16 @@ import './s4_12.css';
    SLIDE 12, SECOND OPTION — Mamba Blocks and Patch Size
    ----------------------------------------------------------------------------
    The main slide (slides3.jsx, TwinSlide) with its two flat patches replaced
-   by the patches to scale in 3D on a whole-body scan (scan A, the scan of
-   slides 2 and 4), one copy under each column (clips/plain-a-grow.mp4,
+   by the patches to scale on a whole-body scan (scan A, the scan of slide 2),
+   one copy under each column (clips/plain-a-grow1.mp4,
    tools/seminar-decks/make_plain_3d_s4_12.py): the final model's patch
    (patch.small_*_mm) under the first, and under the second the same patch
    growing into the larger one (patch.large_mm), as the main slide's second
-   patch grows. Both turn once after it grows, so the depth the coronal view
-   hides shows (391 mm front to back for both), and once more when the larger
-   patch is named again. No PSMASegmentator patch is drawn here. Chart, words
-   and every other beat are the main slide's.
+   patch grows, both at 0.25 px per mm. (The first build also turned both
+   scans twice; the design critic found the turns added nothing the
+   transcript says and competed with the chart, so they were cut, 14 Oct.)
+   No PSMASegmentator patch is drawn here. Chart, words and every other beat
+   are the main slide's.
    75 s read (134 words); latest starts: final model's patch 12.8 s, almost
    five times larger 16.7, at the smaller patch 18.6, added little 21.9, the
    larger patch was where 42.3, cost the hybrid 50.0, four and a half 51.9,
@@ -43,17 +44,14 @@ function timeline(root, add) {
   add(rise(one(root, 'ch-kick'), 11.8, 0.8, 10));
   add(fadeIn(one(root, 'ch-frame'), 12.0, 0.6));
   add(rise(one(root, 'col-0'), 12.2, 0.8, 10));
-  // Clip 1 (starts at 12.2): the first scan, then the second fades in with its
-  // column (15.8), its patch grows (16.2 to 17.2) and both turn once. Then the
-  // still (both clips' last frame) stays, and clip 2 turns them once more.
-  const [c1, c2] = X.clips;
+  // The clip (starts at 12.2): the first scan, then the second fades in with
+  // its column (15.8) and its patch grows (16.2 to 17.2). Then the still (the
+  // clip's last frame) takes over underneath and the clip goes.
+  const [c1] = X.clips;
   add(track(one(root, 'bodies-1'), [
     { t: c1[0], opacity: 0 }, { t: c1[0] + 0.4, opacity: 1 }, { t: c1[1] - 0.2, opacity: 1 }, { t: c1[1], opacity: 0 },
   ], EASE.inOut));
   add(track(one(root, 'bodies-still'), [{ t: c1[1] - 0.4, opacity: 0 }, { t: c1[1] - 0.1, opacity: 1 }], EASE.inOut));
-  add(track(one(root, 'bodies-2'), [
-    { t: c2[0], opacity: 0 }, { t: c2[0] + 0.1, opacity: 1 }, { t: c2[1] - 0.2, opacity: 1 }, { t: c2[1], opacity: 0 },
-  ], EASE.inOut));
   add(fadeIn(one(root, 'scale-tag'), 17.2, 0.6));
   add(fadeIn(one(root, 'once'), 12.8, 0.6));
   add(rise(one(root, 'col-1'), 15.8, 0.8, 10));
@@ -104,7 +102,6 @@ export function TwinSlideB({ ctx }) {
   const next = ctx.mode === 'present' && ctx.phase === 'next' && !ctx.still;
   // Each clip waits, paused and preloaded on its first frame, until the slide reaches it.
   const go1 = useAt(live, X.clips[0][0]);
-  const go2 = useAt(live, X.clips[1][0]);
   const { plot, cols, hyb, cnn } = S12;
   const r = 10;
   const sq = (p, a) => <rect x={p.x - r * 0.9} y={p.y - r * 0.9} width={r * 1.8} height={r * 1.8} className="dp12-pt is-cnn" data-a={a} />;
@@ -175,22 +172,17 @@ export function TwinSlideB({ ctx }) {
           </p>
         </div>
       ))}
-      {/* Each patch to scale on a whole-body scan; the clip turns them in 3D. */}
+      {/* Each patch to scale on a whole-body scan; the clip brings in the second and grows its patch. */}
       <div className="dpx12-still" data-a="bodies-still" style={box}>
         <img src={mediaUrl('clips/plain-a-grow1.png')} alt="" aria-hidden="true" draggable="false" />
       </div>
       {(live || next) && (
-        <>
-          <div className="dpx12-clip" data-a="bodies-1" style={box}>
-            <Clip src="plain-a-grow1" state={go1 ? 'play' : 'start'} mode={ctx.mode} reduced={ctx.reduced} label="The two patches to scale on a whole-body scan: the final model's patch, the larger one growing from it, then both turning once in 3D" />
-          </div>
-          <div className="dpx12-clip" data-a="bodies-2" style={box}>
-            <Clip src="plain-a-grow2" state={go2 ? 'play' : 'start'} mode={ctx.mode} reduced={ctx.reduced} label="The two patches to scale on a whole-body scan, turning once more in 3D" />
-          </div>
-        </>
+        <div className="dpx12-clip" data-a="bodies-1" style={box}>
+          <Clip src="plain-a-grow1" state={go1 ? 'play' : 'start'} mode={ctx.mode} reduced={ctx.reduced} label="The two patches to scale on a whole-body scan: the final model's patch, and the larger one growing from it" />
+        </div>
       )}
       <p className="dp-tag dpx12-tag" data-a="scale-tag" data-role="foot" style={{ right: 1920 - X.left + 14, top: X.top + X.h - 54 }}>
-        To scale on one scan,<br />turning in 3D
+        Both to scale,<br />on the same scan
       </p>
     </div>
   );

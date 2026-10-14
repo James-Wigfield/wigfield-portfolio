@@ -227,7 +227,7 @@ export default function PhoneView({ deck }) {
 
       <main className="sd-phone__body" ref={body} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {s && s.no > 1 && <p className="sd-phone__space">Space: slide {s.no}</p>}
-        {s && s.sentences.map((t, i) => <p key={i} className="sd-phone__s">{t}</p>)}
+        {s && s.sentences.map((t, i) => <p key={i} className={`sd-phone__s is-tint is-c${i % 4}`}>{t}</p>)}
         {cur.kind === 'demo' && (
           <>
             <p className="sd-phone__space">Space after slide {plan.total}: {plan.demo.label}</p>

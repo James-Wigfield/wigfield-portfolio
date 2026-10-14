@@ -18,8 +18,9 @@ import { Num, T } from '../../shared/Num';
    ========================================================================== */
 
 /* ── The demo slide ─────────────────────────────────────────────────────── */
-// The app's own overlay colours (as in its legend; tools/seminar-decks/make_d1.py, APP_COLOURS).
-const APP = { found: '#2ECC71', missed: '#22D3EE', fa: '#FF4FD8' };
+// The app was filmed with its "Motion graphics, light" overlay colours (Mamba_PSMA gui/viz.py,
+// OVERLAY_PALETTES), which are Figure 4.7's and slide 10's.
+const APP = { found: '#0072B2', missed: '#CC79A7', fa: '#E69F00' };
 // The whole app, 1600 x 900 in the clip, shown at DEMO.k with the notes beside it.
 const DEMO = { left: 96, top: 236, w: 1600, h: 900, k: 0.8 };
 
@@ -65,13 +66,13 @@ export function DemoSlide({ ctx }) {
       <div className="dpd-text dpd-text--app" style={{ left: textLeft, top: DEMO.top }}>
         <p className="dpd-lead dpd-lead--app" data-role="body">My app running the five-model ensemble on a sealed test scan</p>
         <p className="dpd-status" data-role="body">{text}</p>
-        <div className="dpd-bar" aria-hidden="true"><span ref={bar} style={{ transform: live ? 'scaleX(0)' : 'scaleX(1)' }} /></div>
+        <div className="dpd-bar" aria-hidden="true" style={{ opacity: live ? 1 : 0 }}><span ref={bar} style={{ transform: 'scaleX(0)' }} /></div>
         <ul className="dpd-legend">
           <li className="dp-label" data-role="chart"><span className="dpd-sw" style={{ background: APP.found }} />Found</li>
           <li className="dp-label" data-role="chart"><span className="dpd-sw" style={{ background: APP.missed }} />Missed</li>
           <li className="dp-label" data-role="chart"><span className="dpd-sw" style={{ background: APP.fa }} />False alarm</li>
         </ul>
-        <p className="dp-tag" data-role="foot">The app&apos;s own colours; before the run, cyan shows the ground truth.</p>
+        <p className="dp-tag" data-role="foot">The results slide&apos;s colours; before the run, dark blue shows the ground truth.</p>
         <p className="dp-tag" data-role="foot"><T>{'Waiting for the app is sped up {{gui.speed}}; clicks, scrolling and the 3D turn play in real time.'}</T></p>
         <p className="dp-tag" data-role="foot">Threshold and size filter as written down beforehand; no test-time augmentation. The case id is blurred.</p>
       </div>

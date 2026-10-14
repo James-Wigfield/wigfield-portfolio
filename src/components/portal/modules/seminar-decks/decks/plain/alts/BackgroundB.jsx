@@ -99,8 +99,10 @@ function timeline(root, add) {
   // the layers appear under the landed clip (unseen), then the clip fades off them
   add(track(one(root, 'pet'), [{ t: land + 0.1, opacity: 0 }, { t: land + 0.3, opacity: 1 }], EASE.inOut));
   add(track(one(root, 'ct'), [{ t: land + 0.1, opacity: 0 }, { t: land + 0.3, opacity: 0.75 }], EASE.inOut));
-  add(track(one(root, 'tag-pet'), [{ t: 31.9, opacity: 0 }, { t: 32.7, opacity: 1 }, { t: 37.4, opacity: 1 }, { t: 37.8, opacity: 0 }]));
-  add(track(one(root, 'tag-ct'), [{ t: 37.9, opacity: 0 }, { t: 38.5, opacity: 1 }, { t: 41.0, opacity: 1 }, { t: 41.4, opacity: 0 }]));
+  // The CT tag comes once the CT has fused in (37.6 to 39.0), so it never names a bare PET view
+  // (design critic, 14 Oct); "+ CT" because it sits over the two together (accuracy check).
+  add(track(one(root, 'tag-pet'), [{ t: 31.9, opacity: 0 }, { t: 32.7, opacity: 1 }, { t: 38.6, opacity: 1 }, { t: 39.0, opacity: 0 }]));
+  add(track(one(root, 'tag-ct'), [{ t: 39.0, opacity: 0 }, { t: 39.5, opacity: 1 }, { t: 41.0, opacity: 1 }, { t: 41.4, opacity: 0 }]));
   add(rise(one(root, 'tag-fused'), land, 0.8, 12));
   // From here, the main slide's timeline unchanged: lesions, then the organs
   // that take up the tracer normally, then the context.
@@ -208,8 +210,8 @@ export function BackgroundSlideB({ ctx }) {
         <p className="dp-tagbox__v" data-role="chart">where the tracer collects</p>
       </div>
       <div className="dp-tagbox dp2-gone" data-a="tag-ct" style={{ left: f.x, top: 184, width: f.w }}>
-        <p className="dp-tagbox__k" data-role="chart">CT</p>
-        <p className="dp-tagbox__v" data-role="chart">anatomy</p>
+        <p className="dp-tagbox__k" data-role="chart">+ CT</p>
+        <p className="dp-tagbox__v" data-role="chart">the anatomy</p>
       </div>
       <p className="dp-tagbox__k dp2-fused" data-a="tag-fused" data-role="chart" style={{ left: f.x, top: 212, width: f.w }}>PSMA PET/CT</p>
 

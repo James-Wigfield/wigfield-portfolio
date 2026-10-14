@@ -9,10 +9,12 @@ the plain deck's style, in four steps that follow the end of slide 8's transcrip
   1. one version (fold 0) reads the scan patch by patch: its 70 patches in MONAI's real order
      (windows.json), with its real running estimate after each patch (accum/acc_NNN.png; the
      replay's final map equals the saved fold-0 map exactly);
-  2. the five versions' maps in turn, then their mean (anterior/prob_fold0-4.png, prob_mean.png);
+  2. that version's map becomes the mean of the five versions (anterior/prob_fold0.png ->
+     prob_mean.png);
   3. the threshold: probability above 0.5 becomes the binary output, in the model's blue;
-  4. the size filter: the predicted pieces under 10 voxels (mask bit `removed`) show in gold and
+  4. the size filter: the predicted pieces under 10 voxels (mask bit `removed`) are ringed, then
      dissolve, leaving the prediction (mask bit `pred`).
+The scan is drawn as slide 10 draws its PET (ink on white, alpha = SUV / 10), with no bone.
 The clip starts when the panel comes up (slide time T_IN; the slide holds it paused on its first
 frame until then, alts/useAt.js), so clip time 0 is slide time T_IN; everything is over by END,
 inside the 52.5 s cap. All times below are slide times.
@@ -24,12 +26,14 @@ and decks/plain/alts/s8.gen.js (panel size and step times for alts/DesignB.jsx).
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import numpy as np  # noqa: E402
+import SimpleITK as sitk  # noqa: E402
 from PIL import Image  # noqa: E402
 import plain3d as P  # noqa: E402
 
@@ -42,17 +46,18 @@ OUT_JS = P.ALTS / 's8.gen.js'
 FPS = 30
 PANEL_H = 610          # display px (as slide 8's scan)
 SCALE = 2
-T_IN = 39.8            # the panel fades in over the main slide's scan
-SWEEP = (40.6, 45.2)   # 70 patches
-FOLDS = [45.5, 45.9, 46.3, 46.7]   # crossfades fold k -> k + 1 start here (0.35 s each)
-MEAN = (47.2, 47.8)    # fold 4 -> the mean of the five
-THRESH = (48.4, 49.5)  # heat out, binary in (a wipe head to toe)
-FILTER = (50.2, 50.6, 51.6)  # removed pieces turn gold, hold, dissolve
+# (design critic, 14 Oct: the panel comes up after "21 to 7" has landed on its own; the five
+# maps differ too little to show one by one, so one version's map becomes the mean in one move)
+T_IN = 41.6            # the panel fades in over the main slide's scan ("ensemble" beat, 43.1)
+SWEEP = (42.2, 46.6)   # 70 patches
+MEAN = (46.8, 47.8)    # fold 0's map -> the mean of the five versions
+THRESH = (48.0, 49.1)  # heat out, binary in (a wipe head to toe)
+FILTER = (50.0, 50.3, 51.3, 51.9)  # removed pieces ringed, held, then ring and piece dissolve
 END = 52.0
-STEPS = [SWEEP[0], FOLDS[0], THRESH[0], FILTER[0]]
+STEPS = [SWEEP[0], MEAN[0], THRESH[0], FILTER[0]]
+RING = (20, 23, 28)    # the deck's ink, with a white halo
 
 HEAT = [np.array(c, np.float32) for c in ((255, 230, 163), (242, 142, 43), (178, 24, 43))]  # light ramp
-GOLD = (184, 148, 26)
 
 
 def load_png(rel, mode=None):
@@ -93,17 +98,32 @@ def main():
     pet_a = np.clip(up(suv) / 10.0, 0, 1)
     base = np.empty((out_h, out_w, 3), np.float32)
     base[:] = P.WHITE
-    # bone only: the exported body silhouette also takes in what lies beside the patient at the
-    # elbows (a band to the frame's edges), so it is not drawn
-    a = np.where(body, 0.34 * np.clip(bone * 1.25, 0, 1), 0.0)
-    base = base * (1 - a[..., None]) + P.CT_INK * a[..., None]
+    # PET only, as slide 10 (no body silhouette or bone: the critic asked for the deck's one
+    # projection style; the silhouette also took in what lies beside the patient at the elbows)
+    del body, bone
     base = base * (1 - pet_a[..., None]) + P.INK * pet_a[..., None]
     dimmed = base * 0.72 + P.WHITE * 0.28      # under the heat and the masks, as the motion graphics dim it
 
     pred = upm((mask & 1) > 0)
     removed = upm((mask & 64) > 0)
-    folds_u = [up(f) for f in folds]
+    folds_u = [up(folds[0])]
     mean_u = up(mean)
+
+    # one ring round each removed piece (its own region in this view), big enough to see:
+    # radius = half its extent + 14 px, at least 30 px (output px; half that on the slide)
+    lab = sitk.GetArrayFromImage(sitk.ConnectedComponent(sitk.GetImageFromArray((removed & ~pred).astype(np.uint8)), True))
+    yy, xx = np.mgrid[0:out_h, 0:out_w]
+    rings = np.zeros((out_h, out_w), bool)
+    rings_halo = np.zeros((out_h, out_w), bool)
+    n_rings = int(lab.max())
+    for k in range(1, n_rings + 1):
+        ys, xs = np.nonzero(lab == k)
+        cy, cx = ys.mean(), xs.mean()
+        r = max(30.0, 0.5 * math.hypot(np.ptp(ys) + 1, np.ptp(xs) + 1) + 14)
+        d = np.hypot(yy - cy, xx - cx)
+        rings |= (d >= r) & (d < r + 5)
+        rings_halo |= ((d >= r - 3) & (d < r)) | ((d >= r + 5) & (d < r + 8))
+    rings_halo &= ~rings
     acc_cache = {}
 
     def heat_rgb(q):
@@ -174,12 +194,8 @@ def main():
             rgb = comp_heat(rgb, acc_cache[i], 1.0)
             rgb = rect(rgb, win['windows'][i])
             return rgb
-        # after the sweep: fold 0's map, the other folds in turn, then the mean
+        # after the sweep: fold 0's map becomes the mean of the five
         q = folds_u[0]
-        for k, t0 in enumerate(FOLDS):
-            u = sm((t - t0) / 0.35)
-            if u > 0:
-                q = q * (1 - u) + folds_u[k + 1] * u
         u = sm((t - MEAN[0]) / (MEAN[1] - MEAN[0]))
         if u > 0:
             q = q * (1 - u) + mean_u * u
@@ -194,18 +210,17 @@ def main():
             wipe = np.clip((thr * (1 + band) - rows) / band, 0, 1)
             bin_m = pred | removed
             show = bin_m & (wipe > 0.5)
-            gold = sm((t - FILTER[0]) / (FILTER[1] - FILTER[0]))
-            gone = sm((t - FILTER[1]) / (FILTER[2] - FILTER[1]))
+            ring_in = sm((t - FILTER[0]) / (FILTER[1] - FILTER[0]))
+            gone = sm((t - FILTER[2]) / (FILTER[3] - FILTER[2]))
             keep = show & pred
             rgb = fill(rgb, keep, P.ACCENT, 1.0)
             spk = show & removed & ~pred
             if spk.any():
-                colour = np.array(P.ACCENT, np.float32) * (1 - gold) + np.array(GOLD, np.float32) * gold
-                rgb = fill(rgb, spk, colour, 1.0 - gone)
-                if gold > 0 and gone < 1:
-                    ring = P._band(spk, 6) & ~P._band(spk, 3)
-                    al = gold * (1 - gone)
-                    rgb[ring] = rgb[ring] * (1 - al) + np.array(GOLD, np.float32) * al
+                rgb = fill(rgb, spk, P.ACCENT, 1.0 - gone)
+                al = ring_in * (1 - gone)
+                if al > 0:
+                    rgb[rings_halo] = rgb[rings_halo] * (1 - al) + P.WHITE * al
+                    rgb[rings] = rgb[rings] * (1 - al) + np.array(RING, np.float32) * al
         return rgb
 
     n = int(round((END - T_IN) * FPS)) + 1

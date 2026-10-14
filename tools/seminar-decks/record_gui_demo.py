@@ -17,6 +17,12 @@ Raw output (gitignored, never published): motion-data/gui-demo/<take>/
 
     python -I tools/seminar-decks/record_gui_demo.py --case <id> --take <name> [--port 8501]
            [--rehearse]   allow a case that already has a saved run (no Run click; tests the rest)
+           [--scheme "Motion graphics, light"] [--pet-cmap "Inverted grey"] [--first-image PET]
+                          set before filming: the app's overlay colours and PET colour map, and
+                          the image the take first switches to (default "PET + CT")
+While filming, the run log under the status line (a code block that prints checkpoint folders,
+whose names carry a development run number) is hidden by a style rule in the page; nothing else
+of the app is changed.
 
 Rules (Mamba_PSMA/outputs/gui-capture-tools/README.md): autoPET test scans only on camera; never
 press "Re-run model"; one heavy WSL job at a time. A real take writes a new saved run under
@@ -215,6 +221,9 @@ def main():
     ap.add_argument('--height', type=int, default=900)
     ap.add_argument('--scale', type=float, default=1.2)
     ap.add_argument('--rehearse', action='store_true')
+    ap.add_argument('--scheme', default=None)
+    ap.add_argument('--pet-cmap', default=None)
+    ap.add_argument('--first-image', default='PET + CT')
     a = ap.parse_args()
     if not a.case.startswith('psma_'):
         sys.exit('autoPET test scans only on camera')
@@ -242,6 +251,26 @@ def main():
             sys.exit('rehearse needs a case with a saved run (no Run click)')
         if not b.js("document.body.innerText.includes('HELD-OUT TEST')"):
             sys.exit('the case is not marked held-out test')
+        # the look, set before filming
+        if a.scheme:
+            b.js(f"{SUMMARY.format(t='Overlay colours')}.click()")
+            time.sleep(0.8)
+            f.idle()
+            b.select_option('Colour scheme', a.scheme)
+            time.sleep(0.8)
+            f.idle()
+            b.js(f"{SUMMARY.format(t='Overlay colours')}.click()")
+            time.sleep(0.8)
+            f.idle()
+        if a.pet_cmap:
+            b.select_option('PET colour map', a.pet_cmap)
+            time.sleep(0.8)
+            f.idle()
+        b.js("document.querySelectorAll('[data-testid=\"stSidebar\"] *').forEach((e) => { if (e.scrollTop) e.scrollTop = 0; })")
+        time.sleep(0.5)
+        print('look:', b.js("[...document.querySelectorAll('[data-testid=\"stSelectbox\"]')].map(s => s.innerText.replace(/\\n/g, ' ')).join(' | ')"))
+        # the run log (checkpoint folder names carry a development run number): hidden while filming
+        b.js("(() => { const s = document.createElement('style'); s.textContent = '[data-testid=\"stExpanderDetails\"] [data-testid=\"stCode\"], [data-testid=\"stStatusWidget\"] ~ * [data-testid=\"stCode\"] { display: none !important; }'; document.head.appendChild(s); })()")
         # the real mouse rests where the drawn cursor starts; the page settles first
         b.send('Input.dispatchMouseEvent', type='mouseMoved', x=f.cur[0], y=f.cur[1])
         b.js("document.activeElement && document.activeElement.blur()")
@@ -257,8 +286,8 @@ def main():
         f.mark('start')
         time.sleep(2.2)
 
-        # 1. the scan as PET + CT, then a few slices either way
-        f.click(*f.centre(LABEL.format(t='PET + CT'))[:2], dur=0.9)
+        # 1. the scan as PET + CT (or the image asked for), then a few slices either way
+        f.click(*f.centre(LABEL.format(t=a.first_image))[:2], dur=0.9)
         time.sleep(0.4)
         f.idle()
         time.sleep(1.2)
@@ -301,10 +330,11 @@ def main():
         time.sleep(0.8)
 
         # 4. the 3D view of the PET with the result, one turn
-        f.click(*f.centre(LABEL.format(t='PET'))[:2], dur=0.9)
-        time.sleep(0.3)
-        f.idle()
-        time.sleep(0.6)
+        if a.first_image != 'PET':
+            f.click(*f.centre(LABEL.format(t='PET'))[:2], dur=0.9)
+            time.sleep(0.3)
+            f.idle()
+            time.sleep(0.6)
         f.click(*f.centre(LABEL.format(t='3D rotation (MIP)'))[:2], dur=0.8)
         f.mark('mip_click')
         f.idle(timeout=300)

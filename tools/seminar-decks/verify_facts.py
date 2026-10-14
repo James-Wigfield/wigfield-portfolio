@@ -116,9 +116,16 @@ S.update({
 })
 
 
+# The plain deck's demo clip: its speed-up is the builder's, recorded in the clip's cue file.
+gui_cues = json.load(open(os.path.join(ROOT, 'public', 'seminar-decks', 'data', 'plain-gui-demo-cues.json')))
+S['gui.speed'] = (gui_cues['speed'], 1, None)
+
+
 def shown(display):
-    """The numeric part of a display string ('84.3%' -> 84.3, '+3.0' -> 3.0, '1,035' -> 1035)."""
+    """The numeric part of a display string ('84.3%' -> 84.3, '+3.0' -> 3.0, '1,035' -> 1035, '20x' -> 20)."""
     t = display.replace(',', '').replace('%', '').replace('+', '').split()[0]
+    if t.endswith('x') and t[:-1].replace('.', '', 1).isdigit():
+        t = t[:-1]
     try:
         return float(t)
     except ValueError:

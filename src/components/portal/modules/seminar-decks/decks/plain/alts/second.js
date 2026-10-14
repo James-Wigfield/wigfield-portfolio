@@ -26,8 +26,8 @@ export const SECOND = {
   ...S12,
   'results-test': {
     render: (ctx) => createElement(ResultsSlideB, { ctx }),
-    media: ['figures/plain-c-pet.png', 'clips/plain-c-spin.mp4', 'clips/plain-c-turn.mp4', 'clips/plain-c-turn.png'],
+    media: ['figures/plain-c-pet.png', 'clips/plain-c-spin.mp4'],
     timeline: 48.6,
-    note: 'Motion only, so it ends as the tile above: the sealed test scan turns once in 3D, then again with found, missed and false alarm drawn on it once all three are named.',
+    note: 'Motion only, so it ends as the tile above: the PET of the sealed test scan first turns once in 3D, then settles into the same view; the rest is unchanged.',
   },
 };

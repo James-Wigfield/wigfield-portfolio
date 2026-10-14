@@ -2,6 +2,3 @@
 .sd-slide.dp .dpx8 { pointer-events: none; }
 .sd-slide.dp .dpx8-cover { background: #fff; }
 .sd-slide.dp .dpx8-panel { overflow: hidden; background: #fff; }
-/* one caption at a time, in the same place; hidden outside the live timeline */
-.sd-slide.dp .dpx8-steps { width: 240px; height: 80px; }
-.sd-slide.dp .dpx8-steps .dp-label { position: absolute; right: 0; top: 0; width: 240px; white-space: normal; text-align: right; text-wrap: balance; color: var(--dp-accent); opacity: 0; }

@@ -69,6 +69,31 @@
 .sd-phone__btn.is-next { background: var(--ph-accent); color: var(--ph-bg) !important; }
 .sd-phone__btn:disabled { opacity: 0.35; }
 
+/* Transcript sentences in faint pastel boxes (mint, peach, lavender, sky in
+   turn, from mint on every slide), so a glance back down from the audience
+   lands on the right sentence. The left edge is the stronger cue; the fills
+   stay pale enough that the text keeps AAA contrast in both themes. */
+.sd-phone {
+  --ph-t0: #eaf6ee; --ph-e0: #86c99f;
+  --ph-t1: #fdf0e3; --ph-e1: #eab27f;
+  --ph-t2: #f1edfb; --ph-e2: #b2a2e3;
+  --ph-t3: #e8f2fb; --ph-e3: #88b7e3;
+}
+.sd-phone.is-dark {
+  --ph-t0: #11261a; --ph-e0: #3f8a5c;
+  --ph-t1: #2a1d11; --ph-e1: #a06c3c;
+  --ph-t2: #1f1a30; --ph-e2: #7765b0;
+  --ph-t3: #10202f; --ph-e3: #4c80b5;
+}
+.sd-phone__s.is-tint {
+  margin-bottom: 10px !important; padding: 8px 12px 9px 13px;
+  border-left: 5px solid var(--ph-e); border-radius: 10px; background: var(--ph-t);
+}
+.sd-phone__s.is-c0 { --ph-t: var(--ph-t0); --ph-e: var(--ph-e0); }
+.sd-phone__s.is-c1 { --ph-t: var(--ph-t1); --ph-e: var(--ph-e1); }
+.sd-phone__s.is-c2 { --ph-t: var(--ph-t2); --ph-e: var(--ph-e2); }
+.sd-phone__s.is-c3 { --ph-t: var(--ph-t3); --ph-e: var(--ph-e3); }
+
 /* ── Palm cards (print only; A4, four A6 cards a sheet) ────────────────── */
 .sd-pcards-root { display: none; }
 .sd-pcards-measure {

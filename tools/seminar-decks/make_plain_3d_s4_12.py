@@ -7,29 +7,26 @@ as a wireframe box, to scale in all three directions, from the fact manifest
 (shared/facts.js): the box turns with the body, so its depth, which the coronal view hides,
 shows. Rotation 0 is the still's own projection.
 
-  Slide 4  PSMASegmentator's patch (psm.patch 288 x 128 x 128 voxels: psm.patch_z_mm head to
-           toe, psm.patch_x_mm across; front to back is also 128 voxels at the same in-plane
-           spacing, so psm.patch_x_mm again). At rest the box sits where the main slide's patch
-           first sits (top of the scan, centred on the still's crop), with everything outside
-           it dimmed as the main slide dims it (white at 0.74). The scan and the box turn once,
-           then the slide's own patch takes over and steps down.
+  Slide 4  (dropped 14 Oct on the design critic's advice: turned to 45 degrees, the 521 mm box
+           projects wider than the body and reads as the patch growing while James says the
+           CNN "can't see the entire scan at once". Its builder is kept in the build session's
+           scratchpad, dropped/s4.)
   Slide 12 The final model's patch (patch.small_*_mm: 288 x 391 x 196 mm, z x y x x) under the
            chart's first column, and under the second the larger patch (patch.large_mm:
-           672 x 391 x 391 mm), each on its own copy of the scan, at the main slide's patch
-           scale (0.3 px per mm). The second box grows from the first's size to its own, as the
-           main slide's second patch does; both bodies turn once after it grows and once more
-           when the larger patch is named again.
+           672 x 391 x 391 mm), each on its own copy of the scan, both at 0.25 px per mm (so
+           the scans clear the footer; the two patches stay to scale with each other and the
+           body). The second scan comes in and its box grows from the first's size to its own,
+           as the main slide's second patch does. No turn (the critic: the turns added nothing
+           the transcript says, and competed with the chart's first points).
 
-Each clip is short and starts when the slide reaches it (alts/useAt.js), waiting paused on its
+The clip is short and starts when the slide reaches it (alts/useAt.js), waiting paused on its
 first frame until then, so a late start can never pull it out of step with the slide.
 
 Writes (portfolio repo):
-  public/seminar-decks/clips/plain-a-patch.mp4 + .png   slide 4: the turn (hold = front)
-  public/seminar-decks/clips/plain-a-grow1.mp4 + .png   slide 12: the second scan comes in, its
-                                                        patch grows, both turn (hold = front)
-  public/seminar-decks/clips/plain-a-grow2.mp4 + .png   slide 12: the second turn (hold = front)
+  public/seminar-decks/clips/plain-a-grow1.mp4 + .png   slide 12: the second scan comes in and
+                                                        its patch grows (hold = the finished state)
   src/components/portal/modules/seminar-decks/decks/plain/alts/s4_12.gen.js
-Run (portfolio root): python -I tools/seminar-decks/make_plain_3d_s4_12.py [s4] [s12]
+Run (portfolio root): python -I tools/seminar-decks/make_plain_3d_s4_12.py
 """
 from __future__ import annotations
 
@@ -52,20 +49,13 @@ SCALE = 2
 ACC = np.array(P.ACCENT, np.float32)
 
 # ── slide timing (seconds from entering the slide; see the components) ──
-S4_K = 0.75              # geometry.js S4.k (px per mm on slide 4)
-S4_TURN = (21.0, 24.0)   # the scan and the box turn once
-S4_START = 20.7          # the clip starts here, front-on, so a small delay never shows
-S4_END = 24.6            # the clip's last frame (front-on) is at this slide time
-S4_DIM = 0.74            # main slide: box-shadow rgba(255, 255, 255, 0.74)
-S4_STROKE = 4            # main slide: .dp4-patch stroke-width 4
-
-S12_K = 0.3              # geometry.js S12: k = 0.3 px per mm for the patches
+S12_K = 0.25             # px per mm (the main slide draws its flat patches at 0.3; 0.25 keeps the
+                         # scans clear of the footer, ending at about y 957)
 S12_COLS = (1150, 1540)  # geometry.js S12.cols
 S12_TOP = 742            # geometry.js S12.top
 S12_RIGHT_IN = (15.8, 16.2)   # the second body fades in (as col-1 at 15.8)
 S12_GROW = (16.2, 17.2)       # its box grows from the small patch to the large (main: 16.2 to 17.2)
-S12_TURNS = ((17.2, 20.2), (41.6, 44.6))  # after it grows; and on "The larger patch was where ..."
-S12_CLIPS = ((12.2, 20.5), (41.4, 45.0))  # slide times each clip covers (start, last frame)
+S12_CLIPS = ((12.2, 17.5),)   # slide times the clip covers (start, last frame)
 S12_STROKE = 3           # main slide: .dp12-patch stroke-width 3
 S12_HALF = 112           # display px either side of each column kept in the clip
 WASH = 0.07              # --dp-accent-wash
@@ -173,42 +163,6 @@ def check_rotation(T, scan):
     return True
 
 
-def build_s4(F, scan):
-    T = P.Turner(scan, display_h=scan.pet.shape[0] * scan.spacing[2] * S4_K, scale=SCALE, pad_mm=140.0, step_deg=1.0)
-    check_rotation(T, scan)
-    c0, c1 = T.c0, T.c1
-    wx = float(F['psm.patch_x_mm'])
-    wy = float(F['psm.patch_x_mm'])  # front to back: 128 voxels at the same in-plane spacing
-    hz = float(F['psm.patch_z_mm'])
-    ztop = (T.Z - 0.5) * T.sz
-    box = Box(((c0 + c1) / 2 - 0.5) * T.sx, T.yc * T.sx, ztop - hz, ztop, wx, wy)
-
-    def frame(theta):
-        pr = T.projections(theta, need=('pet',))
-        rgb = T.base(pr, pet_a=1.0, ct_a=0.0)
-        return draw_box(rgb, T, box, theta, S4_STROKE, dim=S4_DIM).astype(np.uint8)
-
-    enc = P.Encoder(P.CLIPS / 'plain-a-patch.mp4', T.out_w, T.out_h, FPS, crf=22)
-    front = frame(0.0)
-    t0, t1 = S4_TURN
-    enc.hold(front, int(round((t0 - S4_START) * FPS)))
-    n = int(round((t1 - t0) * FPS))
-    for i in range(1, n):
-        enc.write(frame(2 * math.pi * P.smooth(i / n)))
-    enc.hold(front, int(round((S4_END - S4_START) * FPS)) - enc.n)
-    size = enc.close()
-    Image.fromarray(front).save(P.CLIPS / 'plain-a-patch.png', optimize=True)
-    # the front frame's box must be the main slide's patch rectangle (relative to the still)
-    verts, (r0, r1) = project(T, box, 0.0)
-    xs = [v[0] / SCALE - T.pad_cols * T.sx * T.k for v in verts]
-    still_w = (c1 - c0) * T.sx * T.k
-    want = (still_w - wx * T.k) / 2
-    assert abs(min(xs) - want) < 1.0 and abs(max(xs) - (want + wx * T.k)) < 1.0, (xs, want)
-    assert abs(r0 / SCALE) < 1.0 and abs(r1 / SCALE - hz * T.k) < 1.0, (r0, r1)
-    return {'padCols': T.pad_cols, 'cols': T.xb - T.xa, 'start': S4_START, 'turn': list(S4_TURN), 'end': S4_END,
-            'clip': [T.out_w, T.out_h], 'seconds': round(enc.n / FPS, 3), 'bytes': size}
-
-
 def build_s12(F, scan):
     T = P.Turner(scan, display_h=scan.pet.shape[0] * scan.spacing[2] * S12_K, scale=SCALE, pad_mm=140.0, step_deg=1.0)
     check_rotation(T, scan)
@@ -251,13 +205,7 @@ def build_s12(F, scan):
 
     front = canvas(0.0, 1.0, 1.0)
 
-    def turn(enc, t_clip0, t0, t1):
-        enc.hold(front, int(round((t0 - t_clip0) * FPS)) - enc.n)
-        n = int(round((t1 - t0) * FPS))
-        for i in range(1, n):
-            enc.write(canvas(2 * math.pi * P.smooth(i / n), 1.0, 1.0))
-
-    # clip 1: the first scan alone, the second comes in, its patch grows, both turn once
+    # the clip: the first scan alone, the second comes in, its patch grows; then it holds
     c0, c1 = S12_CLIPS[0]
     enc = P.Encoder(P.CLIPS / 'plain-a-grow1.mp4', W, H, FPS, crf=22)
     enc.hold(canvas(0.0, 0.0, 0.0), int(round((S12_RIGHT_IN[0] - c0) * FPS)))
@@ -269,39 +217,21 @@ def build_s12(F, scan):
     n = int(round((g1 - g0) * FPS))
     for i in range(1, n + 1):
         enc.write(canvas(0.0, i / n, 1.0))
-    turn(enc, c0, *S12_TURNS[0])
     enc.hold(front, int(round((c1 - c0) * FPS)) - enc.n)
     size1, n1 = enc.close(), enc.n
-    # clip 2: both turn once more
-    d0, d1 = S12_CLIPS[1]
-    enc = P.Encoder(P.CLIPS / 'plain-a-grow2.mp4', W, H, FPS, crf=22)
-    turn(enc, d0, *S12_TURNS[1])
-    enc.hold(front, int(round((d1 - d0) * FPS)) - enc.n)
-    size2, n2 = enc.close(), enc.n
-    for name in ('plain-a-grow1.png', 'plain-a-grow2.png'):
-        Image.fromarray(front).save(P.CLIPS / name, optimize=True)
+    Image.fromarray(front).save(P.CLIPS / 'plain-a-grow1.png', optimize=True)
     return {'left': left, 'top': S12_TOP, 'w': W / SCALE, 'h': H / SCALE, 'rightIn': list(S12_RIGHT_IN),
-            'grow': list(S12_GROW), 'turns': [list(t) for t in S12_TURNS], 'clips': [list(c) for c in S12_CLIPS],
-            'clip': [W, H], 'seconds': [round(n1 / FPS, 3), round(n2 / FPS, 3)], 'bytes': [size1, size2]}
+            'grow': list(S12_GROW), 'clips': [list(c) for c in S12_CLIPS],
+            'clip': [W, H], 'seconds': [round(n1 / FPS, 3)], 'bytes': [size1]}
 
 
 def main():
-    want = set(sys.argv[1:]) or {'s4', 's12'}
     F = facts()
     scan = P.load_a(with_ct=False)
-    gen = {}
-    if OUT_JS.exists():
-        m = re.search(r'export const S4_12 = (\{.*\});', OUT_JS.read_text(encoding='utf-8'), re.S)
-        if m:
-            gen = json.loads(m.group(1))
-    if 's4' in want:
-        gen['s4'] = build_s4(F, scan)
-        print('s4', json.dumps(gen['s4']))
-    if 's12' in want:
-        gen['s12'] = build_s12(F, scan)
-        print('s12', json.dumps(gen['s12']))
+    gen = {'s12': build_s12(F, scan)}
+    print('s12', json.dumps(gen['s12']))
     js = ('// Generated by tools/seminar-decks/make_plain_3d_s4_12.py; do not edit.\n'
-          '// Slides 4 and 12, second options: where each clip sits and when it turns (seconds from entry).\n'
+          '// Slide 12, second option: where its clip sits and when it plays (seconds from entry).\n'
           f'export const S4_12 = {json.dumps(gen)};\n')
     OUT_JS.write_text(js, encoding='utf-8', newline='\n')
 
