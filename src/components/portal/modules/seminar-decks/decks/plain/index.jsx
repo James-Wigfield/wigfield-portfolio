@@ -129,7 +129,7 @@ const slides = SKELETON.map((s) => {
 
 // Second options (alts/second.js; previewed on the Slides tab through the hidden
 // plain-alt deck). To present one, add its slide id here, e.g. ['results-fair'].
-const USE_SECOND = [];
+const USE_SECOND = ['background', 'problem', 'design', 'results-test', 'results-twin']; // James, 14 Oct
 
 export default {
   slug: 'plain',

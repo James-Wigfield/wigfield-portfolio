@@ -46,7 +46,7 @@ export function DemoSlide({ ctx }) {
     const c = cueAt(cues, t);
     setCue((cur) => (cur?.t === c.t ? cur : c));
   }, [cues]);
-  const text = live && cue ? cue.label : cues?.hold ?? 'The result: found, missed and false alarms';
+  const text = live && cue ? cue.label : cues?.hold ?? "The result in the app's 3D view";
   const { k } = DEMO;
   const textLeft = DEMO.left + DEMO.w * k + 48;
   return (

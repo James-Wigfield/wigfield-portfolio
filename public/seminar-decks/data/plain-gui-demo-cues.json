@@ -28,6 +28,6 @@
    "label": "The result in the app's 3D view"
   }
  ],
- "hold": "The result: found, missed and false alarms",
- "hold_t": 25.44
+ "hold": "The result in the app's 3D view",
+ "hold_t": 35.59
 }

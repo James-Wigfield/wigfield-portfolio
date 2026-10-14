@@ -209,8 +209,9 @@ def main():
     if p.wait() != 0:
         sys.exit('ffmpeg failed')
 
-    # hold frame: the result on the slices, the cursor on the result card (2.4 s after the run)
-    hold_t = out_time(marks['run_done']) + 2.4
+    # hold frame: the result in the app's 3D view, near front on (0.6 s into the turn), which shows
+    # every lesion at once (a single slice shows only a few)
+    hold_t = out_time(marks['mip_ready']) + 0.6
     compose(hold_t).save(OUT_PNG, optimize=True)
 
     # status cues for the slide (output time)
@@ -235,7 +236,7 @@ def main():
             {'t': round(m0, 2), 'label': 'Rendering the 3D view (sped up)'},
             {'t': round(m1, 2), 'label': "The result in the app's 3D view"},
         ],
-        'hold': 'The result: found, missed and false alarms',
+        'hold': "The result in the app's 3D view",
         'hold_t': round(hold_t, 2),
     }
     OUT_CUES.write_text(json.dumps(cues, indent=1) + '\n')
