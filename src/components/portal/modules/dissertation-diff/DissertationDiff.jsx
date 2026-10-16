@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePortalRoute } from '../../portalRoute';
+import AbstractOptions from './AbstractOptions';
 import './DissertationDiff.css';
 
 /* ============================================================================
@@ -128,9 +130,32 @@ function useWidth(el) {
   return w;
 }
 
+/* Two tabs on one tool, switched by the sub-route so deep links, reload and the
+   browser's back button all work:
+     /portal/dissertation-red-pen                      the red-pen view (default)
+     /portal/dissertation-red-pen/abstract-options[/n] the abstract options tab */
+function Tabs({ current, go }) {
+  const tab = (id, label, sub) => (
+    <button type="button" aria-current={current === id ? 'page' : undefined} onClick={() => current !== id && go(sub)}>{label}</button>
+  );
+  return (
+    <nav className="ddf-tabs" aria-label="Dissertation pages">
+      {tab('redpen', 'Red pen', '')}
+      {tab('abstract', 'Abstract options', 'abstract-options')}
+    </nav>
+  );
+}
+
 export default function DissertationDiff() {
+  const { sub, setSub } = usePortalRoute();
   if (!import.meta.env.DEV) return <LocalOnly />;
-  return <DissertationDiffDev />;
+  const parts = sub.split('/').filter(Boolean);
+  const isAbstract = parts[0] === 'abstract-options';
+  const tabs = <Tabs current={isAbstract ? 'abstract' : 'redpen'} go={setSub} />;
+  if (isAbstract) {
+    return <AbstractOptions tabs={tabs} selected={parts[1]} go={(n) => setSub(n ? `abstract-options/${n}` : 'abstract-options')} />;
+  }
+  return <DissertationDiffDev tabs={tabs} />;
 }
 
 function LocalOnly() {
@@ -148,9 +173,10 @@ function LocalOnly() {
   );
 }
 
-function NotBuilt({ error }) {
+function NotBuilt({ error, tabs }) {
   return (
     <div className="pt-module ddf">
+      {tabs}
       <section className="pt-card ddf-notice">
         <h2>Dissertation · red pen · not built yet</h2>
         <p>
@@ -359,7 +385,7 @@ function Notes({ m, children }) {
   );
 }
 
-function DissertationDiffDev() {
+function DissertationDiffDev({ tabs }) {
   const [prefs] = useState(loadPrefs);
   const [m, setM] = useState(null);
   const [error, setError] = useState(null);
@@ -612,8 +638,8 @@ function DissertationDiffDev() {
     measure();
   };
 
-  if (error) return <NotBuilt error={error} />;
-  if (!m) return <div className="pt-module ddf"><p className="ddf-muted">Loading the page renders…</p></div>;
+  if (error) return <NotBuilt error={error} tabs={tabs} />;
+  if (!m) return <div className="pt-module ddf">{tabs}<p className="ddf-muted">Loading the page renders…</p></div>;
 
   const f = m.floats;
   const P = { ...DEFAULT_PAGE, ...(m.page || {}) };
@@ -655,6 +681,7 @@ function DissertationDiffDev() {
 
   return (
     <div className="pt-module ddf">
+      {tabs}
       <header className="ddf-head">
         <div>
           <p className="ddf-kicker">{P.kicker}</p>

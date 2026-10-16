@@ -176,17 +176,17 @@ try {
       const li = lis.find((l) => l.querySelector('.ddf-tag')?.textContent.trim() === id);
       li.querySelector('.ddf-idlink').click();
     }, target);
-    for (let last = -1, now = await scrollTop(page, 'edited'); now !== last; await sleep(250)) {
-      last = now;
-      now = await scrollTop(page, 'edited');
-    }
-    const seen = await page.$eval('.ddf-col--edited', (c, id) => {
+    // A smooth scroll of ~80,000 px can pause between frames, so sampling scrollTop until two
+    // readings agree stopped early on some runs; wait for the tag itself, up to 5 s.
+    const tagInView = () => page.$eval('.ddf-col--edited', (c, id) => {
       const view = c.querySelector('.ddf-scroll').getBoundingClientRect();
       return [...c.querySelectorAll('.ddf-tag--page')].some((t) => {
         const r = t.getBoundingClientRect();
         return t.textContent.trim() === id && r.top > view.top && r.bottom < view.bottom;
       });
     }, target);
+    let seen = false;
+    for (const t0 = Date.now(); !seen && Date.now() - t0 < 5000; await sleep(200)) seen = await tagInView();
     ok(seen, 'a title in the ID list jumps to its tag', target);
     await waitLoaded(page, 'edited');
     await shot(page, '04c-tag-jump');
@@ -231,8 +231,99 @@ try {
   const paper = await page.$eval('.ddf-page', (el) => getComputedStyle(el).backgroundColor);
   ok(paper === 'rgb(255, 255, 255)', 'pages stay white under the arcade theme', paper);
   await shot(page, '05-arcade');
+  await page.click('button[aria-label="Jade theme"]').catch(() => {});
+  await sleep(300);
 
-  ok(errors.length === 0, 'no console errors', errors.slice(0, 3).join(' | '));
+  ok(errors.length === 0, 'no console errors (red pen)', errors.slice(0, 3).join(' | '));
+
+  /* ======================================================================
+     ABSTRACT OPTIONS TAB (a subpage of the red-pen page; data from
+     tools/dissertation-diff/abstract_data.py in dissertation-diff-data/abstract-options/)
+     ====================================================================== */
+  console.log('\n--- Abstract options tab ---');
+  const errs0 = errors.length;
+  await page.evaluate(() => { try { localStorage.removeItem('portal:dissertationDiff:abstractNotes'); } catch { /* ignore */ } });
+
+  // Through the tab bar from the red pen.
+  ok(await page.$$eval('.ddf-tabs button', (bs) => bs.map((b) => b.textContent.trim()).join('|')) === 'Red pen|Abstract options',
+    'the red-pen page shows the two tabs');
+  await page.$$eval('.ddf-tabs button', (bs) => bs.find((b) => b.textContent.trim() === 'Abstract options').click());
+  await page.waitForSelector('.abo-scale', { timeout: 20000 });
+  ok(page.url().endsWith('/portal/dissertation-red-pen/abstract-options'), 'the tab changes the route', page.url());
+  ok(await page.$eval('.ddf-tabs button[aria-current="page"]', (b) => b.textContent.trim()) === 'Abstract options', 'the tab bar marks the abstract tab');
+  const abs = await page.evaluate(() => fetch('/__dissertation-diff/abstract-options/abstracts.json').then((r) => r.json()));
+  const nOpt = await page.$$eval('.abo-chip', (c) => c.length);
+  ok(nOpt === 5 && abs.options.length === 5, 'five options on the scale', `${nOpt} chips, ${abs.options.length} in the data`);
+  ok(await page.$$eval('.abo-chip .abo-chip__name', (n) => n.every((x) => x.textContent.trim().length > 3)), 'every chip carries a name');
+
+  // Back returns to the red pen.
+  await page.goBack({ waitUntil: 'networkidle0' });
+  await page.waitForSelector('.ddf-col--edited .ddf-page img', { timeout: 20000 });
+  ok(page.url().endsWith('/portal/dissertation-red-pen'), 'the browser\'s back button returns to the red pen', page.url());
+  ok(await page.$eval('.ddf-tabs button[aria-current="page"]', (b) => b.textContent.trim()) === 'Red pen', 'the tab bar marks the red pen again');
+
+  // Every option directly by deep link: text, page render, counts, copy buttons.
+  for (const o of abs.options) {
+    await page.goto(`${BASE}/portal/dissertation-red-pen/abstract-options/${o.n}`, { waitUntil: 'networkidle0' });
+    await page.waitForSelector('.abo-prose', { timeout: 20000 });
+    const words = await page.$$eval('.abo-prose .abo-sent', (s) => s.map((x) => x.textContent).join(' ').split(/\s+/).filter(Boolean).length);
+    ok(words > 150 && words <= 300, `option ${o.n}: the prose is on the page and under 300 words`, `${words} words in ${o.sentences.length} sentences`);
+    ok(await page.$$eval('.abo-prose .abo-sent', (s) => s.length) === o.sentences.length, `option ${o.n}: one span per sentence`);
+    const img = await page.$eval('.abo-page__paper img', (i) => ({ done: i.complete, w: i.naturalWidth, src: i.getAttribute('src') }));
+    ok(img.done && img.w > 0 && img.src.endsWith(`${o.id}.svg`), `option ${o.n}: the page render shows`, img.src);
+    const counts = await page.$$eval('.abo-count__n', (c) => c.map((x) => Number(x.textContent.split('/')[0])));
+    ok(counts.length === 3 && counts.every((c) => c > 0 && c <= abs.ceiling), `option ${o.n}: three counts at or under the ceiling`, counts.join(' / '));
+    ok(await page.$eval('.abo-option__tools', (el) => el.textContent.includes('one page with keywords')), `option ${o.n}: fits one page with the keywords`);
+    await page.$$eval('.ddf-btn', (bs) => bs.find((b) => b.textContent === 'Copy text').click());
+    await sleep(300);
+    const t = await page.evaluate(() => navigator.clipboard.readText().catch((e) => `error: ${e.message}`));
+    ok(t.startsWith(o.paragraphs[0].slice(0, 40)), `option ${o.n}: "Copy text" copies the abstract`, t.slice(0, 50));
+    await page.$$eval('.ddf-btn', (bs) => bs.find((b) => b.textContent === 'Copy LaTeX').click());
+    await sleep(300);
+    const l = await page.evaluate(() => navigator.clipboard.readText().catch((e) => `error: ${e.message}`));
+    ok(l.includes('\\releasedbaseline{}') && l.includes('% SOURCE:'), `option ${o.n}: "Copy LaTeX" copies the .tex body`, l.slice(0, 40));
+    // A sentence shows its sources.
+    const srcBefore = await page.$eval('.abo-src', (el) => el.textContent);
+    await page.$eval('.abo-prose .abo-sent[role="button"]', (s) => s.click());
+    await sleep(100);
+    const srcAfter = await page.$eval('.abo-src', (el) => el.textContent);
+    ok(srcAfter !== srcBefore && /F\d/.test(srcAfter), `option ${o.n}: clicking a sentence shows its fact IDs`);
+    if (o.n === 1) await shot(page, '07-abstract-option-1');
+  }
+
+  // Notes and the pick persist across a reload; "Copy notes" copies them.
+  await page.goto(`${BASE}/portal/dissertation-red-pen/abstract-options`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('.abo-notes textarea', { timeout: 20000 });
+  await page.type('.abo-note:nth-child(2) textarea', 'page-check note on option 2');
+  await page.$$eval('.abo-note:nth-child(3) .abo-pick', (b) => b[0].click());
+  await sleep(300);
+  await page.reload({ waitUntil: 'networkidle0' });
+  await page.waitForSelector('.abo-notes textarea', { timeout: 20000 });
+  const noteBack = await page.$eval('.abo-note:nth-child(2) textarea', (t) => t.value);
+  const pickBack = await page.$eval('.abo-note:nth-child(3) .abo-pick', (b) => b.getAttribute('aria-pressed'));
+  ok(noteBack === 'page-check note on option 2', 'a note survives a reload', noteBack);
+  ok(pickBack === 'true', 'the pick survives a reload');
+  ok(await page.$eval('.abo-table tr.is-pick td', (td) => td.textContent.includes('3.')), 'the comparison table marks the picked row');
+  await page.$$eval('.ddf-btn', (bs) => bs.find((b) => b.textContent === 'Copy notes').click());
+  await sleep(300);
+  const notesClip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => `error: ${e.message}`));
+  ok(notesClip.includes('pick: option 3') && notesClip.includes('page-check note on option 2'), '"Copy notes" copies the pick and the notes', notesClip.split('\n')[0]);
+  await page.$$eval('.abo-note:nth-child(3) .abo-pick', (b) => b[0].click());
+  await page.evaluate(() => { try { localStorage.removeItem('portal:dissertationDiff:abstractNotes'); } catch { /* ignore */ } });
+  await shot(page, '08-abstract-overview');
+
+  // Both themes without console errors.
+  await page.goto(`${BASE}/portal/dissertation-red-pen/abstract-options/3`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('.abo-prose', { timeout: 20000 });
+  const errsLight = errors.length;
+  await page.click('button[aria-label="Arcade theme"]').catch(() => {});
+  await sleep(500);
+  const abPaper = await page.$eval('.abo-page__paper', (el) => getComputedStyle(el).backgroundColor);
+  ok(abPaper === 'rgb(255, 255, 255)', 'the abstract page render stays white under the arcade theme', abPaper);
+  await shot(page, '09-abstract-arcade');
+  await page.click('button[aria-label="Jade theme"]').catch(() => {});
+  await sleep(300);
+  ok(errors.length === errs0 && errsLight === errs0, 'no console errors on the abstract tab in either theme', errors.slice(errs0, errs0 + 3).join(' | '));
 } finally {
   await browser.close();
 }
