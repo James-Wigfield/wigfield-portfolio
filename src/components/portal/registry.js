@@ -67,6 +67,7 @@ import PortaraPricing from './modules/PortaraPricing';
 import PortaraPlatform from './modules/PortaraPlatform';
 import PortaraMotion from './modules/PortaraMotion';
 import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
+import BaristaGuide from './modules/barista/BaristaGuide';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -359,6 +360,14 @@ export const MODULES = [
     icon: 'rsvp',
     group: 'Personal',
     component: PaperReader,
+  },
+  {
+    // Deep-linked: /portal/barista-guide/<tab>, /portal/barista-guide/deep-clean/<step> (id must not change).
+    id: 'barista-guide',
+    label: 'Barista · Machine Care',
+    icon: 'cup',
+    group: 'Personal',
+    component: BaristaGuide,
   },
   {
     id: 'america-first-plan',

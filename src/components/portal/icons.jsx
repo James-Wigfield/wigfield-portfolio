@@ -266,6 +266,16 @@ const PATHS = {
     </>
   ),
 
+  // Cup — an espresso cup on a saucer with two steam wisps (Barista · Machine Care)
+  cup: (
+    <>
+      <path d="M5 9.5h11v4a5.5 5.5 0 0 1-11 0v-4Z" />
+      <path d="M16 11h1.4a2.3 2.3 0 0 1 0 4.6H15.4" />
+      <path d="M3.5 20.5h14" />
+      <path d="M8.6 3.6c-.9.9.9 1.9 0 3.1M12.2 3.6c-.9.9.9 1.9 0 3.1" />
+    </>
+  ),
+
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)
   check: <path d="M5 12.5 10 17.5 19 7" />,

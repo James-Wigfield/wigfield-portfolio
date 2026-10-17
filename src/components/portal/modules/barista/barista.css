@@ -1,0 +1,344 @@
+/* ============================================================================
+   BARISTA · MACHINE CARE — page framework (.bxi-*)
+   ----------------------------------------------------------------------------
+   Portal "Reading Room" language: hairline rules, mono uppercase micro-labels,
+   Fraunces display, the theme accent. Tone is a labelled dot on a ruled
+   layout — never a coloured callout box or a filled number pill. Machine
+   buttons are steel chips (reference-to-hardware). Phone first: 390 px, tap
+   targets ≥ 44 px, the step player's actions sit in a bottom dock.
+   ========================================================================== */
+
+.pt-module.bxi { max-width: 1120px; gap: 1rem; }
+.bxi { min-width: 0; }
+.bxi a { color: var(--accent-ink); }
+.bxi p { margin: 0; }
+.bxi :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 520px) {
+  /* Reclaim the portal's 24 px gutter down to 16 px on phones. */
+  .pt-module.bxi { margin-inline: -0.5rem; }
+}
+
+/* ── Tab bar ──────────────────────────────────────────────────────────── */
+.bxi-tabbar {
+  position: sticky;
+  top: 0.4rem;
+  z-index: 7;
+  display: flex;
+  gap: 0.15rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.25rem;
+  box-shadow: 0 2px 10px rgba(14, 22, 32, 0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bxi-tabbar::-webkit-scrollbar { display: none; }
+.bxi-tab {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
+  min-height: 46px;
+  padding: 0.3rem 0.7rem 0.45rem;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bxi-tab:hover { background: var(--surface-hi); }
+.bxi-tab--on { background: var(--accent-soft); }
+.bxi-tab__no { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; color: var(--text-faint); }
+.bxi-tab--on .bxi-tab__no, .bxi-tab--seen .bxi-tab__no { color: var(--accent-ink); }
+.bxi-tab__label { font-size: 0.8rem; font-weight: 700; color: var(--ink-3); }
+.bxi-tab--on .bxi-tab__label { color: var(--ink); }
+.bxi-tab__seen { position: absolute; left: 0.7rem; right: 0.7rem; bottom: 0.2rem; height: 2px; border-radius: 2px; }
+.bxi-tab--seen .bxi-tab__seen { background: var(--line); }
+.bxi-tab--on .bxi-tab__seen { background: var(--accent); }
+.bxi-tab__badge {
+  position: absolute;
+  top: 0.32rem;
+  right: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+.bxi-panel { display: flex; flex-direction: column; gap: 1.1rem; animation: bxi-in 0.3s ease both; }
+@keyframes bxi-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bxi-panel { animation: none; } }
+
+/* ── Type primitives ──────────────────────────────────────────────────── */
+.bxi-hook { display: flex; flex-direction: column; gap: 0.3rem; }
+.bxi-hook__line {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 5vw, 1.95rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  max-width: 30ch;
+}
+.bxi-hook__sub { font-size: 0.92rem; line-height: 1.55; color: var(--ink-3); max-width: 58ch; }
+
+.bxi-label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.bxi-label--accent { color: var(--accent-ink); }
+
+.bxi-h {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+}
+.bxi-body { font-size: 0.92rem; line-height: 1.6; color: var(--ink-2); max-width: 62ch; }
+.bxi-small { font-size: 0.8rem; line-height: 1.5; color: var(--ink-3); }
+.bxi-num { font-family: var(--font-mono); font-size: 0.92em; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.bxi-unit { font-family: var(--font-body); font-weight: 600; font-size: 1.06em; }
+
+/* Steel chips — machine buttons by name */
+.bxi-key {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #1d1c1b;
+  background: radial-gradient(circle at 35% 30%, #f6f8f9, #aab2b8);
+  border: 1px solid #848c93;
+  border-radius: 999px;
+  padding: 0.34em 0.68em 0.3em;
+  white-space: nowrap;
+  vertical-align: 0.12em;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* Labelled dots */
+.bxi-dot { display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.bxi-dot--accent, .bxi-dot--good { background: var(--accent); }
+.bxi-dot--hot { background: var(--bxi-hot); }
+.bxi-dot--sharp { background: #b46a12; }
+.bxi-dot--power { background: var(--ink); }
+.bxi-dot--water { background: var(--bxi-water); }
+.bxi-dot--care { background: var(--ink-3); }
+.bxi-dot--due { background: var(--bxi-hot); }
+.bxi-dot--tip { background: transparent; box-shadow: inset 0 0 0 1.6px var(--accent); }
+.portal[data-portal-theme='arcade'] .bxi-dot--sharp { background: #e5b65c; }
+
+.bxi-tone { display: inline-flex; align-items: center; gap: 0.45rem; }
+.bxi-tone__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.bxi-tipmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  vertical-align: 0.1em;
+  white-space: nowrap;
+}
+
+/* Receipts */
+.bxi-receipt { display: inline-flex; flex-wrap: wrap; gap: 0.15rem 0.6rem; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--ink-3); }
+.bxi-receipt a { color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 2px; }
+.bxi-receipt a:hover { color: var(--accent-ink); text-decoration-color: var(--accent); }
+.bxi-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  text-decoration: none;
+}
+.bxi-video:hover span:first-of-type { text-decoration: underline; }
+.bxi-video__rt { color: var(--ink-3); }
+
+/* Instruction lines */
+.bxi-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bxi-line { display: flex; gap: 0.7rem; align-items: baseline; padding: 0.55rem 0; border-top: 1px solid var(--line-2); }
+.bxi-line:last-child { border-bottom: 1px solid var(--line-2); }
+.bxi-line__n { flex: none; width: 1.4rem; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: var(--accent-ink); }
+.bxi-line__t { font-size: 1rem; line-height: 1.5; color: var(--ink); }
+.bxi-line--tip .bxi-line__t { color: var(--ink-2); font-style: italic; }
+.bxi-line--tip .bxi-line__n { color: var(--text-faint); }
+
+/* Fact cards */
+.bxi-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.55rem; }
+.bxi-fact { border: 1px solid var(--line-2); border-radius: 6px; padding: 0.7rem 0.85rem; background: var(--surface); display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.bxi-fact__k { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+.bxi-fact__v { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 600; line-height: 1.15; color: var(--ink); }
+.bxi-fact__sub { font-size: 0.8rem; line-height: 1.5; color: var(--ink-2); }
+
+/* Unfold */
+.bxi-unfold { border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+.bxi-unfold + .bxi-unfold { border-top: none; }
+.bxi-unfold__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.4rem 0.1rem;
+  cursor: pointer;
+  text-align: left;
+}
+.bxi-unfold__head:hover { color: var(--accent-ink); }
+.bxi-unfold__plus { position: relative; width: 11px; height: 11px; flex: none; }
+.bxi-unfold__plus::before, .bxi-unfold__plus::after { content: ''; position: absolute; background: var(--accent); transition: transform 0.25s ease; }
+.bxi-unfold__plus::before { left: 0; right: 0; top: 5px; height: 1.6px; }
+.bxi-unfold__plus::after { top: 0; bottom: 0; left: 5px; width: 1.6px; }
+.bxi-unfold--open .bxi-unfold__plus::after { transform: scaleY(0); }
+.bxi-unfold__body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
+.bxi-unfold--open .bxi-unfold__body { grid-template-rows: 1fr; }
+.bxi-unfold__inner { overflow: hidden; }
+.bxi-unfold__inner > :last-child { margin-bottom: 0.75rem; }
+.bxi-unfold__inner p { font-size: 0.88rem; line-height: 1.6; color: var(--ink-2); max-width: 64ch; }
+.bxi-unfold__inner p + p { margin-top: 0.45rem; }
+
+/* Segmented in-tab switch */
+.bxi-seg { display: flex; gap: 0.25rem; padding: 0.25rem; background: var(--ground-2); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; scrollbar-width: none; }
+.bxi-seg::-webkit-scrollbar { display: none; }
+.bxi-seg__btn {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bxi-seg__btn:hover { color: var(--ink); }
+.bxi-seg__btn--on { background: var(--surface); color: var(--accent-ink); box-shadow: 0 1px 2px rgba(14, 22, 32, 0.08); }
+.bxi-seg__n { font-weight: 700; color: var(--text-faint); }
+.bxi-seg__btn--on .bxi-seg__n { color: var(--accent-ink); }
+
+/* Buttons (the house text + rule style; no pill CTAs) */
+.bxi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  padding: 0 1.05rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.bxi-btn:hover { background: var(--surface-hi); }
+.bxi-btn--solid { background: var(--ink); color: var(--ground); }
+.bxi-btn--solid:hover { background: var(--accent-hover, var(--accent)); color: var(--ground); border-color: var(--accent-hover, var(--accent)); }
+.bxi-btn--ghost { border-color: var(--line); color: var(--ink-2); }
+.bxi-btn[disabled] { opacity: 0.4; cursor: default; }
+.bxi-quiet {
+  min-height: 44px;
+  padding: 0 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.bxi-quiet:hover { color: var(--accent-ink); }
+
+/* Ruled lists with dots (safety, don'ts, findings) */
+.bxi-ruled { list-style: none; margin: 0; padding: 0; }
+.bxi-ruled > li { display: flex; gap: 0.65rem; align-items: baseline; padding: 0.6rem 0.1rem; border-top: 1px solid var(--line-2); }
+.bxi-ruled > li:last-child { border-bottom: 1px solid var(--line-2); }
+.bxi-ruled__body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
+.bxi-ruled__t { font-size: 0.92rem; line-height: 1.5; color: var(--ink); }
+.bxi-ruled__s { font-size: 0.8rem; line-height: 1.45; color: var(--ink-3); }
+.bxi-ruled .bxi-dot { transform: translateY(-1px); }
+
+.bxi-standfirst { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line-2); padding: 0.8rem 0.1rem 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
+
+/* Generic grids */
+.bxi-split { display: grid; gap: 1.1rem; }
+@media (min-width: 860px) {
+  .bxi-split { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+}
+.bxi-cards { display: grid; gap: 0.55rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.bxi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.bxi-card:hover { border-color: var(--accent); }
+.bxi-card--on { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent); }
+.bxi-card__no { font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700; color: var(--accent-ink); letter-spacing: 0.08em; }
+.bxi-card__t { font-weight: 700; font-size: 0.95rem; line-height: 1.25; }
+.bxi-card__s { font-size: 0.78rem; line-height: 1.45; color: var(--ink-3); }
+
+/* ── Dock: background timers + the step player's thumb bar ────────────── */
+.bxi-dock { position: sticky; bottom: 0; z-index: 8; display: flex; flex-direction: column; gap: 0; pointer-events: none; }
+.bxi-dock > * { pointer-events: auto; }
+.bxi-dock:empty { display: none; }

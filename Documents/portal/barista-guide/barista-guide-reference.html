@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barista Express Impress cleaning guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E7EBED; --surface:#F7F9FA; --ink:#1D1C1B; --muted:#565D63; --line:#C7CED3;
+  --blue:#9EC3D3; --blue-soft:#D6E6ED; --blue-ink:#2C5D75;
+  --timber:#94552B; --needle:#C4302B;
+  --panel:#1F1E1D; --panel-ink:#ECEDEE; --panel-muted:#A3A9AE;
+  --steel-a:#F4F6F7; --steel-b:#AEB5BA;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",Verdana,"Segoe UI",sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1A1918; --surface:#24231F; --ink:#ECEDEE; --muted:#A6ACB1; --line:#3A3936;
+    --blue:#8DB9CC; --blue-soft:#24343B; --blue-ink:#A9D0E0;
+    --timber:#D08A5A; --needle:#E2493F;
+    --panel:#262522; --panel-ink:#ECEDEE; --panel-muted:#A3A9AE;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1A1918; --surface:#24231F; --ink:#ECEDEE; --muted:#A6ACB1; --line:#3A3936;
+  --blue:#8DB9CC; --blue-soft:#24343B; --blue-ink:#A9D0E0;
+  --timber:#D08A5A; --needle:#E2493F;
+  --panel:#262522; --panel-ink:#ECEDEE; --panel-muted:#A3A9AE;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 var(--body);-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%}
+a{color:var(--blue-ink)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:6px}
+
+.wrap{max-width:46rem;margin:0 auto;padding:0 1.25rem}
+h1,h2,h3{font-family:var(--display);font-stretch:118%;line-height:1.05;margin:0;letter-spacing:-0.01em}
+h2{font-size:clamp(1.75rem,5.5vw,2.4rem);font-weight:800;margin-bottom:.5rem}
+h3{font-size:1.15rem;font-weight:750}
+p{margin:0 0 1rem}
+.lede{color:var(--muted);max-width:38rem}
+
+/* ---------- Hero: the control panel ---------- */
+.hero{background:var(--panel);color:var(--panel-ink);border-bottom:1px solid var(--line)}
+.hero .wrap{padding-top:2.25rem;padding-bottom:2.5rem;display:grid;gap:1.75rem;max-width:62rem}
+@media (min-width:52rem){.hero .wrap{grid-template-columns:minmax(0,22rem) 1fr;align-items:center;gap:3rem;padding-top:3.5rem;padding-bottom:3.5rem}}
+.gauge{width:min(100%,22rem);margin:0 auto;display:block}
+.hero h1{font-size:clamp(2.4rem,9vw,4rem);font-weight:850;font-stretch:122%}
+.hero h1 span{display:block;font-weight:500;font-stretch:100%;color:var(--panel-muted);font-size:.5em;margin-top:.6rem;letter-spacing:0}
+.hero p{color:var(--panel-muted);margin-top:1rem;max-width:32rem}
+.lights{display:grid;gap:.75rem;margin:1.5rem 0 1.75rem;padding:0;list-style:none}
+.lights li{display:flex;gap:.85rem;align-items:center;color:var(--panel-ink);font-size:1rem}
+.led{flex:none;width:.85rem;height:.85rem;border-radius:50%;background:#7FC8F0;box-shadow:0 0 .6rem #7FC8F0}
+.led.flash{animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{background:#3a4650;box-shadow:none}}
+@media (prefers-reduced-motion:reduce){.led.flash{animation:none;background:transparent;border:2px dashed #7FC8F0;box-shadow:none}}
+.cta{display:inline-flex;align-items:center;gap:.6rem;background:var(--blue);color:#13232B;font:750 1rem/1 var(--display);font-stretch:110%;padding:.95rem 1.3rem;border-radius:999px;text-decoration:none}
+.cta:hover{filter:brightness(1.06)}
+
+/* machine-style button chips */
+.key{display:inline-block;font:700 .74em/1 var(--display);font-stretch:100%;letter-spacing:.02em;color:#1D1C1B;background:radial-gradient(circle at 35% 30%,var(--steel-a),var(--steel-b));border:1px solid #8E969C;border-radius:999px;padding:.32em .7em .28em;white-space:nowrap;vertical-align:.08em}
+
+/* ---------- Sections ---------- */
+section{padding:3.25rem 0}
+section+section{border-top:1px solid var(--line)}
+
+/* kit */
+.kit{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:2rem 1.75rem;margin-top:1.75rem}
+.kit figure{margin:0}
+.kit .art{height:6.5rem;display:flex;align-items:center;justify-content:flex-start;color:var(--ink);margin-bottom:.75rem}
+.kit .art svg{height:100%;width:auto}
+.kit h3{margin-bottom:.35rem}
+.kit p{color:var(--muted);font-size:.98rem;margin:0}
+.kit .use{display:inline-block;margin-top:.55rem;font-size:.9rem;color:var(--blue-ink);font-weight:700}
+.also{margin-top:2rem;padding:1rem 1.15rem;border-left:4px solid var(--blue);background:var(--blue-soft);border-radius:0 10px 10px 0;font-size:.98rem}
+.also p{margin:0}
+
+/* rhythm */
+.rhythm{margin:1.75rem 0 0;padding:0;list-style:none}
+.rhythm li{display:grid;grid-template-columns:1fr;gap:.35rem;padding:1.15rem 0;border-top:1px solid var(--line)}
+.rhythm li:last-child{border-bottom:1px solid var(--line)}
+@media (min-width:40rem){.rhythm li{grid-template-columns:11rem 1fr;gap:1.5rem}}
+.freq{font:800 1.05rem/1.2 var(--display);font-stretch:112%;display:flex;gap:.6rem;align-items:baseline}
+.freq i{flex:none;display:inline-block;border-radius:50%;background:var(--blue-ink);transform:translateY(-.1em)}
+.rhythm ul{margin:0;padding-left:1.1rem}
+.rhythm ul li{display:list-item;padding:0;border:0;margin:0 0 .3rem}
+.rhythm ul li:last-child{border:0}
+.rhythm .milk .freq{color:var(--timber)}
+.rhythm .milk .freq i{background:var(--timber)}
+
+/* deep clean */
+.progress{display:flex;align-items:center;gap:1rem;margin:1.5rem 0 1.25rem;flex-wrap:wrap}
+.bars{display:flex;gap:4px}
+.bars span{width:1.35rem;height:.6rem;border-radius:2px;background:var(--line);transition:background .25s}
+.bars span.on{background:var(--blue-ink)}
+.progress output{font-weight:700}
+.reset{background:none;border:0;color:var(--muted);font:inherit;font-size:.92rem;text-decoration:underline;cursor:pointer;padding:.25rem;margin-left:auto}
+.steps{display:grid;gap:.75rem}
+details.step{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+details.step[open]{border-color:var(--blue)}
+.step summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:2.6rem 1fr auto;align-items:center;gap:.85rem;padding:1rem 1.1rem}
+.step summary::-webkit-details-marker{display:none}
+.num{width:2.6rem;height:2.6rem;border-radius:50%;display:grid;place-items:center;font:800 1.05rem/1 var(--display);border:2px solid var(--ink)}
+.step.done .num{background:var(--blue-ink);border-color:var(--blue-ink);color:var(--surface)}
+.step.done summary h3{color:var(--muted)}
+.time{font-size:.88rem;color:var(--muted);white-space:nowrap}
+.step summary h3 small{display:block;font:400 .92rem/1.35 var(--body);color:var(--muted);margin-top:.25rem}
+.body{padding:0 1.1rem 1.25rem 4.55rem}
+@media (max-width:30rem){.body{padding-left:1.1rem}}
+.body ol{margin:0 0 1rem;padding-left:1.2rem}
+.body li{margin-bottom:.55rem}
+.body li::marker{font-family:var(--display);font-weight:700;color:var(--muted)}
+.note{font-size:.95rem;color:var(--muted);border-left:3px solid var(--line);padding-left:.85rem;margin:0 0 1rem}
+.warn{border-left-color:var(--needle)}
+.done-btn{font:700 .98rem/1 var(--display);font-stretch:108%;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:.75rem 1.1rem;border-radius:999px;cursor:pointer}
+.step.done .done-btn{border-color:var(--blue-ink);background:var(--blue-ink);color:var(--surface)}
+
+/* milk callout */
+.milkfix{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1.5rem 1.35rem;margin-top:1.5rem;display:grid;gap:1.25rem}
+@media (min-width:40rem){.milkfix{grid-template-columns:7rem 1fr;gap:1.5rem}}
+.milkfix svg{width:7rem;height:auto;color:var(--ink)}
+.milkfix ol{margin:0;padding-left:1.2rem}
+.milkfix li{margin-bottom:.5rem}
+
+/* don'ts + restock */
+.two{display:grid;gap:2.5rem;margin-top:1.5rem}
+@media (min-width:44rem){.two{grid-template-columns:1fr 1fr}}
+.nolist,.buylist{list-style:none;margin:0;padding:0}
+.nolist li,.buylist li{padding:.7rem 0;border-top:1px solid var(--line);display:flex;gap:.75rem}
+.nolist li::before{content:"";flex:none;width:1.1rem;height:1.1rem;margin-top:.2rem;border-radius:50%;border:2px solid var(--needle);background:linear-gradient(45deg,transparent 44%,var(--needle) 44%,var(--needle) 56%,transparent 56%)}
+.buylist li::before{content:"";flex:none;width:1.1rem;height:1.1rem;margin-top:.2rem;border-radius:4px;border:2px solid var(--blue-ink)}
+.buylist li span{color:var(--muted);display:block;font-size:.94rem}
+
+footer{padding:2rem 0 3rem;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <svg class="gauge" viewBox="0 0 240 240" role="img" aria-label="A pressure-style gauge showing months of ownership from 0 to 12, with the needle at 6 months in the deep clean zone">
+      <defs>
+        <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#F5F7F8"/><stop offset=".45" stop-color="#9BA3A9"/><stop offset=".7" stop-color="#E3E7EA"/><stop offset="1" stop-color="#7D868C"/>
+        </linearGradient>
+      </defs>
+      <circle cx="120" cy="120" r="116" fill="url(#steel)"/>
+      <circle cx="120" cy="120" r="103" fill="#F2F3F1"/>
+      <g id="scale"></g>
+      <text x="120" y="166" text-anchor="middle" font-family="Archivo, Arial, sans-serif" font-size="11" fill="#5A6066">months owned</text>
+      <text x="120" y="190" text-anchor="middle" font-family="Archivo, Arial, sans-serif" font-weight="800" font-size="17" fill="#1D1C1B">Deep clean</text>
+      <g transform="translate(120 120)"><g id="needle" transform="rotate(-120)">
+        <path d="M-2.2 8 L0 -78 L2.2 8 Z" fill="#C4302B"/>
+      </g>
+      <circle r="9" fill="#2A2A2A"/><circle r="3.5" fill="#9BA3A9"/></g>
+    </svg>
+
+    <div>
+      <h1>Six months in. Time for a proper clean.<span>A care guide for your Breville Barista Express Impress</span></h1>
+      <p>Below: what each tool in the box is for, the everyday routine that keeps it running, and a one-hour deep clean you can tick off as you go.</p>
+      <ul class="lights" aria-label="What the maintenance light means">
+        <li><span class="led flash" aria-hidden="true"></span>Maintenance light flashing: run a cleaning cycle (tablet)</li>
+        <li><span class="led" aria-hidden="true"></span>Maintenance light solid: time to descale (powder)</li>
+      </ul>
+      <a class="cta" href="#deep">Start the deep clean</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="kit">
+    <div class="wrap">
+      <h2>What came in the box</h2>
+      <p class="lede">Four things in your photo, each with one job.</p>
+      <div class="kit">
+        <figure>
+          <div class="art"><svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="6" y="10" width="108" height="60" rx="10"/><circle cx="40" cy="40" r="15"/><circle cx="80" cy="40" r="15"/><circle cx="40" cy="40" r="8" stroke-opacity=".35"/><circle cx="80" cy="40" r="8" stroke-opacity=".35"/></svg></div>
+          <h3>Cleaning tablets</h3>
+          <p>Dissolve inside the machine to strip coffee oils from the group head (where the coffee comes out). One per cleaning cycle.</p>
+          <span class="use">Used in steps 6 and 7</span>
+        </figure>
+        <figure>
+          <div class="art"><svg viewBox="0 0 90 110" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M10 12 l6 -5 l6 5 l6 -5 l6 5 l6 -5 l6 5 l6 -5 l6 5 l6 -5 l6 5 v86 l-6 5 l-6 -5 l-6 5 l-6 -5 l-6 5 l-6 -5 l-6 5 l-6 -5 l-6 5 l-6 -5 l-6 5 z"/><path d="M26 40 h38 M26 50 h28" stroke-opacity=".45"/><circle cx="60" cy="78" r="8" stroke-opacity=".45"/></svg></div>
+          <h3>Descaler sachet</h3>
+          <p>Powder that dissolves in water to remove limescale from the pipes and heater. One sachet per descale.</p>
+          <span class="use">Used in step 4</span>
+        </figure>
+        <figure>
+          <div class="art"><svg viewBox="0 0 140 70" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="58" y="24" width="76" height="22" rx="11"/><path d="M58 35 H22"/><path d="M22 26 v18 M16 24 v22 M10 26 v18 M4 28 v14" stroke-width="2"/></svg></div>
+          <h3>Cleaning brush</h3>
+          <p>The long one. Sweeps old grounds off the grinder burrs, out of the chute, and away from the tamp mechanism.</p>
+          <span class="use">Used in step 3</span>
+        </figure>
+        <figure>
+          <div class="art"><svg viewBox="0 0 70 120" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="12" y="6" width="46" height="96" rx="23"/><circle cx="35" cy="56" r="8"/><path d="M35 102 v14"/><path d="M28 30 h14" stroke-opacity=".45"/></svg></div>
+          <h3>Steam wand tool</h3>
+          <p>The small flat one. The metal pin pokes out blocked holes in the milk wand tip; the hole in the middle is a spanner for unscrewing that tip.</p>
+          <span class="use">Used in step 2</span>
+        </figure>
+      </div>
+      <div class="also">
+        <p>Two more parts you’ll need, probably in the storage tray behind the drip tray: the <strong>round silicone cleaning disc</strong> (needed for every cleaning cycle) and a small <strong>Allen key</strong> (only for changing the shower screen seal).</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rhythm">
+    <div class="wrap">
+      <h2>The routine</h2>
+      <p class="lede">Most of this takes seconds. The milk wand habit matters most, because dried milk is what you’re seeing now.</p>
+      <ol class="rhythm">
+        <li class="milk">
+          <div class="freq"><i style="width:.95rem;height:.95rem"></i>Every milk drink</div>
+          <ul><li>Wipe the wand with a damp cloth straight away.</li><li>Point it at the drip tray and turn the dial to steam for 2 seconds to blow milk out of the inside.</li></ul>
+        </li>
+        <li>
+          <div class="freq"><i style="width:.85rem;height:.85rem"></i>Every coffee</div>
+          <ul><li>Knock out the puck, then rinse the basket and portafilter under hot water.</li><li>Before your shot, press <span class="key">1 CUP</span> for a short flush through the group head.</li></ul>
+        </li>
+        <li>
+          <div class="freq"><i style="width:.75rem;height:.75rem"></i>Daily</div>
+          <ul><li>Top up the tank with fresh cold tap water. Don’t use distilled or heavily filtered water.</li><li>Empty the drip tray when the “Empty me!” float pops up.</li><li>Before the first coffee, hold <span class="key">DOSE</span> for a second to purge stale grounds, then tip them out.</li></ul>
+        </li>
+        <li>
+          <div class="freq"><i style="width:.62rem;height:.62rem"></i>Weekly</div>
+          <ul><li>Wash the drip tray and grill in warm soapy water.</li><li>Wipe the shower screen (the metal disc above the portafilter) with a damp cloth.</li><li>Brush loose grounds from the tamp area.</li></ul>
+        </li>
+        <li>
+          <div class="freq"><i style="width:.5rem;height:.5rem"></i>Light flashes</div>
+          <ul><li>Run a cleaning cycle with a tablet (step 6). For a coffee a day this tends to land around monthly.</li><li>Brush out the grinder burrs at the same time (step 3).</li></ul>
+        </li>
+        <li>
+          <div class="freq"><i style="width:.42rem;height:.42rem"></i>Every 3 months</div>
+          <ul><li>Replace the water filter in the tank (step 5). Sooner if your water is hard.</li></ul>
+        </li>
+        <li>
+          <div class="freq"><i style="width:.34rem;height:.34rem"></i>Light stays solid</div>
+          <ul><li>Descale (step 4). How often depends on your water; a fresh filter stretches the gap.</li></ul>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="milk">
+    <div class="wrap">
+      <h2>Fixing the dried milk</h2>
+      <p class="lede">A little crust on the wand is normal and comes off easily. This is the short version of step 2.</p>
+      <div class="milkfix">
+        <svg viewBox="0 0 80 140" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M30 4 v20 l22 44 v52"/><rect x="45" y="118" width="14" height="14" rx="3"/><circle cx="49" cy="137" r="1.5" fill="currentColor"/><circle cx="55" cy="137" r="1.5" fill="currentColor"/><path d="M38 52 q8 -4 16 4 M40 62 q8 -4 14 4" stroke="var(--timber)" stroke-dasharray="3 4"/></svg>
+        <ol>
+          <li>Turn the machine off and let the wand cool.</li>
+          <li>Wrap a cloth soaked in very hot water around the wand for 2–3 minutes. The milk softens and wipes off.</li>
+          <li>Push the pin of the steam wand tool into each hole in the tip.</li>
+          <li>Still crusty? Unscrew the tip with the tool’s spanner, soak it in hot water for 10 minutes, pin the holes again and screw it back on.</li>
+        </ol>
+      </div>
+      <p class="note" style="margin-top:1rem">Never use a scourer, steel wool or abrasive cream on the wand. If it builds up again often, an espresso-machine milk cleaner is a good soak for the tip.</p>
+    </div>
+  </section>
+
+  <section id="deep">
+    <div class="wrap">
+      <h2>The six-month deep clean</h2>
+      <p class="lede">About an hour, much of it waiting. Do the steps in this order: the descale needs the water filter out, and the new filter goes in before the cleaning cycle. Tap a step to open it.</p>
+
+      <div class="progress">
+        <div class="bars" id="bars" aria-hidden="true"></div>
+        <output id="count" aria-live="polite">0 of 8 done</output>
+        <button class="reset" id="reset" type="button">Clear ticks</button>
+      </div>
+
+      <div class="steps" id="steps">
+
+        <details class="step" data-id="prep" open>
+          <summary><span class="num">1</span><h3>Set up<small>Drip tray, filter out, find the disc</small></h3><span class="time">2 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Turn the machine off. If you’ve just used it, give it 20 minutes to cool.</li>
+              <li>Empty and rinse the drip tray, then slide it back in.</li>
+              <li>Lift out the water tank, pull out the filter holder and remove the old filter. Empty the tank.</li>
+              <li>Find the round silicone cleaning disc. It’s usually in the storage tray behind the drip tray.</li>
+            </ol>
+            <p class="note warn">The filter must be out before you descale, or it soaks up the descaler.</p>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="wand">
+          <summary><span class="num">2</span><h3>Rescue the milk wand<small>Soften, pin, soak the tip</small></h3><span class="time">15 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Check the steam dial is on standby and the machine is off and cool.</li>
+              <li>Wrap a cloth soaked in very hot water around the wand for 2–3 minutes, then wipe the milk off.</li>
+              <li>Push the pin of the steam wand tool into each hole in the tip.</li>
+              <li>Fit the tool’s spanner over the tip and unscrew it. Drop it in a cup of hot water.</li>
+              <li>Move on to step 3 while it soaks, then come back: pin the holes, rinse, and screw the tip back on firmly.</li>
+            </ol>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="grinder">
+          <summary><span class="num">3</span><h3>Brush the grinder and tamp<small>Burrs, chute, tamp face</small></h3><span class="time">10 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Unlock the bean hopper, hold it over a container and turn its dial to let the beans out. Lock it back on.</li>
+              <li>Put the portafilter in the cradle and hold <span class="key">DOSE</span> until the grinder runs empty. Tip out the grounds.</li>
+              <li>Remove the hopper. Unlock the top burr and lift it out by its wire handle.</li>
+              <li>Brush the top burr and the lower burr with the cleaning brush. No water.</li>
+              <li>Pull off the tamp cover and brush out the chute.</li>
+              <li>Push the tamp lever down and hold it. Brush around the tamp face, then let the lever up slowly with the brush clear.</li>
+              <li>Refit the tamp cover, top burr and hopper, and add your beans back.</li>
+            </ol>
+            <p class="note warn">The burrs are very sharp. Don’t turn the number ring on the top burr: that changes your grind range.</p>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="descale">
+          <summary><span class="num">4</span><h3>Descale<small>Sachet, then a fresh-water flush</small></h3><span class="time">20 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Stir the descaler sachet into 1 litre of water until fully dissolved. Pour it into the tank and refit it.</li>
+              <li>With the machine off, hold <span class="key">2 CUP</span> + <span class="key">POWER</span> for 5 seconds. The buttons flash while it heats.</li>
+              <li>It’s ready when the power and 2 cup buttons and both indicator lights are solid.</li>
+              <li>Put a jug under the group head and press <span class="key">2 CUP</span>. It runs for about 25 seconds.</li>
+              <li>Hold the jug under the steam wand and turn the dial right to steam (about 13 seconds).</li>
+              <li>Hold the jug under the hot water spout and turn the dial left to hot water (about 8 seconds).</li>
+              <li>Repeat steps 4–6 until the tank is empty. Empty the jug and drip tray as you go.</li>
+              <li>Rinse the tank well, fill it to max (2 litres) with fresh cold water, and run the same rounds again to flush out the solution.</li>
+              <li>Press <span class="key">POWER</span> to exit descale mode.</li>
+            </ol>
+            <p class="note">If you leave it idle for 5 minutes it switches off. Restart from the 5-second button hold.</p>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="filter">
+          <summary><span class="num">5</span><h3>Fit a new water filter<small>Overdue by now</small></h3><span class="time">6 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Soak the new filter in a cup of cold water for 5 minutes.</li>
+              <li>Rinse it under cold running water for 5 seconds.</li>
+              <li>Clip it into the filter holder and set the date dial 3 months ahead.</li>
+              <li>Push the holder down onto the post in the tank until it locks. Fill the tank and refit it.</li>
+            </ol>
+            <p class="note">No spare filter yet? Skip this step, fill the tank and carry on. Pick up a Breville replacement filter soon.</p>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="cycle">
+          <summary><span class="num">6</span><h3>Run a cleaning cycle<small>Disc and one tablet</small></h3><span class="time">7 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Make sure the tank is full and the drip tray is empty.</li>
+              <li>Put the 1 cup basket in the portafilter, the silicone disc on top, and one tablet in the middle of the disc.</li>
+              <li>Lock the portafilter in and put a large container underneath.</li>
+              <li>Turn the machine off, then hold <span class="key">1 CUP</span> + <span class="key">2 CUP</span> + <span class="key">POWER</span> for 3 seconds.</li>
+              <li>It runs for about 5 minutes, pulsing water in and flushing it back. Little or no water should come out of the spouts.</li>
+              <li>Remove the portafilter. If the tablet hasn’t fully dissolved, run the cycle again.</li>
+              <li>Take the disc out, lock the portafilter back in and press <span class="key">2 CUP</span> to rinse. Wipe off any splashes.</li>
+            </ol>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="soak">
+          <summary><span class="num">7</span><h3>Soak the baskets and portafilter<small>Your second tablet</small></h3><span class="time">20 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Dissolve the second tablet in a bowl of hot water.</li>
+              <li>Soak all four filter baskets and the metal head of the portafilter for about 20 minutes. Keep the handle out of the water if you can.</li>
+              <li>Rinse everything thoroughly. If any basket holes are still blocked, clear them with the pin.</li>
+            </ol>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+        <details class="step" data-id="finish">
+          <summary><span class="num">8</span><h3>Wipe down and finish<small>Shower screen, trays, outside</small></h3><span class="time">10 min</span></summary>
+          <div class="body">
+            <ol>
+              <li>Wipe the shower screen and the inside of the group head with a damp cloth.</li>
+              <li>Fit an empty basket, lock in the portafilter and hold <span class="key">1 CUP</span> for a short rinse.</li>
+              <li>Wash the drip tray, grill, grounds separator and “Empty me!” float in warm soapy water. Wipe out the storage tray.</li>
+              <li>Wipe the outside with a soft damp cloth and buff it dry.</li>
+              <li>Pull one shot and pour it away before making a coffee to drink.</li>
+            </ol>
+            <button class="done-btn" type="button">Mark done</button>
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="avoid">
+    <div class="wrap">
+      <h2>Avoid these, and restock</h2>
+      <div class="two">
+        <div>
+          <h3 style="margin-bottom:.75rem">Don’t</h3>
+          <ul class="nolist">
+            <li>Put any part in the dishwasher. Hand-wash everything.</li>
+            <li>Use scourers, steel wool or abrasive creams. They scratch the steel and the matte finish.</li>
+            <li>Use harsh or alkaline cleaners on the body. Mild dish soap and a soft cloth only.</li>
+            <li>Descale with vinegar, or with the water filter still in the tank.</li>
+            <li>Fill the tank with hot, distilled or demineralised water.</li>
+            <li>Wash the grinder burrs with water. Brush only.</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom:.75rem">Buy before you run out</h3>
+          <ul class="buylist">
+            <li><div>Cleaning tablets<span>The box only had two. You’ll want a tub.</span></div></li>
+            <li><div>Descaler sachets<span>One per descale. The box only had one.</span></div></li>
+            <li><div>Water filters<span>One every 3 months.</span></div></li>
+            <li><div>Shower screen seal<span>Replace when water leaks around the portafilter or it locks in loosely. The Allen key is for this.</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Based on Breville’s instruction book for the Barista Express Impress (BES876). If something here differs from your manual, go with the manual.</div>
+</footer>
+
+<script>
+(function(){
+  /* gauge scale */
+  var ns="http://www.w3.org/2000/svg", scale=document.getElementById("scale");
+  function pt(m,r){var a=(210-20*m)*Math.PI/180;return [120+r*Math.cos(a),120-r*Math.sin(a)];}
+  function el(t,attrs){var e=document.createElementNS(ns,t);for(var k in attrs)e.setAttribute(k,attrs[k]);scale.appendChild(e);return e;}
+  var a=pt(5,84),b=pt(7,84);
+  el("path",{d:"M"+a[0]+" "+a[1]+" A84 84 0 0 1 "+b[0]+" "+b[1],stroke:"#9EC3D3","stroke-width":"14",fill:"none"});
+  for(var m=0;m<=12;m+=0.5){
+    var major=(m%3===0), whole=(m%1===0);
+    var p1=pt(m,major?70:(whole?75:79)), p2=pt(m,92);
+    el("line",{x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],stroke:"#1D1C1B","stroke-width":major?2.6:(whole?1.6:1),"stroke-linecap":"round"});
+    if(major){var t=pt(m,56);var tx=el("text",{x:t[0],y:t[1]+4,"text-anchor":"middle","font-family":"Archivo, Arial, sans-serif","font-weight":"700","font-size":"13",fill:"#1D1C1B"});tx.textContent=m;}
+  }
+  /* needle sweep, once */
+  var needle=document.getElementById("needle"), target=0, start=-120;
+  var still=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(still){needle.setAttribute("transform","rotate(0)");}
+  else{
+    var t0=null,dur=1600;
+    function ease(x){return 1-Math.pow(1-x,3)*Math.cos(x*4.2)*(1-x*.15);}
+    function frame(ts){if(!t0)t0=ts;var x=Math.min((ts-t0)/dur,1);var v=start+(target-start)*ease(x);needle.setAttribute("transform","rotate("+v.toFixed(2)+")");if(x<1)requestAnimationFrame(frame);}
+    setTimeout(function(){requestAnimationFrame(frame);},250);
+  }
+
+  /* checklist */
+  var KEY="bes876-deepclean-v1", steps=[].slice.call(document.querySelectorAll(".step"));
+  var state={};
+  try{state=JSON.parse(localStorage.getItem(KEY)||"{}")||{};}catch(e){state={};}
+  var bars=document.getElementById("bars"), count=document.getElementById("count");
+  steps.forEach(function(){bars.appendChild(document.createElement("span"));});
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  function render(){
+    var n=0;
+    steps.forEach(function(s,i){
+      var d=!!state[s.dataset.id]; if(d)n++;
+      s.classList.toggle("done",d);
+      s.querySelector(".num").textContent=d?"✓":String(i+1);
+      var btn=s.querySelector(".done-btn"); btn.textContent=d?"Done":"Mark done"; btn.setAttribute("aria-pressed",d);
+    });
+    [].slice.call(bars.children).forEach(function(b,i){b.classList.toggle("on",i<n);});
+    count.textContent = n===steps.length ? "All 8 done. Enjoy the coffee." : n+" of "+steps.length+" done";
+  }
+  steps.forEach(function(s,i){
+    s.querySelector(".done-btn").addEventListener("click",function(){
+      var id=s.dataset.id; state[id]=!state[id]; save(); render();
+      if(state[id]){
+        s.open=false;
+        var next=steps[i+1];
+        if(next&&!state[next.dataset.id]){next.open=true;next.scrollIntoView({behavior:still?"auto":"smooth",block:"start"});}
+      }
+    });
+  });
+  document.getElementById("reset").addEventListener("click",function(){state={};save();render();steps.forEach(function(s,i){s.open=i===0;});});
+  render();
+})();
+</script>
+</body>
+</html>
