@@ -85,12 +85,21 @@ function sourceLabel(src) {
 }
 const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '±0');
 
-function tagTip(id, t, stages) {
+// The hover of a margin tag: ID, stage, damage and word change, then the title and
+// section, where the change came from (a note, an audit finding), why, and the
+// alternative if the proposal names one.
+function tagTip(id, t, stages, action = 'Click to flag') {
   if (!t) return id;
   const words = t.words ? ` · ${signed(t.words)} words` : '';
   const damage = t.damage ? ` · ${t.damage} damage` : '';
-  const more = t.absorbs?.length ? `\nIncludes ${t.absorbs.join(', ')}` : '';
-  return `${id} · ${stages?.[t.stage] ?? t.stage}${damage}${words}\n${t.title}\n${t.section}${more}\nClick to flag`;
+  const section = t.section && !t.title?.startsWith(t.section) ? t.section : '';
+  const lines = [`${id} · ${stages?.[t.stage] ?? t.stage}${damage}${words}`, t.title, section];
+  if (t.source) lines.push(`Source: ${t.source}`);
+  if (t.why && !t.title?.endsWith(t.why)) lines.push(`Why: ${t.why}`);
+  if (t.alt) lines.push(`Alternative: ${t.alt}`);
+  if (t.absorbs?.length) lines.push(`Includes ${t.absorbs.join(', ')}`);
+  lines.push(action);
+  return lines.filter(Boolean).join('\n');
 }
 
 /* Page boxes of one column: every page at the same width, stacked. */
@@ -245,7 +254,8 @@ function Legend({ tags }) {
 }
 
 function floatName(f, n = f.number) {
-  return `${f.kind === 'figure' ? 'Figure' : 'Table'} ${n}`;
+  const kind = { figure: 'Figure', listing: 'Listing' }[f.kind] ?? 'Table';
+  return n ? `${kind} ${n}` : kind;
 }
 // Captions keep a little LaTeX; enough to read in a list.
 function plain(s) {
@@ -265,11 +275,11 @@ function TagIndex({ tags, flags, toggle, goToTag, copy, copied }) {
       <button type="button" className={`ddf-tag ddf-tag--${t.stage}${flags.has(id) ? ' is-flagged' : ''}`}
         aria-pressed={flags.has(id)} title={flags.has(id) ? 'Unflag' : 'Flag'} onClick={() => toggle(id)}>{id}</button>
       {placed.has(id)
-        ? <button type="button" className="ddf-idlink" onClick={() => goToTag(id)}>{t.title}</button>
-        : <span className="ddf-idtext">{t.title}</span>}
+        ? <button type="button" className="ddf-idlink" title={tagTip(id, t, tags.stages, 'Click to go to it')} onClick={() => goToTag(id)}>{t.title}</button>
+        : <span className="ddf-idtext" title={tagTip(id, t, tags.stages, '')}>{t.title}</span>}
       <span className="ddf-idwords">{t.words ? signed(t.words) : ''}</span>
       {t.in && <span className="ddf-muted ddf-idnote">inside {t.in}</span>}
-      {!t.in && !placed.has(id) && <span className="ddf-muted ddf-idnote">not on any page</span>}
+      {!t.in && !placed.has(id) && <span className="ddf-muted ddf-idnote">{t.note || 'not on any page'}</span>}
     </li>
   );
   return (

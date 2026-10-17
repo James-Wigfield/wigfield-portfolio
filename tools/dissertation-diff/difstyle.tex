@@ -10,6 +10,8 @@
 %   removed float     the original float, crossed out, caption struck through,
 %                     with no number of its own so the edited column keeps the
 %                     final numbering
+%   removed listing   the same for an lstlisting, scaled to fit one page
+%   removed heading   struck (latexdiff), counter stepped back (\DIFdelcounter)
 %
 % \DIFmark writes the page and height of every change to <jobname>.difpos,
 % which build.py turns into the page's "next change" list. build.py's check
@@ -150,6 +152,33 @@
   \addcontentsline{#1}{#2}{\protect\numberline{\DIFdel{#4}}\DIFdel{#6}}}
 % the removed float's label: only the check build of the original sets it
 \newcommand\DIFoldlabel[1]{}
+
+% --- removed headings and listings ------------------------------------------
+% A heading removed with its section, chapter or whole appendix is printed
+% struck (latexdiff) with its original number; at the end of the removal
+% build.py steps the counter back by the number of outermost removed headings
+% (#1 counter, #2 how many), so what follows keeps the final numbering. The
+% check build of the original switches the step off.
+\newcommand\DIFdelcounter[2]{\addtocounter{#1}{-#2}}
+% a removed \clearpage, kept so struck floats stay in the original's order
+\newcommand\DIFdelclearpage{\clearpage}
+% A removed lstlisting, rebuilt by build.py from the original source: its
+% caption struck and unnumbered, then the listing crossed out like a removed
+% float, scaled (at most 0.75) to fit one page. #1 "Listing B.1", #2 caption,
+% #3 the original's caption and label keys (only the check build of the
+% original uses them, to print the listing as it was).
+% The caption and the crossed box are set as one block, so they share a page.
+\newsavebox\DIFlstbox
+\newenvironment{DIFdellisting}[3]
+  {\par\DIFmark{f}\def\DIFlstcap{\DIFdel{#1: #2}}%
+   \begin{lrbox}{\DIFlstbox}\begin{minipage}{\linewidth}\color{DIFdelink}}
+  {\end{minipage}\end{lrbox}%
+   \dimen@\ht\DIFlstbox \advance\dimen@\dp\DIFlstbox
+   \pgfmathsetmacro\DIFlstscale{min(0.75,\the\dimexpr\textheight-7\baselineskip\relax/\the\dimen@)}%
+   \par\noindent\begin{minipage}{\linewidth}\centering
+     {\small\DIFlstcap\par}\smallskip
+     \DIFcrossed{\DIFcrossnote}{\scalebox{\DIFlstscale}{\usebox\DIFlstbox}}%
+   \end{minipage}\par}
 
 % A float the markup makes taller than the page, scaled to fit (build.py's
 % fit_floats); #1 is the scale.

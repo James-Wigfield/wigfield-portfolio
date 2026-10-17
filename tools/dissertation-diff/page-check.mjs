@@ -13,7 +13,8 @@
    the dark arcade theme work, and nothing logs a console error. For a
    proposal build (manifest with tags): the margin tags sit right of the text
    on their pages, a click flags one, "Copy IDs" copies the flagged list and a
-   title in the ID list jumps to its tag.
+   title in the ID list jumps to its tag; for the audit build (stages N, F, T),
+   a tag of each stage is drawn in its own ink.
    DDF_SHOTS=<dir> writes screenshots there.
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
@@ -105,7 +106,10 @@ try {
   const counter = await page.$eval('.ddf-seg__count', (el) => el.textContent);
   ok(after.e > before.e + 500, 'Next scrolls the edited column', `${before.e} -> ${Math.round(after.e)}`);
   ok(after.o > before.o + 300, 'the original column follows with sync on', `${before.o} -> ${Math.round(after.o)}`);
-  ok(/^\d+ \/ \d+$/.test(counter) && Number(counter.split(' / ')[0]) === 12, 'twelve quick Nexts walk twelve changes', counter);
+  const walked = Math.min(12, man.changes.length); // a small build has fewer than twelve
+  // (two changes at the same height pass the reading line together, so allow one or two more)
+  const passedN = Number(counter.split(' / ')[0]);
+  ok(/^\d+ \/ \d+$/.test(counter) && passedN >= walked && passedN <= walked + 2, `twelve quick Nexts walk ${walked} changes`, counter);
   const viewerTop = await page.$eval('.ddf-viewer', (el) => el.getBoundingClientRect().top);
   ok(viewerTop < 200, 'the viewer comes up under the top bar on Next', String(Math.round(viewerTop)));
   await waitLoaded(page, 'edited');
@@ -141,7 +145,20 @@ try {
   if (man.tags) {
     const nTags = await page.$$eval('.ddf-tag--page', (t) => t.length);
     ok(nTags === man.tags.placed.length, 'one margin tag per placed change ID', `${nTags} / ${man.tags.placed.length}`);
-    // Tags in view sit in the right margin of the page they are on.
+    // Tags in view sit in the right margin of the page they are on (first brought into
+    // view, since a build with few tags may have none at Chapter 4).
+    await page.$eval('.ddf-col--edited', (c) => {
+      const sc = c.querySelector('.ddf-scroll');
+      const t = c.querySelector('.ddf-tag--page');
+      const inView = [...c.querySelectorAll('.ddf-tag--page')].some((x) => {
+        const r = x.getBoundingClientRect();
+        const v = sc.getBoundingClientRect();
+        return r.top > v.top && r.bottom < v.bottom;
+      });
+      if (!inView && t) sc.scrollTop = t.offsetTop - sc.clientHeight / 2;
+    });
+    await sleep(500);
+    await waitLoaded(page, 'edited');
     const where = await page.$eval('.ddf-col--edited', (c) => {
       const pages = [...c.querySelectorAll('.ddf-page')].map((p) => p.getBoundingClientRect());
       const view = c.querySelector('.ddf-scroll').getBoundingClientRect();
@@ -154,6 +171,21 @@ try {
     });
     ok(where.length > 0 && where.every((w) => w && w[0] > man.tags.text[1] && w[1] < 1.02),
       'tags in view sit in the right margin of their page', where.slice(0, 4).map((w) => w && w.map((x) => x.toFixed(2)).join('-')).join(', '));
+    // The audit build's stages (N your notes, F overnight audit, T Claude's recommendation):
+    // a margin tag of each is drawn, in three different inks, none of them the pen red.
+    if (['N', 'F', 'T'].every((s) => s in man.tags.stages)) {
+      const inks = await page.$$eval('.ddf-tag--page', (ts) => {
+        const out = {};
+        for (const t of ts) {
+          const c = [...t.classList].find((x) => /^ddf-tag--[A-Z]$/.test(x));
+          if (c) out[c.slice(-1)] = getComputedStyle(t).color;
+        }
+        return out;
+      });
+      const nft = ['N', 'F', 'T'].map((s) => inks[s]);
+      ok(nft.every(Boolean) && new Set(nft).size === 3 && !nft.includes('rgb(200, 16, 46)'),
+        'margin tags of stages N, F and T are drawn, each in its own ink', ['N', 'F', 'T'].map((s) => `${s} ${inks[s] ?? 'none'}`).join(', '));
+    }
     const first = await page.$eval('.ddf-tag--page', (t) => t.textContent.trim());
     await page.$eval('.ddf-tag--page', (t) => t.click());
     await sleep(200);

@@ -1,0 +1,640 @@
+{
+ "generated": "documents/temp/final-week/oct16/data-splits-figure/tools/build.py",
+ "baseHead": "57c9367",
+ "baseDirty": false,
+ "facts": {
+  "n_all": 697,
+  "n_autopet": 597,
+  "n_deeppsma": 100,
+  "n_test": 130,
+  "n_pool": 567,
+  "n_test_autopet": 110,
+  "n_test_deeppsma": 20,
+  "n_pool_autopet": 487,
+  "n_pool_deeppsma": 80,
+  "n_test_autopet_neg": 8,
+  "n_test_autopet_pos": 102,
+  "n_pool_autopet_neg": 50,
+  "n_pool_autopet_pos": 437,
+  "n_pool_patients": 381,
+  "n_pool_multi_patients": 136,
+  "pool_multi_min": 2,
+  "pool_multi_max": 7,
+  "n_patients_all": 478,
+  "n_autopet_patients": 378,
+  "f0_train": 500,
+  "f0_val": 67,
+  "fk_train": 442,
+  "fk_val": 125,
+  "fk_val_deeppsma_min": 17,
+  "fk_val_deeppsma_max": 18,
+  "fk_train_deeppsma_min": 62,
+  "fk_train_deeppsma_max": 63,
+  "ap_train": 430,
+  "ap_val": 57,
+  "ap_test": 110,
+  "f0_train_deeppsma": 70,
+  "f0_val_deeppsma": 10,
+  "ap_seed": 42,
+  "cv_seed": 42,
+  "n_deeppsma_external": 100
+ },
+ "sources": {
+  "n_all": "splits/test.json + splits/cv/fold0/{train,val}.json (union)",
+  "n_autopet": "same union, ids psma_*",
+  "n_deeppsma": "same union, ids deeppsma_*",
+  "n_test": "splits/test.json",
+  "n_test_autopet": "splits/test.json, ids psma_*",
+  "n_test_deeppsma": "splits/test.json, ids deeppsma_*",
+  "n_test_autopet_pos": "splits/test.json minus splits/cv/lesion_negative_cases.json negative",
+  "n_test_autopet_neg": "splits/test.json and splits/cv/lesion_negative_cases.json negative",
+  "n_pool": "splits/cv/fold0/{train,val}.json (union); folds_summary.json n_pool",
+  "n_pool_autopet": "the pool, ids psma_*",
+  "n_pool_deeppsma": "the pool, ids deeppsma_*",
+  "n_pool_patients": "the pool, patients (psma_<patient>_<date>; one DEEP-PSMA case per patient)",
+  "n_pool_multi_patients": "the pool, patients with more than one study",
+  "pool_multi_min": "the pool, fewest studies of a patient with more than one",
+  "pool_multi_max": "the pool, most studies of one patient",
+  "f0_train": "splits/cv/fold0/train.json; folds_summary.json folds[0].n_train",
+  "f0_val": "splits/cv/fold0/val.json; folds_summary.json folds[0].n_val",
+  "fk_train": "splits/cv/fold{1..4}/train.json; folds_summary.json n_train",
+  "fk_val": "splits/cv/fold{1..4}/val.json; folds_summary.json n_val",
+  "f0_train_deeppsma": "fold0/train.json minus archive/autopet-only_runs1-4/train.json",
+  "f0_val_deeppsma": "fold0/val.json minus archive/autopet-only_runs1-4/val.json",
+  "ap_train": "splits/archive/autopet-only_runs1-4/train.json",
+  "ap_val": "splits/archive/autopet-only_runs1-4/val.json",
+  "ap_test": "splits/archive/autopet-only_runs1-4/test.json",
+  "ap_seed": "splits/archive/autopet-only_runs1-4/README.md (\"seed 42\")",
+  "cv_seed": "splits/cv/folds_summary.json seed",
+  "n_deeppsma_external": "splits/deeppsma-external/val.json"
+ },
+ "asserts": [
+  "no duplicate id in test",
+  "no duplicate id in ext",
+  "no duplicate id in fold0 train",
+  "no duplicate id in fold0 val",
+  "no duplicate id in fold0 test",
+  "no duplicate id in fold1 train",
+  "no duplicate id in fold1 val",
+  "no duplicate id in fold1 test",
+  "no duplicate id in fold2 train",
+  "no duplicate id in fold2 val",
+  "no duplicate id in fold2 test",
+  "no duplicate id in fold3 train",
+  "no duplicate id in fold3 val",
+  "no duplicate id in fold3 test",
+  "no duplicate id in fold4 train",
+  "no duplicate id in fold4 val",
+  "no duplicate id in fold4 test",
+  "no duplicate id in archive train",
+  "no duplicate id in archive val",
+  "no duplicate id in archive test",
+  "lesion_negative_cases.json checked every one of the studies",
+  "597 + 100 = 697 (cohorts)",
+  "no test study in the pool",
+  "130 + 567 = 697 (test + pool)",
+  "110 + 20 = 130 (test by cohort)",
+  "487 + 80 = 567 (pool by cohort)",
+  "every lesion-negative study is autoPET-III",
+  "no patient in both the pool and the test set",
+  "fold 0: training and validation partition the pool",
+  "fold 0: test set is splits/test.json",
+  "fold 0: no patient on both sides",
+  "fold 1: training and validation partition the pool",
+  "fold 1: test set is splits/test.json",
+  "fold 1: no patient on both sides",
+  "fold 2: training and validation partition the pool",
+  "fold 2: test set is splits/test.json",
+  "fold 2: no patient on both sides",
+  "fold 3: training and validation partition the pool",
+  "fold 3: test set is splits/test.json",
+  "fold 3: no patient on both sides",
+  "fold 4: training and validation partition the pool",
+  "fold 4: test set is splits/test.json",
+  "fold 4: no patient on both sides",
+  "validation sets of folds 0 and 1 share no study",
+  "validation sets of folds 0 and 1 share no patient",
+  "validation sets of folds 0 and 2 share no study",
+  "validation sets of folds 0 and 2 share no patient",
+  "validation sets of folds 0 and 3 share no study",
+  "validation sets of folds 0 and 3 share no patient",
+  "validation sets of folds 0 and 4 share no study",
+  "validation sets of folds 0 and 4 share no patient",
+  "validation sets of folds 1 and 2 share no study",
+  "validation sets of folds 1 and 2 share no patient",
+  "validation sets of folds 1 and 3 share no study",
+  "validation sets of folds 1 and 3 share no patient",
+  "validation sets of folds 1 and 4 share no study",
+  "validation sets of folds 1 and 4 share no patient",
+  "validation sets of folds 2 and 3 share no study",
+  "validation sets of folds 2 and 3 share no patient",
+  "validation sets of folds 2 and 4 share no study",
+  "validation sets of folds 2 and 4 share no patient",
+  "validation sets of folds 3 and 4 share no study",
+  "validation sets of folds 3 and 4 share no patient",
+  "the five validation sets cover the pool",
+  "folds 1 to 4 have one size",
+  "67 + 4 x 125 = 567",
+  "500 + 67 = 567",
+  "442 + 125 = 567",
+  "the autoPET-only split holds autoPET-III only",
+  "the autoPET-only split's three sets are disjoint",
+  "430 + 57 + 110 = 597",
+  "the autoPET-only split is by patient",
+  "its 110 test studies are the first 110 entries of splits/test.json (as a set; sorted there)",
+  "and they are the test set's autoPET studies",
+  "fold 0 contains run 4's training and validation sets",
+  "fold 0 adds DEEP-PSMA cases only",
+  "fold 0 training 500 = 430 + 70 DEEP-PSMA",
+  "fold 0 validation 67 = 57 + 10 DEEP-PSMA",
+  "fold 0's validation file starts with run 4's, in order",
+  "run 4's training set is the autoPET part of folds 1 to 4's validation sets",
+  "70 + 10 + 20 = 100 DEEP-PSMA",
+  "the autoPET-only README states its seed",
+  "splits/{train,val,test}.json are fold 0",
+  "deeppsma-external lists every DEEP-PSMA case",
+  "folds_summary.json: n_pool, n_test, n_folds",
+  "folds_summary.json fold 0: sizes",
+  "folds_summary.json fold 0: strata",
+  "folds_summary.json fold 0: validation patients",
+  "folds_summary.json fold 1: sizes",
+  "folds_summary.json fold 1: strata",
+  "folds_summary.json fold 1: validation patients",
+  "folds_summary.json fold 2: sizes",
+  "folds_summary.json fold 2: strata",
+  "folds_summary.json fold 2: validation patients",
+  "folds_summary.json fold 3: sizes",
+  "folds_summary.json fold 3: strata",
+  "folds_summary.json fold 3: validation patients",
+  "folds_summary.json fold 4: sizes",
+  "folds_summary.json fold 4: strata",
+  "folds_summary.json fold 4: validation patients",
+  "B: axis order adds up",
+  "C: the blocks fill the pool",
+  "C: blocks 1 to 4 hold run 4's 430 autoPET training studies",
+  "C: block 0 holds run 4's 57 validation studies"
+ ],
+ "options": {
+  "A": {
+   "name": "partition tree",
+   "heightMm": 61.9,
+   "numbers": [
+    "n_all",
+    "n_autopet",
+    "n_deeppsma",
+    "n_pool",
+    "n_pool_patients",
+    "n_pool_autopet",
+    "n_pool_deeppsma",
+    "n_pool_multi_patients",
+    "pool_multi_min",
+    "pool_multi_max",
+    "n_test",
+    "f0_train",
+    "f0_val",
+    "fk_train",
+    "fk_val",
+    "fk_train",
+    "fk_val",
+    "fk_train",
+    "fk_val",
+    "fk_train",
+    "fk_val",
+    "n_autopet",
+    "ap_train",
+    "ap_val",
+    "ap_test",
+    "f0_train_deeppsma",
+    "f0_val_deeppsma",
+    "ap_test",
+    "n_test_deeppsma"
+   ],
+   "caption": "How the 697 studies were split. The autoPET-only split of runs 1 to 4 and 6 (left) became fold 0 of run 5 once DEEP-PSMA cases were added, and its test studies became part of the sealed test set.",
+   "captionWords": 39,
+   "build": {
+    "exit": 0,
+    "qq": 0,
+    "figure_pages": [
+     29
+    ],
+    "paragraph_pages": [
+     28
+    ],
+    "pages": 91
+   },
+   "warnings": 0,
+   "overfull": 0,
+   "printedPage": "19",
+   "allin": 14075,
+   "allinDelta": -23
+  },
+  "B": {
+   "name": "proportional bars",
+   "heightMm": 56.8,
+   "numbers": [
+    "n_all",
+    "n_autopet",
+    "n_deeppsma",
+    "n_pool",
+    "n_pool_patients",
+    "n_test",
+    "ap_train",
+    "ap_val",
+    "ap_test",
+    "f0_train",
+    "f0_val",
+    "n_test",
+    "f0_train_deeppsma",
+    "f0_val_deeppsma",
+    "n_test_deeppsma",
+    "fk_train",
+    "fk_val",
+    "n_test"
+   ],
+   "caption": "How the 697 studies were split, drawn to scale. Fold 0 is the split of runs 1 to 4 and 6 plus DEEP-PSMA studies, and no split trains on the sealed test set.",
+   "captionWords": 33,
+   "build": {
+    "exit": 0,
+    "qq": 0,
+    "figure_pages": [
+     29
+    ],
+    "paragraph_pages": [
+     28
+    ],
+    "pages": 91
+   },
+   "warnings": 0,
+   "overfull": 0,
+   "printedPage": "19",
+   "allin": 14069,
+   "allinDelta": -29
+  },
+  "C": {
+   "name": "fold grid",
+   "heightMm": 64.6,
+   "numbers": [
+    "n_all",
+    "n_autopet",
+    "n_deeppsma",
+    "n_pool",
+    "n_pool_patients",
+    "n_test",
+    "ap_val",
+    "ap_test",
+    "ap_train",
+    "f0_val",
+    "f0_train",
+    "n_test",
+    "fk_val",
+    "fk_train",
+    "fk_val",
+    "fk_train",
+    "fk_val",
+    "fk_train",
+    "fk_val",
+    "fk_train"
+   ],
+   "caption": "How the 697 studies were split, drawn to scale. Fold 0 is the split of runs 1 to 4 and 6 plus DEEP-PSMA studies, and no split trains on the sealed test set.",
+   "captionWords": 33,
+   "build": {
+    "exit": 0,
+    "qq": 0,
+    "figure_pages": [
+     29
+    ],
+    "paragraph_pages": [
+     28
+    ],
+    "pages": 91
+   },
+   "warnings": 0,
+   "overfull": 0,
+   "printedPage": "19",
+   "allin": 14078,
+   "allinDelta": -20
+  }
+ },
+ "captionShort": "How the 697 studies were split",
+ "captionCurrent": "How the 697 studies were split between the runs, the sealed test set and the five folds of the 567-study pool (381 patients).",
+ "captionCurrentWords": 23,
+ "heading": "3.2.3 Data splits",
+ "pieces": [
+  {
+   "text": "All splits were made by patient, so that no patient appears on both sides of a split, and Figure 3.2 shows how the 697 studies were used. "
+  },
+  {
+   "cut": "DS-01",
+   "old": "Runs 1 to 4 and 6 used an autoPET-only split of 430 training, 57 validation and 110 test studies, drawn with seed 42.",
+   "new": "Runs 1 to 4 and 6 used an autoPET-only split, drawn with seed 42.",
+   "diff": [
+    {
+     "t": "same",
+     "s": "Runs 1 to 4 and 6 used an autoPET-only"
+    },
+    {
+     "t": "del",
+     "s": "split of 430 training, 57 validation and 110 test studies,"
+    },
+    {
+     "t": "ins",
+     "s": "split,"
+    },
+    {
+     "t": "same",
+     "s": "drawn with seed 42."
+    }
+   ]
+  },
+  {
+   "text": " "
+  },
+  {
+   "cut": "DS-02",
+   "old": "Run 5 kept the same 110 test studies and added 20 DEEP-PSMA cases",
+   "new": "Run 5 kept the same test studies and added DEEP-PSMA cases",
+   "diff": [
+    {
+     "t": "same",
+     "s": "Run 5 kept the same"
+    },
+    {
+     "t": "del",
+     "s": "110"
+    },
+    {
+     "t": "same",
+     "s": "test studies and added"
+    },
+    {
+     "t": "del",
+     "s": "20"
+    },
+    {
+     "t": "same",
+     "s": "DEEP-PSMA cases"
+    }
+   ]
+  },
+  {
+   "text": " to form a sealed test set, which was never trained on or used for selection, and "
+  },
+  {
+   "cut": "DS-03",
+   "old": "divided the other 567 studies into",
+   "new": "divided the other studies into",
+   "diff": [
+    {
+     "t": "same",
+     "s": "divided the other"
+    },
+    {
+     "t": "del",
+     "s": "567"
+    },
+    {
+     "t": "same",
+     "s": "studies into"
+    }
+   ]
+  },
+  {
+   "text": " five folds whose validation sets cover every pool study once. "
+  },
+  {
+   "cut": "DS-04",
+   "old": "Fold 0 trains on run 4's 430 training studies plus 70 DEEP-PSMA cases and validates on run 4's 57 plus 10, so",
+   "new": "Fold 0 trains and validates on run 4's training and validation studies plus DEEP-PSMA cases, so",
+   "diff": [
+    {
+     "t": "same",
+     "s": "Fold 0 trains"
+    },
+    {
+     "t": "del",
+     "s": "on run 4's 430 training studies plus 70 DEEP-PSMA cases"
+    },
+    {
+     "t": "same",
+     "s": "and validates on run 4's"
+    },
+    {
+     "t": "del",
+     "s": "57"
+    },
+    {
+     "t": "ins",
+     "s": "training and validation studies"
+    },
+    {
+     "t": "same",
+     "s": "plus"
+    },
+    {
+     "t": "del",
+     "s": "10,"
+    },
+    {
+     "t": "ins",
+     "s": "DEEP-PSMA cases,"
+    },
+    {
+     "t": "same",
+     "s": "so"
+    }
+   ]
+  },
+  {
+   "text": " comparing fold 0 with run 4 shows what adding DEEP-PSMA did without using the test set. Folds 1 to 4 draw their "
+  },
+  {
+   "cut": "DS-05",
+   "old": "validation sets of 125 from the other 500 pool studies",
+   "new": "validation sets from fold 0's training studies",
+   "diff": [
+    {
+     "t": "same",
+     "s": "validation sets"
+    },
+    {
+     "t": "del",
+     "s": "of 125"
+    },
+    {
+     "t": "same",
+     "s": "from"
+    },
+    {
+     "t": "del",
+     "s": "the other 500 pool"
+    },
+    {
+     "t": "ins",
+     "s": "fold 0's training"
+    },
+    {
+     "t": "same",
+     "s": "studies"
+    }
+   ]
+  },
+  {
+   "text": ", grouped by patient and stratified over autoPET lesion-positive, autoPET lesion-negative and DEEP-PSMA "
+  },
+  {
+   "cut": "DS-06",
+   "old": "studies with seed 42, so the 136 pool patients with two to seven studies kept all of their studies in one fold.",
+   "new": "studies with seed 42.",
+   "diff": [
+    {
+     "t": "same",
+     "s": "studies with seed"
+    },
+    {
+     "t": "del",
+     "s": "42, so the 136 pool patients with two to seven studies kept all of their studies in one fold."
+    },
+    {
+     "t": "ins",
+     "s": "42."
+    }
+   ]
+  },
+  {
+   "text": " The folds are unequal in size, which does not affect the pooled out-of-fold headline (Section 3.7.3)."
+  }
+ ],
+ "cuts": [
+  {
+   "id": "DS-01",
+   "reason": "The three set sizes are drawn in the figure. The sentence keeps which runs used the autoPET-only split and its seed, which no option prints.",
+   "lives": "430: every option (A left column, B first bar, C first row's training count) and Table 3.1. 57: every option and Table 4.1's n column. 110: every option and Table 3.2's last row.",
+   "requires": [],
+   "companions": [
+    "CE-01"
+   ],
+   "removes": [
+    "430",
+    "57",
+    "110"
+   ],
+   "words": -9,
+   "oldTex": "Runs 1 to 4 and run 6 used an autoPET-only split of 430 training, 57\nvalidation and 110 test studies, drawn with seed 42.",
+   "newTex": "Runs 1 to 4 and run 6 used an autoPET-only split, drawn with seed 42."
+  },
+  {
+   "id": "DS-02",
+   "reason": "The figure shows the test set as the autoPET-only test studies plus DEEP-PSMA cases, with both counts. The sentence keeps that the test set was sealed: never trained on or used for selection.",
+   "lives": "110: every option and Table 3.2's last row. 20: options A (test box and link) and B (+20 under fold 0's bar) and Table 3.2's last row; option C does not print it.",
+   "requires": [],
+   "companions": [],
+   "removes": [
+    "110",
+    "20"
+   ],
+   "words": -2,
+   "oldTex": "Run 5 kept the same 110\ntest studies and added 20 DEEP-PSMA cases",
+   "newTex": "Run 5 kept the same\ntest studies and added DEEP-PSMA cases"
+  },
+  {
+   "id": "DS-03",
+   "reason": "The pool size heads the figure and is stated in section 3.1 and Table 4.1.",
+   "lives": "Every option (the pool label), section 3.1 item 1, Table 4.1.",
+   "requires": [],
+   "companions": [],
+   "removes": [
+    "567"
+   ],
+   "words": -1,
+   "oldTex": "divided the other 567 studies into",
+   "newTex": "divided the other studies into"
+  },
+  {
+   "id": "DS-04",
+   "reason": "The figure draws fold 0 as run 4's split plus DEEP-PSMA. The sentence keeps how fold 0 was built and why: comparing it with run 4 isolates the effect of adding DEEP-PSMA, which Chapter 4 relies on.",
+   "lives": "430 and 57: every option. 70 and 10: options A (arrow labels into fold 0) and B (+70 and +10 under fold 0's bar) only; option C draws the 70 and 10 studies hatched but does not print the counts.",
+   "requires": [
+    "option A or B (C does not print 70 and 10)"
+   ],
+   "companions": [
+    "CE-01"
+   ],
+   "removes": [
+    "430",
+    "70",
+    "57",
+    "10"
+   ],
+   "words": -6,
+   "oldTex": "Fold 0 trains on run 4's 430 training studies plus 70 DEEP-PSMA cases and\nvalidates on run 4's 57 plus 10, so",
+   "newTex": "Fold 0 trains and validates on run 4's training and validation studies plus\nDEEP-PSMA cases, so"
+  },
+  {
+   "id": "DS-05",
+   "reason": "Both sizes are drawn. The sentence keeps the grouping by patient and the stratification over the three strata, which a figure cannot argue. 'The other pool studies' would lose its referent once DS-04 drops fold 0's validation counts, so it names the same 500 studies as fold 0's training studies (accuracy critic); this holds with or without DS-04.",
+   "lives": "125: every option and Table 4.1. 500: every option (fold 0's training count) and Table 3.1.",
+   "requires": [],
+   "companions": [],
+   "removes": [
+    "125",
+    "500"
+   ],
+   "words": -3,
+   "oldTex": "validation sets of 125 from the other 500 pool studies",
+   "newTex": "validation sets from fold 0's training studies"
+  },
+  {
+   "id": "DS-06",
+   "reason": "The paragraph's first sentence already says every split is by patient, and section 3.2.1 gives one to seven studies per patient. Option A prints the 136 in its pool box.",
+   "lives": "Option A only (pool box: 136 patients with 2 to 7 studies). With B or C the 136 leaves the dissertation; 3.2.1 keeps 'between one and seven studies' per patient.",
+   "requires": [
+    "option A to keep the 136 in the dissertation"
+   ],
+   "companions": [],
+   "removes": [
+    "136",
+    "two to seven"
+   ],
+   "words": -18,
+   "oldTex": "studies with seed 42, so the 136 pool patients with two to seven studies kept\nall of their studies in one fold.",
+   "newTex": "studies with seed 42."
+  }
+ ],
+ "companions": [
+  {
+   "id": "CE-01",
+   "file": "chapters/04-results.tex",
+   "old": "4's 57 validation cases (\\cref{sec:method-data-splits})",
+   "new": "4's 57 validation cases (\\cref{fig:method-data-splits})",
+   "reason": "After DS-01 and DS-04 the 57 is printed in the figure, not in 3.2.3's text, so the pointer goes to the figure. Harmless without them: the figure carries the 57 in every option."
+  }
+ ],
+ "words": {
+  "before": 200,
+  "after": 161,
+  "allinBase": 14098
+ },
+ "validation": {
+  "unique": true,
+  "independent": true,
+  "audit_overlaps": [],
+  "audit_checked": 66
+ },
+ "labels": {
+  "tab:method-runs": "3.1",
+  "tab:method-datasets": "3.2",
+  "tab:results-cv": "4.1",
+  "sec:method-evaluation-protocol": "3.7.3",
+  "sec:method-data-splits": "3.2.3"
+ },
+ "placed": {
+  "option": "C",
+  "date": "2026-10-16",
+  "cuts": [],
+  "captionWords": 33,
+  "baseHead": "9f6337c",
+  "allinDelta": 9,
+  "pages": "18 and 19",
+  "note": "James chose C and placed it without the cuts: header says plain and striped, the caption is the 33-word draft, and the only paragraph change is Runs 1 to 4 and run 6 to Runs 1 to 4 and 6. Word counts on the option cards are from the 57c9367 proposal."
+ }
+}

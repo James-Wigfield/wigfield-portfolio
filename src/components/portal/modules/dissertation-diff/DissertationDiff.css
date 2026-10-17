@@ -319,8 +319,12 @@
 .ddf-rail__tick:hover,
 .ddf-rail__tick.is-current { opacity: 1; left: -3px; right: -3px; }
 
-/* change tags: an ID in the right margin of an edited page, in its tier's ink
-   (R supervisor blue, A pen red, B amber), filled when flagged */
+/* change tags: an ID in the right margin of an edited page, in its stage's ink,
+   filled when flagged. Revision proposal (13 Oct): R supervisor blue, A pen red,
+   B amber. Audit fixes and cuts (16 Oct): N your notes blue, F overnight audit
+   teal-green, T Claude's recommendation violet, none of them the pen red. Tags
+   sit on the white paper in every theme, and each ink is over 6:1 against white
+   (and under the white text of a flagged tag). */
 .ddf-tag {
   --tag: var(--pen);
   display: inline-flex;
@@ -340,6 +344,9 @@
 .ddf-tag--R { --tag: #1f4e9e; }
 .ddf-tag--A { --tag: #c8102e; }
 .ddf-tag--B { --tag: #a1530a; }
+.ddf-tag--N { --tag: #1f4e9e; }
+.ddf-tag--F { --tag: #0b6e4f; }
+.ddf-tag--T { --tag: #7a2fb5; }
 .ddf-tag:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--tag) 22%, transparent); }
 .ddf-tag.is-flagged { color: #ffffff; background: var(--tag); }
 .ddf-tag.is-flagged::before { content: '⚑'; margin-right: 3px; }

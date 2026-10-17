@@ -10,12 +10,19 @@ gitignored dissertation-diff-data/ folder, which only the dev server serves
     python tools/dissertation-diff/build.py --old HEAD --new HEAD \
         --overlay <dir> --tags <file.json>                   # a proposal: edited copies laid over HEAD
 
---overlay copies each file of <dir> over the file of the same name in the edited tree
-(chapters/, appendices/ or the root), so a proposal can be shown before it is applied.
-Lines "% REV <ID>" in those files become margin tags: build.py turns each into
-\\DIFrevtag{<ID>} (difstyle.tex), which records where TeX put it, and the page draws
-the ID there. --tags gives the page's wording and each ID's metadata (see the
-revision folder's tools/redpen_tags.py).
+--overlay copies the files of <dir> over the edited tree, so a proposal can be shown
+before it is applied. <dir> mirrors the repo (<dir>/chapters/05-discussion.tex,
+<dir>/appendices/..., <dir>/frontmatter/..., <dir>/preamble/..., <dir>/main.tex,
+<dir>/references.bib), or is flat (each file found by name at the root or in one of
+those folders). Lines "% REV <ID>" in those files become margin tags: build.py turns
+each into \\DIFrevtag{<ID>} (difstyle.tex), which records where TeX put it, and the page
+draws the ID there; a "% REV <ID> (deleted)" tag goes to where the removed text starts.
+--tags gives the page's wording and each ID's metadata (see the revision folder's
+tools/redpen_tags.py, and oct16/audit-and-cuts/tools/redpen_tags.py).
+
+Removals shown crossed out: floats, lstlistings (rebuilt from the original source),
+and headings removed with their section, chapter or whole appendix (an \\input line
+dropped from main.tex): the appendix's pages stay in the edited column, struck.
 
 Both columns are real pdflatex builds of the dissertation, so typography, numbering,
 equations, citations and figures are exactly what the PDF shows:
@@ -125,15 +132,36 @@ def copy_worktree(dst):
             shutil.copy2(s, dst / k)
 
 
+OVERLAY_DIRS = ("chapters", "appendices", "frontmatter", "preamble")
+
+
 def apply_overlay(tree, overlay):
-    """Copy each file of `overlay` over the file of the same name in the tree."""
+    """Copy the files of `overlay` over the edited tree.
+
+    Two layouts: mirrored (overlay/chapters/05-discussion.tex, overlay/main.tex,
+    overlay/references.bib, overlay/preamble/macros.tex: each file goes to the same
+    path in the tree), or flat (every file at the top, found by name at the root or
+    in one of OVERLAY_DIRS). A file in a subfolder must replace a file of the tree;
+    hidden files and caches are skipped."""
+    overlay = Path(overlay)
     done = []
-    for src in sorted(p for p in Path(overlay).iterdir() if p.is_file()):
-        hits = [d / src.name for d in (tree, tree / "chapters", tree / "appendices") if (d / src.name).exists()]
-        if len(hits) != 1:
-            sys.exit(f"overlay file {src.name}: {len(hits)} matches in the edited tree")
-        shutil.copy2(src, hits[0])
-        done.append(hits[0].relative_to(tree).as_posix())
+    for src in sorted(p for p in overlay.rglob("*") if p.is_file()):
+        rel = src.relative_to(overlay)
+        if any(part.startswith(".") or part == "__pycache__" for part in rel.parts):
+            continue
+        if len(rel.parts) > 1:
+            if rel.parts[0] not in KEEP:
+                sys.exit(f"overlay file {rel.as_posix()}: {rel.parts[0]}/ is not part of the dissertation tree")
+            dst = tree / rel
+            if not dst.exists():
+                sys.exit(f"overlay file {rel.as_posix()}: no such file in the edited tree")
+        else:
+            hits = [d / src.name for d in (tree, *(tree / x for x in OVERLAY_DIRS)) if (d / src.name).exists()]
+            if len(hits) != 1:
+                sys.exit(f"overlay file {src.name}: {len(hits)} matches in the edited tree")
+            dst = hits[0]
+        shutil.copy2(src, dst)
+        done.append(dst.relative_to(tree).as_posix())
     return done
 
 
@@ -193,10 +221,32 @@ def squash(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+def included(tree):
+    """The .tex files main.tex reaches through active \\input and \\include lines, in
+    reading order. A file whose \\input was dropped (a removed appendix) stays in the
+    tree but is not part of that version."""
+    seen = []
+
+    def walk(name):
+        p = (tree / name).with_suffix(".tex")
+        if p in seen or not p.exists():
+            return
+        seen.append(p)
+        for m in re.finditer(r"\\(?:input|include)\{([^}]*)\}", strip_comments(p.read_text(encoding="utf-8"))):
+            walk(m.group(1))
+    walk("main")
+    return seen
+
+
+def body_files(tree):
+    return [p for p in included(tree) if p.parent.name in ("chapters", "appendices", "frontmatter")]
+
+
 def parse_floats(tree):
-    """label -> float info, from the comment-stripped chapters and appendices."""
+    """label -> float info, from the comment-stripped chapters, appendices and front
+    matter that main.tex inputs."""
     floats = {}
-    for f in sorted((tree / "chapters").glob("*.tex")) + sorted((tree / "appendices").glob("*.tex")):
+    for f in body_files(tree):
         text = strip_comments(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"\\begin\{(figure|table)\}(\[[^\]]*\])?(.*?)\\end\{\1\}", text, re.S):
             body = m.group(3)
@@ -212,6 +262,71 @@ def parse_floats(tree):
                 "graphics": re.findall(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]*)\}", body),
             }
     return floats
+
+
+def split_keys(opts):
+    """[(key, raw value or None)] of a key=value list, split at top-level commas."""
+    parts, depth, cur = [], 0, ""
+    for c in opts:
+        depth += (c == "{") - (c == "}")
+        if c == "," and depth == 0:
+            parts.append(cur)
+            cur = ""
+        else:
+            cur += c
+    parts.append(cur)
+    out = []
+    for p in (p.strip() for p in parts):
+        if p:
+            k, eq, v = p.partition("=")
+            out.append((k.strip(), v.strip() if eq else None))
+    return out
+
+
+def unbrace(v):
+    v = (v or "").strip()
+    if v.startswith("{"):
+        inner, end = read_group(v, 0)
+        if end == len(v):
+            return inner
+    return v
+
+
+def parse_listings(tree):
+    """lstlistings of the chapters and appendices, keyed by their label, else by their
+    squashed \\begin line. Raw source: a listing's body is verbatim, so % is not a
+    comment there."""
+    out = {}
+    for f in body_files(tree):
+        text = f.read_text(encoding="utf-8")
+        for m in re.finditer(r"^[ \t]*\\begin\{lstlisting\}", text, re.M):
+            i = m.end()
+            opts = ""
+            if text[i:i + 1] == "[":
+                opts, i = read_group(text, i, "[", "]")
+            nl = text.find("\n", i)
+            e = re.compile(r"^[ \t]*\\end\{lstlisting\}", re.M).search(text, nl)
+            keys = split_keys(opts)
+            d = dict(keys)
+            info = {"keys": keys, "body": text[nl + 1:e.start()], "label": unbrace(d.get("label")) or None,
+                    "caption": unbrace(d.get("caption", d.get("title"))) or "",
+                    "numbered": "caption" in d}
+            out[info["label"] or squash(text[m.start():i])] = info
+    return out
+
+
+def rebuild_removed_listing(lst, number):
+    """A removed lstlisting, rebuilt from the original source: its caption struck and
+    unnumbered, the listing crossed out (difstyle.tex's DIFdellisting). The original's
+    caption and label keys go to the check build that reads the original, which prints
+    the listing as it was."""
+    shown = [(k, v) for k, v in lst["keys"] if k in ("caption", "title", "label")]
+    other = ",".join(k if v is None else f"{k}={v}" for k, v in lst["keys"] if (k, v) not in shown)
+    name = "\\lstlistingname" + (f"~{number}" if lst["numbered"] and number else "")
+    keys = ",".join(k if v is None else f"{k}={v}" for k, v in shown)
+    return (f"\\ifDIFshowremoved\n\\begin{{DIFdellisting}}{{{name}}}{{{protect_refs(lst['caption'])}}}{{{keys}}}\n"
+            f"\\begin{{lstlisting}}{'[' + other + ']' if other else ''}\n{lst['body']}\\end{{lstlisting}}\n"
+            f"\\end{{DIFdellisting}}\n\\fi\n")
 
 
 def parse_aux(aux):
@@ -320,6 +435,20 @@ def rebuild_removed_float(fl, number, label):
             + visual(body[c1:]) + f"\\end{{{env}}}\n\\fi\n")
 
 
+def stray_additions(span):
+    """What the final reads from a stretch that is about to be replaced by a rebuilt
+    removed float: latexdiff can match a new sentence's words with tokens inside a
+    removed float (a new lead-in spread over the struck tables it replaces). Those
+    words, as one addition after the float, so the final keeps them; '' if none."""
+    text = reading(span, "add")
+    text = re.sub(r"(?<!\\)&|\\\\(\[[^\]]*\])?|\\(?:toprule|midrule|bottomrule|rowsep|hline|centering|small|"
+                  r"footnotesize|par)(?![A-Za-z])|\\(?:cmidrule(?:\([^)]*\))?|label)\{[^{}]*\}", " ", text)
+    text = squash(text)
+    if not re.search(r"[A-Za-z0-9]", re.sub(r"\\[A-Za-z]+", "", text)) or not balanced(text):
+        return ""
+    return "\\DIFaddbegin \\DIFadd{" + text + "}\\DIFaddend\n"
+
+
 def replace_restructured(diff, old_floats, new_floats, old_nums, notes):
     """Tables kept under the same label whose rows or columns changed (latexdiff had to
     comment out a removed & or \\\\, or the column spec): the old table crossed out, then
@@ -342,6 +471,29 @@ def replace_restructured(diff, old_floats, new_floats, old_nums, notes):
         nf = new_floats[label]
         notes["replaced"].append({"label": label, "kind": "table", "number": old_nums[label][0],
                                   "title": squash(old_floats[label]["entry"])})
+        # latexdiff can match this table's \begin with an earlier removed float's, so
+        # the span also holds whole removed floats and words added outside the table
+        # (a new lead-in). Keep them: the removed floats crossed out, in order, and
+        # the added words that the new table's source does not hold, as an addition.
+        others = [x.group(1) for x in re.finditer(r"%DIFDELCMD <[^\n]*?\\label\{([^}]*)\}", body)
+                  if x.group(1) in old_floats and x.group(1) not in new_floats and x.group(1) != label]
+        kept = []
+        for o in others:
+            notes["removed"].append({"label": o, "kind": old_floats[o]["env"], "number": old_nums[o][0],
+                                     "title": squash(old_floats[o]["entry"])})
+            kept.append(rebuild_removed_float(old_floats[o], old_nums[o][0], o))
+        def bare(s):  # letters and digits only, commands dropped
+            return re.sub(r"[^A-Za-z0-9]", "", re.sub(r"\\[A-Za-z]+", "", s))
+        new_src = bare(strip_comments(nf["body"]))
+        loose = []
+        for g in re.finditer(r"\\DIFadd(?:FL)?\{", body):
+            if not active(body, g.start()):
+                continue
+            inner, _ = read_group(body, g.end() - 1)
+            if bare(vis(inner)) and bare(vis(inner)) not in new_src:
+                loose.append(vis(inner).strip())
+        if loose:
+            kept.append("\\DIFaddbegin \\DIFadd{" + " ".join(loose) + "}\\DIFaddend\n")
 
         def framed(seg):
             return re.sub(r"\\begin\{(tabular\*?|tabularx)\}.*?\\end\{\1\}",
@@ -351,7 +503,7 @@ def replace_restructured(diff, old_floats, new_floats, old_nums, notes):
         tags = "".join(f"%DIF >  REV {t}\n" for t in REVTAG.findall(body))
         new = (f"\\ifDIFshowadded\n\\begin{{table}}{nf['place']}\n" + tags + framed(nf["body"][:c0]) + cap
                + framed(nf["body"][c1:]) + "\\end{table}\n\\fi\n")
-        out += [diff[pos:m.start()], rebuild_removed_float(old_floats[label], old_nums[label][0], label), new]
+        out += [diff[pos:m.start()], *kept, rebuild_removed_float(old_floats[label], old_nums[label][0], label), new]
         pos = end
     return "".join(out) + diff[pos:]
 
@@ -731,10 +883,13 @@ def fix_run_together_words(diff, old_src, new_src):
 
 
 def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old_src, new_src,
-                old_tex, new_tex):
+                old_tex, new_tex, old_lists=None):
     # 0. latexdiff comments out a lone [ or ] in removed text as if it were markup, so
     #    "[177Lu]Lu-PSMA" read "177LuLu-PSMA" when struck. Strike it as text.
     diff = re.sub(r"%DIFDELCMD < ([\[\]])%%%\n", r"\\DIFdel{\1}", diff)
+    # A removed \clearpage (before a removed appendix section) is kept as \DIFdelclearpage,
+    # so the struck floats stay in the original's order; the final's check build drops it.
+    diff = re.sub(r"%DIFDELCMD < [ \t]*\\clearpage[ \t]*\n", lambda m: "\\DIFdelclearpage\n", diff)
     # Spacing inside each changed run, from its own source.
     diff = respace_groups(diff, old_tex, new_tex)
     # 1. Stray spaces latexdiff puts before punctuation inside marked text
@@ -809,7 +964,7 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
         num = old_nums[name][0]
         notes["removed"].append({"label": name, "kind": old_floats[name]["env"],
                                  "number": num, "title": squash(old_floats[name]["entry"])})
-        return "\n" + rebuild_removed_float(old_floats[name], num, name)
+        return "\n" + rebuild_removed_float(old_floats[name], num, name) + stray_additions(m.group(0))
     diff = pat.sub(swap, diff)
     # A float removed in one place and added in another under the same label has moved:
     # crossed out where it was (above), and treated as new where it now is (4 and 5).
@@ -892,6 +1047,94 @@ def postprocess(diff, old_floats, new_floats, old_nums, changed_figs, notes, old
             diff = rx.sub(rep, diff)
         if diff == before:
             break
+
+    # 7. Removed lstlistings (Appendix B.1's configuration file). latexdiff keeps the
+    #    listing, numbered, each line struck in a listings style of its own, which
+    #    neither check build can leave out. Rebuild it from the original source,
+    #    crossed out like a removed float, with an unnumbered struck caption.
+    pat = re.compile(r"%DIFDELCMD < [ \t]*(\\begin\{lstlisting\}[^\n]*)\n(.*?)"
+                     r"%DIFDELCMD < [ \t]*\\end\{lstlisting\}[^\n]*\n(?:%DIFDELCMD < %%%\n)?", re.S)
+
+    def swap_listing(m):
+        head, opts = m.group(1), ""
+        i = len("\\begin{lstlisting}")
+        if head[i:i + 1] == "[":
+            opts, _ = read_group(head, i, "[", "]")
+        label = unbrace(dict(split_keys(opts)).get("label")) or None
+        lst = (old_lists or {}).get(label or squash(head))
+        if lst is None:
+            raise SystemExit(f"removed listing not found in the original: {head[:120]}")
+        num = old_nums[label][0] if label in old_nums else ""
+        notes["removed"].append({"label": label or "", "kind": "listing", "number": num,
+                                 "title": squash(lst["caption"])})
+        return rebuild_removed_listing(lst, num)
+    diff = pat.sub(swap_listing, diff)
+
+    # 8. Headings removed with their section, chapter or whole appendix (an \input
+    #    dropped from main.tex). latexdiff prints each struck and steps its counter
+    #    back at once, so the next heading, removed or kept, takes the same number:
+    #    a removed appendix's sections came out as A.1, A.1, A.1. Instead, number the
+    #    removed headings as the original did and step the counter back once per
+    #    outermost removed heading at the end of the removal, so what follows has the
+    #    final numbering. The step is \DIFdelcounter, which the check build reading
+    #    the original switches off; the check build reading the final leaves the
+    #    headings out.
+    rank = {"chapter": 0, "section": 1, "subsection": 2, "subsubsection": 3, "paragraph": 4}
+    heads = []  # (start, end of heading, end of latexdiff's counter step, level)
+    # (at a line start, or after the \DIFdelbegin that opens the removal)
+    for m in re.finditer(r"\\(chapter|section|subsection|subsubsection|paragraph)(?=[\[{])", diff):
+        if (heads and m.start() < heads[-1][2]) or not active(diff, m.start()):
+            continue
+        i = m.end()
+        if diff[i] == "[":
+            _, i = read_group(diff, i, "[", "]")
+        if diff[i] != "{":
+            continue
+        _, i = read_group(diff, i)
+        tail = re.compile(r"[ \t]*\n?%DIFAUXCMD\n\\addtocounter\{" + m.group(1)
+                          + r"\}\{-1\}%DIFAUXCMD[ \t]*\n?").match(diff, i)
+        if tail:
+            heads.append((m.start(), i, tail.end(), m.group(1)))
+    # removal runs: \DIFdelbegin ... \DIFdelend blocks that only comments and blank lines separate
+    runs = []  # [start, start of the closing \DIFdelend, its end]
+    for b in DEL_BEGIN.finditer(diff):
+        e = DEL_END.search(diff, b.end())
+        if not e or (runs and b.start() < runs[-1][2]):
+            continue
+        if runs and not vis(diff[runs[-1][2]:b.start()]).strip():
+            runs[-1][1:] = [e.start(), e.end()]
+        else:
+            runs.append([b.start(), e.start(), e.end()])
+    runs = [(r0, r1) for r0, r1, _ in runs]
+    edits = []  # (position, characters removed, text inserted)
+    for r0, r1 in runs:
+        inside = [h for h in heads if r0 <= h[0] < r1]
+        if not inside:
+            continue
+        top = min(rank[h[3]] for h in inside)
+        first_top = next(k for k, h in enumerate(inside) if rank[h[3]] == top)
+        n_top = 0
+        for k, (s, i, t, level) in enumerate(inside):
+            # a lower heading before the first outermost one belongs to the kept part
+            # above it: step its counter back at once, as latexdiff does
+            now = k < first_top
+            n_top += rank[level] == top
+            step = f"\\DIFdelcounter{{{level}}}{{1}}%\n" if now else ""
+            edits.append((s, t - s, "\\ifDIFshowremoved\n" + diff[s:i] + "%\n" + step + "\\fi\n"))
+        level = next(h[3] for h in inside if rank[h[3]] == top)
+        edits.append((r1, 0, f"\\ifDIFshowremoved\\DIFdelcounter{{{level}}}{{{n_top}}}\\fi "))
+    for h in heads:  # outside any run (should not happen): latexdiff's own step
+        if not any(r0 <= h[0] < r1 for r0, r1 in runs):
+            s, i, t, level = h
+            edits.append((s, t - s, "\\ifDIFshowremoved\n" + diff[s:i]
+                          + f"%\n\\DIFdelcounter{{{level}}}{{1}}%\n\\fi\n"))
+    for pos, n, text in sorted(edits, key=lambda e: e[0], reverse=True):
+        diff = diff[:pos] + text + diff[pos + n:]
+
+    # 9. An added command that prints nothing (\bstctlcite right after \begin{document},
+    #    \nocite) is not a change on the page: no change mark for it.
+    diff = re.sub(r"\\DIFaddbegin[ \t]+(\\(?:bstctlcite|nocite)(?:\[[^\]]*\])?\{[^{}]*\})([ \t]*\n?)"
+                  r"\\DIFaddend(?![A-Za-z]) ?", r"\1\2", diff)
     return diff
 
 
@@ -926,11 +1169,50 @@ def move_table_markers(text):
     return text
 
 
+DEL_BEGIN = re.compile(r"\\DIFdelbegin(?:FL)?(?![A-Za-z]) ?")
+DEL_END = re.compile(r"\\DIFdelend(?:FL)?(?![A-Za-z])")
+DEL_TAG = re.compile(r"(\\DIFdelend(?:FL)?(?![A-Za-z])[ \t]*)(\n?[ \t]*)(?<!\\)%DIF > +REV (\S+) \(deleted\)[^\n]*")
+
+
+def move_deletion_tags(diff):
+    """latexdiff puts a "% REV <ID> (deleted)" marker after the removal it marks, so
+    its tag would sit where the removed text ends: pages later for a whole section
+    or appendix. Move it to where the removal starts, going back over removal blocks
+    that only comments and blank lines separate (latexdiff can split one removal)."""
+    begins = [(b.start(), b.end()) for b in DEL_BEGIN.finditer(diff)]
+    ends = [(e.start(), e.end()) for e in DEL_END.finditer(diff)]
+    edits = []  # (position, characters removed, text inserted), on the original text
+    for m in DEL_TAG.finditer(diff):
+        b = max((x for x in begins if x[1] <= m.start()), default=None)
+        if b is None:
+            continue
+        while True:
+            e = max((x for x in ends if x[1] <= b[0]), default=None)
+            if e is None:
+                break
+            gap = diff[e[1]:b[0]]
+            # only comments and blank lines between, and no other change's marker
+            if vis(gap).strip() or REVTAG.search(gap):
+                break
+            prev = max((x for x in begins if x[1] <= e[0]), default=None)
+            if prev is None:
+                break
+            b = prev
+        # the marker's comment ate its line end; a bare % keeps that
+        keep = "%" if not m.group(2) else m.group(2).rstrip(" \t")
+        edits += [(m.start(), m.end() - m.start(), m.group(1) + keep),
+                  (b[1], 0, "\\DIFrevtag{" + m.group(3) + "}%\n")]
+    for pos, n, text in sorted(edits, key=lambda e: (e[0], e[1] > 0), reverse=True):
+        diff = diff[:pos] + text + diff[pos + n:]
+    return diff
+
+
 def place_tags(diff):
     """latexdiff passes the overlay's "% REV <ID>" lines through as "%DIF >  REV <ID>"
     comments. Each becomes "\\DIFrevtag{<ID>}%": the comment still ends the line as
     before, and the tag records where TeX put it (difstyle.tex). A tag that landed in
     struck text, which ulem sets word by word, moves to just after it."""
+    diff = move_deletion_tags(diff)
     diff, n = REVTAG.subn(lambda m: "\\DIFrevtag{" + m.group(1) + "}%", diff)
     for g in reversed(list(re.finditer(r"\\DIFdel(?:FL)?\{", diff))):
         _, end = read_group(diff, g.end() - 1)
@@ -1020,6 +1302,8 @@ def toc_entries(toc):
         nm = re.match(r"\\numberline \{([^}]*)\}(.*)", title)
         if nm:
             num, title = nm.group(1), nm.group(2)
+        # (a removed heading's title is struck: {\color {DIFdelink}\DIFstrike {...}})
+        title = re.sub(r"\\color\s*\{[^{}]*\}", "", title)
         title = re.sub(r"\\[A-Za-z]+\s*(\{\})?", "", title).replace("{", "").replace("}", "")
         out.append((m.group(1), num, squash(title), anchor))
     return out
@@ -1060,6 +1344,8 @@ MODE_OLD = r"""
 \renewcommand\DIFoldlabel[1]{\label{#1}}
 \renewcommand\DIFnewtable[1]{#1}
 \renewenvironment{DIFfit}[1]{}{}
+\renewcommand\DIFdelcounter[2]{}
+\renewenvironment{DIFdellisting}[3]{\lstset{#3}}{}
 """
 MODE_NEW = r"""
 \DIFshowremovedfalse
@@ -1073,6 +1359,7 @@ MODE_NEW = r"""
 \renewcommand\DIFdelbox[1]{}
 \renewcommand\DIFnewtable[1]{#1}
 \renewenvironment{DIFfit}[1]{}{}
+\renewcommand\DIFdelclearpage{}
 """
 
 
@@ -1109,10 +1396,15 @@ def words(pdf, layout_free=False):
             lines = page.rstrip().split("\n")
             if lines and re.fullmatch(r"\s*([0-9]+|[ivxlcdm]+)\s*", lines[-1]):
                 lines.pop()
-            pages.append("\n".join(re.sub(r"(?:\s*\.){3,}\s*([0-9]+|[ivxlcdm]+)?\s*$", "", l)
+            # a dot leader and its page number anywhere in a line: pdftotext can run
+            # several List of Tables entries together on one line
+            pages.append("\n".join(re.sub(r"(?:\s*\.){3,}\s*(?:[0-9]+|[ivxlcdm]+)?(?=\s|$)", " ", l)
                                    for l in lines))
         text = "\n".join(pages)
         text = re.sub(r"-\n", "", text).replace("-", "")
+        # a space left before punctuation where struck text or a boxed \cref was ("fixed .",
+        # "5.1 )") is spacing, not wording
+        text = re.sub(r"\s+(?=[.,;:)\]])", "", text)
         # draft-mode figure boxes print their file names
         return [t for t in text.split() if not re.search(r"\.(pdf|png|jpe?g)$", t)]
     return re.sub(r"-\n(?=[a-z])", "", text).split()  # line-end hyphenation
@@ -1141,6 +1433,8 @@ def compare(expected_pdf, got_pdf):
     out = []
     for h in sorted(unexplained):
         i1, i2, j1, j2 = hunks[h]
+        if a[i1:i2] and "".join(a[i1:i2]) == "".join(b[j1:j2]):
+            continue  # only a space lost or gained ("1 and" / "1and"): spacing, not wording
         out.append({"context": " ".join(a[max(0, i1 - 8):i1]),
                     "expected": " ".join(a[i1:i2]), "got": " ".join(b[j1:j2])})
     return {"words": len(a), "differences": out}
@@ -1194,7 +1488,14 @@ def main():
 
     old_floats, new_floats = parse_floats(old), parse_floats(new)
     old_nums, old_raw = parse_aux(old / "build" / "dissertation.aux")
-    new_nums, _ = parse_aux(new / "build" / "dissertation.aux")
+    new_nums, new_raw = parse_aux(new / "build" / "dissertation.aux")
+    # The final build's own warnings: a reference left pointing at removed text shows here.
+    final_warnings = sorted(set(re.findall(r"LaTeX Warning: [^\n]*", (new / "build" / "dissertation.log")
+                                           .read_text(encoding="utf-8", errors="replace"))))
+    if final_warnings:
+        print(f"  the final build has {len(final_warnings)} LaTeX warnings:")
+        for w in final_warnings:
+            print("    ", w)
 
     figs_old = {p.name: p for p in (old / "figures").iterdir() if p.is_file()}
     figs_new = {p.name: p for p in (new / "figures").iterdir() if p.is_file()}
@@ -1209,7 +1510,10 @@ def main():
 
     notes = {"removed": [], "moved": [], "replaced": [], "added": [], "changed": [], "renumbered": []}
     diff = postprocess(raw, old_floats, new_floats, old_nums, changed, notes,
-                       Source(old_pdf), Source(new_pdf), flatten(old), flatten(new))
+                       Source(old_pdf), Source(new_pdf), flatten(old), flatten(new), parse_listings(old))
+    n_heads = len(re.findall(r"\\ifDIFshowremoved\n\\(?:chapter|section|subsection|subsubsection|paragraph)[\[{]", diff))
+    if n_heads:
+        print(f"  {n_heads} removed headings")
     diff, n_tags = place_tags(diff)
     if n_tags:
         print(f"  {n_tags} change tags")
@@ -1222,12 +1526,33 @@ def main():
             e = diff.find("\n", b + len("\\ifDIFshowremoved\n")) + 1
             diff = diff[:e] + f"\\renewcommand\\DIFcrossnote{{{note}}}%\n" + diff[e:]
 
-    # Removed floats keep their original numbers for any reference in struck text.
+    # Removed floats, listings, sections and appendices keep their original numbers for
+    # any reference in struck text: every label of the original that the final lacks.
     # \newlabel is preamble-only, so define the r@<label> macros it would make.
     def define(line):
         name, i = read_group(line, len("\\newlabel"))
         return f"\\global\\@namedef{{r@{name}}}{line[i:]}"
-    labels = "\n".join(define(l) for r in notes["removed"] for l in old_raw.get(r["label"], []))
+    gone = sorted(set(old_raw) - set(new_raw))
+    labels = "\n".join(define(l) for name in gone for l in old_raw[name])
+    # Citations only struck text makes (a removed paragraph's \cite): the final's .bbl
+    # lacks them, so give them the original's numbers, as \bibcite in the .aux would.
+    # (\bibcite itself is preamble-only, so set b@<key> to the number directly)
+    def bibcites(aux):
+        out = {}
+        for l in aux.read_text(encoding="utf-8", errors="replace").splitlines():
+            if l.startswith("\\bibcite{"):
+                key, i = read_group(l, len("\\bibcite"))
+                out[key] = read_group(l, i)[0]
+        return out
+    old_cites = bibcites(old / "build" / "dissertation.aux")
+    new_cites = bibcites(new / "build" / "dissertation.aux")
+    labels += "\n" + "\n".join(f"\\@ifundefined{{b@{k}}}{{\\global\\@namedef{{b@{k}}}{{{n}}}}}{{}}"
+                               for k, n in sorted(old_cites.items()) if k not in new_cites)
+    # The check build reading the original takes every reference number from the
+    # original: latexdiff can attach a kept label to another heading (a new section
+    # matched with a removed one), which would give it a different number there.
+    mode_old = (MODE_OLD + "\\makeatletter\n" + "\n".join(define(l) for ls in old_raw.values() for l in ls)
+                + "\n\\AddToHook{begindocument/end}{\\renewcommand\\label[2][]{}}\n\\makeatother\n")
     style = (HERE / "difstyle.tex").read_text(encoding="utf-8")
     diff = diff.replace("\\begin{document}",
                         "% ---- red-pen markup (tools/dissertation-diff/difstyle.tex)\n"
@@ -1260,7 +1585,7 @@ def main():
     for d in (old, new):
         (d / "draft.tex").write_text(DRAFT + "\n\\input{main}\n", encoding="utf-8")
         run(["latexmk", "-jobname=draft", "draft.tex"], d, WORK / f"latexmk-{d.name}-draft.log")
-    pdf_old_view, _ = build_marked(dif, "verify-old", old_bbl, MODE_OLD, draft=True, tex="check.tex")
+    pdf_old_view, _ = build_marked(dif, "verify-old", old_bbl, mode_old, draft=True, tex="check.tex")
     pdf_new_view, _ = build_marked(dif, "verify-new", new_bbl, MODE_NEW, draft=True, tex="check.tex")
     check = {"original": compare(old / "build" / "draft.pdf", pdf_old_view),
              "final": compare(new / "build" / "draft.pdf", pdf_new_view)}
@@ -1360,6 +1685,7 @@ def main():
         "floats": notes,
         "check": check,
         "latex_warnings": warnings,
+        "final_latex_warnings": final_warnings,
     }
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print(f"done: {n_old} original pages, {n_dif} marked-up pages, {len(changes)} changes, "

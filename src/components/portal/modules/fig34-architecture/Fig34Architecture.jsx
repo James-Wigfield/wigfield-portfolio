@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BRIEF, OPTIONS, RECOMMENDATION, CHOSEN } from './options';
 import Fig47Qualitative from './Fig47Qualitative';
+import Fig32DataSplits from './Fig32DataSplits';
 import './Fig34Architecture.css';
 
 /* ============================================================================
@@ -135,11 +136,19 @@ function OptionDetail({ opt }) {
   );
 }
 
-// Figure switcher: this page also holds Figure 4.7's options (Fig47Qualitative.jsx).
-const FIGURES = [{ id: '3.3', label: 'Figure 3.3 · Architecture' }, { id: '4.7', label: 'Figure 4.7 · Qualitative examples' }];
+// Figure switcher: this page also holds Figure 3.2's (Fig32DataSplits.jsx) and Figure 4.7's
+// (Fig47Qualitative.jsx) options; ?fig=3.2 or ?fig=4.7 opens one.
+const FIGURES = [
+  { id: '3.2', label: 'Figure 3.2 · Data splits' },
+  { id: '3.3', label: 'Figure 3.3 · Architecture' },
+  { id: '4.7', label: 'Figure 4.7 · Qualitative examples' },
+];
 
 export default function Fig34Architecture() {
-  const [fig, setFig] = useState(() => (new URLSearchParams(window.location.search).get('fig') === '4.7' ? '4.7' : '3.3'));
+  const [fig, setFig] = useState(() => {
+    const q = new URLSearchParams(window.location.search).get('fig');
+    return FIGURES.some((f) => f.id === q) ? q : '3.3';
+  });
   return (
     <>
       <div className="f47-switch">
@@ -153,7 +162,7 @@ export default function Fig34Architecture() {
           ))}
         </div>
       </div>
-      {fig === '4.7' ? <Fig47Qualitative /> : <ArchitecturePage />}
+      {fig === '4.7' ? <Fig47Qualitative /> : fig === '3.2' ? <Fig32DataSplits /> : <ArchitecturePage />}
     </>
   );
 }

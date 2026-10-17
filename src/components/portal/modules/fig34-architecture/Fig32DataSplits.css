@@ -1,0 +1,136 @@
+/* ============================================================================
+   FIG 3.2 · DATA SPLITS — styles (University · dissertation figure)
+   Builds on Fig34Architecture.css: the page wraps itself in .f34 so the shared
+   sheet, toolbar, scorecard and card styles apply, and adds only what Figure
+   3.2 needs, under f32- classes. Portal tokens throughout; the figures and the
+   mock page stay on white paper in every theme because they are print figures.
+   ========================================================================== */
+
+/* ---------- the mock page: heading and paragraph above the figure ---------- */
+.f34 .f32-sheet__head,
+.f34 .f32-sheet__para {
+  font-family: 'Latin Modern Roman', 'CMU Serif', 'Computer Modern Serif', Georgia, 'Times New Roman', serif;
+  color: var(--paper-ink);
+  font-size: calc(12 / 595.3 * 100cqw);
+  line-height: 1.21;
+}
+.f34 .f32-sheet__head { font-weight: 700; margin: 0 0 calc(8 / 595.3 * 100cqw); }
+.f34 .f32-sheet__head span { margin-right: 1em; }
+.f34 .f32-sheet__para {
+  margin: 0 0 calc(14 / 595.3 * 100cqw);
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* ---------- dissertation pages (scratch build render) ---------- */
+.f32-diss {
+  max-width: 1180px;
+  margin: 0 auto;
+  background: var(--paper);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.f32-diss img { display: block; width: 100%; height: auto; }
+
+/* ---------- cards ---------- */
+.f32-card { padding: 1.1rem 1.3rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.f32-card h3,
+.f32-card h4 { margin: 0; }
+.f32-para { margin: 0; max-width: 85ch; line-height: 1.55; }
+.f32-caption {
+  font-family: 'Latin Modern Roman', 'CMU Serif', 'Computer Modern Serif', Georgia, 'Times New Roman', serif;
+  border-left: 2px solid var(--line);
+  padding-left: 0.8rem;
+}
+.f32-note { margin: 0; font-size: 0.86rem; color: var(--ink-3); max-width: 85ch; }
+
+/* ---------- tables ---------- */
+.f32-tablewrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line-2); border-radius: 3px; }
+.f32-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.f32-table th,
+.f32-table td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line-2); }
+.f32-table th {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: var(--surface-hi);
+}
+.f32-table tr:last-child td { border-bottom: 0; }
+.f32-table td.f32-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.f32-table td.f32-mark { text-align: center; white-space: nowrap; }
+.f32-yes { color: var(--accent-ink); font-weight: 600; }
+.f32-no { color: var(--ink-3); }
+.f32-table tr.is-off td { opacity: 0.55; }
+.f32-details summary { cursor: pointer; color: var(--accent-ink); font-size: 0.9rem; }
+.f32-details[open] summary { margin-bottom: 0.6rem; }
+.f32-details ol { margin: 0; padding-left: 1.4rem; font-size: 0.84rem; columns: 2 22rem; column-gap: 2rem; }
+.f32-details li { margin: 0.1rem 0; break-inside: avoid; }
+
+/* ---------- red-pen paragraph (two classes, so the paper ink outranks a
+   theme's `p` colour, as .f34-sheet__cap does) ---------- */
+.f34 .f32-redpen {
+  margin: 0;
+  max-width: 85ch;
+  padding: 0.9rem 1rem;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  font-family: 'Latin Modern Roman', 'CMU Serif', 'Computer Modern Serif', Georgia, 'Times New Roman', serif;
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+.f34 .f32-redpen del {
+  color: #b42318;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  background: rgba(180, 35, 24, 0.07);
+}
+.f34 .f32-redpen ins {
+  color: #0b6b3a;
+  text-decoration: none;
+  border-bottom: 1.5px solid #0b6b3a;
+  background: rgba(11, 107, 58, 0.08);
+}
+.f34 .f32-redpen sup {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: #6b6b6b;
+  margin: 0 0.15em;
+}
+.f32-cutrow-id { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+.f32-check { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+.f32-check input { accent-color: var(--accent); width: 1rem; height: 1rem; }
+.f32-actions { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; }
+.f32-btn {
+  font: inherit;
+  font-size: 0.88rem;
+  color: #ffffff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 3px;
+  padding: 0.45rem 0.9rem;
+  min-height: 2.25rem;
+  cursor: pointer;
+}
+.f32-btn:disabled { opacity: 0.5; cursor: default; }
+.f32-btn:focus-visible,
+.f32-check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.f32-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.6rem; margin: 0; }
+.f32-stats div { border: 1px solid var(--line-2); border-radius: 3px; padding: 0.5rem 0.7rem; background: var(--surface-hi); }
+.f32-stats dt {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.f32-stats dd { margin: 0.15rem 0 0; font-size: 1rem; color: var(--ink); }
+
+@media (max-width: 760px) {
+  .f32-card { padding: 0.9rem 1rem; }
+  .f32-table { font-size: 0.8rem; }
+  .f34 .f32-redpen { font-size: 0.95rem; padding: 0.7rem 0.8rem; }
+}
