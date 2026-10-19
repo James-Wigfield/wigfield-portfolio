@@ -1,0 +1,34 @@
+/* LECTURE 4 STUDY — §11 labs (LoopLab, AheadSplitLab) */
+
+/* LoopLab — Figure 15-11's picture */
+.dl4s-loop { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl4s-loop__grid { stroke: var(--line-2); stroke-width: 1; }
+.dl4s-loop__true { fill: none; stroke: var(--dlv-blue); stroke-width: 1.4; }
+.dl4s-loop__dot { fill: var(--dlv-blue); }
+.dl4s-loop__today { stroke: var(--ink); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.dl4s-loop__pred { fill: none; stroke: var(--dlv-red); stroke-width: 1.4; }
+.dl4s-loop__x line, line.dl4s-loop__x { stroke: var(--dlv-red); stroke-width: 2; }
+.dl4s-loop__x--echo line { stroke-dasharray: 2 1.5; }
+
+/* AheadSplitLab */
+.dl4s-ahead__plot { max-width: 760px; }
+.dl4s-ahead__grid { stroke: var(--line-2); stroke-width: 1; }
+.dl4s-ahead__l { fill: none; stroke-width: 1.5; }
+.dl4s-ahead__l--bus { stroke: var(--dlv-yellow); }
+.dl4s-ahead__l--rail { stroke: var(--dlv-blue); }
+.dl4s-ahead__l--out { stroke: var(--dlv-red); }
+.dl4s-ahead__dot { fill: var(--dlv-red); }
+.dl4s-ahead { max-width: 760px; }
+.dl4s-ahead__cell { stroke: none; }
+.dl4s-ahead__cell--in { fill: color-mix(in srgb, var(--dlv-blue) calc(var(--v, 0) * 70% + 8%), var(--surface)); }
+.dl4s-ahead__cell--t { fill: color-mix(in srgb, var(--dlv-orange) calc(var(--v, 0) * 75% + 10%), var(--surface)); }
+.dl4s-ahead__cell--off { fill: var(--surface-hi); opacity: 0.6; }
+.dl4s-ahead__box { fill: none; stroke-width: 2.2; }
+.dl4s-ahead__box--in { stroke: var(--x); }
+.dl4s-ahead__box--t { stroke: var(--y); }
+.dl4s-ahead__tcol { fill: var(--y); font-weight: 700; }
+.dl4s-ahead__codes { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
+
+@container lab (max-width: 860px) {
+  .dl4s-loop, .dl4s-ahead__codes { grid-template-columns: minmax(0, 1fr); }
+}

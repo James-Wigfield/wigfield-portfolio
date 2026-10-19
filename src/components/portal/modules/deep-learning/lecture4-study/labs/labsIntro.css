@@ -1,0 +1,58 @@
+/* LECTURE 4 STUDY — §1 labs (NeuronLab, LayerLab) */
+
+/* NeuronLab */
+.dl4s-neuron__stage { max-width: 640px; }
+.dl4s-neuron__run { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem 1.4rem; }
+.dl4s-xedit { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.dl4s-xedit__cell {
+  display: inline-grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0 0.2rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+}
+.dl4s-xedit__cell--on { border-color: var(--accent); background: var(--accent-soft); }
+.dl4s-xedit__cell button {
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--ink-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+.dl4s-xedit__cell button:hover { border-color: var(--accent); color: var(--accent-ink); }
+.dl4s-xedit__cell b { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; min-width: 2.1rem; text-align: center; color: var(--ink); }
+.dl4s-xedit__cell small { grid-column: 1 / -1; text-align: center; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.58rem; color: var(--x); font-weight: 700; }
+
+/* LayerLab */
+.dl4s-layer { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.dl4s-layer__rolled { max-width: 320px; }
+.dl4s-layer__box { fill: color-mix(in srgb, var(--dlv-yellow) 18%, var(--surface)); stroke: color-mix(in srgb, var(--dlv-yellow) 60%, var(--ink-3)); stroke-width: 1.2; }
+.dl4s-layer__pick { cursor: pointer; }
+.dl4s-layer__pick:focus-visible { outline: none; }
+.dl4s-layer__pick:focus-visible .dl4s-nrn__body { stroke: var(--accent-ink); stroke-width: 3; }
+.dl4s-fan { stroke-width: 0.9; opacity: 0.22; }
+.portal[data-portal-theme='arcade'] .dl4s-fan { opacity: 0.4; }
+.dl4s-fan--x { stroke: var(--x); }
+.dl4s-fan--y { stroke: var(--h); }
+.dl4s-fan--on { opacity: 1; stroke-width: 1.6; }
+.dl4s-xdot { fill: var(--x); }
+.dl4s-layer__side { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.dl4s-layer__count { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; color: var(--ink-2); }
+.dl4s-layer__unroll { display: flex; flex-direction: column; gap: 0.45rem; }
+.dl4s-layer__t { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: 0.2rem 0.5rem; align-items: center; padding-bottom: 0.35rem; border-bottom: 1px solid var(--line-2); }
+.dl4s-layer__lab { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; font-weight: 700; color: var(--y); }
+.dl4s-layer__lab--x { color: var(--x); }
+.dl4s-vec--x i { min-width: 2.1rem; }
+
+@container lab (max-width: 640px) {
+  .dl4s-layer { grid-template-columns: minmax(0, 1fr); }
+}

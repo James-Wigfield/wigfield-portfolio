@@ -39,6 +39,7 @@ import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
 import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
 import DeepLearningLecture3Study from './modules/deep-learning/lecture3-study/Lecture3Study';
+import DeepLearningLecture4Study from './modules/deep-learning/lecture4-study/Lecture4Study';
 import DeepLearningGame from './modules/deep-learning/game/Game';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
 import DeepLearningProject2 from './modules/deep-learning/project2/Project2';
@@ -172,6 +173,7 @@ export const MODULES = [
     group: 'Deep Learning',
     component: DeepLearningLecture3Study,
   },
+  { id: 'dl-lecture-4-study', label: 'Lecture 4 · RNNs (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture4Study },
   {
     id: 'dl-game',
     label: 'Scrolls · 3D',

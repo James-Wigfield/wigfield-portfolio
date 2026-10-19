@@ -1,0 +1,57 @@
+/* LECTURE 4 STUDY — the validation-MAE scoreboard (strip + §16 lab) */
+
+.dl4s-board { display: flex; flex-direction: column; gap: 0.35rem; border-top: 2px solid var(--ink); padding-top: 0.55rem; }
+.dl4s-board--full { border-top-width: 1px; }
+.dl4s-board__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.9rem; }
+.dl4s-board__title { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.dl4s-board__sub { font-size: 0.72rem; color: var(--ink-3); }
+.dl4s-board__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dl4s-board__row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 15rem) minmax(6rem, 1fr) 8.5rem;
+  grid-template-areas: 'model bar val' 'meta meta meta' 'note note note';
+  align-items: center;
+  gap: 0.15rem 0.8rem;
+  padding: 0.4rem 0.1rem;
+  border-bottom: 1px solid var(--line-2);
+}
+.dl4s-board__model { grid-area: model; display: flex; flex-direction: column; min-width: 0; }
+.dl4s-board__model code { font-size: 0.74rem; background: none; padding: 0; color: var(--ink); font-weight: 700; }
+.dl4s-board__model small { font-size: 0.66rem; color: var(--ink-3); }
+.dl4s-board__bar { grid-area: bar; position: relative; height: 0.7rem; background: var(--surface-hi); border-radius: 3px; }
+.dl4s-board__fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--dlv-blue); border-radius: 3px; }
+.dl4s-board__fill--base { background: var(--ink-3); }
+.dl4s-board__row--unfair .dl4s-board__fill { background: repeating-linear-gradient(-45deg, var(--dlv-blue) 0 3px, transparent 3px 6px); border: 1px solid var(--dlv-blue); }
+.dl4s-board__off { position: absolute; right: 0.3rem; top: -0.05rem; font-size: 0.6rem; font-weight: 700; color: var(--surface); }
+.dl4s-board__baseline { position: absolute; top: -0.2rem; bottom: -0.2rem; border-left: 1.5px dashed var(--ink); }
+.dl4s-board__val { grid-area: val; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.76rem; font-weight: 700; color: var(--ink); text-align: right; }
+.dl4s-board__meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 0.1rem 0.9rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); }
+.dl4s-board__meta .dl4s-link { font-size: inherit; }
+.dl4s-board__kind { display: inline-flex; align-items: center; }
+.dl4s-dot.dl4s-dot--warn { background: none; border: 1.5px solid var(--ink-3); width: 7px; height: 7px; }
+.dl4s-board__new { color: var(--accent-ink); font-weight: 700; }
+.dl4s-board__row--new .dl4s-board__model code { color: var(--accent-ink); }
+.dl4s-board__note { grid-area: note; font-size: 0.7rem; line-height: 1.45; color: var(--ink-3); }
+.dl4s-board__foot { margin: 0; font-size: 0.7rem; color: var(--ink-3); }
+.dl4s-board__foot code { font-size: 0.68rem; }
+.dl4s-board__runs { display: flex; flex-direction: column; gap: 0.35rem; }
+
+/* the strip under a section's labs: one line per model */
+.dl4s-board--compact .dl4s-board__row {
+  grid-template-columns: minmax(8rem, 12rem) minmax(4rem, 1fr) 9.5rem minmax(12rem, 18rem);
+  grid-template-areas: 'model bar val meta';
+  padding: 0.22rem 0.1rem;
+}
+.dl4s-board--compact .dl4s-board__bar { height: 0.55rem; }
+.dl4s-board--compact .dl4s-board__val { font-size: 0.72rem; }
+.dl4s-board--compact .dl4s-board__meta { gap: 0 0.6rem; min-width: 0; }
+
+@container lab (max-width: 560px) {
+  .dl4s-board__row { grid-template-columns: minmax(0, 1fr) 6.5rem; grid-template-areas: 'model val' 'bar bar' 'meta meta' 'note note'; }
+}
+@media (max-width: 900px) {
+  .dl4s-board--compact .dl4s-board__row { grid-template-columns: minmax(0, 1fr) 7rem; grid-template-areas: 'model val' 'bar bar' 'meta meta'; }
+}
+@media (max-width: 560px) {
+  .dl4s-board__row { grid-template-columns: minmax(0, 1fr) 6.5rem; grid-template-areas: 'model val' 'bar bar' 'meta meta' 'note note'; }
+}

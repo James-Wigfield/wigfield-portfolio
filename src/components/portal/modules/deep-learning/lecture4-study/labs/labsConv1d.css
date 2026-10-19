@@ -1,0 +1,160 @@
+/* LECTURE 4 STUDY — §15 lab (Conv1DLab, slide 50)
+   --fm = a Conv1D feature map (slide 50's "1D feature map per kernel"); the
+   other roles are the shared ones: --x input, --h GRU state, --y prediction */
+
+.dl4s-c1d { --fm: var(--dlv-aqua); display: flex; flex-direction: column; gap: 0.85rem; min-width: 0; }
+.dl4s-c1d[hidden] { display: none; }
+.dl4s-c1d-static { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; line-height: 1.5; color: var(--ink-3); }
+
+/* A · weights editor */
+.dl4s-c1d-wedit { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.dl4s-c1d-wedit__cell {
+  display: inline-grid;
+  grid-template-columns: auto auto auto auto;
+  align-items: center;
+  gap: 0 0.22rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+}
+.dl4s-c1d-wedit__cell small { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; font-weight: 700; color: var(--ink-3); min-width: 1.1rem; }
+.dl4s-c1d-wedit__cell b { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; min-width: 2.1rem; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dl4s-c1d-wedit__cell button {
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1;
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  color: var(--ink-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.dl4s-c1d-wedit__cell button:hover { border-color: var(--accent); color: var(--accent-ink); }
+.dl4s-c1d-wedit__cell button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* A · the stepper drawing */
+.dl4s-c1d-stage { max-width: 720px; overflow-x: auto; }
+.dl4s-c1d-bar { fill: color-mix(in srgb, var(--x) 28%, var(--surface)); transition: fill 0.2s ease; }
+.dl4s-c1d-bar--in { fill: var(--x); }
+.dl4s-c1d-val--in { fill: var(--ink); font-weight: 700; }
+.dl4s-c1d-xi { fill: var(--x); font-family: var(--font-mono, ui-monospace, monospace); font-size: 9px; font-weight: 700; }
+.dl4s-c1d-yi { fill: var(--ink-3); font-family: var(--font-mono, ui-monospace, monospace); font-size: 9px; font-weight: 700; }
+.dl4s-c1d-lab--fm { fill: var(--ink); font-weight: 700; }
+.dl4s-c1d-w { fill: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; font-weight: 700; }
+.dl4s-c1d-brace { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.dl4s-c1d-ocell {
+  fill: color-mix(in srgb, var(--fm) calc(var(--v, 0) * 60%), var(--surface));
+  stroke: color-mix(in srgb, var(--fm) 55%, var(--line));
+  stroke-width: 1;
+}
+.dl4s-c1d-ocell--todo { fill: none; stroke: var(--line); stroke-dasharray: 3 3; }
+.dl4s-c1d-ocell--cur { stroke: var(--accent-ink); stroke-width: 2.4; }
+.dl4s-c1d-run { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.2rem; }
+
+/* A · the arithmetic, one line per stage */
+.dl4s-c1d-eq { display: flex; flex-direction: column; gap: 0.1rem; }
+.dl4s-c1d-eq span { display: block; white-space: pre-wrap; }
+
+/* A · feature maps (filters × time) */
+.dl4s-c1d-out { min-width: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.dl4s-c1d-fmap { position: relative; overflow-x: auto; padding-bottom: 0.15rem; }
+.dl4s-c1d-fmap__grid { display: grid; gap: 2px; width: max-content; min-width: 100%; align-items: stretch; }
+.dl4s-c1d-fmap__corner { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.56rem; color: var(--ink-3); align-self: end; padding-bottom: 0.2rem; }
+.dl4s-c1d-fmap__ch {
+  font: inherit;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0.15rem 0.1rem;
+  cursor: pointer;
+}
+.dl4s-c1d-fmap__ch:hover { color: var(--accent-ink); border-color: var(--line-2); }
+.dl4s-c1d-fmap__ch--on { color: var(--accent-ink); border-color: var(--accent); }
+.dl4s-c1d-fmap__ch:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dl4s-c1d-fmap__rh { display: flex; align-items: center; gap: 0.3rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; color: var(--ink-3); white-space: nowrap; padding-right: 0.3rem; }
+.dl4s-c1d-fmap__rh--on { color: var(--ink); font-weight: 800; }
+.dl4s-c1d-fmap__rh--on::before { content: ''; width: 6px; height: 6px; border-radius: 99px; background: var(--fm); flex: none; }
+.dl4s-c1d-fmap__cell {
+  font-style: normal;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  text-align: center;
+  padding: 0.2rem 0.1rem;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--fm) calc(var(--v, 0) * 55%), var(--surface));
+  font-variant-numeric: tabular-nums;
+}
+.dl4s-c1d-fmap__cell--todo { color: var(--ink-3); background: none; border-style: dashed; }
+.dl4s-c1d-fmap__cell--row { font-weight: 700; }
+.dl4s-c1d-fmap__cell--col { border-color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent-ink); }
+
+/* B · layers, one ruled row each */
+.dl4s-c1d-layers { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.dl4s-c1d-lrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) 8.2rem 5.2rem;
+  grid-template-areas: 'name draw shape params';
+  gap: 0.25rem 0.9rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.42rem 0.45rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line-2);
+}
+button.dl4s-c1d-lrow { cursor: pointer; }
+button.dl4s-c1d-lrow:hover { background: var(--surface-hi); }
+button.dl4s-c1d-lrow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.dl4s-c1d-lrow--on, button.dl4s-c1d-lrow--on:hover { background: var(--accent-soft); }
+.dl4s-c1d-lrow--head { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+.dl4s-c1d-lrow--head span { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dl4s-c1d-lrow__name { grid-area: name; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; }
+.dl4s-c1d-lrow__draw { grid-area: draw; min-width: 0; }
+.dl4s-c1d-lrow__shape { grid-area: shape; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.76rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.dl4s-c1d-lrow__p { grid-area: params; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.86rem; font-weight: 800; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dl4s-c1d-lrow--head .dl4s-c1d-lrow__p { text-align: right; }
+.dl4s-c1d-lrow--total { border-top: 1px solid var(--line); border-bottom: 2px solid var(--line); }
+.dl4s-c1d-lrow--total .dl4s-c1d-lrow__name { font-family: inherit; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.dl4s-c1d-lrow--total .dl4s-c1d-lrow__p { color: var(--accent-ink); font-size: 1rem; }
+.dl4s-c1d-lrow__sum { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink-2); }
+.dl4s-c1d-verdict { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 700; font-size: 0.7rem; white-space: normal; }
+.dl4s-c1d-verdict svg { color: var(--accent-ink); flex: none; }
+.dl4s-c1d-tensor { max-width: 250px; height: auto; }
+.dl4s-c1d-tensor__box { stroke-width: 1.2; transition: width 0.2s ease; }
+.dl4s-c1d-tensor--x .dl4s-c1d-tensor__box { fill: color-mix(in srgb, var(--x) 30%, var(--surface)); stroke: var(--x); }
+.dl4s-c1d-tensor--fm .dl4s-c1d-tensor__box { fill: color-mix(in srgb, var(--fm) 30%, var(--surface)); stroke: var(--fm); }
+.dl4s-c1d-tensor--h .dl4s-c1d-tensor__box { fill: color-mix(in srgb, var(--h) 30%, var(--surface)); stroke: var(--h); }
+.dl4s-c1d-tensor--y .dl4s-c1d-tensor__box { fill: color-mix(in srgb, var(--y) 30%, var(--surface)); stroke: var(--y); }
+.dl4s-c1d-why { font-size: 0.84rem; }
+.dl4s-c1d-why b { font-family: var(--font-mono, ui-monospace, monospace); }
+.dl4s-c1d-sel { color: var(--ink); font-weight: 700; font-size: 0.78rem; overflow-wrap: anywhere; }
+
+/* B · slide 50's exercise: a ruled block, labelled with a dot */
+.dl4s-c1d-home { display: flex; flex-direction: column; gap: 0.35rem; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.dl4s-c1d-home__k { margin: 0; display: flex; align-items: center; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.dl4s-c1d-home__q { margin: 0; font-size: 0.86rem; line-height: 1.6; color: var(--ink); max-width: 76ch; }
+
+@container lab (max-width: 700px) {
+  .dl4s-c1d-lrow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name name' 'draw draw' 'shape params'; }
+  .dl4s-c1d-lrow--head { display: none; }
+}
+@container lab (max-width: 560px) {
+  .dl4s-c1d-stage svg { min-width: 540px; }
+  .dl4s-c1d-eq { font-size: 0.7rem; }
+}
+
+.dl4s-c1d-parthead { border-top: 1px solid var(--line-2); padding-top: 0.8rem; margin-top: 0.4rem; scroll-margin-top: 6rem; }
+
+.dl4s-c1d-anchor { scroll-margin-top: 6rem; }

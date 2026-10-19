@@ -1,0 +1,66 @@
+/* LECTURE 4 STUDY — §13–§14 labs (LstmCellLab, LstmMathLab, GruLab) */
+
+/* the live Figure 15-12 / 15-13 */
+.dl4s-lstm { max-width: 720px; }
+.dl4s-lstm__cell { fill: color-mix(in srgb, var(--dlv-yellow) 14%, var(--surface)); stroke: color-mix(in srgb, var(--dlv-yellow) 50%, var(--ink-3)); stroke-width: 1.3; }
+.dl4s-lstm__name { fill: var(--ink); font-size: 12px; font-weight: 800; }
+.dl4s-lstm__fc { fill: color-mix(in srgb, var(--dlv-blue) 14%, var(--surface)); stroke: var(--ink-3); stroke-width: 1; }
+.dl4s-lstm__band--logistic { fill: var(--dlv-red); }
+.dl4s-lstm__band--tanh { fill: var(--dlv-blue); }
+.dl4s-lstm__one { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1; }
+.dl4s-lstm__k { fill: var(--ink-2); font-family: var(--font-body, system-ui, sans-serif); }
+.dl4s-lstm__val { fill: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; font-weight: 700; }
+.dl4s-lstm__gate { stroke: var(--ink); stroke-width: calc(1 + var(--g, 0) * 3.5); opacity: calc(0.3 + var(--g, 0) * 0.7); }
+.dl4s-op circle { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4; }
+.dl4s-op path { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+.dl4s-fan4 { stroke-width: 0.9; opacity: 0.55; }
+.portal[data-portal-theme='arcade'] .dl4s-fan4 { opacity: 0.9; stroke-width: 1.1; }
+.dl4s-fan4--x { stroke: var(--x); }
+.dl4s-fan4--h { stroke: var(--h); }
+
+/* the time line under the cell */
+.dl4s-tl4 { display: flex; flex-direction: column; gap: 3px; overflow-x: auto; }
+.dl4s-tl4__row { display: grid; grid-template-columns: 8.5rem repeat(8, minmax(2.4rem, 1fr)); gap: 3px; align-items: stretch; min-width: 30rem; }
+.dl4s-tl4__lab { font-size: 0.72rem; font-weight: 700; color: var(--ink-2); align-self: center; }
+.dl4s-tl4__lab--x { color: var(--x); }
+.dl4s-tl4__lab--c { color: var(--c); }
+.dl4s-tl4__lab--h { color: var(--h); }
+.dl4s-tl4__t, .dl4s-tl4__bit, .dl4s-tl4__bar {
+  font: inherit;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  color: var(--ink-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0.15rem 0;
+}
+.dl4s-tl4__bit--on { background: color-mix(in srgb, var(--dlv-blue) 30%, var(--surface)); color: var(--ink); font-weight: 800; border-color: var(--x); }
+.dl4s-tl4__bar { position: relative; height: 2.1rem; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
+.dl4s-tl4__bar i { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--ink-3) 30%, transparent); }
+.dl4s-tl4__bar--gate i { background: color-mix(in srgb, var(--dlv-red) 45%, transparent); }
+.dl4s-tl4__bar--c i { background: color-mix(in srgb, var(--dlv-aqua) 55%, transparent); }
+.dl4s-tl4__bar--h i { background: color-mix(in srgb, var(--dlv-violet) 50%, transparent); }
+.dl4s-tl4__bar i.neg { background: color-mix(in srgb, var(--dlv-blue) 45%, transparent); }
+.dl4s-tl4__bar span { position: relative; font-size: 0.64rem; color: var(--ink); padding-bottom: 0.15rem; }
+.dl4s-tl4__cell--cur { border-color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent-ink); }
+.dl4s-tl4__row--head .dl4s-tl4__t { background: none; }
+
+/* LstmMathLab */
+.dl4s-shapes4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1.1rem; font-size: 0.82rem; color: var(--ink-2); }
+.dl4s-eq6 { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dl4s-eq6 li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: center; gap: 0.6rem; border-bottom: 1px solid var(--line-2); }
+.dl4s-eq6__tag { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dl4s-eq6 .dlk-tex-block { padding: 0.15rem 0; }
+.dl4s-eq6 .katex-display { margin: 0.3em 0; text-align: left; }
+.dl4s-count4 { display: flex; flex-direction: column; gap: 0.45rem; border-top: 1px solid var(--line-2); padding-top: 0.7rem; }
+
+/* GruLab */
+.dl4s-gruorder { display: flex; flex-direction: column; gap: 0.2rem; border-top: 1px solid var(--line-2); padding-top: 0.6rem; }
+.dl4s-gruorder .katex-display { margin: 0.2em 0; text-align: left; }
+.dl4s-vs td, .dl4s-vs th { font-size: 0.8rem; }
+
+@container lab (max-width: 560px) {
+  .dl4s-eq6 li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
