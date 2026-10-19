@@ -41,6 +41,7 @@ import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
 import DeepLearningLecture3Study from './modules/deep-learning/lecture3-study/Lecture3Study';
 import DeepLearningGame from './modules/deep-learning/game/Game';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
+import DeepLearningProject2 from './modules/deep-learning/project2/Project2';
 import MambaUpdates from './modules/MambaUpdates';
 import HpcSetup from './modules/HpcSetup';
 import LossCheck from './modules/LossCheck';
@@ -185,6 +186,7 @@ export const MODULES = [
     group: 'Deep Learning',
     component: DeepLearningCodeLab,
   },
+  { id: 'dl-project-2', label: 'Project 2', icon: 'notebook', group: 'Deep Learning', component: DeepLearningProject2 },
   {
     id: 'hpc-setup',
     label: 'HPC Setup',

@@ -275,6 +275,15 @@ const PATHS = {
       <path d="M8.6 3.6c-.9.9.9 1.9 0 3.1M12.2 3.6c-.9.9.9 1.9 0 3.1" />
     </>
   ),
+  // Notebook — a bound notebook page: rings, two prose lines, one code cell (DL Project 2)
+  notebook: (
+    <>
+      <rect x="6" y="3.5" width="13.5" height="17" rx="1.5" />
+      <path d="M4 7.5h3.5M4 12h3.5M4 16.5h3.5" />
+      <path d="M9.8 7.8h6.6M9.8 10.9h4.4" />
+      <rect x="9.5" y="13.6" width="7.2" height="3.8" rx="0.6" />
+    </>
+  ),
 
   /* ── Utility glyphs (replace inline text symbols) ───────────────────── */
   chevron: <path d="M9 6 15 12 9 18" />,                 // collapsible caret (right; rotate to open)
