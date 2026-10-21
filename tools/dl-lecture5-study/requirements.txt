@@ -1,0 +1,9 @@
+# fashion_pipeline.py — exact versions of the run that produced
+# src/components/portal/modules/deep-learning/lecture5-study/data/*.js
+# Python 3.12.9 (64-bit, Windows 11), CPU only. Install into a venv outside the repo:
+#   py -3.12 -m venv <venv> && <venv>/Scripts/python -I -m pip install -r requirements.txt
+tensorflow==2.21.0
+keras==3.15.1
+numpy==2.5.4
+scikit-learn==1.9.1
+scipy==1.18.1
