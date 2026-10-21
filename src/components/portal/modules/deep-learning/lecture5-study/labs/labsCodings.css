@@ -1,0 +1,32 @@
+/* §2 labs */
+.dl5s-seq { display: flex; flex-direction: column; gap: 0.15rem; }
+.dl5s-seq__row { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-wrap: wrap; gap: 3px; }
+.dl5s-seq__row li {
+  min-width: 2.1rem;
+  text-align: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  padding: 0.2rem 0.25rem;
+  background: var(--surface-hi);
+}
+.dl5s-seq__row--code li { border-color: var(--dlv-violet); display: inline-flex; flex-direction: column; min-width: 3rem; }
+.dl5s-seq__row--code li span { font-size: 0.56rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.dl5s-seq__row li.dl5s-seq__bad { border-color: var(--dlv-red); color: var(--dlv-red); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+.dl5s-f171__grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(13rem, 1fr); gap: 1rem; align-items: start; }
+.dl5s-f171 { max-width: 520px; }
+.dl5s-f171__w { stroke: var(--ink-3); fill: none; }
+.dl5s-f171__w--pos { stroke: var(--dlv-orange); }
+.dl5s-f171__w--neg { stroke: var(--dlv-blue); }
+.dl5s-f171__n { fill: color-mix(in srgb, var(--dlv-blue) 14%, var(--surface)); stroke: var(--ink-3); stroke-width: 1.3; }
+.dl5s-f171__n--code { fill: color-mix(in srgb, var(--dlv-violet) 18%, var(--surface)); stroke: var(--dlv-violet); stroke-width: 1.8; }
+.dl5s-f171__v { fill: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; font-weight: 700; }
+.dl5s-f171__brace { fill: none; stroke: var(--ink-3); stroke-width: 1.3; }
+
+@container lab (max-width: 640px) {
+  .dl5s-f171__grid { grid-template-columns: 1fr; }
+}

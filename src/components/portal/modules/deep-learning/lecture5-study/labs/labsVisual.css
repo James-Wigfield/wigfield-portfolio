@@ -1,0 +1,32 @@
+/* §6 labs + the shared Fashion MNIST parts (./parts.jsx), also used in §8–§9 */
+.dl5s-fwait { color: var(--ink-3); font-style: italic; }
+.dl5s-fimg { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; border: 1px solid var(--line-2); background: #fff; }
+
+.dl5s-rgrid { margin: 0; min-width: calc(var(--n) * 3.6rem + 6rem); }
+.dl5s-rgrid__rows { display: grid; grid-template-columns: 6rem repeat(var(--n), minmax(3.2rem, 5.5rem)); gap: 0.35rem 0.45rem; align-items: start; }
+.dl5s-rgrid__k { align-self: center; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.dl5s-rgrid__cell { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.dl5s-rgrid__name, .dl5s-rgrid__mse { font-size: 0.62rem; line-height: 1.2; color: var(--ink-3); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+.dl5s-recon__low { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl5s-recon__fig { margin: 0; min-width: 0; }
+.dl5s-recon__side { display: flex; flex-direction: column; gap: 0.5rem; }
+.dl5s-recon__fixes { margin: 0; padding-left: 1.2rem; font-size: 0.84rem; line-height: 1.6; color: var(--ink-2); }
+.dl5s-lcurve { max-width: 440px; }
+.dl5s-lcurve__line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.dl5s-lcurve__line--a { stroke: var(--dlv-blue); }
+.dl5s-lcurve__line--b { stroke: var(--dlv-orange); stroke-dasharray: 5 3; }
+.dl5s-lcurve__line--c { stroke: var(--dlv-violet); }
+.dl5s-lcurve__hit { fill: transparent; stroke: none; }
+
+.dl5s-tsne { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(12rem, 1fr); gap: 1rem; align-items: start; }
+.dl5s-tsne__canvas { display: block; width: 100%; max-width: 600px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface-hi); cursor: crosshair; touch-action: pan-y; }
+.dl5s-tsne__side { display: flex; flex-direction: column; gap: 0.6rem; }
+.dl5s-tsne__legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.dl5s-tsne__legend li { display: grid; grid-template-columns: 1rem minmax(0, 1fr); align-items: baseline; font-size: 0.84rem; color: var(--ink); }
+.dl5s-tsne__legend .dl5s-mini { grid-column: 2; }
+.dl5s-tsne__hover { font-size: 0.8rem; }
+
+@container lab (max-width: 700px) {
+  .dl5s-recon__low, .dl5s-tsne { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,34 @@
+/* §4–§5 labs. Layer colours follow Figure 17-3's pairing: input/output,
+   the two hidden layers, and the coding layer singled out (--dlv-violet) */
+.dl5s-sand__grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(13rem, 1fr); gap: 1rem; align-items: start; }
+.dl5s-sand { max-width: 560px; }
+.dl5s-sand__box { stroke-width: 1.4; }
+.dl5s-sand__box--io { fill: color-mix(in srgb, var(--dlv-aqua) 22%, var(--surface)); stroke: var(--dlv-aqua); }
+.dl5s-sand__box--hid { fill: color-mix(in srgb, var(--dlv-blue) 16%, var(--surface)); stroke: var(--dlv-blue); }
+.dl5s-sand__box--code { fill: color-mix(in srgb, var(--dlv-violet) 18%, var(--surface)); stroke: var(--dlv-violet); stroke-width: 2; }
+.dl5s-sand__link { stroke: var(--ink-3); stroke-width: 1.4; }
+.dl5s-sand__name { fill: var(--ink); font-size: 11px; font-weight: 700; }
+.dl5s-sand__units { fill: var(--ink-3); font-size: 10px; font-family: var(--font-mono, ui-monospace, monospace); }
+.dl5s-sand__w { fill: var(--ink-2); font-size: 10px; font-family: var(--font-mono, ui-monospace, monospace); }
+.dl5s-sand__tag { fill: var(--ink-3); font-size: 9.5px; font-style: italic; }
+
+.dl5s-sand__toy { display: flex; flex-direction: column; gap: 0.6rem; }
+.dl5s-sand__map { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-2); }
+.dl5s-sand__map li { display: grid; grid-template-columns: minmax(7rem, 10rem) 1.4rem 4rem 1.4rem minmax(0, 1fr); align-items: baseline; gap: 0.3rem; padding: 0.4rem 0.1rem; border-bottom: 1px solid var(--line-2); font-size: 0.84rem; color: var(--ink-2); }
+.dl5s-sand__map code { font-size: 0.82rem; color: var(--ink); }
+.dl5s-sand__arrow { color: var(--ink-3); text-align: center; }
+.dl5s-sand__new { color: var(--ink) !important; font-weight: 600; }
+
+.dl5s-scode { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; max-width: 860px; }
+.dl5s-scode__table code { font-size: 0.76rem; }
+.dl5s-scode__part { display: block; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); margin: 0.2rem 0 0.15rem; }
+.dl5s-scode__ok { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.74rem; color: var(--accent-ink); margin-left: 0.4rem; }
+
+@container lab (max-width: 760px) {
+  .dl5s-sand__grid, .dl5s-scode { grid-template-columns: 1fr; }
+}
+@container lab (max-width: 480px) {
+  .dl5s-sand__map li { grid-template-columns: minmax(0, 1fr) 1.2rem 3rem; }
+  .dl5s-sand__map li > :nth-child(n + 4) { grid-column: 1 / -1; padding-left: 1rem; }
+  .dl5s-sand__map li > :nth-child(4) { display: none; }
+}

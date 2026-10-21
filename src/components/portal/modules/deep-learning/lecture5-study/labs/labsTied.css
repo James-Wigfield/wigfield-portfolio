@@ -1,0 +1,20 @@
+/* §8 labs: the tied pair (encoder layer ℓ and decoder layer N − ℓ + 1) in
+   the accent; everything else in quiet ink */
+.dl5s-tiedrule { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(14rem, 1fr); gap: 1rem; align-items: start; }
+.dl5s-tiedrule__side { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dl5s-tiedrule__eq { margin: 0; font-size: 1.05rem; overflow-x: auto; }
+.dl5s-tied { max-width: 480px; }
+.dl5s-tied__box { fill: color-mix(in srgb, var(--dlv-blue) 12%, var(--surface)); stroke: var(--ink-3); stroke-width: 1.2; }
+.dl5s-tied__box--code { fill: color-mix(in srgb, var(--dlv-violet) 16%, var(--surface)); stroke: var(--dlv-violet); }
+.dl5s-tied__link { stroke: var(--ink-3); stroke-width: 1.4; }
+.dl5s-tied__name { fill: var(--ink); font-size: 10.5px; font-weight: 700; }
+.dl5s-tied__units { fill: var(--ink-3); font-size: 9.5px; font-family: var(--font-mono, ui-monospace, monospace); }
+.dl5s-tied__w { fill: var(--ink-2); font-size: 11px; font-weight: 700; }
+.dl5s-tied__shape { fill: var(--ink-3); font-size: 9.5px; font-family: var(--font-mono, ui-monospace, monospace); }
+.dl5s-tied__on .dl5s-tied__link { stroke: var(--accent-ink); stroke-width: 3; }
+.dl5s-tied__on .dl5s-tied__w, .dl5s-tied__on .dl5s-tied__shape { fill: var(--accent-ink); }
+.dl5s-screenonly-hidden { display: none; }
+
+@container lab (max-width: 700px) {
+  .dl5s-tiedrule { grid-template-columns: 1fr; }
+}

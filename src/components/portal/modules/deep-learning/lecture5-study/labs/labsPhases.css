@@ -1,0 +1,12 @@
+/* §9 lab */
+.dl5s-ph { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.dl5s-ph__fig { max-width: 520px; }
+.dl5s-ph__side { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.dl5s-ph__shapes { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.dl5s-ph__shapes code { font-size: 0.76rem; }
+.dl5s-ph__run { display: flex; flex-direction: column; gap: 0.6rem; border-top: 1px solid var(--line-2); padding-top: 0.7rem; }
+.dl5s-ph__curves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.dl5s-ph__curve { margin: 0; min-width: 0; }
+@container lab (max-width: 700px) {
+  .dl5s-ph, .dl5s-ph__curves { grid-template-columns: 1fr; }
+}
