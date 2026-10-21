@@ -95,7 +95,7 @@ export function PhasesLab() {
           <ol className="dl5s-ph__shapes">{ph.shapes.map((s) => <li key={s}><code>{s}</code></li>)}</ol>
           <p className="dl5s-readout"><b>Target:</b> {ph.target}</p>
           <div className="dl5s-stats dl5s-stats--tight">
-            {ph.params.map(([k, v]) => <Stat key={k} k={k} v={fmtInt(v)} sub="parameters" />)}
+            {ph.params.map(([k, v]) => <Stat key={k} k={k} v={fmtInt(v)} sub="parameters (this page’s working)" />)}
           </div>
         </div>
       </div>
@@ -131,6 +131,7 @@ export function PhasesLab() {
           </div>
           <p className="dl5s-stagehead">stacked_ae_1_by_1’s reconstructions (slide 25’s check)</p>
           <div className="dl5s-scroll"><ReconGrid data={data} model="oneByOne" n={5} /></div>
+          <p className="dl5s-figcap"><span className="dl5s-figcap__k">On slide 25:</span> {CAPTIONS.slide25}</p>
         </div>
       )}
       <p className="dl5s-cap">

@@ -202,22 +202,23 @@ function Pretrain() {
   const left = ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'];
   const right = ['Input', 'Hidden 1', 'Hidden 2', 'Output', 'Softmax'];
   const widths = { Input: 96, Output: 96, Softmax: 70 };
+  // as on the slide, the Softmax sits directly on the Output box (no link)
   const col = (cx, names, partFor) => names.map((n, i) => {
-    const y = y0 - i * gap;
+    const y = n === 'Softmax' ? y0 - (i - 1) * gap - h : y0 - i * gap;
     const w = widths[n] ?? 74;
     return (
       <g key={`${cx}-${n}-${i}`}>
-        {i > 0 && <line x1={cx} y1={y + h} x2={cx} y2={y + gap} />}
+        {i > 0 && n !== 'Softmax' && <line x1={cx} y1={y + h} x2={cx} y2={y + gap} />}
         <P k={partFor(n, i)}><Box x={cx - w / 2} y={y} w={w} h={h} label={n} s={10} /></P>
       </g>
     );
   });
   return (
-    <Svg w={360} h={256} label="Figure 17-6: Phase 1, an autoencoder (Input, Hidden 1, Hidden 2, Hidden 3, Output) trained on all the data; Phase 2, a classifier (Input, Hidden 1, Hidden 2, Output, Softmax) trained on the labelled data, with Hidden 1 and Hidden 2's parameters copied across from Phase 1">
-      {col(84, left, (n) => (n === 'Hidden 1' || n === 'Hidden 2' ? 'copy' : 'p1'))}
+    <Svg w={360} h={256} label="Figure 17-6: Phase 1, an autoencoder (Input, Hidden 1, Hidden 2, Hidden 3, Output) trained on all the data; Phase 2, a classifier (Input, Hidden 1, Hidden 2, Output with a Softmax on top) trained on the labelled data, with Hidden 1 and Hidden 2's parameters copied across from Phase 1">
+      {col(84, left, (n) => (n === 'Hidden 1' || n === 'Hidden 2' ? 'p1h' : 'p1'))}
       <Arrow x1={84} y1={y0 - 4 * gap} x2={84} y2={y0 - 4 * gap - 14} head={4} />
       {col(268, right, (n, i) => (n === 'Hidden 1' || n === 'Hidden 2' ? 'copy' : i >= 3 ? 'head' : 'p2'))}
-      <Arrow x1={268} y1={y0 - 4 * gap} x2={268} y2={y0 - 4 * gap - 14} head={4} />
+      <Arrow x1={268} y1={y0 - 3 * gap - h} x2={268} y2={y0 - 3 * gap - h - 14} head={4} />
       <P k="copy">
         <Arrow x1={124} y1={y0 - gap + 9} x2={228} y2={y0 - gap + 9} dashed head={4} />
         <Arrow x1={124} y1={y0 - 2 * gap + 9} x2={228} y2={y0 - 2 * gap + 9} dashed head={4} />

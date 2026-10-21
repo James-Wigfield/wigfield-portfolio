@@ -17,9 +17,9 @@ import './labsPretrain.css';
    ========================================================================== */
 
 const STEPS = [
-  { hl: ['p1', 'copy'], title: 'Phase 1 · train the autoencoder on all the data', text: 'Train a stacked autoencoder on all the training data. This needs no labels: the inputs are their own targets.' },
-  { hl: ['copy'], title: 'Copy the lower layers', text: 'Reuse the trained autoencoder’s lower layers, Hidden 1 and Hidden 2 (its encoder). Their parameters are copied into a new network for the actual task.' },
-  { hl: ['head', 'p2'], title: 'Add the new top', text: 'On top of the copied layers goes a new Output layer with a Softmax, for the classification task. Hidden 3 and the autoencoder’s Output layer are not reused.' },
+  { hl: ['p1', 'p1h'], title: 'Phase 1 · train the autoencoder on all the data', text: 'Train a stacked autoencoder on all the training data. This needs no labels: the inputs are their own targets.' },
+  { hl: ['p1h', 'copy'], title: 'Copy the lower layers', text: 'Reuse the trained autoencoder’s lower layers, Hidden 1 and Hidden 2 (its encoder). Their parameters are copied into a new network for the actual task.' },
+  { hl: ['head'], title: 'Add the new top', text: 'On top of the copied layers goes a new Output layer with a Softmax, for the classification task. Hidden 3 and the autoencoder’s Output layer are not reused.' },
   { hl: ['head', 'copy', 'p2'], title: 'Phase 2 · train the classifier on the labelled data', text: 'Train the new network using the labelled data. The copied layers already hold feature detectors, so there is less left to learn, and it can cope with fewer labelled examples.' },
 ];
 
@@ -69,7 +69,7 @@ export function PretrainLab() {
             </div>
           )}
           <div className="dl5s-stats dl5s-stats--tight">
-            <Stat k="learned without labels" v={fmtInt(reused)} sub="Phase 1, all the data" />
+            <Stat k="copied from Phase 1" v={at >= 1 ? fmtInt(reused) : '—'} sub={at >= 1 ? 'learned without labels' : 'nothing copied yet'} />
             <Stat k="to learn from labelled data" v={at === STEPS.length - 1 ? fmtInt(training) : '?'} tone="accent" sub={at === STEPS.length - 1 ? (frozen ? 'only the new layer' : 'the new layer and the copied ones') : 'predict it, then take the last step'} />
           </div>
         </div>

@@ -99,7 +99,8 @@ export const PRINT_CSS = `
   ${P} .dlk-unfold__body { grid-template-rows: 1fr !important; }
   ${P} .dlk-unfold__inner { overflow: visible !important; }
   ${P} .dlk-unfold__plus { display: none; }
-  ${P} .dlk-unfold__head { padding-left: 0; font-weight: 700; color: var(--ink); }
+  ${P} .dlk-unfold__head { padding-left: 0; font-weight: 700; color: var(--ink); break-after: avoid-page; }
+  ${P} .dlk-unfold { break-inside: avoid-page; }
   ${P} .dl5s-printfn { display: block !important; margin: 3mm 0 0; padding: 2mm 0 0 5mm; border-top: 1px solid var(--line); font-size: 0.72rem; color: var(--ink-2); }
   ${P} .dlk-fnote__btn { border: none; background: none; padding: 0; font-size: 0.62em; vertical-align: super; color: var(--ink); }
 
@@ -136,7 +137,9 @@ export const PRINT_CSS = `
   ${P} .dl5s-lab .dl5s-pca__s2 { max-width: 62mm; }
   ${P} .dl5s-lab .dl5s-figwrap .dl5s-fig { max-width: 112mm; }
   ${P} .dl5s-tsne__canvas { max-width: 125mm; }
-  ${P} .dl5s-rgrid { min-width: 0; max-width: 150mm; }
+  ${P} .dl5s-rgrid { min-width: 0; max-width: 118mm; }
+  ${P} .dl5s-lab .dl5s-table { font-size: 0.7rem; }
+  ${P} .dl5s-lab .dl5s-table :is(th, td) { padding: 0.8mm 1.6mm; }
   /* what only makes sense on screen */
   ${P} .dl5s-road__prog, ${P} .dl5s-outcome__tick, ${P} .dl5s-outcome__prog, ${P} .dl5s-outcome__nb, ${P} .dl5s-uses, ${P} .dl5s-uses__body,
   ${P} .dl5s-pca__hover, ${P} .dl5s-tsne__hover, ${P} .dl5s-fwait { display: none !important; }

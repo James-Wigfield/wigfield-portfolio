@@ -160,6 +160,7 @@ export function TiedCountLab() {
           <>
             <p className="dl5s-stagehead">tied_ae’s reconstructions (slide 22’s check)</p>
             <div className="dl5s-scroll"><ReconGrid data={data} model="tied" n={5} /></div>
+            <p className="dl5s-figcap"><span className="dl5s-figcap__k">On slide 22:</span> {CAPTIONS.slide22}</p>
             <div className="dl5s-scroll">
               <table className="dl5s-table">
                 <thead><tr><th>this page’s run</th><th className="dl5s-num">epochs</th><th className="dl5s-num">validation MSE</th></tr></thead>

@@ -18,7 +18,7 @@ export default {
       at: '10',
       items: [
         'More layers let the autoencoder learn more complex codings.',
-        'But an autoencoder whose encoder maps each input to one arbitrary number reconstructs the training data perfectly, learns no useful representation, and is unlikely to generalise.',
+        'But an autoencoder whose encoder maps each input to one arbitrary number, and whose decoder learns the reverse, reconstructs the training data perfectly, learns no useful representation, and is unlikely to generalise.',
       ],
       margin: [
         { q: 'Why can a too-powerful autoencoder be useless, even with perfect reconstructions?', a: 'It can memorise each training input as an arbitrary number (and the decoder the reverse), so it learns no useful representation and is unlikely to generalise to new instances.' },

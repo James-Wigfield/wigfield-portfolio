@@ -13,7 +13,7 @@ export default {
       id: 'how',
       h: 'Unsupervised pretraining',
       at: '16–17',
-      fig: { key: 'pretrain', hl: ['copy'], cap: 'Figure 17-6: label both phases and the copied layers.' },
+      fig: { key: 'pretrain', hl: ['p1h', 'copy'], cap: 'Figure 17-6: label both phases and the copied layers.' },
       items: [
         {
           steps: [

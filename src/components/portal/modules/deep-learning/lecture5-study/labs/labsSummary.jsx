@@ -23,7 +23,7 @@ export function OutcomesLab() {
       slides="slides 26–27"
       tryThis="tick an outcome only once you can explain it from your notes without looking. If you can’t yet, its chips jump back to the section, or straight to its notebook page."
     >
-      <p className="dl5s-readout"><b>{done}/{OUTCOMES.length}</b> outcomes ticked · <b>{stats.pages}</b> notebook pages copied</p>
+      <p className="dl5s-readout dl5s-noprint"><b>{done}/{OUTCOMES.length}</b> outcomes ticked · <b>{stats.pages}</b> notebook pages copied</p>
       <ol className="dl5s-outcomes">
         {OUTCOMES.map((o, n) => {
           const on = outcomes.includes(n);

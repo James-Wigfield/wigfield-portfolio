@@ -5,6 +5,6 @@ export const FIG_PARTS = {
   fig171: ['enc', 'dec', 'code'],
   sandwich: ['enc', 'dec', 'coding'],
   tied: ['w1', 'w2', 'coding'],
-  pretrain: ['p1', 'copy', 'p2', 'head'],
+  pretrain: ['p1', 'p1h', 'copy', 'p2', 'head'],
   phases: ['p1', 'p2', 'p3', 'copy'],
 };
