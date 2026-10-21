@@ -150,13 +150,15 @@ export function ConvStepLab() {
           options={PRESETS.map((p) => ({ v: p.id, l: p.label }))}
           onChange={(id) => { setGrid(PRESETS.find((p) => p.id === id).grid()); setPreset(id); setPlaying(false); }}
         />
-        <Chips label="Paint value" value={brush} options={[{ v: 8, l: 'bright 8' }, { v: 4, l: 'mid 4' }, { v: 0, l: 'erase 0' }]} onChange={setBrush} />
+        <div className="dl3s-screenonly">
+          <Chips label="Paint value" value={brush} options={[{ v: 8, l: 'bright 8' }, { v: 4, l: 'mid 4' }, { v: 0, l: 'erase 0' }]} onChange={setBrush} />
+        </div>
         <Chips label="Filter" value={kerId} options={SLIDE6_FILTERS.map((k) => ({ v: k.id, l: k.name, tag: k.role }))} onChange={(id) => { setKerId(id); setPlaying(false); }} />
       </div>
 
       <div className="dl3s-conv">
         <div>
-          <p className="dl3s-stagehead">Input <Tex src="\mathcal{I}" /> · paint on me</p>
+          <p className="dl3s-stagehead">Input <Tex src="\mathcal{I}" /><span className="dl3s-screenonly"> · paint on me</span></p>
           <PaintGrid grid={grid} onPaint={paint} win={{ r: oy, c: ox }} />
           <p className="dl3s-cap">Window centred on (x, y) = ({x}, {y}) — x is the column, y the row, counted from 0.</p>
         </div>
@@ -184,6 +186,7 @@ export function ConvStepLab() {
 
         <div>
           <p className="dl3s-stagehead">Output <Tex src="\mathcal{I}'" /> · 6×6 · position {pos + 1}/36</p>
+          <p className="dl3s-cap dl3s-printonly">Filled up to the window’s current position; the complete map is the first panel below.</p>
           <svg
             viewBox={`0 0 ${ON * C} ${ON * C}`}
             className="dl3s-svg dl3s-grid"
