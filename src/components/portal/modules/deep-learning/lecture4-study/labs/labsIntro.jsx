@@ -75,6 +75,7 @@ const X_STEPS = [-1, -0.5, 0, 0.5, 1];
 
 export function NeuronLab() {
   const reduced = useReducedMotion();
+  const { printing } = useStudy();
   const [T, setT] = useState(4); // Figure 15-1 unrolls x(0)…x(3)
   const [preset, setPreset] = useState('pulse');
   const [xs, setXs] = useState(() => Array.from({ length: 8 }, (_, t) => X_PRESETS.pulse.f(t)));
@@ -97,16 +98,18 @@ export function NeuronLab() {
     }
     return out;
   }, [T, xs, wx, wy, b, act]);
-  const cur = Math.min(t, T - 1);
+  const at = Math.min(t, T - 1);
+  // printed at its last step: every output computed
+  const cur = printing ? T - 1 : at;
 
   useEffect(() => {
     if (!playing) return undefined;
     const id = setTimeout(() => {
-      if (cur >= T - 1) setPlaying(false);
-      else setT0(cur + 1);
+      if (at >= T - 1) setPlaying(false);
+      else setT0(at + 1);
     }, reduced ? 80 : 650);
     return () => clearTimeout(id);
-  }, [playing, cur, T, reduced]);
+  }, [playing, at, T, reduced]);
 
   const pickPreset = (p) => {
     setPreset(p);

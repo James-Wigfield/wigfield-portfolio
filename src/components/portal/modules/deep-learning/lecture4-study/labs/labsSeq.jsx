@@ -6,6 +6,7 @@ import { SEQ_MODES } from '../slideData';
 import { fmtNum, fmtSigned, signClass, scalarBptt, numericalGrad } from '../rnn';
 import { useReducedMotion } from '../hooks';
 import { Arrowhead } from './parts';
+import { useStudy } from '../context';
 import './labsSeq.css';
 
 /* ============================================================================
@@ -123,13 +124,13 @@ const V2S_NOTE = {
   figure: 'Figure 15-4 (slide 13) draws the same X fed into every step. Slide 12’s text describes the other reading — switch above to see it.',
   text: 'Slide 12’s text: the single input X goes in at t = 0 and the later steps are fed zeros; the outputs are still a whole sequence. Figure 15-4 draws the other reading — switch above to see it.',
 };
+// on paper there is no switch: both readings, as one note
+const V2S_PRINT = 'Figure 15-4 (slide 13) draws the same X fed into every step (as here); slide 12’s text instead puts X in at t = 0 only and feeds zeros after. Either way the outputs are a whole sequence.';
 
-export function SeqModesLab() {
-  const [mode, setMode] = useState('seq2seq');
-  const [v2s, setV2s] = useState('figure');
-  const [picks, setPicks] = useState({});
-  const [checked, setChecked] = useState(false);
-
+// One Figure 15-4 panel with its tallies and slide-12 reading (the lab shows
+// the chosen one; the printed page shows all four).
+function ModePanel({ mode, v2s }) {
+  const { printing } = useStudy();
   const m = MODE[mode];
   const { cells, boxes } = seqChain(mode, v2s);
   const { cy, half } = SQ;
@@ -139,25 +140,8 @@ export function SeqModesLab() {
   const aria = `${m.name}, Figure 15-4 ${m.where}: ${cells.length} cells, time left to right. Inputs: ${cells
     .map((c) => `${symText(c.inM, c.inS)} ${c.inReal ? 'real' : 'zero'}`)
     .join(', ')}. Outputs: ${cells.map((c) => `${symText(c.outM, c.outS)} ${c.outUsed ? 'used' : 'ignored'}`).join(', ')}.`;
-
-  const nPicked = SORT_ORDER.filter((id) => picks[id]).length;
-  const score = SORT_ORDER.filter((id) => picks[id] === id).length;
-  const pick = (id, v) => {
-    setPicks((p) => ({ ...p, [id]: v }));
-    setChecked(false);
-  };
-
   return (
-    <Lab
-      title="Figure 15-4 live · four ways to wire a sequence"
-      slides="slides 12–13"
-      tryThis="before switching to sequence-to-vector, predict which of its outputs are used; then sort slide 12’s four examples below and check."
-    >
-      <div className="dl-lab__controls">
-        <Chips label="Figure 15-4 panel" value={mode} options={MODE_OPTS} onChange={setMode} />
-        {mode === 'vec2seq' && <Chips label="fed after t = 0" value={v2s} options={V2S_OPTS} onChange={setV2s} />}
-      </div>
-
+    <>
       <div className="dl4s-seq-stage">
         <svg viewBox={`0 0 ${SQ.W} ${H}`} className="dl4s-svg" role="img" aria-label={aria}>
           {boxes.map((b) => (
@@ -209,7 +193,7 @@ export function SeqModesLab() {
       <p className="dl4s-readout" aria-live="polite">
         <b>Slide 12, item {m.item}:</b> {m.text} — e.g., {m.example}.
         <br />
-        {mode === 'vec2seq' ? V2S_NOTE[v2s] : MODE_NOTE[mode]}
+        {mode === 'vec2seq' ? (printing ? V2S_PRINT : V2S_NOTE[v2s]) : MODE_NOTE[mode]}
       </p>
       {mode === 'seq2seq' && (
         <>
@@ -219,6 +203,48 @@ export function SeqModesLab() {
           </p>
         </>
       )}
+    </>
+  );
+}
+
+export function SeqModesLab() {
+  const { printing } = useStudy();
+  const [mode, setMode] = useState('seq2seq');
+  const [v2s, setV2s] = useState('figure');
+  const [chosen, setPicks] = useState({});
+  const [isChecked, setChecked] = useState(false);
+  // on paper: all four panels, and the sorting exercise shown answered
+  const picks = printing ? Object.fromEntries(SORT_ORDER.map((id) => [id, id])) : chosen;
+  const checked = printing || isChecked;
+
+  const nPicked = SORT_ORDER.filter((id) => picks[id]).length;
+  const score = SORT_ORDER.filter((id) => picks[id] === id).length;
+  const pick = (id, v) => {
+    setPicks((p) => ({ ...p, [id]: v }));
+    setChecked(false);
+  };
+
+  return (
+    <Lab
+      title="Figure 15-4 live · four ways to wire a sequence"
+      slides="slides 12–13"
+      tryThis="before switching to sequence-to-vector, predict which of its outputs are used; then sort slide 12’s four examples below and check."
+    >
+      {!printing && (
+        <div className="dl-lab__controls">
+          <Chips label="Figure 15-4 panel" value={mode} options={MODE_OPTS} onChange={setMode} />
+          {mode === 'vec2seq' && <Chips label="fed after t = 0" value={v2s} options={V2S_OPTS} onChange={setV2s} />}
+        </div>
+      )}
+
+      {printing
+        ? SEQ_MODES.map((sm) => (
+          <div key={sm.id} className="dl4s-seq-printpanel">
+            <p className="dl4s-stagehead">Figure 15-4, {sm.where} · {sm.name}</p>
+            <ModePanel mode={sm.id} v2s={v2s} />
+          </div>
+        ))
+        : <ModePanel mode={mode} v2s={v2s} />}
       <p className="dl4s-cap">
         Drawn as Figure 15-4 draws it; the words real / zero and used / ignored are this page’s labels (the figure greys them).
       </p>
@@ -239,7 +265,7 @@ export function SeqModesLab() {
                   {checked && got && (
                     <p className="dl4s-seq-verdict">
                       <span className={`dl4s-dot ${ok ? 'dl4s-seq-dot--ok' : 'dl4s-seq-dot--no'}`} aria-hidden="true" />
-                      <b>{ok ? 'right' : `not ${MODE[got].name}`}</b> — slide 12, item {ex.item} ({ex.name}): {ex.text}.{' '}
+                      <b>{printing ? ex.name : ok ? 'right' : `not ${MODE[got].name}`}</b> — slide 12, item {ex.item} ({ex.name}): {ex.text}.{' '}
                       <button type="button" className="dl4s-link dl4s-seq-show" onClick={() => setMode(id)}>
                         <Icon name="eye" size={12} /> show it in the figure
                       </button>

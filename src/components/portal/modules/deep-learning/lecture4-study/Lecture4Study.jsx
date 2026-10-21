@@ -1,14 +1,17 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import Icon from '../../../icons';
 import { RefsProvider } from '../kit';
 import { SECTIONS } from './sections';
 import { REFS } from './slideData';
 import { load, save, loadTicks, loadSheetTicks } from './storage';
-import { StudyCtx } from './context';
+import { StudyCtx, useStudy } from './context';
 import { Blocks } from './Rich';
 import NotebookTabs from './NotebookTabs';
+import NotebookLmPrompt from './NotebookLmPrompt';
 import { SHEETS, sheetKeys } from './sheets';
 import { prefersReducedMotion } from './hooks';
+import { PRINT_CSS, PRINT_TITLE, addPrintTex, removePrintTex } from './print';
 import { RoadmapLab, NeuronLab, LayerLab } from './labs/labsIntro';
 import { DependencyLab, StateEqLab, ShapeLab } from './labs/labsMemory';
 import { SeqModesLab, BpttLab } from './labs/labsSeq';
@@ -40,6 +43,11 @@ import './sheet.css';
                   root becomes its own scroll container with the theme's
                   ground behind it. Falls back to a fixed overlay when the API
                   is missing. Esc exits.
+     export PDF   "Read + Play" only, through window.print(): print mode
+                  (html.dl4s-printing + ./print.js mounted as a <style>,
+                  labs in their finished state) on, focus mode off, print,
+                  and everything put back on afterprint. The NotebookLM video
+                  prompt sits under the button (./NotebookLmPrompt.jsx).
      persistence  ./storage.js — ticks, last section, outcomes, rail state
      content      ./sections.js (all prose, notes, formulas, questions)
      labs         ./labs/*.jsx  ·  diagrams ./diagrams.jsx
@@ -90,6 +98,33 @@ const LAB_COUNT = SECTIONS.reduce((a, s) => a + (s.play?.length ?? 0), 0);
 const WIDE_AT = 920;
 const NONE = [];
 
+// footnote numbers ([^n]) used in a section's Read blocks, in order
+function footnotes(blocks) {
+  const seen = [];
+  const walk = (b) => {
+    if (typeof b === 'string') {
+      for (const m of b.matchAll(/\[\^(\d+)\]/g)) if (!seen.includes(Number(m[1]))) seen.push(Number(m[1]));
+    } else if (Array.isArray(b)) b.forEach(walk);
+    else if (b && typeof b === 'object') Object.values(b).forEach(walk);
+  };
+  walk(blocks);
+  return seen;
+}
+
+// On screen a footnote is a hover popover; in the PDF its text prints under
+// the Read beat.
+function PrintRefs({ blocks }) {
+  const { printing } = useStudy();
+  if (!printing) return null;
+  const ns = footnotes(blocks).filter((n) => REFS[n]);
+  if (!ns.length) return null;
+  return (
+    <ol className="dl4s-printrefs">
+      {ns.map((n) => <li key={n} value={n}>{REFS[n]}</li>)}
+    </ol>
+  );
+}
+
 function Beat({ n, icon, label, children }) {
   return (
     <div className={`dl4s-beat dl4s-beat--${label.toLowerCase()}`}>
@@ -114,6 +149,7 @@ const StudySection = memo(function StudySection({ s, ticked, onToggle, onSetAll,
       <Beat n={1} icon="eye" label="Read">
         <div className="dl4s-read">
           <Blocks blocks={s.read} />
+          <PrintRefs blocks={s.read} />
         </div>
       </Beat>
       {s.play?.length > 0 && (
@@ -219,6 +255,7 @@ export default function Lecture4Study() {
   const [pseudoFs, setPseudoFs] = useState(false);
   const [wide, setWide] = useState(true);
   const [stick, setStick] = useState(0);
+  const [printing, setPrinting] = useState(false);
 
   const focus = isFs || pseudoFs;
   const pseudoFsRef = useRef(false);
@@ -465,6 +502,83 @@ export default function Lecture4Study() {
   // if the module unmounts mid-overlay. Real fullscreen uses the top layer.
   useEffect(() => () => document.documentElement.classList.remove('dl4s-pseudo-on'), []);
 
+  // ── export PDF (Read + Play) ─────────────────────────────────────────────
+  // Print mode = html.dl4s-printing + the PRINT_CSS <style> (rendered below
+  // only while printing) + `printing` in the context, which labs read to
+  // show their finished step without touching their own state. The button
+  // leaves focus mode first; a plain Ctrl+P enters the same mode through
+  // beforeprint. afterprint puts back the title, the class, the LaTeX lines,
+  // focus mode (re-entered as the overlay if the browser refuses fullscreen
+  // outside a click) and the scroll position.
+  const printJob = useRef(null);
+  const endPrint = useCallback(() => {
+    const job = printJob.current;
+    if (!job) return;
+    printJob.current = null;
+    removePrintTex(rootRef.current);
+    document.documentElement.classList.remove('dl4s-printing');
+    document.title = job.title;
+    setPrinting(false);
+    if (job.focus) {
+      holdSection.current = job.section;
+      toggleFocus();
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: job.y, behavior: 'instant' })));
+    }
+  }, [toggleFocus]);
+
+  const exportPdf = useCallback(async () => {
+    if (printJob.current) return;
+    const job = { title: document.title, focus: live.current.focus, section: live.current.current, y: window.scrollY, button: true };
+    printJob.current = job;
+    if (document.fullscreenElement) await document.exitFullscreen?.().catch(() => {});
+    if (pseudoFsRef.current) setPseudo(false);
+    document.documentElement.classList.add('dl4s-printing');
+    setPrinting(true);
+  }, [setPseudo]);
+
+  // the button's print: once print mode has rendered, fonts and KaTeX settled
+  useEffect(() => {
+    if (!printing || !printJob.current?.button) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        await document.fonts?.ready;
+      } catch {
+        /* no font loading API — print anyway */
+      }
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled || !printJob.current) return;
+      addPrintTex(rootRef.current);
+      document.title = PRINT_TITLE;
+      window.print();
+    })();
+    return () => { cancelled = true; };
+  }, [printing]);
+
+  useEffect(() => {
+    const before = () => {
+      if (printJob.current) return; // the button's own print
+      printJob.current = { title: document.title, focus: false, section: live.current.current, y: window.scrollY, button: false };
+      document.documentElement.classList.add('dl4s-printing');
+      flushSync(() => setPrinting(true));
+      addPrintTex(rootRef.current);
+      document.title = PRINT_TITLE;
+    };
+    window.addEventListener('beforeprint', before);
+    window.addEventListener('afterprint', endPrint);
+    return () => {
+      window.removeEventListener('beforeprint', before);
+      window.removeEventListener('afterprint', endPrint);
+    };
+  }, [endPrint]);
+
+  // leaving the module mid-print must not leave the page in print mode
+  useEffect(() => () => {
+    if (printJob.current) document.title = printJob.current.title;
+    document.documentElement.classList.remove('dl4s-printing');
+  }, []);
+
   // Esc closes the dropdown, and the overlay fallback (real fullscreen exits
   // on Esc by itself).
   useEffect(() => {
@@ -487,7 +601,7 @@ export default function Lecture4Study() {
     return () => document.removeEventListener('pointerdown', onDown);
   }, [dropOpen]);
 
-  const ctx = useMemo(() => ({ stats, jumpTo, outcomes, toggleOutcome }), [stats, jumpTo, outcomes, toggleOutcome]);
+  const ctx = useMemo(() => ({ stats, jumpTo, outcomes, toggleOutcome, printing }), [stats, jumpTo, outcomes, toggleOutcome, printing]);
   const cur = SECTIONS[current];
   const showRail = wide && railOpen;
   const pct = stats.pct;
@@ -501,6 +615,7 @@ export default function Lecture4Study() {
           className={`dl dl4s${focus ? ' dl4s--focus' : ''}${pseudoFs ? ' dl4s--pseudo' : ''}`}
           style={{ '--dl4s-stick': `${focus ? 0 : stick}px` }}
         >
+          {printing && <style>{PRINT_CSS}</style>}
           {/* ── sticky header ─────────────────────────────────────────── */}
           <header ref={barRef} className="dl4s-bar">
             <div className="dl4s-bar__title">
@@ -557,9 +672,18 @@ export default function Lecture4Study() {
                   One page, in slide order. Each section: read a short explanation, play with a live lab until it clicks, then copy
                   its notebook page onto paper and tick the lines off.
                 </p>
+                {printing && (
+                  <p className="dl4s-print-note">
+                    This PDF holds the Read and Play parts of all 18 sections, in slide order; the notebook pages are left out. Each lab is
+                    printed in its finished state, with the values of its controls written out; each equation is followed by its LaTeX source.
+                  </p>
+                )}
                 <div className="dl4s-hero__actions">
                   <button type="button" className="dl4s-btn dl4s-btn--primary dl4s-btn--big" onClick={toggleFocus} aria-pressed={focus}>
                     <Icon name={focus ? 'compress' : 'expand'} size={17} /> {focus ? 'Exit focus mode' : 'Enter focus mode'}
+                  </button>
+                  <button type="button" className="dl4s-btn dl4s-btn--big dl4s-export__btn" onClick={exportPdf} disabled={printing}>
+                    <Icon name="download" size={16} /> Export PDF
                   </button>
                   {resumeOpen && resumeIdx > 0 && (
                     <span className="dl4s-resume">
@@ -572,6 +696,7 @@ export default function Lecture4Study() {
                     </span>
                   )}
                 </div>
+                <NotebookLmPrompt />
                 <p className="dl4s-hero__stats">
                   <span><b>{SECTIONS.length}</b> notebook pages</span>
                   <span><b>{LAB_COUNT}</b> live labs</span>

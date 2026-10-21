@@ -3,6 +3,7 @@ import { Tex } from '../../kit';
 import { Lab, Chips, Range, Stat } from '../ui';
 import { lstmStep, gruStep, zeros, tanh, lstmParams, gruParams, denseParams, fmtInt } from '../rnn';
 import { Arrowhead } from './parts';
+import { useStudy } from '../context';
 import './labsCells.css';
 
 /* ============================================================================
@@ -196,12 +197,16 @@ function LstmFigure({ s, t }) {
 
 export function LstmCellLab() {
   const seq = useSequence();
-  const [t, setT] = useState(1);
+  const { printing } = useStudy();
+  const [step, setT] = useState(1);
   const [forget, setForget] = useState('learned');
   const run = useMemo(() => runLstm(seq.xs, FORGET[forget]), [seq.xs, forget]);
-  const s = run[t];
   const sigAt = seq.signal.indexOf(1);
   const readAt = seq.read.indexOf(1);
+  // printed at the read step, where the stored signal is released (the
+  // timeline below shows every step either way)
+  const t = printing ? (readAt >= 0 ? readAt : T - 1) : step;
+  const s = run[t];
 
   return (
     <Lab

@@ -24,6 +24,17 @@
      legacy     dl4s:ticks saved before the student-notes page existed still
                 show on Legacy, and a page finished on either tab marks its
                 section done (index rail + header)
+     export     Export PDF calls (the stubbed) window.print exactly once, in
+                print mode; afterprint restores the title, the class, the
+                LaTeX lines, focus mode, the Legacy tab and a stepped lab
+     pdf        the headless A4 PDF of print mode: all 18 section titles in
+                order, no notebook text, Read sentences intact, slides 9 / 47
+                / 49's equations readable as LaTeX (pdftotext; page count and
+                size reported)
+     nlm        the NotebookLM prompt disclosure opens; Copy copies, and
+                selects the text when the clipboard is refused
+   window.print is stubbed on every page before it loads (a real print
+   dialog would hang an unattended run).
      storage    with localStorage throwing, the page still renders and ticks
      reduced    prefers-reduced-motion: renders, labs still work
      lecture3   /portal/dl-lecture-3-study still renders without errors
@@ -34,7 +45,9 @@
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { exportPdf } from './export-pdf.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -61,6 +74,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const SEED = () => {
   sessionStorage.setItem('portal_auth', JSON.stringify({ token: 'mock-session-token', key: 'wiggy1', issued_at: new Date().toISOString() }));
+  // never a real print dialog: count the calls instead
+  window.print = () => { window.__printCalls = (window.__printCalls || 0) + 1; };
 };
 
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: 'new', args: ['--hide-scrollbars'] });
@@ -434,6 +449,145 @@ try {
     ok(/· 2\/18 pages/.test(pages2), 'the header counts both', pages2);
     await lp.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('dl4s:')).forEach((k) => localStorage.removeItem(k)));
     await lp.close();
+  }
+
+  // ── Export PDF: one print, then everything back ───────────────────────────
+  if (want('export')) {
+    const ep = await open({ tag: 'export', clear: true });
+    // a state worth restoring: §3 on Legacy, the slide-34 loop at round 2,
+    // focus mode on (the overlay fallback, so it can come back without a click)
+    await ep.click('#dl4s-s03-nbt-legacy');
+    await ep.evaluate(() => {
+      const next = document.querySelector('#dl4s-s11 .dl4s-stepper button[aria-label="Next round"]');
+      next.click();
+      next.click();
+      delete Element.prototype.requestFullscreen;
+    });
+    await ep.click('.dl4s-hero__actions .dl4s-btn--primary');
+    await sleep(700);
+    const loopText = () => ep.$eval('#dl4s-s11 .dl4s-stepper__t', (el) => el.textContent.replace(/\s+/g, ' ').trim());
+    const before = { loop: await loopText(), focus: await ep.$eval('.dl4s', (el) => el.classList.contains('dl4s--focus')), title: await ep.title() };
+    await ep.click('.dl4s-export__btn');
+    await ep.waitForFunction(() => (window.__printCalls || 0) > 0, { timeout: 20000 });
+    await sleep(300);
+    const during = await ep.evaluate(() => ({
+      calls: window.__printCalls,
+      cls: document.documentElement.classList.contains('dl4s-printing'),
+      style: [...document.querySelectorAll('.dl4s style')].some((s) => s.textContent.includes('@page')),
+      title: document.title,
+      focus: document.querySelector('.dl4s').classList.contains('dl4s--focus'),
+      ptex: document.querySelectorAll('.dl4s-ptex').length,
+      loop: document.querySelector('#dl4s-s11 .dl4s-stepper__t').textContent.replace(/\s+/g, ' ').trim(),
+      panels: document.querySelectorAll('#dl4s-s04 .dl4s-seq-printpanel').length,
+    }));
+    ok(during.calls === 1, 'Export PDF calls window.print exactly once', String(during.calls));
+    ok(during.cls && during.style && /Read \+ Play/.test(during.title), 'it prints in print mode (class, print CSS, file name title)', `“${during.title}”`);
+    ok(!during.focus && during.ptex >= 13, 'focus mode is left and each display equation gets its LaTeX line', `${during.ptex} LaTeX lines`);
+    ok(/round 14 of 14/.test(during.loop) && during.panels === 4, 'labs print their finished state (loop at round 14, all four Figure 15-4 panels)', `${during.loop} · ${during.panels} panels`);
+    await ep.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await sleep(900);
+    const after = await ep.evaluate(() => ({
+      cls: document.documentElement.classList.contains('dl4s-printing'),
+      style: [...document.querySelectorAll('.dl4s style')].length,
+      title: document.title,
+      focus: document.querySelector('.dl4s').classList.contains('dl4s--focus'),
+      ptex: document.querySelectorAll('.dl4s-ptex').length,
+      legacy: document.getElementById('dl4s-s03-nbt-legacy').getAttribute('aria-selected'),
+      calls: window.__printCalls,
+    }));
+    const loopAfter = await loopText();
+    ok(!after.cls && !after.style && after.title === before.title && after.ptex === 0, 'afterprint removes print mode and restores the title', `“${after.title}”`);
+    ok(after.focus === before.focus && after.focus, 'afterprint brings focus mode back');
+    ok(loopAfter === before.loop && after.legacy === 'true', 'the loop lab and the Legacy tab are as they were', `${loopAfter} · Legacy ${after.legacy}`);
+    ok(after.calls === 1, 'no second print');
+    await ep.close();
+  }
+
+  // ── the PDF itself ────────────────────────────────────────────────────────
+  if (want('pdf')) {
+    const pp = await open({ tag: 'pdf', clear: true });
+    const file = path.join(OUT, 'read-play.pdf');
+    await exportPdf(pp, file);
+    await pp.close();
+    const bytes = fs.statSync(file).size;
+    const run = spawnSync('pdftotext', ['-enc', 'UTF-8', file, '-'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    if (run.error || run.status !== 0) {
+      ok(false, 'pdftotext extracts the PDF', String(run.error || run.stderr));
+    } else {
+      const raw = run.stdout;
+      const pages = (raw.match(/\f/g) || []).length;
+      const text = raw.replace(/​/g, '').replace(/\s+/g, ' ');
+      console.log(`      PDF: ${pages} pages · ${(bytes / 1024 / 1024).toFixed(2)} MB · ${file}`);
+      let at = -1;
+      const missing = [];
+      SECTIONS.forEach((s) => {
+        const i = text.indexOf(`§${s.no} ${s.title}`, at + 1);
+        if (i < 0) missing.push(`§${s.no}`);
+        else at = i;
+      });
+      ok(missing.length === 0, 'all 18 section titles in the PDF, in order', missing.join(', '));
+      // the opening words of each section's first Read paragraph, before any maths
+      const plain = (s) => s.replace(/\[([^\]]+)\]\(#[a-z0-9]+\)/g, '$1').replace(/\[\^\d+\]/g, '').replace(/\*\*|\*|`/g, '');
+      const notebook = ['lines copied', 'page copied', 'tick every line', 'clear ticks', 'Student notes', 'Legacy', 'Big idea:', 'NOTEBOOK PAGE', 'my hook'];
+      // the notebook's sub-headings, unless the Read text itself uses the phrase
+      const readText = plain(JSON.stringify(SECTIONS.map((s) => s.read)));
+      SECTIONS.forEach((s) => s.notes.forEach((g) => { if (!readText.includes(g.h)) notebook.push(g.h); }));
+      const found = notebook.filter((t) => text.includes(t));
+      ok(found.length === 0, `no notebook text in the PDF (tabs, counters, tools, ${notebook.length - 9} note headings)`, found.slice(0, 5).join(' | '));
+      const sentences = SECTIONS.map((s) => {
+        const p = s.read.find((b) => typeof b === 'string');
+        const head = plain(p.split('$')[0]).replace(/\s+/g, ' ').trim().split(' ').slice(0, 9).join(' ');
+        return head.split(' ').length >= 5 ? head : null;
+      }).filter(Boolean);
+      const lost = sentences.filter((h) => !text.includes(h));
+      ok(lost.length === 0, `Read text extracts as running sentences (${sentences.length} sections sampled)`, lost.slice(0, 3).join(' | '));
+      // the whole equation, spaced as print.js spaces its LaTeX line
+      const spaced = (t) => t.replace(/([^\s\\])\\(?=[a-zA-Z])/g, '$1 \\').replace(/\s+/g, ' ').trim();
+      const eqOf = (re) => SECTIONS.flatMap((s) => s.read).find((b) => b && b.eq && re.test(b.eq.name))?.eq.tex ?? '';
+      const eqs = [['slide 9', eqOf(/slide 9/)], ['slide 47', eqOf(/slide 47/)], ['slide 49', eqOf(/slide 49/)]];
+      const badEq = eqs.filter(([, tex]) => !tex || !text.includes(spaced(tex))).map(([n]) => n);
+      const lines = (text.match(/LaTeX: /g) || []).length;
+      ok(badEq.length === 0 && !/\(t1\)/.test(text), `equations read as LaTeX (slides 9, 47, 49; ${lines} LaTeX lines)`, badEq.join(', '));
+      ok(pages >= 30 && bytes < 30 * 1024 * 1024, 'a sensible PDF', `${pages} pages, ${(bytes / 1024 / 1024).toFixed(2)} MB`);
+    }
+  }
+
+  // ── NotebookLM prompt disclosure ──────────────────────────────────────────
+  if (want('nlm')) {
+    const np = await open({ tag: 'nlm' });
+    await browser.defaultBrowserContext().overridePermissions(BASE, ['clipboard-read', 'clipboard-write', 'clipboard-sanitized-write']);
+    const closed = await np.$eval('.dl4s-export__toggle', (b) => ({ exp: b.getAttribute('aria-expanded'), text: b.textContent.replace(/\s+/g, ' ').trim(), hidden: document.getElementById('dl4s-nlm').hidden }));
+    await np.click('.dl4s-export__toggle');
+    await sleep(200);
+    const opened = await np.evaluate(() => ({
+      exp: document.querySelector('.dl4s-export__toggle').getAttribute('aria-expanded'),
+      visible: !document.getElementById('dl4s-nlm').hidden && document.getElementById('dl4s-nlm').getBoundingClientRect().height > 100,
+      prompts: [...document.querySelectorAll('.dl4s-nlm__text')].map((p) => p.textContent.length),
+      steps: document.querySelectorAll('.dl4s-nlm__steps li').length,
+    }));
+    ok(closed.text === 'NotebookLM video prompt ▾' && closed.exp === 'false' && closed.hidden, 'the “NotebookLM video prompt ▾” disclosure starts closed', closed.text);
+    ok(opened.exp === 'true' && opened.visible && opened.steps >= 2, 'it opens (aria-expanded) on steps and the prompts', `${opened.steps} steps`);
+    ok(opened.prompts.length === 3 && opened.prompts.every((n) => n > 300 && n < 1000), 'one prompt + a two-part variant, each under 1,000 characters', opened.prompts.join(', '));
+    await np.click('.dl4s-nlm__copy');
+    await sleep(300);
+    const copied = await np.evaluate(async () => ({
+      label: document.querySelector('.dl4s-nlm__copy').textContent.trim(),
+      clip: await navigator.clipboard.readText().catch(() => ''),
+      text: document.querySelector('.dl4s-nlm__text').textContent,
+    }));
+    ok(copied.label === 'Copied' && copied.clip === copied.text, 'Copy puts the prompt on the clipboard and says “Copied”', copied.label);
+    // clipboard refused: the text is selected instead
+    await np.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error('denied')); });
+    const blocks = await np.$$('.dl4s-nlm__copy');
+    await blocks[1].click();
+    await sleep(300);
+    const fb = await np.evaluate(() => ({
+      status: document.querySelectorAll('.dl4s-nlm__status')[1].textContent,
+      sel: window.getSelection().toString(),
+      text: document.querySelectorAll('.dl4s-nlm__text')[1].textContent,
+    }));
+    ok(/Selected/.test(fb.status) && fb.sel === fb.text, 'with the clipboard refused, Copy selects the prompt instead', fb.status);
+    await np.close();
   }
 
   // ── broken storage ────────────────────────────────────────────────────────

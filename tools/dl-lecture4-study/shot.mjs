@@ -3,18 +3,20 @@
    (puppeteer-core + local Edge, seeded through the portal gate)
    ----------------------------------------------------------------------------
      node tools/dl-lecture4-study/shot.mjs <outDir> [ids…] [--theme=jade|coral|arcade]
-          [--width=1440] [--part=all|play|nb|nbt|read] [--tab=sheet|legacy]
-          [--focus] [--full]
+          [--width=1440] [--part=all|play|nb|nbt|read|hero] [--tab=sheet|legacy]
+          [--focus] [--nlm] [--full]
 
    For each section id (s00, s01, … or "all") it saves
      <outDir>/<id>-<part>-<theme>-<width>.png
    where part "play" is the Play beat, "nb" the notebook page showing (the
    student-notes page, or with --tab=legacy the Legacy page; the file is then
    named <id>-legacy-…), "nbt" the notebook with its tab row, "read" the Read
-   beat, "all" the whole section. --focus shoots inside focus mode (the
+   beat, "all" the whole section, "hero" the page's title block (one shot,
+   with --nlm the NotebookLM prompt disclosure opened). --focus shoots inside focus mode (the
    overlay fallback, so element shots work). --full adds one full-page
-   screenshot. --no-tabrow hides the notebook tab row, so a Legacy page sits
-   exactly where it sat before the tabs existed (for pixel-comparing it with
+   screenshot. --no-tabrow hides the notebook tab row and the NotebookLM
+   prompt disclosure (the two things added above a Legacy page), so a Legacy
+   page sits exactly where it sat before they existed (for pixel-comparing it with
    compare-shots.mjs: gradients and dashed borders rasterise slightly
    differently at another page offset).
    Prints every console error/warning it saw. Dev server on 5173 (SITE_URL to
@@ -61,7 +63,9 @@ try {
   // element shots: keep the sticky bars from painting over the element
   if (!flags.full) await page.addStyleTag({ content: '.dl4s-bar, .portal__topbar, .dl4s-rail { position: static !important; }' });
   if (flags.tab === 'legacy') await page.evaluate(() => document.querySelectorAll('.dl4s-nbt__tab[id$="-legacy"]').forEach((b) => b.click()));
-  if (flags['no-tabrow']) await page.addStyleTag({ content: '.dl4s-nbt__tabs { display: none !important; }' });
+  if (flags['no-tabrow']) await page.addStyleTag({ content: '.dl4s-nbt__tabs, .dl4s-export { display: none !important; }' });
+  if (flags.nlm) await page.click('.dl4s-export__toggle');
+  if (part === 'hero') ids = ['hero'];
   await new Promise((r) => setTimeout(r, 600));
   if (!ids.length || ids.includes('all')) ids = await page.$$eval('.dl4s-sec', (els) => els.map((e) => e.id.replace('dl4s-', '')));
   for (const id of ids) {
@@ -72,6 +76,7 @@ try {
       nbt: `#dl4s-${id} .dl4s-nbt`,
       read: `#dl4s-${id} .dl4s-beat--read`,
       draw: `#dl4s-${id}-nb .dl4s-nb__draws`,
+      hero: '.dl4s-hero',
     }[part];
     const el = await page.$(sel);
     if (!el) { console.log(`missing ${sel}`); continue; }

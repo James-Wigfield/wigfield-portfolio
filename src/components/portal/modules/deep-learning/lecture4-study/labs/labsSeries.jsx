@@ -6,6 +6,7 @@ import { RIDERSHIP } from '../data/ridership';
 import { MAE_CODE, TOY_BATCHES, SPLIT_CODE, INSPECT_CODE, SPLITS } from '../slideData';
 import { diff, shift, mae, mape, dayIndex, isoAt, monthRange, fmtInt, timeseriesDataset, batchShape } from '../rnn';
 import { svgPoint } from '../hooks';
+import { useStudy } from '../context';
 import './labsSeries.css';
 
 /* ============================================================================
@@ -756,6 +757,7 @@ function MiniWindow({ w, L, on, onPick }) {
 }
 
 export function RailWindowsLab() {
+  const { printing } = useStudy();
   const [L, setL] = useState(SPLITS.seqLength);
   const [B, setB] = useState(SPLITS.batchSize);
   const [seed, setSeed] = useState(42);
@@ -789,9 +791,10 @@ export function RailWindowsLab() {
   const pickWindow = (start) => { setPick(start); setFocus('window'); };
 
   const inspectHl = isSlide ? [10, 11, 13, 14] : [4, 5];
-  const codeShown = tab === 'split'
-    ? <Code code={SPLIT_CODE} label="python · slide 20" meta={SPLIT_META[focus]} hl={SPLIT_HL[focus]} />
-    : <Code code={INSPECT_CODE} label="python · slide 21" meta="as printed" hl={inspectHl} />;
+  const splitCode = <Code code={SPLIT_CODE} label="python · slide 20" meta={SPLIT_META[focus]} hl={SPLIT_HL[focus]} />;
+  const inspectCode = <Code code={INSPECT_CODE} label="python · slide 21" meta="as printed" hl={inspectHl} />;
+  // on paper both listings print, one after the other
+  const codeShown = printing ? <>{splitCode}{inspectCode}</> : tab === 'split' ? splitCode : inspectCode;
 
   // the explorer window
   const xs = RAIL_TRAIN.slice(p, p + L);

@@ -6,6 +6,7 @@ import { RIDERSHIP } from '../data/ridership';
 import { LOOP_CODE, AHEAD_DS_CODE, AHEAD_MODEL_CODE, MULVAR_COLUMNS, SPLITS } from '../slideData';
 import { timeseriesDataset, fitLinear, predictLinear, mae, monthRange, isoAt, fmtInt } from '../rnn';
 import { useReducedMotion } from '../hooks';
+import { useStudy } from '../context';
 import './labsAhead.css';
 
 /* ============================================================================
@@ -30,9 +31,11 @@ const DT = ['A', 'U', 'W'];
 /* ── §11 · slide 34's loop ───────────────────────────────────────────────── */
 export function LoopLab() {
   const reduced = useReducedMotion();
+  const { printing } = useStudy();
   const [pred, setPred] = useState('naive');
-  const [k, setK] = useState(0); // rounds done
+  const [rounds, setK] = useState(0); // rounds done
   const [playing, setPlaying] = useState(false);
+  const k = printing ? AHEAD : rounds; // printed with all 14 rounds done
 
   const setup = useMemo(() => {
     const [va] = monthRange(R.start, SPLITS.valid.from, SPLITS.valid.to); // rail_valid starts 2019-01-01
@@ -58,11 +61,11 @@ export function LoopLab() {
   useEffect(() => {
     if (!playing) return undefined;
     const id = setTimeout(() => {
-      if (k >= AHEAD) setPlaying(false);
-      else setK(k + 1);
+      if (rounds >= AHEAD) setPlaying(false);
+      else setK(rounds + 1);
     }, reduced ? 60 : 420);
     return () => clearTimeout(id);
-  }, [playing, k, reduced]);
+  }, [playing, rounds, reduced]);
 
   // Figure 15-11's window: 1 Feb → 11 Mar 2019
   const from = setup.va + 31;

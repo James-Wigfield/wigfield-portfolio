@@ -3,6 +3,7 @@ import Icon from '../../../../icons';
 import { Code } from '../../kit';
 import { Lab, Chips, Range, Stat } from '../ui';
 import { useReducedMotion } from '../hooks';
+import { useStudy } from '../context';
 import { RIDERSHIP } from '../data/ridership';
 import { CNN_GRU_CODE, SLIDE_PARAMS, MULVAR_COLUMNS } from '../slideData';
 import { conv1d, conv1dLen, conv1dParams, gruParams, denseParams, relu, fmtInt, fmtSigned, signClass, dayIndex, isoAt, mulberry32 } from '../rnn';
@@ -79,6 +80,7 @@ const OY = 182; // top of the output cells
 
 function PartA({ active, onSeeB }) {
   const reduced = useReducedMotion();
+  const { printing } = useStudy();
   const [stride, setStride] = useState(1);
   const [nF, setNF] = useState(8); // slide 50’s first Conv1D has filters=8
   const [pick, setPick] = useState(0);
@@ -87,7 +89,8 @@ function PartA({ active, onSeeB }) {
   const [playing, setPlaying] = useState(false);
 
   const L = conv1dLen(DAYS, K, stride);
-  const cur = Math.min(pos, L - 1);
+  // printed at the last window: every feature map filled in
+  const cur = Math.min(printing ? L - 1 : pos, L - 1);
   const f = Math.min(pick, nF - 1);
   const F = filters[f];
   const map = useMemo(() => convMap(XS, filters.slice(0, nF), stride), [filters, nF, stride]);
@@ -99,14 +102,15 @@ function PartA({ active, onSeeB }) {
   // play: one window per tick. Reduced motion → no timer at all (the play
   // button jumps straight to the last window instead).
   const running = playing && active && !reduced;
+  const at = Math.min(pos, L - 1); // the lab's own window (cur may be the print one)
   useEffect(() => {
     if (!running) return undefined;
     const id = setTimeout(() => {
-      if (cur >= L - 1) setPlaying(false);
-      else setPos(cur + 1);
+      if (at >= L - 1) setPlaying(false);
+      else setPos(at + 1);
     }, 750);
     return () => clearTimeout(id);
-  }, [running, cur, L]);
+  }, [running, at, L]);
 
   // narrow widths: the drawing and the grid scroll sideways inside the lab,
   // so keep the window and the current column in view (DOM scroll only)
