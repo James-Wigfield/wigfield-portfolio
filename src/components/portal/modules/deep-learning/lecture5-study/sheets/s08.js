@@ -19,7 +19,7 @@ export default {
       at: '20–21',
       items: [
         '`DenseTranspose(dense)` uses that Dense layer’s weights, transposed, plus its own biases.',
-        { worked: ['`stacked_ae`: 163,814 parameters (slide 12)', '`tied_ae`: 78,500 + 3,030 + 100 + 784 = {g|82,414} (slide 21)'] },
+        { worked: ['`tied_ae` has {g|82,414} parameters (slide 21) against 163,814 (slide 12): 78,500 + 3,030 + 100 + 784, by this page’s working.'] },
         'The biases are not tied, so the parameters are only almost halved.',
       ],
       margin: [

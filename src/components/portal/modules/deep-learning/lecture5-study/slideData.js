@@ -13,15 +13,6 @@
    ./data (and are labelled as this page's own wherever they are shown).
    ========================================================================== */
 
-export const DECK = {
-  topic: 'Topic 5: Representation learning and dimension reduction using Autoencoders',
-  lecturer: 'Associate Professor Du Huynh (Unit Coordinator and Lecturer)',
-  semester: 'Semester 2, 2026',
-  slides: 27,
-  chapter: 'Chapter 17',
-  chapterTitle: 'Autoencoders, GANs, and Diffusion Models',
-};
-
 /* ── the two parameter counts printed on the slides ──────────────────────── */
 export const PARAMS = {
   stacked: { value: 163814, slide: 12, text: 'This model (stacked_ae) has 163,814 trainable parameters.' },

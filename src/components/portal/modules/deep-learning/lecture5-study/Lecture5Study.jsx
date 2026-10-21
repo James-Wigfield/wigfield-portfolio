@@ -613,8 +613,8 @@ export default function Lecture5Study() {
               <footer className="dl5s-end">
                 <p>
                   End of Lecture 5. Source: <em>CITS5017 Topic 5: Representation learning and dimension reduction using Autoencoders</em>,
-                  A/Prof Du Huynh, UWA, Semester 2 2026 (27 slides). The 3D data, the trained linear autoencoder and the Fashion MNIST
-                  reconstructions and t-SNE map are this page’s own runs, not the slides’ figures.
+                  A/Prof Du Huynh, UWA, Semester 2 2026 (27 slides). The 3D data and the trained linear autoencoder (§2–§3), and the Fashion MNIST runs (§6, §8, §9) are this
+                  page’s own runs, not the slides’ figures.
                 </p>
               </footer>
             </main>

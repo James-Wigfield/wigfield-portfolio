@@ -11,9 +11,9 @@ export default {
           table: {
             head: ['use', 'what it means'],
             rows: [
-              ['dimensionality reduction', 'the codings have far fewer dimensions than the inputs'],
+              ['dimensionality reduction', 'the codings typically have far fewer dimensions than the inputs'],
               ['feature detectors', 'unsupervised pre-training of deep networks'],
-              ['generative models', 'new data like the training data, but usually fuzzy'],
+              ['generative models', 'some generate new data like the training data, usually fuzzy'],
             ],
           },
         },

@@ -145,18 +145,19 @@ function Stack({ cx, y0, gap = 40, h = 20, parts = [] }) {
 
 /* §4 — Figure 17-3: a stacked autoencoder */
 function Sandwich() {
-  const cx = 168;
+  const cx = 190;
   const y0 = 196;
   const gap = 40;
   return (
     <Svg w={300} h={224} label="Figure 17-3: a stacked autoencoder drawn bottom to top: input layer 784 units, Hidden 1 100 units, Hidden 2 30 units (the codings), Hidden 3 100 units, output layer 784 units (the reconstruction)">
       <Stack cx={cx} y0={y0} gap={gap} parts={['enc', 'enc', 'dec', 'dec']} />
+      {/* as on the slide: the labels on the left, dashed arrows pointing right */}
       <P k="coding">
-        <Arrow x1={240} y1={y0 - 2 * gap - 10} x2={cx + 8} y2={y0 - 2 * gap - 10} dashed head={4} />
-        <T x={244} y={y0 - 2 * gap - 6} a="start" s={9.5} b>Codings</T>
+        <T x={4} y={y0 - 2 * gap - 7} a="start" s={9.5} b>Codings</T>
+        <Arrow x1={50} y1={y0 - 2 * gap - 10} x2={cx - 6} y2={y0 - 2 * gap - 10} dashed head={4} />
       </P>
-      <Arrow x1={240} y1={y0 - 4 * gap - 10} x2={cx + 8} y2={y0 - 4 * gap - 10} dashed head={4} />
-      <T x={244} y={y0 - 4 * gap - 6} a="start" s={9.5} b>Reconstruction</T>
+      <T x={4} y={y0 - 4 * gap - 9} a="start" s={9.5} b>Reconstruction</T>
+      <Arrow x1={80} y1={y0 - 4 * gap - 12} x2={cx - 6} y2={y0 - 4 * gap - 12} dashed head={4} />
     </Svg>
   );
 }
@@ -212,10 +213,10 @@ function Pretrain() {
     );
   });
   return (
-    <Svg w={360} h={246} label="Figure 17-6: Phase 1, an autoencoder (Input, Hidden 1, Hidden 2, Hidden 3, Output) trained on all the data; Phase 2, a classifier (Input, Hidden 1, Hidden 2, Output, Softmax) trained on the labelled data, with Hidden 1 and Hidden 2's parameters copied across from Phase 1">
+    <Svg w={360} h={256} label="Figure 17-6: Phase 1, an autoencoder (Input, Hidden 1, Hidden 2, Hidden 3, Output) trained on all the data; Phase 2, a classifier (Input, Hidden 1, Hidden 2, Output, Softmax) trained on the labelled data, with Hidden 1 and Hidden 2's parameters copied across from Phase 1">
       {col(84, left, (n) => (n === 'Hidden 1' || n === 'Hidden 2' ? 'copy' : 'p1'))}
       <Arrow x1={84} y1={y0 - 4 * gap} x2={84} y2={y0 - 4 * gap - 14} head={4} />
-      {col(268, right, (n, i) => (n === 'Hidden 1' || n === 'Hidden 2' ? 'copy' : i >= 3 ? 'head' : undefined))}
+      {col(268, right, (n, i) => (n === 'Hidden 1' || n === 'Hidden 2' ? 'copy' : i >= 3 ? 'head' : 'p2'))}
       <Arrow x1={268} y1={y0 - 4 * gap} x2={268} y2={y0 - 4 * gap - 14} head={4} />
       <P k="copy">
         <Arrow x1={124} y1={y0 - gap + 9} x2={228} y2={y0 - gap + 9} dashed head={4} />
@@ -223,9 +224,11 @@ function Pretrain() {
         <T x={176} y={y0 - 1.5 * gap + 13} s={9.5} i>Copy parameters</T>
       </P>
       <T x={84} y={y0 + h + 14} s={10.5} b>Phase 1</T>
-      <T x={84} y={y0 + h + 26} s={9}>train the autoencoder on all the data</T>
+      <T x={84} y={y0 + h + 26} s={9}>Train the autoencoder</T>
+      <T x={84} y={y0 + h + 36} s={9}>using all the data</T>
       <T x={268} y={y0 + h + 14} s={10.5} b>Phase 2</T>
-      <T x={268} y={y0 + h + 26} s={9}>train the classifier on the labelled data</T>
+      <T x={268} y={y0 + h + 26} s={9}>Train the classifier</T>
+      <T x={268} y={y0 + h + 36} s={9}>on the labeled data</T>
     </Svg>
   );
 }
@@ -235,18 +238,18 @@ function Phases() {
   const y0 = 176;
   const h = 19;
   const box = (cx, y, w, label, k) => <P k={k}><Box x={cx - w / 2} y={y} w={w} h={h} label={label} s={9.5} /></P>;
-  const c1 = 60;
+  const c1 = 66;
   const c2 = 186;
   const c3 = 318;
   const g = 30;
   return (
-    <Svg w={400} h={236} label="Figure 17-7: Phase 1 trains Input, Hidden 1, Output with target equal to the inputs; Phase 2 trains Input, Hidden 2, Output on the training set encoded by the first encoder; Phase 3 stacks Input, Hidden 1, Hidden 2, Hidden 3, Output, with parameters copied from the two phases">
+    <Svg w={400} h={262} label="Figure 17-7: Phase 1 trains Input, Hidden 1, Output with target equal to the inputs; Phase 2 trains Input, Hidden 2, Output on the training set encoded by the first encoder; Phase 3 stacks Input, Hidden 1, Hidden 2, Hidden 3, Output, with parameters copied from the two phases">
       {/* Phase 1: 784 → 100 → 784 */}
       <P k="p1">
         <line x1={c1} y1={y0} x2={c1} y2={y0 - g + h} />
         <line x1={c1} y1={y0 - g} x2={c1} y2={y0 - 4 * g + h} />
         <Arrow x1={c1} y1={y0 - 4 * g} x2={c1} y2={y0 - 4 * g - 14} head={4} />
-        <T x={c1} y={y0 - 4 * g - 18} s={8.5}>target = inputs</T>
+        <T x={c1} y={y0 - 4 * g - 18} s={9.5}>Target=inputs</T>
       </P>
       {box(c1, y0, 96, 'Input', 'p1')}
       {box(c1, y0 - g, 66, 'Hidden 1', 'p1')}
@@ -256,7 +259,7 @@ function Phases() {
         <line x1={c2} y1={y0 - g} x2={c2} y2={y0 - 2 * g + h} />
         <line x1={c2} y1={y0 - 2 * g} x2={c2} y2={y0 - 3 * g + h} />
         <Arrow x1={c2} y1={y0 - 3 * g} x2={c2} y2={y0 - 3 * g - 14} head={4} />
-        <T x={c2} y={y0 - 3 * g - 18} s={8.5}>target = inputs</T>
+        <T x={c2} y={y0 - 3 * g - 18} s={9.5}>Target=inputs</T>
       </P>
       {box(c2, y0 - g, 66, 'Input', 'p2')}
       {box(c2, y0 - 2 * g, 60, 'Hidden 2', 'p2')}
@@ -284,9 +287,12 @@ function Phases() {
       <T x={c1} y={y0 + h + 16} s={10} b>Phase 1</T>
       <T x={c2} y={y0 + h + 22} s={10} b>Phase 2</T>
       <T x={c3} y={y0 + h + 16} s={10} b>Phase 3</T>
-      <T x={c1} y={y0 + h + 28} s={8.5}>train the first AE</T>
-      <T x={c2} y={y0 + h + 34} s={8.5}>train the second AE on X₍₁₎</T>
-      <T x={c3} y={y0 + h + 28} s={8.5}>stack the autoencoders</T>
+      <T x={c1} y={y0 + h + 30} s={9.5}>Train the first</T>
+      <T x={c1} y={y0 + h + 41} s={9.5}>autoencoder</T>
+      <T x={c2} y={y0 + h + 36} s={9.5}>Train the second autoencoder</T>
+      <T x={c2} y={y0 + h + 47} s={9.5}>on the training set encoded</T>
+      <T x={c2} y={y0 + h + 58} s={9.5}>by the first encoder</T>
+      <T x={c3} y={y0 + h + 30} s={9.5}>Stack the autoencoders</T>
     </Svg>
   );
 }

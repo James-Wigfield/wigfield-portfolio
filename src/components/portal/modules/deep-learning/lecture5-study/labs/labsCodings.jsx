@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Lab, Chips, Range, Stat } from '../ui';
-import { SEQ_A, SEQ_B } from '../slideData';
+import { CAPTIONS, SEQ_A, SEQ_B } from '../slideData';
 import { X3, RUN } from '../aeRun';
 import { encode, decode, decoderPlane, mse, fmt } from '../ae';
 import './labsCodings.css';
@@ -157,6 +157,7 @@ export function Fig171Lab() {
   return (
     <Lab
       title="Figure 17-1, live: inputs → codings → reconstructions"
+      fig={CAPTIONS.fig171}
       slides="slides 6–7"
       tryThis="predict what happens to the reconstruction loss as you push the input off the plane. Then widen the code to 3 numbers and notice that the loss goes to zero for any input: a code that wide can simply copy."
     >
@@ -180,7 +181,7 @@ export function Fig171Lab() {
       </div>
       <p className="dl5s-cap">
         <span className="dl5s-own">this page’s own run</span> The weights are the linear autoencoder this page trains in §3 on its own 60 points
-        (slide 9’s settings: SGD, learning rate 0.5, 500 epochs). Its mean training loss is {fmt(trainLoss, 4)}. The 2-number code can only describe points on
+        (slides 8–9’s settings: SGD with learning_rate=0.5, 500 epochs). Its mean training loss is {fmt(trainLoss, 4)}. The 2-number code can only describe points on
         one plane, so a point pushed off that plane comes back on the plane, and the gap is the loss. Edge thickness shows each weight’s size; orange is
         positive, blue is negative. With 3 numbers the page simply wires each input straight through: a perfect copy that has learned nothing.
       </p>

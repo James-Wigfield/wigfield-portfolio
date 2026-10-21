@@ -15,7 +15,8 @@ export default {
           ],
         },
         '`train_autoencoder` trains one shallow autoencoder and returns its encoder, its decoder and the encoded data.',
-        'There can be more phases if the autoencoder is very deep, and the full stack can then be trained for a few more epochs.',
+        'There can be more phases if the autoencoder is very deep.',
+        'If needed, the full stack can then be trained for a few more epochs.',
       ],
       margin: [
         { q: 'What does the second autoencoder train on?', a: 'On $\\mathbf{X}_{(1)}$, the training set encoded by the first encoder (100 numbers per image). Those codings are its targets too.' },

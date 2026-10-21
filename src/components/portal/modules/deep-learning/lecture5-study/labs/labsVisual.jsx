@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Lab, Chips, Stat } from '../ui';
 import { loadRecon, loadTsne, useData } from '../fashion';
+import { CAPTIONS } from '../slideData';
 import { fmt, fmtInt } from '../ae';
 import { ReconGrid, LossCurve } from './parts';
 import './labsVisual.css';
@@ -26,6 +27,7 @@ export function ReconLab() {
   return (
     <Lab
       title="Originals vs reconstructions (Figure 17-4’s check)"
+      fig={CAPTIONS.fig174}
       slides="slide 13"
       tryThis="before showing what was lost, predict which item suffers most. Then show it, and notice what kind of detail disappears: logos, straps and handles."
     >
@@ -59,7 +61,7 @@ export function ReconLab() {
       <p className="dl5s-cap">
         <span className="dl5s-own">this page’s own run</span> <code>stacked_ae</code> built and trained exactly as slide 12 (Nadam, MSE, 20 epochs) with
         TensorFlow on Fashion MNIST, and the first validation images (the same five as Figure 17-4 come first). These are not the slide’s images. The
-        validation loss is still falling at epoch 20, which fits the first remedy. Each image’s MSE is its own mean squared pixel error, on a 0–1 scale.
+        validation loss is still falling at epoch 20, which fits the first remedy. Each image’s MSE is the mean squared pixel error of the model’s raw output, on a 0–1 scale (the pictures are clipped to that range for display).
       </p>
     </Lab>
   );
@@ -202,6 +204,7 @@ export function TsneLab() {
   return (
     <Lab
       title="t-SNE of the codings (Figure 17-5’s idea)"
+      fig={CAPTIONS.fig175}
       slides="slides 14–15"
       tryThis="before switching to one class at a time, predict which classes will sit apart and which will overlap. Then pick trousers, bags and the different tops in turn, and notice where the clusters blur."
     >
@@ -243,7 +246,7 @@ export function TsneLab() {
       )}
       <p className="dl5s-cap">
         <span className="dl5s-own">this page’s own run</span> Slide 14’s code: <code>stacked_encoder.predict(X_valid)</code> gives 30 codings per image, then{' '}
-        <code>TSNE()</code> (scikit-learn, random_state=42) maps all {T ? fmtInt(T.count) : '5,000'} validation images to 2D. The axes of a t-SNE map have no
+        <code>TSNE()</code> (scikit-learn; this page added random_state=42 so the map is the same every time) maps all {T ? fmtInt(T.count) : '5,000'} validation images to 2D. The axes of a t-SNE map have no
         meaning; only who sits near whom does. The four colour groups are this page’s own grouping of the ten classes. Figure 17-5 colours each class and adds item
         thumbnails; like it, this map keeps trousers, bags and footwear apart while the tops overlap.
       </p>

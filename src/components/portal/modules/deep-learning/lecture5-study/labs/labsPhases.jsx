@@ -3,7 +3,7 @@ import { Code } from '../../kit';
 import { Lab, Stat } from '../ui';
 import { useStudy } from '../context';
 import { Diagram } from '../diagrams';
-import { NAMED_CODE } from '../slideData';
+import { CAPTIONS, NAMED_CODE } from '../slideData';
 import { loadRecon, useData } from '../fashion';
 import { denseParams, fmt, fmtInt } from '../ae';
 import { ReconGrid, LossCurve } from './parts';
@@ -76,8 +76,9 @@ export function PhasesLab() {
   return (
     <Lab
       title="Figure 17-7, one phase at a time"
+      fig={CAPTIONS.fig177}
       slides="slides 23–25"
-      tryThis="before stepping to Phase 2, predict the shape of its input data and what its targets are. Then step on and check against the shapes and the highlighted lines of code."
+      tryThis="before stepping to Phase 2, predict the shape of its input data and what its targets are. Then step on and notice whether the shapes and the highlighted lines of code match your prediction."
     >
       <div className="dl-lab__controls">
         <div className="dl5s-stepper">
@@ -100,7 +101,7 @@ export function PhasesLab() {
       </div>
       <div className="dl5s-scroll">
         <table className="dl5s-table dl5s-ph__table">
-          <thead><tr><th>phase</th><th>input</th><th>codings</th><th>output (target)</th><th className="dl5s-num">parameters</th></tr></thead>
+          <thead><tr><th>phase</th><th>input</th><th>codings</th><th>output (target)</th><th className="dl5s-num">parameters (this page’s working)</th></tr></thead>
           <tbody>
             <tr className={at === 0 ? 'dl5s-row--on' : undefined}><td>1</td><td>784 (flattened image)</td><td>100: X₍₁₎</td><td>784 (the input)</td><td className="dl5s-num">{fmtInt(denseParams(784, 100) + denseParams(100, 784))}</td></tr>
             <tr className={at === 1 ? 'dl5s-row--on' : undefined}><td>2</td><td>100 (X₍₁₎)</td><td>30: X₍₂₎</td><td>100 (X₍₁₎)</td><td className="dl5s-num">{fmtInt(denseParams(100, 30) + denseParams(30, 100))}</td></tr>

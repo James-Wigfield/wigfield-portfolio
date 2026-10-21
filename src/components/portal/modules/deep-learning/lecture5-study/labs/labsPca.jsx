@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Icon from '../../../../icons';
 import { Lab, Chips, Range, Stat } from '../ui';
 import { useStudy } from '../context';
+import { CAPTIONS } from '../slideData';
 import { useReducedMotion } from '../hooks';
 import { X3, PCA3, RUN } from '../aeRun';
 import { AE_DEFAULTS, trainAE, encode, reconstruct, decoderPlane, planeAngle, codeAxes, dot, norm, fmt } from '../ae';
@@ -146,7 +147,7 @@ function LossChart({ history, epoch, floor }) {
   const n = history.length - 1;
   const sx = (e) => m.l + (e / n) * (WL - m.l - m.r);
   const sy = (v) => m.t + ((hi - Math.log10(v)) / (hi - lo)) * (HL - m.t - m.b);
-  const path = history.map((v, e) => `${e ? 'L' : 'M'}${sx(e).toFixed(1)} ${sy(v).toFixed(1)}`).join(' ');
+  const path = history.slice(0, epoch + 1).map((v, e) => `${e ? 'L' : 'M'}${sx(e).toFixed(1)} ${sy(v).toFixed(1)}`).join(' ');
   const ticks = [];
   for (let k = Math.ceil(lo); k <= Math.floor(hi); k++) ticks.push(10 ** k);
   return (
@@ -159,7 +160,7 @@ function LossChart({ history, epoch, floor }) {
       ))}
       {[0, 100, 200, 300, 400, 500].filter((e) => e <= n).map((e) => <text key={e} x={sx(e)} y={HL - 8} textAnchor="middle" className="dl5s-tick">{e}</text>)}
       <line x1={m.l} y1={sy(floor)} x2={WL - m.r} y2={sy(floor)} className="dl5s-pca__floor" />
-      <text x={WL - m.r} y={sy(floor) - 5} textAnchor="end" className="dl5s-svg__label">PCA’s error {fmt(floor, 4)}</text>
+      <text x={WL - m.r} y={sy(floor) - 5} textAnchor="end" className="dl5s-svg__label">PCA’s error {fmt(floor, 5)}</text>
       <path d={path} className="dl5s-pca__loss" />
       <line x1={sx(epoch)} y1={m.t} x2={sx(epoch)} y2={HL - m.b} className="dl5s-marker" />
       <circle cx={sx(epoch)} cy={sy(history[epoch])} r={4} className="dl5s-pca__now" />
@@ -206,6 +207,7 @@ export function PcaLab() {
   return (
     <Lab
       title="Train the linear autoencoder, watch it find PCA’s plane"
+      fig={CAPTIONS.slide9}
       slides="slides 8–9"
       tryThis="before pressing Train, predict where the blue plane will settle. Then compare the codings with PCA’s projection: notice the same layout, but turned, stretched and skewed. Lower the learning rate and see whether 500 epochs is still enough."
     >
@@ -238,7 +240,7 @@ export function PcaLab() {
           <figcaption className="dl5s-stagehead">Training loss by epoch (MSE, log scale)</figcaption>
           <div className="dl5s-wide"><LossChart history={run.history} epoch={epoch} floor={PCA3.mse} /></div>
           <div className="dl5s-stats dl5s-stats--tight">
-            <Stat k="loss now" v={fmt(loss, 4)} sub={`epoch ${epoch}`} />
+            <Stat k="loss now" v={fmt(loss, 5)} sub={`epoch ${epoch}`} />
             <Stat k="tilt from PCA’s plane" v={`${fmt(tilt, 1)}°`} tone={tilt < 1 ? 'accent' : undefined} sub="angle between the two planes" />
             <Stat k="angle between code axes" v={`${fmt(axes.angle, 0)}°`} sub={`lengths ${fmt(axes.lengths[0], 2)} and ${fmt(axes.lengths[1], 2)}; PCA’s axes: 90°, equal`} />
           </div>
@@ -265,10 +267,10 @@ export function PcaLab() {
 
       <p className="dl5s-cap">
         <span className="dl5s-own">this page’s own run</span> {X3.length} points of this page’s own 3D data (seeded; the slide’s data isn’t given), PCA from
-        their 3×3 covariance matrix, and the autoencoder trained here with slide 9’s settings: SGD, learning rate {lr}, {AE_DEFAULTS.epochs} epochs, MSE, mini-batches of 32. PCA keeps
+        their 3×3 covariance matrix, and the autoencoder trained here as slides 8–9 set it up (SGD, MSE, 500 epochs), with learning_rate={lr} in this run (slide 8 uses 0.5) and mini-batches of 32 (Keras’s default; no slide gives one). PCA keeps
         {' '}{fmt(PCA3.explained[0] * 100 + PCA3.explained[1] * 100, 1)}% of this set’s variance in its plane. PCA’s error is the smallest mean squared
         error any flat 2D code can reach on these points. At epoch {AE_DEFAULTS.epochs} with the slide’s learning rate, the autoencoder’s plane is within{' '}
-        {fmt(planeAngle(decoderPlane(RUN.ae).normal, PCA3.comps[2]), 1)}° of PCA’s and its loss is {fmt(RUN.history[RUN.history.length - 1], 4)} against PCA’s {fmt(PCA3.mse, 4)}. Its code
+        {fmt(planeAngle(decoderPlane(RUN.ae).normal, PCA3.comps[2]), 1)}° of PCA’s and its loss is {fmt(RUN.history[RUN.history.length - 1], 5)} against PCA’s {fmt(PCA3.mse, 5)}. Its code
         axes, though, meet at {fmt(codeAxes(RUN.ae).angle, 0)}° and have different lengths, so the codings are PCA’s projection turned, stretched and
         skewed: the same subspace, not the same axes.
       </p>

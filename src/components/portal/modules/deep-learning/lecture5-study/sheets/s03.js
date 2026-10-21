@@ -21,10 +21,10 @@ export default {
       items: [
         { code: 'autoencoder.fit(X_train, X_train, epochs=500, verbose=False)', read: 'the inputs are also the {g|targets}' },
         { code: 'codings = encoder.predict(X_train)', read: 'each 3D point’s 2D coding' },
-        'The codings are an approximate PCA: the 3D points projected onto a plane.',
+        'The codings are each point’s 2D position on a plane: an approximate PCA.',
       ],
       margin: [
-        { nb: 'It finds PCA’s plane, but its two code axes need not be the principal components (this page’s run).' },
+        { nb: 'It finds PCA’s plane, but its two coding axes need not be the principal components (this page’s clarification).' },
       ],
     },
   ],

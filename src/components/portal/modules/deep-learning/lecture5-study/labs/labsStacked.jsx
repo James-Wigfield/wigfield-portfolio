@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Icon from '../../../../icons';
 import { Code } from '../../kit';
 import { Lab, Chips, Stat } from '../ui';
-import { NAMED_CODE, PARAMS, STACKED_LINE_LAYER } from '../slideData';
+import { CAPTIONS, NAMED_CODE, PARAMS, STACKED_LINE_LAYER } from '../slideData';
 import { stackParams, fmtInt } from '../ae';
 import './labsStacked.css';
 
@@ -28,10 +28,10 @@ function StackSvg({ sizes }) {
   const gap = 58;
   const H = 30 + gap * 4 + 34;
   const y = (i) => H - 34 - i * gap;
-  const cx = 300;
+  const cx = 250;
   const { layers } = stackParams(sizes);
   return (
-    <svg viewBox={`0 0 580 ${H}`} className="dl5s-svg dl5s-sand" role="img" aria-label={`A stacked autoencoder: ${sizes.join(' to ')} units, drawn bottom to top`}>
+    <svg viewBox={`0 0 520 ${H}`} className="dl5s-svg dl5s-sand" role="img" aria-label={`A stacked autoencoder: ${sizes.join(' to ')} units, drawn bottom to top`}>
       {sizes.map((n, i) => (
         <g key={i}>
           {i > 0 && (
@@ -70,6 +70,7 @@ export function SandwichLab() {
   return (
     <Lab
       title="Build the sandwich (Figure 17-3)"
+      fig={CAPTIONS.fig173}
       slides="slides 10–11"
       tryThis="predict how the parameter count changes if you halve the hidden layers, then try it. Then switch to “too powerful” and notice what perfect training reconstructions leave out."
     >
@@ -84,7 +85,7 @@ export function SandwichLab() {
           <div className="dl5s-stats dl5s-stats--col">
             <Stat k="the sandwich" v={sizes.join(' → ')} sub="symmetric about the coding layer" />
             <Stat k="parameters" v={fmtInt(total)} tone={total === PARAMS.stacked.value ? 'accent' : undefined} sub={total === PARAMS.stacked.value ? 'slide 12’s count for this shape' : 'weights + biases of the four Dense layers'} />
-            <Stat k="numbers per image" v={`784 → ${coding}`} sub={`${(784 / coding).toFixed(1)}× fewer in the codings`} />
+            <Stat k="numbers per image" v={`784 → ${coding}`} sub={`about 1/${Math.round(784 / coding)} as many numbers (this page’s arithmetic)`} />
           </div>
         </div>
       ) : (
@@ -141,7 +142,7 @@ export function StackedCodeLab() {
     <Lab
       title="stacked_ae, layer by layer"
       slides="slide 12"
-      tryThis="before reading the right-hand column, predict which layer holds the most parameters. Then pick each row to find its line in the code, and pick the fit() line to see what the targets are."
+      tryThis="before reading the right-hand column, predict which layer holds the most parameters. Then pick each row to find its line in the code, and notice which two layers hold almost all of them; pick the fit() line to see what the targets are."
     >
       <div className="dl5s-scode">
         <div className="dl5s-scroll">
@@ -187,7 +188,7 @@ export function StackedCodeLab() {
       </p>
       <p className="dl5s-cap">
         The per-layer split is this page’s working; slide 12 prints only the total. A Dense layer’s parameters are its inputs × units weights plus one bias per unit.
-        <code> InputLayer</code>, <code>Flatten</code> and <code>Reshape</code> only change the shape and have none. The two biggest layers are the two that touch the 784 pixels.
+        <code> InputLayer</code>, <code>Flatten</code> and <code>Reshape</code> have no weights: <code>InputLayer</code> only declares the input shape, and the other two only reshape the data. The two biggest layers are the two that touch the 784 pixels.
       </p>
     </Lab>
   );

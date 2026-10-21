@@ -147,6 +147,24 @@ export const PRINT_CSS = `
   ${P} .dl5s-cap { font-size: 0.72rem; max-width: none; }
   ${P} .dl5s-readout { font-size: 0.78rem; max-width: none; }
 
+  /* lab layouts print as blocks: the drawing, then its readouts at full width */
+  ${P} .dl5s-f171__grid, ${P} .dl5s-sand__grid, ${P} .dl5s-tiedrule, ${P} .dl5s-pre, ${P} .dl5s-ph, ${P} .dl5s-recon__low,
+  ${P} .dl5s-tsne, ${P} .dl5s-pca__top, ${P} .dl5s-scode { display: block; }
+  ${P} .dl5s-f171__grid > * + *, ${P} .dl5s-sand__grid > * + *, ${P} .dl5s-tiedrule > * + *, ${P} .dl5s-pre > * + *,
+  ${P} .dl5s-ph > * + *, ${P} .dl5s-recon__low > * + *, ${P} .dl5s-tsne > * + *, ${P} .dl5s-pca__top > * + * { margin-top: 3mm; }
+  ${P} .dl5s-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  ${P} .dl5s-tsne, ${P} .dl5s-rgrid, ${P} .dl5s-recon__fig { break-inside: avoid; }
+  /* letter-spaced caps extract as "P L AY"; on paper they are set solid */
+  ${P} .dl5s :is(.dl5s-beat__label, .dl5s-lab__name, .dl5s-lab__slides, .dl5s-stagehead, .dl5s-receipt, .dl5s-own, .dl5s-stat__k, .dl5s-hero__kicker, .dl5s-figcap__k, .dlk-note__label, .dlk-eq__name) { letter-spacing: 0 !important; }
+  /* a beat's label stays with its first block */
+  ${P} .dl5s-beat__label { break-after: avoid-page; }
+  ${P} .dl5s-beat > .dl5s-beat__label + * { break-before: avoid-page; }
+  ${P} .dl5s-lab__bar, ${P} .dl5s-lab__bar + * { break-after: avoid-page; }
+  /* §10's outcomes, tight */
+  ${P} .dl5s-outcome { padding: 0.8mm 0; }
+  ${P} .dl5s-outcome__text { font-size: 0.8rem; }
+  ${P} .dl5s-outcomes + .dl5s-cap, ${P} .dl5s-cap + .dl5s-cap { margin-top: 1mm; }
+
   /* nothing split that matters */
   ${P} figure, ${P} table, ${P} .dlk-eq, ${P} .dl5s-eq, ${P} .dl5s-stats, ${P} .dl5s-stat, ${P} .dlk-note, ${P} svg, ${P} .dl5s-keep { break-inside: avoid; }
   ${P} .dl5s-stagehead, ${P} h2, ${P} h3, ${P} h4 { break-after: avoid; }

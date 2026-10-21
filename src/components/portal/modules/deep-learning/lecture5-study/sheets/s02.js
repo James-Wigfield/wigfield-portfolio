@@ -15,7 +15,7 @@ export default {
       at: '6',
       fig: { key: 'fig171', hl: ['code'], cap: 'Figure 17-1 (right): label the inputs, the two coding neurons, the encoder and the decoder.', place: 'side' },
       items: [
-        'An autoencoder has the architecture of an MLP, but its output layer has as many neurons as its input layer.',
+        'An autoencoder typically has the architecture of an MLP, but its output layer must have as many neurons as its input layer.',
         'The encoder turns the inputs into {g|codings}, the latent representation.',
         'The decoder turns the codings back into outputs, called the reconstructions.',
         'The cost function contains a {g|reconstruction loss}, which penalises reconstructions that differ from the inputs.',

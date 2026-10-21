@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Lab, Chips, Stat } from '../ui';
 import { useStudy } from '../context';
 import { Diagram } from '../diagrams';
+import { CAPTIONS } from '../slideData';
 import { denseParams, fmtInt } from '../ae';
 import './labsPretrain.css';
 
@@ -18,8 +19,8 @@ import './labsPretrain.css';
 const STEPS = [
   { hl: ['p1', 'copy'], title: 'Phase 1 · train the autoencoder on all the data', text: 'Train a stacked autoencoder on all the training data. This needs no labels: the inputs are their own targets.' },
   { hl: ['copy'], title: 'Copy the lower layers', text: 'Reuse the trained autoencoder’s lower layers, Hidden 1 and Hidden 2 (its encoder). Their parameters are copied into a new network for the actual task.' },
-  { hl: ['head'], title: 'Add the new top', text: 'On top of the copied layers goes a new Output layer with a Softmax, for the classification task. Hidden 3 and the autoencoder’s Output layer are not reused.' },
-  { hl: ['head', 'copy'], title: 'Phase 2 · train the classifier on the labelled data', text: 'Train the new network using the labelled data. The copied layers already hold feature detectors, so there is less left to learn, and it can cope with fewer labelled examples.' },
+  { hl: ['head', 'p2'], title: 'Add the new top', text: 'On top of the copied layers goes a new Output layer with a Softmax, for the classification task. Hidden 3 and the autoencoder’s Output layer are not reused.' },
+  { hl: ['head', 'copy', 'p2'], title: 'Phase 2 · train the classifier on the labelled data', text: 'Train the new network using the labelled data. The copied layers already hold feature detectors, so there is less left to learn, and it can cope with fewer labelled examples.' },
 ];
 
 // this page's example sizes: slide 12's encoder (784 → 100 → 30) and an output
@@ -38,6 +39,7 @@ export function PretrainLab() {
   return (
     <Lab
       title="Figure 17-6, step by step"
+      fig={CAPTIONS.fig176}
       slides="slides 16–17"
       tryThis="before the last step, predict how many parameters the classifier still has to learn from labelled data. Then switch the copied layers between fixed and trained, and notice the difference."
     >
@@ -54,18 +56,21 @@ export function PretrainLab() {
         <div className="dl5s-pre__side">
           <p className="dl5s-stagehead">{s.title}</p>
           <p className="dl5s-readout">{s.text}</p>
-          <div className="dl5s-scroll">
-            <table className="dl5s-table">
-              <thead><tr><th>layer</th><th>where from</th><th className="dl5s-num">parameters</th></tr></thead>
-              <tbody>
-                {REUSED.map((r) => <tr key={r.name}><td>{r.name}</td><td>copied (Phase 1)</td><td className="dl5s-num">{fmtInt(r.p)}</td></tr>)}
-                <tr><td>{HEAD.name}</td><td>new</td><td className="dl5s-num">{fmtInt(HEAD.p)}</td></tr>
-              </tbody>
-            </table>
-          </div>
+          {/* the tally fills in step by step, so the last step's number can be predicted first */}
+          {at >= 1 && (
+            <div className="dl5s-scroll">
+              <table className="dl5s-table">
+                <thead><tr><th>layer</th><th>where from</th><th className="dl5s-num">parameters</th></tr></thead>
+                <tbody>
+                  {REUSED.map((r) => <tr key={r.name}><td>{r.name}</td><td>copied (Phase 1)</td><td className="dl5s-num">{fmtInt(r.p)}</td></tr>)}
+                  {at >= 2 && <tr><td>{HEAD.name}</td><td>new</td><td className="dl5s-num">{fmtInt(HEAD.p)}</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className="dl5s-stats dl5s-stats--tight">
             <Stat k="learned without labels" v={fmtInt(reused)} sub="Phase 1, all the data" />
-            <Stat k="to learn from labelled data" v={fmtInt(training)} tone="accent" sub={frozen ? 'only the new layer' : 'the new layer and the copied ones'} />
+            <Stat k="to learn from labelled data" v={at === STEPS.length - 1 ? fmtInt(training) : '?'} tone="accent" sub={at === STEPS.length - 1 ? (frozen ? 'only the new layer' : 'the new layer and the copied ones') : 'predict it, then take the last step'} />
           </div>
         </div>
       </div>

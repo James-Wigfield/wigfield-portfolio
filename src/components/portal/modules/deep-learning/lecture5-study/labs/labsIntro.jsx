@@ -33,7 +33,7 @@ export function RoadmapLab() {
     <Lab
       title="Slide 3’s roadmap, mapped onto this page"
       slides="slide 3"
-      tryThis="before scrolling on, guess which topic gets the most slides; then click its chips. The bar beside each topic fills as you tick off its notebook lines."
+      tryThis="before scrolling on, guess which topic gets the most slides; then click its chips and notice how many sections it spans. The bar beside each topic fills as you tick off its notebook lines."
     >
       <ol className="dl5s-road">
         {ROADMAP.map((t, i) => {

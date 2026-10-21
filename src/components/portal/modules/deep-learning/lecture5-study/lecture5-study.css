@@ -224,7 +224,7 @@ html.dl5s-pseudo-on body { overflow: hidden !important; }
   max-width: 24ch;
 }
 .dl5s-hero__lead { margin: 0; font-size: 1rem; line-height: 1.65; color: var(--ink-2); max-width: 62ch; }
-.dl5s-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin-top: 0.3rem; }
+.dl5s-hero__actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.6rem 1rem; margin-top: 0.3rem; }
 .dl5s-resume { display: inline-flex; align-items: center; gap: 0.5rem; }
 .dl5s-resume__x { font: inherit; font-size: 0.72rem; color: var(--ink-3); background: none; border: none; text-decoration: underline; cursor: pointer; }
 .dl5s-resume__x:hover { color: var(--accent-ink); }
@@ -435,10 +435,12 @@ html.dl5s-pseudo-on body { overflow: hidden !important; }
 .dl5s-nocase { text-transform: none; }
 .dl5s-mini { font-size: 0.7rem; color: var(--ink-3); }
 
-/* narrow labs: wide drawings keep a readable size and scroll sideways */
+/* narrow labs: wide drawings keep a readable size and scroll sideways, with
+   a cue that there is more */
 @container lab (max-width: 560px) {
   .dl5s-wide { overflow-x: auto; overscroll-behavior-x: contain; }
-  .dl5s-wide > svg { min-width: 540px; }
+  .dl5s-wide > svg { min-width: 440px; }
+  .dl5s-wide::after, .dl5s-scroll--cue::after { content: 'scroll sideways for the rest →'; display: block; margin-top: 0.2rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; color: var(--ink-3); position: sticky; left: 0; }
 }
 
 /* §0 roadmap */
@@ -534,7 +536,7 @@ html.dl5s-pseudo-on body { overflow: hidden !important; }
 .portal[data-portal-theme='arcade'] .dl5s-figwrap--lab .dl5s-fig--hl g[data-part]:not(.dl5s-fig__hl) { opacity: 0.55; }
 
 /* hero: Export PDF + the NotebookLM prompt under it */
-.dl5s-export { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; max-width: 100%; }
+.dl5s-export { position: relative; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; max-width: 100%; }
 .dl5s-export__toggle {
   font: inherit;
   font-size: 0.72rem;
@@ -550,7 +552,22 @@ html.dl5s-pseudo-on body { overflow: hidden !important; }
 .dl5s-export__toggle:hover { color: var(--accent-ink); }
 .dl5s-export__chev { display: inline-block; transition: transform 0.2s; }
 .dl5s-export__chev--open { transform: rotate(180deg); }
-.dl5s-nlm { width: min(44rem, calc(100vw - 3rem)); max-width: 100%; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); padding: 0.6rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.dl5s-nlm {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 7;
+  width: min(44rem, calc(100vw - 2.5rem));
+  margin-top: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(14, 22, 32, 0.18);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 .dl5s-nlm__steps { margin: 0; padding-left: 1.2rem; font-size: 0.78rem; line-height: 1.55; color: var(--ink-2); }
 .dl5s-nlm__head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
 .dl5s-nlm__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
@@ -613,3 +630,7 @@ html.dl5s-pseudo-on body { overflow: hidden !important; }
     animation: none !important;
   }
 }
+
+/* a lab's redrawn figure: the slide's own caption, verbatim */
+.dl5s-figcap { margin: 0; font-size: 0.72rem; line-height: 1.5; color: var(--ink-3); font-style: italic; border-top: 1px solid var(--line-2); padding-top: 0.4rem; }
+.dl5s-figcap__k { font-style: normal; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 0.3rem; }

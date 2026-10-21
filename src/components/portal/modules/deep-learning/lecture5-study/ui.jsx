@@ -1,17 +1,18 @@
 import Icon from '../../../icons';
 
 /* ============================================================================
-   LECTURE 4 STUDY — LAB CHROME
+   LECTURE 5 STUDY — LAB CHROME
    ----------------------------------------------------------------------------
-     Lab     the frame every "Play" piece sits in: name, slide receipt, and the
-             one-line "Try this" prompt (what to change, what to notice)
+     Lab     the frame every "Play" piece sits in: name, slide receipt, the
+             one-line "Try this" prompt (what to change, what to notice), and
+             the redrawn figure's own caption from the slide, verbatim (`fig`)
      Chips   a labelled row of toggle chips (aria-pressed), the .dl-chip style
      Range   a labelled range slider showing its live value
      Stat    a big-number readout with its working underneath
    Built on the shared .dl-* controls in ../common.css.
    ========================================================================== */
 
-export function Lab({ title, slides, tryThis, children }) {
+export function Lab({ title, slides, tryThis, fig, children }) {
   return (
     <div className="dl5s-lab">
       <div className="dl5s-lab__bar">
@@ -25,6 +26,7 @@ export function Lab({ title, slides, tryThis, children }) {
         </p>
       )}
       {children}
+      {fig && <p className="dl5s-figcap"><span className="dl5s-figcap__k">On the slide:</span> {fig}</p>}
     </div>
   );
 }

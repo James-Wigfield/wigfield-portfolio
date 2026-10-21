@@ -6,8 +6,8 @@ export default {
       h: '`stacked_ae` in Keras',
       at: '12',
       items: [
-        'The encoder flattens each 28 × 28 image and applies `Dense(100)` and `Dense(30)` with ReLU; the decoder mirrors it, ending in `Dense(28 * 28)` with no activation and `Reshape([28, 28])`.',
-        { code: 'stacked_ae.fit(X_train, X_train, epochs=20,\n                         validation_data=(X_valid, X_valid))', read: 'loss `"mse"`, optimizer `"nadam"`; the targets are the {g|inputs}' },
+        'The encoder takes a 28 × 28 image (`InputLayer`), flattens it and applies `Dense(100)` and `Dense(30)` with ReLU; the decoder mirrors it, ending in `Dense(28 * 28)` with no activation and `Reshape([28, 28])`.',
+        { code: 'history = stacked_ae.fit(X_train, X_train, epochs=20,\n                         validation_data=(X_valid, X_valid))', read: 'loss `"mse"`, optimizer `"nadam"`; the targets are the {g|inputs}' },
       ],
     },
     {
@@ -31,7 +31,7 @@ export default {
         },
       ],
       margin: [
-        { q: 'Which layers of `stacked_ae` have no parameters?', a: '`InputLayer`, `Flatten` and `Reshape`: they only change the shape.' },
+        { q: 'Which layers of `stacked_ae` have no parameters?', a: '`InputLayer`, `Flatten` and `Reshape`. They have no weights: `InputLayer` only declares the input shape, and the other two only reshape the data.' },
       ],
     },
   ],

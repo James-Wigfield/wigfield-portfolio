@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Lab, Chips, Stat } from '../ui';
 import { Tex } from '../../kit';
-import { PARAMS } from '../slideData';
+import { CAPTIONS, PARAMS } from '../slideData';
 import { loadRecon, useData } from '../fashion';
 import { stackParams, tiedParams, fmt, fmtInt } from '../ae';
 import { texText } from '../texText';
@@ -65,6 +65,7 @@ export function TiedRuleLab() {
   return (
     <Lab
       title="The tied-weights rule, layer by layer"
+      fig={CAPTIONS.slide19}
       slides="slide 19"
       tryThis="before picking ℓ = 2, predict which decoder layer reuses W₂, and what shape that layer’s weights must have. Then try N = 6 and check the rule still pairs each layer with its mirror."
     >
@@ -116,17 +117,17 @@ export function TiedCountLab() {
         <Chips label="show" value={view} options={[{ v: 'count', l: 'the parameter count' }, { v: 'run', l: 'this page’s tied_ae run' }]} onChange={setView} />
       </div>
       <div className={view === 'count' ? undefined : 'dl5s-screenonly-hidden'}>
-        <div className="dl5s-scroll">
+        <div className="dl5s-scroll dl5s-scroll--cue">
           <table className="dl5s-table">
             <thead>
-              <tr><th>layer</th><th>stacked_ae (slide 12)</th><th className="dl5s-num">params</th><th>tied_ae (slide 21)</th><th className="dl5s-num">params</th></tr>
+              <tr><th>layer ℓ · stacked_ae / tied_ae</th><th>stacked_ae (slide 12)</th><th className="dl5s-num">params</th><th>tied_ae (slide 21)</th><th className="dl5s-num">params</th></tr>
             </thead>
             <tbody>
               {full.layers.map((x, i) => {
                 const t = tied.layers[i];
                 return (
                   <tr key={i}>
-                    <td>{['dense_1 · Dense(100)', 'dense_2 · Dense(30)', 'Dense(100) / DenseTranspose(dense_2)', 'Dense(28 * 28) / DenseTranspose(dense_1)'][i]}</td>
+                    <td>{['1 · Dense(100) / dense_1', '2 · Dense(30) / dense_2', '3 · Dense(100) / DenseTranspose(dense_2)', '4 · Dense(28 * 28) / DenseTranspose(dense_1)'][i]}</td>
                     <td>W {x.inputs} × {x.units} + b {x.units}</td>
                     <td className="dl5s-num">{fmtInt(x.total)}</td>
                     <td>{t.tiedTo ? <>W{sub(t.tiedTo)}ᵀ (shared) + b {t.biases}</> : <>W {x.inputs} × {x.units} + b {x.units}</>}</td>
