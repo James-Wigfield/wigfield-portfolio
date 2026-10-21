@@ -3,10 +3,11 @@ import Icon from '../../../icons';
 import { RefsProvider } from '../kit';
 import { SECTIONS } from './sections';
 import { REFS } from './slideData';
-import { load, save, loadTicks } from './storage';
+import { load, save, loadTicks, loadSheetTicks } from './storage';
 import { StudyCtx } from './context';
 import { Blocks } from './Rich';
-import NotebookPage from './NotebookPage';
+import NotebookTabs from './NotebookTabs';
+import { SHEETS, sheetKeys } from './sheets';
 import { prefersReducedMotion } from './hooks';
 import { RoadmapLab, NeuronLab, LayerLab } from './labs/labsIntro';
 import { DependencyLab, StateEqLab, ShapeLab } from './labs/labsMemory';
@@ -20,13 +21,17 @@ import { Conv1DLab, CnnGruLab } from './labs/labsConv1d';
 import { Scoreboard, ScoreboardLab, OutcomesLab } from './labs/labsSummary';
 import '../common.css';
 import './lecture4-study.css';
+import './sheet.css';
 
 /* ============================================================================
    CITS5017 · LECTURE 4 (RNNs) — STUDY MODULE
    ----------------------------------------------------------------------------
    One continuous page, in slide order, built for working down it in focus
    mode: every section is Read → Play → Write, and the Write beat is a sheet of
-   notebook paper to copy by hand.
+   notebook paper to copy by hand — the student-notes page (./sheets, drawn by
+   SheetPage.jsx) by default, the original fixed-order page behind a Legacy
+   tab (NotebookTabs.jsx). A section counts as copied when either page is
+   fully ticked; its progress is whichever page is further along.
 
      shell        sticky header (title · current section · progress · focus
                   toggle), a section index (rail when wide, dropdown when
@@ -77,7 +82,10 @@ const LABS = {
 
 const domId = (id) => `dl4s-${id}`;
 const lineCount = (s) => s.notes.reduce((a, g) => a + g.lines.length, 0);
-const TOTAL_LINES = SECTIONS.reduce((a, s) => a + lineCount(s), 0);
+const SHEET_KEYS = Object.fromEntries(SECTIONS.map((s) => [s.id, sheetKeys(SHEETS[s.id])]));
+// what a section asks you to copy: its student-notes page (or, without one, its legacy lines)
+const pageSize = (s) => SHEET_KEYS[s.id].length || lineCount(s);
+const TOTAL_LINES = SECTIONS.reduce((a, s) => a + pageSize(s), 0);
 const LAB_COUNT = SECTIONS.reduce((a, s) => a + (s.play?.length ?? 0), 0);
 const WIDE_AT = 920;
 const NONE = [];
@@ -95,7 +103,7 @@ function Beat({ n, icon, label, children }) {
   );
 }
 
-const StudySection = memo(function StudySection({ s, ticked, onToggle, onSetAll }) {
+const StudySection = memo(function StudySection({ s, ticked, onToggle, onSetAll, sheetTicked, onSheetToggle, onSheetSetAll }) {
   return (
     <section className="dl4s-sec" id={domId(s.id)} aria-labelledby={`${domId(s.id)}-h`}>
       <header className="dl4s-sec__head">
@@ -118,7 +126,16 @@ const StudySection = memo(function StudySection({ s, ticked, onToggle, onSetAll 
         </Beat>
       )}
       <Beat n={3} icon="edit" label="Write">
-        <NotebookPage section={s} ticked={ticked} onToggle={(idx) => onToggle(s.id, idx)} onSetAll={(total, on) => onSetAll(s.id, total, on)} />
+        <NotebookTabs
+          section={s}
+          sheet={SHEETS[s.id]}
+          ticked={ticked}
+          onToggle={(idx) => onToggle(s.id, idx)}
+          onSetAll={(total, on) => onSetAll(s.id, total, on)}
+          sheetTicked={sheetTicked}
+          onSheetToggle={(key) => onSheetToggle(s.id, key)}
+          onSheetSetAll={(keys, on) => onSheetSetAll(s.id, keys, on)}
+        />
       </Beat>
     </section>
   );
@@ -167,7 +184,7 @@ function SectionIndex({ current, stats, onJump, variant, onClose }) {
                   {s.short}
                   <span className="dl4s-index__slides">{/[–,]/.test(s.slides) ? 'slides' : 'slide'} {s.slides}</span>
                 </span>
-                <span className="dl4s-index__state" aria-label={st?.complete ? 'notes finished' : `${st?.done ?? 0} of ${st?.total ?? 0} lines`}>
+                <span className="dl4s-index__state" aria-label={st?.complete ? 'notes finished' : `${st?.done ?? 0} of ${st?.total ?? 0} lines${st?.page === 'legacy' ? ' on the Legacy page' : ''}`}>
                   {st?.complete ? <Icon name="check" size={13} strokeWidth={2.2} /> : st?.done ? `${st.done}/${st.total}` : ''}
                 </span>
               </button>
@@ -185,6 +202,7 @@ export default function Lecture4Study() {
   const dropRef = useRef(null);
 
   const [ticks, setTicks] = useState(loadTicks);
+  const [sheetTicks, setSheetTicks] = useState(loadSheetTicks);
   const [outcomes, setOutcomes] = useState(() => {
     const v = load('outcomes', []);
     return Array.isArray(v) ? v.filter((n) => Number.isInteger(n)) : [];
@@ -213,6 +231,7 @@ export default function Lecture4Study() {
 
   // ── persistence ──────────────────────────────────────────────────────────
   useEffect(() => { save('ticks', ticks); }, [ticks]);
+  useEffect(() => { save('sheetTicks', sheetTicks); }, [sheetTicks]);
   useEffect(() => { save('outcomes', outcomes); }, [outcomes]);
   useEffect(() => { save('rail', railOpen); }, [railOpen]);
   useEffect(() => {
@@ -230,24 +249,43 @@ export default function Lecture4Study() {
   const setAllTicks = useCallback((id, total, on) => {
     setTicks((prev) => ({ ...prev, [id]: on ? Array.from({ length: total }, (_, i) => i) : [] }));
   }, []);
+  const toggleSheetTick = useCallback((id, key) => {
+    setSheetTicks((prev) => {
+      const list = prev[id] || [];
+      return { ...prev, [id]: list.includes(key) ? list.filter((k) => k !== key) : [...list, key] };
+    });
+  }, []);
+  const setAllSheetTicks = useCallback((id, keys, on) => {
+    setSheetTicks((prev) => ({ ...prev, [id]: on ? [...keys] : [] }));
+  }, []);
   const toggleOutcome = useCallback((i) => {
     setOutcomes((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort((a, b) => a - b)));
   }, []);
 
+  // Per section, each page's own count; the section shows whichever page is
+  // further along, and is done when either page is fully ticked.
   const stats = useMemo(() => {
     const per = {};
     let lines = 0;
     let pages = 0;
+    let weighted = 0;
     SECTIONS.forEach((s) => {
-      const total = lineCount(s);
-      const done = (ticks[s.id] || []).filter((i) => i < total).length;
-      const complete = total > 0 && done === total;
-      per[s.id] = { done, total, complete };
-      lines += done;
+      const lTotal = lineCount(s);
+      const legacy = { done: (ticks[s.id] || []).filter((i) => i < lTotal).length, total: lTotal };
+      const keys = SHEET_KEYS[s.id];
+      const have = new Set(sheetTicks[s.id] || []);
+      const sheet = { done: keys.filter((k) => have.has(k)).length, total: keys.length };
+      const frac = (p) => (p.total ? p.done / p.total : 0);
+      const complete = [legacy, sheet].some((p) => p.total > 0 && p.done === p.total);
+      const best = frac(legacy) > frac(sheet) || !sheet.total ? 'legacy' : 'sheet';
+      const shown = best === 'legacy' ? legacy : sheet;
+      per[s.id] = { done: shown.done, total: shown.total, complete, page: best, frac: complete ? 1 : frac(shown), sheet, legacy };
+      lines += shown.done;
+      weighted += per[s.id].frac * pageSize(s);
       if (complete) pages += 1;
     });
-    return { per, lines, pages };
-  }, [ticks]);
+    return { per, lines, pages, pct: Math.round((weighted / TOTAL_LINES) * 100) };
+  }, [ticks, sheetTicks]);
 
   // ── layout measurements ──────────────────────────────────────────────────
   useEffect(() => {
@@ -283,7 +321,9 @@ export default function Lecture4Study() {
   }, []);
 
   const jumpTo = useCallback((id, { nb = false, smooth = true } = {}) => {
-    const el = document.getElementById(nb ? `${domId(id)}-nb` : domId(id));
+    const page = nb ? document.getElementById(`${domId(id)}-nb`) : null;
+    // land on the notebook's tab row, so the tabs stay in view
+    const el = nb ? page?.closest('.dl4s-nbt') ?? page : document.getElementById(domId(id));
     const root = rootRef.current;
     if (!el || !root) return;
     const gap = barBottom() + 14;
@@ -299,7 +339,7 @@ export default function Lecture4Study() {
     } else {
       window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - gap, behavior });
     }
-    const heading = nb ? el.querySelector('.dl4s-nb__title') : el.querySelector('.dl4s-sec__title');
+    const heading = nb ? el.querySelector('.dl4s-nb__title, .dl4s-sh__title') : el.querySelector('.dl4s-sec__title');
     heading?.focus?.({ preventScroll: true });
     setDropOpen(false);
   }, [barBottom, scroller]);
@@ -450,7 +490,7 @@ export default function Lecture4Study() {
   const ctx = useMemo(() => ({ stats, jumpTo, outcomes, toggleOutcome }), [stats, jumpTo, outcomes, toggleOutcome]);
   const cur = SECTIONS[current];
   const showRail = wide && railOpen;
-  const pct = Math.round((stats.lines / TOTAL_LINES) * 100);
+  const pct = stats.pct;
 
   return (
     <StudyCtx.Provider value={ctx}>
@@ -471,9 +511,9 @@ export default function Lecture4Study() {
               <span className="dl4s-bar__nowno">§{cur.no}</span>
               <span className="dl4s-bar__nowname">{cur.title}</span>
             </div>
-            <div className="dl4s-bar__prog" title={`${stats.lines} of ${TOTAL_LINES} notebook lines copied`}>
+            <div className="dl4s-bar__prog" title={`${pct}% of the notebook copied (each section counts its student-notes or Legacy page, whichever is further along)`}>
               <span className="dl4s-bar__progtext">
-                <b>{stats.lines}</b>/{TOTAL_LINES} lines · <b>{stats.pages}</b>/{SECTIONS.length} pages
+                <b>{pct}%</b> copied · <b>{stats.pages}</b>/{SECTIONS.length} pages
               </span>
               <span className="dl4s-bar__track" aria-hidden="true"><span style={{ width: `${pct}%` }} /></span>
             </div>
@@ -541,7 +581,16 @@ export default function Lecture4Study() {
               </div>
 
               {SECTIONS.map((s) => (
-                <StudySection key={s.id} s={s} ticked={ticks[s.id] || NONE} onToggle={toggleTick} onSetAll={setAllTicks} />
+                <StudySection
+                  key={s.id}
+                  s={s}
+                  ticked={ticks[s.id] || NONE}
+                  onToggle={toggleTick}
+                  onSetAll={setAllTicks}
+                  sheetTicked={sheetTicks[s.id] || NONE}
+                  onSheetToggle={toggleSheetTick}
+                  onSheetSetAll={setAllSheetTicks}
+                />
               ))}
 
               <footer className="dl4s-end">

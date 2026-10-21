@@ -9,6 +9,7 @@ import { Diagram } from './diagrams';
    ----------------------------------------------------------------------------
      Rich            one string of inline markup → React nodes:
                        **bold**  *italic*  `code`  $tex$  [label](#id)  [^n]
+                       {g|…}  green pen (student-notes sheets only)
                      (an earliest-match tokeniser, like ../../markdownLite.js,
                      so nothing is ever injected as HTML)
      Blocks          a section's `read` array → paragraphs, equations, code
@@ -28,12 +29,33 @@ function SecLink({ id, children }) {
   );
 }
 
+// {g|…} — the student-notes sheet's green highlight. Its body may hold TeX
+// braces, so the closing brace is found by counting, not by the regex.
+const GREEN = '{g|';
+function closeBrace(text, from) {
+  let depth = 0;
+  for (let i = from; i < text.length; i++) {
+    if (text[i] === '{') depth += 1;
+    else if (text[i] === '}' && --depth === 0) return i;
+  }
+  return -1;
+}
+
 function parse(text, key = 'r') {
   const out = [];
   let rest = text;
   let k = 0;
   while (rest) {
     const m = TOKEN.exec(rest);
+    const g = rest.indexOf(GREEN);
+    const gEnd = g === -1 || (m && m.index < g) ? -1 : closeBrace(rest, g);
+    if (gEnd !== -1) {
+      if (g > 0) out.push(rest.slice(0, g));
+      const tk = `${key}.${k++}`;
+      out.push(<span key={tk} className="dl4s-sh__g">{parse(rest.slice(g + GREEN.length, gEnd), tk)}</span>);
+      rest = rest.slice(gEnd + 1);
+      continue;
+    }
     if (!m) {
       out.push(rest);
       break;
