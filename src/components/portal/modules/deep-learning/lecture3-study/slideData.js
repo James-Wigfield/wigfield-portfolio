@@ -38,7 +38,7 @@ export const ROADMAP = [
   { topic: 'Pooling layers', secs: ['s09'] },
   { topic: 'TensorFlow implementation for CNNs', secs: ['s06', 's07', 's11'] },
   { topic: 'Memory requirements of CNNs', secs: ['s08'] },
-  { topic: 'CNN architectures', secs: ['s10', 's11', 's12a', 's12b', 's12c'] },
+  { topic: 'CNN architectures', secs: ['s10', 's11', 's12', 's12a', 's12b', 's12c'] },
   { topic: 'Using pretrained models and transfer learning', secs: ['s13', 's14'] },
 ];
 
@@ -151,28 +151,36 @@ export const GOOGLENET_FLOW = [
 ];
 
 // ── Slides 36–47: the ILSVRC story ──────────────────────────────────────────
+// idea = the fuller line the §12.3 comparison cards show; key = the same idea
+// in one line, for the §12 summary table.
 export const ARCHS = [
   { id: 'lenet', name: 'LeNet-5', year: 1998, who: 'Yann LeCun', sec: 's12a',
     result: 'Widely used for handwritten digit recognition (MNIST)',
-    idea: 'Conv + average-pooling layers, tanh activations, RBF output', err: null },
+    idea: 'Conv + average-pooling layers, tanh activations, RBF output',
+    key: 'Conv + average-pooling layers; tanh, RBF output', err: null },
   { id: 'alexnet', name: 'AlexNet', year: 2012, who: 'Alex Krizhevsky, Ilya Sutskever, Geoffrey Hinton', sec: 's12a',
     result: 'Won ILSVRC 2012: 17% top-5 error (second best 26%)',
-    idea: 'Much larger and deeper than LeNet-5; first to stack conv layers directly on top of each other; dropout + data augmentation', err: 17, bound: '=' },
+    idea: 'Much larger and deeper than LeNet-5; first to stack conv layers directly on top of each other; dropout + data augmentation',
+    key: 'Like LeNet-5 but much larger and deeper; first to stack conv layers directly on top of each other', err: 17, bound: '=' },
   { id: 'googlenet', name: 'GoogLeNet', year: 2014, who: 'Christian Szegedy et al., Google Research', sec: 's12b',
     result: 'Won ILSVRC 2014: top-5 error below 7%',
-    idea: 'Much deeper, using inception modules; roughly 6 million parameters vs AlexNet’s 60 million', err: 7, bound: '<' },
+    idea: 'Much deeper, using inception modules; roughly 6 million parameters vs AlexNet’s 60 million',
+    key: 'Inception modules: much deeper, with 10 times fewer parameters than AlexNet', err: 7, bound: '<' },
   { id: 'vgg', name: 'VGGNet', year: 2014, who: 'Karen Simonyan, Andrew Zisserman (VGG, Oxford)', sec: 's12b',
     result: 'Runner-up in ILSVRC 2014',
-    idea: '2–3 conv layers + a pooling layer, repeated (16 or 19 conv layers); only 3×3 filters, but many', err: null },
+    idea: '2–3 conv layers + a pooling layer, repeated (16 or 19 conv layers); only 3×3 filters, but many',
+    key: '2 or 3 conv layers and a pooling layer, repeated; only 3×3 filters, but many', err: null },
   { id: 'resnet', name: 'ResNet', year: 2015, who: 'Kaiming He et al.', sec: 's12c',
     result: 'Won ILSVRC 2015: top-5 error under 3.6%',
-    idea: '152 layers (variants: 34, 50, 101); skip connections → residual learning', err: 3.6, bound: '<' },
+    idea: '152 layers (variants: 34, 50, 101); skip connections → residual learning',
+    key: 'Skip connections → residual learning; 152 layers (winning variant)', err: 3.6, bound: '<' },
   { id: 'xception', name: 'Xception', year: 2016, who: 'François Chollet (author of Keras)', sec: 's12c',
     result: 'Significantly outperformed Inception-v3 on a huge task (350 million images, 17,000 classes)',
-    idea: 'A variant of GoogLeNet', err: null },
+    idea: 'A variant of GoogLeNet', key: 'A variant of GoogLeNet', err: null },
   { id: 'senet', name: 'SENet', year: 2017, who: 'Jie Hu et al.', sec: 's12c',
     result: 'Won ILSVRC 2017: 2.25% top-5 error',
-    idea: 'Squeeze-and-Excitation Network: extends inception networks and ResNets and boosts their performance', err: 2.25, bound: '=' },
+    idea: 'Squeeze-and-Excitation Network: extends inception networks and ResNets and boosts their performance',
+    key: 'Extends inception networks and ResNets and boosts their performance', err: 2.25, bound: '=' },
 ];
 
 export const OTHER_ARCHS = ['ResNeXt (2016)', 'DenseNet (2016)', 'MobileNet (2017)', 'CSPNet (2019)', 'EfficientNet (2019)'];
@@ -265,6 +273,6 @@ export const OUTCOMES = [
   { text: 'Understand the role of pooling layers in a CNN', secs: ['s09'] },
   { text: 'Know how to implement a simple CNN using TensorFlow', secs: ['s06', 's07', 's11'] },
   { text: 'Understand the large memory requirements of CNNs', secs: ['s08'] },
-  { text: 'Know some basic CNN architectures', secs: ['s11', 's12a', 's12b', 's12c'] },
+  { text: 'Know some basic CNN architectures', secs: ['s11', 's12', 's12a', 's12b', 's12c'] },
   { text: 'Know how to implement transfer learning with a pretrained model', secs: ['s13', 's14'] },
 ];

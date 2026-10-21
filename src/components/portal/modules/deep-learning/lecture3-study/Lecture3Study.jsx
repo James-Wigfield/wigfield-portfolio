@@ -15,6 +15,10 @@ import { Conv2DLab, PaddingLab, MemoryLab } from './labs/labsKeras';
 import { PoolingLab, DepthPoolLab, HyperparamLab } from './labs/labsPool';
 import { ShapeFlowLab, KernelStackLab, ClassicTablesLab, AugmentLab, InceptionLab, ResidualLab, TimelineLab } from './labs/labsArch';
 import { PretrainedLab, TransferLab, OutcomesLab } from './labs/labsApps';
+import NotebookLmPrompt from './NotebookLmPrompt';
+import { PRINT_CSS } from './print';
+import { PDF_TITLE } from './exportPrompt';
+import { annotateMath } from './texPlain';
 import '../common.css';
 import './lecture3-study.css';
 
@@ -35,6 +39,11 @@ import './lecture3-study.css';
      persistence  ./storage.js — ticks, last section, outcomes, rail state
      content      ./sections.js (all prose, notes, formulas, questions)
      labs         ./labs/*.jsx  ·  diagrams ./diagrams.jsx
+     progress     counts the core sections only: the optional §12.1–12.3
+                  deep dives can be ticked but never hold the bar back
+     export       Export PDF = print mode (html.dl3s-printing, ./print.js)
+                  + window.print(): Read and Play beats only, real text for
+                  NotebookLM; the prompt to paste there is ./exportPrompt.js
 
    The original tabbed Lecture 3 (../lecture3/) is untouched.
    ========================================================================== */
@@ -67,10 +76,33 @@ const LABS = {
 
 const domId = (id) => `dl3s-${id}`;
 const lineCount = (s) => s.notes.reduce((a, g) => a + g.lines.length, 0);
-const TOTAL_LINES = SECTIONS.reduce((a, s) => a + lineCount(s), 0);
-const LAB_COUNT = SECTIONS.reduce((a, s) => a + (s.play?.length ?? 0), 0);
+const CORE = SECTIONS.filter((s) => !s.optional);
+const OPTIONAL_COUNT = SECTIONS.length - CORE.length;
+const TOTAL_LINES = CORE.reduce((a, s) => a + lineCount(s), 0);
+const LAB_COUNT = new Set(SECTIONS.flatMap((s) => s.play ?? [])).size;
 const WIDE_AT = 920;
 const NONE = [];
+
+// The footnote numbers a section's Read beat cites, in order (printed under
+// the section, since the hover popovers can't be read on paper).
+const FN_RE = /\[\^(\d+)\]/g;
+function footnotes(blocks, out = []) {
+  const scan = (t) => {
+    for (const m of String(t).matchAll(FN_RE)) if (!out.includes(Number(m[1]))) out.push(Number(m[1]));
+  };
+  blocks.forEach((b) => {
+    if (typeof b === 'string') scan(b);
+    else if (b.list) b.list.forEach(scan);
+    else if (b.note) scan(b.note);
+    else if (b.slideNote) scan(b.slideNote);
+    else if (b.dd) scan(b.dd);
+    else if (b.unfold) footnotes(b.unfold.blocks, out);
+  });
+  return out;
+}
+
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+const slideWord = (range) => (/[–,-]/.test(range) ? 'slides' : 'slide');
 
 function Beat({ n, icon, label, children }) {
   return (
@@ -86,16 +118,23 @@ function Beat({ n, icon, label, children }) {
 }
 
 const StudySection = memo(function StudySection({ s, ticked, onToggle, onSetAll }) {
+  const fns = useMemo(() => footnotes(s.read), [s.read]);
   return (
-    <section className="dl3s-sec" id={domId(s.id)} aria-labelledby={`${domId(s.id)}-h`}>
+    <section className={`dl3s-sec${s.optional ? ' dl3s-sec--opt' : ''}`} id={domId(s.id)} aria-labelledby={`${domId(s.id)}-h`}>
       <header className="dl3s-sec__head">
         <span className="dl3s-sec__no">§{s.no}</span>
         <h2 className="dl3s-sec__title" id={`${domId(s.id)}-h`} tabIndex={-1}>{s.title}</h2>
-        <span className="dl3s-receipt">slides {s.slides}</span>
+        {s.optional && <span className="dl3s-sec__opt">optional deep dive</span>}
+        <span className="dl3s-receipt">{slideWord(s.slides)} {s.slides}</span>
       </header>
       <Beat n={1} icon="eye" label="Read">
         <div className="dl3s-read">
           <Blocks blocks={s.read} />
+          {fns.length > 0 && (
+            <ol className="dl3s-fns" aria-label="Footnotes">
+              {fns.map((n) => <li key={n} value={n}>{REFS[n]}</li>)}
+            </ol>
+          )}
         </div>
       </Beat>
       {s.play?.length > 0 && (
@@ -131,7 +170,7 @@ function SectionIndex({ current, stats, onJump, variant, onClose }) {
     <nav className={`dl3s-index dl3s-index--${variant}`} aria-label="Sections of this lecture">
       <div className="dl3s-index__head">
         <span className="dl3s-index__title">Sections</span>
-        <span className="dl3s-index__count">{stats.pages}/{SECTIONS.length} pages done</span>
+        <span className="dl3s-index__count">{stats.pages}/{CORE.length} pages done</span>
         {onClose && (
           <button type="button" className="dl3s-index__close" onClick={onClose} aria-label="Hide the section index">
             <Icon name="chevron" size={14} className="dl3s-rot180" />
@@ -141,20 +180,21 @@ function SectionIndex({ current, stats, onJump, variant, onClose }) {
       <ol className="dl3s-index__list" ref={listRef}>
         {SECTIONS.map((s, i) => {
           const st = stats.per[s.id];
-          const groupHead = s.group && SECTIONS[i - 1]?.group !== s.group ? s.group : null;
           return (
             <li key={s.id}>
-              {groupHead && <span className="dl3s-index__group">§12 {groupHead}</span>}
               <button
                 type="button"
-                className={`dl3s-index__item${i === current ? ' dl3s-index__item--on' : ''}${st?.complete ? ' dl3s-index__item--done' : ''}${s.group ? ' dl3s-index__item--sub' : ''}`}
+                className={`dl3s-index__item${i === current ? ' dl3s-index__item--on' : ''}${st?.complete ? ' dl3s-index__item--done' : ''}${s.parent ? ' dl3s-index__item--sub' : ''}`}
                 aria-current={i === current ? 'location' : undefined}
                 onClick={() => onJump(s.id)}
               >
                 <span className="dl3s-index__no">{s.no}</span>
                 <span className="dl3s-index__name">
                   {s.short}
-                  <span className="dl3s-index__slides">slides {s.slides}</span>
+                  <span className="dl3s-index__slides">
+                    {slideWord(s.slides)} {s.slides}
+                    {s.optional && <span className="dl3s-index__opt"> · optional</span>}
+                  </span>
                 </span>
                 <span className="dl3s-index__state" aria-label={st?.complete ? 'notes finished' : `${st?.done ?? 0} of ${st?.total ?? 0} lines`}>
                   {st?.complete ? <Icon name="check" size={13} strokeWidth={2.2} /> : st?.done ? `${st.done}/${st.total}` : ''}
@@ -190,6 +230,8 @@ export default function Lecture3Study() {
   const [pseudoFs, setPseudoFs] = useState(false);
   const [wide, setWide] = useState(true);
   const [stick, setStick] = useState(0);
+  const [withDeep, setWithDeep] = useState(false);
+  const [nlmOpen, setNlmOpen] = useState(false);
 
   const focus = isFs || pseudoFs;
   const pseudoFsRef = useRef(false);
@@ -223,6 +265,7 @@ export default function Lecture3Study() {
     setOutcomes((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort((a, b) => a - b)));
   }, []);
 
+  // Every section reports its own ticks; the totals count core sections only.
   const stats = useMemo(() => {
     const per = {};
     let lines = 0;
@@ -232,10 +275,11 @@ export default function Lecture3Study() {
       const done = (ticks[s.id] || []).filter((i) => i < total).length;
       const complete = total > 0 && done === total;
       per[s.id] = { done, total, complete };
+      if (s.optional) return;
       lines += done;
       if (complete) pages += 1;
     });
-    return { per, lines, pages };
+    return { per, lines, pages, core: CORE.length };
   }, [ticks]);
 
   // ── layout measurements ──────────────────────────────────────────────────
@@ -436,6 +480,84 @@ export default function Lecture3Study() {
     return () => document.removeEventListener('pointerdown', onDown);
   }, [dropOpen]);
 
+  // ── Export PDF: print mode + the browser's own "Save as PDF" ─────────────
+  // html.dl3s-printing switches on ./print.js (Read + Play only, a paper
+  // palette); html.dl3s-print-dd adds the §12.1–12.3 deep dives. The button
+  // leaves focus mode first and puts it back once printing is over (the
+  // overlay if fullscreen is refused without a click). Ctrl+P on this page
+  // reaches the same print mode through beforeprint.
+  const printState = useRef({ on: false, title: '', refocus: null });
+  const deepRef = useRef(withDeep);
+  useEffect(() => { deepRef.current = withDeep; }, [withDeep]);
+
+  const enterPrint = useCallback(() => {
+    const p = printState.current;
+    if (p.on) return;
+    p.on = true;
+    p.title = document.title;
+    annotateMath(rootRef.current);
+    document.documentElement.classList.add('dl3s-printing');
+    document.documentElement.classList.toggle('dl3s-print-dd', deepRef.current);
+    document.title = PDF_TITLE;
+  }, []);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const leave = (refocus) => {
+      const p = printState.current;
+      if (!p.on) return;
+      p.on = false;
+      document.title = p.title;
+      html.classList.remove('dl3s-printing', 'dl3s-print-dd');
+      const again = p.refocus;
+      p.refocus = null;
+      if (refocus && again) again();
+    };
+    const onAfter = () => leave(true);
+    window.addEventListener('beforeprint', enterPrint);
+    window.addEventListener('afterprint', onAfter);
+    return () => {
+      window.removeEventListener('beforeprint', enterPrint);
+      window.removeEventListener('afterprint', onAfter);
+      leave(false);
+    };
+  }, [enterPrint]);
+
+  const leaveFocus = useCallback(() => new Promise((resolve) => {
+    if (document.fullscreenElement && document.fullscreenElement === rootRef.current) {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        document.removeEventListener('fullscreenchange', finish);
+        resolve();
+      };
+      document.addEventListener('fullscreenchange', finish);
+      setTimeout(finish, 1500);
+      document.exitFullscreen().catch(finish);
+      return;
+    }
+    if (pseudoFsRef.current) setPseudo(false);
+    resolve();
+  }), [setPseudo]);
+
+  const exportPdf = useCallback(async () => {
+    const wasFocus = live.current.focus;
+    const wasPseudo = pseudoFsRef.current;
+    if (wasFocus) await leaveFocus();
+    enterPrint();
+    printState.current.refocus = wasFocus ? () => (wasPseudo ? setPseudo(true) : toggleFocus()) : null;
+    try {
+      await document.fonts?.ready;
+    } catch {
+      /* no font loading API — print anyway */
+    }
+    // let React drop the focus-mode classes and KaTeX settle before the snapshot
+    await nextFrame();
+    await nextFrame();
+    window.print();
+  }, [leaveFocus, enterPrint, setPseudo, toggleFocus]);
+
   const ctx = useMemo(() => ({ stats, jumpTo, outcomes, toggleOutcome }), [stats, jumpTo, outcomes, toggleOutcome]);
   const cur = SECTIONS[current];
   const showRail = wide && railOpen;
@@ -450,6 +572,7 @@ export default function Lecture3Study() {
           className={`dl dl3s${focus ? ' dl3s--focus' : ''}${pseudoFs ? ' dl3s--pseudo' : ''}`}
           style={{ '--dl3s-stick': `${focus ? 0 : stick}px` }}
         >
+          <style>{PRINT_CSS}</style>
           {/* ── sticky header ─────────────────────────────────────────── */}
           <header ref={barRef} className="dl3s-bar">
             <div className="dl3s-bar__title">
@@ -460,9 +583,9 @@ export default function Lecture3Study() {
               <span className="dl3s-bar__nowno">§{cur.no}</span>
               <span className="dl3s-bar__nowname">{cur.title}</span>
             </div>
-            <div className="dl3s-bar__prog" title={`${stats.lines} of ${TOTAL_LINES} notebook lines copied`}>
+            <div className="dl3s-bar__prog" title={`${stats.lines} of ${TOTAL_LINES} notebook lines copied (the optional §12.1–12.3 deep dives aren’t counted)`}>
               <span className="dl3s-bar__progtext">
-                <b>{stats.lines}</b>/{TOTAL_LINES} lines · <b>{stats.pages}</b>/{SECTIONS.length} pages
+                <b>{stats.lines}</b>/{TOTAL_LINES} lines · <b>{stats.pages}</b>/{CORE.length} pages
               </span>
               <span className="dl3s-bar__track" aria-hidden="true"><span style={{ width: `${pct}%` }} /></span>
             </div>
@@ -506,10 +629,50 @@ export default function Lecture3Study() {
                   One page, in slide order. Each section: read a short explanation, play with a live lab until it clicks, then copy
                   its notebook page onto paper and tick the lines off.
                 </p>
+                <div className="dl3s-printonly dl3s-cover">
+                  <p>
+                    <b>Read + Play edition.</b> Every section of the CITS5017 Lecture 3 study page in slide order: its explanation (Read) and
+                    its interactive lab, shown in the lab’s default state (Play). The notebook pages (Write) are left out. “Try this” lines say
+                    what each lab is for on screen; the labs compute their numbers live from the slides’ formulas, mostly on the slides’ own
+                    examples. “Slide check” notes mark places where the slides disagree with themselves.
+                  </p>
+                  <p className="dl3s-print-dd-off">
+                    §12 summarises the classic architectures of slides 36–47; its three in-depth sections, §12.1–12.3, are left out of this PDF.
+                  </p>
+                  <p className="dl3s-print-dd-on">
+                    §12 summarises the classic architectures of slides 36–47; §12.1–12.3 then cover them in depth.
+                  </p>
+                </div>
                 <div className="dl3s-hero__actions">
                   <button type="button" className="dl3s-btn dl3s-btn--primary dl3s-btn--big" onClick={toggleFocus} aria-pressed={focus}>
                     <Icon name={focus ? 'compress' : 'expand'} size={17} /> {focus ? 'Exit focus mode' : 'Enter focus mode'}
                   </button>
+                  <div className="dl3s-export">
+                    <div className="dl3s-export__row">
+                      <button
+                        type="button"
+                        className="dl3s-btn dl3s-btn--big"
+                        onClick={exportPdf}
+                        title="Print the Read and Play parts of every section to an A4 PDF (choose “Save as PDF”); the notebook pages are left out"
+                      >
+                        <Icon name="download" size={16} /> Export PDF
+                      </button>
+                      <label className="dl-check dl3s-export__opt">
+                        <input type="checkbox" checked={withDeep} onChange={(e) => setWithDeep(e.target.checked)} />
+                        include §12.1–12.3 deep dives
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      className="dl3s-export__nlm"
+                      aria-expanded={nlmOpen}
+                      aria-controls="dl3s-nlm"
+                      onClick={() => setNlmOpen((o) => !o)}
+                    >
+                      NotebookLM video prompt
+                      <Icon name="chevron" size={13} className={`dl3s-export__chev${nlmOpen ? ' dl3s-export__chev--open' : ''}`} />
+                    </button>
+                  </div>
                   {resumeOpen && resumeIdx > 0 && (
                     <span className="dl3s-resume">
                       <button type="button" className="dl3s-btn dl3s-btn--big" onClick={() => { setResumeOpen(false); jumpTo(SECTIONS[resumeIdx].id); }}>
@@ -521,8 +684,10 @@ export default function Lecture3Study() {
                     </span>
                   )}
                 </div>
+                {nlmOpen && <NotebookLmPrompt id="dl3s-nlm" />}
                 <p className="dl3s-hero__stats">
-                  <span><b>{SECTIONS.length}</b> notebook pages</span>
+                  <span><b>{CORE.length}</b> notebook pages</span>
+                  <span><b>{OPTIONAL_COUNT}</b> optional deep dives</span>
                   <span><b>{LAB_COUNT}</b> live labs</span>
                   <span><b>{TOTAL_LINES}</b> lines to copy</span>
                   <span>Esc leaves focus mode</span>

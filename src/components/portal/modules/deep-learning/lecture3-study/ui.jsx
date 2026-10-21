@@ -4,14 +4,17 @@ import Icon from '../../../icons';
    LECTURE 3 STUDY — LAB CHROME
    ----------------------------------------------------------------------------
      Lab     the frame every "Play" piece sits in: name, slide receipt, and the
-             one-line "Try this" prompt (what to change, what to notice)
+             one-line "Try this" prompt (what to change, what to notice);
+             printTry={false} keeps a prompt that is only about ticking or
+             clicking out of the PDF
      Chips   a labelled row of toggle chips (aria-pressed), the .dl-chip style
      Range   a labelled range slider showing its live value
-     Stat    a big-number readout with its working underneath
+     Stat    a big-number readout with its working underneath (screenOnly
+             for a readout that only means something mid-interaction)
    Built on the shared .dl-* controls in ../common.css.
    ========================================================================== */
 
-export function Lab({ title, slides, tryThis, children }) {
+export function Lab({ title, slides, tryThis, printTry = true, children }) {
   return (
     <div className="dl3s-lab">
       <div className="dl3s-lab__bar">
@@ -19,7 +22,7 @@ export function Lab({ title, slides, tryThis, children }) {
         {slides && <span className="dl3s-lab__slides">{slides}</span>}
       </div>
       {tryThis && (
-        <p className="dl3s-try">
+        <p className={`dl3s-try${printTry ? '' : ' dl3s-screenonly'}`}>
           <Icon name="flask" size={14} />
           <span><b>Try this:</b> {tryThis}</span>
         </p>
@@ -61,9 +64,9 @@ export function Range({ label, value, min, max, step = 1, onChange, fmt, width }
   );
 }
 
-export function Stat({ k, v, sub, tone }) {
+export function Stat({ k, v, sub, tone, screenOnly = false }) {
   return (
-    <div className="dl3s-stat" data-tone={tone}>
+    <div className={`dl3s-stat${screenOnly ? ' dl3s-screenonly' : ''}`} data-tone={tone}>
       <p className="dl3s-stat__k">{k}</p>
       <p className="dl3s-stat__v">{v}</p>
       {sub && <p className="dl3s-stat__sub">{sub}</p>}

@@ -310,7 +310,7 @@ export function MemoryLab() {
           <Stat k="training needs at least" v={fmtBytes(trainRam)} tone="accent" sub="every layer, kept for the reverse pass" />
           <Stat k={`per device (${D})`} v={fmtBytes(trainRam / D)} sub="training RAM split evenly across devices" />
         </div>
-        <div className="dl3s-fixes" role="group" aria-label="Out-of-memory fixes from slide 24">
+        <div className="dl3s-fixes dl3s-screenonly" role="group" aria-label="Out-of-memory fixes from slide 24">
           <span className="dl-ctl__label">slide-24 fixes</span>
           {fixes.map((f) => (
             <button key={f.id} type="button" className="dl-btn" onClick={f.act} disabled={f.disabled}>{f.label}</button>

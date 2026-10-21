@@ -155,6 +155,24 @@ export function PretrainedLab() {
         </div>
         <Code code={RESNET_CODE} label="resnet50_pretrained.py" meta="slide 48" hl={st.hl} />
       </div>
+      {/* on paper the lab can't be stepped to stage 5, so its result prints here */}
+      <div className="dl3s-printonly">
+        <p className="dl3s-stagehead">stage 5 · decode_predictions(Y_proba, top=3), both images (slide 49)</p>
+        <table className="dl-table dl3s-decodeprint">
+          <thead>
+            <tr><th scope="col">Image</th><th scope="col">Top 3 (class id · name · probability)</th><th scope="col">Correct class</th></tr>
+          </thead>
+          <tbody>
+            {RESNET_PREDS.map((p) => (
+              <tr key={p.image}>
+                <td>{p.image}</td>
+                <td>{p.top.map((t) => `${t.id} · ${t.name} · ${t.p.toFixed(2)}%`).join('; ')}</td>
+                <td>{p.truth}{p.inImageNet ? ' (top prediction: right)' : ' (not one of the 1,000 ImageNet classes: wrong)'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Lab>
   );
 }
@@ -277,29 +295,31 @@ export function OutcomesLab() {
     <Lab
       title="Slide 52 · can you do each of these?"
       slides="slide 52"
+      printTry={false}
       tryThis="tick an outcome once you can explain it from your notes without looking; if you can’t yet, its chips jump back to the section — or straight to its notebook page."
     >
-      <p className="dl3s-readout"><b>{done}/{OUTCOMES.length}</b> outcomes ticked · <b>{stats.pages}/{SECTIONS.length}</b> notebook pages copied</p>
+      <p className="dl3s-readout dl3s-screenonly"><b>{done}/{OUTCOMES.length}</b> outcomes ticked · <b>{stats.pages}/{stats.core}</b> notebook pages copied</p>
       <ol className="dl3s-outcomes">
         {OUTCOMES.map((o, n) => {
           const on = outcomes.includes(n);
-          const lines = o.secs.reduce((a, id) => a + (stats.per[id]?.done ?? 0), 0);
-          const total = o.secs.reduce((a, id) => a + (stats.per[id]?.total ?? 0), 0);
+          const core = o.secs.filter((id) => !SEC[id].optional);
+          const lines = core.reduce((a, id) => a + (stats.per[id]?.done ?? 0), 0);
+          const total = core.reduce((a, id) => a + (stats.per[id]?.total ?? 0), 0);
           return (
             <li key={o.text} className={`dl3s-outcome${on ? ' dl3s-outcome--on' : ''}`}>
-              <button type="button" className="dl3s-outcome__tick" aria-pressed={on} onClick={() => toggleOutcome(n)} aria-label={`${o.text}: ${on ? 'ticked' : 'not ticked'}`}>
+              <button type="button" className="dl3s-outcome__tick dl3s-screenonly" aria-pressed={on} onClick={() => toggleOutcome(n)} aria-label={`${o.text}: ${on ? 'ticked' : 'not ticked'}`}>
                 {on && <Icon name="check" size={13} strokeWidth={2.4} />}
               </button>
               <span className="dl3s-outcome__text">{o.text}</span>
               <span className="dl3s-outcome__links">
                 {o.secs.map((id) => (
-                  <span key={id} className="dl3s-outcome__sec">
-                    <button type="button" className="dl3s-secchip" onClick={() => jumpTo(id)}><b>§{SEC[id].no}</b> {SEC[id].short}</button>
-                    <button type="button" className="dl3s-link dl3s-outcome__nb" onClick={() => jumpTo(id, { nb: true })}>notebook page{stats.per[id]?.complete ? ' · copied' : ''}</button>
+                  <span key={id} className={`dl3s-outcome__sec${SEC[id].optional ? ' dl3s-ddref' : ''}`}>
+                    <button type="button" className={`dl3s-secchip${SEC[id].optional ? ' dl3s-secchip--opt' : ''}`} onClick={() => jumpTo(id)}><b>§{SEC[id].no}</b> {SEC[id].short}</button>
+                    <button type="button" className="dl3s-link dl3s-outcome__nb dl3s-screenonly" onClick={() => jumpTo(id, { nb: true })}>notebook page{stats.per[id]?.complete ? ' · copied' : ''}</button>
                   </span>
                 ))}
               </span>
-              <span className="dl3s-outcome__prog">{lines}/{total} lines</span>
+              <span className="dl3s-outcome__prog dl3s-screenonly">{lines}/{total} lines</span>
             </li>
           );
         })}

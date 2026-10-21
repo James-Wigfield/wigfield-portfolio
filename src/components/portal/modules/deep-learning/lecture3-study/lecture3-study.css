@@ -168,15 +168,7 @@ html.dl3s-pseudo-on body { overflow: hidden !important; }
 .dl3s-index__close:hover { color: var(--accent-ink); border-color: var(--accent); }
 .dl3s-rot180 { transform: rotate(180deg); }
 .dl3s-index__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
-.dl3s-index__group {
-  display: block;
-  padding: 0.45rem 0.45rem 0.15rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
+.dl3s-index__opt { font-style: italic; color: var(--ink-3); }
 .dl3s-index__item {
   display: grid;
   grid-template-columns: 2.2rem minmax(0, 1fr) auto;
@@ -223,10 +215,68 @@ html.dl3s-pseudo-on body { overflow: hidden !important; }
   max-width: 24ch;
 }
 .dl3s-hero__lead { margin: 0; font-size: 1rem; line-height: 1.65; color: var(--ink-2); max-width: 62ch; }
-.dl3s-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin-top: 0.3rem; }
-.dl3s-resume { display: inline-flex; align-items: center; gap: 0.5rem; }
+.dl3s-hero__actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.6rem 1rem; margin-top: 0.3rem; }
+.dl3s-resume { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; }
 .dl3s-resume__x { font: inherit; font-size: 0.72rem; color: var(--ink-3); background: none; border: none; text-decoration: underline; cursor: pointer; }
 .dl3s-resume__x:hover { color: var(--accent-ink); }
+/* Export PDF, its deep-dive option, and the NotebookLM disclosure under it */
+.dl3s-export { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+.dl3s-export__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem; }
+.dl3s-export__opt { font-size: 0.74rem; color: var(--ink-3); }
+.dl3s-export__nlm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.15rem 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.dl3s-export__nlm:hover { color: var(--accent-ink); text-decoration-color: currentColor; }
+.dl3s-export__chev { transform: rotate(90deg); transition: transform 0.2s ease; }
+.dl3s-export__chev--open { transform: rotate(-90deg); }
+
+.dl3s-nlm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 74ch;
+  margin-top: 0.2rem;
+  padding: 0.8rem 0 0.9rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.dl3s-nlm__steps { margin: 0; padding-left: 1.6rem; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.82rem; line-height: 1.55; color: var(--ink-2); }
+.dl3s-nlm__steps li::marker { font-family: var(--font-mono, ui-monospace, monospace); font-weight: 700; color: var(--accent-ink); }
+.dl3s-nlm__block { display: flex; flex-direction: column; gap: 0.35rem; }
+.dl3s-nlm__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.8rem; }
+.dl3s-nlm__label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); }
+.dl3s-nlm__hint { flex: 1; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); }
+.dl3s-nlm__copy { padding: 0.28rem 0.7rem; font-size: 0.72rem; }
+.dl3s-nlm__text {
+  margin: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+.dl3s-nlm__split { margin: 0.2rem 0 0; font-size: 0.78rem; line-height: 1.55; color: var(--ink-3); }
+
 .dl3s-hero__stats { display: flex; flex-wrap: wrap; gap: 0.3rem 1.3rem; margin: 0.3rem 0 0; font-size: 0.78rem; color: var(--ink-3); }
 .dl3s-hero__stats b { font-size: 1.1rem; color: var(--accent-ink); margin-right: 0.2rem; }
 
@@ -259,6 +309,14 @@ html.dl3s-pseudo-on body { overflow: hidden !important; }
   color: var(--ink);
 }
 .dl3s-sec__title:focus { outline: none; }
+.dl3s-sec__opt {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.64rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
 .dl3s-receipt {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.66rem;
@@ -316,6 +374,72 @@ html.dl3s-pseudo-on body { overflow: hidden !important; }
   text-underline-offset: 2px;
 }
 .dl3s-link:hover { color: var(--ink); }
+
+/* a list with a small lead-in label ({ list, lead }) */
+.dl3s-leadlist { display: flex; flex-direction: column; gap: 0.3rem; }
+.dl3s-leadlist__lead {
+  margin: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* §12's comparison table ({ archTable }) — a ruled editorial table */
+.dl3s-arch { max-width: 74ch; }
+.dl3s-arch__table { width: 100%; border-collapse: collapse; font-size: 0.84rem; line-height: 1.5; }
+.dl3s-arch__cap {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: 0.4rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.dl3s-arch__table thead th {
+  text-align: left;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0 0.6rem 0.35rem 0;
+  border-bottom: 1.5px solid var(--ink);
+}
+.dl3s-arch__table tbody th,
+.dl3s-arch__table td { text-align: left; vertical-align: top; padding: 0.5rem 0.6rem 0.5rem 0; border-bottom: 1px solid var(--line-2); color: var(--ink-2); font-weight: 400; }
+.dl3s-arch__model { white-space: nowrap; }
+.dl3s-arch__model b { display: block; color: var(--ink); font-size: 0.9rem; }
+.dl3s-arch__year { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; color: var(--ink-3); margin-right: 0.5rem; }
+.dl3s-arch__more { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; }
+.dl3s-arch__res { color: var(--ink) !important; }
+.dl3s-arch__table td:nth-child(2) { max-width: 11rem; }
+@media (max-width: 640px) {
+  .dl3s-arch__table thead { display: none; }
+  .dl3s-arch__table tr { display: block; padding: 0.55rem 0; border-bottom: 1px solid var(--line-2); }
+  .dl3s-arch__table tbody th,
+  .dl3s-arch__table td:nth-child(n) { display: block; border: none; padding: 0.1rem 0; max-width: none; }
+  .dl3s-arch__table td::before {
+    content: attr(data-label) ' · ';
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .dl3s-arch__model b { display: inline; margin-right: 0.5rem; }
+}
+
+/* print-only pieces (the PDF cover, each section's footnote list) */
+.dl3s-printonly,
+.dl3s-fns,
+.dl3s-texprint { display: none; }
 
 .dl3s-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.6rem; }
 .dl3s-filters__item { margin: 0; border: 1px solid var(--line-2); border-radius: 6px; padding: 0.55rem 0.6rem; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
@@ -392,6 +516,7 @@ html.dl3s-pseudo-on body { overflow: hidden !important; }
 }
 .dl3s-secchip b { font-family: var(--font-mono, ui-monospace, monospace); color: var(--accent-ink); }
 .dl3s-secchip:hover { border-color: var(--accent); color: var(--ink); }
+.dl3s-secchip--opt { background: none; border-style: dashed; color: var(--ink-3); }
 
 .dl3s-stat { border: 1px solid var(--line-2); border-radius: 6px; padding: 0.6rem 0.75rem; min-width: 0; }
 .dl3s-stat__k { margin: 0 0 0.2rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }

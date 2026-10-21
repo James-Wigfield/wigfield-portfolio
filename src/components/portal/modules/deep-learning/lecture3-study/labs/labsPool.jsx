@@ -131,8 +131,8 @@ export function PoolingLab() {
 
       <div className="dl3s-stats">
         <Stat k="this output" v={fmtP(out[r]?.[c] ?? 0)} tone="accent" sub={mode === 'max' ? `max(${win.join(', ')})` : `(${win.join(' + ')}) / ${win.length}`} />
-        <Stat k="max pooling after the shift" v={shift ? `${keptMax}/${total} same` : '—'} sub={shift ? 'outputs unchanged by the shift' : 'pick a shift to test'} />
-        <Stat k="average pooling after the shift" v={shift ? `${keptAvg}/${total} same` : '—'} sub={shift ? 'outputs unchanged by the shift' : 'pick a shift to test'} />
+        <Stat k="max pooling after the shift" v={shift ? `${keptMax}/${total} same` : '—'} sub={shift ? 'outputs unchanged by the shift' : 'pick a shift to test'} screenOnly={!shift} />
+        <Stat k="average pooling after the shift" v={shift ? `${keptAvg}/${total} same` : '—'} sub={shift ? 'outputs unchanged by the shift' : 'pick a shift to test'} screenOnly={!shift} />
       </div>
       <p className="dl3s-cap">
         No weights anywhere: a pooling neuron only aggregates its window. With the “strong features + noise” input, max pooling usually keeps more outputs after a small shift —
@@ -289,12 +289,12 @@ export function HyperparamLab() {
       <div className="dl-tablewrap">
         <table className="dl-table dl3s-hyper">
           <thead>
-            <tr><th scope="col">Got it</th><th scope="col">Layer</th><th scope="col">You choose…</th><th scope="col">Keras argument</th><th scope="col">Try</th><th scope="col">Effect on a 28×28×1 input</th></tr>
+            <tr><th scope="col" className="dl3s-screenonly">Got it</th><th scope="col">Layer</th><th scope="col">You choose…</th><th scope="col">Keras argument</th><th scope="col">Try</th><th scope="col">Effect on a 28×28×1 input</th></tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id} className={ticked.has(row.id) ? 'dl3s-hyper--done' : undefined}>
-                <td>
+                <td className="dl3s-screenonly">
                   <button type="button" className={`dl3s-chk${ticked.has(row.id) ? ' dl3s-chk--on' : ''}`} aria-pressed={ticked.has(row.id)} aria-label={`Mark "${row.what}" as understood`} onClick={() => tick(row.id)} />
                 </td>
                 <td>{row.layer}</td>
@@ -310,7 +310,7 @@ export function HyperparamLab() {
       <p className="dl3s-readout">
         <code>Conv2D({convArgs.join(', ')})</code> → {ch}×{ch}×{filters} · <code>MaxPool2D({poolArgs.join(', ')})</code> → {ph}×{ph}×{filters}
       </p>
-      <p className="dl3s-cap">{ticked.size}/{rows.length} ticked. Cross-validation could search all of these, but it is very time-consuming — so §11–§12 look at what common architectures use.</p>
+      <p className="dl3s-cap"><span className="dl3s-screenonly">{ticked.size}/{rows.length} ticked. </span>Cross-validation could search all of these, but it is very time-consuming — so §11–§12 look at what common architectures use.</p>
     </Lab>
   );
 }

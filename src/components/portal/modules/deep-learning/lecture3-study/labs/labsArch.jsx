@@ -524,7 +524,7 @@ export function TimelineLab() {
               <dt>result</dt><dd>{x.result}</dd>
               <dt>key idea</dt><dd>{x.idea}</dd>
             </dl>
-            <button type="button" className="dl3s-link" onClick={() => jumpTo(x.sec)}>read it in §{x.sec === 's12a' ? '12.1' : x.sec === 's12b' ? '12.2' : '12.3'}</button>
+            <button type="button" className="dl3s-link dl3s-ddref" onClick={() => jumpTo(x.sec)}>read it in §{x.sec === 's12a' ? '12.1' : x.sec === 's12b' ? '12.2' : '12.3'}</button>
           </article>
         ))}
       </div>

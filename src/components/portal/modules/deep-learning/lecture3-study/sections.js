@@ -9,9 +9,16 @@
 
    Each section:
      id, no, title, slides            identity + slide receipt
+     parent, optional                 a sub-section (indented in the index);
+                                      optional = a deep dive that doesn't count
+                                      towards progress and is left out of the
+                                      PDF unless asked for
      read      blocks — a string is a paragraph; objects are
-               { eq }, { list }, { code }, { note }, { slideNote }, { unfold },
-               { matrices: true } (the four slide-6 filters)
+               { eq }, { list, lead? }, { code }, { note }, { slideNote },
+               { unfold }, { matrices: true } (the four slide-6 filters),
+               { archTable: [ids] } (ARCHS rows as a comparison table),
+               { screen } (a paragraph about using the page; never printed),
+               { dd } (a paragraph about the deep dives; printed only with them)
      play      lab keys (components live in ./labs, mapped in the shell)
      notes     [{ h, lines }] — the notebook page, 2–4 sub-headings
      draw      [{ fig, caption }] — line-art diagram keys (./diagrams.jsx)
@@ -32,7 +39,7 @@ export const SECTIONS = [
     read: [
       '**Topic 3: Deep Computer Vision Using Convolutional Neural Networks** — CITS5017 Deep Learning, A/Prof Du Huynh, Semester 2, 2026 (slide 1). The reading is **Chapter 14** of *Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow* (slide 2).',
       'Slide 3 lists the main topics: **convolutional layers**, **filters and feature maps**, **stacking multiple feature maps**, **pooling layers**, the **TensorFlow implementation** for CNNs, the **memory requirements** of CNNs, **CNN architectures**, and **using pretrained models and transfer learning**.',
-      'Every section below follows the deck in order and has the same three beats: **Read** the short explanation, **Play** with the live lab until the idea clicks, then **Write** — copy the notebook page onto paper and tick each line as it goes in. Ticks and your place are saved in this browser, and the index marks a section done once all its lines are ticked.',
+      { screen: 'Every section below follows the deck in order and has the same three beats: **Read** the short explanation, **Play** with the live lab until the idea clicks, then **Write** — copy the notebook page onto paper and tick each line as it goes in. Ticks and your place are saved in this browser, and the index marks a section done once all its lines are ticked.' },
     ],
     play: ['roadmap'],
     notes: [
@@ -604,7 +611,7 @@ export const SECTIONS = [
     read: [
       'Unfortunately, convolutional layers have quite a few hyperparameters: you must choose **the number of filters**, **their height and width**, **the strides**, and **the padding type** ("SAME" or "VALID").',
       'Similarly, pooling layers have a **pool size**, a **stride** (default `None`) and a **padding type** (default `"valid"`) to choose. A stride of `None` means the stride defaults to the pool size (slide 28).',
-      'As always, **cross-validation** can find the right hyperparameter values, but this is very time-consuming. The common CNN architectures in [§11](#s11) and [§12](#s12a) give an idea of what values work best in practice.',
+      'As always, **cross-validation** can find the right hyperparameter values, but this is very time-consuming. The common CNN architectures in [§11](#s11) and [§12](#s12) give an idea of what values work best in practice.',
     ],
     play: ['hyper'],
     notes: [
@@ -701,11 +708,83 @@ export const SECTIONS = [
     ],
   },
 
+  /* ── §12 · the summary (the quick path through slides 36–47) ─────────── */
+  {
+    id: 's12',
+    no: '12',
+    title: 'Classic architectures in brief',
+    short: 'Architectures in brief',
+    slides: '36–47',
+    read: [
+      '**§12 on one page.** Slides 36–47 walk through classic CNN architectures, most of them winners of the ILSVRC ImageNet Challenge. This section keeps what each model is, its one key idea and its result.',
+      { dd: 'The deep dives that follow, [§12.1](#s12a)–[§12.3](#s12c), cover the same slides in depth and are optional.' },
+      'A good measure of progress is the error rate in competitions such as the **ILSVRC ImageNet Challenge**[^6]: the **top-5 error rate**[^7] for image classification fell from **over 26% to less than 3%** in just six years (slide 36).',
+      { archTable: ['lenet', 'alexnet', 'googlenet', 'vgg', 'resnet'] },
+      {
+        lead: 'Why each one mattered',
+        list: [
+          '**LeNet-5** (slide 37): perhaps the most widely known CNN — convolution and average-pooling layers, used for handwritten digits (MNIST). Today we would use ReLU instead of tanh and softmax instead of RBF.',
+          '**AlexNet** (slides 38–39): quite similar to LeNet-5, only much larger and deeper, and the first to stack convolutional layers directly on top of each other. It used dropout (50%) and data augmentation to reduce overfitting.',
+          '**GoogLeNet** (slides 41–43): sub-networks called **inception modules** let it be much deeper while using parameters much more efficiently — roughly 6 million instead of AlexNet’s 60 million.',
+          '**VGGNet** (slide 44): a very simple, classical architecture — 2 or 3 conv layers and a pooling layer, repeated (16 or 19 conv layers) — with only 3 × 3 filters, but many.',
+          '**ResNet** (slides 45–46): **skip connections** add the input $\\mathbf{x}$ to a deeper layer, so instead of the target function $h(\\mathbf{x})$ the layers model $f(\\mathbf{x}) = h(\\mathbf{x}) - \\mathbf{x}$ (**residual learning**). They are the key to training such a deep network (the winning variant had 152 layers).',
+        ],
+      },
+      'The trend ResNet confirmed (slide 46): models are getting **deeper and deeper, with fewer and fewer parameters**.',
+      {
+        lead: 'More recent (slide 47)',
+        list: [
+          '**Xception** (2016): a variant of GoogLeNet by François Chollet that significantly outperformed Inception-v3 on a huge vision task (350 million images, 17,000 classes).',
+          '**SENet** (2017): the Squeeze-and-Excitation Network extends existing architectures such as inception networks and ResNets and boosts their performance; it won ILSVRC 2017 with a **2.25%** top-5 error.',
+          'Also noteworthy: ResNeXt (2016), DenseNet (2016), MobileNet (2017), CSPNet (2019), EfficientNet (2019).',
+        ],
+      },
+      { dd: 'Skimming the deep dives? The next main topic is [§13 · Using pretrained models](#s13).' },
+    ],
+    play: ['timeline', 'residual'],
+    notes: [
+      {
+        h: 'LeNet-5 & AlexNet (slides 36–40)',
+        lines: [
+          'A good measure of progress: the ILSVRC top-5 error rate fell from over 26% to less than 3% in six years.',
+          'LeNet-5 (1998, LeCun): conv and average-pooling layers with tanh and an RBF output; used for MNIST digits.',
+          'AlexNet (2012) won with a 17% top-5 error (second best 26%): like LeNet-5 but much larger and deeper, the first to stack conv layers directly; dropout + data augmentation.',
+        ],
+      },
+      {
+        h: 'GoogLeNet & VGGNet (slides 41–44)',
+        lines: [
+          'GoogLeNet (2014) won with a top-5 error below 7%: inception modules made it much deeper with 10 times fewer parameters than AlexNet (roughly 6 million instead of 60 million).',
+          'An inception module copies its input to four different layers; 1×1, 3×3 and 5×5 kernels capture patterns at different scales, and "same" padding lets a depth concat join them.',
+          'VGGNet (2014, runner-up): 2 or 3 conv layers and a pooling layer, repeated; only 3×3 filters, but many.',
+        ],
+      },
+      {
+        h: 'ResNet & after (slides 45–47)',
+        lines: [
+          'ResNet (2015) won with a top-5 error under 3.6% (the winning variant had 152 layers); skip connections are the key to training such a deep network.',
+          'A skip connection adds the input $\\mathbf{x}$ to a deeper layer, so instead of the target $h(\\mathbf{x})$ the layers model $f(\\mathbf{x}) = h(\\mathbf{x}) - \\mathbf{x}$: residual learning.',
+          'SENet (2017) won with a 2.25% top-5 error; it extends inception networks and ResNets and boosts their performance. Xception (2016) is a GoogLeNet variant.',
+        ],
+      },
+    ],
+    draw: [
+      { fig: 'residual', caption: 'Label the skip connection, the + node, and $f(\\mathbf{x}) = h(\\mathbf{x}) - \\mathbf{x}$ beside the two layers.' },
+    ],
+    check: [
+      { q: 'What does the top-5 error rate count?', a: 'The test images for which the system’s top five predictions did not include the correct answer.' },
+      { q: 'What did AlexNet change compared with LeNet-5?', a: 'It was much larger and deeper, and stacked conv layers directly on top of each other instead of a pooling layer on top of each conv layer.' },
+      { q: 'How did GoogLeNet get much deeper with fewer parameters than AlexNet?', a: 'Inception modules use parameters much more efficiently: roughly 6 million instead of 60 million.' },
+      { q: 'What is the key to being able to train a network as deep as ResNet?', a: 'Skip (shortcut) connections: adding the input $\\mathbf{x}$ to a deeper layer makes the layers model $f(\\mathbf{x}) = h(\\mathbf{x}) - \\mathbf{x}$ rather than the target $h(\\mathbf{x})$ — residual learning.' },
+    ],
+  },
+
   /* ── §12.1 ──────────────────────────────────────────────────────────── */
   {
     id: 's12a',
     no: '12.1',
-    group: 'Classic architectures',
+    parent: 's12',
+    optional: true,
     title: 'ILSVRC, LeNet-5 & AlexNet',
     short: 'LeNet-5 & AlexNet',
     slides: '36–40',
@@ -769,7 +848,8 @@ export const SECTIONS = [
   {
     id: 's12b',
     no: '12.2',
-    group: 'Classic architectures',
+    parent: 's12',
+    optional: true,
     title: 'GoogLeNet & VGGNet',
     short: 'GoogLeNet & VGGNet',
     slides: '41–44',
@@ -831,7 +911,8 @@ export const SECTIONS = [
   {
     id: 's12c',
     no: '12.3',
-    group: 'Classic architectures',
+    parent: 's12',
+    optional: true,
     title: 'ResNet & more recent architectures',
     short: 'ResNet & beyond',
     slides: '45–47',
@@ -1004,7 +1085,8 @@ export const SECTIONS = [
     short: 'Summary',
     slides: '52–53',
     read: [
-      'Slide 52 lists what you should be able to do after this topic. Tick each outcome in the checklist below once you can explain it from your notes; every outcome links back to the sections — and notebook pages — that teach it.',
+      'Slide 52 lists what you should be able to do after this topic; the list below maps each outcome to the sections that teach it.',
+      { screen: 'Tick each outcome in the checklist once you can explain it from your notes; every outcome links back to the sections — and notebook pages — that teach it.' },
       'For the next topic (slide 53): read up to **Chapter 15**, *Processing Sequences Using RNNs and CNNs*.',
     ],
     play: ['outcomes'],

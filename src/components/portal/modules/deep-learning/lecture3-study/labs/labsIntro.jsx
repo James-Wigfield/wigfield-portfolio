@@ -25,24 +25,27 @@ export function RoadmapLab() {
     <Lab
       title="Slide 3’s roadmap, mapped onto this page"
       slides="slide 3"
+      printTry={false}
       tryThis="click a section chip to jump to it — the bar beside each topic fills as you tick off that topic’s notebook lines."
     >
       <ol className="dl3s-road">
         {ROADMAP.map((t, i) => {
-          const done = t.secs.reduce((a, id) => a + (stats.per[id]?.done ?? 0), 0);
-          const total = t.secs.reduce((a, id) => a + (stats.per[id]?.total ?? 0), 0);
+          // the bar counts core sections; optional deep dives only get a chip
+          const core = t.secs.filter((id) => !SEC[id].optional);
+          const done = core.reduce((a, id) => a + (stats.per[id]?.done ?? 0), 0);
+          const total = core.reduce((a, id) => a + (stats.per[id]?.total ?? 0), 0);
           const pct = total ? Math.round((done / total) * 100) : 0;
           return (
             <li key={t.topic} className="dl3s-road__item">
               <span className="dl3s-road__no" aria-hidden="true">{i + 1}</span>
               <span className="dl3s-road__topic">{t.topic}</span>
-              <span className="dl3s-road__prog" aria-label={`${done} of ${total} notebook lines copied`}>
+              <span className="dl3s-road__prog dl3s-screenonly" aria-label={`${done} of ${total} notebook lines copied`}>
                 <span className="dl3s-road__track"><span className="dl3s-road__fill" style={{ width: `${pct}%` }} /></span>
                 <span className="dl3s-road__pct">{done}/{total}</span>
               </span>
               <span className="dl3s-road__secs">
                 {t.secs.map((id) => (
-                  <button key={id} type="button" className="dl3s-secchip" onClick={() => jumpTo(id)}>
+                  <button key={id} type="button" className={`dl3s-secchip${SEC[id].optional ? ' dl3s-secchip--opt dl3s-ddref' : ''}`} onClick={() => jumpTo(id)}>
                     <b>§{SEC[id].no}</b> {SEC[id].short}
                   </button>
                 ))}
