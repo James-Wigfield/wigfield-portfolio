@@ -44,6 +44,7 @@ import DeepLearningLecture5Study from './modules/deep-learning/lecture5-study/Le
 import DeepLearningLecture67Study from './modules/deep-learning/lecture6-7-study/Lecture67Study';
 import DeepLearningLecture8Study from './modules/deep-learning/lecture8-study/Lecture8Study';
 import DeepLearningGame from './modules/deep-learning/game/Game';
+import DeepLearningArcade from './modules/deep-learning/arcade/Arcade';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
 import DeepLearningProject2 from './modules/deep-learning/project2/Project2';
 import MambaUpdates from './modules/MambaUpdates';
@@ -187,6 +188,7 @@ export const MODULES = [
     group: 'Deep Learning',
     component: DeepLearningGame,
   },
+  { id: 'dl-arcade', label: 'Gradient Arcade', icon: 'network', group: 'Deep Learning', component: DeepLearningArcade },
   {
     id: 'dl-code-lab',
     label: 'Code Lab · Search',
