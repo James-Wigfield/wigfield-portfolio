@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Lab, Chips, Range, Stat } from '../ui';
 import { useStudy } from '../context';
 import { useReducedMotion } from '../hooks';
-import { ToyGan, GAN_PRESETS, TARGETS, targetDensity, modeCover, fmt, fmtInt } from '../gen';
+import { ToyGan, GAN_PRESETS, TARGETS, targetDensity, modeCover, fmt, fmtS, fmtInt } from '../gen';
 import './labsToyGan.css';
 
 /* ============================================================================
@@ -52,12 +52,6 @@ function useToyRun(cfg, { instant }) {
 
   const getGan = useCallback(() => (ganRef.current ??= new ToyGan(cfg)), [cfg]);
 
-  const stop = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = 0;
-    setRunning(false);
-  }, []);
-
   const runTo = useCallback((gan, end) => {
     const out = [];
     while (gan.step < end) {
@@ -66,6 +60,19 @@ function useToyRun(cfg, { instant }) {
     }
     return out;
   }, []);
+
+  // pausing finishes the current block of 25 iterations, so the picture and
+  // the counter always show where the model is
+  const stop = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
+    const gan = ganRef.current;
+    if (gan && gan.step % SNAP) {
+      const more = runTo(gan, Math.min(total, Math.ceil(gan.step / SNAP) * SNAP));
+      if (more.length) setSnaps((s) => [...s, ...more]);
+    }
+    setRunning(false);
+  }, [runTo, total]);
 
   const finish = useCallback(() => {
     stop();
@@ -331,8 +338,8 @@ export function CollapseLab() {
         </div>
         <p className="dl67s-readout">
           <span className="dl67s-dot dl67s-dot--a" />left bump <span className="dl67s-dot dl67s-dot--b" />right bump; the gap above the two is the share
-          elsewhere.{biases.length > 1 && <> The generator’s output bias, one of its parameters, went from {fmt(biases[0], 2)} to {fmt(biases[biases.length - 1], 2)},
-          ranging over [{fmt(Math.min(...biases), 2)}, {fmt(Math.max(...biases), 2)}] on the way.</>}
+          elsewhere.{biases.length > 1 && <> The generator’s output bias, one of its parameters, went from {fmtS(biases[0], 2)} to {fmtS(biases[biases.length - 1], 2)},
+          ranging over [{fmtS(Math.min(...biases), 2)}, {fmtS(Math.max(...biases), 2)}] on the way.</>}
         </p>
       </div>
       <p className="dl67s-cap">

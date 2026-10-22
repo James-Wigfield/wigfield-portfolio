@@ -196,8 +196,10 @@ function Gan() {
         <T x={cx + 30} y={143} s={10} i>Real</T>
       </P>
       <P k="disc">
-        <line x1={cx - 30} y1={118} x2={cx} y2={92} />
-        <line x1={cx + 30} y1={118} x2={cx} y2={92} />
+        <circle cx={cx - 30} cy={114} r={2} />
+        <circle cx={cx + 30} cy={114} r={2} />
+        <Arrow x1={cx - 30} y1={114} x2={cx - 3} y2={92} head={4} />
+        <Arrow x1={cx + 30} y1={114} x2={cx + 3} y2={92} head={4} />
         <circle cx={cx} cy={90} r={2.5} />
         <T x={cx} y={108} s={9.5} i>Or</T>
         <Arrow x1={cx} y1={88} x2={cx} y2={70} head={4} />

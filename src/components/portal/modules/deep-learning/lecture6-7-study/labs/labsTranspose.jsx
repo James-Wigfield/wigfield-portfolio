@@ -29,11 +29,11 @@ function startInput(n) {
 }
 const INPUTS = { valid: startInput(3), same: startInput(7) };
 
-function Grid({ m, cell, pick, onPick, hl, crop, label, inputGrid = false, fullN }) {
+function Grid({ m, cell, pick, onPick, hl, crop, label, inputGrid = false, fullN, kernel = false }) {
   const n = fullN ?? m.length;
   const size = n * cell;
   return (
-    <svg viewBox={`-1 -1 ${size + 2} ${size + 2}`} className="dl67s-svg dl67s-tc__grid" style={{ maxWidth: Math.min(size + 2, 330) }} role="img" aria-label={label}>
+    <svg viewBox={`-1 -1 ${size + 2} ${size + 2}`} className={`dl67s-svg dl67s-tc__grid${kernel ? ' dl67s-tc__grid--k' : ''}`} style={{ maxWidth: Math.min(size + 2, 330) }} role="img" aria-label={label}>
       {Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => {
         const inside = r < m.length && c < m.length;
         const v = inside ? m[r][c] : null;
@@ -77,7 +77,7 @@ export function TransposeLab() {
           <p className="dl67s-stagehead">input: {c.n} × {c.n} (one channel)<span className="dl67s-screenonly"> · click a pixel</span></p>
           <Grid m={input} cell={which === 'valid' ? 34 : 22} pick={p} onPick={(q) => { if (!printing) setPick(q); }} inputGrid label={`A ${c.n} by ${c.n} input`} />
           <p className="dl67s-stagehead">kernel: 3 × 3 (all ones here)</p>
-          <Grid m={KERNEL} cell={18} label="A 3 by 3 kernel of ones" />
+          <Grid m={KERNEL} cell={18} kernel label="A 3 by 3 kernel of ones" />
         </div>
         <div className="dl67s-tc__main">
           <p className="dl67s-stagehead">output: {res.outN} × {res.outN}{c.padding === 'same' ? ` (the full ${res.full} × ${res.full} grid, cropped)` : ''}</p>

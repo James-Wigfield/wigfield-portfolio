@@ -4,7 +4,7 @@ export default {
     {
       id: 'guide',
       h: 'DCGAN guidelines',
-      at: '28',
+      at: '28–29',
       items: [
         {
           steps: [

@@ -22,7 +22,7 @@ export default {
       h: 'One layer’s parameters',
       at: '6',
       items: [
-        { title: 'the first `Conv2DTranspose(32, 3, strides=2)`', worked: ['3 × 3 × 16 × 32 + 32 = {g|4,640}: a 3 × 3 kernel per input channel (16) per filter (32), plus a bias per filter, as slide 6 prints'] },
+        { title: 'the first `Conv2DTranspose(32, 3, strides=2)`', worked: ['3 × 3 × 16 × 32 + 32 = {g|4,640}: a 3 × 3 kernel per input channel (16) per filter (32), plus a bias per filter (this page’s working; slide 6 prints 4640)'] },
       ],
     },
   ],

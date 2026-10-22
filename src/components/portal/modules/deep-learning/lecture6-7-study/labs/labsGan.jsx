@@ -43,7 +43,7 @@ const ROLES = {
     name: 'Discriminator',
     goal: 'Goal = tell fake from real',
     input: 'either a fake image from the generator or a real image from the training set',
-    output: 'its guess: is the input image fake or real?',
+    output: 'its guess of whether the input image is fake or real',
     text: 'In slide 23’s code it is a regular binary classifier, ending in Dense(1, activation="sigmoid").',
   },
 };

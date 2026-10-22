@@ -137,7 +137,8 @@ export const PRINT_CSS = `
   ${P} .dl67s-lab .dl67s-figwrap .dl67s-fig { max-width: 105mm; }
   ${P} .dl67s-cf__strip { min-width: 0 !important; max-width: 170mm; }
   ${P} .dl67s-tc__grid { width: 52mm !important; max-width: 52mm !important; }
-  ${P} .dl67s-tc { break-inside: avoid; }
+  ${P} .dl67s-tc__grid--k { width: 20mm !important; max-width: 20mm !important; }
+  ${P} .dl67s-tc, ${P} .dl67s-tl__wrap { break-inside: avoid; }
   ${P} .dl67s-rgrid { min-width: 0; max-width: 150mm; }
   ${P} .dl67s-ip .dl67s-igrid, ${P} .dl67s-ip__t { min-width: 0; }
   ${P} .dl67s-lab .dl67s-table { font-size: 0.68rem; }

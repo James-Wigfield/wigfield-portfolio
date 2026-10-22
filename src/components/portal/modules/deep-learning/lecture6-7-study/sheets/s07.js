@@ -15,5 +15,5 @@ export default {
       ],
     },
   ],
-  skip: 'the 2014 paper (Goodfellow et al.) and the competition idea on slide 19.',
+  skip: 'the 2014 paper (Goodfellow et al.) and the “simple in hindsight” remark on slide 19.',
 };

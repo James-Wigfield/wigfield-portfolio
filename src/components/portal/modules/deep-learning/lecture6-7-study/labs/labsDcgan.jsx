@@ -39,7 +39,7 @@ function Samples({ run, which, fig, figLabel, epochsNote }) {
       <div className="dl67s-sm">
         <div className="dl67s-sm__grid">
           <p className="dl67s-stagehead">The same 7 noise vectors, epoch by epoch</p>
-          <div className="dl67s-scroll">
+          <div className="dl67s-scroll dl67s-scroll--cue">
             <ImgRows
               rows={run.snapshots.map((x) => ({
                 key: x.epoch,
@@ -79,7 +79,7 @@ export function GanSamplesLab() {
       title="What this page’s GAN generated, epoch by epoch"
       fig={CAPTIONS.fig1715}
       slides="slide 26"
-      tryThis="predict whether the images will be sharper at the end than after epoch 1. Step through the epochs and notice what improves, and what doesn’t."
+      tryThis="predict whether the images will be sharper at the end than after epoch 1; compare the rows epoch by epoch, and notice what improves and what doesn’t."
     >
       {!G ? <Pending /> : <Samples run={G} which="GAN" fig={1} figLabel="Figure 17-15’s epoch" epochsNote={`slide 25’s train_gan call: n_epochs=${G.epochsSlide}`} />}
       <p className="dl67s-cap">
@@ -143,7 +143,7 @@ export function DcganLab() {
     <Lab
       title="Slide 28’s guidelines, held against slide 29’s code"
       slides="slides 28–29"
-      tryThis="for each guideline, predict whether slide 29’s code follows it; click it to light up the lines that decide, and notice which of the two networks departs from the guidelines more."
+      tryThis="for each guideline, predict whether slide 29’s code follows it; click it to light up the lines that decide, and notice which guidelines each network departs from."
     >
       <div className="dl-lab__controls">
         <Chips label="show" value={view} options={[{ v: 'guide', l: 'the five guidelines' }, { v: 'shapes', l: 'shapes and parameters' }]} onChange={setView} />
