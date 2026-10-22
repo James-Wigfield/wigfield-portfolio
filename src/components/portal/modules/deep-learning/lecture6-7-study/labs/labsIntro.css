@@ -1,0 +1,14 @@
+/* §0 lab (.dl67s-road* lives in ../lecture6-7-study.css) */
+.dl67s-secchip {
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  background: var(--surface-hi);
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 0.18rem 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dl67s-secchip b { font-family: var(--font-mono, ui-monospace, monospace); color: var(--accent-ink); }
+.dl67s-secchip:hover { border-color: var(--accent); color: var(--ink); }

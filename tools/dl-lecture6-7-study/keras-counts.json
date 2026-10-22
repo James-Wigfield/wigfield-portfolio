@@ -1,0 +1,846 @@
+{
+  "generatedBy": "tools/dl-lecture6-7-study/pipeline.py --counts",
+  "date": "2026-10-22",
+  "libraries": "Python 3.12.0, TensorFlow 2.21.0 (tf.keras = Keras 3.15.1), NumPy 2.5.2; Linux (Ubuntu 24.04.4 LTS, WSL2)",
+  "note": "Straight from Keras: every model built fresh from the slides' code (Sequential models via build(input_shape)); per layer = model.layers in order (name, class, layer.output shape with null = batch, layer.count_params()); totals = count_params(), trainable / non-trainable weight sizes. Layer names are Keras's auto names for this build order in one process. VAE codingsSize = 10. dcgan_* = slide 29's generator / discriminator / gan.",
+  "models": {
+    "conv_encoder": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Sequential",
+      "totalParams": 40606,
+      "trainableParams": 40606,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "reshape",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            28,
+            28,
+            1
+          ],
+          "params": 0
+        },
+        {
+          "name": "conv2d",
+          "class": "Conv2D",
+          "outputShape": [
+            null,
+            28,
+            28,
+            16
+          ],
+          "params": 160
+        },
+        {
+          "name": "max_pooling2d",
+          "class": "MaxPooling2D",
+          "outputShape": [
+            null,
+            14,
+            14,
+            16
+          ],
+          "params": 0
+        },
+        {
+          "name": "conv2d_1",
+          "class": "Conv2D",
+          "outputShape": [
+            null,
+            14,
+            14,
+            32
+          ],
+          "params": 4640
+        },
+        {
+          "name": "max_pooling2d_1",
+          "class": "MaxPooling2D",
+          "outputShape": [
+            null,
+            7,
+            7,
+            32
+          ],
+          "params": 0
+        },
+        {
+          "name": "conv2d_2",
+          "class": "Conv2D",
+          "outputShape": [
+            null,
+            7,
+            7,
+            64
+          ],
+          "params": 18496
+        },
+        {
+          "name": "max_pooling2d_2",
+          "class": "MaxPooling2D",
+          "outputShape": [
+            null,
+            3,
+            3,
+            64
+          ],
+          "params": 0
+        },
+        {
+          "name": "conv2d_3",
+          "class": "Conv2D",
+          "outputShape": [
+            null,
+            3,
+            3,
+            30
+          ],
+          "params": 17310
+        },
+        {
+          "name": "global_average_pooling2d",
+          "class": "GlobalAveragePooling2D",
+          "outputShape": [
+            null,
+            30
+          ],
+          "params": 0
+        }
+      ]
+    },
+    "conv_decoder": {
+      "inputShape": [
+        null,
+        30
+      ],
+      "class": "Sequential",
+      "totalParams": 13873,
+      "trainableParams": 13873,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "dense",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            144
+          ],
+          "params": 4464
+        },
+        {
+          "name": "reshape_1",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            3,
+            3,
+            16
+          ],
+          "params": 0
+        },
+        {
+          "name": "conv2d_transpose",
+          "class": "Conv2DTranspose",
+          "outputShape": [
+            null,
+            7,
+            7,
+            32
+          ],
+          "params": 4640
+        },
+        {
+          "name": "conv2d_transpose_1",
+          "class": "Conv2DTranspose",
+          "outputShape": [
+            null,
+            14,
+            14,
+            16
+          ],
+          "params": 4624
+        },
+        {
+          "name": "conv2d_transpose_2",
+          "class": "Conv2DTranspose",
+          "outputShape": [
+            null,
+            28,
+            28,
+            1
+          ],
+          "params": 145
+        },
+        {
+          "name": "reshape_2",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 0
+        }
+      ]
+    },
+    "conv_ae": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Sequential",
+      "totalParams": 54479,
+      "trainableParams": 54479,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "sequential",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            30
+          ],
+          "params": 40606
+        },
+        {
+          "name": "sequential_1",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 13873
+        }
+      ]
+    },
+    "dropout_encoder": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Sequential",
+      "totalParams": 81530,
+      "trainableParams": 81530,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "flatten",
+          "class": "Flatten",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 0
+        },
+        {
+          "name": "dropout",
+          "class": "Dropout",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 0
+        },
+        {
+          "name": "dense_1",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            100
+          ],
+          "params": 78500
+        },
+        {
+          "name": "dense_2",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            30
+          ],
+          "params": 3030
+        }
+      ]
+    },
+    "dropout_decoder": {
+      "inputShape": [
+        null,
+        30
+      ],
+      "class": "Sequential",
+      "totalParams": 82284,
+      "trainableParams": 82284,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "dense_3",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            100
+          ],
+          "params": 3100
+        },
+        {
+          "name": "dense_4",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 79184
+        },
+        {
+          "name": "reshape_3",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 0
+        }
+      ]
+    },
+    "dropout_ae": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Sequential",
+      "totalParams": 163814,
+      "trainableParams": 163814,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "sequential_3",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            30
+          ],
+          "params": 81530
+        },
+        {
+          "name": "sequential_4",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 82284
+        }
+      ]
+    },
+    "variational_encoder": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Functional",
+      "totalParams": 134870,
+      "trainableParams": 134870,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "input_layer_6",
+          "class": "InputLayer",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 0
+        },
+        {
+          "name": "flatten_1",
+          "class": "Flatten",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 0
+        },
+        {
+          "name": "dense_5",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            150
+          ],
+          "params": 117750
+        },
+        {
+          "name": "dense_6",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            100
+          ],
+          "params": 15100
+        },
+        {
+          "name": "dense_7",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            10
+          ],
+          "params": 1010
+        },
+        {
+          "name": "dense_8",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            10
+          ],
+          "params": 1010
+        },
+        {
+          "name": "sampling",
+          "class": "Sampling",
+          "outputShape": [
+            null,
+            10
+          ],
+          "params": 0
+        }
+      ]
+    },
+    "variational_decoder": {
+      "inputShape": [
+        null,
+        10
+      ],
+      "class": "Functional",
+      "totalParams": 134634,
+      "trainableParams": 134634,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "input_layer_7",
+          "class": "InputLayer",
+          "outputShape": [
+            null,
+            10
+          ],
+          "params": 0
+        },
+        {
+          "name": "dense_9",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            100
+          ],
+          "params": 1100
+        },
+        {
+          "name": "dense_10",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            150
+          ],
+          "params": 15150
+        },
+        {
+          "name": "dense_11",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 118384
+        },
+        {
+          "name": "reshape_4",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 0
+        }
+      ]
+    },
+    "variational_ae": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Functional",
+      "totalParams": 269504,
+      "trainableParams": 269504,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "input_layer_6",
+          "class": "InputLayer",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 0
+        },
+        {
+          "name": "functional_6",
+          "class": "Functional",
+          "outputShape": [
+            [
+              null,
+              10
+            ],
+            [
+              null,
+              10
+            ],
+            [
+              null,
+              10
+            ]
+          ],
+          "params": 134870
+        },
+        {
+          "name": "functional_7",
+          "class": "Functional",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 134634
+        }
+      ]
+    },
+    "generator": {
+      "inputShape": [
+        null,
+        30
+      ],
+      "class": "Sequential",
+      "totalParams": 136634,
+      "trainableParams": 136634,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "dense_12",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            100
+          ],
+          "params": 3100
+        },
+        {
+          "name": "dense_13",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            150
+          ],
+          "params": 15150
+        },
+        {
+          "name": "dense_14",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 118384
+        },
+        {
+          "name": "reshape_5",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 0
+        }
+      ]
+    },
+    "discriminator": {
+      "inputShape": [
+        null,
+        28,
+        28
+      ],
+      "class": "Sequential",
+      "totalParams": 132951,
+      "trainableParams": 132951,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "flatten_2",
+          "class": "Flatten",
+          "outputShape": [
+            null,
+            784
+          ],
+          "params": 0
+        },
+        {
+          "name": "dense_15",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            150
+          ],
+          "params": 117750
+        },
+        {
+          "name": "dense_16",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            100
+          ],
+          "params": 15100
+        },
+        {
+          "name": "dense_17",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            1
+          ],
+          "params": 101
+        }
+      ]
+    },
+    "gan": {
+      "inputShape": [
+        null,
+        30
+      ],
+      "class": "Sequential",
+      "totalParams": 269585,
+      "trainableParams": 269585,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "sequential_6",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            28,
+            28
+          ],
+          "params": 136634
+        },
+        {
+          "name": "sequential_7",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            1
+          ],
+          "params": 132951
+        }
+      ]
+    },
+    "dcgan_generator": {
+      "inputShape": [
+        null,
+        100
+      ],
+      "class": "Sequential",
+      "totalParams": 840705,
+      "trainableParams": 840321,
+      "nonTrainableParams": 384,
+      "layers": [
+        {
+          "name": "dense_18",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            6272
+          ],
+          "params": 633472
+        },
+        {
+          "name": "reshape_6",
+          "class": "Reshape",
+          "outputShape": [
+            null,
+            7,
+            7,
+            128
+          ],
+          "params": 0
+        },
+        {
+          "name": "batch_normalization",
+          "class": "BatchNormalization",
+          "outputShape": [
+            null,
+            7,
+            7,
+            128
+          ],
+          "params": 512
+        },
+        {
+          "name": "conv2d_transpose_3",
+          "class": "Conv2DTranspose",
+          "outputShape": [
+            null,
+            14,
+            14,
+            64
+          ],
+          "params": 204864
+        },
+        {
+          "name": "batch_normalization_1",
+          "class": "BatchNormalization",
+          "outputShape": [
+            null,
+            14,
+            14,
+            64
+          ],
+          "params": 256
+        },
+        {
+          "name": "conv2d_transpose_4",
+          "class": "Conv2DTranspose",
+          "outputShape": [
+            null,
+            28,
+            28,
+            1
+          ],
+          "params": 1601
+        }
+      ]
+    },
+    "dcgan_discriminator": {
+      "inputShape": [
+        null,
+        28,
+        28,
+        1
+      ],
+      "class": "Sequential",
+      "totalParams": 212865,
+      "trainableParams": 212865,
+      "nonTrainableParams": 0,
+      "layers": [
+        {
+          "name": "conv2d_4",
+          "class": "Conv2D",
+          "outputShape": [
+            null,
+            14,
+            14,
+            64
+          ],
+          "params": 1664
+        },
+        {
+          "name": "dropout_1",
+          "class": "Dropout",
+          "outputShape": [
+            null,
+            14,
+            14,
+            64
+          ],
+          "params": 0
+        },
+        {
+          "name": "conv2d_5",
+          "class": "Conv2D",
+          "outputShape": [
+            null,
+            7,
+            7,
+            128
+          ],
+          "params": 204928
+        },
+        {
+          "name": "dropout_2",
+          "class": "Dropout",
+          "outputShape": [
+            null,
+            7,
+            7,
+            128
+          ],
+          "params": 0
+        },
+        {
+          "name": "flatten_3",
+          "class": "Flatten",
+          "outputShape": [
+            null,
+            6272
+          ],
+          "params": 0
+        },
+        {
+          "name": "dense_19",
+          "class": "Dense",
+          "outputShape": [
+            null,
+            1
+          ],
+          "params": 6273
+        }
+      ]
+    },
+    "dcgan_gan": {
+      "inputShape": [
+        null,
+        100
+      ],
+      "class": "Sequential",
+      "totalParams": 1053570,
+      "trainableParams": 1053186,
+      "nonTrainableParams": 384,
+      "layers": [
+        {
+          "name": "sequential_9",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            28,
+            28,
+            1
+          ],
+          "params": 840705
+        },
+        {
+          "name": "sequential_10",
+          "class": "Sequential",
+          "outputShape": [
+            null,
+            1
+          ],
+          "params": 212865
+        }
+      ]
+    }
+  }
+}

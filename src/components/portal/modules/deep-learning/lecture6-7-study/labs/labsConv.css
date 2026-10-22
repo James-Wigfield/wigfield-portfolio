@@ -1,0 +1,23 @@
+/* §1 conv_ae layer by layer */
+.dl67s-cf__strip { min-width: 640px; max-width: 900px; }
+.dl67s-cf__mid { stroke: var(--line); stroke-dasharray: 3 3; }
+.dl67s-cf__hit { fill: transparent; }
+.dl67s-cf__box { fill: color-mix(in srgb, var(--dlv-blue) 12%, var(--surface)); stroke: var(--ink-3); stroke-width: 1; }
+.dl67s-cf__st--pick { cursor: pointer; }
+.dl67s-cf__st--pick:hover .dl67s-cf__box { stroke: var(--accent); }
+.dl67s-cf__st--on .dl67s-cf__box { fill: color-mix(in srgb, var(--dlv-violet) 24%, var(--surface)); stroke: var(--dlv-violet); stroke-width: 1.6; }
+.dl67s-cf__shape { fill: var(--ink-2); font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; }
+.dl67s-cf__st--on .dl67s-cf__shape { fill: var(--ink); font-weight: 700; }
+
+.dl67s-cf { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1rem; align-items: start; margin: 0.8rem 0; }
+.dl67s-cf__tables { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dl67s-cf__table code { font-size: 0.7rem; }
+.dl67s-cf__ok { color: var(--accent-ink); margin-left: 0.3rem; vertical-align: -2px; }
+.dl67s-cf__code { min-width: 0; }
+.dl67s-cf__run { display: flex; flex-direction: column; gap: 0.7rem; }
+.dl67s-cf__low { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl67s-cf__curve { margin: 0; min-width: 0; }
+
+@container lab (max-width: 860px) {
+  .dl67s-cf, .dl67s-cf__low { grid-template-columns: 1fr; }
+}

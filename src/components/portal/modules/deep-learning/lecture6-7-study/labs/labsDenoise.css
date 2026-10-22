@@ -1,0 +1,11 @@
+/* §2 labs */
+.dl67s-cs { display: flex; flex-direction: column; gap: 0.45rem; max-width: 640px; }
+.dl67s-cs__row { display: grid; grid-template-columns: 5rem minmax(0, 1fr) 3.5rem; align-items: center; gap: 0.5rem; }
+.dl67s-cs__row { grid-template-columns: 5rem minmax(0, 1fr) 3.5rem; }
+.dl67s-cs__row > .dl67s-cs__bar { justify-self: start; }
+.dl67s-cs__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
+.dl67s-cs__bar { display: block; height: 14px; border-radius: 3px; transition: width 0.3s ease; }
+.dl67s-cs__bar--in { background: color-mix(in srgb, var(--dlv-aqua) 45%, var(--surface)); border: 1px solid var(--dlv-aqua); }
+.dl67s-cs__bar--undercomplete { background: color-mix(in srgb, var(--dlv-violet) 45%, var(--surface)); border: 1px solid var(--dlv-violet); }
+.dl67s-cs__bar--overcomplete { background: color-mix(in srgb, var(--dlv-orange) 45%, var(--surface)); border: 1px solid var(--dlv-orange); }
+.dl67s-cs__n { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; color: var(--ink); font-variant-numeric: tabular-nums; }

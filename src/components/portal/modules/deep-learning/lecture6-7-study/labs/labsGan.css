@@ -1,0 +1,33 @@
+/* §7–§9 GAN labs */
+.dl67s-gr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 1fr); gap: 1rem; align-items: start; }
+.dl67s-gr__fig { max-width: 420px; }
+.dl67s-gr__side { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+.dl67s-gr__cmp { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--line-2); padding-top: 0.7rem; }
+.dl67s-gr__cmp code { font-size: 0.7rem; }
+.dl67s-gr__imgs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.dl67s-gr__imgs .dl67s-igrid { grid-template-columns: repeat(7, minmax(0, 3rem)); }
+
+/* the phase stepper's batch: one small cell per example, its label inside */
+.dl67s-batch { display: flex; flex-direction: column; gap: 0.3rem; }
+.dl67s-batch__row { display: grid; grid-template-columns: 4rem minmax(0, 1fr); align-items: center; gap: 0.4rem; }
+.dl67s-batch__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); }
+.dl67s-batch__cells { display: flex; flex-wrap: wrap; gap: 2px; }
+.dl67s-batch__c { display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; border-radius: 2px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.55rem; color: var(--ink); }
+.dl67s-batch__c--fake { background: color-mix(in srgb, var(--dlv-violet) 28%, var(--surface)); border: 1px solid var(--dlv-violet); }
+.dl67s-batch__c--real { background: color-mix(in srgb, var(--dlv-aqua) 28%, var(--surface)); border: 1px solid var(--dlv-aqua); }
+
+.dl67s-ps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl67s-ps__main { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.dl67s-ps__main .dl67s-figwrap { max-width: 400px; }
+.dl67s-ps__code { min-width: 0; }
+.dl67s-ps__log { max-width: 30rem; }
+
+.dl67s-gc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl67s-gc__side { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.dl67s-gc__side code { font-size: 0.7rem; }
+.dl67s-gc__code { min-width: 0; }
+.dl67s-gc__star { display: flex; flex-direction: column; gap: 0.45rem; border-top: 1px solid var(--line-2); padding-top: 0.7rem; }
+
+@container lab (max-width: 820px) {
+  .dl67s-gr, .dl67s-ps, .dl67s-gc, .dl67s-gr__imgs { grid-template-columns: 1fr; }
+}

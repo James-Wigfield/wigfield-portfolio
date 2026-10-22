@@ -1,0 +1,375 @@
+/* ============================================================================
+   LECTURES 6–7 STUDY — THE NOTEBOOK PAGE  (.dl67s-sh*)
+   ----------------------------------------------------------------------------
+   The page is written in exactly four pens, defined once per theme:
+     --pen-blue    headings (page title, sub-headings, table heads)
+     --pen-black   body text, diagram line-work, formulas, worked numbers
+                   (on the dark Arcade paper it is the page's light ink)
+     --pen-red     markers only: bullets, step numbers, margin markers
+     --pen-green   sparing highlights: {g|…} in text, `hl` diagram parts
+   Everything else — tick boxes, the copied counter, reveal buttons, the
+   paper's rules, the "Not in these notes" line — is page furniture in
+   neutral grey, never ink. Type is the page's own: the display face for
+   headings, the body face for everything else (no handwriting font).
+   ========================================================================== */
+
+/* the page queries its own width (margin column, narrow fold) */
+.dl67s-shwrap { min-width: 0; container: dl67s-sheet / inline-size; }
+
+/* ── The sheet ─────────────────────────────────────────────────────────── */
+.dl67s-sh {
+  --pen-blue: #1f3f99;
+  --pen-black: #1d1e22;
+  --pen-red: #c4322c;
+  --pen-green: #16773a;
+  --sh-paper: color-mix(in srgb, var(--surface-hi) 30%, #fdfcf7);
+  --sh-rule: rgba(46, 54, 64, 0.1);
+  --sh-mrule: rgba(46, 54, 64, 0.2);
+  --sh-furn: #6a7079;
+  --sh-furn-2: rgba(46, 54, 64, 0.32);
+  --sh-head: var(--font-display, Georgia, serif);
+  --sh-body: var(--font-body, system-ui, sans-serif);
+  --sh-step: 1.8rem;
+  --sh-gut: 2.9rem;
+  --sh-pr: 1.5rem;
+  --sh-mw: 13.5rem;
+  --sh-mgap: 1.6rem;
+}
+.portal[data-portal-theme='arcade'] .dl67s-sh {
+  --pen-blue: #8db0f7;
+  --pen-black: #e4e6ec;
+  --pen-red: #f0857b;
+  --pen-green: #79d495;
+  --sh-paper: color-mix(in srgb, var(--surface) 72%, #0b0e15);
+  --sh-rule: rgba(200, 210, 228, 0.075);
+  --sh-mrule: rgba(200, 210, 228, 0.16);
+  --sh-furn: #8a919c;
+  --sh-furn-2: rgba(200, 210, 228, 0.3);
+}
+
+.dl67s-sh {
+  position: relative;
+  max-width: 72rem;
+  color: var(--pen-black);
+  font-family: var(--sh-body);
+  font-size: 0.97rem;
+  line-height: var(--sh-step);
+  background-color: var(--sh-paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--sh-step) - 1px),
+    var(--sh-rule) calc(var(--sh-step) - 1px),
+    var(--sh-rule) var(--sh-step)
+  );
+  border: 1px solid var(--line);
+  border-radius: 2px 6px 6px 6px;
+  box-shadow: 0 1px 0 var(--line-2), 0 14px 30px -20px rgba(14, 22, 32, 0.4);
+  padding: var(--sh-step) var(--sh-pr) var(--sh-step) var(--sh-gut);
+  display: flex;
+  flex-direction: column;
+}
+.portal[data-portal-theme='arcade'] .dl67s-sh { box-shadow: 0 1px 0 var(--line-2), 0 16px 34px -18px rgba(0, 0, 0, 0.8); }
+/* the left margin rule: a faint grey double hairline (furniture, not pen) */
+.dl67s-sh::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--sh-gut) - 0.55rem);
+  width: 3px;
+  border-left: 1px solid var(--sh-mrule);
+  border-right: 1px solid var(--sh-mrule);
+  pointer-events: none;
+}
+/* the portal's `.hp p` body colour would otherwise re-ink every paragraph */
+.dl67s .dl67s-sh p { color: var(--pen-black); }
+.dl67s-sh__probe { position: absolute; visibility: hidden; height: var(--sh-step); width: 1px; top: 0; left: 0; }
+.dl67s-sh .katex { font-size: 1.02em; }
+/* maths is written in whichever pen the line is in (kit.css inks it --ink) */
+.dl67s-sh :is(.dlk-tex-inline, .dlk-tex-block) { color: inherit; }
+.dl67s-sh code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78em; background: none; padding: 0; color: inherit; }
+
+/* header: the title in blue, the slide range written small like a date */
+.dl67s-sh__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 1.2rem; }
+.dl67s-sh__title {
+  margin: 0;
+  flex: 1 1 18rem;
+  font-family: var(--sh-head);
+  font-weight: 500;
+  font-size: 1.32rem;
+  line-height: var(--sh-step);
+  color: var(--pen-blue);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 6px;
+}
+.dl67s-sh__title:focus { outline: none; }
+.dl67s-sh__date { margin: 0; display: flex; flex-direction: column; align-items: flex-end; line-height: calc(var(--sh-step) / 2); padding-top: 0.05rem; }
+.dl67s-sh__slides { font-family: var(--sh-body); font-size: 0.8rem; line-height: var(--sh-step); color: var(--pen-black); }
+.dl67s-sh__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  line-height: calc(var(--sh-step) / 2);
+  color: var(--sh-furn);
+}
+.dl67s-sh--done .dl67s-sh__count { font-weight: 700; }
+
+/* ── Blocks: main column + a narrow margin column when there's room ───── */
+.dl67s-sh__bigrow { margin-top: 0; }
+.dl67s-sh__block { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: var(--sh-step); }
+.dl67s-sh__main { min-width: 0; container: dl67s-shmain / inline-size; }
+.dl67s-sh__margin { min-width: 0; display: flex; flex-direction: column; font-size: 0.9rem; }
+
+.dl67s-sh__h {
+  margin: 0;
+  font-family: var(--sh-head);
+  font-weight: 500;
+  font-size: 1.08rem;
+  line-height: var(--sh-step);
+  color: var(--pen-blue);
+}
+.dl67s-sh__htext { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.dl67s-sh__at { font-family: var(--sh-body); font-size: 0.76rem; line-height: 1; color: var(--pen-black); margin-left: 0.75rem; white-space: nowrap; }
+/* inline runs in another font or size must never stretch a ruled line */
+.dl67s-sh :is(.dl67s-sh__t, .dl67s-sh__h, .dl67s-sh__td, .dl67s-sh__th, .dl67s-sh__qline, .dl67s-sh__a, .dl67s-sh__sc, .dl67s-sh__cap, .dl67s-sh__read) :is(code, .dlk-tex-inline, .dl67s-sh__g, .dl67s-sh__mark, .dl67s-sh__ie, .dl67s-sh__tag, em, b, i) { line-height: 1; }
+.dl67s-sh__sub { margin: 0; font-family: var(--sh-head); font-weight: 500; font-size: 0.98rem; line-height: var(--sh-step); color: var(--pen-blue); }
+
+.dl67s-sh__split { display: grid; grid-template-columns: minmax(0, 1fr); }
+.dl67s-sh__items { min-width: 0; display: flex; flex-direction: column; }
+.dl67s-sh__steps { list-style: none; margin: 0; padding: 0; }
+
+/* a tickable unit: [tick box in the left margin] [marker] [text] */
+.dl67s-sh__u {
+  display: grid;
+  grid-template-columns: var(--sh-gut) auto minmax(0, 1fr);
+  align-items: start;
+  width: calc(100% + var(--sh-gut));
+  margin-left: calc(-1 * var(--sh-gut));
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  line-height: var(--sh-step);
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.dl67s-sh__u > .dl67s-sh__box { justify-self: center; margin-top: calc((var(--sh-step) - 0.9rem) / 2); }
+.dl67s-sh__mark { color: var(--pen-red); margin-right: 0.45rem; white-space: nowrap; }
+.dl67s-sh__u--bullet .dl67s-sh__mark { font-size: 1.25em; margin-right: 0.45rem; }
+.dl67s-sh__u--step .dl67s-sh__mark { min-width: 1.15rem; }
+.dl67s-sh__t { min-width: 0; overflow-wrap: anywhere; }
+.dl67s-sh__u--line .dl67s-sh__t { grid-column: 2 / -1; }
+.dl67s-sh__u--on > .dl67s-sh__t,
+.dl67s-sh__u--on > .dl67s-sh__mark,
+.dl67s-sh__figu.dl67s-sh__u--on .dl67s-sh__fig,
+.dl67s-sh__tr.dl67s-sh__u--on > .dl67s-sh__td { opacity: 0.42; }
+.dl67s-sh__u:hover:not(.dl67s-sh__u--on) > .dl67s-sh__box,
+.dl67s-sh__tr:hover:not(.dl67s-sh__u--on) > .dl67s-sh__box { border-color: var(--sh-furn); }
+
+/* the tick box: grey furniture */
+.dl67s-sh__box {
+  width: 0.9rem;
+  height: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.4px solid var(--sh-furn-2);
+  border-radius: 3px;
+  background: var(--sh-paper);
+  color: var(--sh-furn);
+  transition: border-color 0.15s;
+}
+.dl67s-sh__u--on .dl67s-sh__box,
+.dl67s-sh__tr.dl67s-sh__u--on .dl67s-sh__box,
+.dl67s-sh__figu.dl67s-sh__u--on .dl67s-sh__box { border-color: var(--sh-furn); }
+
+/* the big idea: one plain sentence under the title, in black like the body */
+.dl67s-sh__u--big .dl67s-sh__t { grid-column: 2 / -1; }
+
+/* what this page deliberately leaves to the Read beat: grey furniture, not
+   copied */
+.dl67s .dl67s-sh p.dl67s-sh__skip { margin: var(--sh-step) 0 0; font-size: 0.82rem; line-height: var(--sh-step); color: var(--sh-furn); }
+.dl67s-sh__skipk { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.dl67s-sh__skip code { color: inherit; }
+
+/* boxed formula / code: a thin black pen box, the reading under it */
+.dl67s-sh__u--formula .dl67s-sh__t { display: flex; flex-direction: column; align-items: flex-start; }
+.dl67s-sh__u--formula .dl67s-sh__t { grid-column: 2 / -1; }
+.dl67s-sh__fbox {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: calc(var(--sh-step) * 0.25);
+  padding: 0.1rem 0.8rem;
+  border: 1.4px solid var(--pen-black);
+  border-radius: 3px;
+}
+.dl67s-sh__fbox .dlk-tex-block { color: var(--pen-black); padding: 0; }
+.dl67s-sh__fbox .katex-display { margin: 0.3rem 0; }
+.dl67s-sh__fbox .katex { font-size: 1.06em; }
+/* code lines sit on the ruled lines too, one per rule */
+.dl67s-sh__fbox--code code { display: block; font-size: 0.88rem; line-height: var(--sh-step); white-space: pre-wrap; padding: 0; }
+/* the formula box is the one scroller (kit.css makes the maths scroll too) */
+.dl67s-sh__fbox .dlk-tex-block { overflow: visible; }
+.dl67s-sh__read { display: block; font-size: 0.92rem; }
+.dl67s-sh__ie { font-style: italic; }
+.dl67s-sh__tag { font-size: 0.92rem; }
+
+/* worked number: indented under its formula, results in green */
+.dl67s-sh__worked { display: flex; flex-direction: column; }
+.dl67s-sh__u--wline .dl67s-sh__t { grid-column: 2 / -1; padding-left: 1.6rem; font-variant-numeric: tabular-nums; }
+.dl67s-sh__u--wtitle .dl67s-sh__mark { color: var(--pen-black); font-style: italic; }
+
+/* cause → effect */
+.dl67s-sh__u--arrow .dl67s-sh__t { grid-column: 2 / -1; }
+.dl67s-sh__arr { display: inline-block; width: 2.4rem; height: 0.8rem; margin: 0 0.5rem; vertical-align: -0.05rem; fill: none; stroke: var(--pen-black); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* a hand-ruled table: blue heads, black rules, one tick per row */
+.dl67s-sh__table {
+  display: grid;
+  grid-template-columns: var(--sh-gut) var(--sh-cols);
+  justify-content: start;
+  width: calc(100% + var(--sh-gut));
+  margin-left: calc(-1 * var(--sh-gut));
+}
+.dl67s-sh__tr { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: start; }
+button.dl67s-sh__tr { font: inherit; line-height: var(--sh-step); color: inherit; text-align: left; background: none; border: none; padding: 0; cursor: pointer; }
+.dl67s-sh__tr > .dl67s-sh__box { justify-self: center; margin-top: calc((var(--sh-step) - 0.9rem) / 2); }
+.dl67s-sh__tr--head { background: linear-gradient(var(--pen-black), var(--pen-black)) no-repeat calc(var(--sh-gut) + 0px) calc(100% - 2px) / calc(100% - var(--sh-gut)) 1.4px; }
+.dl67s-sh__th { color: var(--pen-blue); font-family: var(--sh-head); font-weight: 500; padding-right: 0.8rem; }
+.dl67s-sh__td { padding-right: 0.8rem; min-width: 0; overflow-wrap: break-word; }
+.dl67s-sh__th:nth-child(2), .dl67s-sh__td:nth-child(2) { border-right: 1.2px solid var(--pen-black); }
+.dl67s-sh__th:nth-child(n + 3), .dl67s-sh__td:nth-child(n + 3) { padding-left: 0.8rem; }
+
+/* diagrams: black line-work, the discussed part in green */
+.dl67s-sh__figu { position: relative; margin-top: calc(var(--sh-step) * 0.25); }
+.dl67s-sh__figtick {
+  position: absolute;
+  top: 0.2rem;
+  left: calc(-1 * var(--sh-gut));
+  width: var(--sh-gut);
+  height: var(--sh-step);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc((var(--sh-step) - 0.9rem) / 2) 0 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.dl67s-sh__fig { margin: 0; max-width: 24rem; cursor: pointer; }
+.dl67s-sh__figscroll { min-width: 0; }
+.dl67s-figwrap { display: block; }
+.dl67s-figwrap--sheet .dl67s-fig { color: var(--pen-black); overflow: visible; }
+.dl67s-figwrap--sheet .dl67s-fig__hl { color: var(--pen-green); }
+.dl67s-figwrap--sheet .dl67s-fig__hl :is(rect, line, path, circle, polyline) { stroke-width: 1.9; }
+.dl67s-sh__cap { font-size: 0.86rem; line-height: var(--sh-step); }
+
+/* side-by-side: items | diagram. Once the page has its margin column, a
+   side diagram takes the right of the block, reaching into the margin, and
+   that block's margin notes go under it. */
+/* beside the bullets, the diagram's tick starts its caption line */
+.dl67s-sh__figu--side .dl67s-sh__figtick { position: static; display: inline-flex; width: auto; height: auto; padding: 0; margin-right: 0.55rem; vertical-align: -0.1rem; }
+
+/* the margin column: markers in red, notes in black, Q: with a reveal */
+.dl67s-sh__u--aside { grid-template-columns: var(--sh-gut) minmax(0, 1fr); }
+.dl67s-sh__u--aside .dl67s-sh__t { grid-column: 2 / -1; }
+.dl67s-sh__u--aside .dl67s-sh__mark,
+.dl67s-sh__q .dl67s-sh__mark,
+.dl67s-sh__sc .dl67s-sh__mark { font-size: 0.92em; margin-right: 0.4rem; }
+.dl67s-sh__q { margin: 0; }
+.dl67s-sh__qline { margin: 0; }
+.dl67s-sh__q .dl67s-sh__mark { font-weight: 400; color: var(--sh-furn); }
+.dl67s-sh__u--aside .dl67s-sh__mark { color: var(--pen-blue); }
+.dl67s-sh__reveal {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  color: var(--sh-furn);
+  background: none;
+  border: none;
+  border-bottom: 1px dotted var(--sh-furn-2);
+  padding: 0;
+  cursor: pointer;
+  vertical-align: 2px;
+}
+.dl67s-sh__reveal:hover { color: var(--pen-black); }
+.dl67s-sh__a { margin: 0; font-style: italic; }
+.dl67s-sh__a::before { content: '→ '; font-style: normal; }
+/* a slide-check pointer isn't copied: it is grey page furniture, like the
+   tick boxes, pointing at the Read beat's Slide check */
+.dl67s .dl67s-sh p.dl67s-sh__sc { margin: 0; font-size: 0.86rem; color: var(--sh-furn); }
+.dl67s-sh__sc .dl67s-sh__mark { color: var(--sh-furn); font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* folded: margin notes under their block (always, beside a side diagram),
+   indented; their ticks stay in the page's left margin */
+.dl67s-sh__margin > :not(.dl67s-sh__u),
+.dl67s-sh__margin > .dl67s-sh__u > .dl67s-sh__t { padding-left: 1.3rem; }
+
+@container dl67s-sheet (min-width: 46rem) {
+  .dl67s-sh__block { position: relative; }
+  .dl67s-sh__block--margin { grid-template-columns: minmax(0, 1fr) var(--sh-mw); column-gap: var(--sh-mgap); }
+  .dl67s-sh__block:not(.dl67s-sh__block--margin):not(.dl67s-sh__block--side) { padding-right: calc(var(--sh-mw) + var(--sh-mgap)); }
+  .dl67s-sh__split--side { grid-template-columns: minmax(16rem, 1fr) minmax(0, 24.5rem); column-gap: var(--sh-mgap); align-items: start; }
+  .dl67s-sh__block > .dl67s-sh__margin > :not(.dl67s-sh__u),
+  .dl67s-sh__block > .dl67s-sh__margin > .dl67s-sh__u > .dl67s-sh__t { padding-left: 0; }
+  .dl67s-sh__block > .dl67s-sh__margin > .dl67s-sh__u--aside { grid-template-columns: 1.5rem minmax(0, 1fr); width: calc(100% + 1.5rem); margin-left: -1.5rem; }
+  .dl67s-sh__block > .dl67s-sh__margin > .dl67s-sh__u--aside > .dl67s-sh__box { justify-self: start; }
+  /* the margin column's faint rule, drawn per block (up through the gap
+     above it) so it never cuts through a side diagram */
+  .dl67s-sh__block:not(.dl67s-sh__block--side)::after {
+    content: '';
+    position: absolute;
+    top: calc(-1 * var(--sh-step));
+    bottom: 0;
+    right: calc(var(--sh-mw) + var(--sh-mgap) / 2);
+    border-left: 1px solid var(--sh-rule);
+    pointer-events: none;
+  }
+}
+
+/* page tools */
+.dl67s-sh__tools { display: flex; gap: 0.9rem; margin-top: var(--sh-step); }
+.dl67s-sh__tool {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  color: var(--sh-furn);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dl67s-sh__tool:hover:not(:disabled) { color: var(--pen-black); }
+.dl67s-sh__tool:disabled { opacity: 0.45; cursor: default; }
+
+/* green pen in text */
+.dl67s-sh__g { color: var(--pen-green); }
+
+/* focus mode: a touch larger */
+.dl67s--focus .dl67s-sh { --sh-step: 1.9rem; font-size: 1.03rem; }
+
+/* narrow pages */
+@container dl67s-sheet (max-width: 34rem) {
+  .dl67s-sh { --sh-gut: 2.2rem; --sh-pr: 0.9rem; font-size: 0.95rem; }
+  .dl67s-sh__figscroll { overflow-x: auto; overscroll-behavior-x: contain; }
+  .dl67s-sh__figscroll .dl67s-fig { min-width: 0; }
+  .dl67s-sh__fbox .katex { font-size: 0.92em; }
+  .dl67s-sh__date { align-items: flex-start; }
+}
+/* more to the right: the frame's edge fades out */
+.dl67s-sh__scrollx[data-more] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+}

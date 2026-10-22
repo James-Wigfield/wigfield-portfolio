@@ -1,0 +1,16 @@
+/* §1 transposed-convolution visualiser */
+.dl67s-tc { display: grid; grid-template-columns: minmax(10rem, auto) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+.dl67s-tc__side, .dl67s-tc__main { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.dl67s-tc__grid { display: block; height: auto; }
+.dl67s-tc__cell { fill: var(--surface-hi); stroke: var(--line); stroke-width: 1; }
+.dl67s-tc__cell--crop { fill: none; stroke: var(--line-2); stroke-dasharray: 2 2; }
+.dl67s-tc__cell--on { fill: color-mix(in srgb, var(--dlv-violet) 22%, var(--surface)); stroke: var(--dlv-violet); stroke-width: 1.4; }
+.dl67s-tc__cell--pick { fill: color-mix(in srgb, var(--dlv-violet) 30%, var(--surface)); stroke: var(--dlv-violet); stroke-width: 2.2; }
+.dl67s-tc__in { cursor: pointer; }
+.dl67s-tc__in:hover .dl67s-tc__cell { stroke: var(--accent); stroke-width: 1.8; }
+.dl67s-tc__v { fill: var(--ink); font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 600; pointer-events: none; }
+.dl67s-tc__croplabel { fill: var(--ink-3); font-size: 8px; font-family: var(--font-mono, ui-monospace, monospace); }
+
+@container lab (max-width: 640px) {
+  .dl67s-tc { grid-template-columns: 1fr; }
+}

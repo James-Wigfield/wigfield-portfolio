@@ -1,0 +1,28 @@
+/* §9–§10 toy GAN: real data as a quiet filled curve, the generator's
+   numbers as accent bars, the discriminator as an ink line */
+.dl67s-toy__grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(13rem, 1fr); gap: 1rem; align-items: start; }
+.dl67s-toy__fig { margin: 0; min-width: 0; }
+.dl67s-toy { max-width: 620px; }
+.dl67s-toy__real { fill: color-mix(in srgb, var(--dlv-aqua) 22%, transparent); stroke: var(--dlv-aqua); stroke-width: 1.4; }
+.dl67s-toy__bar { fill: color-mix(in srgb, var(--dlv-violet) 70%, transparent); }
+.dl67s-toy__d { fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-dasharray: 6 3; }
+.dl67s-toy__lreal { fill: var(--ink-2); }
+.dl67s-toy__legend { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.74rem; color: var(--ink-2); }
+.dl67s-toy__legend li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dl67s-toy__key { display: inline-block; width: 16px; height: 8px; border-radius: 2px; }
+.dl67s-toy__key--real { background: color-mix(in srgb, var(--dlv-aqua) 30%, transparent); border: 1.4px solid var(--dlv-aqua); }
+.dl67s-toy__key--bar { background: color-mix(in srgb, var(--dlv-violet) 70%, transparent); }
+.dl67s-toy__key--d { height: 0; border-top: 2px dashed var(--ink); border-radius: 0; }
+
+.dl67s-tl__wrap { display: flex; flex-direction: column; gap: 0.45rem; }
+.dl67s-tl { max-width: 620px; }
+.dl67s-tl__a { fill: var(--dlv-blue); }
+.dl67s-tl__b { fill: var(--dlv-orange); }
+.dl67s-tl__col { cursor: pointer; }
+.dl67s-tl__col:hover rect { opacity: 0.75; }
+.dl67s-dot--a { background: var(--dlv-blue); }
+.dl67s-dot--b { background: var(--dlv-orange); margin-left: 0.6rem; }
+
+@container lab (max-width: 700px) {
+  .dl67s-toy__grid { grid-template-columns: 1fr; }
+}
