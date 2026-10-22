@@ -1,0 +1,25 @@
+/* §8 · the soft dictionary lookup: a cabinet of three drawers */
+.dl8s-lk__slot { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 3; }
+.dl8s-lk__front { transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dl8s-lk__drawer { fill: var(--dl8s-floor); stroke: var(--dl8s-enc); stroke-width: 1.8; }
+.dl8s-lk__drawer--lit { stroke-width: 3; }
+.dl8s-lk__handle { fill: none; stroke: var(--ink-3); stroke-width: 1.5; }
+.dl8s-lk__glow { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 70%, transparent)); }
+.dl8s-lk__lit { text-decoration: underline; }
+.dl8s-lk__code { margin-top: 0.6rem; }
+.dl8s-lk__tok {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0 0.05em;
+  border-radius: 3px;
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.dl8s-lk__tok.tok-var { color: #9cdcfe; }
+.dl8s-lk__tok.tok-fn { color: #dcdcaa; }
+.dl8s-lk__tok--on, .dl8s-lk__tok:focus-visible { background: rgba(56, 139, 253, 0.28); outline: none; }
+.dl8s-lk__say { min-height: 1.6em; margin-top: 0.4rem; }
+@media (prefers-reduced-motion: reduce) { .dl8s-lk__front { transition: none; } }

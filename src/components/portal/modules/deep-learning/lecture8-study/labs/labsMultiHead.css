@@ -1,0 +1,4 @@
+/* §12 · multi-head: Figure 16-10 as a left-to-right flow of outlined boxes */
+.dl8s-mh__box rect { fill: var(--dl8s-floor); stroke: var(--line); stroke-width: 1.2; transition: stroke 0.3s, stroke-width 0.3s; }
+.dl8s-mh__box--now rect { stroke: var(--accent); stroke-width: 2.4; }
+.dl8s-mh__slice { transition: transform 0.45s ease; }

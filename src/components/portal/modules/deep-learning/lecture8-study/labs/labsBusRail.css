@@ -1,0 +1,39 @@
+/* §3–§5 · bus/rail labs */
+.dl8s-br__wins { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.2rem; margin: 0 0 0.4rem; }
+.dl8s-br__winsk { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); margin-right: 0.3rem; }
+.dl8s-br__series { margin-bottom: 0.4rem; }
+.dl8s-br__pt { fill: var(--dl8s-dec); }
+.dl8s-br__dot { stroke: none; }
+.dl8s-br__dot.dl8s-line--q { fill: var(--dl8s-q); }
+.dl8s-br__dot.dl8s-line--dec { fill: var(--dl8s-dec); }
+.dl8s-br__dot.dl8s-line--ghost { fill: var(--ink-3); }
+
+/* §4 stages */
+.dl8s-br__loop { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--ink-2); }
+.dl8s-br__loop .dl8s-story__play { width: 1.9rem; height: 1.9rem; font-size: 0.7rem; }
+.dl8s-br__loop .dl8s-story__play:disabled { opacity: 0.45; cursor: default; }
+.dl8s-br__box { fill: none; stroke-width: 1.6; }
+.dl8s-br__box--enc { stroke: var(--dl8s-enc); }
+.dl8s-br__tick { fill: var(--ink-2); opacity: 0.75; }
+.dl8s-br__state { fill: none; stroke: var(--ink); stroke-width: 1.8; }
+.dl8s-br__out { fill: var(--dl8s-floor); stroke: var(--dl8s-dec); stroke-width: 1.5; }
+.dl8s-br__wire { stroke: var(--line); stroke-width: 1; }
+.dl8s-br__in { stroke-width: 1.4; transition: fill 0.3s ease; }
+.dl8s-br__in--real { fill: var(--ink-2); stroke: var(--ink-2); }
+.dl8s-br__in--est { fill: var(--dl8s-dec); stroke: var(--dl8s-dec); }
+.dl8s-br__in--zero { stroke: var(--ink-3); }
+.dl8s-br__hatch { stroke: var(--ink-3); stroke-width: 1.4; opacity: 0.7; }
+.dl8s-br__feed { fill: none; stroke: var(--dl8s-dec); stroke-width: 1.4; opacity: 0.8; }
+
+/* §5 learning curves (slide 16 style: train vs validation, dashed vs dash-dot) */
+.dl8s-br__lc--train { stroke: var(--ink-2); }
+.dl8s-br__lc--val { stroke: var(--dl8s-dec); }
+.dl8s-br__lc--dash { stroke-dasharray: 6 4; }
+.dl8s-br__lc--dashdot { stroke-dasharray: 8 3 2 3; }
+
+/* §5 scoreboard: slides' numbers vs the page's, a ruled two-column list */
+.dl8s-br__score { margin: 0.6rem 0 0; display: grid; gap: 0.15rem; max-width: 30rem; font-size: 0.8rem; }
+.dl8s-br__score > div { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--line-2); padding: 0.2rem 0; }
+.dl8s-br__score dt { color: var(--ink-3); margin: 0; }
+.dl8s-br__score dd { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); color: var(--ink); font-weight: 600; }
+.dl8s-br__score .dl8s-own::before { margin-right: 0.15rem; }

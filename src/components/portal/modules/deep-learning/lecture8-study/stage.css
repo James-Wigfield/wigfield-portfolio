@@ -1,0 +1,319 @@
+/* ============================================================================
+   LECTURE 8 STUDY — THE LABS' VISUAL LANGUAGE  (.dl8s-stage*, .dl8s-tok …)
+   ----------------------------------------------------------------------------
+   Every Play lab on this page is drawn from one small vocabulary, defined
+   here once and themed for Jade, Coral and Arcade:
+
+     roles      one colour each, used for strokes, beams, heatmap ramps and
+                small labels — never for big fills or boxes:
+                  --dl8s-q    queries (and attention beams: the beam is the
+                              query looking for what it needs)
+                  --dl8s-k    keys            --dl8s-v    values
+                  --dl8s-pos  positional signal
+                  --dl8s-mask the mask (drawn as a grey hatch)
+                  --dl8s-enc  encoder         --dl8s-dec  decoder
+     tokens     words are outlined boxes (.dl8s-tok), outline = their side
+     beams      attention is a ribbon whose width and opacity are the weight
+     heatmaps   a matrix is a grid of cells: role colour for positive values,
+                slate for negative, the floor colour at zero (.dl8s-cell)
+     frame      Stage: title + slide receipt, a one-line "Try this", the
+                stage floor (the picture), an optional story bar (▶ + named
+                beats), a quiet challenge, and a "Show the maths" drawer
+
+   Numbers are never the main view: they appear on hover / focus, and in the
+   maths drawer (which print opens).
+   ========================================================================== */
+
+.dl8s {
+  --dl8s-q: #c2410c;
+  --dl8s-k: #1d5fc9;
+  --dl8s-v: #15803d;
+  --dl8s-pos: #6d3fc0;
+  --dl8s-mask: #64748b;
+  --dl8s-enc: #0e7490;
+  --dl8s-dec: #be185d;
+  --dl8s-neg: #8a8178;
+  --dl8s-floor: color-mix(in srgb, var(--surface-hi) 45%, #ffffff);
+  --dl8s-floor-line: rgba(30, 41, 59, 0.08);
+  --dl8s-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 10px 26px -18px rgba(15, 23, 42, 0.35);
+}
+.portal[data-portal-theme='coral'] .dl8s {
+  --dl8s-floor: color-mix(in srgb, var(--surface-hi) 70%, #ffffff);
+  --dl8s-floor-line: rgba(80, 30, 36, 0.08);
+}
+.portal[data-portal-theme='arcade'] .dl8s {
+  --dl8s-q: #ff8a5c;
+  --dl8s-k: #7aa7ff;
+  --dl8s-v: #4ade80;
+  --dl8s-pos: #b79cff;
+  --dl8s-mask: #94a3b8;
+  --dl8s-enc: #3cc3dc;
+  --dl8s-dec: #f47bb8;
+  --dl8s-neg: #a39b93;
+  --dl8s-floor: #171a21;
+  --dl8s-floor-line: rgba(200, 210, 228, 0.07);
+  --dl8s-shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 14px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* ── the lab frame ────────────────────────────────────────────────────── */
+.dl8s-stage {
+  container: stage / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.dl8s-stage + .dl8s-stage { margin-top: 1.6rem; }
+.dl8s-stage__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; }
+.dl8s-stage__title {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 500;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dl8s-stage__slides { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); white-space: nowrap; }
+.dl8s-stage__try { margin: 0; display: flex; gap: 0.55rem; align-items: baseline; font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); max-width: 78ch; }
+.dl8s-stage__tryk {
+  flex: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.dl8s-stage__floor {
+  position: relative;
+  background: var(--dl8s-floor);
+  background-image: radial-gradient(var(--dl8s-floor-line) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  border-radius: 12px;
+  box-shadow: var(--dl8s-shadow);
+  padding: clamp(0.6rem, 2.2cqi, 1.4rem);
+  min-width: 0;
+}
+.dl8s-stage__cap { margin: 0; font-size: 0.82rem; line-height: 1.55; color: var(--ink-3); max-width: 76ch; }
+.dl8s-stage__cap b { color: var(--ink-2); }
+.dl8s-stage__foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1.2rem; }
+
+/* "this page's own" marker: a labelled dot */
+.dl8s-own { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.03em; color: var(--ink-3); }
+.dl8s-own::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--dlv-violet); margin-right: 0.4rem; vertical-align: 0; }
+.dl8s-slideval::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--accent); margin-right: 0.4rem; vertical-align: 0; }
+
+/* a light challenge: one quiet line, a check when it's met */
+.dl8s-chal { margin: 0; display: inline-flex; align-items: baseline; gap: 0.5rem; font-size: 0.82rem; color: var(--ink-3); }
+.dl8s-chal__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dl8s-chal__ok { display: inline-flex; align-items: center; gap: 0.25rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--accent-ink); }
+.dl8s-chal--done .dl8s-chal__text { color: var(--ink-2); }
+
+/* ── story mode: ▶ + named beats, one sentence for the current beat ────── */
+.dl8s-story { display: flex; flex-direction: column; gap: 0.45rem; }
+.dl8s-story__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.4rem; }
+.dl8s-story__play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-right: 0.3rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--accent);
+  background: none;
+  color: var(--accent-ink);
+  cursor: pointer;
+  flex: none;
+}
+.dl8s-story__play:hover { background: var(--accent-soft); }
+.dl8s-story__beat {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--line-2);
+  padding: 0.3rem 0.35rem 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dl8s-story__beat b { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; margin-right: 0.3rem; color: inherit; }
+.dl8s-story__beat:hover { color: var(--ink); }
+.dl8s-story__beat--past { color: var(--ink-2); border-bottom-color: var(--line); }
+.dl8s-story__beat--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl8s-story__say { margin: 0; min-height: 1.5em; font-size: 0.88rem; line-height: 1.5; color: var(--ink-2); max-width: 76ch; }
+.dl8s-story__say .katex { font-size: 1em; }
+
+/* ── "Show the maths": a ruled drawer, closed on screen, open in print ── */
+.dl8s-maths { border-top: 1px solid var(--line-2); }
+.dl8s-maths__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.5rem 0.1rem 0.4rem;
+  cursor: pointer;
+}
+.dl8s-maths__btn:hover { color: var(--accent-ink); }
+.dl8s-maths__chev { display: inline-block; transition: transform 0.2s; font-size: 0.75em; }
+.dl8s-maths__chev--open { transform: rotate(180deg); }
+.dl8s-maths__body { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.2rem 0.1rem 0.8rem; max-width: 80ch; }
+.dl8s-maths__body .dlk-eq { margin: 0; }
+.dl8s-mline { margin: 0; font-size: 0.86rem; line-height: 1.65; color: var(--ink-2); overflow-x: auto; }
+.dl8s-mline .katex { font-size: 1.02em; }
+.dl8s-mline b { color: var(--ink); }
+.dl8s-mnote { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--ink-3); }
+
+/* ── SVG vocabulary ───────────────────────────────────────────────────── */
+.dl8s-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-body, system-ui, sans-serif); }
+.dl8s-svg text { fill: var(--ink); }
+.dl8s-t { font-size: 13px; }
+.dl8s-t--s { font-size: 11px; fill: var(--ink-3) !important; }
+.dl8s-t--xs { font-size: 10px; fill: var(--ink-3) !important; }
+.dl8s-t--m { font-family: var(--font-mono, ui-monospace, monospace); }
+.dl8s-t--b { font-weight: 700; }
+.dl8s-t--q { fill: var(--dl8s-q) !important; }
+.dl8s-t--k { fill: var(--dl8s-k) !important; }
+.dl8s-t--v { fill: var(--dl8s-v) !important; }
+.dl8s-t--pos { fill: var(--dl8s-pos) !important; }
+.dl8s-t--enc { fill: var(--dl8s-enc) !important; }
+.dl8s-t--dec { fill: var(--dl8s-dec) !important; }
+.dl8s-halo { paint-order: stroke; stroke: var(--dl8s-floor); stroke-width: 4px; stroke-linejoin: round; }
+
+/* tokens: words in outlined boxes */
+.dl8s-tok rect { fill: var(--dl8s-floor); stroke: var(--ink-3); stroke-width: 1.4; transition: stroke-width 0.2s, fill 0.2s; }
+.dl8s-tok text { font-size: 14px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+.dl8s-tok--enc rect { stroke: var(--dl8s-enc); }
+.dl8s-tok--dec rect { stroke: var(--dl8s-dec); }
+.dl8s-tok--q rect { stroke: var(--dl8s-q); }
+.dl8s-tok--k rect { stroke: var(--dl8s-k); }
+.dl8s-tok--v rect { stroke: var(--dl8s-v); }
+.dl8s-tok--ghost rect { stroke-dasharray: 4 3; }
+.dl8s-tok--ghost text { fill: var(--ink-3); }
+.dl8s-tok--on rect { stroke-width: 2.8; fill: color-mix(in srgb, currentColor 0%, var(--dl8s-floor)); }
+.dl8s-tok--btn { cursor: pointer; }
+.dl8s-tok--btn:hover rect { stroke-width: 2.4; }
+.dl8s-tok--btn:focus-visible { outline: none; }
+/* keyboard focus is a dashed accent outline, so it never looks like a selection */
+.dl8s-tok--btn:focus-visible rect { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 5 3; }
+.dl8s-tok__caret { fill: var(--dl8s-dec); transition: opacity 0.2s; }
+
+/* beams: width and opacity = the weight */
+.dl8s-beam { fill: none; stroke: var(--dl8s-q); stroke-linecap: round; transition: stroke-width 0.45s ease, opacity 0.45s ease; }
+.dl8s-beam--k { stroke: var(--dl8s-k); }
+.dl8s-cone { fill: var(--dl8s-q); transition: opacity 0.45s ease, d 0.5s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dl8s-cone__top { stop-color: var(--dl8s-q); stop-opacity: 0.95; }
+.dl8s-cone__bot { stop-color: var(--dl8s-q); stop-opacity: 0.32; }
+.dl8s-tok__glow { fill: var(--dl8s-q); transition: opacity 0.45s ease; pointer-events: none; }
+.dl8s-wire { fill: none; stroke: var(--ink-3); stroke-width: 1.3; opacity: 0.55; }
+.dl8s-wire--on { stroke: var(--ink); opacity: 0.9; stroke-width: 1.8; }
+.dl8s-arrowhead { fill: var(--ink-3); }
+
+/* heatmap cells (fill is set inline from the value) */
+.dl8s-cell { stroke: var(--dl8s-floor); stroke-width: 1.5; transition: fill 0.45s ease, opacity 0.35s ease; }
+.dl8s-cell--hit { stroke: var(--ink); stroke-width: 2; }
+.dl8s-grid-frame { fill: none; stroke: var(--line); stroke-width: 1; }
+.dl8s-grid-frame--q { stroke: var(--dl8s-q); }
+.dl8s-grid-frame--k { stroke: var(--dl8s-k); }
+.dl8s-grid-frame--v { stroke: var(--dl8s-v); }
+.dl8s-rowband { fill: var(--ink); opacity: 0.07; transition: opacity 0.2s; }
+.dl8s-tip { pointer-events: none; }
+.dl8s-tip rect { fill: var(--ink); opacity: 0.92; }
+.dl8s-tip text { fill: var(--dl8s-floor) !important; font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 600; }
+
+/* draggable score knobs */
+.dl8s-knob { cursor: ns-resize; touch-action: none; }
+.dl8s-knob__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dl8s-knob__bar { fill: var(--ink-3); transition: transform 0.5s ease; }
+.dl8s-knob__dot { fill: var(--dl8s-floor); stroke: var(--ink); stroke-width: 2; transition: transform 0.5s ease; }
+.dl8s-knob:hover .dl8s-knob__dot { stroke-width: 3; }
+.dl8s-knob:focus-visible .dl8s-knob__dot { stroke: var(--accent); stroke-width: 3.4; stroke-dasharray: 4 2; }
+.dl8s-knob:focus-visible { outline: none; }
+.dl8s-knob--drag .dl8s-knob__bar, .dl8s-knob--drag .dl8s-knob__dot { transition: none; }
+
+/* a quiet ruled switch (two or three options, underline = on) */
+.dl8s-switch { display: inline-flex; flex-wrap: wrap; gap: 0.2rem; margin: 0 0 0.6rem; border-bottom: 1px solid var(--line-2); }
+.dl8s-switch__opt {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+.dl8s-switch__opt:hover { color: var(--ink); }
+.dl8s-switch__opt--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl8s-floorrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+
+/* line charts (bus/rail) */
+.dl8s-ax { stroke: var(--line); stroke-width: 1; }
+.dl8s-grid-line { stroke: var(--line-2); stroke-width: 1; }
+.dl8s-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dl8s-line--truth { stroke: var(--ink-2); }
+.dl8s-line--q { stroke: var(--dl8s-q); stroke-width: 2.6; }
+.dl8s-line--dec { stroke: var(--dl8s-dec); stroke-width: 2.6; }
+.dl8s-line--ghost { stroke: var(--ink-3); stroke-dasharray: 5 4; opacity: 0.8; }
+.dl8s-gap { fill: var(--dl8s-dec); opacity: 0.14; }
+.dl8s-today { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 3; }
+
+/* softmax bars (weights 0…1, grown by scaleY) */
+.dl8s-sbar { fill: var(--dl8s-q); transition: transform 0.4s ease; }
+
+/* a horizontal scrubber (d_keys, positions …) */
+.dl8s-scrub { cursor: ew-resize; touch-action: none; }
+.dl8s-scrub:focus-visible { outline: none; }
+.dl8s-scrub__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dl8s-scrub__knob { transition: transform 0.25s ease; }
+.dl8s-scrub--drag .dl8s-scrub__knob { transition: none; }
+.dl8s-scrub__knob circle { fill: var(--dl8s-floor); stroke: var(--ink); stroke-width: 2.2; }
+.dl8s-scrub:focus-visible .dl8s-scrub__knob circle { stroke-width: 3.4; stroke: var(--accent); }
+
+/* the ⊕ node where weighted parts are summed */
+.dl8s-plus__c { fill: var(--dl8s-floor); stroke: var(--ink); stroke-width: 1.6; }
+.dl8s-plus__x { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+
+/* a small in-stage text button (e.g. "reset scores"), top right of the floor */
+.dl8s-floorbtn {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.7rem;
+  z-index: 1;
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0.1rem 0.1rem;
+  cursor: pointer;
+}
+.dl8s-floorbtn:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+
+/* things that fade between story beats */
+.dl8s-fade { transition: opacity 0.45s ease; }
+.dl8s-hide { opacity: 0 !important; pointer-events: none; }
+.dl8s-dim { opacity: 0.28; }
+.dl8s-pop { transform-box: fill-box; transform-origin: center; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.3), opacity 0.35s ease; }
+
+/* narrow stages: a simplified picture instead of a shrunken one */
+.dl8s-only-narrow { display: none; }
+@container stage (max-width: 560px) {
+  .dl8s-only-wide { display: none; }
+  .dl8s-only-narrow { display: block; }
+  .dl8s-stage__title { font-size: 1.12rem; }
+  .dl8s-story__beat { font-size: 0.76rem; padding-inline: 0.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dl8s-beam, .dl8s-cone, .dl8s-tok__glow, .dl8s-cell, .dl8s-fade, .dl8s-pop, .dl8s-knob__bar, .dl8s-knob__dot, .dl8s-tok rect { transition: none !important; }
+}

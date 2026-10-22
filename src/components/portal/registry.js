@@ -42,6 +42,7 @@ import DeepLearningLecture3Study from './modules/deep-learning/lecture3-study/Le
 import DeepLearningLecture4Study from './modules/deep-learning/lecture4-study/Lecture4Study';
 import DeepLearningLecture5Study from './modules/deep-learning/lecture5-study/Lecture5Study';
 import DeepLearningLecture67Study from './modules/deep-learning/lecture6-7-study/Lecture67Study';
+import DeepLearningLecture8Study from './modules/deep-learning/lecture8-study/Lecture8Study';
 import DeepLearningGame from './modules/deep-learning/game/Game';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
 import DeepLearningProject2 from './modules/deep-learning/project2/Project2';
@@ -178,6 +179,7 @@ export const MODULES = [
   { id: 'dl-lecture-4-study', label: 'Lecture 4 · RNNs (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture4Study },
   { id: 'dl-lecture-5-study', label: 'Lecture 5 · Autoencoders (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture5Study },
   { id: 'dl-lecture-6-7-study', label: 'Lectures 6–7 · AEs & GANs (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture67Study },
+  { id: 'dl-lecture-8-study', label: 'Lecture 8 · Transformers (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture8Study },
   {
     id: 'dl-game',
     label: 'Scrolls · 3D',

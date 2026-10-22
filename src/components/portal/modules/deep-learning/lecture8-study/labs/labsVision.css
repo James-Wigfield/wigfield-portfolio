@@ -1,0 +1,42 @@
+/* §15 · the patch chopper and visual attention (labsVision.jsx) */
+
+/* the drawn picture: crisp pixels, its own colours whatever the theme */
+.dl8s-vit__px { image-rendering: pixelated; }
+.dl8s-vit__cut { stroke: var(--dl8s-floor); stroke-width: 2; pointer-events: none; }
+
+/* the squares fly between the picture and the row (staggered by index) */
+.dl8s-vit__sq { cursor: pointer; transition: transform 0.75s cubic-bezier(0.3, 0.75, 0.25, 1); }
+.dl8s-vit__edge { fill: none; stroke: var(--dl8s-floor); stroke-width: 1; pointer-events: none; }
+.dl8s-vit__edge--on { stroke: var(--ink); stroke-width: 2; }
+.dl8s-vit__num--on { fill: var(--ink) !important; font-weight: 700; }
+
+/* the picker: arrow keys move the outlined square */
+.dl8s-vit__picker { cursor: pointer; }
+.dl8s-vit__picker:focus-visible { outline: none; }
+.dl8s-vit__mark { fill: none; stroke: var(--ink); stroke-width: 2.4; pointer-events: none; }
+.dl8s-vit__picker:focus-visible .dl8s-vit__mark { stroke: var(--accent); stroke-width: 3; }
+
+/* the pipeline bands */
+.dl8s-vit__grow { transition: transform 0.55s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dl8s-vit__ink--enc { fill: var(--dl8s-enc); }
+.dl8s-vit__ink--pos { fill: var(--dl8s-pos); }
+.dl8s-vit__ink--neg { fill: var(--dl8s-neg); }
+.dl8s-vit__layer { fill: var(--dl8s-floor); stroke: var(--ink-3); stroke-width: 1.2; }
+.dl8s-vit__tf { fill: var(--dl8s-floor); stroke: var(--dl8s-enc); stroke-width: 1.8; }
+
+/* visual attention: the dimmed veil, the feature-map grid, the caption */
+.dl8s-va__veil { fill: #fff; transition: opacity 0.6s ease; }
+.dl8s-va__grid { stroke: rgba(255, 255, 255, 0.32); stroke-width: 1; pointer-events: none; }
+.dl8s-va__hcell { fill: none; stroke: #fff; stroke-width: 2; pointer-events: none; }
+.dl8s-va__frame { fill: none; stroke: var(--line); stroke-width: 1; pointer-events: none; }
+.dl8s-va__caret { fill: var(--dl8s-q); }
+.dl8s-va__bar { flex-wrap: nowrap; align-items: center; }
+.dl8s-va__bar .dl8s-story__say { flex: 1; min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dl8s-vit__sq, .dl8s-vit__grow, .dl8s-va__veil { transition: none !important; }
+}
+
+/* a strip the story has moved past steps back, so the current beat leads */
+.dl8s-vit__past { opacity: 0.32; }
+.dl8s-vit__settled { opacity: 0.72; }

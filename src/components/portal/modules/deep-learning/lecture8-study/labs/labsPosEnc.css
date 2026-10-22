@@ -1,0 +1,49 @@
+/* §10 · the wave organ (labsPosEnc.jsx) */
+.dl8s-wave { display: flex; flex-direction: column; gap: 0.35rem; }
+.dl8s-wave__svg { max-width: 820px; margin: 0 auto; }
+
+/* the base switch: two quiet text buttons, the chosen one underlined */
+.dl8s-wave__switch { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.1rem 0.9rem; }
+.dl8s-wave__sw {
+  font: inherit;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.2rem 0.1rem 0.15rem;
+  cursor: pointer;
+}
+.dl8s-wave__sw:hover { color: var(--ink); }
+.dl8s-wave__sw--on { color: var(--ink); border-bottom-color: var(--dl8s-pos); }
+.dl8s-wave__sw:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* the heatmap: role colours through value masks, the floor beneath */
+.dl8s-wave__bed { fill: var(--dl8s-floor); }
+.dl8s-wave__ink--pos { fill: var(--dl8s-pos); }
+.dl8s-wave__ink--neg { fill: var(--dl8s-neg); }
+.dl8s-wave__frame { fill: none; stroke: var(--ink-3); stroke-width: 1; }
+
+/* the waves */
+.dl8s-wave__grid { stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 4; }
+.dl8s-wave__zero { stroke: var(--line); stroke-width: 1; }
+.dl8s-wave__curve { fill: none; stroke: var(--dl8s-pos); stroke-width: 2; stroke-linejoin: round; pointer-events: none; }
+.dl8s-wave__curve--cos { stroke-width: 1.6; stroke-dasharray: 5 3; opacity: 0.85; }
+.dl8s-wave__dot { fill: var(--dl8s-pos); stroke: var(--dl8s-floor); stroke-width: 1.6; pointer-events: none; }
+.dl8s-wave__dot--cos { fill: var(--dl8s-floor); stroke: var(--dl8s-pos); stroke-width: 2; }
+
+/* markers: the chosen rows and the position line */
+.dl8s-wave__row { stroke: var(--ink); stroke-width: 1.2; opacity: 0.8; pointer-events: none; }
+.dl8s-wave__pline { stroke: var(--ink); stroke-width: 1.3; stroke-dasharray: 4 3; pointer-events: none; }
+.dl8s-wave__hit { cursor: ew-resize; touch-action: none; }
+.dl8s-wave__hit--heat { cursor: crosshair; }
+
+/* the two handles */
+.dl8s-wave__handle { cursor: grab; touch-action: none; }
+.dl8s-wave__handle--drag { cursor: grabbing; }
+.dl8s-wave__handle:focus-visible { outline: none; }
+.dl8s-wave__track { stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
+.dl8s-wave__knob { fill: var(--dl8s-floor); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.dl8s-wave__handle:hover .dl8s-wave__knob { stroke-width: 2.6; }
+.dl8s-wave__handle:focus-visible .dl8s-wave__knob { stroke: var(--accent); stroke-width: 3.2; }

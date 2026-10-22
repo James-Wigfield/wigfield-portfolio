@@ -1,0 +1,12 @@
+/* §2 · two readers: forward = the encoder's teal, backward = amber (a lab-only
+   colour: the two directions are not one of the module's roles) */
+.dl8s { --dl8s-bwd: var(--dlv-yellow); }
+.dl8s-bi__frame { fill: none; stroke: var(--line); stroke-width: 1; }
+.dl8s-bi__strip--f .dl8s-bi__frame { stroke: var(--dl8s-enc); }
+.dl8s-bi__strip--b .dl8s-bi__frame { stroke: var(--dl8s-bwd); }
+.dl8s-bi__strip { transition: opacity 0.45s ease, transform 0.45s ease; }
+.dl8s-bi__up { stroke: var(--ink-3); stroke-width: 1.2; }
+.dl8s-bi__sweep { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.dl8s-bi__sweep--f { stroke: var(--dl8s-enc); }
+.dl8s-bi__sweep--b { stroke: var(--dl8s-bwd); }
+.dl8s-bi__fold { fill: none; stroke: var(--ink-3); stroke-width: 1.4; }
