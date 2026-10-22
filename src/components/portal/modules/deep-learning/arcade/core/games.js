@@ -9,10 +9,22 @@
 import { lazy } from 'react';
 import paramSniper from '../games/param-sniper/index.js';
 import theExchange from '../games/the-exchange/index.js';
+import descent from '../games/descent/index.js';
+import kernelRush from '../games/kernel-rush/index.js';
+import longLine from '../games/long-line/index.js';
+import bottleneck from '../games/bottleneck/index.js';
+import latentSurfer from '../games/latent-surfer/index.js';
+import chainReaction from '../games/chain-reaction/index.js';
 
 export const GAMES = [
   paramSniper,
   theExchange,
+  descent,
+  kernelRush,
+  longLine,
+  bottleneck,
+  latentSurfer,
+  chainReaction,
 ].filter(Boolean);
 
 // Lazy React components, created once here (never during a render).
