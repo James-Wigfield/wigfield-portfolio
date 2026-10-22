@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Lab, Chips, Range, Stat } from '../ui';
+import { useStudy } from '../context';
 import { CAPTIONS } from '../slideData';
 import { useData, loadDenoise, decodeImg, CLASS_NAMES } from '../fashion';
 import { rng, gauss, fmt, fmtInt } from '../gen';
@@ -26,6 +27,7 @@ function gaussNoisy(b64, sd, seed) {
 }
 
 export function NoiseLab() {
+  const { printing } = useStudy();
   const data = useData(loadDenoise);
   const [kind, setKind] = useState('dropout');
   const [sd, setSd] = useState(0.2);
@@ -48,7 +50,7 @@ export function NoiseLab() {
       title="Two kinds of noise (Figure 17-8), on real images"
       fig={CAPTIONS.fig179}
       slides="slides 8–9"
-      tryThis="predict how much of each item survives Dropout(0.5) and whether the network can still rebuild it. Look at the noisy row, then the reconstructions; then switch to Gaussian noise and turn it up."
+      tryThis="predict how much of each item survives Dropout(0.5) and whether the network can rebuild it; compare the rows, then switch to Gaussian noise and turn it up, and notice which kind of noise hides more of the item."
     >
       <div className="dl-lab__controls">
         <Chips label="noise" value={kind} options={[{ v: 'dropout', l: 'Dropout(0.5) (slide 9)' }, { v: 'gauss', l: 'Gaussian noise (Figure 17-8, left)' }]} onChange={setKind} />
@@ -58,7 +60,12 @@ export function NoiseLab() {
         <>
           <div className="dl67s-scroll">
             <ImgRows
-              rows={kind === 'dropout' ? [
+              rows={printing ? [
+                { key: 'o', label: 'originals', cells: items.map((it) => ({ b64: it.original, label: `original: ${CLASS_NAMES[it.label]}`, note: CLASS_NAMES[it.label] })) },
+                { key: 'n', label: 'Dropout(0.5): half the pixels off', cells: items.map((it) => ({ b64: it.noisy, label: 'noisy input' })) },
+                { key: 'r', label: 'dropout_ae', cells: items.map((it) => ({ b64: it.recon, label: 'reconstruction', note: `MSE ${fmt(it.mse, 4)}` })) },
+                { key: 'g', label: '+ Gaussian noise, sd 0.20', cells: items.map((it, i) => ({ px: gaussNoisy(it.original, 0.2, 500 + i), label: 'with Gaussian noise added' })) },
+              ] : kind === 'dropout' ? [
                 { key: 'o', label: 'originals', cells: items.map((it) => ({ b64: it.original, label: `original: ${CLASS_NAMES[it.label]}`, note: CLASS_NAMES[it.label] })) },
                 { key: 'n', label: 'noisy: half the pixels off', cells: items.map((it) => ({ b64: it.noisy, label: 'noisy input' })) },
                 { key: 'r', label: 'dropout_ae', cells: items.map((it) => ({ b64: it.recon, label: 'reconstruction', note: `MSE ${fmt(it.mse, 4)}` })) },

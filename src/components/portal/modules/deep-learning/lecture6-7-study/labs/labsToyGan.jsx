@@ -78,7 +78,8 @@ function useToyRun(cfg, { instant }) {
     setRunning(true);
     const tick = () => {
       const gan = getGan();
-      const more = runTo(gan, Math.min(total, gan.step + SNAP));
+      // 5 iterations a frame: slow enough to watch, and to pause part-way
+      const more = runTo(gan, Math.min(total, gan.step + 5));
       if (more.length) setSnaps((s) => [...s, ...more]);
       if (gan.step >= total) { rafRef.current = 0; setRunning(false); return; }
       rafRef.current = requestAnimationFrame(tick);
@@ -200,7 +201,7 @@ export function ToyGanLab() {
       </div>
       <div className="dl67s-toy__grid">
         <figure className="dl67s-toy__fig">
-          <ToyPlot target={TARGETS[cfg.target]} s={s} label={`Iteration ${s.step}: the real data's bump around ${t.m}, a histogram of 300 generated numbers, and the discriminator's output D(x)`} />
+          <div className="dl67s-wide"><ToyPlot target={TARGETS[cfg.target]} s={s} label={`Iteration ${s.step}: the real data's bump around ${t.m}, a histogram of 300 generated numbers, and the discriminator's output D(x)`} /></div>
           <Legend />
         </figure>
         <div className="dl67s-stats dl67s-stats--col">
@@ -307,7 +308,7 @@ export function CollapseLab() {
       </div>
       <div className="dl67s-toy__grid">
         <figure className="dl67s-toy__fig">
-          <ToyPlot target={target} s={s} label={`Iteration ${s.step}: two real bumps at −3 and 3, a histogram of 300 generated numbers, and D(x)`} />
+          <div className="dl67s-wide"><ToyPlot target={target} s={s} label={`Iteration ${s.step}: two real bumps at −3 and 3, a histogram of 300 generated numbers, and D(x)`} /></div>
           <Legend />
         </figure>
         <div className="dl67s-stats dl67s-stats--col">
@@ -322,22 +323,23 @@ export function CollapseLab() {
         </div>
       </div>
       <div className="dl67s-tl__wrap">
-        <p className="dl67s-stagehead">Where the generated numbers are, every 25 iterations (click a column)</p>
+        <p className="dl67s-stagehead">Where the generated numbers are, every 25 iterations<span className="dl67s-screenonly"> (click a column)</span></p>
+        <p className="dl67s-printonly dl67s-readout">Printed: the “{kind === 'weak' ? 'weaker generator, learning faster' : 'balanced'}” run, seed {seed}, after {fmtInt(run.total)} iterations.</p>
         <div className="dl67s-wide"><Timeline snaps={run.snaps} at={at} onPick={setPick} total={run.total} /></div>
         <div className="dl-lab__controls dl67s-noprint">
           <Range label="show iteration" value={at} min={0} max={last} onChange={setPick} fmt={(v) => fmtInt(run.snaps[v]?.step ?? 0)} />
         </div>
         <p className="dl67s-readout">
           <span className="dl67s-dot dl67s-dot--a" />left bump <span className="dl67s-dot dl67s-dot--b" />right bump; the gap above the two is the share
-          elsewhere. The generator’s output bias, one of its parameters, went from {fmt(biases[0], 2)} to {fmt(biases[biases.length - 1], 2)},
-          ranging over [{fmt(Math.min(...biases), 2)}, {fmt(Math.max(...biases), 2)}] on the way.
+          elsewhere.{biases.length > 1 && <> The generator’s output bias, one of its parameters, went from {fmt(biases[0], 2)} to {fmt(biases[biases.length - 1], 2)},
+          ranging over [{fmt(Math.min(...biases), 2)}, {fmt(Math.max(...biases), 2)}] on the way.</>}
         </p>
       </div>
       <p className="dl67s-cap">
         <span className="dl67s-own">this page’s own toy run</span> The same networks and loop as §9, on numbers drawn half from a bump at −3 and half from a
         bump at 3. “Weaker generator, learning faster”: 1 noise number, {GAN_PRESETS.weak.hidden} hidden units, the generator’s learning rate 4× the
         discriminator’s (0.004 against 0.001). “Balanced”: 2 noise numbers, 16 units, both at 0.004. These settings and seeds are this page’s choice; other
-        seeds behave differently, which is part of slide 27’s point.
+        seeds behave differently (this page’s observation).
       </p>
     </Lab>
   );

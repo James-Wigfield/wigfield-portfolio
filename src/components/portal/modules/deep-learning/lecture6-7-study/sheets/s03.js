@@ -24,5 +24,5 @@ export default {
       ],
     },
   ],
-  skip: 'the right half of Figure 17-11 (an instance going through it).',
+  skip: 'the 2013 paper, the approximation of the data distribution (slide 10), and the right half of Figure 17-11 (an instance going through it).',
 };

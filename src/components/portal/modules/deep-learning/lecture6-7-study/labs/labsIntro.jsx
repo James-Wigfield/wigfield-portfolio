@@ -29,7 +29,7 @@ export function RoadmapLab() {
     <Lab
       title="Slide 3’s roadmap, mapped onto this page"
       slides="slide 3"
-      tryThis="before scrolling on, guess which of the five topics takes the most slides; then count its section chips. The bar beside each topic fills as you tick off its notebook lines."
+      tryThis="before scrolling on, guess which two of the five topics take the most slides; then count their section chips. The bar beside each topic fills as you tick off its notebook lines."
     >
       <ol className="dl67s-road">
         {ROADMAP.map((t, i) => {

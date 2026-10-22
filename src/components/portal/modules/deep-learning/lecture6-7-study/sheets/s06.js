@@ -7,7 +7,7 @@ export default {
       at: '16',
       items: [
         'Sample codings from the normal distribution and decode them with the trained decoder.',
-        'The images look fairly convincing but fuzzy (the codings are only 10-dimensional, and the VAE trained for 25 epochs).',
+        'Most look fairly convincing, if a bit too fuzzy, and the rest are not great: the codings are only 10-dimensional, and the VAE trained for only 25 epochs.',
       ],
     },
     {
@@ -23,7 +23,7 @@ export default {
             'Decode the interpolated codings.',
           ],
         },
-        'Or draw the two codings from the normal distribution (slide 18: 10 codings, T-shirt to Sneaker).',
+        'Step 1 can be replaced by drawing the two codings from the normal distribution; slide 18 does this, and its 10 decoded codings go from a T-shirt to a Sneaker.',
       ],
       margin: [
         { q: 'Why interpolate the codings rather than the pixels?', a: 'Interpolating pixels just overlays the two images; decoding interpolated codings gives images that change gradually from one item to the other.' },

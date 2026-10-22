@@ -100,17 +100,17 @@ function Dae() {
       <Arrow x1={cx} y1={ys[4]} x2={cx} y2={ys[4] - 14} head={4} />
       {noise === 'gauss' ? (
         <P k="noise">
-          <line x1={cx} y1={ys[0]} x2={cx} y2={173} />
-          <Op cx={cx} cy={164} sym="+" />
-          <line x1={cx} y1={155} x2={cx} y2={ys[1] + h} />
-          <Box x={cx + 26} y={155} w={86} h={h} label="Gaussian noise" s={9.5} />
-          <Arrow x1={cx + 26} y1={164} x2={cx + 10} y2={164} head={4} />
+          <line x1={cx} y1={ys[0]} x2={cx} y2={182} />
+          <Op cx={cx} cy={173} sym="+" />
+          <line x1={cx} y1={164} x2={cx} y2={ys[1] + h} />
+          <Box x={cx + 26} y={163.5} w={86} h={h} label="Gaussian noise" s={9.5} />
+          <Arrow x1={cx + 26} y1={173} x2={cx + 10} y2={173} head={4} />
         </P>
       ) : (
         <P k="dropout">
-          <line x1={cx} y1={ys[0]} x2={cx} y2={174} />
-          <Box x={cx - w / 2} y={155} w={w} h={h} label="Dropout" s={10} />
-          <line x1={cx} y1={155} x2={cx} y2={ys[1] + h} />
+          <line x1={cx} y1={ys[0]} x2={cx} y2={183} />
+          <Box x={cx - w / 2} y={164} w={w} h={h} label="Dropout" s={10} />
+          <line x1={cx} y1={164} x2={cx} y2={ys[1] + h} />
         </P>
       )}
     </g>
@@ -127,7 +127,7 @@ function Dae() {
 
 /* §3 — Figure 17-11 (left): a variational autoencoder */
 function Vae() {
-  const cx = 92;
+  const cx = 74;
   const w = 78;
   const h = 19;
   const mu = 74;
@@ -145,8 +145,8 @@ function Vae() {
       </P>
       {/* the two coding layers */}
       <P k="codings">
-        <Arrow x1={cx - 6} y1={198} x2={mu} y2={168} head={4} />
-        <Arrow x1={cx + 6} y1={198} x2={sg - 10} y2={168} head={4} />
+        <Arrow x1={mu} y1={198} x2={mu} y2={168} head={4} />
+        <Arrow x1={cx + 10} y1={198} x2={sg - 10} y2={168} head={4} />
         <Box x={mu - 36} y={149} w={72} h={h} label="Codings μ" s={10} />
         <Box x={sg - 36} y={149} w={72} h={h} label="Codings σ" s={10} />
       </P>
@@ -187,17 +187,17 @@ function Gan() {
         <Box x={cx - 46} y={193} w={92} h={20} label="Generator" />
         <path d={`M${cx + 54} 191 q6 0 6 6 v1 q0 4 5 4 q-5 0 -5 4 v1 q0 6 -6 6`} />
         <T x={cx + 72} y={207} a="start" s={9.5}>Goal = trick the discriminator</T>
-        <Arrow x1={cx - 50} y1={193} x2={cx - 50} y2={160} head={4} />
-        <rect x={cx - 74} y={118} width={48} height={42} rx={3} strokeDasharray="3 2" />
-        <T x={cx - 50} y={143} s={10} i>Fake</T>
+        <Arrow x1={cx - 30} y1={193} x2={cx - 30} y2={160} head={4} />
+        <rect x={cx - 54} y={118} width={48} height={42} rx={3} strokeDasharray="3 2" />
+        <T x={cx - 30} y={143} s={10} i>Fake</T>
       </P>
       <P k="real">
-        <rect x={cx + 26} y={118} width={48} height={42} rx={3} strokeDasharray="3 2" />
-        <T x={cx + 50} y={143} s={10} i>Real</T>
+        <rect x={cx + 6} y={118} width={48} height={42} rx={3} strokeDasharray="3 2" />
+        <T x={cx + 30} y={143} s={10} i>Real</T>
       </P>
       <P k="disc">
-        <line x1={cx - 50} y1={118} x2={cx} y2={92} />
-        <line x1={cx + 50} y1={118} x2={cx} y2={92} />
+        <line x1={cx - 30} y1={118} x2={cx} y2={92} />
+        <line x1={cx + 30} y1={118} x2={cx} y2={92} />
         <circle cx={cx} cy={90} r={2.5} />
         <T x={cx} y={108} s={9.5} i>Or</T>
         <Arrow x1={cx} y1={88} x2={cx} y2={70} head={4} />
@@ -223,12 +223,12 @@ function Phases() {
       </P>
       <Arrow x1={x0 + 36} y1={158} x2={x0 + 36} y2={140} head={4} />
       <Box x={x0 + 4} y={110} w={64} h={30} />
-      <T x={x0 + 36} y={123} s={9}>32 fake</T>
+      <T x={x0 + 36} y={123} s={9}>fake images</T>
       <T x={x0 + 36} y={135} s={9} b>label {fakeLabel}</T>
       {realOn && (
         <g>
           <Box x={x0 + 104} y={110} w={64} h={30} />
-          <T x={x0 + 136} y={123} s={9}>32 real</T>
+          <T x={x0 + 136} y={123} s={9}>real images</T>
           <T x={x0 + 136} y={135} s={9} b>label 1</T>
           <line x1={x0 + 136} y1={110} x2={x0 + 92} y2={84} />
         </g>
@@ -239,14 +239,14 @@ function Phases() {
         <Box x={x0 + 36} y={50} w={100} h={20} label="Discriminator" s={9.5} />
       </P>
       <T x={x0 + 86} y={36} s={9} i>{learns === 'D' ? 'learns' : 'frozen'}</T>
-      <T x={x0 + 36} y={234} s={9} i>{learns === 'G' ? 'learns' : 'not updated'}</T>
+      <T x={x0 + 72} y={171} a="start" s={9} i>{learns === 'G' ? 'learns' : 'not updated'}</T>
     </g>
   );
   return (
-    <Svg w={380} h={244} label="The two training phases. Phase 1: the generator makes 32 fake images labelled 0, 32 real images are labelled 1, and only the discriminator learns. Phase 2: the generator makes 32 fake images labelled 1; the discriminator is frozen and only the generator learns">
+    <Svg w={380} h={224} label="The two training phases. Phase 1: the generator makes fake images labelled 0, an equal number of real images are labelled 1, and only the discriminator learns. Phase 2: the generator makes fake images labelled 1; the discriminator is frozen and only the generator learns">
       {half(4, 'Phase 1: train the discriminator', 0, true, 'D')}
       {half(200, 'Phase 2: train the generator', 1, false, 'G')}
-      <line x1={192} y1={24} x2={192} y2={236} strokeDasharray="2 3" />
+      <line x1={192} y1={24} x2={192} y2={218} strokeDasharray="2 3" />
     </Svg>
   );
 }

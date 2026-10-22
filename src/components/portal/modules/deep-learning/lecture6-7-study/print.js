@@ -114,7 +114,7 @@ export const PRINT_CSS = `
   ${P} .dl67s .dlk-code { box-shadow: none; border: 1px solid var(--line); break-inside: avoid; }
   ${P} .dl67s .dlk-code__bar { background: #eef2f4; border-bottom: 1px solid var(--line); }
   ${P} .dl67s .dlk-code__file { color: #333; }
-  ${P} .dl67s .dlk-code__pre { background: #f7f9fa; color: #1f1f1f; font-size: 0.66rem; line-height: 1.5; overflow: visible; white-space: pre-wrap; }
+  ${P} .dl67s .dlk-code__pre { background: #f7f9fa; color: #1f1f1f; font-size: 0.66rem; line-height: 1.5; overflow: visible; white-space: pre-wrap; padding: 2mm 3mm; }
   ${P} .dl67s .dlk-code__code { min-width: 0; }
   ${P} .dl67s .dlk-code__line { padding-left: 2.2em; text-indent: -2.2em; white-space: pre-wrap; opacity: 1 !important; }
   ${P} .dl67s .dlk-code__line::before { content: none; }
@@ -136,7 +136,8 @@ export const PRINT_CSS = `
   ${P} .dl67s-lab svg.dl67s-svg { max-width: 125mm; }
   ${P} .dl67s-lab .dl67s-figwrap .dl67s-fig { max-width: 105mm; }
   ${P} .dl67s-cf__strip { min-width: 0 !important; max-width: 170mm; }
-  ${P} .dl67s-tc__grid { max-width: 60mm !important; }
+  ${P} .dl67s-tc__grid { width: 52mm !important; max-width: 52mm !important; }
+  ${P} .dl67s-tc { break-inside: avoid; }
   ${P} .dl67s-rgrid { min-width: 0; max-width: 150mm; }
   ${P} .dl67s-ip .dl67s-igrid, ${P} .dl67s-ip__t { min-width: 0; }
   ${P} .dl67s-lab .dl67s-table { font-size: 0.68rem; }
@@ -175,5 +176,7 @@ export const PRINT_CSS = `
   /* nothing split that matters */
   ${P} figure, ${P} table, ${P} .dlk-eq, ${P} .dl67s-eq, ${P} .dl67s-stats, ${P} .dl67s-stat, ${P} .dlk-note, ${P} svg, ${P} .dl67s-keep { break-inside: avoid; }
   ${P} .dl67s-stagehead, ${P} h2, ${P} h3, ${P} h4 { break-after: avoid; }
+  ${P} .dl67s-figcap { break-before: avoid; }
+  ${P} .dl67s-road__item { break-inside: avoid; }
 }
 `;

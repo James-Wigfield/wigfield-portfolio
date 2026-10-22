@@ -74,7 +74,7 @@ export function TransposeLab() {
       </div>
       <div className="dl67s-tc">
         <div className="dl67s-tc__side">
-          <p className="dl67s-stagehead">input: {c.n} × {c.n} (one channel) · click a pixel</p>
+          <p className="dl67s-stagehead">input: {c.n} × {c.n} (one channel)<span className="dl67s-screenonly"> · click a pixel</span></p>
           <Grid m={input} cell={which === 'valid' ? 34 : 22} pick={p} onPick={(q) => { if (!printing) setPick(q); }} inputGrid label={`A ${c.n} by ${c.n} input`} />
           <p className="dl67s-stagehead">kernel: 3 × 3 (all ones here)</p>
           <Grid m={KERNEL} cell={18} label="A 3 by 3 kernel of ones" />

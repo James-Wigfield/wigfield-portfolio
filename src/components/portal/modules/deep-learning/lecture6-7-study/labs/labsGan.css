@@ -16,13 +16,14 @@
 .dl67s-batch__c--fake { background: color-mix(in srgb, var(--dlv-violet) 28%, var(--surface)); border: 1px solid var(--dlv-violet); }
 .dl67s-batch__c--real { background: color-mix(in srgb, var(--dlv-aqua) 28%, var(--surface)); border: 1px solid var(--dlv-aqua); }
 
-.dl67s-ps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl67s-ps { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; max-width: 880px; }
 .dl67s-ps__main { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
 .dl67s-ps__main .dl67s-figwrap { max-width: 400px; }
 .dl67s-ps__code { min-width: 0; }
 .dl67s-ps__log { max-width: 30rem; }
 
-.dl67s-gc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.dl67s-gc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; max-width: 880px; }
+.dl67s-gr__role + .dl67s-gr__role { margin-top: 0.6rem; }
 .dl67s-gc__side { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
 .dl67s-gc__side code { font-size: 0.7rem; }
 .dl67s-gc__code { min-width: 0; }

@@ -17,3 +17,5 @@
 .dl67s-lcurve__line--b { stroke: var(--dlv-orange); stroke-dasharray: 5 3; }
 .dl67s-lcurve__line--c { stroke: var(--dlv-violet); }
 .dl67s-lcurve__hit { fill: transparent; stroke: none; }
+.dl67s-lcurve__end--a { fill: var(--dlv-blue); }
+.dl67s-lcurve__end--b { fill: var(--dlv-orange); }

@@ -6,10 +6,11 @@ export default {
       h: 'Convolutional autoencoders',
       at: '4–5',
       items: [
-        'For images, build a {g|convolutional autoencoder}.',
-        'The encoder is a regular CNN of convolutional and pooling layers: it shrinks the height and width and increases the depth (the channels).',
-        'The decoder does the reverse with {g|transposed convolutional layers}: it upscales the image and reduces its depth back.',
-        { line: '28 × 28 × 1 → 14 × 14 × 16 → 7 × 7 × 32 → 3 × 3 × 64 → 3 × 3 × 30 → 30 → 3 × 3 × 16 → 7 × 7 × 32 → 14 × 14 × 16 → 28 × 28 × 1' },
+        'The dense autoencoders seen so far don’t work well on images: for images, build a {g|convolutional autoencoder}.',
+        'The encoder is a regular CNN of convolutional and pooling layers: it typically shrinks the height and width and increases the depth (the channels).',
+        'The decoder does the reverse with {g|transpose convolutional layers}: it upscales the image and reduces its depth back.',
+        { line: 'Encoder: 28 × 28 × 1 → 14 × 14 × 16 → 7 × 7 × 32 → 3 × 3 × 64 → 3 × 3 × 30 → {g|30 codings}' },
+        { line: 'Decoder: 30 → 144 → 3 × 3 × 16 → 7 × 7 × 32 → 14 × 14 × 16 → 28 × 28 × 1' },
       ],
       margin: [
         { q: 'Why does the third `MaxPool2D` give 3 × 3?', a: 'Pooling with pool_size=2 halves 7 and rounds down, so 7 → 3.' },
@@ -21,8 +22,7 @@ export default {
       h: 'One layer’s parameters',
       at: '6',
       items: [
-        { formula: '\\text{params} = k \\times k \\times C_{\\text{in}} \\times \\text{filters} + \\text{filters}', read: 'a k × k kernel per input channel per filter, plus a bias per filter', tag: 'this page’s working' },
-        { title: 'the first `Conv2DTranspose(32, 3, strides=2)`', worked: ['3 × 3 × 16 × 32 + 32 = {g|4,640}, as slide 6’s summary prints'] },
+        { title: 'the first `Conv2DTranspose(32, 3, strides=2)`', worked: ['3 × 3 × 16 × 32 + 32 = {g|4,640}: a 3 × 3 kernel per input channel (16) per filter (32), plus a bias per filter, as slide 6 prints'] },
       ],
     },
   ],

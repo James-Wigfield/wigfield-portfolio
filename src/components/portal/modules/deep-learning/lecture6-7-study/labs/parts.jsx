@@ -79,14 +79,15 @@ export function LossCurve({ series, label, mark, xLabel = 'epoch' }) {
   const ticks = [lo, (lo + hi) / 2, hi];
   // end labels, pushed apart so two lines ending close together stay legible
   const ends = series.map((s, i) => ({ i, y: sy(s.values[s.values.length - 1]) + 3 })).sort((a, b) => a.y - b.y);
-  for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 11) ends[k].y = ends[k - 1].y + 11;
+  for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 12) ends[k].y = ends[k - 1].y + 12;
+  const dec = hi - lo > 0.5 ? 2 : 4;
   const endY = Object.fromEntries(ends.map((e) => [e.i, e.y]));
   return (
     <svg viewBox={`0 0 ${WC} ${HC}`} className="dl67s-svg dl67s-lcurve" role="img" aria-label={label}>
       {ticks.map((t) => (
         <g key={t}>
           <line x1={m.l} y1={sy(t)} x2={WC - m.r} y2={sy(t)} className="dl67s-gridline" />
-          <text x={m.l - 5} y={sy(t) + 3} textAnchor="end" className="dl67s-tick">{fmt(t, 4)}</text>
+          <text x={m.l - 5} y={sy(t) + 3} textAnchor="end" className="dl67s-tick">{fmt(t, dec)}</text>
         </g>
       ))}
       {[1, Math.ceil(n / 2), n].map((e) => <text key={e} x={sx(e)} y={HC - 8} textAnchor="middle" className="dl67s-tick">{e}</text>)}
@@ -95,7 +96,7 @@ export function LossCurve({ series, label, mark, xLabel = 'epoch' }) {
         <g key={s.label}>
           <path d={s.values.map((v, i) => `${i ? 'L' : 'M'}${sx(i + 1).toFixed(1)} ${sy(v).toFixed(1)}`).join(' ')} className={`dl67s-lcurve__line dl67s-lcurve__line--${s.tone}`} />
           {s.values.map((v, i) => <circle key={i} cx={sx(i + 1)} cy={sy(v)} r={6} className="dl67s-lcurve__hit"><title>{`${s.label}, ${xLabel} ${i + 1}: ${fmt(v, 5)}`}</title></circle>)}
-          <text x={sx(s.values.length) + 6} y={endY[si]} className="dl67s-svg__label">{s.label}</text>
+          <text x={sx(s.values.length) + 6} y={endY[si]} className={`dl67s-svg__label dl67s-lcurve__end--${s.tone}`}>{s.label}</text>
         </g>
       ))}
     </svg>

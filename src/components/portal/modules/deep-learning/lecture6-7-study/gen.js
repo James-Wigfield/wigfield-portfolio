@@ -299,7 +299,8 @@ export class ToyGan {
     const r = rng(seed * 7919 + 13);
     this.G = [initLayer(r, zDim, hidden, Math.sqrt(1 / zDim)), initLayer(r, hidden, 1, Math.sqrt(1 / hidden))];
     this.D = [initLayer(r, 1, hidden, 1), initLayer(r, hidden, 1, Math.sqrt(2 / hidden))];
-    // RMSprop accumulators (rho 0.9, epsilon 1e-7, as Keras's defaults)
+    // RMSprop accumulators (rho 0.9, epsilon 1e-7, as Keras's defaults; the
+    // step is lr · g / √(v + ε), Keras 3's form)
     this.sG = this.G.map(zeroLike);
     this.sD = this.D.map(zeroLike);
     this.step = 0;
@@ -355,12 +356,12 @@ export class ToyGan {
       L.W.forEach((row, i) => row.forEach((_, j) => {
         const g = grads[li].W[i][j];
         acc[li].W[i][j] = rho * acc[li].W[i][j] + (1 - rho) * g * g;
-        L.W[i][j] -= (lr * g) / (Math.sqrt(acc[li].W[i][j]) + eps);
+        L.W[i][j] -= (lr * g) / Math.sqrt(acc[li].W[i][j] + eps);
       }));
       L.b.forEach((_, j) => {
         const g = grads[li].b[j];
         acc[li].b[j] = rho * acc[li].b[j] + (1 - rho) * g * g;
-        L.b[j] -= (lr * g) / (Math.sqrt(acc[li].b[j]) + eps);
+        L.b[j] -= (lr * g) / Math.sqrt(acc[li].b[j] + eps);
       });
     });
   }
@@ -454,3 +455,5 @@ export function modeShares(target, xs) {
 /* ── formatting ─────────────────────────────────────────────────────────── */
 export const fmtInt = (n) => Math.round(n).toLocaleString('en-AU');
 export const fmt = (n, d = 3) => (Number.isFinite(n) ? n.toFixed(d) : '—');
+// the same, with a typographic minus (for text, not for TeX)
+export const fmtS = (n, d = 3) => fmt(n, d).replace(/^-/, '−');

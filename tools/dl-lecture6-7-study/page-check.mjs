@@ -370,7 +370,7 @@ try {
       return m ? m.index : -1;
     });
     ok(positions.every((p, i) => p >= 0 && (i === 0 || p > positions[i - 1])), 'the PDF has every section heading (title + slide range), in order', positions.join(', '));
-    const sheetOnly = ['For images, build a', 'Interpolate two images at the codings level, not the pixel level', 'Each phase is one step with the binary cross-entropy loss', 'Not in these notes', 'tick every line'];
+    const sheetOnly = ['The dense autoencoders seen so far don’t work well on images', 'Interpolate two images at the codings level, not the pixel level', 'Each phase is a single training step with the binary cross-entropy loss', 'Not in these notes', 'tick every line'];
     const leaked = sheetOnly.filter((s) => text.includes(s));
     ok(leaked.length === 0, 'no notebook (Write) text in the PDF', leaked.join(' | '));
     ok(text.includes('history = conv_ae.fit(X_train, X_train, epochs=10,') && text.includes('If you are dealing with images, the autoencoders seen so far will not work well'), 'Read text and code come out as normal text');

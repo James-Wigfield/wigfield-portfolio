@@ -77,7 +77,7 @@ function FlowTable({ f, part, on, onPick }) {
             <tr key={i} className={sel ? 'dl67s-row--on' : undefined}>
               <td><button type="button" className="dl67s-rowbtn" aria-pressed={sel} onClick={() => onPick({ part, i })}><code>{r.call}</code></button></td>
               <td>{shapeText(r.out)}</td>
-              <td>{r.comment ? <><code># output: {r.comment}</code>{agrees && <Icon name="check" size={12} strokeWidth={2.4} className="dl67s-cf__ok" />}</> : <span className="dl67s-mini">—</span>}</td>
+              <td>{r.comment ? <><code>{/neurons$/.test(r.comment) ? `# ${r.comment}` : `# output: ${r.comment}`}</code>{agrees && <Icon name="check" size={12} strokeWidth={2.4} className="dl67s-cf__ok" />}</> : <span className="dl67s-mini">—</span>}</td>
               <td className="dl67s-num">{fmtInt(r.params)}</td>
             </tr>
           );
@@ -114,7 +114,7 @@ export function ConvFlowLab() {
             <div className="dl67s-scroll"><FlowTable f={DEC} part="dec" on={on} onPick={setOn} /></div>
           </div>
           <div className="dl67s-noprint dl67s-cf__code">
-            <Code code={NAMED_CODE.CONV_AE} label="slide 5" meta={row.call} hl={hl} />
+            <Code code={NAMED_CODE.CONV_AE} label="slide 5" meta={`line ${row.line}`} hl={hl} />
           </div>
         </div>
         <div className="dl67s-stats dl67s-stats--tight">

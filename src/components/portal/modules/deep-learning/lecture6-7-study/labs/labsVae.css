@@ -36,7 +36,7 @@
 .dl67s-ll__table td, .dl67s-ll__table th { padding: 0.25rem 0.35rem; }
 
 /* the code walk */
-.dl67s-vc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1rem; align-items: start; }
+.dl67s-vc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; max-width: 880px; }
 .dl67s-vc__tables { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
 .dl67s-vc__tables code { font-size: 0.72rem; }
 .dl67s-vc__code { min-width: 0; }
@@ -48,6 +48,10 @@
   .dl67s-vl { grid-template-columns: 5rem minmax(0, 1fr); }
   .dl67s-vl > .dl67s-vl__img:last-child { grid-column: 1; }
   .dl67s-vl__row, .dl67s-ll, .dl67s-vc { grid-template-columns: 1fr; }
+}
+@container lab (max-width: 560px) {
+  .dl67s-vl .dl67s-vec { flex-wrap: wrap; }
+  .dl67s-vl .dl67s-vec i { min-width: 2.3rem; }
 }
 @container lab (max-width: 480px) {
   .dl67s-vl { grid-template-columns: 1fr; }

@@ -4,10 +4,11 @@ export default {
     {
       id: 'two',
       h: 'The loss has two parts',
-      at: '13',
+      at: '12–13',
       items: [
         'The {g|reconstruction loss} pushes the autoencoder to reproduce its inputs.',
         'The {g|latent loss} pushes the codings to look sampled from a simple Gaussian. It is the Kullback-Leibler divergence between that Gaussian and the codings’ distribution.',
+        'During training the codings migrate within the coding space (the {g|latent space}) until they look like a cloud of Gaussian points.',
       ],
     },
     {
@@ -15,7 +16,7 @@ export default {
       h: 'The latent loss',
       at: '12',
       items: [
-        { formula: '\\mathscr{L} = -\\frac{1}{2}\\sum_{i=1}^{n}\\left[1 + \\log(\\sigma_i^2) - \\sigma_i^2 - \\mu_i^2\\right]', read: 'n is the codings’ dimension' },
+        { line: 'Slide 12 first writes it with σ: $\\mathscr{L} = -\\tfrac{1}{2}\\sum_{i=1}^{n}[1 + \\log(\\sigma_i^2) - \\sigma_i^2 - \\mu_i^2]$, where n is the codings’ dimension.' },
         'In practice the encoder outputs {g|γ = log(σ²)} instead of σ: it is more numerically stable, and training is faster.',
         { formula: '\\mathscr{L} = -\\frac{1}{2}\\sum_{i=1}^{n}\\left[1 + \\gamma_i - \\exp\\left(\\gamma_i\\right) - \\mu_i^2\\right]', read: 'the same loss, since σᵢ² = exp(γᵢ)' },
       ],
@@ -26,4 +27,5 @@ export default {
       ],
     },
   ],
+  skip: 'footnote 3 (the original paper and Doersch’s tutorial).',
 };

@@ -98,6 +98,9 @@ export function Rich({ text }) {
 export function Blocks({ blocks }) {
   return blocks.map((b, i) => {
     if (typeof b === 'string') return <p key={i} className="dl67s-p"><Rich text={b} /></p>;
+    // a paragraph for the screen only, or for the PDF only
+    if (b.screen) return <p key={i} className="dl67s-p dl67s-screenonly"><Rich text={b.screen} /></p>;
+    if (b.print) return <p key={i} className="dl67s-p dl67s-printonly"><Rich text={b.print} /></p>;
     if (b.eq) {
       return (
         <div key={i} className="dl67s-eq">

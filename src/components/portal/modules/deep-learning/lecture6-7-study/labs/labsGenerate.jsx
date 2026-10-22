@@ -59,7 +59,7 @@ export function GenerateLab() {
           </div>
           <p className="dl67s-readout">
             <code>codings = tf.random.normal(shape=[3 * 7, codings_size])</code>: 21 codings of {n} numbers, each drawn from N(0, 1);{' '}
-            <code>variational_decoder(codings)</code> turns them into 21 images of 28 × 28. Click one to edit it.
+            <code>variational_decoder(codings)</code> turns them into 21 images of 28 × 28.<span className="dl67s-screenonly"> Click one to edit it.</span>
           </p>
         </div>
       ) : (
@@ -96,7 +96,7 @@ function pairOfItems(items) {
 
 export function InterpLab() {
   const vae = useVae();
-  const [src, setSrc] = useState('random');
+  const [src, setSrc] = useState('images');
   const [seed, setSeed] = useState(123);
   const n = vae?.VAE.codingsSize ?? 10;
   const pair = useMemo(() => (vae ? pairOfItems(vae.VAE.items) : [0, 1]), [vae]);
@@ -125,7 +125,7 @@ export function InterpLab() {
       title="Semantic interpolation (slides 17–18), live"
       fig={CAPTIONS.slide18}
       slides="slides 17–18"
-      tryThis="predict what the middle images will look like in each row. Then compare: the top row changes the item; the bottom row only fades one picture into the other. Draw new codings, or start from two real images."
+      tryThis="predict what the middle images will look like in each row; then switch between two real images and random codings, and notice how the two rows differ in between."
     >
       <div className="dl-lab__controls">
         <Chips label="the two codings" value={src} options={[{ v: 'random', l: 'drawn from the normal distribution (slide 18)' }, { v: 'images', l: 'two real images, through the encoder (slide 17, step 1)' }]} onChange={setSrc} />
@@ -148,7 +148,7 @@ export function InterpLab() {
               ))}
             </div>
           )}
-          <p className="dl67s-stagehead">codings level: np.linspace(codings[0], codings[1], 10), decoded</p>
+          <p className="dl67s-stagehead">codings level: <code>np.linspace(codings[0], codings[1], 10)</code>, decoded</p>
           <div className="dl67s-scroll"><ImgGrid cells={rows.latent.map((px, k) => ({ px, label: `interpolated coding ${k + 1} of 10, decoded` }))} cols={10} label="Ten decoded codings" /></div>
           <p className="dl67s-stagehead">pixel level: the two end images blended (“as if the two images were overlaid”)</p>
           <div className="dl67s-scroll"><ImgGrid cells={rows.pixel.map((px, k) => ({ px, label: `pixel blend ${k + 1} of 10` }))} cols={10} label="Ten pixel-level blends" /></div>

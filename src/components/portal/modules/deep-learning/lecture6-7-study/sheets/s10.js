@@ -16,12 +16,13 @@ export default {
       items: [
         '{g|Nash equilibrium}: no player would be better off changing its own strategy, if the others don’t change theirs.',
         'A GAN can only reach a single Nash equilibrium, but nothing guarantees it will ever be reached.',
-        '{g|Mode collapse}: the generator’s outputs gradually become less diverse, only producing images in a specific class.',
+        'The biggest difficulty is {g|mode collapse}: the generator’s outputs gradually become less diverse, only producing images in a specific class.',
         'The two networks push against each other, so their parameters may end up {g|oscillating} and becoming unstable.',
       ],
       margin: [
-        { q: 'What is mode collapse?', a: 'The generator’s outputs gradually become less diverse, until it only produces images in a specific class.' },
+        { q: 'Which difficulty does slide 27 call the biggest?', a: 'Mode collapse: the generator’s outputs become less diverse, until it only produces images in a specific class.' },
       ],
     },
   ],
+  skip: 'Figure 17-15 and slide 27’s closing remarks on research progress.',
 };

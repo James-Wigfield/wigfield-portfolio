@@ -4,7 +4,7 @@ import { Lab, Chips, Stat } from '../ui';
 import { CAPTIONS, GUIDELINES, GUIDELINE_CHECKS, MODELS, NAMED_CODE } from '../slideData';
 import { useData, loadGan, loadDcgan } from '../fashion';
 import { flow, shapeText, fmtInt } from '../gen';
-import { ImgGrid, LossCurve, Pending } from './parts';
+import { ImgGrid, ImgRows, LossCurve, Pending } from './parts';
 import './labsDcgan.css';
 
 /* ============================================================================
@@ -18,25 +18,41 @@ import './labsDcgan.css';
      DcganSamplesLab   this page's run of slide 29's DCGAN, the same way
    ========================================================================== */
 
-function Samples({ run, which, fig, figLabel }) {
-  const [at, setAt] = useState(run.snapshots.length - 1);
+// the same 7 noise vectors at every saved epoch, then the full set of 21
+// for an epoch that kept them all (the first such epoch the slide shows)
+function Samples({ run, which, fig, figLabel, epochsNote }) {
+  const full = run.snapshots.map((x, i) => [x, i]).filter(([x]) => x.images.length >= 21);
+  const start = full.find(([x]) => x.epoch === fig) ?? full[full.length - 1];
+  const [at, setAt] = useState(start[1]);
   const s = run.snapshots[at];
-  const cols = s.images.length >= 21 ? 7 : s.images.length;
   const h = run.history;
   return (
     <>
       <div className="dl-lab__controls">
         <Chips
-          label="after"
+          label="all 21 after"
           value={at}
-          options={run.snapshots.map((x, i) => ({ v: i, l: `epoch ${x.epoch}`, tag: x.epoch === fig ? figLabel : undefined }))}
+          options={full.map(([x, i]) => ({ v: i, l: `epoch ${x.epoch}`, tag: x.epoch === fig ? figLabel : undefined }))}
           onChange={setAt}
         />
       </div>
       <div className="dl67s-sm">
         <div className="dl67s-sm__grid">
-          <ImgGrid cells={s.images.map((b64, i) => ({ b64, label: `${which} sample ${i + 1} after epoch ${s.epoch}` }))} cols={cols} label={`${s.images.length} images from this page's ${which} after epoch ${s.epoch}`} />
-          <p className="dl67s-mini">{s.images.length} images after epoch {s.epoch} of this page’s {run.epochsRun}; the same {s.images.length} noise vectors at every epoch</p>
+          <p className="dl67s-stagehead">The same 7 noise vectors, epoch by epoch</p>
+          <div className="dl67s-scroll">
+            <ImgRows
+              rows={run.snapshots.map((x) => ({
+                key: x.epoch,
+                label: `epoch ${x.epoch}`,
+                cells: x.images.slice(0, 7).map((b64, i) => ({ b64, label: `${which} sample ${i + 1} after epoch ${x.epoch}` })),
+              }))}
+              min={2.6}
+              max={3.4}
+            />
+          </div>
+          <p className="dl67s-stagehead">All 21 after epoch {s.epoch}</p>
+          <ImgGrid cells={s.images.map((b64, i) => ({ b64, label: `${which} sample ${i + 1} after epoch ${s.epoch}` }))} cols={7} label={`21 images from this page's ${which} after epoch ${s.epoch}`} />
+          <p className="dl67s-mini">After epoch {s.epoch} of this page’s {run.epochsRun}, from the same fixed noise vectors at every epoch. The slides’ figures show 32 images, in 4 rows of 8.</p>
         </div>
         <div className="dl67s-sm__side">
           {h?.dLoss?.length > 1 && (
@@ -46,7 +62,7 @@ function Samples({ run, which, fig, figLabel }) {
             </figure>
           )}
           <div className="dl67s-stats dl67s-stats--tight">
-            <Stat k="epochs, this page’s run" v={String(run.epochsRun)} sub={`the slides’ code: n_epochs=${run.epochsSlide}`} />
+            <Stat k="epochs, this page’s run" v={String(run.epochsRun)} sub={epochsNote} />
             <Stat k="codings_size" v={String(run.codingsSize)} sub={`batch ${run.batchSize}`} />
           </div>
         </div>
@@ -65,7 +81,7 @@ export function GanSamplesLab() {
       slides="slide 26"
       tryThis="predict whether the images will be sharper at the end than after epoch 1. Step through the epochs and notice what improves, and what doesn’t."
     >
-      {!G ? <Pending /> : <Samples run={G} which="GAN" fig={1} figLabel="as Figure 17-15" />}
+      {!G ? <Pending /> : <Samples run={G} which="GAN" fig={1} figLabel="Figure 17-15’s epoch" epochsNote={`slide 25’s train_gan call: n_epochs=${G.epochsSlide}`} />}
       <p className="dl67s-cap">
         <span className="dl67s-own">this page’s own run</span> Slides 23–25’s GAN trained with TensorFlow on Fashion MNIST
         {G ? ` for ${G.epochsRun} epochs (the slide’s train_gan call says n_epochs=${G.epochsSlide})` : ''}, and the same fixed noise vectors fed to its generator
@@ -86,7 +102,7 @@ export function DcganSamplesLab() {
       slides="slide 30"
       tryThis="compare these with §10’s GAN images at the same epoch: predict which network’s images are sharper, then check."
     >
-      {!D ? <Pending /> : <Samples run={D} which="DCGAN" fig={50} figLabel="as Figure 17-16" />}
+      {!D ? <Pending /> : <Samples run={D} which="DCGAN" fig={50} figLabel="Figure 17-16’s epoch" epochsNote="Figure 17-16 is after 50 epochs (slide 30)" />}
       <p className="dl67s-cap">
         <span className="dl67s-own">this page’s own run</span> Slide 29’s DCGAN trained with TensorFlow on Fashion MNIST
         {D ? ` for ${D.epochsRun} epochs` : ''}, compiled and trained like the GAN (“similar to the code for GANs”). Before training, this page rescaled the images to
@@ -127,7 +143,7 @@ export function DcganLab() {
     <Lab
       title="Slide 28’s guidelines, held against slide 29’s code"
       slides="slides 28–29"
-      tryThis="for each guideline, predict whether slide 29’s code follows it before clicking. Then click it to light up the lines that decide."
+      tryThis="for each guideline, predict whether slide 29’s code follows it; click it to light up the lines that decide, and notice which of the two networks departs from the guidelines more."
     >
       <div className="dl-lab__controls">
         <Chips label="show" value={view} options={[{ v: 'guide', l: 'the five guidelines' }, { v: 'shapes', l: 'shapes and parameters' }]} onChange={setView} />

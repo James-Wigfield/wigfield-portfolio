@@ -637,3 +637,7 @@ html.dl67s-pseudo-on body { overflow: hidden !important; }
 
 /* a lab view hidden on screen (another view is chosen) but printed */
 .dl67s-screenonly-hidden { display: none; }
+
+/* code and Greek inside upper-case labels keep their own case */
+.dl67s-stagehead code, .dl67s-stat__k code, .dl67s-table th code { text-transform: none; letter-spacing: 0; }
+.dl67s-nowrap { white-space: nowrap; }

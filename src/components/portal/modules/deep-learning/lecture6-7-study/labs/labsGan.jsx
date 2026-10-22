@@ -49,6 +49,7 @@ const ROLES = {
 };
 
 export function GanRolesLab() {
+  const { printing } = useStudy();
   const vae = useVae();
   const gan = useData(loadGan);
   const [role, setRole] = useState('generator');
@@ -71,12 +72,16 @@ export function GanRolesLab() {
         <Chips label="network" value={role} options={[{ v: 'generator', l: 'the generator' }, { v: 'discriminator', l: 'the discriminator' }]} onChange={setRole} />
       </div>
       <div className="dl67s-gr">
-        <div className="dl67s-gr__fig"><Diagram fig="gan" lab hl={r.hl} /></div>
+        <div className="dl67s-gr__fig">{printing ? <Diagram fig="gan" /> : <Diagram fig="gan" lab hl={r.hl} />}</div>
         <div className="dl67s-gr__side">
-          <p className="dl67s-stagehead">{r.name} · {r.goal}</p>
-          <p className="dl67s-readout"><b>Takes:</b> {r.input}.</p>
-          <p className="dl67s-readout"><b>Outputs:</b> {r.output}.</p>
-          <p className="dl67s-readout">{r.text}</p>
+          {(printing ? Object.values(ROLES) : [r]).map((x) => (
+            <div key={x.name} className="dl67s-gr__role">
+              <p className="dl67s-stagehead">{x.name} · {x.goal}</p>
+              <p className="dl67s-readout"><b>Takes:</b> {x.input}.</p>
+              <p className="dl67s-readout"><b>Outputs:</b> {x.output}.</p>
+              <p className="dl67s-readout">{x.text}</p>
+            </div>
+          ))}
         </div>
       </div>
       <div className="dl67s-gr__cmp">
@@ -222,8 +227,9 @@ export function PhaseStepperLab() {
       )}
       <p className="dl67s-cap">
         <span className="dl67s-own">this page’s own toy run</span> The §9 toy GAN, where each “image” is one number: batches of 32 as on slide 24, binary
-        cross-entropy, one RMSprop step per phase. “Largest weight change” is the biggest change to any one weight or bias in that step, measured here; 0 means
-        the network was not touched. Hover a cell to see its number.
+        cross-entropy, one RMSprop step per phase. The toy is written to follow the slides’ rule (each phase updates one network), so the zeros confirm it
+        rather than test Keras; §9 measures the slides’ own Keras code. “Largest weight change” is the biggest change to any one weight or bias in that step,
+        measured by comparing copies of the weights before and after.<span className="dl67s-screenonly"> Hover a cell to see its number.</span>
       </p>
     </Lab>
   );
@@ -270,7 +276,7 @@ export function GanCodeLab() {
               <thead><tr><th>tensor</th><th>shape</th><th>from</th></tr></thead>
               <tbody>
                 {TENSORS.map((x, i) => (
-                  <tr key={i} className={x.part === part ? 'dl67s-row--on' : undefined}><td><code>{x.name}</code></td><td>({x.shape.join(', ')})</td><td><code>{x.from}</code></td></tr>
+                  <tr key={i} className={x.part === part ? 'dl67s-row--on' : undefined}><td><code>{x.name}</code></td><td className="dl67s-nowrap">({x.shape.join(', ')})</td><td><code>{x.from}</code></td></tr>
                 ))}
               </tbody>
             </table>
@@ -291,7 +297,7 @@ export function GanCodeLab() {
         {!t ? <Pending /> : <TrainableTable t={t} />}
       </div>
       <p className="dl67s-cap">
-        Shapes are this page’s working from slides 23–25 (the batch has 32 real images because of <code>drop_remainder=True</code>). Phase 1 trains{' '}
+        Shapes are this page’s working from slides 23–25 (32 real images per batch because <code>batch_size = 32</code>; <code>drop_remainder=True</code> drops the last, shorter batch). Phase 1 trains{' '}
         <code>discriminator</code> on 64 images; phase 2 trains <code>gan</code>, the generator and the discriminator stacked, on 32 noise vectors whose
         target is “real”.
       </p>

@@ -426,7 +426,7 @@ export const GUIDELINE_CHECKS = [
     g: 1,
     status: 'part',
     lines: [6, 9, 16, 19],
-    note: 'The generator has BatchNormalization after its Dense layer and after its first Conv2DTranspose, and none on its output layer, as the guideline says. The discriminator has no BatchNormalization at all: it uses Dropout(0.4) after each Conv2D instead.',
+    note: 'The generator has BatchNormalization after the Reshape that follows its Dense layer, and after its first Conv2DTranspose, and none on its output layer, as the guideline says. The discriminator has no BatchNormalization at all: it uses Dropout(0.4) after each Conv2D instead.',
   },
   {
     g: 2,

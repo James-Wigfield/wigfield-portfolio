@@ -20,8 +20,8 @@
 .dl67s-tl__b { fill: var(--dlv-orange); }
 .dl67s-tl__col { cursor: pointer; }
 .dl67s-tl__col:hover rect { opacity: 0.75; }
-.dl67s-dot--a { background: var(--dlv-blue); }
-.dl67s-dot--b { background: var(--dlv-orange); margin-left: 0.6rem; }
+.dl67s-dot.dl67s-dot--a { background: var(--dlv-blue); }
+.dl67s-dot.dl67s-dot--b { background: var(--dlv-orange); margin-left: 0.6rem; }
 
 @container lab (max-width: 700px) {
   .dl67s-toy__grid { grid-template-columns: 1fr; }

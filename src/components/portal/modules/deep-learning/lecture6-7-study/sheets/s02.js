@@ -25,5 +25,5 @@ export default {
       ],
     },
   ],
-  skip: 'the rest of slide 9’s listing and Figure 17-9.',
+  skip: 'slide 7’s recap, the 2010 paper, the rest of slide 9’s listing and Figure 17-9.',
 };

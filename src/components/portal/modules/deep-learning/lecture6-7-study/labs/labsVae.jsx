@@ -6,7 +6,7 @@ import { CAPTIONS, NAMED_CODE, MODELS } from '../slideData';
 import { useVae, useData, loadConv, decodeImg, CLASS_NAMES } from '../fashion';
 import {
   decode, toBytes, sampleCoding, normals, rng, latentTermSigma, latentTermGamma, sigmaOfGamma,
-  flow, shapeText, mse, fmt, fmtInt,
+  flow, shapeText, mse, fmt, fmtS, fmtInt,
 } from '../gen';
 import { FashionImg, Pending } from './parts';
 import './labsVae.css';
@@ -85,7 +85,7 @@ export function VaeLiveLab() {
       title="Figure 17-11, live: two codings, a random sample, a reconstruction"
       fig={CAPTIONS.fig1711}
       slides="slides 10–11"
-      tryThis="predict whether pressing Resample, with the same image in, gives the same output. Press it a few times and notice which dimensions of z move most: the ones with the largest σ. Then compare the plain autoencoder below."
+      tryThis="predict whether pressing Resample, with the same image in, gives the same output; press it a few times and notice which numbers of z move most, and how the plain autoencoder below behaves."
     >
       {!run ? <Pending /> : (
         <>
@@ -148,7 +148,7 @@ export function VaeLiveLab() {
         <span className="dl67s-own">this page’s own run</span> The VAE is slides 14–15’s model trained offline with TensorFlow on Fashion MNIST
         ({vae ? `${vae.VAE.epochs} epochs, batch ${vae.VAE.batchSize}, 10 codings` : 'see §5'}). μ and γ for these twelve validation images come from
         its encoder; the decoder runs here, in the browser, from its weights stored as 8-bit numbers with one scale per unit
-        {vae?.VAE.check ? ` (largest pixel difference from Keras’s own decoder: ${fmt(vae.VAE.check.quantMaxAbsErr, 3)})` : ''}. ε is this page’s own
+        {vae?.VAE.check ? ` (largest pixel difference from Keras’s own decoder: ${fmt(vae.VAE.check.quantMaxAbsErr, 3)} over 100 random N(0, 1) codings${vae.VAE.check.quantMaxAbsErrWide ? `, up to ${fmt(vae.VAE.check.quantMaxAbsErrWide, 3)} for codings out to ±3` : ''})` : ''}. ε is this page’s own
         seeded draw. MSE is the output’s mean squared pixel error against the input, on a 0–1 scale. conv_ae is §1’s model (this page’s run): with no
         randomness, the same input always gives the same reconstruction. The VAE’s output changes with every draw, even after training: it is a
         probabilistic autoencoder (slide 10).
@@ -160,7 +160,7 @@ export function VaeLiveLab() {
 /* ── §4 · the latent loss ─────────────────────────────────────────────────── */
 const W = 250;
 const H = 130;
-function TermPlot({ xs, ys, at, xLabel, minAt, label }) {
+function TermPlot({ xs, ys, at, xLabel, minAt, minY, label }) {
   const m = { l: 30, r: 10, t: 10, b: 24 };
   const lo = Math.min(...xs);
   const hi = Math.max(...xs);
@@ -177,7 +177,7 @@ function TermPlot({ xs, ys, at, xLabel, minAt, label }) {
       {[lo, minAt, hi].map((v) => <text key={v} x={sx(v)} y={H - 8} textAnchor="middle" className="dl67s-tick">{fmt(v, v % 1 ? 2 : 0)}</text>)}
       <text x={W - m.r} y={m.t + 2} textAnchor="end" className="dl67s-tick">{xLabel}</text>
       <path d={d} className="dl67s-ll__curve" />
-      <circle cx={sx(minAt)} cy={sy(0)} r={3.5} className="dl67s-ll__min"><title>minimum: 0</title></circle>
+      <circle cx={sx(minAt)} cy={sy(minY)} r={3.5} className="dl67s-ll__min"><title>{`this curve’s lowest point: ${fmt(minY, 3)}`}</title></circle>
       <circle cx={sx(at.x)} cy={sy(at.y)} r={5} className="dl67s-ll__dot" />
     </svg>
   );
@@ -210,7 +210,7 @@ export function LatentLossLab() {
     <Lab
       title="The latent loss, one coding dimension at a time"
       slides="slides 12–13"
-      tryThis="predict the μ and σ that make one dimension’s term zero. Drag the sliders to find it, switch between the σ and γ forms and notice the term doesn’t change. Then pick an image to see the loss of all 10 of its codings."
+      tryThis="predict the μ and σ that make one dimension’s term zero; drag the sliders to find them, switch to the γ form, and notice what happens to the term. Then pick an image to see the loss of all 10 of its codings."
     >
       <div className="dl-lab__controls">
         <Chips label="the encoder outputs" value={mode} options={[{ v: 'sigma', l: 'σ (first formula)' }, { v: 'gamma', l: 'γ = log(σ²) (the tweak)' }]} onChange={setMode} />
@@ -234,24 +234,24 @@ export function LatentLossLab() {
             As text: −1/2 [1 + {mode === 'sigma' ? `log(${fmt(sigma, 2)}²) − ${fmt(sigma, 2)}²` : `(${fmt(gamma, 2)}) − exp(${fmt(gamma, 2)})`} − ({fmt(mu, 2)})²]
           </p>
           <ol className="dl67s-ll__parts">
-            <li><span>1</span><b>{fmt(inside[0], 3)}</b></li>
-            <li><span>{mode === 'sigma' ? 'log(σᵢ²)' : 'γᵢ'}</span><b>{fmt(inside[1], 3)}</b></li>
-            <li><span>{mode === 'sigma' ? '− σᵢ²' : '− exp(γᵢ)'}</span><b>{fmt(inside[2], 3)}</b></li>
-            <li><span>− μᵢ²</span><b>{fmt(inside[3], 3)}</b></li>
-            <li className="dl67s-ll__sum"><span>× (−½)</span><b>{fmt(mode === 'sigma' ? tS : tG, 4)}</b></li>
+            <li><span>1</span><b>{fmtS(inside[0], 3)}</b></li>
+            <li><span>{mode === 'sigma' ? 'log(σᵢ²)' : 'γᵢ'}</span><b>{fmtS(inside[1], 3)}</b></li>
+            <li><span>{mode === 'sigma' ? '− σᵢ²' : '− exp(γᵢ)'}</span><b>{fmtS(inside[2], 3)}</b></li>
+            <li><span>− μᵢ²</span><b>{fmtS(inside[3], 3)}</b></li>
+            <li className="dl67s-ll__sum"><span>× (−½)</span><b>{fmtS(mode === 'sigma' ? tS : tG, 4)}</b></li>
           </ol>
           <div className="dl67s-stats dl67s-stats--tight">
             <Stat k={<>this dimension’s term, <span className="dl67s-nocase">σ</span> form</>} v={fmt(tS, 4)} />
-            <Stat k={<>the same, <span className="dl67s-nocase">γ</span> form</>} v={fmt(tG, 4)} tone={Math.abs(tS - tG) < 1e-9 ? 'accent' : undefined} sub={`γ = log(σ²) = ${fmt(gamma, 3)}`} />
+            <Stat k={<>the same, <span className="dl67s-nocase">γ</span> form</>} v={fmt(tG, 4)} tone={Math.abs(tS - tG) < 1e-9 ? 'accent' : undefined} sub={`γ = log(σ²) = ${fmtS(gamma, 3)}`} />
           </div>
         </div>
         <div className="dl67s-ll__plots">
           <figure className="dl67s-ll__fig">
-            <TermPlot xs={MU_GRID} ys={MU_GRID.map((m) => latentTermSigma(m, sigma))} at={{ x: mu, y: tS }} minAt={0} xLabel="μᵢ" label={`The term against mu, with sigma fixed at ${fmt(sigma, 2)}`} />
+            <TermPlot xs={MU_GRID} ys={MU_GRID.map((m) => latentTermSigma(m, sigma))} at={{ x: mu, y: tS }} minAt={0} minY={latentTermSigma(0, sigma)} xLabel="μᵢ" label={`The term against mu, with sigma fixed at ${fmt(sigma, 2)}`} />
             <figcaption className="dl67s-mini">the term against μᵢ, σᵢ = {fmt(sigma, 2)}</figcaption>
           </figure>
           <figure className="dl67s-ll__fig">
-            <TermPlot xs={SG_GRID} ys={SG_GRID.map((s) => latentTermSigma(mu, s))} at={{ x: sigma, y: tS }} minAt={1} xLabel="σᵢ" label={`The term against sigma, with mu fixed at ${fmt(mu, 2)}`} />
+            <TermPlot xs={SG_GRID} ys={SG_GRID.map((s) => latentTermSigma(mu, s))} at={{ x: sigma, y: tS }} minAt={1} minY={latentTermSigma(mu, 1)} xLabel="σᵢ" label={`The term against sigma, with mu fixed at ${fmt(mu, 2)}`} />
             <figcaption className="dl67s-mini">the term against σᵢ, μᵢ = {fmt(mu, 2)}</figcaption>
           </figure>
         </div>
@@ -269,8 +269,8 @@ export function LatentLossLab() {
               <table className="dl67s-table dl67s-ll__table">
                 <thead><tr><th>dimension</th>{real.rows.map((_, i) => <th key={i} className="dl67s-num">{i + 1}</th>)}<th className="dl67s-num">sum</th></tr></thead>
                 <tbody>
-                  <tr><td>μᵢ</td>{real.rows.map((r, i) => <td key={i} className="dl67s-num">{fmt(r.m, 2)}</td>)}<td /></tr>
-                  <tr><td>γᵢ</td>{real.rows.map((r, i) => <td key={i} className="dl67s-num">{fmt(r.g, 2)}</td>)}<td /></tr>
+                  <tr><td>μᵢ</td>{real.rows.map((r, i) => <td key={i} className="dl67s-num">{fmtS(r.m, 2)}</td>)}<td /></tr>
+                  <tr><td>γᵢ</td>{real.rows.map((r, i) => <td key={i} className="dl67s-num">{fmtS(r.g, 2)}</td>)}<td /></tr>
                   <tr><td>σᵢ</td>{real.rows.map((r, i) => <td key={i} className="dl67s-num">{fmt(r.s, 2)}</td>)}<td /></tr>
                   <tr className="dl67s-row--on"><td>term</td>{real.rows.map((r, i) => <td key={i} className="dl67s-num">{fmt(r.t, 2)}</td>)}<td className="dl67s-num"><b>{fmt(real.L, 2)}</b></td></tr>
                 </tbody>
@@ -344,7 +344,7 @@ export function VaeCodeLab() {
     <Lab
       title="The VAE in Keras, line by line"
       slides="slides 14–15"
-      tryThis="before reading the tables, predict which layer of the encoder has the most parameters, and what shape Sampling outputs. Pick rows to find their lines; then step through the sampling line’s terms on a real coding."
+      tryThis="predict which encoder layer has the most parameters and what shape Sampling outputs; pick rows to find their lines, step through the sampling line’s terms, and notice which term carries the randomness."
     >
       <div className="dl-lab__controls">
         <Chips label="part" value={part} options={Object.entries(PARTS).map(([v, p]) => ({ v, l: p.label }))} onChange={pickPart} />
@@ -367,12 +367,12 @@ export function VaeCodeLab() {
         <p className="dl67s-mono dl67s-vc__line">return tf.random.normal(tf.shape(logvar)) * tf.exp(logvar / 2) + mean</p>
         {!ex ? <Pending /> : (
           <ol className="dl67s-ll__parts dl67s-vc__terms">
-            <li><span>mean (μ)</span><b>{fmt(m, 3)}</b></li>
-            <li><span>logvar (γ)</span><b>{fmt(g, 3)}</b></li>
-            <li><span>tf.random.normal(…) (ε)</span><b>{fmt(e, 3)}</b></li>
-            <li><span>tf.exp(logvar / 2) (σ)</span><b>{fmt(Math.exp(g / 2), 3)}</b></li>
-            <li><span>ε × σ</span><b>{fmt(e * Math.exp(g / 2), 3)}</b></li>
-            <li className="dl67s-ll__sum"><span>+ mean → this coding</span><b>{fmt(e * Math.exp(g / 2) + m, 3)}</b></li>
+            <li><span>mean (μ)</span><b>{fmtS(m, 3)}</b></li>
+            <li><span>logvar (γ)</span><b>{fmtS(g, 3)}</b></li>
+            <li><span>tf.random.normal(…) (ε)</span><b>{fmtS(e, 3)}</b></li>
+            <li><span>tf.exp(logvar / 2) (σ)</span><b>{fmtS(Math.exp(g / 2), 3)}</b></li>
+            <li><span>ε × σ</span><b>{fmtS(e * Math.exp(g / 2), 3)}</b></li>
+            <li className="dl67s-ll__sum"><span>+ mean → this coding</span><b>{fmtS(e * Math.exp(g / 2) + m, 3)}</b></li>
           </ol>
         )}
         <p className="dl67s-readout">
