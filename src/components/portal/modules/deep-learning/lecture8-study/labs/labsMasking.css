@@ -1,0 +1,63 @@
+/* ============================================================================
+   §13 labs (SelfCrossLab, MaskLab) + the parts the toy-transformer labs share
+   (.dl8s-toy-*: the quiet text switch, the loading floor, the mask hatch).
+   Colours only through the role vars and portal tokens (see ../stage.css).
+   ========================================================================== */
+
+/* ── a quiet text switch: underline = on (never a filled pill) ────────── */
+.dl8s-toy-seg { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.7rem; }
+.dl8s-toy-seg__b {
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--line-2);
+  padding: 0.2rem 0.1rem 0.15rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dl8s-toy-seg__b:hover { color: var(--ink); }
+.dl8s-toy-seg__b[aria-pressed='true'] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.dl8s-toy-seg__b:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dl8s-toy-seg__sub { margin-left: 0.35rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; font-weight: 400; color: var(--ink-3); }
+
+/* the floor's control row (above the picture) */
+.dl8s-toy-ctl { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem 1.2rem; margin-bottom: 0.4rem; }
+
+/* loading / failed */
+.dl8s-toy-wait {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+  color: var(--ink-3);
+}
+
+/* the mask: a grey hatch */
+.dl8s-toy-hatch__bg { fill: color-mix(in srgb, var(--dl8s-mask) 10%, var(--dl8s-floor)); }
+.dl8s-toy-hatch__ln { stroke: var(--dl8s-mask); stroke-width: 1.6; opacity: 0.75; }
+
+/* long "this page's own" receipts wrap instead of overflowing a phone */
+.dl8s-toy-stage .dl8s-own { white-space: normal; }
+
+.dl8s-toy-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ── SelfCrossLab ─────────────────────────────────────────────────────── */
+.dl8s-selfx-src { font-size: 10.5px; font-weight: 600; }
+.dl8s-selfx-role { font-size: 12.5px; font-weight: 700; }
+.dl8s-selfx-tok text { transition: opacity 0.3s ease; }
+
+/* ── MaskLab ──────────────────────────────────────────────────────────── */
+.dl8s-mask-cell { cursor: default; }
+.dl8s-mask-new rect { stroke-width: 2.8; }
+.dl8s-mask-pop { transform-box: fill-box; transform-origin: center; transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.3), opacity 0.35s ease; }
+.dl8s-mask-pop.dl8s-hide { transform: scale(0.6); }
+.dl8s-mask-frame { fill: none; stroke: var(--line); stroke-width: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dl8s-mask-pop, .dl8s-selfx-tok text { transition: none !important; }
+}

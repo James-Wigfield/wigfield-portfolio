@@ -1,0 +1,27 @@
+/* §1 · the long path: RNN cells as rounded boxes, the traced path in the
+   query/beam colour; the right ___: a two-way switch and arcs */
+.dl8s-lp__cell { fill: var(--dl8s-floor); stroke-width: 1.6; transition: stroke-width 0.3s, fill 0.3s; }
+.dl8s-lp__cell--enc { stroke: var(--dl8s-enc); }
+.dl8s-lp__cell--dec { stroke: var(--dl8s-dec); }
+.dl8s-lp__cell--on { stroke: var(--dl8s-q); stroke-width: 3.2; fill: color-mix(in srgb, var(--dl8s-q) 14%, var(--dl8s-floor)); }
+.dl8s-lp__unused { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: 0.5; }
+.dl8s-lp__bridge { fill: none; stroke: var(--ink-3); stroke-width: 2; transition: stroke 0.3s, stroke-width 0.3s; }
+.dl8s-lp__bridge--now { stroke: var(--ink); stroke-width: 3.4; }
+.dl8s-lp__bridge--on { stroke: var(--dl8s-q); stroke-width: 3.6; }
+
+.dl8s-rw__switch { display: inline-flex; gap: 0.2rem; margin: 0 0 0.6rem; border-bottom: 1px solid var(--line-2); }
+.dl8s-rw__opt {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+.dl8s-rw__opt:hover { color: var(--ink); }
+.dl8s-rw__opt--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl8s-rw__arc { fill: none; stroke: var(--ink-3); stroke-width: 1.4; }
+.dl8s-rw__arc--ahead { stroke: var(--dl8s-q); stroke-width: 2; }

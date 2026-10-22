@@ -1,0 +1,19 @@
+/* §7 · two arrows on a plane, three score bars */
+.dl8s-lu__ring { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 3 4; }
+.dl8s-lu__angle { fill: var(--dl8s-q); opacity: 0.12; }
+.dl8s-lu__vec { stroke-width: 3.2; stroke-linecap: round; }
+.dl8s-lu__vec--enc { stroke: var(--dl8s-enc); }
+.dl8s-lu__vec--dec { stroke: var(--dl8s-dec); }
+.dl8s-lu__tip { cursor: grab; touch-action: none; }
+.dl8s-lu__tip--drag { cursor: grabbing; }
+.dl8s-lu__tip:focus-visible { outline: none; }
+.dl8s-lu__dot { fill: var(--dl8s-floor); stroke-width: 3; }
+.dl8s-lu__dot--enc { stroke: var(--dl8s-enc); }
+.dl8s-lu__dot--dec { stroke: var(--dl8s-dec); }
+.dl8s-lu__tip:focus-visible .dl8s-lu__dot, .dl8s-lu__tip:hover .dl8s-lu__dot { stroke-width: 4.5; }
+.dl8s-lu__track { fill: var(--line-2); opacity: 0.6; }
+.dl8s-lu__bar { fill: var(--dl8s-q); transition: transform 0.2s ease; }
+.dl8s-lu__bar--neg { fill: var(--dl8s-neg); }
+.dl8s-lu__blocked { stroke: var(--dl8s-mask); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.dl8s-lu__nolab { fill: var(--ink-2) !important; }
+.dl8s-lu__nolab { paint-order: stroke; stroke: var(--dl8s-floor); stroke-width: 5px; }
