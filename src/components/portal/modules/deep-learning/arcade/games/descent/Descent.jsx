@@ -8,6 +8,7 @@ import { Why } from '../../kit/WhyText';
 import { receipt } from '../../kit/why';
 import { Tex } from '../../../kit';
 import { rng } from '../../core/rng';
+import { useSprite } from '../../core/art.js';
 import { makeItems, swing, schedCurve, fmtVec } from '../../maths/descentItems.js';
 import { contours } from '../../maths/descentHoles.js';
 import { EQUATIONS } from '../../content/lecture2.js';
@@ -61,6 +62,16 @@ function Stage({ item, round }) {
   }
 }
 
+/* pixel art (optional, core/art.js): ×2 sprites, the SVG until they load.
+   The ball sprite's ball is centred on (12, 11) of its 24 × 24; the flag
+   sprite's cup on (12, 18). Par's ghost ball stays an SVG ring. */
+const PIXEL = { imageRendering: 'pixelated' };
+function Ball({ x, y, ghost = false }) {
+  const art = useSprite('golf-ball.png');
+  if (art && !ghost) return <image href={art} x={x - 24} y={y - 22} width={48} height={48} className="dla-dc__ballart" style={PIXEL} />;
+  return <circle cx={x} cy={y} r={7} className={`dla-dc__ball${ghost ? ' dla-dc__ball--ghost' : ''}`} />;
+}
+
 /* ── the course: contours, tee, cup and flag; children draw on top ────── */
 function Course({ spec, label, children, overlay = null, holed = false, axes = null }) {
   const clip = `dc${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
@@ -68,6 +79,7 @@ function Course({ spec, label, children, overlay = null, holed = false, axes = n
   const [fx, fy] = toSvg(spec.flag);
   const [tx, ty] = toSvg(spec.start);
   const cupR = (spec.r / (COURSE.x1 - COURSE.x0)) * COURSE.W;
+  const flagArt = useSprite('golf-flag.png');
   return (
     <svg className="dla-svg dla-dc__course" viewBox={`0 0 ${COURSE.W} ${COURSE.H}`} role="img" aria-label={label}>
       <defs>
@@ -79,10 +91,12 @@ function Course({ spec, label, children, overlay = null, holed = false, axes = n
         <path d={`M${tx - 6} ${ty}h12M${tx} ${ty - 6}v12`} className="dla-dc__tee" />
         {children}
       </g>
-      <g className="dla-dc__flag" aria-hidden="true">
-        <line x1={fx} y1={fy} x2={fx} y2={fy - 34} />
-        <path d={`M${fx} ${fy - 34}l16 5l-16 5z`} />
-      </g>
+      {flagArt
+        ? <image href={flagArt} x={fx - 24} y={fy - 36} width={48} height={48} style={PIXEL} aria-hidden="true" />
+        : <g className="dla-dc__flag" aria-hidden="true">
+            <line x1={fx} y1={fy} x2={fx} y2={fy - 34} />
+            <path d={`M${fx} ${fy - 34}l16 5l-16 5z`} />
+          </g>}
       {axes && (
         <g aria-hidden="true">
           <text x={COURSE.W / 2} y={COURSE.H - 6} textAnchor="middle" className="dla-t--xs dla-halo">{axes[0]}</text>
@@ -220,7 +234,7 @@ function HoleStage({ item, round }) {
             })}
             {(drawn.length ? drawn : [null]).map((c) => {
               const [x, y] = toSvg(c ? at(paths[c], showK) : spec.start);
-              return <circle key={c ?? 'tee'} cx={x} cy={y} r={7} className={`dla-dc__ball${c && c !== mine ? ' dla-dc__ball--ghost' : ''}`} />;
+              return <Ball key={c ?? 'tee'} x={x} y={y} ghost={!!c && c !== mine} />;
             })}
           </Course>
           <p className="dla-dc__caption">
@@ -350,7 +364,7 @@ function DialStage({ item, round }) {
             </g>
             {(() => {
               const [x, y] = toSvg(at(path, path.length - 1));
-              return <circle cx={x} cy={y} r={7} className="dla-dc__ball" />;
+              return <Ball x={x} y={y} />;
             })()}
           </Course>
           <p className="dla-dc__caption">
@@ -400,7 +414,7 @@ function ClipStage({ item, round }) {
             {arrow(raw, `dla-dc__arrow--raw${taken ? ' dla-dc__arrow--faint' : ''}`)}
             {showValue && arrow(cv, taken ? 'dla-dc__arrow--taken' : 'dla-dc__arrow--value')}
             {showNorm && arrow(cn, taken ? 'dla-dc__arrow--taken' : 'dla-dc__arrow--norm')}
-            <circle cx={bx} cy={by} r={7} className="dla-dc__ball" />
+            <Ball x={bx} y={by} />
           </Course>
           <p className="dla-dc__caption">
             <span><span className="dla-k">gradient at the ball</span> <Tex src={`\\nabla_\\theta J(\\theta) = ${asciiMinus(fmtVec(item.g))}`} /></span>

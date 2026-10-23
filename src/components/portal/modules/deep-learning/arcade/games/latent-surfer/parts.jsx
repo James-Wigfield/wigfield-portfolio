@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useSprite } from '../../core/art.js';
 
 /* ============================================================================
    LATENT SURFER — DRAWN PARTS (components only; the numbers come in as props
@@ -6,6 +7,7 @@ import { useEffect, useRef } from 'react';
      Px          one decoded 28 × 28 image on a canvas, dark ink on white as
                  the slides draw Fashion MNIST (255 − v), crisp pixels
      SliceMap    tiles × tiles decodes over the 2D slice, with the cursor
+                 (the surfer sprite once it loads, core/art.js; else a dot)
      Meter       a horizontal bar (MSE to target, the find stage's ℒ)
      SampleWire  Figure 17-11's sampling wiring with this item's numbers
      NumberLine  where the sampled coding lands (after the answer)
@@ -46,6 +48,8 @@ export function SliceMap({ tiles, n, range, a, b, onPick, label, axisA, axisB })
   }, [tiles, n]);
   const [lo, hi] = range;
   const fx = (v) => ((v - lo) / (hi - lo)) * 100;
+  const surfer = useSprite('surfer.png');
+  const pos = { left: `${fx(a)}%`, top: `${100 - fx(b)}%` };
   const pick = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
@@ -62,7 +66,9 @@ export function SliceMap({ tiles, n, range, a, b, onPick, label, axisA, axisB })
         onPointerMove={(e) => { if (e.buttons & 1) pick(e); }}
       >
         <canvas ref={ref} width={n * 28} height={n * 28} className="dla-ls__mapc" />
-        <span className="dla-ls__cursor" style={{ left: `${fx(a)}%`, top: `${100 - fx(b)}%` }} aria-hidden="true" />
+        {surfer
+          ? <img className="dla-sprite dla-ls__surfer" src={surfer} alt="" width={32} height={32} style={pos} aria-hidden="true" />
+          : <span className="dla-ls__cursor" style={pos} aria-hidden="true" />}
       </div>
       <span className="dla-ls__axis dla-ls__axis--a" aria-hidden="true">{axisA} →</span>
       <span className="dla-ls__axis dla-ls__axis--b" aria-hidden="true">{axisB} →</span>

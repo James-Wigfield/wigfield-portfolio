@@ -19,3 +19,18 @@
 .dla-ps__model { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-ink); }
 @media (max-width: 600px) { .dla-ps__spec { margin-left: calc(var(--t, 0) * 18%); } .dla-ps__code { font-size: 0.76rem; } .dla-ps__belt::after { right: 2%; bottom: 30px; } }
 @media (prefers-reduced-motion: reduce) { .dla-ps__spec { transition: none; } }
+
+/* pixel art (optional, core/art.js; hub.css's .dla-sprite rule repeated here) */
+.dla-ps .dla-sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+/* the ×2 card badge sits left of the code; its transparent margin is trimmed */
+.dla-ps__spec--art { display: inline-grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.2rem; align-items: center; }
+.dla-ps__spec--art > :not(.dla-ps__badge) { grid-column: 2; }
+.dla-ps__badge { grid-column: 1; grid-row: 1 / span 2; margin: -12px -20px -12px -14px; }
+/* the ×2 reticle sits on the firing line, above the belt (×1 on phones: on the
+   belt, under the label and the card); it replaces the line's glow */
+.dla-ps__sight { position: absolute; right: calc(8% + 1.5px - 32px); top: -84px; pointer-events: none; }
+.dla-ps__belt--art .dla-ps__line { box-shadow: none; }
+@media (max-width: 600px) {
+  .dla-ps__badge { width: 48px; height: 32px; margin: -6px -10px -6px -8px; }
+  .dla-ps__sight { width: 32px; height: 32px; right: calc(8% + 1.5px - 16px); top: -15px; }
+}

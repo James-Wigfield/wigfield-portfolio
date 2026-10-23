@@ -128,3 +128,18 @@ line.dla-ll-hatch.dla-ll-on { stroke: var(--ink-3); }
   0%, 100% { stroke: var(--ink-3); }
   40% { stroke: var(--dlv-red); stroke-width: 3; }
 }
+
+/* pixel art (optional, core/art.js): the crane lifts the platform crate; a
+   miss jolts the wagon (the drawn car flashes instead) */
+.dla-ll-scene image { image-rendering: pixelated; }
+.dla-ll-crate__img { transform: translateY(0); }
+.dla-ll-crate.dla-ll-on .dla-ll-crate__img { transform: translateY(-4px); }
+@media (prefers-reduced-motion: no-preference) {
+  .dla-ll-crate__img { transition: transform 0.2s ease-out; }
+  .dla-ll--miss .dla-ll-wagon { animation: dla-ll-jolt 0.4s ease-out; }
+}
+@keyframes dla-ll-jolt {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  60% { transform: translateX(2px); }
+}

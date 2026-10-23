@@ -1,5 +1,6 @@
 import { Why } from '../../kit/WhyText';
 import { SCENE } from '../../content/long-line.js';
+import { useSprite } from '../../core/art.js';
 
 /* ============================================================================
    THE LONG SHORT-TERM LINE — THE PICTURES (procedural SVG, no assets)
@@ -16,6 +17,9 @@ import { SCENE } from '../../content/long-line.js';
      StepScene      level 1: one step of slide 9 with the numbers
      SignalScene    the train held at a signal (a question between stations)
    Numbers come from maths/longLine.js; words from content/long-line.js.
+   Pixel art (optional, core/art.js): on the wide layout and the signal the
+   car, locomotive and platform crate are sprites once they load; until then,
+   and on the narrow layout, the procedural SVG below is drawn.
    ========================================================================== */
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -46,6 +50,18 @@ const NARROW = {
   platform: [206, 92], crate: 222, input: [216, 100, 'end'], platLabel: 252,
 };
 
+// sprite placement (viewBox units, integer scales): the wagon's body (sprite
+// rows 5–22) ends on the floor y = 130 and its wheels on the rail y = 145;
+// the cargo meter sits inside the body (sprite cols 11–50)
+const ART = {
+  wagon: { x: 15, y: 61, s: 3 }, body: [33, 186], meter: [48, 120, 79],
+  loco: { x: 176, y: 81, s: 2 }, cellX: 242,
+};
+const px = { imageRendering: 'pixelated' };
+function Sprite({ href, at, w, h, className }) {
+  return <image href={href} x={at.x} y={at.y} width={w * at.s} height={h * at.s} className={className} style={px} />;
+}
+
 export function TrainScene({ model, prev, x, levers, result, target, scale, t, due, uid, narrow = false }) {
   const G = narrow ? NARROW : WIDE;
   const isGru = model === 'gru';
@@ -61,10 +77,20 @@ export function TrainScene({ model, prev, x, levers, result, target, scale, t, d
   const stateSym = W.state;
   const carTop = 60;
   const floor = 130;
-  const inner = floor - carTop - 6;
   const [cx0, cw] = G.car;
   const cx1 = cx0 + cw;
   const aid = `dla-ll-ah-${uid}${narrow ? '-n' : ''}`;
+  const wagonArt = useSprite('train-wagon.png');
+  const locoArt = useSprite('train-loco.png');
+  const crateArt = useSprite('train-crate.png');
+  const wagon = narrow ? null : wagonArt; // the narrow car keeps the SVG (a ×2 wagon is too small for the meter)
+  const loco = narrow ? null : locoArt;
+  const crate = narrow ? null : crateArt;
+  // the cargo meter and the hatch: the drawn car's inside, or the wagon's
+  const [mx, mw, mTop] = wagon ? ART.meter : [cx0 + 6, cw - 12, carTop + 3];
+  const mInner = floor - 3 - mTop;
+  const [lx0, lx1] = wagon ? ART.body : [cx0 + 10, cx1 - 10];
+  const [hx0, hx1] = wagon ? [ART.meter[0], ART.meter[0] + ART.meter[1]] : [cx0, cx1];
   const label = `Station t = ${t}. The cargo car holds ${stateSym}(t−1) = ${n2(before)}; the platform crate is x(t) = ${n2(x)}.${result ? ` After departing, ${stateSym}(t) = ${n2(result.c)} and the readout h(t) = ${n2(result.h)}.` : ''}`;
   return (
     <svg className={`dla-svg dla-ll-scene dla-ll-scene--${narrow ? 'narrow' : 'wide'}`} viewBox={`0 0 ${G.w} 186`} role="img" aria-label={label}>
@@ -98,26 +124,34 @@ export function TrainScene({ model, prev, x, levers, result, target, scale, t, d
 
       {/* the train */}
       <g className="dla-ll-train">
-        <rect x={cx0} y={carTop} width={cw} height={floor - carTop} rx="6" className="dla-ll-car" />
-        {ghost !== null && <line x1={cx0 + 6} x2={cx1 - 6} y1={floor - 3 - ghost * inner} y2={floor - 3 - ghost * inner} className="dla-ll-ghost" />}
-        <rect x={cx0 + 6} y={floor - 3 - inner} width={cw - 12} height={inner} rx="3" className="dla-ll-cargo" style={{ transform: `scaleY(${level})` }} />
-        <text x={cx0 + 10} y={carTop + 16} className="dla-t dla-t--s dla-halo">{result ? `${stateSym}(t)` : `${stateSym}(t−1)`}</text>
-        <text x={cx1 - 10} y={carTop + 16} textAnchor="end" className="dla-t dla-t--m dla-t--b dla-halo">{n2(shownC)}</text>
+        {wagon
+          ? <Sprite href={wagon} at={ART.wagon} w={64} h={32} className="dla-ll-wagon" />
+          : <rect x={cx0} y={carTop} width={cw} height={floor - carTop} rx="6" className="dla-ll-car" />}
+        {ghost !== null && <line x1={mx} x2={mx + mw} y1={floor - 3 - ghost * mInner} y2={floor - 3 - ghost * mInner} className="dla-ll-ghost" />}
+        <rect x={mx} y={mTop} width={mw} height={mInner} rx="3" className="dla-ll-cargo" style={{ transform: `scaleY(${level})` }} />
+        <text x={lx0} y={carTop + 16} className="dla-t dla-t--s dla-halo">{result ? `${stateSym}(t)` : `${stateSym}(t−1)`}</text>
+        <text x={lx1} y={carTop + 16} textAnchor="end" className="dla-t dla-t--m dla-t--b dla-halo">{n2(shownC)}</text>
         {/* the hatch in the floor: the forget gate (LSTM) or z (GRU) */}
         {keepOn
-          ? <line x1={cx0} x2={cx1} y1={floor} y2={floor} className="dla-ll-hatch dla-ll-on" />
+          ? <line x1={hx0} x2={hx1} y1={floor} y2={floor} className="dla-ll-hatch dla-ll-on" />
           : <g className="dla-ll-hatch">
-              <line x1={cx0} x2={G.hatch[0]} y1={floor} y2={floor} />
-              <line x1={G.hatch[1]} x2={cx1} y1={floor} y2={floor} />
+              <line x1={hx0} x2={G.hatch[0]} y1={floor} y2={floor} />
+              <line x1={G.hatch[1]} x2={hx1} y1={floor} y2={floor} />
               <line x1={G.hatch[0]} x2={G.hatch[0] + 16} y1={floor} y2={floor + 14} />
               <line x1={G.hatch[1]} x2={G.hatch[1] - 16} y1={floor} y2={floor + 14} />
             </g>}
         <text x={cx0 + cw / 2} y={floor + 34} textAnchor="middle" className="dla-t dla-t--xs">
           {keepOn ? W.hatchKept : W.hatchDropped}
         </text>
-        <circle cx={G.wheels[0]} cy="138" r="6" className="dla-ll-wheel" />
-        <circle cx={G.wheels[1]} cy="138" r="6" className="dla-ll-wheel" />
-        {G.loco && (
+        {!wagon && <circle cx={G.wheels[0]} cy="138" r="6" className="dla-ll-wheel" />}
+        {!wagon && <circle cx={G.wheels[1]} cy="138" r="6" className="dla-ll-wheel" />}
+        {G.loco && loco && (
+          <>
+            <Sprite href={loco} at={ART.loco} w={64} h={32} />
+            <text x={ART.cellX} y="164" textAnchor="middle" className="dla-t dla-t--xs">{SCENE.cell}</text>
+          </>
+        )}
+        {G.loco && !loco && (
           <>
             <path d="M212 130 L212 92 L246 92 L246 78 L280 78 L280 130 Z" className="dla-ll-loco" />
             <rect x="254" y="84" width="18" height="14" rx="2" className="dla-ll-loco__win" />
@@ -132,8 +166,12 @@ export function TrainScene({ model, prev, x, levers, result, target, scale, t, d
       <line x1="0" x2={G.w} y1="145" y2="145" className="dla-ll-rail" />
       <rect x={G.platform[0]} y="132" width={G.platform[1]} height="13" className="dla-ll-platform" />
       <g className={`dla-ll-crate${addOn ? ' dla-ll-on' : ''}`}>
-        <rect x={G.crate} y="86" width="54" height="46" rx="4" />
-        <path d={`M${G.crate} 86 L${G.crate + 54} 132 M${G.crate + 54} 86 L${G.crate} 132`} className="dla-ll-crate__x" />
+        {crate
+          ? <Sprite href={crate} at={{ x: G.crate + 3, y: 88, s: 2 }} w={24} h={24} className="dla-ll-crate__img" />
+          : <>
+              <rect x={G.crate} y="86" width="54" height="46" rx="4" />
+              <path d={`M${G.crate} 86 L${G.crate + 54} 132 M${G.crate + 54} 86 L${G.crate} 132`} className="dla-ll-crate__x" />
+            </>}
         <text x={G.input[0]} y={G.input[1]} textAnchor={G.input[2]} className="dla-t dla-t--xs">{SCENE.input}</text>
         <text x={G.crate + 27} y="114" textAnchor="middle" className="dla-t dla-t--m dla-t--b dla-halo">{n2(x)}</text>
       </g>
@@ -278,11 +316,17 @@ export function StepScene({ step, reveal }) {
 /* ── a question between stations ──────────────────────────────────────── */
 export function SignalScene({ state, model }) {
   const lamp = state === 'right' ? 'go' : state === 'wrong' ? 'stop' : 'wait';
+  const wagon = useSprite('train-wagon.png');
+  const loco = useSprite('train-loco.png');
   return (
     <svg className="dla-svg dla-ll-scene dla-ll-scene--signal" viewBox="0 0 420 90" role="img" aria-label={`The ${model === 'gru' ? 'GRU' : 'LSTM'} train is held at a signal: answer to proceed.`}>
       <line x1="0" x2="420" y1="74" y2="74" className="dla-ll-rail" />
-      <rect x="22" y="40" width="120" height="30" rx="5" className="dla-ll-car" />
-      <path d="M148 70 L148 46 L176 46 L176 38 L196 38 L196 70 Z" className="dla-ll-loco" />
+      {wagon
+        ? <Sprite href={wagon} at={{ x: 10, y: 18, s: 2 }} w={64} h={32} />
+        : <rect x="22" y="40" width="120" height="30" rx="5" className="dla-ll-car" />}
+      {loco
+        ? <Sprite href={loco} at={{ x: 114, y: 10, s: 2 }} w={64} h={32} />
+        : <path d="M148 70 L148 46 L176 46 L176 38 L196 38 L196 70 Z" className="dla-ll-loco" />}
       <line x1="300" x2="300" y1="74" y2="20" className="dla-ll-rule" />
       <rect x="290" y="6" width="20" height="40" rx="4" className="dla-ll-signal" />
       <circle cx="300" cy="18" r="5" className={`dla-ll-lamp${lamp === 'stop' || lamp === 'wait' ? ' dla-ll-lamp--stop' : ''}`} />

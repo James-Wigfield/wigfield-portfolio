@@ -5,6 +5,7 @@ import { RoundShell, Prompt, Feedback } from '../../kit/RoundShell';
 import { Keypad, ShapePad } from '../../kit/Keypad';
 import { Choice } from '../../kit/Choice';
 import { rng } from '../../core/rng';
+import { useSprite } from '../../core/art.js';
 import { makeItems, fmtShape } from '../../maths/paramSniper';
 import './param-sniper.css';
 
@@ -20,6 +21,8 @@ import './param-sniper.css';
 
    Items: maths/paramSniper.js (seeded; verified maths). Content and slide
    receipts: content/param-sniper.js.
+   Pixel art (optional, core/art.js): a card badge on the spec and a reticle
+   on the firing line once they load; the plain card and red line otherwise.
    ========================================================================== */
 const INTRO = {
   line: 'Count the parameters before the spec reaches the line.',
@@ -66,14 +69,18 @@ function ItemStage({ item, round, share }) {
   const submitShape = () => { if (shape.every((v, i) => v !== '' || item.answer[i] === null)) round.submit(shape.map((v, i) => (item.answer[i] === null ? null : Number(v)))); };
   // the ShapePad shows the batch axis as a fixed leading "None" slot
   const fixed = item.kind === 'shape' ? ['None', ...item.answer.map((d) => (d === null ? 'None' : undefined))] : [];
+  const card = useSprite('spec-card.png');
+  const sight = useSprite('sight.png');
 
   return (
     <>
       <div className="dla-floor dla-ps__floor">
-        <div className="dla-ps__belt" aria-hidden="true">
+        <div className={`dla-ps__belt${sight ? ' dla-ps__belt--art' : ''}`} aria-hidden="true">
           <span className="dla-ps__line" />
+          {sight && <img className="dla-sprite dla-ps__sight" src={sight} alt="" width={64} height={64} />}
         </div>
-        <div className={`dla-ps__spec${round.feedback ? (round.feedback.correct ? ' dla-ps__spec--hit' : ' dla-ps__spec--miss') : ''}`} style={{ '--t': t }}>
+        <div className={`dla-ps__spec${card ? ' dla-ps__spec--art' : ''}${round.feedback ? (round.feedback.correct ? ' dla-ps__spec--hit' : ' dla-ps__spec--miss') : ''}`} style={{ '--t': t }}>
+          {card && <img className="dla-sprite dla-ps__badge" src={card} alt="" width={96} height={64} />}
           <pre className="dla-ps__code" aria-label="Layer specification">
             {item.lines.map((l, i) => <span key={i} className={`dla-ps__ln${i === item.lines.length - 1 && item.lines.length <= 3 ? ' dla-ps__ln--hot' : ''}`}>{l}</span>)}
           </pre>
