@@ -84,7 +84,7 @@ export const CONCEPTS = [
   { id: 'gru.cell', lecture: 4, title: 'The GRU cell as a simplified LSTM', slides: [48], hard: 3,
     summary: 'Both state vectors are merged into h(t); one gate controller z controls both the forget and the input gate; there is no output gate, the full state is output every step.' },
   { id: 'gru.update', lecture: 4, title: 'GRU computations (z, r, g, h)', slides: [49], hard: 3,
-    summary: 'z and r use σ, g uses tanh with the reset gate applied on the h path, and h(t) = z ⊗ h(t−1) + (1 − z) ⊗ g.' },
+    summary: 'z and r use σ, g uses tanh with the gate r applied on the h path, and h(t) = z ⊗ h(t−1) + (1 − z) ⊗ g.' },
   { id: 'params.gru', lecture: 4, title: 'GRU parameter count (1,401)', slides: [49], hard: 3,
     summary: 'GRU(20) on a univariate input plus Dense(1) has 1,401 trainable parameters (Keras counts two bias vectors per block).' },
   { id: 'conv1d.sequences', lecture: 4, title: '1D convolution layers for sequences', slides: [50], hard: 2,

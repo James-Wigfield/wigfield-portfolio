@@ -93,7 +93,7 @@ export const CARDS = {
     },
     deliver: {
       concept: 'lstm.equations', src: L47, answer: { f: 1, i: 0, o: 1 },
-      line: 'The cargo is due here: deliver it, and keep it aboard.',
+      line: 'The cargo is due here: deliver it, and keep it aboard. Leave the crate.',
       sub: 'Read c(t) out to h(t) and y(t); keep c(t−1); add nothing.',
       why: 'Delivering is the output gate: $\\mathbf{y}_{(t)} = \\mathbf{h}_{(t)} = \\mathbf{o}_{(t)} \\otimes \\tanh(\\mathbf{c}_{(t)})$ with $\\mathbf{o} \\approx 1$. Keep $\\mathbf{f} \\approx 1$: $\\mathbf{h}_{(t)}$ reads the NEW $\\mathbf{c}_{(t)}$, so erasing at this station would deliver nothing.',
     },
@@ -215,7 +215,7 @@ export const QUESTIONS = {
       answer: 'hWh',
       why: 'Slide 9: $\\mathbf{h}_{(t)}^{\\top} = \\varphi_h(\\mathbf{h}_{(t-1)}^{\\top}\\mathbf{W}_h + \\mathbf{x}_{(t)}^{\\top}\\mathbf{W}_x + \\mathbf{b}_h^{\\top})$: the previous state enters through $\\mathbf{h}_{(t-1)}^{\\top}\\mathbf{W}_h$ ($\\mathbf{W}_h$ is $n_{\\text{neurons}} \\times n_{\\text{neurons}}$); $\\mathbf{h}_{(t)}^{\\top}\\mathbf{W}_y$ belongs to the output line.' },
     { id: 'fade', drawer: true, concept: 'rnn.longSeq', src: { lecture: 4, slides: [40, 42] }, picture: 'fade', hard: 2,
-      prompt: 'At the end of this run, which crate leaves the weakest trace in h(t)?',
+      prompt: 'Which leaves the weaker trace in h(t) at the end of the run: the first crate or the last?',
       choices: [
         { value: 'first', label: 'the first crate, loaded at t = 1', aria: 'the first crate, loaded at t = 1' },
         { value: 'last', label: 'the last crate', aria: 'the last crate' },
@@ -279,7 +279,7 @@ export const QUESTIONS = {
     { id: 'act.f', concept: 'lstm.equations', src: { lecture: 4, slides: [46, 47] }, hard: 2,
       prompt: 'Which activation does the forget gate f(t) use?',
       choices: 'ACT', answer: 'sigma',
-      why: 'Slides 46–47: the three gate controllers $\\mathbf{f}, \\mathbf{i}, \\mathbf{o}$ use the logistic activation $\\sigma$, so their outputs range from 0 to 1; only the main layer $\\mathbf{g}$ uses $\\tanh$.' },
+      why: 'Slides 46–47: the three gate controllers $\\mathbf{f}, \\mathbf{i}, \\mathbf{o}$ use the logistic activation $\\sigma$, so their outputs range from 0 to 1; of the four FC layers, only $\\mathbf{g}$ uses $\\tanh$.' },
     { id: 'act.i', concept: 'lstm.equations', src: { lecture: 4, slides: [46, 47] }, hard: 2,
       prompt: 'Which activation does the input gate i(t) use?',
       choices: 'ACT', answer: 'sigma',
@@ -323,7 +323,7 @@ export const QUESTIONS = {
       answer: 'c',
       why: 'Slide 43: LSTM cells manage two state vectors, $\\mathbf{h}_{(t)}$ and $\\mathbf{c}_{(t)}$ (“c” for “cell”); think of $\\mathbf{h}_{(t)}$ as the short-term state and $\\mathbf{c}_{(t)}$ as the long-term state.' },
     { id: 'straight', concept: 'lstm.gates', src: { lecture: 4, slides: [44, 45] }, hard: 2,
-      prompt: 'After the forget gate and the addition, the new c(t) is …',
+      prompt: 'After the forget gate and the addition, the new c(t) passed on to the next time step is …',
       choices: [
         { value: 'straight', label: 'sent straight out, without any further transformation', aria: 'sent straight out, without any further transformation' },
         { value: 'tanh', label: 'passed through tanh before it leaves the cell', aria: 'passed through tanh before it leaves the cell' },
