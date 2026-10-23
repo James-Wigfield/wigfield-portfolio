@@ -34,7 +34,7 @@ export const RULES = {
   // ── height and width of a convolution ────────────────────────────────
   valid1: {
     concept: 'shape.conv2d',
-    src: { lecture: 3, slides: [18, 20] },
+    src: { lecture: 3, slides: [17, 18, 20] },
     text: 'padding="valid"{how} keeps the {f} window inside the image, so each axis loses $f - 1$ pixels: {calc}, as slide 18’s 70 × 120 → 64 × 114 with kernel_size=7.',
   },
   same1: {
@@ -67,7 +67,7 @@ export const RULES = {
   pool: {
     concept: 'shape.pool',
     src: { lecture: 3, slides: [28, 26, 29] },
-    text: '{layer}: strides default to the pool size and padding to "valid" (slide 28), so the {p} × {p} windows tile the map: {calc}; each channel is pooled on its own, so the depth stays {c} (slides 26, 29).',
+    text: '{layer}: strides default to the pool size and padding to "valid" (slide 28), so the {p} × {p} windows tile the map (slide 26): {calc}; each channel is pooled on its own, so the depth stays {c} (slide 29).',
   },
   poolSame: {
     concept: 'shape.pool',
@@ -98,7 +98,7 @@ export const RULES = {
   // ── stacks ────────────────────────────────────────────────────────────
   stack: {
     concept: 'shape.conv2d',
-    src: { lecture: 3, slides: [13] },
+    src: { lecture: 3, slides: [13, 29] },
     text: 'Layer by layer: {steps}. Depth = the last Conv2D’s filters; pooling keeps it (slides 13, 29).',
   },
   // ── receptive field ───────────────────────────────────────────────────
@@ -157,8 +157,8 @@ export const TABLE_STACKS = [
       { type: 'MaxPool2D', pool: 3, strides: 2 },
     ],
     printed: [[55, 55, 96], [27, 27, 96]],
-    why: 'Slide 39’s AlexNet table prints C1: 96 maps of 55 × 55 (11 × 11, stride 4, valid) and S2: 96 maps of 27 × 27 (3 × 3 max pooling, stride 2, valid). Max pooling keeps the 96 maps (slide 29).',
-    src: { lecture: 3, slides: [39] },
+    why: 'Slide 39’s AlexNet table prints C1: 96 maps of 55 × 55 (11 × 11, stride 4, valid) and S2: 96 maps of 27 × 27 (3 × 3 max pooling, stride 2, valid). In the slides’ terms: 227 − 11 + 1 = 217 window positions, every 4th kept: 55; then 55 − 3 + 1 = 53, every 2nd kept: 27. Max pooling keeps the 96 maps (slide 29).',
+    src: { lecture: 3, slides: [29, 39] },
   },
   {
     id: 'alexnet-c3c5',
@@ -170,7 +170,7 @@ export const TABLE_STACKS = [
       { type: 'Conv2D', filters: 384, kernel: 3, padding: 'same' },
     ],
     printed: [[27, 27, 256], [13, 13, 256], [13, 13, 384]],
-    why: 'Slide 39’s AlexNet table prints C3: 256 maps of 27 × 27 (5 × 5, stride 1, same), S4: 256 maps of 13 × 13 (3 × 3 max pooling, stride 2, valid) and C5: 384 maps of 13 × 13 (3 × 3, stride 1, same).',
+    why: 'Slide 39’s AlexNet table prints C3: 256 maps of 27 × 27 (5 × 5, stride 1, same), S4: 256 maps of 13 × 13 (3 × 3 max pooling, stride 2, valid) and C5: 384 maps of 13 × 13 (3 × 3, stride 1, same). In the slides’ terms: "same" keeps 27 × 27, the pool fits 27 − 3 + 1 = 25 window positions and keeps every 2nd: 13, and "same" keeps 13 × 13; pooling keeps the 256 maps and C5’s 384 filters set the depth.',
     src: { lecture: 3, slides: [39] },
   },
 ];
@@ -180,6 +180,7 @@ export const SLIDE18 = {
   input: [70, 120, 3],
   spec: { type: 'Conv2D', filters: 32, kernel: 7 },
   src: { lecture: 3, slides: [17, 18] },
+  paramsSrc: { lecture: 3, slides: [19] }, // its bonus: slide 19 prints this layer's kernels (7, 7, 3, 32) and biases (32,)
 };
 
 /* Prompts and stage labels. */
@@ -208,7 +209,7 @@ export const LABELS = {
 
 /* "Show the maths" drawer lines (slides' notation; $…$ is KaTeX). */
 export const MATHS = {
-  valid: 'padding="valid" (the default): the window stays inside, $n - f + 1$ positions per axis (slides 18, 20).',
+  valid: 'padding="valid" (the default) means no padding (slide 28): the window stays inside, $n - f + 1$ positions per axis (slides 18, 20; slide 37’s $f = 5$: $32 - 5 + 1 = 28$).',
   same: 'padding="same": zero padding keeps all $n$ positions (slide 20).',
   stride: 'strides=$s$ keeps every $s$-th position: the stride is the distance between consecutive receptive fields (slides 9, 21).',
   depth: 'Depth = number of filters: $n$ filters give $n$ feature maps (slide 13).',

@@ -42,7 +42,7 @@ export const CONCEPTS = [
     summary: 'MaxPool2D(pool_size=2): strides default to the kernel size and "valid" padding (no padding at all) is assumed.' },
   { id: 'params.pool', lecture: 3, title: 'Pooling layers have no parameters', slides: [25, 29], hard: 1,
     summary: 'Pooling kernels have no weights to learn; they are just stateless sliding windows.' },
-  { id: 'shape.pool', lecture: 3, title: 'Output shape of a pooling layer', slides: [26, 29, 37, 39], hard: 2,
+  { id: 'shape.pool', lecture: 3, title: 'Output shape of a pooling layer', slides: [26, 28, 29, 37, 39, 42], hard: 2,
     summary: 'Pooling works on every channel independently, so output depth equals input depth; a 2×2 kernel with stride 2 halves height and width.' },
   { id: 'pool.depthwise', lecture: 3, title: 'Depthwise max pooling', slides: [29, 30], hard: 2,
     summary: 'Pooling over the depth dimension keeps height and width but reduces channels; it can make the CNN invariant to rotation. Keras has no such layer.' },

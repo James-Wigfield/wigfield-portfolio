@@ -176,7 +176,11 @@ function layerWhy(row, { multi = false } = {}) {
 
 function paramsWhy(row) {
   const spec = row.spec;
-  if (spec.type !== 'Conv2D') return { text: RULES.poolParams.text, src: RULES.poolParams.src, concept: RULES.poolParams.concept };
+  if (spec.type !== 'Conv2D') {
+    // GlobalAvgPool2D: slide 31 names the layer ("Similar to AveragePooling2D")
+    const src = spec.type === 'GlobalAvgPool2D' ? union(RULES.poolParams.src, RULES.gap.src) : RULES.poolParams.src;
+    return { text: RULES.poolParams.text, src, concept: RULES.poolParams.concept };
+  }
   const [fh, fw] = pair(spec.kernel);
   const c = row.in[2];
   return {
@@ -191,9 +195,10 @@ function shapeMaths(drop, multi) {
   const lines = [];
   const rules = new Set(drop.rows.map((r) => r.rule));
   const hasConv = drop.rows.some((r) => r.spec.type === 'Conv2D');
-  if (rules.has('valid1') || rules.has('valid2')) lines.push({ text: MATHS.valid });
+  // poolOther (AlexNet's 3 × 3, stride 2 pool) is sized by n − f + 1 positions, every s-th kept
+  if (rules.has('valid1') || rules.has('valid2') || rules.has('poolOther')) lines.push({ text: MATHS.valid });
   if (rules.has('same1') || rules.has('same2')) lines.push({ text: MATHS.same });
-  if (rules.has('same2') || rules.has('valid2')) lines.push({ text: MATHS.stride });
+  if (rules.has('same2') || rules.has('valid2') || rules.has('poolOther')) lines.push({ text: MATHS.stride });
   if (hasConv) lines.push({ text: MATHS.depth });
   if (multi) {
     lines.push({ text: MATHS.filterSize });
@@ -271,7 +276,7 @@ function shapeItem(level, dropId, drop, { multi = false, title = null, table = n
   };
 }
 
-function paramsItem(level, dropId, drop, { weight = 1.4 } = {}) {
+function paramsItem(level, dropId, drop, { weight = 1.4, extraSrc = null } = {}) {
   const single = drop.rows.length === 1;
   let why;
   let src;
@@ -287,6 +292,7 @@ function paramsItem(level, dropId, drop, { weight = 1.4 } = {}) {
     src = RULES.stackParams.src;
     concept = drop.rows.some((r) => r.spec.type === 'Conv2D') ? RULES.stackParams.concept : RULES.poolParams.concept;
   }
+  if (extraSrc) src = union(src, extraSrc);
   return {
     id: nextId(level, 'params'),
     drop: dropId,
@@ -517,7 +523,7 @@ export function makeItems(rand, level = 1) {
     if (rand.chance(0.35)) {
       const drop = buildDrop(SLIDE18.input, [SLIDE18.spec]);
       const id = did();
-      items.push(shapeItem(1, id, drop), paramsItem(1, id, drop));
+      items.push(shapeItem(1, id, drop), paramsItem(1, id, drop, { extraSrc: SLIDE18.paramsSrc }));
     } else items.push(...convDrop(rand, 1, did(), { padding: 'valid', stride: 1 }));
     items.push(...convDrop(rand, 1, did(), { padding: 'same', stride: 1 }));
     items.push(...convDrop(rand, 1, did(), { padding: rand.pick(['valid', 'same']), stride: 1 }));
