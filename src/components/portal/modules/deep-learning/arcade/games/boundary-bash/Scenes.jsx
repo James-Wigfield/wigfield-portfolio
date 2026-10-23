@@ -114,7 +114,7 @@ export function Plane({ scene, reveal = false, given = null, answer = null }) {
           <text className="dla-t dla-halo dla-bb__xl" x={probeAt[0]} y={probeAt[1]} textAnchor="middle">{vec(probe.x)}</text>
         </g>
       )}
-      {fresh && <text className="dla-t dla-halo dla-bb__fresh" x={V.sx(LO) + 8} y={V.sy(HI) + 16}>{LABELS.fresh}</text>}
+      {fresh && <text className="dla-t dla-halo dla-bb__fresh" x={V.sx(LO) + 8} y={V.sy(HI) + 16}>{LABELS.fresh[fresh]}</text>}
     </svg>
   );
 }

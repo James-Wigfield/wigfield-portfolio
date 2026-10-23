@@ -119,6 +119,8 @@ function newWorld(rand, eta) {
 
 // a fresh batch once the current one is separated (keeps w: the boundary carries on)
 function newBatch(rand, st) {
+  // 'separated' only if the current w gets no point of the old batch wrong (skipped z = 0 points included)
+  const separated = misCount(st.w, st.b, st.pool) === 0;
   const made = makePool(rand, st.b, st.w);
   if (made) {
     st.pool = made.pool;
@@ -129,7 +131,7 @@ function newBatch(rand, st) {
   st.used = new Set();
   st.hist = [];
   st.batch += 1;
-  st.fresh = true;
+  st.fresh = separated ? 'separated' : 'batch';
 }
 
 function candidates(st, want, filter) {
@@ -155,7 +157,7 @@ function takePoint(rand, st, want, filter = null, depth = 0) {
   if (!c.length && want === 'ok') return takePoint(rand, st, 'mis', filter, depth + 1);
   if (!c.length) {
     // pathological: start over in a fresh world (and drop the filter if it keeps failing)
-    Object.assign(st, newWorld(rand, st.eta), { batch: st.batch + 1, fresh: true });
+    Object.assign(st, newWorld(rand, st.eta), { batch: st.batch + 1, fresh: 'batch' });
     return takePoint(rand, st, want, depth > 20 ? null : filter, depth + 1);
   }
   return rand.pick(c);
@@ -321,7 +323,8 @@ function updItem(rand, st, id, show, trap) {
     scene: planeScene(st, { cur: { x: p.x, y: p.y, yhat: p.yhat, z: p.z, showYhat: show }, after: next, ask: i }),
     maths: ruleMaths(st),
   };
-  if (!show) item.src = { lecture: 1, slides: [4, 5, 10] };
+  // hidden ŷ cites slides 4–5; a point already on its correct side cites slide 9 (whyStay)
+  if (!show || p.y === p.yhat) item.src = { lecture: 1, slides: [...(show ? [] : [4, 5]), ...(p.y === p.yhat ? [9] : []), 10] };
   advance(st, p, next);
   return item;
 }

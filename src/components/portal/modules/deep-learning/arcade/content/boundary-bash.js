@@ -59,7 +59,7 @@ export const LABELS = {
   y0: 'y = 0',
   side1: 'ŷ = 1 side',
   probe: 'probe',
-  fresh: 'separated · new batch',
+  fresh: { separated: 'separated · new batch', batch: 'new batch' },
   w: 'w',
   fixed: 'fixed',
   hidden: '?',
@@ -418,15 +418,15 @@ export const CONCEPT_L3 = {
   b: [
     {
       id: 'converge', concept: 'perceptron.boundary', kind: 'choice',
-      prompt: 'On XOR, the learning rule never settles. Why?',
+      prompt: 'Why does the Perceptron convergence theorem not promise a solution on XOR?',
       choices: [
-        { value: 'separable', label: 'XOR is not linearly separable, so the convergence theorem does not apply' },
+        { value: 'separable', label: 'XOR is not linearly separable, and the theorem covers only linearly separable data' },
         { value: 'eta', label: 'the learning rate η is too large' },
         { value: 'order', label: 'the instances arrive one at a time' },
       ],
       answer: 'separable',
-      why: 'Slide 12: the Perceptron convergence theorem promises a solution when the training instances are linearly separable, and slide 16’s XOR points are not: every single line gets one of them wrong, so there is always a wrong prediction to update on (slides 9–10).',
-      src: S(9, 10, 12, 16),
+      why: 'Slide 12: the Perceptron convergence theorem promises a solution only when the training instances are linearly separable, and slide 16’s XOR points are not: no single straight line puts both squares on one side and both triangles on the other. The theorem’s condition is on the data, not on the learning rate η or on feeding one instance at a time (slide 9).',
+      src: S(9, 12, 16),
     },
     {
       id: 'stack', concept: 'mlp.xor', kind: 'choice',
