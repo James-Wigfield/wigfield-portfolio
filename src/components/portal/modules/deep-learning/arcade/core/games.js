@@ -15,6 +15,8 @@ import longLine from '../games/long-line/index.js';
 import bottleneck from '../games/bottleneck/index.js';
 import latentSurfer from '../games/latent-surfer/index.js';
 import chainReaction from '../games/chain-reaction/index.js';
+import boundaryBash from '../games/boundary-bash/index.js';
+import signalKeeper from '../games/signal-keeper/index.js';
 
 export const GAMES = [
   paramSniper,
@@ -25,6 +27,8 @@ export const GAMES = [
   bottleneck,
   latentSurfer,
   chainReaction,
+  boundaryBash,
+  signalKeeper,
 ].filter(Boolean);
 
 // Lazy React components, created once here (never during a render).
