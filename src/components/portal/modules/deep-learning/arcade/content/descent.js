@@ -156,12 +156,13 @@ export const WINS = {
     why: 'AdaGrad’s $\\mathbf{s}$ only grows, so its learning rate gets scaled down so much that it stalls before the flag on a long course: it often stops too early. Plain gradient descent keeps the same η, so the steady slope of the valley floor carries it all the way.',
     src: L2(34, 40),
   },
-  // the six-club bowl: the slides rank AdaGrad only against GD (38–40) and RMSProp (42)
+  // the six-club bowl: slides 38–40 and 42 compare AdaGrad with GD and RMSProp; Table 11-2
+  // (slide 47) rates convergence speed, but no slide says AdaGrad beats the others on a bowl
   'bowl.adagrad.six': {
-    why: 'Gradient descent goes quickly down the steepest slope, then very slowly along the bottom of the valley. AdaGrad scales the gradient down along the steepest dimensions, $\\theta \\leftarrow \\theta - \\eta \\nabla_\\theta J(\\theta) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}$, so it points more toward the global minimum; it frequently performs well on simple quadratic problems like this bowl. That it also beats momentum, NAG and Adam here is this scorecard’s result, not a slide claim.',
-    src: L2(38, 39, 40, 42),
+    why: 'Gradient descent goes quickly down the steepest slope, then very slowly along the bottom of the valley. AdaGrad scales the gradient down along the steepest dimensions, $\\theta \\leftarrow \\theta - \\eta \\nabla_\\theta J(\\theta) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}$, so it points more toward the global minimum; it frequently performs well on simple quadratic problems like this bowl. Table 11-2 (slide 47) rates AdaGrad’s convergence speed ★★★, above momentum and NAG (★★) and level with RMSProp and Adam; that it holes first here is this scorecard’s result, not a slide claim.',
+    src: L2(38, 39, 40, 42, 47),
     beyond: true,
-    note: 'The slides compare AdaGrad only with gradient descent (slides 38–40) and RMSProp (slide 42); they do not rank it against momentum, NAG or Adam. The par club here is decided by the simulation.',
+    note: 'Table 11-2 (slide 47) rates convergence speed only: SGD ★, momentum and NAG ★★, AdaGrad, RMSProp and Adam ★★★. It ranks AdaGrad above momentum and NAG and level with Adam, but no slide says AdaGrad beats them on a bowl; the par club here is decided by the hole’s simulation.',
   },
   'bowl.adagrad.vsRms': {
     why: 'RMSProp almost always performs much better than AdaGrad, except on very simple problems, and this elongated bowl is one: AdaGrad scales the gradient down along the steep dimension and its decaying learning rate settles it in the cup, as on simple quadratic problems.',

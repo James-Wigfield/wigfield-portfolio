@@ -239,7 +239,7 @@ export const FACTS = [
     why: 'Slide 14 returns tf.random.normal(tf.shape(logvar)) * tf.exp(logvar / 2) + mean. With γ = log(σ²) (slide 12), $\\exp(\\gamma/2) = \\sigma$, so this is Figure 17-11’s σ × noise + μ; tf.exp(logvar) would be σ², the variance.',
   },
   {
-    id: 'wiring', level: 1, concept: 'vae.sampling', src: { lecture: 6, slides: [11] }, eq: null,
+    id: 'wiring', level: 1, concept: 'vae.sampling', src: { lecture: 6, slides: [11, 12] }, eq: null,
     prompt: 'Figure 17-11 (slide 11): the Gaussian noise is…',
     choices: [
       { label: 'multiplied by Codings σ, then Codings μ is added', text: 'multiplied by Codings σ, then Codings μ is added' },

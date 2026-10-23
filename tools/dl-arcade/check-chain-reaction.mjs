@@ -13,7 +13,10 @@
       right, a mutated one wrong), the answer recomputed independently from
       the numbers the item shows, and the beyond rule: every item that uses
       a derivative other than σ′ (slide 20) or slide 11's (ŷ − y)·x carries
-      `beyond: true`, a note, and "beyond the slides" on its prompt.
+      `beyond: true`, a note, and "beyond the slides" on its prompt. Every
+      tanh reverse step (those rounds plus 2,000 more level-3 rounds) grades
+      against two keys at ±0.01 each (exact z, and the 2-decimal h on show):
+      both pass, σ′ in place of tanh′ fails, and z is never within 0.5 of 0.
    4. Task cards against slides 27 and 31's tables (encoded here
       independently from the rendered slides).
 
@@ -155,7 +158,7 @@ const BEYOND_TAGS = ['chain', 'dtanh', 'drelu', 'dheaviside', 'dbias'];
 const BEYOND_TEXT = [/\\tanh'/, /tanh′/, /\\mathrm\{ReLU\}'/, /ReLU′/, /1 - \\tanh\^2/, /chain rule/i, /chain-rule/i];
 
 const textOf = (it) => [it.prompt, it.promptText, it.why, it.sub, ...(it.maths ?? []).map((m) => m.tex ?? m.text ?? '')].join(' \n ');
-const seen = { tasks: new Set(), curves: { act: new Set(), deriv: new Set() }, slideCollapse: 0, beyond: new Map(), fdItems: 0, fdDrift: 0, kinds: new Set() };
+const seen = { tasks: new Set(), curves: { act: new Set(), deriv: new Set() }, slideCollapse: 0, beyond: new Map(), fdItems: 0, fdDrift: 0, kinds: new Set(), tanhSteps: 0 };
 
 function recompute(it) {
   // the answer from the numbers the item shows (independent of the generator's arithmetic)
@@ -179,10 +182,27 @@ function recompute(it) {
     const k = Number(t[2]);
     if (n.act === 'sigmoid') return round2(vals.e * n.v[k] * led[`ds${k}`]);
     if (n.act === 'tanh') {
-      // graded from the exact z on show; the tolerance must also accept working from the 2-decimal h
+      // two keys at ±0.01 each: the exact z on show, and the 2-decimal h on show (re-audit row 60)
+      const exact = round2(vals.e * n.v[k] * (1 - Math.tanh(vals.z[k]) ** 2));
       const fromH = round2(vals.e * n.v[k] * (1 - vals.h[k] ** 2));
-      ok(grade(it, fromH) === true, `${it.id}: working from the shown h (${fromH}) grades wrong against ${it.answer} ±${it.tol}`);
-      return round2(vals.e * n.v[k] * (1 - Math.tanh(vals.z[k]) ** 2));
+      ok(it.tol === 0.01 && typeof it.check === 'function', `${it.id}: tanh step is not a two-key ±0.01 check (tol ${it.tol})`);
+      ok(Array.isArray(it.keys) && it.keys.length === 2 && near(it.keys[0], exact, 1e-9) && near(it.keys[1], fromH, 1e-9), `${it.id}: keys ${JSON.stringify(it.keys)} vs exact ${exact}, shown-h ${fromH}`);
+      for (const key of [exact, fromH]) for (const dv of [-0.01, 0, 0.01]) {
+        const g = round2(key + dv);
+        ok(grade(it, g) === true, `${it.id}: ${g} (key ${key} ${dv >= 0 ? '+' : ''}${dv}) grades wrong`);
+      }
+      // outside ±0.01 of both keys grades wrong
+      const lo = Math.min(exact, fromH) - 0.02;
+      const hi = Math.max(exact, fromH) + 0.02;
+      ok(grade(it, round2(lo)) === false && grade(it, round2(hi)) === false, `${it.id}: ${round2(lo)} or ${round2(hi)} grades right (keys ${exact}, ${fromH})`);
+      // σ′(z) in place of tanh′(z) is a wrong working and must grade wrong
+      const s = 1 / (1 + Math.exp(-vals.z[k]));
+      const slip = round2(vals.e * n.v[k] * s * (1 - s));
+      ok(grade(it, slip) === false, `${it.id}: σ′ in place of tanh′ (${slip}) grades right against ${exact} / ${fromH}`);
+      // never at z = 0, where tanh′ = 1 and skipping the derivative gives the exact key (row 61)
+      ok(Math.abs(vals.z[k]) >= 0.5, `${it.id}: tanh step asked at z = ${vals.z[k]}`);
+      seen.tanhSteps += 1;
+      return exact;
     }
     return round2(vals.e * n.v[k] * (vals.z[k] > 0 ? 1 : 0));
   }
@@ -270,6 +290,14 @@ for (const level of [1, 2, 3]) {
     }
   }
 }
+// the tanh reverse step over 2,000 more level-3 rounds: both keys pass, the σ′ slip fails, |z| ≥ 0.5
+for (let seed = 1; seed <= 2000; seed++) {
+  const it = M.makeItems(rng(seed * 104729 + 3), 3).find((x) => x.id === 'cr3-dz');
+  if (it?.stage?.net?.act !== 'tanh') continue;
+  const rc = recompute(it);
+  ok(near(rc, it.answer, 1e-9), `tanh sweep seed ${seed}: recomputed ${rc} ≠ answer ${it.answer}`);
+}
+ok(seen.tanhSteps > 500, `only ${seen.tanhSteps} tanh reverse steps checked`);
 ok(seen.tasks.size === C.TASKS.length, `only ${seen.tasks.size}/${C.TASKS.length} task cards appear in 30 rounds`);
 ok(seen.curves.act.size === 4 && seen.curves.deriv.size === 4, 'not every Figure 10-8 curve appears');
 ok(seen.slideCollapse > 0, "slide 23's own example never appears");
@@ -311,6 +339,7 @@ ok(C.STEPS.list.map((s) => s.id).join() === 'forward,error,reverse,gd', "slide 1
 console.log(`Chain Reaction check: ${checks} assertions`);
 console.log(`  finite differences: max |analytic − numeric| = ${fdMax.toExponential(2)} over ${3 * 300 + 1} nets; ${seen.fdItems} asked gradients checked, max drift from the 2-decimal display ${seen.fdDrift.toFixed(4)}`);
 console.log(`  item kinds: ${[...seen.kinds].join(', ')}; task cards seen: ${seen.tasks.size}/${C.TASKS.length}; slide 23's own example ${seen.slideCollapse}×`);
+console.log(`  tanh reverse steps: ${seen.tanhSteps} checked (both keys ±0.01 pass, σ′ in place of tanh′ fails, |z| ≥ 0.5)`);
 console.log(`  beyond items per round type: ${[...seen.beyond].map(([k, n]) => `${k} ×${n}`).join(', ')}`);
 if (failures.length) {
   console.log(`\n${failures.length} FAILURE(S):`);

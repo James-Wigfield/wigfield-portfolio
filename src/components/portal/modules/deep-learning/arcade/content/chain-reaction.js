@@ -240,7 +240,7 @@ export const T = {
       note: 'tanh′(z) = 1 − tanh²(z) is standard; the deck shows the tanh derivative only as a curve (Figure 10-8), and the chain rule is not printed.',
       prompt: 'Reverse pass through a tanh neuron: $\\partial\\mathcal{L}/\\partial z_%k% = (\\hat{y} - y)\\,v_%k%\\,(1 - h_%k%^2)$.',
       promptText: '∂ℒ/∂z%K% through tanh with ŷ − y = %e%, v%K% = %v%, h%K% = tanh(z%K%) = %h%',
-      why: 'Beyond the slides: $\\tanh\'(z) = 1 - \\tanh^2(z)$ (Figure 10-8 shows only its curve, peaking at 1.0 at $z = 0$), and the chain rule gives $(\\hat{y} - y)\\,v_%k%\\,(1 - \\tanh^2 z_%k%)$. Graded from the exact $z_%k% = %z%$: $%ep% \\times %vp% \\times (1 - \\tanh^2(%z%)) = %ans%$. From the shown $h_%k%$ (2 decimals): $%ep% \\times %vp% \\times (1 - %hp%^2) = %ansh%$. The ±%tol% tolerance accepts both ways of working.',
+      why: 'Beyond the slides: $\\tanh\'(z) = 1 - \\tanh^2(z)$ (Figure 10-8 shows only its curve, peaking at 1.0 at $z = 0$), and the chain rule gives $(\\hat{y} - y)\\,v_%k%\\,(1 - \\tanh^2 z_%k%)$. Graded from the exact $z_%k% = %z%$: $%ep% \\times %vp% \\times (1 - \\tanh^2(%z%)) = %ans%$. From the shown $h_%k%$ (2 decimals): $%ep% \\times %vp% \\times (1 - %hp%^2) = %ansh%$. Either value is accepted, ±%tol% of each.',
       maths: [{ text: 'Beyond the slides: $\\tanh\'(z) = 1 - \\tanh^2(z)$, then the chain rule.' }, { tex: '\\partial\\mathcal{L}/\\partial z_%k% = %ep% \\times %vp% \\times (1 - %hp%^2)' }],
     },
     relu: {
@@ -347,8 +347,10 @@ export const TASKS = [
 
 /* Game tuning (rules of play, not slide facts). */
 export const TUNING = {
-  // tanh: L3's reverse step is graded from the exact z; 0.04 also accepts working from the 2-decimal h
-  tol: { exact: 0.01, curve: 0.05, product: 0.01, chain: 0.02, tanh: 0.04 },
+  // tanh: L3's reverse step has two keys, the exact-z value and the shown-h value, each ±0.01;
+  // its z is at least 0.5 from 0 (at z = 0 tanh′ = 1, so skipping the derivative gives the key)
+  tol: { exact: 0.01, curve: 0.05, product: 0.01, chain: 0.02, tanh: 0.01 },
+  tanhMinAbsZ: 0.5,
   eta: [0.1, 0.5],
   // level 2's per-item fuse: a share of the round clock, clamped (ms)
   fuse: { share: 0.22, minMs: 9000, maxMs: 15000, untimedMs: 15000 },

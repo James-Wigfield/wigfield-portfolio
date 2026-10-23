@@ -114,11 +114,15 @@ export const RULES = {
   },
 };
 
+// return_sequences shapes: slide 29 sets return_sequences=True to stack recurrent layers (slide
+// 28 draws the stack), but no slide in the seven decks prints (None, None, units) (re-audit row 25)
+const SEQ_NOTE = 'Slide 29 sets return_sequences=True on every recurrent layer but the last (slide 28 draws the stack), but no slide prints the resulting shape; (None, None, units), one units-vector per time step, is Keras’s.';
+
 export const SHAPE_RULES = {
   Conv2D: {
     concept: 'shape.conv2d',
     src: { lecture: 3, slides: [18, 20, 21] },
-    rule: 'one feature map per filter; with "valid" padding the filter must fit inside the image, so each side loses f − 1 (slide 18: 70 − 7 + 1 = 64, 120 − 7 + 1 = 114); with "same" padding and stride 1 the output keeps the input size (slide 20), and with stride 2 it is about half (slide 21: 10 → 5)',
+    rule: 'one feature map per filter; with "valid" padding the filter must fit inside the image, so each axis loses f − 1 (slide 18: 70 − 7 + 1 = 64, 120 − 7 + 1 = 114); with "same" padding and stride 1 the output keeps the input size (slide 20), and with stride 2 it is about half (slide 21: 10 → 5)',
   },
   MaxPool2D: {
     concept: 'shape.pool',
@@ -149,9 +153,10 @@ export const SHAPE_RULES = {
     concept: 'rnn.deep',
     src: { lecture: 4, slides: [27, 28, 29] },
     rule: 'a recurrent layer outputs one vector of `units` numbers for the last time step, (None, units); with return_sequences=True it outputs one per time step, (None, None, units)',
+    seqNote: SEQ_NOTE,
   },
-  LSTM: { concept: 'rnn.deep', src: { lecture: 4, slides: [27, 28, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True' },
-  GRU: { concept: 'rnn.deep', src: { lecture: 4, slides: [27, 28, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True' },
+  LSTM: { concept: 'rnn.deep', src: { lecture: 4, slides: [27, 28, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True', seqNote: SEQ_NOTE },
+  GRU: { concept: 'rnn.deep', src: { lecture: 4, slides: [27, 28, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True', seqNote: SEQ_NOTE },
   Bidirectional: { concept: 'params.bidirectional', src: { lecture: 8, slides: [7, 14] }, rule: 'the forward and backward outputs are concatenated: twice the wrapped layer’s width (slide 14: two SimpleRNN(16) states become (None, 32))' },
 };
 

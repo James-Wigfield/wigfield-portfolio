@@ -10,7 +10,9 @@
             template's club wins by a clear margin (≤ 80% of the runner-up's
             steps, or the runner-up never holes) AND the losers fail the way
             the why card says (SGD settles in the dimple, AdaGrad stalls short
-            of the flag, momentum swings past the flag in the narrow valley).
+            of the flag, momentum swings past the flag in the narrow valley)
+            AND the same club still wins by the margin when the gradient is
+            nudged by ±1e-8 (parIsRobust).
      dial   SGD's trail at a too-high or too-low η; turn the dial (slide 48)
      clip   the cliff: clipvalue vs clipnorm (slide 29)
      sched  learning-rate schedule power-ups (slides 50–59)
@@ -68,18 +70,34 @@ export const SAMPLERS = {
     const start = [flag[0] - L * c - off * s, flag[1] - L * s + off * c];
     return { kind: 'narrow', p: { a, b, phi }, start, flag, r: 0.3, eta, nMax: 120 };
   },
-  // Known quirk (audit row 31): RMSProp reaches the flag here, then its normalised near-zero
-  // θ₂ gradient (ε = 10⁻¹⁰ inside the root) jitters it, so its par COUNT is sensitive to
-  // ~1e-10 changes in the gradient; the winning club never changes.
+  // Known quirk (audit row 31, re-audit row 40): RMSProp reaches the flag here, then its
+  // normalised near-zero θ₂ gradient (ε = 10⁻¹⁰ inside the root) jitters it, so its par COUNT
+  // is sensitive to ~1e-10 changes in the gradient and, unguarded, the par club could flip.
+  // makeHole() therefore re-swings every hole with the gradient nudged by ±PERTURB and keeps
+  // it only if the same club still wins by the margin (see parIsRobust).
   valley(R) {
     return { kind: 'valley', p: { k: U(R, 0.3, 0.5), w: U(R, 0.8, 1.2), b: U(R, 0.8, 1.2) }, start: [U(R, -4.6, -4), sgn(R) * U(R, 1, 1.6)], flag: [U(R, 3, 4), U(R, -0.3, 0.3)], r: 0.3, eta: r2(U(R, 0.2, 0.3)), nMax: 160 };
   },
 };
 
 /* ── swinging a club and reading the outcome ───────────────────────────── */
-export function swing(spec, club, nMax = spec.nMax) {
+export function swing(spec, club, nMax = spec.nMax, perturb = null) {
   const { grad } = buildHole(spec);
-  return run(club, grad, spec.start, { eta: spec.eta }, nMax, 50);
+  return run(club, perturb ? nudged(grad, perturb) : grad, spec.start, { eta: spec.eta }, nMax, 50);
+}
+
+/* the robustness re-swing (re-audit row 40): the gradient nudged by +PERTURB, by −PERTURB,
+   or by seeded noise in ±PERTURB on every component at every step */
+export const PERTURB = 1e-8;
+export const PERTURB_MODES = ['plus', 'minus', 'noise'];
+function nudged(grad, mode) {
+  if (mode === 'plus') return (th) => grad(th).map((g) => g + PERTURB);
+  if (mode === 'minus') return (th) => grad(th).map((g) => g - PERTURB);
+  let s = 20231;
+  return (th) => grad(th).map((g) => {
+    s = (s * 16807) % 2147483647; // Park–Miller, exact in doubles
+    return g + PERTURB * ((2 * s) / 2147483647 - 1);
+  });
 }
 
 /* the scorecard word for a swing: holed (with steps), diverged, stuck (in
@@ -105,10 +123,10 @@ export function outcome(spec, path, diverged) {
   return { steps: null, status: 'moving' };
 }
 
-export function scoreHole(spec, bag) {
+export function scoreHole(spec, bag, perturb = null) {
   const results = {};
   for (const c of bag) {
-    const { path, diverged } = swing(spec, c);
+    const { path, diverged } = swing(spec, c, spec.nMax, perturb);
     results[c] = { ...outcome(spec, path, diverged), overshoot: overshoot(spec, path) };
   }
   return results;
@@ -131,6 +149,12 @@ export function parOf(results, bag) {
   const next = ranked[1]?.[1] ?? Infinity;
   if (!Number.isFinite(steps) || !(steps <= MARGIN * next)) return null;
   return { club, steps, runnerUp: Number.isFinite(next) ? next : null };
+}
+
+/* par must not hinge on round-off: the same club wins by the margin when every club is
+   re-swung with the gradient nudged by ±PERTURB (and by ±PERTURB noise) */
+export function parIsRobust(spec, bag, club) {
+  return PERTURB_MODES.every((m) => parOf(scoreHole(spec, bag, m), bag)?.club === club);
 }
 
 /* the hole templates: kind, bag, the club the slides' story says wins, the
@@ -158,7 +182,7 @@ export const TEMPLATES = {
     { kind: 'flats', bag: ['sgd', 'adagrad', 'adam'], win: 'adam', tier: 1, need: { adagrad: 'stalled' } },
     { kind: 'narrow', bag: ['sgd', 'momentum', 'nag'], win: 'nag', tier: 1, overshoot: 'momentum' },
     { kind: 'valley', bag: ['sgd', 'adagrad', 'rmsprop'], win: 'rmsprop', tier: 1, need: { adagrad: 'stalled' } },
-    { kind: 'bowl', bag: CLUB_IDS, win: 'adagrad', tier: 2, whyKey: 'bowl.adagrad.six' }, // beyond: no slide ranks AdaGrad against momentum/NAG/Adam
+    { kind: 'bowl', bag: CLUB_IDS, win: 'adagrad', tier: 2, whyKey: 'bowl.adagrad.six' }, // beyond: Table 11-2 (slide 47) rates speed only; no slide says AdaGrad wins a bowl
   ],
 };
 
@@ -173,7 +197,9 @@ export function bowlOrderOk(spec) {
 }
 
 export function makeHole(R, tpl, n) {
-  for (let tries = 0; tries < 60; tries++) {
+  // the valley keeps only about 1 in 16 samples once par must survive the ±1e-8 nudge
+  const maxTries = tpl.kind === 'valley' ? 800 : 60;
+  for (let tries = 0; tries < maxTries; tries++) {
     const spec = SAMPLERS[tpl.kind](R);
     const results = scoreHole(spec, tpl.bag);
     const par = parOf(results, tpl.bag);
@@ -184,6 +210,8 @@ export function makeHole(R, tpl, n) {
     if (tpl.overshoot && !(results[tpl.overshoot].overshoot > spec.r && results[tpl.win].overshoot < results[tpl.overshoot].overshoot)) continue;
     // the elongated bowl must agree with slide 35 / Table 11-2 (slide 47)
     if (tpl.kind === 'bowl' && !bowlOrderOk(spec)) continue;
+    // and the par club survives a ±1e-8 nudge to the gradient (RMSProp's valley jitter, row 40)
+    if (!parIsRobust(spec, tpl.bag, tpl.win)) continue;
     const win = WINS[tpl.whyKey ?? `${tpl.kind}.${tpl.win}`];
     const H = HOLES[tpl.kind];
     const club = CLUBS[tpl.win];
@@ -393,11 +421,14 @@ export function schedCurve(item) {
   }
   if (item.curve === 'performance') {
     const loss = [];
-    // best at epoch 11, no better for epochs 12–16 → η cut at 16, THEN the loss drops at 17
-    // and keeps edging down, so η stays at 0.005 to the end (one cut, as on slide 58)
+    // best at epoch 11, no better for epochs 12–16 → the callback cuts η after epoch 16, so
+    // epoch 17 is the first trained at 0.005 and the loss drops there; it keeps edging down,
+    // so η stays at 0.005 to the end (one cut, as on slide 58)
     for (let e = 0; e <= 24; e++) loss.push(e <= 11 ? 0.48 - 0.1 * (1 - Math.exp(-e / 3)) : e <= 16 ? 0.3826 + 0.0016 * (e - 11) : 0.356 - 0.0004 * (e - 17) + 0.0006 * Math.sin(e));
     const etas = performanceSched(loss, { eta0: 0.01, factor: 0.5, patience: 5 });
-    etas.forEach((eta, t) => pts.push({ t, eta }));
+    // plot the η USED during epoch e (the value after epoch e − 1's callback; η₀ at 0): slide 58
+    // keeps 0.010 through epoch 16 and shows 0.005 from 17, the epoch the loss drops
+    for (let t = 0; t <= 24; t++) pts.push({ t, eta: t === 0 ? 0.01 : etas[t - 1] });
     return { pts, T: 24, loss, mark: null };
   }
   // onecycle (shape only)

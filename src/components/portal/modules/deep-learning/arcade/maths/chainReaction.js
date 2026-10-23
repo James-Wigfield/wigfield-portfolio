@@ -147,7 +147,7 @@ const C_VALS = [-1, -0.5, 0.5, 1];
 // the hand-worked net of tools/dl-arcade/check-chain-reaction.mjs (fallback)
 export const HAND_NET = { act: 'sigmoid', x: [2, -1], W: [[0.5, 1], [1, 2]], b: [0, 0.5], v: [2, -1], c: 0.5 };
 
-export function makeNet(rand, act, { firstNegative = null } = {}) {
+export function makeNet(rand, act, { firstNegative = null, minAbsZ = 0 } = {}) {
   for (let t = 0; t < 4000; t++) {
     const net = {
       act,
@@ -166,10 +166,12 @@ export function makeNet(rand, act, { firstNegative = null } = {}) {
       if (firstNegative === true && z[0] > 0) continue;
       if (firstNegative === false && z[0] < 0) continue;
     } else if (z.some((zz) => Math.abs(zz) > 2)) continue;
+    // a reverse step through tanh never asks at z = 0, where tanh′ = 1 and skipping it gives the key
+    if (minAbsZ && z.some((zz) => Math.abs(zz) < minAbsZ)) continue;
     return net;
   }
-  // HAND_NET's z₁ is 0, where ReLU′ is undefined (slide 21): nudge b₁ so a ReLU net never asks it
-  return act === 'relu' ? { ...HAND_NET, act, b: [1, HAND_NET.b[1]] } : { ...HAND_NET, act };
+  // HAND_NET's z₁ is 0, where ReLU′ is undefined (slide 21) and tanh′ = 1: nudge b₁ so z = (1, 0.5)
+  return act === 'relu' || minAbsZ ? { ...HAND_NET, act, b: [1, HAND_NET.b[1]] } : { ...HAND_NET, act };
 }
 
 // what the player sees: z exact, h and ŷ to 2 decimals (ŷ from the shown h)
@@ -538,21 +540,38 @@ function cardItem(rand, task, id) {
   };
 }
 
+// the tanh reverse step's two right workings (exact z, or the 2-decimal h on show) and the σ′ slip
+export function tanhKeys(e, v, z, h) {
+  return { exact: r2(e * v * (1 - tanh(z) ** 2)), fromH: r2(e * v * (1 - h ** 2)), sigmaSlip: r2(e * v * dSigmoid(z)) };
+}
+const nearKey = (g, key, tol) => Math.abs(Number(g) - key) <= tol + 1e-9;
+
 function dzOtherItem(rand, id) {
   const act = rand.pick(['tanh', 'relu']);
-  const d = withTarget(rand, makeNet(rand, act, { firstNegative: act === 'relu' ? rand.chance(0.4) : null }));
-  const k = rand.int(0, 1);
+  const tol = act === 'relu' ? TUNING.tol.product : TUNING.tol.tanh;
+  let d;
+  let k;
+  let keys = null;
+  for (let t = 0; t < 200; t++) {
+    d = withTarget(rand, makeNet(rand, act, act === 'relu' ? { firstNegative: rand.chance(0.4) } : { minAbsZ: TUNING.tanhMinAbsZ }));
+    k = rand.int(0, 1);
+    if (act !== 'tanh') break;
+    // tanh: two keys at ±tol each; σ′ in place of tanh′ must land outside both
+    keys = tanhKeys(d.e, d.v[k], d.z[k], d.h[k]);
+    if (!nearKey(keys.sigmaSlip, keys.exact, tol) && !nearKey(keys.sigmaSlip, keys.fromH, tol)) break;
+  }
   const K = k + 1;
   const sK = subDigit(K);
   const C = T.dzOther[act];
   const deriv = act === 'relu' ? dRelu(d.z[k]) : r2(1 - d.h[k] ** 2);
-  // tanh: graded from the exact z (on show); ±TUNING.tol.tanh also accepts working from the 2-decimal h
-  const ansH = r2(d.e * d.v[k] * (1 - d.h[k] ** 2));
-  const ans = act === 'relu' ? r2(d.e * d.v[k] * deriv) : r2(d.e * d.v[k] * (1 - tanh(d.z[k]) ** 2));
-  const tol = act === 'relu' ? TUNING.tol.product : TUNING.tol.tanh;
+  const ans = act === 'relu' ? r2(d.e * d.v[k] * deriv) : keys.exact;
+  const ansH = act === 'relu' ? ans : keys.fromH;
   const vars = { k: K, K: sK, e: fmt(d.e), ep: tp(d.e), v: fmt(d.v[k]), vp: tp(d.v[k]), h: fmt(d.h[k]), hp: tp(d.h[k]), z: tx(d.z[k]), zt: fmt(d.z[k]), d: String(deriv), ansh: tx(ansH), tol: tol.toFixed(2) };
+  const tanhCheck = act === 'tanh'
+    ? { keys: [ans, ansH], check: (g) => g !== '' && g !== null && g !== undefined && Number.isFinite(Number(g)) && (nearKey(g, ans, tol) || nearKey(g, ansH, tol)) }
+    : {};
   return {
-    id, kind: 'number', answer: ans, tol,
+    id, kind: 'number', answer: ans, tol, ...tanhCheck,
     concept: T.dzOther.concept, src: T.dzOther.src, beyond: true, note: C.note, uses: ['chain', act === 'relu' ? 'drelu' : 'dtanh'],
     prompt: fill(C.prompt, vars), sub: fill(T.dzOther.sub, { tol: tol.toFixed(2), receipt: receipt(T.dzOther.src) }),
     promptText: fill(C.promptText, vars),

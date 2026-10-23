@@ -110,7 +110,7 @@ export const BUILD = {
   drawer: [
     { kind: 'text', text: 'Slide 11: a stacked autoencoder is typically symmetrical with regards to the central hidden layer (the coding layer), like a sandwich: 784 → 100 → 30 → 100 → 784.', src: { lecture: 5, slides: [11] } },
     { kind: 'text', text: 'Slide 12: this model (stacked_ae) has 163,814 trainable parameters.', src: { lecture: 5, slides: [12] } },
-    { kind: 'text', text: 'Lecture 1, slide 8: a fully connected layer computes XW + b, with one row of W per input feature, one column per neuron, and one bias per neuron; so a Dense layer has inputs × units + units parameters.', src: { lecture: 1, slides: [8] } },
+    { kind: 'text', text: 'Lecture 1, slide 8: a fully connected layer computes φ(XW + bᵀ), with one row of W per input feature, one column per neuron, one bias per neuron, and φ the activation function; so a Dense layer has inputs × units + units parameters.', src: { lecture: 1, slides: [8] } },
   ],
 };
 

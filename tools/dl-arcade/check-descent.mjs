@@ -10,7 +10,9 @@
       in the catalogue, a Lecture 2 src, a why, a choice answer the bot can
       submit (and a wrong value that grades false), and is JSON-serialisable.
       Every hole is re-swung independently here: the par club is the unique
-      winner by the margin, and the losers fail the way the why card says.
+      winner by the margin, and the losers fail the way the why card says;
+      re-swung with random 1e-10 and 1e-8 gradient noise, the same club
+      still wins by the margin (re-audit row 40).
       The cliff's gradient at the ball is the vector printed. Every TeX string
       renders with KaTeX in strict mode.
 
@@ -175,14 +177,16 @@ expectV('PiecewiseConstantDecay at 0, 60,000, 90,000 (slide 56)', [0, 60000, 900
   expect('ReduceLROnPlateau cuts 0.010 → 0.005 after 5 flat epochs (slide 57)', etas[6] === 0.01 && etas[7] === A['l2.sched.performance'].value);
 }
 {
-  // the performance chart is shaped like slide 58's run: one cut, 0.010 → 0.005 at epoch 16,
-  // BEFORE the validation loss drops (epoch 17), and η stays at 0.005 to the end
+  // the performance chart is shaped like slide 58's run (rendered): η plots the rate USED in each
+  // epoch, so 0.010 through epoch 16 and 0.005 from epoch 17, the same epoch the validation loss
+  // drops (the callback cut it after epoch 16, the fifth flat epoch); η stays at 0.005 to the end
   const { pts, loss } = G.schedCurve({ curve: 'performance' });
   const etas = pts.map((p) => p.eta);
   const cuts = etas.map((v, i) => (i > 0 && v < etas[i - 1] ? i : null)).filter((i) => i !== null);
-  expect('performance chart: one cut, at epoch 16 (slide 58)', cuts.length === 1 && cuts[0] === 16, `cuts at ${cuts.join(', ')}`);
-  expect('performance chart: 0.010 → 0.005 (slide 58)', etas[15] === 0.01 && etas[24] === 0.005);
-  expect('performance chart: the loss drop follows the cut (slide 58)', loss[17] < Math.min(...loss.slice(0, 17)) - 0.02 && Math.min(...loss.slice(12, 17)) > Math.min(...loss.slice(0, 12)));
+  expect('performance chart: one cut, first plotted at epoch 17 (slide 58)', cuts.length === 1 && cuts[0] === 17, `cuts at ${cuts.join(', ')}`);
+  expect('performance chart: 0.010 through epoch 16, 0.005 from 17 (slide 58)', etas[0] === 0.01 && etas[16] === 0.01 && etas[17] === 0.005 && etas[24] === 0.005);
+  expect('performance chart: η plotted = the callback output of the epoch before', etas.slice(1).every((v, e) => v === D.performanceSched(loss, { eta0: 0.01, factor: 0.5, patience: 5 })[e]));
+  expect('performance chart: the loss drops in the first epoch at the cut rate (slide 58)', loss[17] < Math.min(...loss.slice(0, 17)) - 0.02 && Math.min(...loss.slice(12, 17)) > Math.min(...loss.slice(0, 12)));
 }
 
 /* ── 3. the rounds ──────────────────────────────────────────────────── */
@@ -218,6 +222,17 @@ function checkHole(it, where) {
   expect(`${where} unique par by the margin`, ranked[0][1] <= G.MARGIN * ranked[1][1], `${ranked[0][1]} vs ${ranked[1][1]}`);
   expect(`${where} par steps recorded`, it.par.steps === ranked[0][1] && it.par.club === it.answer);
   expect(`${where} par leaves the ball in the cup for at least a fifth of the run`, it.par.steps <= 0.8 * spec.nMax);
+  // re-audit row 40: the par club must not hinge on round-off. Re-swing every club with
+  // independent random gradient noise (1e-10 and 1e-8): the same club wins by the margin
+  for (const [amp, seed] of [[1e-10, 11], [1e-10, 12], [1e-8, 13], [1e-8, 14]]) {
+    const R = rng(seed + stats.holes * 31);
+    const noisy = (th) => g(th).map((v) => v + amp * (2 * R.next() - 1));
+    const nr = bag.map((c) => {
+      const { path, diverged } = D.run(c, noisy, spec.start, { eta: spec.eta }, spec.nMax, 50);
+      return [c, D.holedAt(path, spec.flag, spec.r, diverged) ?? Infinity];
+    }).sort((a, b) => a[1] - b[1]);
+    expect(`${where} par club survives ${amp} gradient noise`, nr[0][0] === it.answer && nr[0][1] <= G.MARGIN * nr[1][1], `${nr.map((r) => r.join(' ')).join(', ')}`);
+  }
   // the why card's story
   const k = spec.kind;
   if (k === 'dimple' && bag.includes('sgd') && it.answer === 'momentum') expect(`${where} SGD settles in the dimple`, it.results.sgd.status === 'stuck');

@@ -82,7 +82,10 @@ function howParams(spec, nIn, counts) {
     }
     case 'Bidirectional': {
       const inner = layerParams({ ...spec.layer, inputShape: [null, nIn] }).total;
-      return `Two copies of ${specLine(spec.layer)} (forward and backward), each ${fmt(inner)}: 2 × ${fmt(inner)} = ${fmt(total)}.`;
+      const gru = spec.layer.type === 'GRU'
+        ? ` Each copy is Keras’s two-bias GRU (reset_after=True, two bias vectors per block, as the 1,401 on Lecture 4, slide 49 needs); with slide 49’s one bias per block it would be 2 × ${fmt(inner - 3 * spec.layer.units)} = ${fmt(total - 6 * spec.layer.units)}.`
+        : '';
+      return `Two copies of ${specLine(spec.layer)} (forward and backward), each ${fmt(inner)}: 2 × ${fmt(inner)} = ${fmt(total)}.${gru}`;
     }
     case 'DenseTranspose':
       return `DenseTranspose(dense) reuses dense’s (${spec.tied.nIn}, ${spec.tied.units}) kernel transposed, so it maps ${spec.tied.units} → ${spec.tied.nIn} with no kernel of its own; its only trainable parameters are its ${spec.tied.nIn} biases: ${fmt(total)}.`;
@@ -102,7 +105,7 @@ function howShape(spec, inShape, out) {
       const [kh, kw] = pair(spec.kernel);
       const s = spec.strides ?? 1;
       if (spec.padding === 'same') return `"same" padding keeps ${s === 1 ? 'the input size' : `about 1/${s} of each side (⌈n / ${s}⌉, slide 21: 10 → 5)`} and there is one feature map per filter: ${fmtShape(out)}.`;
-      return `"valid" padding: the ${kh} × ${kw} filter must fit inside, so each side loses ${kh - 1}: ${inShape[0]} − ${kh} + 1 = ${out[0]}, ${inShape[1]} − ${kw} + 1 = ${out[1]}; one map per filter → ${fmtShape(out)}. (Slide 18: 70 × 120 → 64 × 114.)`;
+      return `"valid" padding: the ${kh} × ${kw} filter must fit inside, so each axis loses ${kh - 1}: ${inShape[0]} − ${kh} + 1 = ${out[0]}, ${inShape[1]} − ${kw} + 1 = ${out[1]}; one map per filter → ${fmtShape(out)}. (Slide 18: 70 × 120 → 64 × 114.)`;
     }
     case 'MaxPool2D': case 'AvgPool2D':
       return `A ${pair(spec.pool)[0]} × ${pair(spec.pool)[1]} pooling window with stride ${pair(spec.strides ?? spec.pool)[0]} halves the height and width and leaves the depth: ${fmtShape(out)}.`;
@@ -114,7 +117,7 @@ function howShape(spec, inShape, out) {
       return `One output per neuron: ${fmtShape(out)}.`;
     case 'SimpleRNN': case 'LSTM': case 'GRU':
       return spec.returnSequences
-        ? `return_sequences=True: one ${spec.units}-vector per time step, ${fmtShape(out)}.`
+        ? `return_sequences=True: one ${spec.units}-vector per time step, ${fmtShape(out)}. Beyond the slides: slide 29 sets return_sequences=True, but no slide prints this shape; it is Keras’s.`
         : `Only the last time step’s output, ${spec.units} numbers: ${fmtShape(out)}.`;
     case 'Bidirectional':
       return `Forward and backward outputs concatenated: 2 × ${spec.layer.units} = ${out[out.length - 1]}: ${fmtShape(out)}.`;
@@ -218,7 +221,8 @@ function singleItem(rand, type, { choice = false, ask = 'total' } = {}) {
   const nIn = inputShape[inputShape.length - 1];
   const R = RULES[type];
   const answer = ask === 'trainable' ? counts.trainable : ask === 'nonTrainable' ? counts.nonTrainable : counts.total;
-  const q = ask === 'trainable' ? 'Trainable params?' : ask === 'nonTrainable' ? 'Non-trainable params?' : 'Param #?';
+  const q = spec.type === 'DenseTranspose' ? 'Trainable params this DenseTranspose adds?'
+    : ask === 'trainable' ? 'Trainable params?' : ask === 'nonTrainable' ? 'Non-trainable params?' : 'Param #?';
   const lines = spec.type === 'DenseTranspose'
     ? [inputLine([spec.tied.nIn]), `dense = Dense(${spec.tied.units})  # kernel (${spec.tied.nIn}, ${spec.tied.units})`, specLine(spec)]
     : [inputLine(inputShape), specLine(spec)];
@@ -228,7 +232,7 @@ function singleItem(rand, type, { choice = false, ask = 'total' } = {}) {
     src: R.src,
     beyond: R.beyond || undefined,
     lines,
-    question: spec.type === 'DenseTranspose' ? 'Trainable params this DenseTranspose adds?' : q,
+    question: q,
     ask,
     promptText: spec.type === 'DenseTranspose' ? `DenseTranspose of Dense(${spec.tied.units}) on ${spec.tied.nIn} inputs · ${q}` : `${specLine(spec)} on ${fmtShapeIn(inputShape)} · ${q}`,
     why: howParams(spec, nIn, counts),
@@ -252,6 +256,7 @@ function shapeItem(rand, type) {
     id: nextId(`${type}-shape`),
     concept: R.concept,
     src: R.src,
+    ...(spec.returnSequences ? { beyond: true, note: R.seqNote } : {}),
     kind: 'shape',
     lines: [inputLine(inputShape), specLine(spec)],
     question: 'Output shape?',
@@ -310,8 +315,15 @@ function stackItem(rand, types, { ask = 'total' } = {}) {
     ask,
     promptText: `${specs.map(specLine).join(' → ')} on ${fmtShapeIn(first.inputShape)} · ${q}`,
     answer,
-    why: `Layer by layer: ${perLayer.join('; ')}. Total ${fmt(total)}${nonTrainable ? `, of which ${fmt(nonTrainable)} are non-trainable (BatchNormalization’s moving means and variances), leaving ${fmt(trainable)} trainable` : ''}.`,
+    why: `Layer by layer: ${perLayer.join('; ')}. Total ${fmt(total)}${nonTrainable ? `, of which ${fmt(nonTrainable)} are non-trainable (BatchNormalization’s moving means and variances), leaving ${fmt(trainable)} trainable` : ''}.${gruBiasNote(specs, answer, ask)}`,
   };
+}
+// a stack holding a GRU (or a Bidirectional GRU) is counted with Keras's two-bias GRU (re-audit row 23)
+function gruBiasNote(specs, answer, ask) {
+  if (ask === 'nonTrainable') return '';
+  const extra = specs.reduce((acc, s) => acc + (s.type === 'GRU' ? 3 * s.units : s.type === 'Bidirectional' && s.layer.type === 'GRU' ? 6 * s.layer.units : 0), 0);
+  if (!extra) return '';
+  return ` Each GRU here is Keras’s two-bias GRU (reset_after=True, two bias vectors per block, as the 1,401 on Lecture 4, slide 49 needs); with slide 49’s one bias per block the answer would be ${fmt(answer - extra)}.`;
 }
 const hardOf = (t) => ({ GRU: 5, LSTM: 4, MultiHeadAttention: 5, BatchNormalization: 4, Bidirectional: 4, DenseTranspose: 4, Conv2DTranspose: 3, Conv2D: 3, SimpleRNN: 3, Conv1D: 3, Dense: 2 }[t] ?? 1);
 

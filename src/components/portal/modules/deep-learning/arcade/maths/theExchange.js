@@ -103,7 +103,7 @@ function patchItem(rand, model, kind, used) {
       format: (v) => (Array.isArray(v) ? words.map((w, j) => `${w} ${fmt2(v[j] ?? 0)}`).join(' · ') : String(v)),
       question: `Self-attention: patch “${words[i]}” into its own sentence.`,
       promptText: `Self-attention: “${words[i]}” within “${words.join(' ')}”`,
-      why: `In the encoder, queries, keys and values all come from the same sentence (slide 40): the toy’s self-attention for “${words[i]}” put ${words.map((w, j) => `${fmt2(answer[j])} on “${w}”`).join(', ')}. ${OWN}`,
+      why: `In the encoder, queries, keys and values all come from the same sentence (slides 31, 40): the toy’s self-attention for “${words[i]}” put ${words.map((w, j) => `${fmt2(answer[j])} on “${w}”`).join(', ')}. ${OWN}`,
     };
   }
   return null;
@@ -185,7 +185,7 @@ function maskItem(rand) {
   const words = ['⟨SOS⟩', 'me', 'gusta', 'el', 'fútbol'];
   const i = rand.int(1, 3);
   const allowed = words.slice(0, i + 1);
-  const wrongA = [words[0]];
+  const wrongA = [words[i]]; // the word alone: wrong whether or not the word attends to itself
   const wrongB = words.slice(i);
   const choices = rand.shuffle([
     { value: 'ok', label: allowed.join(', ') },

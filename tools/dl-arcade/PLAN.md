@@ -88,3 +88,4 @@ See `Documents/cits5017/dl-arcade-report.md` (written at the end) — decisions 
   fixed and committed; Daily Mix / Exam flow fixed (Continue advances); full headless check green; report written at
   `Documents/cits5017/dl-arcade-report.md`; vault + memory updated. Pending at the time of writing: the whole-arcade
   re-audit and the visual QA report (their findings get applied on top). Batch 2 not started.
+- 2026-10-23: visual QA (54 shots) and the whole-arcade re-audit done; all findings fixed; every check green; final commit. Batch 2 not started.

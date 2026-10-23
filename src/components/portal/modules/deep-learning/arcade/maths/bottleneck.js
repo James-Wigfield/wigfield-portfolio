@@ -358,15 +358,17 @@ function indexItem(rand, level, i, N) {
   if (kind === 'pair') {
     const L = rand.int(N / 2 + 1, N);
     const l = tiedSource(N, L);
-    const others = Array.from({ length: N / 2 }, (_, k) => k + 1).filter((k) => k !== l);
+    const others = rand.shuffle(Array.from({ length: N / 2 }, (_, k) => k + 1).filter((k) => k !== l));
+    const oT = others[0];
+    const oW = others[1] ?? others[0];
+    // four different matrices under slide 19 (W_L = W_lᵀ): not W_L (true too), and not W_Lᵀ,
+    // which equals W_l and would repeat the untransposed distractor (re-audit row 49)
     const choices = [
       { value: `T${l}`, label: wTex(l, true) },
-      { value: `T${rand.pick(others)}`, label: '' },
-      // not W_L: slide 19 defines W_ℓ as layer ℓ's own weights, so W_L (= W_lᵀ) would be true too
+      { value: `T${oT}`, label: wTex(oT, true) },
       { value: `W${l}`, label: wTex(l, false) },
-      { value: `T${L}`, label: wTex(L, true) },
+      { value: `W${oW}`, label: wTex(oW, false) },
     ];
-    choices[1].label = wTex(Number(choices[1].value.slice(1)), true);
     return {
       ...base,
       layer: L,

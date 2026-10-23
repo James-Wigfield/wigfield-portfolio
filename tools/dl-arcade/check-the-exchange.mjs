@@ -45,6 +45,7 @@ ok(Math.abs(w.reduce((s, x) => s + x, 0) - 1) < 1e-12 && argmax(w) === 0, 'plugs
 // rounds
 const model = await loadToyMT();
 let patches = 0;
+let masks = 0;
 for (const level of [1, 2, 3]) {
   for (let seed = 1; seed <= 30; seed++) {
     const items = makeItems(rng(seed), level, model);
@@ -58,8 +59,20 @@ for (const level of [1, 2, 3]) {
       if (it.board) { patches++; ok(!grade(it, it.answer.map((x, i) => (i === argmax(it.answer) ? 0 : x + 1))), `mutated patch fails ${it.id}`); }
       if (it.order) ok(!grade(it, it.answer.slice().reverse()), `reversed order fails ${it.id}`);
       if (it.kind === 'number') ok(!grade(it, it.answer + 1), `off-by-one fails ${it.id}`);
+      if (it.concept === 'transformer.mask' && it.promptText?.startsWith('causal mask')) {
+        // re-audit row 29: every distractor is wrong under both readings of slide 31
+        // (the word attends to itself and the words before it, or only the words before it)
+        const words = ['⟨SOS⟩', 'me', 'gusta', 'el', 'fútbol'];
+        const i = words.findIndex((x) => it.promptText.includes(`“${x}”`));
+        const withSelf = words.slice(0, i + 1).join(', ');
+        const without = words.slice(0, i).join(', ');
+        ok(i >= 1 && it.choices.find((c) => c.value === it.answer).label === withSelf, `mask answer ${it.id}`);
+        for (const c of it.choices.filter((x) => x.value !== it.answer)) ok(c.label !== withSelf && c.label !== without, `mask distractor “${c.label}” is right under one reading ${it.id}`);
+        masks++;
+      }
     }
   }
 }
 ok(patches > 100, `patch items generated (${patches})`);
+ok(masks > 0, `mask items generated (${masks})`);
 console.log(`check-the-exchange: ${n} assertions passed · ${patches} patch items across 90 rounds`);
