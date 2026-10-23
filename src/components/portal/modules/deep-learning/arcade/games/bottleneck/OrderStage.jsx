@@ -13,16 +13,19 @@ import { StageHead } from './Parts';
    ========================================================================== */
 
 // Figure 17-6 / 17-7's boxes in miniature: green input / output, blue
-// hidden, pink Hidden 2, orange Softmax (the figures' colours)
-const tone = (name) => (/^(Input|Output)$/.test(name) ? 'io' : name === 'Hidden 2' ? 'code' : name === 'Softmax' ? 'soft' : 'hid');
+// hidden, pink Hidden 2, orange Softmax (the figures' colours). A stack
+// entry { name, tone } overrides the default (e.g. Phase 2's narrow light-blue
+// Input / Output in Fig 17-7, the classifier's light-blue Output in Fig 17-6).
+const tone = (n) => (typeof n === 'object' ? n.tone : /^(Input|Output)$/.test(n) ? 'io' : n === 'Hidden 2' ? 'code' : n === 'Softmax' ? 'soft' : 'hid');
 
 function MiniStack({ layers }) {
   const h = layers.length * 9 + 2;
   return (
     <svg className="dla-bn__mini" viewBox={`0 0 40 ${h}`} width="40" height={h} aria-hidden="true">
-      {layers.map((n, i) => (
-        <rect key={i} className={`dla-bn__mini--${tone(n)}`} x={tone(n) === 'io' ? 2 : 7} y={h - 9 - i * 9} width={tone(n) === 'io' ? 36 : 26} height="7" rx="2" />
-      ))}
+      {layers.map((n, i) => {
+        const t = tone(n);
+        return <rect key={i} className={`dla-bn__mini--${t}`} x={t === 'io' ? 2 : 7} y={h - 9 - i * 9} width={t === 'io' ? 36 : 26} height="7" rx="2" />;
+      })}
     </svg>
   );
 }

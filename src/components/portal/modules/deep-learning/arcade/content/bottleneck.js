@@ -100,16 +100,17 @@ export const BUILD = {
   },
   budgetSteps: [10000, 5000, 1000, 500, 100, 50, 10, 1], // a round budget, the coarsest that still separates the answer
   prompt: 'Budget {budget} parameters. Build the biggest symmetric sandwich that fits.',
-  sub: 'The decoder mirrors the encoder (slide 11). A Dense layer costs inputs × units + units.',
+  sub: 'The decoder mirrors the encoder (slide 11). A Dense layer costs inputs × units + units (Lecture 1, slide 8).',
   promptText: 'Stage 2 · the biggest symmetric sandwich within {budget} parameters',
   meter: { label: 'parameters', budget: 'budget', over: 'over by {n}', fits: 'fits' },
   build: 'Build',
-  why: 'A Dense layer has inputs × units weights plus units biases, so {sizes} costs {terms} = {total} ≤ {budget}; the next bigger sandwich on offer, {nextSizes}, needs {nextTotal}.',
+  why: 'A Dense layer has inputs × units weights plus units biases (Lecture 1, slide 8: W has one row per input feature and one column per neuron, b one bias per neuron), so {sizes} costs {terms} = {total} ≤ {budget}; the next bigger sandwich on offer, {nextSizes}, needs {nextTotal}.',
   whySlide: ' Slide 12’s 784–100–30–100–784 has 163,814.',
   fixed: '{label}: {units} (fixed)',
   drawer: [
     { kind: 'text', text: 'Slide 11: a stacked autoencoder is typically symmetrical with regards to the central hidden layer (the coding layer), like a sandwich: 784 → 100 → 30 → 100 → 784.', src: { lecture: 5, slides: [11] } },
     { kind: 'text', text: 'Slide 12: this model (stacked_ae) has 163,814 trainable parameters.', src: { lecture: 5, slides: [12] } },
+    { kind: 'text', text: 'Lecture 1, slide 8: a fully connected layer computes XW + b, with one row of W per input feature, one column per neuron, and one bias per neuron; so a Dense layer has inputs × units + units parameters.', src: { lecture: 1, slides: [8] } },
   ],
 };
 
@@ -159,7 +160,7 @@ export const INDEX = {
   pair: {
     prompt: 'N = {N}, weights tied. Which weights does layer {L} use?',
     promptText: 'Stage 2 · N = {N}: the weights of layer {L}',
-    why: 'Slide 19: $\\mathbf{W}_{N-\\ell+1} = \\mathbf{W}_\\ell^\\top$ for $\\ell = 1, 2, \\cdots, N/2$. Layer {L} = N − ℓ + 1 gives ℓ = {N} − {L} + 1 = {l}, so layer {L} uses $\\mathbf{W}_{{l}}^\\top$.',
+    why: 'Slide 19: $\\mathbf{W}_{N-\\ell+1} = \\mathbf{W}_\\ell^\\top$ for $\\ell = 1, 2, \\cdots, N/2$. Layer {L} = N − ℓ + 1 gives ℓ = {N} − {L} + 1 = {l}, so layer {L} uses $\\mathbf{W}_{{l}}^\\top$ (which slide 19 also calls $\\mathbf{W}_{{L}}$, layer {L}’s weights). Untransposed, $\\mathbf{W}_{{l}}$ (= $\\mathbf{W}_{{L}}^\\top$) has encoder layer {l}’s shape, the wrong way round for layer {L}.',
   },
   coding: {
     prompt: 'N = {N} layers, not counting the input layer. Which one is the coding layer?',
@@ -172,7 +173,7 @@ export const INDEX = {
     choices: [
       { value: 'w12b', label: '$\\mathbf{W}_1$, $\\mathbf{W}_2$ and the bias terms', plain: 'W₁, W₂ and the bias terms' },
       { value: 'w12', label: '$\\mathbf{W}_1$ and $\\mathbf{W}_2$ only', plain: 'W₁ and W₂ only' },
-      { value: 'w34b', label: '$\\mathbf{W}_3$, $\\mathbf{W}_4$ and the bias terms', plain: 'W₃, W₄ and the bias terms' },
+      { value: 'b', label: 'the bias terms only', plain: 'the bias terms only' },
       { value: 'w1234', label: '$\\mathbf{W}_1$, $\\mathbf{W}_2$, $\\mathbf{W}_3$ and $\\mathbf{W}_4$', plain: 'W₁, W₂, W₃ and W₄' },
     ],
     answer: 'w12b',
@@ -196,7 +197,7 @@ export const ORDERS = {
     promptText: 'Stage 3 · Figure 17-7’s three phases',
     cards: [
       { id: 'p1', text: 'Phase 1 · train the first autoencoder (target = inputs) to learn $\\mathbf{X}_{(1)}$', short: 'Phase 1', stack: ['Input', 'Hidden 1', 'Output'] },
-      { id: 'p2', text: 'Phase 2 · using $\\mathbf{X}_{(1)}$ as input data, train the second autoencoder to learn $\\mathbf{X}_{(2)}$', short: 'Phase 2', stack: ['Input', 'Hidden 2', 'Output'] },
+      { id: 'p2', text: 'Phase 2 · using $\\mathbf{X}_{(1)}$ as input data, train the second autoencoder to learn $\\mathbf{X}_{(2)}$', short: 'Phase 2', stack: [{ name: 'Input', tone: 'hid' }, 'Hidden 2', { name: 'Output', tone: 'hid' }] },
       { id: 'p3', text: 'Phase 3 · stack the autoencoders into one big sandwich', short: 'Phase 3', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'] },
     ],
     answer: ['p1', 'p2', 'p3'],
@@ -209,7 +210,7 @@ export const ORDERS = {
     promptText: 'Stage 3 · Figure 17-7’s phases, then slide 25',
     cards: [
       { id: 'p1', text: 'Phase 1 · train the first autoencoder (target = inputs) to learn $\\mathbf{X}_{(1)}$', short: 'Phase 1', stack: ['Input', 'Hidden 1', 'Output'] },
-      { id: 'p2', text: 'Phase 2 · using $\\mathbf{X}_{(1)}$ as input data, train the second autoencoder to learn $\\mathbf{X}_{(2)}$', short: 'Phase 2', stack: ['Input', 'Hidden 2', 'Output'] },
+      { id: 'p2', text: 'Phase 2 · using $\\mathbf{X}_{(1)}$ as input data, train the second autoencoder to learn $\\mathbf{X}_{(2)}$', short: 'Phase 2', stack: [{ name: 'Input', tone: 'hid' }, 'Hidden 2', { name: 'Output', tone: 'hid' }] },
       { id: 'p3', text: 'Phase 3 · stack the autoencoders into one big sandwich', short: 'Phase 3', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'] },
       { id: 'p4', text: 'If needed, keep training the full stacked autoencoder for a few epochs', short: 'fine-tune', code: 'stacked_ae_1_by_1.fit(X_train, X_train, epochs=5, …)' },
     ],
@@ -223,7 +224,7 @@ export const ORDERS = {
     promptText: 'Stage 3 · Figure 17-7’s phases, with a decoy',
     cards: [
       { id: 'p1', text: 'Phase 1 · train the first autoencoder (target = inputs) to learn $\\mathbf{X}_{(1)}$', short: 'Phase 1', stack: ['Input', 'Hidden 1', 'Output'] },
-      { id: 'p2', text: 'Phase 2 · using $\\mathbf{X}_{(1)}$ as input data, train the second autoencoder to learn $\\mathbf{X}_{(2)}$', short: 'Phase 2', stack: ['Input', 'Hidden 2', 'Output'] },
+      { id: 'p2', text: 'Phase 2 · using $\\mathbf{X}_{(1)}$ as input data, train the second autoencoder to learn $\\mathbf{X}_{(2)}$', short: 'Phase 2', stack: [{ name: 'Input', tone: 'hid' }, 'Hidden 2', { name: 'Output', tone: 'hid' }] },
       { id: 'p3', text: 'Phase 3 · stack the autoencoders into one big sandwich', short: 'Phase 3', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'] },
       { id: 'x1', text: 'Train the second autoencoder on the original inputs, not on $\\mathbf{X}_{(1)}$', short: 'second on the raw inputs', decoy: true },
     ],
@@ -237,11 +238,11 @@ export const ORDERS = {
     promptText: 'Stage 3 · Figure 17-6’s pretraining',
     cards: [
       { id: 'a', text: 'Phase 1 · train the autoencoder using all the data (no labels needed)', short: 'train the autoencoder', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'] },
-      { id: 'b', text: 'Copy the parameters of Hidden 1 and Hidden 2 into a classifier with an Output layer and a Softmax', short: 'copy Hidden 1, Hidden 2', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Output', 'Softmax'] },
+      { id: 'b', text: 'Copy the parameters of Hidden 1 and Hidden 2 into a classifier with an Output layer and a Softmax', short: 'copy Hidden 1, Hidden 2', stack: ['Input', 'Hidden 1', 'Hidden 2', { name: 'Output', tone: 'hid' }, 'Softmax'] },
       { id: 'c', text: 'Phase 2 · train the classifier on the labelled data', short: 'train the classifier' },
     ],
     answer: ['a', 'b', 'c'],
-    why: 'Figure 17-6 (slides 16–17): train the autoencoder using all the data, which needs no labels; reuse its encoder layers (copy the Hidden 1 and Hidden 2 parameters) in a classifier with an Output layer and a Softmax; train that classifier on the labelled data. The slides say “reuse” and “copy”; they never say the copied layers are frozen.',
+    why: 'Figure 17-6 (slides 16–17): train the autoencoder using all the data, which needs no labels; reuse its encoder layers (copy the Hidden 1 and Hidden 2 parameters) in a classifier with an Output layer and a Softmax; train that classifier on the labelled data. The slides say “reuse” and “copy”; they never say the copied layers are frozen, but slide 16 notes the new network “has fewer layers that require training”, so it can cope with fewer labelled training data.',
   },
   pretraindecoy: {
     concept: 'pretrain.ae',
@@ -250,12 +251,12 @@ export const ORDERS = {
     promptText: 'Stage 3 · Figure 17-6’s pretraining, with a decoy',
     cards: [
       { id: 'a', text: 'Phase 1 · train the autoencoder using all the data (no labels needed)', short: 'train the autoencoder', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'] },
-      { id: 'b', text: 'Copy the parameters of Hidden 1 and Hidden 2 into a classifier with an Output layer and a Softmax', short: 'copy Hidden 1, Hidden 2', stack: ['Input', 'Hidden 1', 'Hidden 2', 'Output', 'Softmax'] },
+      { id: 'b', text: 'Copy the parameters of Hidden 1 and Hidden 2 into a classifier with an Output layer and a Softmax', short: 'copy Hidden 1, Hidden 2', stack: ['Input', 'Hidden 1', 'Hidden 2', { name: 'Output', tone: 'hid' }, 'Softmax'] },
       { id: 'c', text: 'Phase 2 · train the classifier on the labelled data', short: 'train the classifier' },
       { id: 'x', text: 'Copy Hidden 3 and the Output layer into the classifier as well', short: 'copy Hidden 3 and Output', decoy: true },
     ],
     answer: ['a', 'b', 'c'],
-    why: 'Figure 17-6 (slide 17) copies parameters for Hidden 1 and Hidden 2 only, the encoder layers (“reuse its encoder layers”); the classifier gets its own Output layer and Softmax, and Phase 2 trains it on the labelled data. The slides never say the copied layers are frozen.',
+    why: 'Figure 17-6 (slide 17) copies parameters for Hidden 1 and Hidden 2 only, the encoder layers (“reuse its encoder layers”); the classifier gets its own Output layer and Softmax, and Phase 2 trains it on the labelled data. The slides never say the copied layers are frozen, but slide 16 notes the network then “has fewer layers that require training”.',
   },
   code: {
     concept: 'ae.trainAutoencoderFn',
@@ -309,7 +310,7 @@ export const MAP = {
   ],
   near: { k: 25, min: 8 },
   items: [
-    { index: 0, label: 0, near: [3], tier: 'medium' },
+    { index: 0, label: 0, near: [3], tier: 'hard' }, // a dark long-sleeved top that reads as a Pullover; its coding sits among Dresses
     { index: 1, label: 8, near: [8], tier: 'easy' },
     { index: 2, label: 0, near: [0], tier: 'medium' },
     { index: 3, label: 6, near: [6, 2], tier: 'hard' },
@@ -330,8 +331,8 @@ export const MAP = {
   itemAria: 'validation image {n} (its class is the question)',
   own: 'this page’s own run · t-SNE of stacked_encoder’s 30 codings of 5,000 Fashion MNIST validation images',
   loading: 'Loading this page’s Fashion MNIST run…',
-  why: 'Graded by class: this is a {cls}, so it belongs with the {cls} points. Slide 14 encodes X_valid with stacked_encoder and runs TSNE() on those codings, which keeps similar instances close and dissimilar instances apart. On this page’s own map its coding landed among the {near} points{tail}.',
-  tailMixed: '; the tops overlap on this map',
+  why: 'Graded by class: this is a {cls}, so it belongs with the {cls} points. Slide 14 encodes X_valid with stacked_encoder and runs TSNE() on those codings, which reduces them to 2D while trying to keep similar instances close and dissimilar instances apart. On this page’s own map its coding landed among the {near} points{tail}.',
+  tailMixed: '; tops, dresses and coats overlap on this map',
   drawer: [
     { kind: 'code', text: 'X_valid_compressed = stacked_encoder.predict(X_valid)   X_valid_2D = TSNE().fit_transform(X_valid_compressed)', src: { lecture: 5, slides: [14] } },
     { kind: 'text', text: '784 pixels → 30 codings (stacked_encoder) → 2D (t-SNE). The axes of a t-SNE map mean nothing; only who sits near whom does.', beyond: true,

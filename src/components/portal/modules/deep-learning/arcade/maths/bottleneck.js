@@ -362,7 +362,8 @@ function indexItem(rand, level, i, N) {
     const choices = [
       { value: `T${l}`, label: wTex(l, true) },
       { value: `T${rand.pick(others)}`, label: '' },
-      { value: `W${L}`, label: wTex(L, false) },
+      // not W_L: slide 19 defines W_ℓ as layer ℓ's own weights, so W_L (= W_lᵀ) would be true too
+      { value: `W${l}`, label: wTex(l, false) },
       { value: `T${L}`, label: wTex(L, true) },
     ];
     choices[1].label = wTex(Number(choices[1].value.slice(1)), true);
@@ -373,7 +374,7 @@ function indexItem(rand, level, i, N) {
       promptText: fill(INDEX.pair.promptText, { N, L }),
       choices: rand.shuffle(choices),
       answer: `T${l}`,
-      wrong: `W${L}`,
+      wrong: `W${l}`,
       format: wFromValue,
       why: fill(INDEX.pair.why, { N, L, l }),
     };
