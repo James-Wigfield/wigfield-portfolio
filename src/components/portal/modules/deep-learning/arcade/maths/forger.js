@@ -43,7 +43,16 @@ const choiceItem = (base, choices, answer) => ({
 export const ROW_KEYS = ['batch', 'labels', 'learns'];
 const optText = (row, key) => INGREDIENTS[row].find((o) => o.key === key)?.text ?? '—';
 export const recipeText = (v) => (v && typeof v === 'object' ? ROW_KEYS.map((r) => optText(r, v[r])).join(' · ') : '—');
-export const recipeOk = (answer) => (g) => !!g && typeof g === 'object' && ROW_KEYS.every((r) => g[r] === answer[r]);
+// graded on the label each row of the batch actually gets: with phase 2's fakes-only
+// batch, "fake 1 · real 0" labels every fake 1, the same batch as "all 1" (slide 22)
+export const rowLabels = (batch, labels) => {
+  const b = INGREDIENTS.batch.find((o) => o.key === batch);
+  const l = INGREDIENTS.labels.find((o) => o.key === labels);
+  return b && l ? `${b.fake ? l.fakeLabel : '-'}|${b.real ? l.realLabel : '-'}` : null;
+};
+export const recipeOk = (answer) => (g) => !!g && typeof g === 'object'
+  && g.batch === answer.batch && g.learns === answer.learns
+  && rowLabels(g.batch, g.labels) === rowLabels(answer.batch, answer.labels);
 
 function recipe(rand, phase, n) {
   const P = PHASES[phase];
@@ -210,7 +219,10 @@ function build(rand, net, n) {
 
 function spot(rand, s, n) {
   const lines = DCGAN[s.net].lines;
-  const choices = s.candidates.map((id) => ({ value: id, label: `\`${firstLine(lines.find((l) => l.id === id).code)}\`` }));
+  const choices = s.candidates.map((id) => {
+    const l = lines.find((x) => x.id === id);
+    return { value: id, label: `\`${firstLine(l.code)}\`${l.pos ? ` (${l.pos})` : ''}` };
+  });
   return choiceItem({
     id: `spot-${n}-${s.id}`,
     type: 'spot',

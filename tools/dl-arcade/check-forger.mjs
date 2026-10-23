@@ -249,6 +249,9 @@ for (const level of [1, 2, 3]) {
       // the answer key, re-derived
       if (it.type === 'recipe') {
         ok(JSON.stringify(it.answer) === JSON.stringify(C.PHASES[it.phase].answer), `${where}: phase ${it.phase} recipe`);
+        // graded on the labels the rows get: fakes only + "fake 1 · real 0" = every fake labelled 1 (slide 22)
+        ok(grade(it, { ...it.answer, labels: 'fake1real0' }) === (it.phase === 2), `${where}: "fake 1 · real 0" grades ${it.phase === 2 ? 'right (fakes-only batch)' : 'wrong'}`);
+        ok(!grade(it, { ...it.answer, labels: 'all0' }), `${where}: "all 0" grades wrong`);
         ok(it.rows.every((r) => r.options.length === C.INGREDIENTS[r.key].length), `${where}: every option offered`);
       }
       if (it.type === 'which') {
@@ -261,11 +264,13 @@ for (const level of [1, 2, 3]) {
       if (it.type === 'gap') ok(it.choices.find((c) => c.value === it.answer).label.replace(/`/g, '') === C.LOOP.lines.find((l) => l.id === it.line).code.trim(), `${where}: gap answer is the printed line`);
       if (it.type === 'build') ok(it.slots.length === 3 && it.slots.every((s) => it.answer[s.id] === guide[s.id][0]), `${where}: slots by slide 28`);
       if (it.type === 'spot') ok(it.answer === C.SPOT.find((s) => it.id.endsWith(s.id)).answer, `${where}: spot key`);
+      if (it.kind === 'choice') ok(new Set(it.choices.map((c) => c.label)).size === it.choices.length, `${where}: choice labels distinguishable`);
       if (it.type === 'number') {
         const b = it.batch;
         const want = { rows: 2 * b, zeros: b, y2: b, dense: 7 * 7 * 128 }[it.numberKind];
         ok(it.answer === want && it.tol === 0, `${where}: ${it.numberKind} = ${want}`);
       }
+      if (it.type === 'shape') ok(it.src.slides[it.src.slides.length - 1] === 25, `${where}: code caption = slide 25 (the noise line)`);
       if (it.type === 'shape') ok(it.answer[0] === it.batch && it.answer[1] === (it.model === 'GAN' ? 30 : 100), `${where}: noise shape [${it.answer}]`);
     });
   }
