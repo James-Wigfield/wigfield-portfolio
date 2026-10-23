@@ -225,7 +225,19 @@
 .dla-stagegrid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.9rem; align-items: start; }
 .dla-stagegrid > .dla-pad { width: 300px; }
 .dla-stagegrid > .dla-pad--shape { width: 340px; }
-@container arcade (max-width: 720px) { .dla-stagegrid { grid-template-columns: 1fr; } .dla-stagegrid > .dla-pad, .dla-stagegrid > .dla-pad--shape { width: 100%; justify-self: center; max-width: 360px; } }
+@container arcade (max-width: 720px) {
+  .dla-stagegrid { grid-template-columns: 1fr; }
+  /* the keypad stays in reach while the stage scrolls past */
+  .dla-stagegrid > .dla-pad, .dla-stagegrid > .dla-pad--shape { width: 100%; justify-self: center; max-width: 360px; position: sticky; bottom: 0.4rem; z-index: 2; background: var(--ground); padding-top: 0.3rem; border-radius: 10px; }
+}
+@container arcade (max-width: 520px) {
+  /* two rows: title + score + mute, then the timer across the width */
+  .dla-round__bar { row-gap: 0.3rem; }
+  .dla-round__timer { flex-basis: 100%; order: 10; margin-left: 0; min-width: 0; }
+  .dla-round__count { margin-left: auto; }
+  .dla-round__score { margin-left: auto; }
+  .dla-round__exitk { display: none; }
+}
 
 /* the maths drawer (reuses the L8 drawer look) */
 .dla-maths { border-top: 1px solid var(--line-2); }

@@ -17,7 +17,7 @@
   min-height: 118px;
 }
 .dla-marquee__title { margin: 0; font-family: var(--font-display, Georgia, serif); font-weight: 500; font-size: clamp(1.6rem, 4vw, 2.3rem); letter-spacing: -0.015em; line-height: 1.05; color: var(--ground); }
-.dla-marquee__sub { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ground); opacity: 0.75; }
+.dla-marquee__sub { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ground); opacity: 0.95; }
 .dla-marquee__lights {
   position: absolute; inset: 0 0 auto 0; height: 8px;
   background-image: repeating-linear-gradient(90deg, var(--dlv-orange) 0 8px, transparent 8px 16px, var(--dlv-aqua) 16px 24px, transparent 24px 32px, var(--dlv-magenta) 32px 40px, transparent 40px 48px);
@@ -75,13 +75,14 @@
 .dla-cab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dla-cab__marquee {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-  padding: 0.55rem 0.85rem; color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cab) 88%, #000) 0%, var(--cab) 100%);
-  border-bottom: 3px solid color-mix(in srgb, var(--cab) 70%, #000);
+  padding: 0.55rem 0.85rem; color: var(--ink);
+  background: color-mix(in srgb, var(--cab) 16%, var(--surface));
+  border-top: 4px solid var(--cab);
+  border-bottom: 1px solid var(--line-2);
 }
-.dla-cab__title { font-family: var(--font-display, Georgia, serif); font-weight: 500; font-size: 1.1rem; letter-spacing: -0.01em; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25); }
-.dla-cab__due { display: inline-flex; align-items: center; gap: 0.3rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.95; }
-.dla-cab__duedot { width: 7px; height: 7px; border-radius: 99px; background: #fff; }
+.dla-cab__title { font-family: var(--font-display, Georgia, serif); font-weight: 500; font-size: 1.1rem; letter-spacing: -0.01em; }
+.dla-cab__due { display: inline-flex; align-items: center; gap: 0.3rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
+.dla-cab__duedot { width: 7px; height: 7px; border-radius: 99px; background: var(--cab); }
 .dla-cab__screen { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem 0.85rem 0.6rem; flex: 1; }
 .dla-cab__glyph { color: var(--cab); display: block; height: 44px; }
 .dla-cab__glyph svg { height: 44px; width: auto; display: block; }

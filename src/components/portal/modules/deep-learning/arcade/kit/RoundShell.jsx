@@ -56,7 +56,7 @@ export function RoundShell({ game, round, host = {}, intro, children, stageClass
           <Icon name="arrowLeft" size={14} /> <span className="dla-round__exitk">arcade</span>
         </button>
         <span className="dla-round__title">{game.title}</span>
-        <span className="dla-round__lvl">L{round.level}{round.mode !== 'free' ? ` · ${round.mode}` : ''}</span>
+        <span className="dla-round__lvl">lvl {round.level}{round.mode !== 'free' ? ` · ${round.mode}` : ''}</span>
         {state === 'play' && durationMs && (
           <span className="dla-round__timer" role="timer" aria-label={`${secs} seconds left`} data-low={secs <= 5 ? 'true' : undefined}>
             <span className="dla-round__timerbar"><span className="dla-round__timerfill" style={{ transform: `scaleX(${frac})` }} /></span>

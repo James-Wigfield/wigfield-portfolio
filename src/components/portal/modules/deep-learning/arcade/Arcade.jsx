@@ -7,6 +7,7 @@ import { Run } from './hub/Run';
 import { GamePlayer } from './GamePlayer';
 import '../common.css';
 import '../lecture8-study/stage.css';
+import './kit/kit.css';
 import './arcade.css';
 
 /* ============================================================================

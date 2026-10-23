@@ -122,8 +122,8 @@ const moveUp = (o, k) => (k <= 0 ? o : [...o.slice(0, k - 1), o[k], o[k - 1], ..
 /* ── the patch board ─────────────────────────────────────────────────────── */
 function Board({ board, plugs, onCycle, real }) {
   const n = board.keys.length;
-  const W = Math.max(420, n * 96 + 60);
-  const H = 262;
+  const W = Math.max(360, n * 82 + 48);
+  const H = 270;
   const kx = (j) => 40 + ((W - 80) / Math.max(1, n - 1)) * j;
   const qx = W / 2;
   const ky = 62;
@@ -134,7 +134,7 @@ function Board({ board, plugs, onCycle, real }) {
   return (
     <svg className="dl8s-svg dla-xc__svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} style={{ maxWidth: W }}>
       <text x={8} y={13} className="dla-t dla-t--xs dla-t--m">{board.mode === 'cross' ? 'KEYS · encoder (English)' : 'KEYS · the same sentence'}</text>
-      <text x={8} y={H - 6} className="dla-t dla-t--xs dla-t--m">{board.mode === 'cross' ? 'QUERY · decoder (Spanish)' : 'QUERY · encoder word'}</text>
+      <text x={8} y={H - 4} className="dla-t dla-t--xs dla-t--m">{board.mode === 'cross' ? 'QUERY · decoder (Spanish)' : 'QUERY · encoder word'}</text>
       {/* the player's cables */}
       {board.keys.map((k, j) => (any ? <Beam key={`b${j}`} x1={qx} y1={qy - 16} x2={kx(j)} y2={ky + 16} w={w[j]} max={18} min={0} role="q" className={plugs[j] === 'off' ? 'dl8s-hide' : ''} /> : null))}
       {/* the toy's real cables after the answer */}
@@ -142,12 +142,12 @@ function Board({ board, plugs, onCycle, real }) {
       {board.keys.map((k, j) => (
         <g key={k + j}>
           <circle className={`dla-xc__lamp dla-xc__lamp--${plugs[j]}`} cx={kx(j)} cy={ky - 27} r={5.5} />
-          <Token x={kx(j)} y={ky} w={Math.min(90, (W - 80) / n - 6)} h={30} word={k} role={board.mode === 'cross' ? 'enc' : 'k'} on={plugs[j] !== 'off'} onPick={onCycle ? () => onCycle(j) : undefined} label={`${j + 1}: socket “${k}”, plug ${plugs[j]}; press to cycle`} />
+          <Token x={kx(j)} y={ky} w={Math.min(80, (W - 80) / Math.max(1, n - 1) - 8)} h={30} word={k} role={board.mode === 'cross' ? 'enc' : 'k'} on={plugs[j] !== 'off'} onPick={onCycle ? () => onCycle(j) : undefined} label={`${j + 1}: socket “${k}”, plug ${plugs[j]}; press to cycle`} />
           {real && <text x={kx(j)} y={ky + 32} textAnchor="middle" className="dla-t dla-t--xs dla-t--m">{real[j].toFixed(2)}</text>}
         </g>
       ))}
-      <Token x={qx} y={qy} w={Math.min(140, board.query.length * 12 + 40)} h={32} word={board.query} role={board.mode === 'cross' ? 'dec' : 'q'} on />
-      {board.produces && <text x={qx + Math.min(140, board.query.length * 12 + 40) / 2 + 10} y={qy + 5} className="dla-t dla-t--s">→ {board.produces}</text>}
+      <Token x={qx} y={qy} w={Math.min(150, board.query.length * 13 + 44)} h={32} word={board.query} role={board.mode === 'cross' ? 'dec' : 'q'} on />
+      {board.produces && <text x={qx} y={qy + 34} textAnchor="middle" className="dla-t dla-t--s">→ {board.produces}</text>}
     </svg>
   );
 }

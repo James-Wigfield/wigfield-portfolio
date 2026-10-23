@@ -72,7 +72,8 @@ Nothing numerical was wrong in any game; the wrongs were distractors that were t
 - Descent's RMSProp step count on long-valley holes is numerically fragile (the winner never changes).
 - Bottleneck's map pool covers six of the ten classes; two images are reasonably readable as another class (graded by the dataset label).
 - The hub's concept panel does not yet show a concept's `also` lectures.
-- See `tools/dl-arcade/QA-visual.md` for the visual review's findings and `accuracy/re-audit.md` for the final re-audit.
+- Visual QA (`tools/dl-arcade/QA-visual.md`, 54 screenshots): fixed afterwards — kit styles now load with the hub (buttons were unstyled on a cold load), cabinet marquees are tinted with ink titles (contrast in all themes), the round bar wraps into two rows at 390 px, the keypad sticks to the bottom at 390 px, The Exchange's board no longer shrinks its labels, Param Sniper's firing-line label moved off the line, in-game level badge reads "lvl n" (L1–L8 are lectures on the hub). Still open from that review: Bottleneck's map uses the study page's four colour groups for ten classes and its item thumbnail is tinted; Long Line's level-1 loop arc has a loose end; Chain Reaction's weight labels sit on their lines; Kernel Rush's small kernel cube at the top-left is unlabelled; some stages are tall at 390 px so game-specific controls (Lock in, Depart, Swing) can sit below the first screen; games pick some of their own in-stage colours rather than only the L8 role tokens.
+- See `accuracy/re-audit.md` for the final re-audit.
 
 ## What's left
 
