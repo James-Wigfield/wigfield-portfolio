@@ -14,5 +14,6 @@ export default {
   levels: 3,
   levelNames: ['SimpleRNN · the fade', 'LSTM · f, i, o', 'GRU · z, r'],
   glyph: Glyph,
+  art: 'cab-long-line.png',
   load: () => import('./LongLine.jsx'),
 };

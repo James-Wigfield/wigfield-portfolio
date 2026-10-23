@@ -11,5 +11,6 @@ export default {
   levels: 3,
   levelNames: ['single layers · 4 choices', 'keypad · stacks · shapes', 'model.summary()'],
   glyph: Glyph,
+  art: 'cab-param-sniper.png',
   load: () => import('./ParamSniper.jsx'),
 };

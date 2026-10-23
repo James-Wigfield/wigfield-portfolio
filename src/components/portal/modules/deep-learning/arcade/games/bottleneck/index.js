@@ -12,5 +12,6 @@ export default {
   levels: 3,
   levelNames: ['the four stages', 'tie the weights · pretraining', 'deeper stacks · decoys'],
   glyph: Glyph,
+  art: 'cab-bottleneck.png',
   load: () => import('./Bottleneck.jsx'),
 };

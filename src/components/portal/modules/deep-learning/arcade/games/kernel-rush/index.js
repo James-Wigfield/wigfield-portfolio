@@ -11,5 +11,6 @@ export default {
   levels: 3,
   levelNames: ['valid vs same · stride', 'filters span channels · pooling', 'stacks · receptive field'],
   glyph: Glyph,
+  art: 'cab-kernel-rush.png',
   load: () => import('./KernelRush.jsx'),
 };

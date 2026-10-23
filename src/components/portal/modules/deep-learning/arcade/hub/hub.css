@@ -40,6 +40,13 @@
 .dla-strip__bar span { position: absolute; inset: 0; background: var(--accent); transform-origin: left center; transition: transform 0.6s ease; }
 .dla-strip__xp { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); }
 
+/* pixel art (optional): crisp scaling, a slow idle bob on the mascot */
+.dla-sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+.dla-cab__sprite { width: 56px; height: 56px; }
+.dla-marquee__mascot { position: absolute; right: 1.1rem; bottom: 0.9rem; width: 72px; height: 72px; animation: dla-bob 2.6s ease-in-out infinite; }
+@keyframes dla-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@container arcade (max-width: 520px) { .dla-marquee__mascot { width: 48px; height: 48px; } }
+
 /* rings */
 .dla-ring { display: block; }
 .dla-ring__track { fill: none; stroke: var(--line-2); }
@@ -84,7 +91,7 @@
 .dla-cab__due { display: inline-flex; align-items: center; gap: 0.3rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); }
 .dla-cab__duedot { width: 7px; height: 7px; border-radius: 99px; background: var(--cab); }
 .dla-cab__screen { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem 0.85rem 0.6rem; flex: 1; }
-.dla-cab__glyph { color: var(--cab); display: block; height: 44px; }
+.dla-cab__glyph { color: var(--cab); display: block; height: 56px; }
 .dla-cab__glyph svg { height: 44px; width: auto; display: block; }
 .dla-cab__blurb { font-size: 0.82rem; line-height: 1.45; color: var(--ink-2); }
 .dla-cab__foot { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; border-top: 1px solid var(--line-2); padding: 0.5rem 0.85rem 0.6rem; }
@@ -138,7 +145,7 @@
 @container arcade (max-width: 520px) { .dla-grade__row { grid-template-columns: 6.5rem 1fr 3.4rem; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .dla-marquee__lights { animation: none; }
+  .dla-marquee__lights, .dla-marquee__mascot { animation: none; }
   .dla-cab { animation: none; transition: none; }
   .dla-bigcab, .dla-strip__bar span, .dla-ring__fill { transition: none; }
 }

@@ -11,5 +11,6 @@ export default {
   levels: 3,
   levelNames: ['one cable · patch board', 'Bahdanau vs Luong desks', 'masks · heads · scaling'],
   glyph: Glyph,
+  art: 'cab-the-exchange.png',
   load: () => import('./TheExchange.jsx'),
 };

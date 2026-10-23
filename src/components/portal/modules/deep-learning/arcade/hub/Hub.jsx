@@ -7,6 +7,7 @@ import { getBoxes, getProfile, getMix, getExam, resetAll } from '../core/storage
 import { levelProgress, maxLevelUnlocked, examUnlocked, EXAM_GAMES_NEEDED } from '../core/progress';
 import { todayISO } from '../core/rng';
 import { Cabinet, Ring } from './Cabinet';
+import { useSprite } from '../core/art';
 import './hub.css';
 
 /* ============================================================================
@@ -35,12 +36,14 @@ export function Hub({ onOpen }) {
   const [showConcepts, setShowConcepts] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const overall = mastery(boxes, DRILLED);
+  const mascot = useSprite('mascot.png');
 
   return (
     <div className="dla-hub">
       <header className="dla-hub__head">
         <div className="dla-marquee" aria-label="Gradient Arcade">
           <span className="dla-marquee__lights" aria-hidden="true" />
+          {mascot && <img className="dla-sprite dla-marquee__mascot" src={mascot} alt="" width={48} height={48} />}
           <h2 className="dla-marquee__title">Gradient Arcade</h2>
           <p className="dla-marquee__sub">CITS5017 · exam drills · {GAMES.length} games · {DRILLED.length} concepts</p>
         </div>

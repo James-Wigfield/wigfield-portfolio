@@ -11,5 +11,6 @@ export default {
   levels: 3,
   levelNames: ['forward pass · collapse', 'backprop · the fuse', 'task cards · deeper collapse'],
   glyph: Glyph,
+  art: 'cab-chain-reaction.png',
   load: () => import('./ChainReaction.jsx'),
 };

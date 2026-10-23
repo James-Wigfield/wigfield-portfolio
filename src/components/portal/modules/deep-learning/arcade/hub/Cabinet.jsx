@@ -1,4 +1,5 @@
 import { LECTURES } from '../core/concepts';
+import { useSprite } from '../core/art';
 
 /* ============================================================================
    GRADIENT ARCADE — A CABINET (one game on the hub)
@@ -23,6 +24,7 @@ const lecShort = (n) => LECTURES.find((l) => l.n === n)?.short ?? `L${n}`;
 
 export function Cabinet({ game, best, unlocked, mastery, due, onOpen, i = 0 }) {
   const Glyph = game.glyph ?? null;
+  const sprite = useSprite(game.art);
   const pct = best ? Math.round((100 * best.score) / best.maxScore) : null;
   return (
     <button type="button" className="dla-cab" style={{ '--cab': `var(${game.color ?? '--dlv-blue'})`, '--i': i }} onClick={() => onOpen(game.id)} aria-label={`${game.title}: ${game.blurb}`}>
@@ -31,7 +33,7 @@ export function Cabinet({ game, best, unlocked, mastery, due, onOpen, i = 0 }) {
         {due > 0 && <span className="dla-cab__due" title={`${due} concepts due`}><span className="dla-cab__duedot" aria-hidden="true" />{due} due</span>}
       </span>
       <span className="dla-cab__screen">
-        <span className="dla-cab__glyph" aria-hidden="true">{Glyph ? <Glyph /> : <DefaultGlyph />}</span>
+        <span className="dla-cab__glyph" aria-hidden="true">{sprite ? <img className="dla-sprite dla-cab__sprite" src={sprite} alt="" width={48} height={48} /> : Glyph ? <Glyph /> : <DefaultGlyph />}</span>
         <span className="dla-cab__blurb">{game.blurb}</span>
       </span>
       <span className="dla-cab__foot">

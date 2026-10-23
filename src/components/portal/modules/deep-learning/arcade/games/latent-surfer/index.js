@@ -12,5 +12,6 @@ export default {
   levels: 3,
   levelNames: LEVEL_NAMES,
   glyph: Glyph,
+  art: 'cab-latent-surfer.png',
   load: () => import('./LatentSurfer.jsx'),
 };

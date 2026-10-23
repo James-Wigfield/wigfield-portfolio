@@ -16,5 +16,6 @@ export default {
   levels: 3,
   levelNames: LEVEL_NAMES,
   glyph: Glyph,
+  art: 'cab-descent.png',
   load: () => import('./Descent.jsx'),
 };
