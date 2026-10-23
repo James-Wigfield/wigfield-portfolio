@@ -19,6 +19,9 @@ import boundaryBash from '../games/boundary-bash/index.js';
 import signalKeeper from '../games/signal-keeper/index.js';
 import forger from '../games/forger/index.js';
 import forecastDesk from '../games/forecast-desk/index.js';
+import blockBuilder from '../games/block-builder/index.js';
+import waveStamp from '../games/wave-stamp/index.js';
+import overfitClinic from '../games/overfit-clinic/index.js';
 
 export const GAMES = [
   paramSniper,
@@ -33,6 +36,9 @@ export const GAMES = [
   signalKeeper,
   forger,
   forecastDesk,
+  blockBuilder,
+  waveStamp,
+  overfitClinic,
 ].filter(Boolean);
 
 // Lazy React components, created once here (never during a render).
