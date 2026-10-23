@@ -84,3 +84,7 @@ See `Documents/cits5017/dl-arcade-report.md` (written at the end) — decisions 
   attention, argmax + L1 ≤ 0.6; level 2 Bahdanau vs Luong computations; level 3 √d_keys, causal mask, heads,
   self vs cross, SDPA shapes). Then: `core/games.js` already lists all eight; run the accuracy checkers, write
   `arcade-check.mjs`, QA, report, vault, memory.
+- 2026-10-23 morning: all eight Batch 1 games built (six builders relaunched on Opus 5.5), audited (zero WRONG remaining),
+  fixed and committed; Daily Mix / Exam flow fixed (Continue advances); full headless check green; report written at
+  `Documents/cits5017/dl-arcade-report.md`; vault + memory updated. Pending at the time of writing: the whole-arcade
+  re-audit and the visual QA report (their findings get applied on top). Batch 2 not started.
