@@ -260,6 +260,7 @@ function interpItem(rand, level, model, i, type) {
       const prompt = fill(INTERP.promptT, { k });
       return {
         id: `interpT-${i}`, type: 'interpT', kind: 'choice', concept: INTERP.concept, src: INTERP.src,
+        beyond: true, note: INTERP.beyondNote,
         ...base, k, slot: k, choices, answer, prompt, promptText: prompt,
         why: fill(INTERP.whyT, { k }),
         format: (v) => choices.find((c) => c.value === v)?.text ?? '—',
@@ -298,6 +299,8 @@ function interpItem(rand, level, model, i, type) {
     const prompt = mid ? INTERP.promptMid : fill(INTERP.promptSlot, { k });
     return {
       id: `${type}-${i}`, type, kind: 'choice', concept: INTERP.concept, src: INTERP.src,
+      // the slot's t = k/9 relies on linspace's endpoint=True default
+      ...(mid ? {} : { beyond: true, note: INTERP.beyondNote }),
       ...base, k, slot: mid ? null : k, choices, answer, prompt, promptText: prompt,
       why: mid ? INTERP.whyMid : fill(INTERP.whySlot, { k }),
       format: (v) => {
@@ -360,14 +363,15 @@ function lossItem(rand, level, i) {
   }
   return null;
 }
-export function lossTrap(item, given) {
+// every trap the given number matches (at γ = 0, "sign" and "muSign" give the same value)
+export function lossTraps(item, given) {
   const g = Number(given);
-  if (!Number.isFinite(g) || Math.abs(g - item.answer) <= item.tol) return null;
-  for (const k of ['noHalf', 'sign', 'muSign']) {
-    if (k === 'muSign' && item.dims.every((d) => d.mu === 0)) continue;
-    if (Math.abs(g - item.traps[k]) <= item.tol + 0.005) return k;
-  }
-  return null;
+  if (!Number.isFinite(g) || Math.abs(g - item.answer) <= item.tol) return [];
+  return ['noHalf', 'sign', 'muSign'].filter((k) => !(k === 'muSign' && item.dims.every((d) => d.mu === 0))
+    && Math.abs(g - item.traps[k]) <= item.tol + 0.005);
+}
+export function lossTrap(item, given) {
+  return lossTraps(item, given)[0] ?? null;
 }
 
 /* ── 5. facts ──────────────────────────────────────────────────────────── */
@@ -381,6 +385,7 @@ function factItem(rand, level, i, used) {
   const answer = choices.find((c) => c.right).value;
   return {
     id: `fact-${i}`, type: 'fact', kind: 'choice', concept: f.concept, src: f.src, factId: f.id,
+    beyond: f.beyond || undefined, note: f.note,
     tex: f.eq ? EQUATIONS[f.eq]?.tex ?? null : null,
     choices: choices.map((c) => ({ value: c.value, label: c.label, text: c.text, aria: c.aria })),
     answer,
@@ -418,7 +423,7 @@ export const EQ = {
 export function samplingLine(item, reveal) {
   const v = item.values;
   const g = v.variance === 1 ? '0' : tex(v.gamma, 3);
-  const head = `$z = ${tex(v.mu)} + \\exp(${g}/2)\\cdot ${texPar(v.eps)}`;
+  const head = `$\\text{codings} = ${tex(v.mu)} + \\exp(${g}/2)\\cdot ${texPar(v.eps)}`;
   return reveal ? `${head} = ${tex(v.mu)} + ${tex(v.sigma, 3)}\\cdot ${texPar(v.eps)} = ${tex(v.z, 3)}$` : `${head}$`;
 }
 export function findLines(item, a, b, mseNow) {

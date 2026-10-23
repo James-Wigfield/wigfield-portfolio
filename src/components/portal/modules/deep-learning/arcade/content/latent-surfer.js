@@ -156,7 +156,7 @@ export const INTERP = {
     { from: 'items', a: 1, b: 7 }, { from: 'items', a: 5, b: 4 }, { from: 'items', a: 10, b: 11 },
     { from: 'items', a: 0, b: 1 }, { from: 'items', a: 7, b: 11 }, { from: 'slide18' },
   ],
-  pairText: { items: 'μ of X_valid[%a%] (%ca%) and X_valid[%b%] (%cb%) from this page’s encoder', slide18: 'this page’s run of slide 18’s two tf.random.normal codings' },
+  pairText: { items: 'μ (codings_mean, no noise) of X_valid[%a%] (%ca%) and X_valid[%b%] (%cb%) from this page’s encoder', slide18: 'this page’s run of slide 18’s two tf.random.normal codings' },
   slots: { 2: [2, 3, 6, 7], 3: [1, 2, 3, 6, 7, 8] },
   // two decoded choices closer than this (pixel MSE) would look alike
   minApart: 0.02,
@@ -174,8 +174,10 @@ export const INTERP = {
     near: 'decoded coding at t = %t%',
   },
   whyMid: 'Slide 17: semantic interpolation interpolates the two codings and decodes the result; interpolating at the pixel level instead would look as if the two images were overlaid. The midpoint coding is $\\tfrac{1}{2}(\\text{codings[0]} + \\text{codings[1]})$, decoded by this page’s decoder.',
-  whySlot: 'np.linspace(codings[0], codings[1], 10) returns 10 codings with both ends included (slide 18’s strip starts on codings[0]’s T-shirt and ends on codings[1]’s Sneaker), so images[%k%] decodes $\\text{codings[0]} + \\tfrac{%k%}{9}(\\text{codings[1]} - \\text{codings[0]})$. Overlaying pixels is what slide 17 says semantic interpolation avoids.',
-  whyT: 'np.linspace(codings[0], codings[1], 10) puts 10 codings from codings[0] to codings[1] inclusive (slide 18’s strip begins and ends on the two codings’ images), so the steps are 1/9 apart and images[%k%] sits at $t = \\tfrac{%k%}{9}$, not $\\tfrac{%k%}{10}$.',
+  // slot and interpT items lean on linspace's endpoint=True default: beyond the slides
+  beyondNote: 'NumPy’s np.linspace includes both ends by default (endpoint=True); slide 18 only says “linearly interpolate 10 elements from the 2 codings”.',
+  whySlot: 'np.linspace(codings[0], codings[1], 10) returns 10 evenly spaced codings, and NumPy includes both ends by default (endpoint=True; slide 18 does not say so, but it is consistent with slide 18’s strip going from T-shirt to Sneaker), so images[%k%] decodes $\\text{codings[0]} + \\tfrac{%k%}{9}(\\text{codings[1]} - \\text{codings[0]})$. Overlaying pixels is what slide 17 says semantic interpolation avoids.',
+  whyT: 'np.linspace(codings[0], codings[1], 10) puts 10 evenly spaced codings from codings[0] to codings[1], both ends included by NumPy’s default (endpoint=True; slide 18 does not say so, but it is consistent with slide 18’s strip going from T-shirt to Sneaker), so the steps are 1/9 apart and images[%k%] sits at $t = \\tfrac{%k%}{9}$, not $\\tfrac{%k%}{10}$.',
 };
 
 /* ── 4. Latent loss, γ form (slide 12) ──────────────────────────────────── */
@@ -226,7 +228,7 @@ export const FACTS = [
     why: 'Slide 12: the encoder outputs γ (defined as log(σ²)) rather than σ. So γ is a log variance, which is why slide 14 names the head codings_log_var (# gamma) and the Sampling layer calls it logvar.',
   },
   {
-    id: 'scale', level: 1, concept: 'vae.sampling', src: { lecture: 6, slides: [12, 14] }, eq: null,
+    id: 'scale', level: 1, concept: 'vae.sampling', src: { lecture: 6, slides: [11, 12, 14] }, eq: null,
     prompt: 'Slide 14’s Sampling layer returns tf.random.normal(tf.shape(logvar)) * ▢ + mean. What is ▢?',
     choices: [
       { label: '`tf.exp(logvar / 2)`', text: 'tf.exp(logvar / 2)' },
@@ -245,7 +247,7 @@ export const FACTS = [
       { label: 'added to Codings σ and to Codings μ', text: 'added to Codings σ and to Codings μ' },
       { label: 'fed straight into Hidden 4', text: 'fed straight into Hidden 4' },
     ],
-    why: 'In Figure 17-11 Codings σ and the Gaussian noise meet at ×, and the product meets Codings μ at +; that sum feeds Hidden 4.',
+    why: 'In Figure 17-11 Codings σ and the Gaussian noise meet at ×, and the product meets Codings μ at +; that sum feeds Hidden 4 (slide 12 calls the decoder layers Hidden 3 and Hidden 4).',
   },
   {
     id: 'outputs', level: 1, concept: 'vae.encoderOutputs', src: { lecture: 6, slides: [11] }, eq: null,
@@ -303,7 +305,7 @@ export const FACTS = [
     why: 'By definition γ = log(σ²) (slide 12), so log(σᵢ²) is γᵢ itself: $1 + \\log(\\sigma_i^2) - \\sigma_i^2 - \\mu_i^2$ becomes $1 + \\gamma_i - \\exp(\\gamma_i) - \\mu_i^2$.',
   },
   {
-    id: 'half', level: 2, concept: 'vae.latentLoss', src: { lecture: 6, slides: [12] }, eq: null,
+    id: 'half', level: 2, concept: 'vae.latentLoss', src: { lecture: 6, slides: [12, 14] }, eq: null,
     prompt: 'Slide 12’s latent loss is ▢ × Σᵢ [1 + log(σᵢ²) − σᵢ² − μᵢ²]. What is ▢?',
     choices: [
       { label: '$-\\tfrac{1}{2}$', text: '−½', aria: 'minus one half' },
@@ -325,7 +327,7 @@ export const FACTS = [
     why: 'Slide 13: the latent loss is the Kullback-Leibler divergence between the target distribution (i.e., the Gaussian distribution) and the actual distribution of the codings; this gives the formula for ℒ on slide 12.',
   },
   {
-    id: 'step1', level: 2, concept: 'vae.interpolation', src: { lecture: 6, slides: [17] }, eq: null,
+    id: 'step1', level: 2, concept: 'vae.interpolation', src: { lecture: 6, slides: [17, 18] }, eq: null,
     prompt: 'Slide 17’s step 1 (run both images through the encoder to get their codings) can be replaced by…',
     choices: [
       { label: 'drawing random samples from the normal distribution', text: 'drawing random samples from the normal distribution' },
@@ -337,6 +339,8 @@ export const FACTS = [
   },
   {
     id: 'ends', level: 2, concept: 'vae.interpolation', src: { lecture: 6, slides: [18] }, eq: null,
+    beyond: true,
+    note: 'NumPy’s np.linspace includes both ends by default (endpoint=True); slide 18 only says “linearly interpolate 10 elements from the 2 codings”.',
     prompt: 'inter_codings = np.linspace(codings[0], codings[1], 10): images[0] and images[9] decode…',
     choices: [
       { label: 'codings[0] and codings[1] themselves', text: 'codings[0] and codings[1] themselves' },
@@ -344,7 +348,7 @@ export const FACTS = [
       { label: 'the midpoint coding, twice', text: 'the midpoint coding, twice' },
       { label: 'two fresh random codings', text: 'two fresh random codings' },
     ],
-    why: 'np.linspace includes both ends: slide 18’s strip of 10 begins with codings[0]’s T-shirt and ends with codings[1]’s Sneaker.',
+    why: 'NumPy’s np.linspace includes both ends by default (endpoint=True), so images[0] and images[9] decode codings[0] and codings[1] themselves. Slide 18 only says “linearly interpolate 10 elements from the 2 codings”; this is consistent with its strip going from T-shirt to Sneaker.',
   },
   {
     id: 'gammaWhy', level: 2, concept: 'vae.gamma', src: { lecture: 6, slides: [12] }, eq: 'vaeGammaDef',

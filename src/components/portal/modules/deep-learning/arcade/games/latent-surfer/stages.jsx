@@ -6,7 +6,7 @@ import { Maths, MLine, MEq } from '../../kit/Maths';
 import { Why } from '../../kit/WhyText';
 import {
   fill, fmt, snap, decodePx, pixelMse, sliceCoding, mapTiles, findLoss, findLines, sigmaOf,
-  samplingTrap, samplingLine, lossTrap, lossSub, choicePx, stripPx, EQ,
+  samplingTrap, samplingLine, lossTraps, lossSub, choicePx, stripPx, EQ,
 } from '../../maths/latentSurfer';
 import { UI, FIND, SAMPLING, INTERP, LOSS } from '../../content/latent-surfer';
 import { Px, SliceMap, Meter, SampleWire, NumberLine, Bells, Heat } from './parts.jsx';
@@ -230,7 +230,7 @@ export function LossStage({ item, round }) {
   const live = isLive(round);
   const reveal = !!round.feedback;
   const given = reveal ? Number(round.feedback.given) : null;
-  const trap = reveal && !round.feedback.correct ? lossTrap(item, round.feedback.given) : null;
+  const traps = reveal && !round.feedback.correct ? lossTraps(item, round.feedback.given) : [];
   const dims = item.dims.map((d, i) => ({
     mu: d.mu,
     sigma: sigmaOf(Math.log(d.variance)),
@@ -246,7 +246,7 @@ export function LossStage({ item, round }) {
             <Heat value={fmt(item.answer, 3)} given={given} max={LOSS.meterMax} label={UI.heat} aria={UI.heatAria} reveal={reveal} unknown={UI.meterUnknown} />
           </div>
           <Feedback feedback={round.feedback} format={fmtAns} />
-          {trap && <p className="dla-ls__trap"><span className="dla-dot" aria-hidden="true" />{LOSS.traps[trap]}</p>}
+          {traps.map((k) => <p key={k} className="dla-ls__trap"><span className="dla-dot" aria-hidden="true" />{LOSS.traps[k]}</p>)}
         </div>
         <Keypad value={value} onChange={setValue} onSubmit={() => value !== '' && value !== '-' && round.submit(Number(value))} decimal negative disabled={!live} active={live} label={UI.heat} />
       </div>
