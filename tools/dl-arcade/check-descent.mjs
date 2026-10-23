@@ -174,6 +174,16 @@ expectV('PiecewiseConstantDecay at 0, 60,000, 90,000 (slide 56)', [0, 60000, 900
   const etas = D.performanceSched([0.5, 0.45, 0.4, 0.41, 0.42, 0.41, 0.43, 0.44, 0.3], { eta0: 0.01, factor: 0.5, patience: 5 });
   expect('ReduceLROnPlateau cuts 0.010 → 0.005 after 5 flat epochs (slide 57)', etas[6] === 0.01 && etas[7] === A['l2.sched.performance'].value);
 }
+{
+  // the performance chart is shaped like slide 58's run: one cut, 0.010 → 0.005 at epoch 16,
+  // BEFORE the validation loss drops (epoch 17), and η stays at 0.005 to the end
+  const { pts, loss } = G.schedCurve({ curve: 'performance' });
+  const etas = pts.map((p) => p.eta);
+  const cuts = etas.map((v, i) => (i > 0 && v < etas[i - 1] ? i : null)).filter((i) => i !== null);
+  expect('performance chart: one cut, at epoch 16 (slide 58)', cuts.length === 1 && cuts[0] === 16, `cuts at ${cuts.join(', ')}`);
+  expect('performance chart: 0.010 → 0.005 (slide 58)', etas[15] === 0.01 && etas[24] === 0.005);
+  expect('performance chart: the loss drop follows the cut (slide 58)', loss[17] < Math.min(...loss.slice(0, 17)) - 0.02 && Math.min(...loss.slice(12, 17)) > Math.min(...loss.slice(0, 12)));
+}
 
 /* ── 3. the rounds ──────────────────────────────────────────────────── */
 const ESC = new Set(['sgd', 'momentum', 'nag', 'adagrad', 'rmsprop', 'adam']);
@@ -214,6 +224,20 @@ function checkHole(it, where) {
   if ((k === 'valley' || (k === 'flats' && it.answer === 'adam')) && bag.includes('adagrad')) expect(`${where} AdaGrad stalls short of the flag`, it.results.adagrad.status === 'stalled');
   if (k === 'narrow') expect(`${where} momentum swings past the flag, further than NAG`, it.results.momentum.overshoot > spec.r && it.results.nag.overshoot < it.results.momentum.overshoot);
   if (it.answer === 'adam' && k === 'dimple') expect(`${where} Adam is the only club with momentum in the bag`, !bag.includes('momentum') && !bag.includes('nag'));
+  if (k === 'bowl') {
+    // slide 35 (momentum almost always faster than GD) and Table 11-2 (slide 47): on every
+    // bowl, momentum, NAG and Adam hole sooner than plain GD, in the bag or not
+    const off = (c) => {
+      const { path, diverged } = D.run(c, g, spec.start, { eta: spec.eta }, spec.nMax, 50);
+      return D.holedAt(path, spec.flag, spec.r, diverged) ?? Infinity;
+    };
+    const sgd = off('sgd');
+    for (const c of ['momentum', 'nag', 'adam']) {
+      const n = off(c);
+      expect(`${where} ${c} beats SGD on the bowl (slides 35, 47)`, Number.isFinite(n) && n < sgd, `${n} vs SGD ${sgd}`);
+    }
+    if (bag.length === 6) expect(`${where} six-club bowl is marked beyond the slides`, it.beyond === true && typeof it.note === 'string');
+  }
   stats.holes++;
   stats.parSteps.push(it.par.steps);
 }

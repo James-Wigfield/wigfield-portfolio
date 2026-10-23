@@ -39,8 +39,8 @@ const r2 = (v) => Math.round(v * 100) / 100;
 export const SAMPLERS = {
   bowl(R) {
     const eta = R.pick([1.5, 2]);
-    const b = U(R, 1.3, 1.7) / eta; // ηb in [1.3, 1.7]: stable but brisk across
-    const a = b / U(R, 15, 30); // 15–30× flatter along
+    const b = U(R, 0.6, 1) / eta; // ηb in [0.6, 1]: stable across for every club (NAG too)
+    const a = b / U(R, 25, 40); // 25–40× flatter along: GD crawls there, momentum is faster (slide 35)
     return { kind: 'bowl', p: { a, b }, start: [U(R, -4.6, -3.8), sgn(R) * U(R, 1.8, 2.5)], flag: [U(R, 0.8, 2.2), U(R, -0.3, 0.3)], r: 0.3, eta, nMax: 120 };
   },
   flats(R) {
@@ -68,6 +68,9 @@ export const SAMPLERS = {
     const start = [flag[0] - L * c - off * s, flag[1] - L * s + off * c];
     return { kind: 'narrow', p: { a, b, phi }, start, flag, r: 0.3, eta, nMax: 120 };
   },
+  // Known quirk (audit row 31): RMSProp reaches the flag here, then its normalised near-zero
+  // θ₂ gradient (ε = 10⁻¹⁰ inside the root) jitters it, so its par COUNT is sensitive to
+  // ~1e-10 changes in the gradient; the winning club never changes.
   valley(R) {
     return { kind: 'valley', p: { k: U(R, 0.3, 0.5), w: U(R, 0.8, 1.2), b: U(R, 0.8, 1.2) }, start: [U(R, -4.6, -4), sgn(R) * U(R, 1, 1.6)], flag: [U(R, 3, 4), U(R, -0.3, 0.3)], r: 0.3, eta: r2(U(R, 0.2, 0.3)), nMax: 160 };
   },
@@ -155,9 +158,19 @@ export const TEMPLATES = {
     { kind: 'flats', bag: ['sgd', 'adagrad', 'adam'], win: 'adam', tier: 1, need: { adagrad: 'stalled' } },
     { kind: 'narrow', bag: ['sgd', 'momentum', 'nag'], win: 'nag', tier: 1, overshoot: 'momentum' },
     { kind: 'valley', bag: ['sgd', 'adagrad', 'rmsprop'], win: 'rmsprop', tier: 1, need: { adagrad: 'stalled' } },
-    { kind: 'bowl', bag: CLUB_IDS, win: 'adagrad', tier: 2 },
+    { kind: 'bowl', bag: CLUB_IDS, win: 'adagrad', tier: 2, whyKey: 'bowl.adagrad.six' }, // beyond: no slide ranks AdaGrad against momentum/NAG/Adam
   ],
 };
+
+/* slide 35: momentum "almost always goes faster than regular gradient descent";
+   Table 11-2 (slide 47) rates momentum, NAG and Adam above SGD. On a bowl each
+   of them must hole sooner than plain GD (swung even when not in the bag). */
+export const FASTER_THAN_GD = ['momentum', 'nag', 'adam'];
+export function bowlOrderOk(spec) {
+  const sc = scoreHole(spec, ['sgd', ...FASTER_THAN_GD]);
+  const st = (c) => sc[c].steps ?? Infinity;
+  return FASTER_THAN_GD.every((c) => st(c) < st('sgd'));
+}
 
 export function makeHole(R, tpl, n) {
   for (let tries = 0; tries < 60; tries++) {
@@ -169,6 +182,8 @@ export function makeHole(R, tpl, n) {
     if (tpl.need && Object.entries(tpl.need).some(([c, st]) => results[c].status !== st)) continue;
     // the narrow-valley story: momentum swings past the flag, and further than NAG
     if (tpl.overshoot && !(results[tpl.overshoot].overshoot > spec.r && results[tpl.win].overshoot < results[tpl.overshoot].overshoot)) continue;
+    // the elongated bowl must agree with slide 35 / Table 11-2 (slide 47)
+    if (tpl.kind === 'bowl' && !bowlOrderOk(spec)) continue;
     const win = WINS[tpl.whyKey ?? `${tpl.kind}.${tpl.win}`];
     const H = HOLES[tpl.kind];
     const club = CLUBS[tpl.win];
@@ -182,6 +197,7 @@ export function makeHole(R, tpl, n) {
       choices: R.shuffle(tpl.bag).map((c) => ({ value: c, label: CLUBS[c].label })),
       promptText: `${H.name}: which club makes par?`,
       why: win.why,
+      ...(win.beyond ? { beyond: true, note: win.note } : {}),
       hole: spec,
       results,
       par: { club: par.club, steps: par.steps },
@@ -377,7 +393,9 @@ export function schedCurve(item) {
   }
   if (item.curve === 'performance') {
     const loss = [];
-    for (let e = 0; e <= 24; e++) loss.push(e <= 11 ? 0.48 - 0.1 * (1 - Math.exp(-e / 3)) : e <= 16 ? 0.377 + 0.0016 * (e - 11) : 0.356 + 0.001 * Math.sin(e));
+    // best at epoch 11, no better for epochs 12–16 → η cut at 16, THEN the loss drops at 17
+    // and keeps edging down, so η stays at 0.005 to the end (one cut, as on slide 58)
+    for (let e = 0; e <= 24; e++) loss.push(e <= 11 ? 0.48 - 0.1 * (1 - Math.exp(-e / 3)) : e <= 16 ? 0.3826 + 0.0016 * (e - 11) : 0.356 - 0.0004 * (e - 17) + 0.0006 * Math.sin(e));
     const etas = performanceSched(loss, { eta0: 0.01, factor: 0.5, patience: 5 });
     etas.forEach((eta, t) => pts.push({ t, eta }));
     return { pts, T: 24, loss, mark: null };

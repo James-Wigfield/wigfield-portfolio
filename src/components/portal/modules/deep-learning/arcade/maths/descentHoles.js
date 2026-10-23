@@ -5,11 +5,12 @@
      { kind, p: {…surface params}, start: [θ₁, θ₂], flag: [θ₁, θ₂], r, eta, nMax }
    buildHole(spec) → { J(θ), grad(θ) } rebuilds the surface from it.
 
-   The course is θ₁ ∈ [−5, 5] (horizontal) × θ₂ ∈ [−3, 3] (vertical), as in
-   the slides' contour figures (Figure 11-7, 11-8).
+   The course is θ₁ ∈ [−5, 5] (horizontal) × θ₂ ∈ [−3, 3] (vertical): the
+   game's own range (the slides' contour figures, Figure 11-7 and 11-8, print
+   no axis values).
 
    kinds (the surface; which club it rewards is checked by actually running
-   every club in maths/descentGame.js):
+   every club in maths/descentItems.js):
      bowl     ½(a(θ₁−f₁)² + b(θ₂−f₂)²), b ≫ a — the elongated bowl (slide 38)
      flats    ½k((θ₁−f₁)² + q(θ₂−f₂)²) with ηk tiny — the local gradient is
               tiny (slide 34)

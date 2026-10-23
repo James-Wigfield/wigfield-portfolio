@@ -22,7 +22,7 @@ export const INTRO = {
   line: 'Read the hole, call the club that makes par, then swing.',
   controls: [
     'Pick a club (keys 1–6), then Swing (Enter or Space). Your call is the answer.',
-    'Every club swings with the same η (the dial) and the slides’ defaults: β = 0.9, ρ = 0.9, β₁ = 0.9, β₂ = 0.999, ε = 10⁻¹⁰.',
+    'Every club swings with the same η (the dial) and the slides’ defaults: β = 0.9, ρ = 0.9, β₁ = 0.9, β₂ = 0.999; ε = 10⁻¹⁰ is AdaGrad’s value (slide 38), reused for RMSProp and Adam.',
     'Par = the fewest steps until the ball stays in the cup, among the clubs in this hole’s bag.',
   ],
 };
@@ -133,8 +133,8 @@ export const WINS = {
     src: L2(34),
   },
   'flats.adam': {
-    why: 'The local gradient is tiny: gradient descent goes very slowly, and AdaGrad’s ever-growing $\\mathbf{s}$ scales its steps down until it stops too early. Adam combines momentum optimization and RMSProp: step 5 divides $\\hat{\\mathbf{m}}$ by $\\sqrt{\\hat{\\mathbf{s}} + \\epsilon}$, so a tiny but steady gradient still moves the ball, and $\\mathbf{m}$ keeps it rolling.',
-    src: L2(34, 40, 43),
+    why: 'The local gradient is tiny: gradient descent goes very slowly, and AdaGrad’s ever-growing $\\mathbf{s}$ scales its steps down until it stops too early. Adam combines the ideas of momentum optimization and RMSProp: its step 1, $\\mathbf{m} \\leftarrow \\beta_1 \\mathbf{m} + (1 - \\beta_1) \\nabla_\\theta J(\\theta)$, is momentum’s idea, and it is an adaptive learning rate algorithm, like AdaGrad and RMSProp.',
+    src: L2(34, 40, 43, 44),
   },
   'dimple.momentum': {
     why: 'Gradient descent does not care what the earlier gradients were, so it settles where the local gradient is zero: the dimple. Momentum keeps the earlier gradients in $\\mathbf{m}$ and can help roll past local optima.',
@@ -155,6 +155,13 @@ export const WINS = {
   'valley.sgd': {
     why: 'AdaGrad’s $\\mathbf{s}$ only grows, so its learning rate gets scaled down so much that it stalls before the flag on a long course: it often stops too early. Plain gradient descent keeps the same η, so the steady slope of the valley floor carries it all the way.',
     src: L2(34, 40),
+  },
+  // the six-club bowl: the slides rank AdaGrad only against GD (38–40) and RMSProp (42)
+  'bowl.adagrad.six': {
+    why: 'Gradient descent goes quickly down the steepest slope, then very slowly along the bottom of the valley. AdaGrad scales the gradient down along the steepest dimensions, $\\theta \\leftarrow \\theta - \\eta \\nabla_\\theta J(\\theta) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}$, so it points more toward the global minimum; it frequently performs well on simple quadratic problems like this bowl. That it also beats momentum, NAG and Adam here is this scorecard’s result, not a slide claim.',
+    src: L2(38, 39, 40, 42),
+    beyond: true,
+    note: 'The slides compare AdaGrad only with gradient descent (slides 38–40) and RMSProp (slide 42); they do not rank it against momentum, NAG or Adam. The par club here is decided by the simulation.',
   },
   'bowl.adagrad.vsRms': {
     why: 'RMSProp almost always performs much better than AdaGrad, except on very simple problems, and this elongated bowl is one: AdaGrad scales the gradient down along the steep dimension and its decaying learning rate settles it in the cup, as on simple quadratic problems.',
@@ -276,7 +283,7 @@ export const EQ = [
     why: 'Nesterov Accelerated Gradient (Nesterov momentum optimization) is momentum with the gradient measured at $\\theta + \\beta \\mathbf{m}$.',
   },
   {
-    id: 'eq.nag.keras', level: 2, concept: 'optim.nag', src: L2(37),
+    id: 'eq.nag.keras', level: 2, concept: 'optim.nag', src: L2(37, 45, 46),
     prompt: 'Which Keras optimizer is NAG?',
     choices: [
       { value: 'a', label: 'SGD(learning_rate=0.001, momentum=0.9, nesterov=True)' },
@@ -436,7 +443,7 @@ export const CLIP = {
     choices: [{ value: 'clipvalue', label: 'SGD(clipvalue=1.0)' }, { value: 'clipnorm', label: 'SGD(clipnorm=1.0)' }],
     why: {
       clipvalue: 'The swing changed direction: every component was clipped to a value between −1.0 and 1.0 on its own, which is clipvalue=1.0. clipnorm=1.0 retains the gradient vector orientation.',
-      clipnorm: 'The swing kept its direction and only got shorter: clipnorm=1.0 retains the gradient vector orientation. clipvalue=1.0 clips each component to between −1.0 and 1.0 on its own.',
+      clipnorm: 'The swing kept its direction: clipnorm=1.0 retains the gradient vector orientation. clipvalue=1.0 clips each component to between −1.0 and 1.0 on its own.',
     },
   },
   value: {
