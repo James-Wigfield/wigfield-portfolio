@@ -35,7 +35,8 @@ for (const sel of clicks) {
   await page.click(sel).catch((e) => msgs.push(`click failed ${sel}: ${e.message}`));
   await new Promise((r) => setTimeout(r, 500));
 }
-for (const k of keys) { await page.keyboard.press(k); await new Promise((r) => setTimeout(r, 200)); }
+const keyGap = Number(rest.find((a) => a.startsWith('--gap='))?.slice(6) ?? 200);
+for (const k of keys) { await page.keyboard.press(k); await new Promise((r) => setTimeout(r, keyGap)); }
 await new Promise((r) => setTimeout(r, 300));
 if (rest.includes('--el')) {
   const el = await page.$('.dla');

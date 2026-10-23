@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sfx } from './sfx';
 import { getSettings, setSettings } from '../core/storage';
+import { grade } from './grade.js';
+
+export { grade };
 
 /* ============================================================================
    GRADIENT ARCADE — THE ROUND ENGINE (every game runs on this)
@@ -40,19 +43,6 @@ import { getSettings, setSettings } from '../core/storage';
 export const FEEDBACK_MS = 520;
 export const pointsFor = (combo) => 10 + 2 * Math.min(Math.max(combo - 1, 0), 5);
 export const perfectScore = (n) => Array.from({ length: n }, (_, i) => pointsFor(i + 1)).reduce((a, b) => a + b, 0);
-
-const near = (a, b, tol = 0) => Math.abs(Number(a) - Number(b)) <= tol + 1e-9;
-const eqShape = (a, b, tol = 0) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => (b[i] === null ? v === null : near(v, b[i], tol)));
-
-export function grade(item, given) {
-  if (typeof item.check === 'function') return !!item.check(given);
-  switch (item.kind) {
-    case 'number': return given !== '' && given !== null && given !== undefined && near(given, item.answer, item.tol ?? 0);
-    case 'shape': return eqShape(given, item.answer, item.tol ?? 0);
-    case 'choice': return given === item.answer;
-    default: return JSON.stringify(given) === JSON.stringify(item.answer);
-  }
-}
 
 export function useRound({ gameId, seed, level = 1, mode = 'free', durationMs = null, onRoundEnd, items: itemsIn, next = null, total: totalIn = null }) {
   const items = useMemo(() => itemsIn ?? [], [itemsIn]);
