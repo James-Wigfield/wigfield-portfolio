@@ -308,6 +308,13 @@ try {
 
   // ── persistence ───────────────────────────────────────────────────────────
   if (want('persist')) {
+    // make sure there is progress to persist (a clean round when this scenario runs alone)
+    const warm = await open({ tag: 'persist-warm', route: `${ROUTE}/param-sniper?seed=3&level=1&ms=45000` });
+    if (!((await lsJson(warm, 'dla:profile'))?.xp > 0)) {
+      await waitForHook(warm, 'param-sniper').catch(() => {});
+      await playRound(warm, { wrongEvery: 0, label: 'persist warm-up' });
+    }
+    await warm.close();
     const pp = await open({ tag: 'persist', route: ROUTE });
     const prof = await lsJson(pp, 'dla:profile');
     const shown = await pp.evaluate(() => document.querySelector('.dla-strip__xp')?.textContent ?? '');
