@@ -345,11 +345,19 @@ for (const level of [1, 2, 3]) {
         const v = sc.xs.reduce((s, x) => s + (x - mu) ** 2, 0) / m;
         const want = { 'bn-mu': mu, 'bn-var': v, 'bn-xhat': (sc.xi - mu) / Math.sqrt(v), 'bn-z': sc.gamma * ((sc.xi - mu) / Math.sqrt(v)) + sc.beta }[it.tpl];
         expectNear(`${where} slide 24 by hand`, it.answer, want, 1e-9);
+        // negatives inside the arithmetic are bracketed: (6 - (-1)), 3 \times (-1) + 2
+        expect(`${where} why brackets negatives`, !/[-+] -\d|\\times -\d/.test(it.why), it.why);
+      }
+      if (it.tpl === 'heVar') expect(`${where} article agrees ("an ELU")`, !/\ba [AEIOU]/.test(it.prompt), it.prompt);
+      if (it.tpl === 'seluConditions') expect(`${where} SELU prompt says "if" (slide 16), not "only if"`, !/only if/.test(it.prompt));
+      if (it.tpl === 'bnBenefit' && it.answer === 'saturating') {
+        expect(`${where} "saturating" benefit shows a stack whose ∂L/∂z vanishes`, S.simulate(sc.before).layers[0].ratio < S.GRAD_LOW, JSON.stringify(sc.before));
       }
       if (it.tpl === 'clipVector') expect(`${where} clipvalue by hand`, it.answer.every((v, k) => near(v, Math.max(-1, Math.min(1, sc.g[k])))));
       if (it.tpl === 'clipNorm') {
         const nrm = Math.hypot(...sc.g);
         expect(`${where} clipnorm by hand`, it.answer.every((v, k) => near(v, nrm > 1 ? sc.g[k] / nrm : sc.g[k], 1e-9)));
+        expect(`${where} clipnorm why: "left unchanged" exactly when ‖g‖ ≤ 1`, /left unchanged \(its norm is already ≤ 1\)/.test(it.why) === (nrm <= 1), it.why);
       }
       if (it.tpl === 'diagnose') expect(`${where} diagnose answer from the simulation`, it.answer === S.verdict(S.simulate({ ...sc.before })));
       if (it.tpl === 'seluConditions') {
@@ -359,8 +367,22 @@ for (const level of [1, 2, 3]) {
       if (sc.type === 'stack') {
         expect(`${where} stack before is sick`, S.verdict(S.simulate(sc.before)) !== 'healthy' || it.tpl === 'diagnose');
         if (sc.after) expect(`${where} stack after heals`, S.simulate(sc.after).healthy === 10);
+        // the sim vanishes for sigmoid on Glorot, which Table 11-1 pairs: never picture it
+        expect(`${where} no sigmoid-on-Glorot stack`, ![sc.before, sc.after].some((c) => c?.act === 'sigmoid' && /^glorot/.test(c.init)));
       }
     });
+  }
+}
+// a within-norm clipnorm item (g = (0.3, 0.4), ‖g‖ = 0.5) says g is left unchanged, not "g × 1.0/0.5"
+{
+  let kept = null;
+  for (let seed = 1; seed <= 2000 && !kept; seed++) {
+    kept = G.makeItems(rng(seed * 7919 + 3), 3).find((it) => it.tpl === 'clipNorm' && Math.hypot(...it.scene.g) <= 1) ?? null;
+  }
+  expect('a within-norm clipnorm item turns up (L3 seeds ≤ 2000)', !!kept);
+  if (kept) {
+    expect('within-norm clipnorm: answer = g', kept.answer.every((v, k) => near(v, kept.scene.g[k])));
+    expect('within-norm clipnorm why says g is left unchanged', /left unchanged \(its norm is already ≤ 1\)/.test(kept.why) && !/1\.0\/0\.5/.test(kept.why), kept.why);
   }
 }
 expect('beyond items are rare (< 4% of all items)', beyond / total < 0.04, `${beyond} / ${total}`);

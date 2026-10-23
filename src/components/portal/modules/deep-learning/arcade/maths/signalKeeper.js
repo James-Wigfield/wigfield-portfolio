@@ -44,6 +44,7 @@ export const fmt = (x) => {
 };
 // inside $…$ (KaTeX takes an ASCII minus)
 const tx = (x) => String(clean(Number(x), 8));
+const txP = (x) => (clean(Number(x), 8) < 0 ? `(${tx(x)})` : tx(x)); // a negative inside an expression: 6 - (-1)
 export const fmtVec = (v) => `(${v.map(fmt).join(', ')})`;
 const txVec = (v) => `(${v.map(tx).join(', ')})`;
 // a ratio for the why card: 2 significant figures, or a power of ten when far from 1
@@ -221,7 +222,7 @@ function initCompute(R, n, kind) {
   else if (kind === 'glorotLimit') { answer = glorotLimit(fin, fout); dist = 'uniform'; }
   else if (kind === 'heVar') { answer = heVariance(fin); concept = 'init.he'; init = 'he'; act = ACTS[R.pick(TABLE.he)].label; }
   else { answer = lecunVariance(fin); concept = 'init.lecun'; init = 'lecun'; }
-  const vars = { fin, fout, favg, ans: tx(answer), act, r2: tx(clean(3 / favg)) };
+  const vars = { fin, fout, favg, ans: tx(answer), act, article: /^[AEIOU]/i.test(act ?? '') ? 'an' : 'a', r2: tx(clean(3 / favg)) };
   const T = TEXT[kind];
   const texs = init === 'glorot' ? MATHS.glorot : MATHS[init];
   return numberItem({
@@ -339,7 +340,7 @@ function bnItem(R, n, ask) {
   const sum = xs.reduce((s, x) => s + x, 0);
   const sq = xs.reduce((s, x) => s + (x - b.mu) ** 2, 0);
   const vars = { m: xs.length, xs: fmtVec(xs).replace(/^\(/, '[').replace(/\)$/, ']'), xi: fmt(xi), gamma: fmt(gamma), beta: fmt(beta) };
-  const whyVars = { m: xs.length, sum: tx(sum), sq: tx(sq), mu: tx(b.mu), var: tx(b.var), xi: tx(xi), xhat: tx(b.xhat[idx]), gamma: tx(gamma), beta: tx(beta), z: tx(b.z[idx]) };
+  const whyVars = { m: xs.length, sum: tx(sum), sq: tx(sq), mu: tx(b.mu), muP: txP(b.mu), var: tx(b.var), xi: tx(xi), xhat: tx(b.xhat[idx]), xhatP: txP(b.xhat[idx]), gamma: tx(gamma), beta: tx(beta), betaP: txP(beta), z: tx(b.z[idx]) };
   const prompt = fill(BN.prompts[ask], vars);
   return numberItem({
     id: `bn-${ask}-${n}`, tpl: `bn-${ask}`, concept: 'bn.algorithm', src: BN.src,
@@ -368,7 +369,9 @@ function bnCount(R, n, which) {
   });
 }
 
-function bnBenefit(R, n, b, cfg) {
+function bnBenefit(R, n, b, heal) {
+  // an item may name its stack (the 'saturating' one needs a stack whose gradients vanish)
+  const cfg = b.stack ?? heal;
   const after = { ...cfg, bn: 'before' };
   return choiceItem({
     id: `bnBenefit-${n}`, tpl: 'bnBenefit', concept: 'bn.benefits', src: BN.benefitSrc,
@@ -407,7 +410,7 @@ function clipNormItem(R, n) {
     answer: ans, slots: ans.length,
     check: (given) => nearVec(given, ans, 1e-6),
     format: (v) => (Array.isArray(v) ? fmtVec(v.map(Number)) : '—'),
-    why: fill(CLIP.normWhy, { norm: tx(norm), ans: `$${txVec(ans)}$` }),
+    why: fill(norm <= 1 ? CLIP.normKeptWhy : CLIP.normWhy, { norm: tx(norm), ans: `$${txVec(ans)}$` }),
     scene: { type: 'clip', g, clipped: ans, mode: 'norm' },
   };
 }

@@ -177,7 +177,7 @@ export const TEXT = {
     src: L2(7),
   },
   heVar: {
-    prompt: 'He initialization (normal) for a {act} layer: fan_in = {fin}, fan_out = {fout}. What is σ²?',
+    prompt: 'He initialization (normal) for {article} {act} layer: fan_in = {fin}, fan_out = {fout}. What is σ²?',
     why: 'Table 11-1 (slide 8): He uses $\\sigma^2 = 2/\\text{fan}_{\\text{in}} = 2/{fin} = {ans}$; fan_out does not enter.',
     src: L2(8),
   },
@@ -236,7 +236,7 @@ export const FAN_PAIRS = {
 
 /* ── slide 16: SELU's self-normalisation constraints ──────────────────── */
 export const SELU = {
-  prompt: 'SELU preserves the mean and variance between consecutive layers only if the slide’s constraints hold. Select exactly those constraints.',
+  prompt: 'SELU preserves the mean and variance between consecutive layers if the slide’s constraints hold. Select exactly those constraints.',
   promptText: 'Select exactly slide 16’s constraints for SELU to self-normalise',
   // the three constraints, as slide 16 lists them
   conditions: [
@@ -359,8 +359,8 @@ export const BN = {
   why: {
     mu: 'Slide 24: $\\mu_B = \\frac{1}{m_B}\\sum x^{(i)} = {sum}/{m} = {mu}$.',
     var: 'Slide 24: $\\sigma_B^2 = \\frac{1}{m_B}\\sum (x^{(i)} - \\mu_B)^2 = {sq}/{m} = {var}$ with $\\mu_B = {mu}$ (divide by m_B, not m_B − 1).',
-    xhat: 'Slide 24: $\\hat{x} = (x - \\mu_B)/\\sqrt{\\sigma_B^2 + \\epsilon} = ({xi} - {mu})/\\sqrt{{var}} = {xhat}$ (ε ≈ 0).',
-    z: 'Slide 24: $\\hat{x} = ({xi} - {mu})/\\sqrt{{var}} = {xhat}$, then $z = \\gamma \\otimes \\hat{x} + \\beta = {gamma} \\times {xhat} + {beta} = {z}$.',
+    xhat: 'Slide 24: $\\hat{x} = (x - \\mu_B)/\\sqrt{\\sigma_B^2 + \\epsilon} = ({xi} - {muP})/\\sqrt{{var}} = {xhat}$ (ε ≈ 0).',
+    z: 'Slide 24: $\\hat{x} = ({xi} - {muP})/\\sqrt{{var}} = {xhat}$, then $z = \\gamma \\otimes \\hat{x} + \\beta = {gamma} \\times {xhatP} + {betaP} = {z}$.',
   },
   // number of parameters per BN layer (slides 24 and 27)
   count: {
@@ -429,7 +429,8 @@ export const BN = {
   ],
   // slide 25 with a stack that keeps its bad init and gains BN
   benefit: [
-    { id: 'saturating', prompt: 'This stack keeps its N(0, 1) init. With BN, Ioffe and Szegedy found vanishing gradients so strongly reduced that they could use …',
+    // shown on sigmoid + N(0, 1), the bnHeals stack whose ∂L/∂z vanishes in the simulation (tanh and ReLU on N(0, 1) explode)
+    { id: 'saturating', stack: { act: 'sigmoid', init: 'n01' }, prompt: 'This stack keeps its N(0, 1) init. With BN, Ioffe and Szegedy found vanishing gradients so strongly reduced that they could use …',
       choices: [
         { value: 'saturating', label: 'saturating activation functions, e.g. tanh' },
         { value: 'smallLr', label: 'only much smaller learning rates' },
@@ -464,6 +465,7 @@ export const CLIP = {
   normPrompt: 'SGD(clipnorm=1.0) on g = {g}: g is rescaled so its ℓ2 norm is at most 1.0. What is g after clipping?',
   normPromptText: 'clipnorm=1.0: the rescaled gradient vector',
   normWhy: 'Slide 29 says clipnorm=1.0 retains the gradient vector’s orientation. Keras does it by rescaling: ‖g‖ = {norm}, so g × 1.0/{norm} = {ans} (a vector already within norm 1.0 is left alone).',
+  normKeptWhy: 'Slide 29 says clipnorm=1.0 retains the gradient vector’s orientation. Keras rescales only when ‖g‖ > 1.0: here ‖g‖ = {norm} ≤ 1.0, so g is left unchanged (its norm is already ≤ 1): {ans}.',
   normNote: 'Slide 29 only says clipnorm retains the orientation; the rescaling rule g · 1.0/max(‖g‖, 1.0) is Keras’s documented behaviour, not on the slide.',
   // ℓ2 norms that divide cleanly
   normVectors: [[3, 4], [-6, 8], [12, -16], [8, -6], [-9, 12], [0.3, 0.4], [5, 0], [0, -2]],
