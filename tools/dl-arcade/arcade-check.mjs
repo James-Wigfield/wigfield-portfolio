@@ -300,7 +300,7 @@ try {
     await ep.waitForSelector('.dla-run', { timeout: 10000 }).catch(() => {});
     const eplan = (await lsJson(ep, 'dla:exam'))?.plan ?? [];
     ok(eplan.length >= 6, `the Exam plans ${eplan.length} rounds`, eplan.join(', '));
-    const er = await runSequence(ep, 'exam', 14);
+    const er = await runSequence(ep, 'exam', Math.max(14, eplan.length));
     const esum = await ep.evaluate(() => ({ has: !!document.querySelector('.dla-runsum'), grade: document.querySelector('.dla-runsum__title')?.textContent, rows: document.querySelectorAll('.dla-grade__row').length }));
     ok(er === eplan.length && esum.has && /Grade: (HD|D|CR|P|N)/.test(esum.grade ?? '') && esum.rows >= 2, 'the Exam runs end to end with a grade per lecture', `${er} rounds · ${esum.grade} · ${esum.rows} lectures`);
     await ep.close();
