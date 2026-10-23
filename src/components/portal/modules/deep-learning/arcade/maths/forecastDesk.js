@@ -306,7 +306,7 @@ function toyItem(level, tpl, rand) {
     // the last batch half the time (it may be short, as on slide 19)
     const kb = rand.next() < 0.5 ? ds.batches.length - 1 : rand.int(0, ds.batches.length - 1);
     const size = ds.batches[kb].length;
-    const vars = { k: kb, count, B: ds.B, size, L: ds.L };
+    const vars = { k: kb, count, B: ds.B, size, sizeWindows: `${size} window${size === 1 ? '' : 's'}`, L: ds.L };
     const answer = tpl === 'toyBatchX' ? [size, ds.L] : [size];
     return {
       ...base, concept: q.concept, src: q.src, kind: 'shape', answer, labels: tpl === 'toyBatchX' ? ['batch', 'steps'] : ['batch'],
@@ -349,7 +349,7 @@ function windowItem(level, tpl, rand) {
   return {
     ...base, concept: q.concept, src: q.src, kind: 'shape', answer, labels: tpl === 'shapeX' ? ['batch', 'steps'] : ['batch'],
     prompt: fill(q.prompt, vars), promptText: fill(q.prompt, vars), why: fill(q.why, vars), scene: windowScene(rand, 'all'),
-    format: (v) => (Array.isArray(v) ? fmtShape(v) : '—'), maths: { lines: [COPY.drawerShapes] },
+    format: (v) => (Array.isArray(v) ? fmtShape(v) : '—'), maths: { lines: tpl === 'shapeY' ? [COPY.drawerShapes, COPY.drawerTargets] : [COPY.drawerShapes] },
   };
 }
 
@@ -379,7 +379,7 @@ function aheadItem(level, tpl, rand) {
   return {
     ...base, kind: 'shape', answer, labels, format: (v) => (Array.isArray(v) ? fmtShape(v) : '—'),
     scene: tpl === 'mulvarShape' ? { type: 'table30', highlight: 'inputs' } : aheadScene(rand),
-    maths: { lines: [COPY.drawerShapes] },
+    maths: { lines: answer.length === 2 ? [COPY.drawerShapes, COPY.drawerTargets] : [COPY.drawerShapes] },
   };
 }
 

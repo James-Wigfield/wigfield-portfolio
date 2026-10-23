@@ -46,7 +46,8 @@ export const COPY = {
   drawer: 'Show the maths',
   drawerMae: 'Slide 18 defines both through pandas code: diff_7.abs().mean() and (diff_7 / targets).abs().mean().',
   drawerWindow: 'tf.keras.utils.timeseries_dataset_from_array, as slide 19 calls it:',
-  drawerShapes: 'Shapes are [batch size, time steps, dimensionality] (slide 24).',
+  drawerShapes: 'Recurrent layers expect inputs shaped [batch size, time steps, dimensionality] (slide 24).',
+  drawerTargets: 'Targets have no time-step axis: yy.shape = (32,) on slide 21, y.shape = (32, 14) on slide 36.',
   boardTitle: 'validation MAE, as printed on the slides',
   boardHidden: '?',
   legend: { top: 'rail, and rail 7 days earlier (df.shift(7))', bottom: 'diff_7 = y(t) − y(t−7), bus and rail', rail: 'rail', lag: 'rail 7 days earlier', bus: 'bus (diff_7 panel)' },
@@ -119,13 +120,13 @@ export const TOY = {
   },
   batchX: {
     concept: 'forecast.windowing', src: L4(19),
-    prompt: 'Shape of batch {k}’s inputs (batch, steps)?',
+    prompt: 'Batch {k}, counting from 0 like slide 21’s Minibatch 0: shape of its inputs (batch, steps)?',
     why: '{count} windows in batches of {B}: batch {k} holds {size}, each of {L} values, so ({size}, {L}). Slide 19 prints shape=(2, 3) and then shape=(1, 3): the last batch may be short.',
   },
   batchY: {
     concept: 'forecast.windowing', src: L4(19),
-    prompt: 'Shape of batch {k}’s targets?',
-    why: 'One target per window: batch {k} holds {size} windows, so its targets have shape ({size},). Slide 19 prints shape=(2,) and then shape=(1,).',
+    prompt: 'Batch {k}, counting from 0 like slide 21’s Minibatch 0: shape of its targets?',
+    why: 'One target per window: batch {k} holds {sizeWindows}, so its targets have shape ({size},). Slide 19 prints shape=(2,) and then shape=(1,).',
   },
   missing: {
     concept: 'forecast.windowing', src: L4(19),
@@ -136,7 +137,7 @@ export const TOY = {
       { value: 'noOverlap', label: 'windows never overlap' },
       { value: 'lastIndex', label: 'sequence_length={L} skips the last index' },
     ],
-    why: 'Its target would be my_series[{n}], past the end: the targets run out after {count} windows. Windows do overlap ([0, 1, 2] then [1, 2, 3]), and slide 19’s last batch keeps its single window, shape (1, 3).',
+    why: 'Its target would be my_series[{n}], past the end: the targets run out after {count} windows. Windows do overlap (slide 19’s [0, 1, 2] then [1, 2, 3]), and slide 19’s last batch keeps its single window, shape (1, 3).',
   },
 };
 
@@ -168,7 +169,7 @@ export const WINDOW = {
   },
   input3d: {
     concept: 'rnn.input3d', src: L4(21, 24),
-    prompt: 'SimpleRNN wants [batch size, time steps, dimensionality]. A minibatch of 32 univariate 56-day windows is…?',
+    prompt: 'In the 3D form SimpleRNN expects, [batch size, time steps, dimensionality], a minibatch of 32 univariate 56-day windows is…?',
     why: 'Slide 24: all recurrent layers in Keras expect 3D inputs [batch size, time steps, dimensionality], dimensionality 1 for a univariate series: (32, 56, 1). Slide 21 prints the dataset’s xx.shape as (32, 56); the deck shows no reshape.',
   },
 };
@@ -386,7 +387,7 @@ export const QUESTIONS = {
       { value: 'both', label: 'both' },
       { value: 'neither', label: 'neither' },
     ],
-    why: 'Slide 20: train_ds passes shuffle=True, seed=42; valid_ds passes only sequence_length and batch_size=32.',
+    why: 'Slide 20: train_ds passes shuffle=True, seed=42; valid_ds passes no shuffle or seed (just targets, sequence_length and batch_size=32).',
   },
   deepWhy: {
     concept: 'rnn.deep', src: L4(29),
@@ -395,7 +396,7 @@ export const QUESTIONS = {
       { value: 'tooLarge', label: 'this RNN is a bit too large for the task', correct: true },
       { value: 'lastSeq', label: 'the last SimpleRNN also needs return_sequences=True' },
       { value: 'tooSmall', label: 'it has too few parameters to fit the series' },
-      { value: 'tanh', label: 'tanh cannot output values above 1' },
+      { value: 'denseTanh', label: 'its Dense(1) output needs a tanh to reach 1.4' },
     ],
     why: 'Slide 29: about 29,672 is "worse than the previous shallower RNN. It looks like this RNN is a bit too large for our task." univar_model printed 27,703 (slide 26).',
   },
@@ -419,8 +420,8 @@ export const QUESTIONS = {
       { value: 'tanhRange', label: 'tanh outputs lie between −1 and +1, but the series reaches about 1.4', src: L4(26) },
     ],
     choices: [
-      { value: 'shuffle', label: 'its training windows were shuffled' },
-      { value: 'input3d', label: 'its input layer is [None, 1]' },
+      { value: 'shuffle', label: 'shuffling scrambled the day order inside each window' },
+      { value: 'inputCols', label: 'its input layer expects 5 columns, but rail is 1' },
       { value: 'returnSeq', label: 'it is missing return_sequences=True' },
     ],
     why: 'Slides 25–26: the model has a single recurrent neuron (3 parameters in all), and the default tanh can only output values between −1 and +1 while the series runs from 0 to about 1.4. The fix: SimpleRNN(32) plus Dense(1) with no activation (univar_model).',
