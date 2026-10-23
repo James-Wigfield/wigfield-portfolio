@@ -45,7 +45,7 @@ class GameBoundary extends Component {
   }
 }
 
-export function GamePlayer({ game, mode = 'free', seed: seedIn, level: levelIn = 1, durationMs = 60000, onDone, onExit, exitLabel, continueOnExit = false }) {
+export function GamePlayer({ game, mode = 'free', seed: seedIn, level: levelIn = 1, durationMs = 60000, onDone, onExit, onContinue, exitLabel, continueOnExit = false }) {
   const [seed, setSeed] = useState(() => seedIn ?? freshSeed());
   const [level, setLevel] = useState(levelIn);
   const [run, setRun] = useState(0);
@@ -75,6 +75,8 @@ export function GamePlayer({ game, mode = 'free', seed: seedIn, level: levelIn =
 
   const host = {
     onExit: () => onExit?.(),
+    // the results screen's Continue: the host's next step (mix / exam), else leave
+    onContinue: () => (onContinue ?? onExit)?.(),
     onReplay,
     onLevelChange,
     levels: game.levels ?? 3,

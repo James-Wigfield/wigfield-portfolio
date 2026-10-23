@@ -120,7 +120,7 @@ export function RoundShell({ game, round, host = {}, intro, children, stageClass
       )}
 
       {state === 'results' && (
-        <Results round={round} game={game} summary={round.summary} onReplay={host.onReplay} onExit={() => host.onExit?.()} exitLabel={host.exitLabel} replayLabel={host.replayLabel} />
+        <Results round={round} game={game} summary={round.summary} onReplay={host.onReplay} onExit={() => (host.onContinue ?? host.onExit)?.()} exitLabel={host.exitLabel} replayLabel={host.replayLabel} />
       )}
     </div>
   );

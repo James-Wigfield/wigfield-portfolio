@@ -55,10 +55,16 @@ export function Run({ kind, onExit }) {
   const level = game ? Math.max(1, Math.min(maxLevelUnlocked(game.id, profile.bests, game.levels ?? 3), kind === 'exam' ? 3 : 2)) : 1;
   const seed = hashSeed(`${run.seedBase}:${i}:${gameId}`);
 
+  // a finished round waits on its results screen; Continue advances the run
+  const [pending, setPending] = useState(null);
   const onDone = useCallback((result, summary) => {
-    const entry = { gameId, level, score: result.score, maxScore: result.maxScore, outcomes: result.outcomes, boxesUp: summary?.boxesUp ?? [], boxesDown: summary?.boxesDown ?? [], xp: summary?.xpGained ?? 0 };
-    setRun({ ...run, done: [...run.done, gameId], results: [...run.results, entry] });
-  }, [run, gameId, level, setRun]);
+    setPending({ gameId, level, score: result.score, maxScore: result.maxScore, outcomes: result.outcomes, boxesUp: summary?.boxesUp ?? [], boxesDown: summary?.boxesDown ?? [], xp: summary?.xpGained ?? 0 });
+  }, [gameId, level]);
+  const advance = useCallback(() => {
+    if (!pending) { onExit(); return; }
+    setRun({ ...run, done: [...run.done, pending.gameId], results: [...run.results, pending] });
+    setPending(null);
+  }, [pending, run, setRun, onExit]);
 
   const restart = () => setRun(makeRun(kind, today));
 
@@ -133,6 +139,7 @@ export function Run({ kind, onExit }) {
         durationMs={cfg.durationMs}
         onDone={onDone}
         onExit={onExit}
+        onContinue={advance}
         exitLabel={i + 1 < run.plan.length ? `Next round · ${gameById(run.plan[i + 1])?.title ?? ''}` : 'See the summary'}
         continueOnExit
       />
