@@ -156,6 +156,8 @@ for (const level of [1, 2, 3]) {
 
       // the ViT picture never shows the answer: the full pipeline is hidden on the pipeline questions
       if (it.order || /^ws.l3.(linear|sequence|chop|channels)/.test(it.id)) ok(st.focus === 'chop', `no pipeline giveaway ${it.id}`);
+      // the visual-attention items (slides 44–45) never show the ViT patch grid; the captioner stays hidden on its own question
+      if (/^ws.l3.(caption|frisbee)/.test(it.id)) ok(st.type === 'caption' && (st.focus === 'decoder') === it.id.startsWith('ws.l3.caption'), `caption stage ${it.id}`);
 
       // nothing from slides 47–48 is drilled: only the one exam-status item cites 47, none cites 48
       ok(!it.src.slides.includes(48), `no slide 48 ${it.id}`);

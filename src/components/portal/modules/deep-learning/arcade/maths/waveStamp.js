@@ -78,7 +78,7 @@ function matchItem(rand, faceUp) {
     stage: { type: 'match', d: MATCH_D, variant: 'slide', p, row: R[p], rack: R, faceUp, candidates: positions },
     maths: {
       eq: 'posenc',
-      lines: [`For $i = 0$ and $i = 1$ the exponent is 0, so $\\mathbf{P}_{p,0} = \\sin p$ and $\\mathbf{P}_{p,1} = \\cos p$ (radians); the stamp’s numbers are listed below.`],
+      lines: [`For $i = 0$ and $i = 1$ the exponent is 0, so $\\mathbf{P}_{p,0} = \\sin p$ and $\\mathbf{P}_{p,1} = \\cos p$ (radians, NumPy’s convention); the stamp’s numbers are listed below.`],
     },
     why: `This stamp is position ${p} with d = ${MATCH_D} and slide 32’s base 1000: its first pair is $(\\sin ${p}, \\cos ${p}) = (${t2(s)}, ${t2(c)})$. ${NOTES.unique}${faceUp ? ' Exactly one row of the rack matches it.' : ''}`,
   };
@@ -407,8 +407,8 @@ function choiceItem(rand, c) {
     concept: c.concept, src: c.src,
     question: c.prompt, promptText: c.promptText ?? c.prompt,
     choices, answer: c.answer, format: choiceFormat(choices),
-    stage: c.stage === 'code' ? { type: 'code', code: c.code } : c.stage === 'wall' ? { type: 'wall', d: 16, n: 24, variant: 'slide', rack: rack(24, 16, 'slide') } : c.stage === 'twin' ? { type: 'pair', d: 8, p: 20, target: null, slide: rack(21, 8, 'slide')[20], code: rack(21, 8, 'code')[20] } : { type: 'patches', H: 64, W: 96, own: true, focus: c.focus ?? 'chop' },
-    maths: c.stage === 'code' ? null : c.stage === 'patches' ? null : { eq: 'posenc', lines: [] },
+    stage: c.stage === 'code' ? { type: 'code', code: c.code } : c.stage === 'wall' ? { type: 'wall', d: 16, n: 24, variant: 'slide', rack: rack(24, 16, 'slide') } : c.stage === 'twin' ? { type: 'pair', d: 8, p: 20, target: null, slide: rack(21, 8, 'slide')[20], code: rack(21, 8, 'code')[20] } : c.stage === 'caption' ? { type: 'caption', focus: c.focus ?? 'all' } : { type: 'patches', H: 64, W: 96, own: true, focus: c.focus ?? 'chop' },
+    maths: c.stage === 'code' || c.stage === 'patches' || c.stage === 'caption' ? null : { eq: 'posenc', lines: [] },
     why: c.why,
     ...(c.notExamined ? { notExamined: true } : {}),
   };

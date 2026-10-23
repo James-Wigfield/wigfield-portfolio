@@ -13,7 +13,10 @@
    Choice labels may hold $…$ (KaTeX); `plain` is the same label in text for
    the feedback line and the why card. `focus` on a ViT item picks how much of
    the slide-46 pipeline the picture shows ('chop' when it would give the
-   answer away; 'all' otherwise).
+   answer away; 'all' otherwise). The visual-attention items (slides 44–45)
+   use the `caption` stage instead (CNN → feature maps → decoder RNN with
+   attention), never the patch grid; `focus: 'decoder'` keeps that pipeline
+   behind a "?" until the answer is in.
    ========================================================================== */
 
 const L8 = (slides) => ({ lecture: 8, slides });
@@ -46,6 +49,13 @@ export const COPY = {
   formulaHidden: 'slide 32 · the base is hidden',
   codeAsMaths: ' (the code, written as maths)',
   submitOrder: 'Submit order',
+  capImage: 'image',
+  capCnn: 'CNN',
+  capMaps: 'feature maps',
+  capDecoder: 'decoder RNN + attention',
+  capAttention: 'attention',
+  capWords: ['word 1', 'word 2', 'word 3'],
+  capCaption: 'the caption',
 };
 
 /* ── choice items ──────────────────────────────────────────────────────── */
@@ -127,7 +137,7 @@ export const CHOICE = [
       { value: 'heads', label: 'The number of attention heads' },
     ],
     answer: 'dim',
-    why: 'Slide 32: $\\mathbf{P}_{p,i}$ denotes the positional encoding for the $i^{\\text{th}}$ component of the embedding vector for the word at the $p^{\\text{th}}$ position, and d denotes the dimension of the keys, values, and queries vectors. The code on slide 35 calls the same size embed_size.',
+    why: 'Slide 32: $\\mathbf{P}_{p,i}$ denotes the positional encoding for the $i^{\\text{th}}$ component of the embedding vector for the word at the $p^{\\text{th}}$ position, and d denotes the dimension of the keys, values, and queries vectors. The code on slide 35 uses embed_size in its place.',
   },
 
   // ── level 2: the base quirk and the code ───────────────────────────────
@@ -202,7 +212,7 @@ export const CHOICE = [
     promptText: 'Where slide 36 adds P',
     choices: [
       { value: 'embeddings', label: 'encoder_embeddings and decoder_embeddings: the word embeddings going into the encoder and the decoder' },
-      { value: 'outputs', label: 'The outputs of the encoder’s attention layers' },
+      { value: 'ids', label: 'The token IDs, before the Embedding layer looks them up' },
       { value: 'weights', label: 'The attention weights' },
       { value: 'logits', label: 'The final Dense layer’s outputs' },
     ],
@@ -290,7 +300,7 @@ export const CHOICE = [
     why: 'Slide 46: this makes sense since transformers don’t have as many inductive biases as CNNs, so they need extra data just to learn things that CNNs implicitly assume.',
   },
   {
-    id: 'ws.l3.caption', level: 3, concept: 'vit.visualAttention', src: L8([44]), stage: 'patches',
+    id: 'ws.l3.caption', level: 3, concept: 'vit.visualAttention', src: L8([44]), stage: 'caption', focus: 'decoder',
     prompt: 'Image captioning using visual attention (slide 44): what writes the caption?',
     promptText: 'What writes the caption with visual attention',
     choices: [
@@ -303,7 +313,7 @@ export const CHOICE = [
     why: 'Slide 44: a convolutional neural network first processes the image and outputs some feature maps, then a decoder RNN equipped with an attention mechanism generates the caption, one word at a time, focusing on just the right part of the image at each step. (It sits under the heading “Vision Transformers”, but this model is not a transformer.)',
   },
   {
-    id: 'ws.l3.frisbee', level: 3, concept: 'vit.visualAttention', src: L8([45]), stage: 'patches',
+    id: 'ws.l3.frisbee', level: 3, concept: 'vit.visualAttention', src: L8([45]), stage: 'caption', focus: 'all',
     prompt: 'Figure 16-12: just before the model output the word “frisbee”, where was most of its attention?',
     promptText: 'Figure 16-12’s attention before “frisbee”',
     choices: [
@@ -359,7 +369,7 @@ export const NOT_EXAMINED = {
 /* ── why-text pieces shared by the generated items ───────────────────── */
 export const NOTES = {
   base: 'Slide 32 typesets the base as 1000; the code on slide 35 uses 10_000 (a factor of 10 apart). This item uses the base of the slide it names.',
-  radians: 'The angle is in radians.',
+  radians: 'The angle is in radians (NumPy’s np.sin / np.cos convention; the slides do not state units).',
   codeIndex: 'In the slide-35 code i = 2 * np.arange(embed_size // 2) takes only the even values 0, 2, 4, …, and the cosine line reuses the same i / embed_size: for an odd column that is slide 32’s (i − 1)/d.',
   unique: 'Each position has a unique positional encoding (slide 33).',
 };

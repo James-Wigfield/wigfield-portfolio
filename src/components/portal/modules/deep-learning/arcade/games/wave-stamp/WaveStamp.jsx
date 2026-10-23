@@ -137,6 +137,7 @@ function Picture({ item, shown }) {
     case 'code': return <CodePic st={st} shown={shown} />;
     case 'formula': return <FormulaPic />;
     case 'patches': return <PatchPic st={st} shown={shown} />;
+    case 'caption': return <CaptionPic st={st} shown={shown} />;
     default: return null;
   }
 }
@@ -390,6 +391,69 @@ function PatchPic({ st, shown }) {
           )}
         </g>
       )}
+    </svg>
+  );
+}
+
+/* ── visual attention: CNN → feature maps → decoder RNN with attention (slides 44–45) ── */
+function CaptionPic({ st, shown }) {
+  const uid = useId().replace(/:/g, '');
+  const hide = !shown && st.focus === 'decoder';
+  const ox = 10;
+  const oy = 24;
+  const iw = 96;
+  const ih = 64;
+  const cy = oy + ih / 2;
+  const cx = ox + iw + 22; // CNN box
+  const fx = cx + 74; // feature maps
+  const dx = fx + 62; // decoder box
+  const dw = 156;
+  const Wv = dx + dw + 10;
+  const Hv = oy + ih + 34;
+  const arrow = (x1, x2) => `M${x1} ${cy} H ${x2} M ${x2 - 5} ${cy - 5} L ${x2} ${cy} L ${x2 - 5} ${cy + 5}`;
+  const label = hide
+    ? 'An image goes in; something hidden writes the caption, one word at a time.'
+    : 'An image goes into a CNN, which outputs feature maps; a decoder RNN with an attention mechanism looks back at them and writes the caption, one word at a time.';
+  return (
+    <svg className="dl8s-svg dla-ws__svg" viewBox={`0 0 ${Wv} ${Hv}`} role="img" aria-label={label} style={{ maxWidth: Wv * 1.3 }}>
+      <defs>
+        <clipPath id={`ws-cap-${uid}`}><rect x={ox} y={oy} width={iw} height={ih} rx={3} /></clipPath>
+      </defs>
+      <text x={ox} y={oy - 7} className="dla-t dla-t--xs dla-t--m">{COPY.capImage}</text>
+      <g clipPath={`url(#ws-cap-${uid})`}>
+        <rect className="dla-ws__sky" x={ox} y={oy} width={iw} height={ih} />
+        <circle className="dla-ws__sun" cx={ox + iw * 0.72} cy={oy + ih * 0.32} r={ih * 0.16} />
+        <path className="dla-ws__hill" d={`M${ox} ${oy + ih * 0.72} Q ${ox + iw * 0.3} ${oy + ih * 0.42} ${ox + iw * 0.6} ${oy + ih * 0.7} T ${ox + iw} ${oy + ih * 0.62} V ${oy + ih} H ${ox} Z`} />
+        <path className="dla-ws__hill dla-ws__hill--near" d={`M${ox} ${oy + ih * 0.86} Q ${ox + iw * 0.45} ${oy + ih * 0.66} ${ox + iw} ${oy + ih * 0.88} V ${oy + ih} H ${ox} Z`} />
+      </g>
+      <path className="dla-ws__arrow" d={arrow(ox + iw + 4, cx - 4)} />
+      {hide ? (
+        <>
+          <rect className="dla-ws__box" x={cx} y={cy - 13} width={dx + dw - cx} height={26} rx={6} />
+          <text x={(cx + dx + dw) / 2} y={cy + 4} textAnchor="middle" className="dla-t dla-t--s dla-t--b">?</text>
+        </>
+      ) : (
+        <>
+          <rect className="dla-ws__box" x={cx} y={cy - 13} width={50} height={26} rx={6} />
+          <text x={cx + 25} y={cy + 4} textAnchor="middle" className="dla-t dla-t--s">{COPY.capCnn}</text>
+          <path className="dla-ws__arrow" d={arrow(cx + 54, fx - 4)} />
+          {[0, 1, 2].map((k) => <rect key={k} className="dla-ws__strip" x={fx + k * 5} y={cy - 19 + k * 5} width={28} height={28} rx={2} />)}
+          <text x={fx + 19} y={oy + ih + 12} textAnchor="middle" className="dla-t dla-t--xs dla-t--m">{COPY.capMaps}</text>
+          <path className="dla-ws__arrow" d={arrow(fx + 42, dx - 4)} />
+          <rect className="dla-ws__box dla-ws__box--tf" x={dx} y={cy - 13} width={dw} height={26} rx={6} />
+          <text x={dx + dw / 2} y={cy + 4} textAnchor="middle" className="dla-t dla-t--s dla-t--b">{COPY.capDecoder}</text>
+          <path className="dla-ws__arrow" strokeDasharray="3 3" d={`M${dx + 30} ${cy - 14} C ${dx + 20} ${oy - 14} ${fx + 30} ${oy - 14} ${fx + 22} ${cy - 22}`} />
+          <text x={(fx + dx) / 2 + 22} y={oy - 12} textAnchor="middle" className="dla-t dla-t--xs dla-t--m">{COPY.capAttention}</text>
+        </>
+      )}
+      <text x={dx} y={cy + 30} className="dla-t dla-t--xs dla-t--m">{COPY.capCaption}:</text>
+      {COPY.capWords.map((w, k) => (
+        <g key={w} transform={`translate(${dx + k * 46} ${cy + 36})`}>
+          <rect className="dla-ws__strip" width={42} height={16} rx={3} />
+          <text x={21} y={12} textAnchor="middle" className="dla-t dla-t--xs">{w}</text>
+        </g>
+      ))}
+      <text x={dx + 140} y={cy + 48} className="dla-t dla-t--s">…</text>
     </svg>
   );
 }
