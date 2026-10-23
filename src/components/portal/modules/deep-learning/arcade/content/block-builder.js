@@ -26,8 +26,8 @@
      ROUNDS                   the item plan per level
 
    What the slides only NAME is not drilled: Xception and SENet get one
-   paragraph each (slide 47: no depthwise separable convolution, no SE
-   block); local response normalization appears only as two blocks in
+   paragraph each (slide 47 names depthwise separable convolution and the
+   SE block but does not explain them); local response normalization appears only as two blocks in
    Figure 14-15 and is never explained; the purpose of the 1 × 1 convs is
    not stated; slide 39's AlexNet table has no C7 row (S8's 256 maps cannot
    come from C6's 384), so S8's maps are never asked. Nothing here is
@@ -75,10 +75,10 @@ export const UI = {
   wireTo: 'Now tap the block it joins.',
   cellPrompt: 'Fill in %layer%’s %col%.',
   cellSub: 'Rows above %layer% are hidden.',
-  cellSubAll: 'The whole table, as slide 39 prints it.',
+  cellSubAll: 'The whole table, with the Activation column hidden.',
   sumPrompt: 'How many feature maps does this module’s depth concat send up to the %block%?',
   sumSub: 'The inception module below it, with the numbers Figure 14-15 prints.',
-  sumBar: 'depth concat (axis=3)',
+  sumBar: 'top four numbers',
   hiddenRows: 'rows above hidden',
   keypadCell: '%layer% %col%',
   keypadSum: 'Feature maps',
@@ -98,7 +98,7 @@ export const UI = {
   incAria: 'Figure 14-14, the inception module: the input is copied to four branches that meet in a depth concat',
   incSlotsAria: 'Figure 14-14 with its four branches empty; picked branches fill the columns left to right',
   resAria: 'Figure 14-16: Input, Layer 1, Layer 2 and a + node; a skip connection carries the input to the +',
-  barAria: 'The depth concat as four stacked blocks of feature maps',
+  barAria: 'The module’s top four printed numbers as four stacked segments; they add up to the printed depth',
   towerAria: 'A stack of layers, bottom to top',
   stepsAria: 'Slide 51’s steps, top to bottom',
   tableAria: 'Rows of a layer table',
@@ -374,7 +374,7 @@ export const FRAGMENTS = {
   alexRows: { arch: 'alexnet', concept: 'arch.alexnet', src: { lecture: 3, slides: [39] },
     why: 'Slide 39’s AlexNet table: ReLU, 3 × 3 max pooling with stride 2, a padding column (valid / same), and an 11 × 11 stride-4 first layer on a 227 × 227 RGB input.' },
   inception: { arch: 'googlenet', concept: 'arch.inception', not: ['xception', 'senet'], src: { lecture: 3, slides: [41, 42] },
-    why: 'Figure 14-14 (slide 42) is GoogLeNet’s inception module: the input copied to four branches and joined by a depth concat (slide 41).' },
+    why: 'Figure 14-14 is GoogLeNet’s inception module (slide 41): the input is copied to four branches that are joined by a depth concat (slide 42).' },
   residual: { arch: 'resnet', concept: 'arch.resnet', not: ['xception', 'senet'], src: { lecture: 3, slides: [46] },
     why: 'Figure 14-16 (slide 46) is ResNet’s residual learning: a skip connection adds the input $\\mathbf{x}$ to the layers’ output, so they model $f(\\mathbf{x}) = h(\\mathbf{x}) - \\mathbf{x}$.' },
   vgg: { arch: 'vgg', concept: 'arch.vgg', src: { lecture: 3, slides: [44] },
@@ -405,7 +405,7 @@ export const QUICK = [
 
 // ── level 2 / 3: the stacks to put in order ─────────────────────────────
 export const ORDERS = {
-  lenet5: { concept: 'arch.lenet5', name: 'LeNet-5', src: { lecture: 3, slides: [37] },
+  lenet5: { concept: 'arch.lenet5', name: 'LeNet-5', src: { lecture: 3, slides: [33, 37] },
     why: 'Slide 37 bottom to top: In 1@32×32 → C1 conv 6@28×28 → S2 avg pool 6@14×14 → C3 conv 16@10×10 → S4 avg pool 16@5×5 → C5 conv 120@1×1 → F6 84 → Out 10 (RBF). The image gets smaller and deeper (slide 33).' },
   alexnet: { concept: 'arch.alexnet', name: 'AlexNet', src: { lecture: 3, slides: [39] },
     why: 'Slide 39 bottom to top: In 3@227×227 → C1 96@55×55 → S2 96@27×27 → C3 256@27×27 → S4 256@13×13 → C5, C6 384@13×13 → S8 256@6×6 → F9, F10 4,096 → Out 1,000 softmax. (The table has no C7 row, so S8’s 256 maps do not follow C6’s 384.)' },
@@ -430,7 +430,7 @@ export const FINETUNE = [
 export const RULES = {
   valid1: {
     src: { lecture: 3, slides: [20] },
-    text: '%layer%’s %f% × %f% kernel at stride 1 stays inside the map ("valid": it does not go outside the image boundary, slide 20), so each axis loses $f - 1$ pixels: %n% − %f% + 1 = %out%, the %out% × %out% slide %slide% prints.',
+    text: 'Slide %slide%’s table prints no padding, but 32 → 28 under C1’s 5 × 5 kernel means none, so its convs are taken as "valid" (the kernel does not go outside the image boundary, slide 20). %layer%’s %f% × %f% kernel at stride 1 stays inside the map, so each axis loses $f - 1$ pixels: %n% − %f% + 1 = %out%, the %out% × %out% slide %slide% prints.',
     maths: ['$\\text{positions} = n - f + 1 = %n% - %f% + 1$'],
   },
   tile: {
@@ -450,7 +450,7 @@ export const RULES = {
   },
   pooledMaps: {
     src: { lecture: 3, slides: [29] },
-    text: 'A pooling layer works on every input channel independently, so its output depth is the input depth (slide 29): %layer% keeps %prev%’s %out% maps.',
+    text: 'A pooling layer typically works on every input channel independently, so its output depth is the same as its input depth (slide 29): %layer% keeps %prev%’s %out% maps.',
     maths: ['pooling: depth out = depth in (%prev%)'],
   },
   classes: {
@@ -460,8 +460,8 @@ export const RULES = {
   },
   sum: {
     src: { lecture: 3, slides: [42, 43] },
-    text: 'The depth concat stacks the four branches’ feature maps along the depth dimension (axis=3, slide 42): %calc% = %out%, the number Figure 14-15 prints on “%into%” (slide 43). The slide does not label the module’s numbers; its top four are the ones that add up.',
-    maths: ['depth concat (axis=3): add the four branches’ feature maps', '$%calc%$'],
+    text: 'The depth concat stacks the module’s outputs along the depth dimension (axis=3, slide 42), and Figure 14-15 prints %out% on “%into%” (slide 43). The slide does not label the module’s numbers; the top four printed numbers add up to the printed depth: %calc% = %out%.',
+    maths: ['the top four printed numbers add up to the printed depth', '$%calc% = %out%$'],
   },
 };
 // which cells each tier may ask (level 3 ramps 1 → 3)

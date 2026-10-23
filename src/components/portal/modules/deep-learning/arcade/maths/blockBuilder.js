@@ -217,10 +217,12 @@ function rowsItem(rand, key, id) {
   const top = key === 'alexnet' ? 7 : table.rows.length - 1;
   const start = rand.int(0, top - len + 1);
   const rows = Array.from({ length: len }, (_, j) => start + j);
+  // AlexNet's S4–S8 rows are all 3 × 3: slide 44's VGGNet recipe fits them too, so VGGNet is not offered
+  const only3x3 = rows.every((r) => table.rows[r].kernel === 3);
   return choiceItem({
     id, view: 'rows', table: key, rows, concept: frag.concept, src: frag.src, answer: frag.arch,
     prompt: UI.whichRows, promptText: `${UI.whichRows} (${rows.map((r) => table.rows[r].layer).join(', ')})`, why: frag.why,
-  }, archChoices(rand, frag.arch, DRAWN.filter((a) => !(frag.not ?? []).includes(a))));
+  }, archChoices(rand, frag.arch, DRAWN.filter((a) => !(frag.not ?? []).includes(a) && !(a === 'vgg' && only3x3))));
 }
 function figureItem(rand, fkey, id) {
   const frag = FRAGMENTS[fkey];
@@ -299,7 +301,7 @@ function sumItem(s, id) {
     prompt, sub: UI.sumSub, promptText: `${prompt} (module ${mod.top.join(' ')} / ${mod.bottom.join(' ')})`,
     padLabel: UI.keypadSum,
     why: fill(RULES.sum.text, { calc, out, into: s.into }),
-    maths: RULES.sum.maths.map((m) => fill(m, { calc })),
+    maths: RULES.sum.maths.map((m) => fill(m, { calc, out })),
   };
 }
 function textItem(rand, t, concept, topic, id) {

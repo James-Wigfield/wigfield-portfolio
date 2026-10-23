@@ -227,10 +227,30 @@ for (const level of [1, 2, 3]) {
         const cell = M.ALL_CELLS.find((c) => c.key === it.cellKey);
         eq(`${w}: cell answer`, it.answer, cell.answer);
       }
-      if (it.view === 'sum') eq(`${w}: sum answer`, it.answer, it.sum.printed);
+      if (it.view === 'sum') {
+        eq(`${w}: sum answer`, it.answer, it.sum.printed);
+        expect(`${w}: sum why never calls the top four the branches' maps (slides do not label them)`, !/branches’ (feature )?maps/.test(`${it.why} ${(it.maths ?? []).join(' ')}`) && it.why.includes('top four printed numbers add up to the printed depth'));
+      }
+      if (it.view === 'rows' && it.table === 'alexnet' && it.rows.every((r) => C.ALEXNET.rows[r].kernel === 3)) {
+        expect(`${w}: VGGNet is not a choice on a 3×3-only AlexNet window`, !it.choices.some((c) => c.value === 'vgg'));
+      }
     }
   }
 }
+// slide 44's recipe fits AlexNet's 3×3-only rows (S4–S8): VGGNet is never offered on them
+let win33 = 0;
+for (let seed = 1; seed <= 400; seed++) {
+  for (const it of M.makeItems(rng(seed * 104729 + 1), 1)) {
+    if (it.view !== 'rows' || it.table !== 'alexnet' || !it.rows.every((r) => C.ALEXNET.rows[r].kernel === 3)) continue;
+    win33++;
+    expect(`L1 probe seed ${seed} ${it.id}: VGGNet is not a choice on 3×3-only AlexNet rows`, !it.choices.some((c) => c.value === 'vgg') && it.choices.length === 4);
+  }
+}
+expect('probe: 3×3-only AlexNet row windows occur', win33 > 0, `${win33}`);
+// the valid1 why says the padding is inferred from 32 → 28: only tables with no padding column (LeNet-5) use it
+expect('valid1 cells only on a table with no padding column (LeNet-5)', M.ALL_CELLS.filter((c) => c.rule === 'valid1').every((c) => c.table === 'lenet5' && !M.TABLES[c.table].columns.includes('padding')));
+eq('ORDERS.lenet5 cites slide 33 (its why does)', C.ORDERS.lenet5.src.slides, [33, 37]);
+
 for (const level of [1, 2, 3]) console.log(`  L${level} views over 30 rounds: ${Object.entries(counts[level]).map(([k, v]) => `${k} ${v}`).join(' · ')}`);
 
 // every content item has a src in range (pure data)

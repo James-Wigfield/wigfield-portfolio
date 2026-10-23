@@ -11,7 +11,7 @@ import { arrowHead, INC, RES, resBox, skipPath } from './geom';
    SlideTable       slide 37's / 39's layer table, ruled, Out at the top
    InceptionFigure  Figure 14-14 (SVG): four branch columns + depth concat
    ResidualFigure   Figure 14-16 (SVG): the residual unit, optionally wired
-   DepthBar         a depth concat drawn as four stacked segments
+   DepthBar         a module's top four printed numbers as four stacked segments
    Every label comes from content/block-builder.js.
    ========================================================================== */
 
