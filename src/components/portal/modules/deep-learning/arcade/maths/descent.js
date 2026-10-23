@@ -176,9 +176,10 @@ export function performanceSched(valLosses, { eta0, factor, patience }) {
 // back down to η₀, then the last few epochs drop by several orders of magnitude
 // (still linearly). Used for a schematic curve with no axis values.
 export function oneCycleSched(t, { eta0, eta1, total, tail }) {
-  const half = (total - tail) / 2;
+  const half = total / 2; // η₁ is reached halfway through training
+  const down = total - tail; // back at η₀ when the last few epochs begin
   if (t <= half) return eta0 + ((eta1 - eta0) * t) / half;
-  if (t <= 2 * half) return eta1 - ((eta1 - eta0) * (t - half)) / half;
-  const u = Math.min(1, (t - 2 * half) / tail);
+  if (t <= down) return eta1 - ((eta1 - eta0) * (t - half)) / (down - half);
+  const u = Math.min(1, (t - down) / tail);
   return eta0 + (eta0 / 1000 - eta0) * u;
 }
