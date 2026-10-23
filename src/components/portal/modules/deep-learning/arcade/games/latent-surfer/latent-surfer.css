@@ -1,0 +1,154 @@
+/* Latent Surfer — the stations (.dla-ls*). Colours only from theme tokens,
+   --dlv-* and --dl8s-*; every motion is behind prefers-reduced-motion. */
+.dla-ls { --ls-mu: var(--dl8s-enc); --ls-sig: var(--dl8s-k); --ls-noise: var(--dl8s-pos); --ls-out: var(--dl8s-dec); }
+.dla-ls__col { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+
+/* decoded images: dark ink on white, as the slides draw Fashion MNIST */
+.dla-ls__px { display: block; width: 84px; height: 84px; image-rendering: pixelated; border: 1px solid var(--line-2); border-radius: 4px; }
+.dla-ls__px--big { width: clamp(140px, 30cqi, 196px); height: auto; aspect-ratio: 1; }
+.dla-ls__px--mid { width: clamp(96px, 18cqi, 132px); height: auto; aspect-ratio: 1; }
+.dla-ls__px--choice { width: 100%; max-width: 104px; height: auto; aspect-ratio: 1; }
+
+/* ── find ─────────────────────────────────────────────────────────────── */
+.dla-ls__floor { display: flex; flex-direction: column; gap: 0.8rem; }
+.dla-ls__find { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: clamp(0.8rem, 3cqi, 2rem); }
+.dla-ls__fig { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; min-width: 0; }
+.dla-ls__fig--you { max-width: 220px; }
+.dla-ls__fig--tgt { max-width: 170px; }
+.dla-ls__fig figcaption { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.1rem 0.5rem; text-align: center; }
+.dla-ls__fig--you .dla-ls__px { border-color: var(--ink-3); box-shadow: 0 10px 26px -18px rgba(15, 23, 42, 0.7); }
+.dla-ls__floor--hot .dla-ls__fig--you .dla-ls__px { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dla-ls__map { position: relative; padding: 0 0 1.1rem 1.1rem; }
+.dla-ls__mapbox { position: relative; width: clamp(168px, 30cqi, 216px); aspect-ratio: 1; touch-action: none; cursor: crosshair; border: 1px solid var(--line-2); border-radius: 4px; overflow: hidden; }
+.dla-ls__mapc { display: block; width: 100%; height: 100%; image-rendering: pixelated; opacity: 0.92; }
+.dla-ls__cursor { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 99px; border: 2.5px solid var(--dlv-orange); background: color-mix(in srgb, var(--dlv-orange) 25%, transparent); box-shadow: 0 0 0 2px var(--dl8s-floor); pointer-events: none; }
+.dla-ls__axis { position: absolute; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; color: var(--ink-2); }
+.dla-ls__axis--a { left: 1.1rem; bottom: 0; }
+.dla-ls__axis--b { left: 0; bottom: 1.2rem; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+
+.dla-ls__gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 1.4rem; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.dla-ls__meter { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.25rem 0.6rem; min-width: 0; }
+.dla-ls__meter > .dla-ls__lab { grid-column: 1 / -1; }
+.dla-ls__meterbar { position: relative; height: 8px; border-radius: 99px; background: var(--surface-hi); overflow: visible; }
+.dla-ls__meterfill { position: absolute; inset: 0; border-radius: 99px; background: var(--dlv-orange); transform-origin: left; }
+.dla-ls__meter--ok .dla-ls__meterfill { background: var(--accent); }
+.dla-ls__metermark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); }
+.dla-ls__meterv { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; font-weight: 700; color: var(--ink); }
+.dla-ls__meters { grid-column: 1 / -1; font-size: 0.7rem; color: var(--ink-3); }
+
+.dla-ls__controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 0.6rem 1.2rem; align-items: center; }
+.dla-ls__slider { display: grid; grid-template-columns: auto minmax(0, 1fr) 3.4rem; align-items: center; gap: 0.6rem; min-width: 0; }
+.dla-ls__sk { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+.dla-ls__sv { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.86rem; text-align: right; color: var(--ink-2); }
+.dla-ls__slider input[type='range'] { width: 100%; min-height: 44px; accent-color: var(--dlv-orange); cursor: pointer; touch-action: pan-y; }
+.dla-ls__lock { min-height: 46px; }
+@container arcade (max-width: 720px) {
+  .dla-ls__fig--map { order: 3; flex-basis: 100%; }
+  .dla-ls__find { align-items: flex-end; flex-wrap: wrap; }
+  .dla-ls__fig--you { max-width: 56%; }
+  .dla-ls__fig--tgt { max-width: 40%; }
+  .dla-ls__px--big { width: clamp(118px, 40cqi, 170px); }
+  .dla-ls__px--mid { width: clamp(84px, 28cqi, 120px); }
+  .dla-ls__controls { grid-template-columns: 1fr; }
+  .dla-ls__lock { justify-self: stretch; justify-content: center; }
+  .dla-ls__gauges { grid-template-columns: 1fr; }
+}
+
+/* ── sample ───────────────────────────────────────────────────────────── */
+.dla-ls__wire { max-width: 520px; margin: 0 auto; }
+.dla-ls__box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.5; }
+.dla-ls__g-mu .dla-ls__box { stroke: var(--ls-mu); }
+.dla-ls__g-sigma .dla-ls__box { stroke: var(--ls-sig); }
+.dla-ls__g-noise .dla-ls__box { stroke: var(--ls-noise); stroke-dasharray: 4 3; }
+.dla-ls__g-out .dla-ls__box { stroke: var(--ls-out); }
+.dla-ls__g-out--on .dla-ls__box { stroke-width: 2.5; fill: color-mix(in srgb, var(--ls-out) 14%, var(--surface)); }
+.dla-ls__op { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1.5; }
+.dla-ls__wirepath { fill: none; stroke: var(--ink-3); stroke-width: 1.6; }
+.dla-ls__arrowhead { fill: var(--ink-3); }
+.dla-ls__line { max-width: 520px; margin: 0 auto; }
+.dla-ls__axisline { stroke: var(--ink-3); stroke-width: 1.2; fill: none; }
+.dla-ls__mk { fill: var(--ink-3); stroke: var(--dl8s-floor); stroke-width: 2; }
+.dla-ls__mkstem { stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 2; }
+.dla-ls__m-mu .dla-ls__mk { fill: var(--ls-mu); }
+.dla-ls__m-z .dla-ls__mk { fill: var(--ls-out); }
+.dla-ls__m-you .dla-ls__mk { fill: none; stroke: var(--dlv-red); stroke-width: 2.5; }
+.dla-ls__trap { margin: 0; font-size: 0.84rem; color: var(--ink-2); }
+
+/* ── interpolation ────────────────────────────────────────────────────── */
+.dla-ls__stripfig { margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.dla-ls__stripfig figcaption { display: flex; flex-wrap: wrap; gap: 0.1rem 0.5rem; }
+.dla-ls__strip { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: clamp(3px, 0.9cqi, 10px); align-items: end; }
+.dla-ls__strip--3 { grid-template-columns: repeat(3, minmax(0, 120px)); justify-content: center; gap: clamp(0.8rem, 4cqi, 2.4rem); }
+.dla-ls__cell { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; min-width: 0; }
+.dla-ls__cell .dla-ls__px, .dla-ls__blank { width: 100%; height: auto; aspect-ratio: 1; }
+.dla-ls__blank { display: flex; align-items: center; justify-content: center; border: 1px dashed var(--line-2); border-radius: 4px; font-family: var(--font-mono, ui-monospace, monospace); font-weight: 800; font-size: 1.1rem; color: var(--dlv-orange); }
+.dla-ls__cell--hot .dla-ls__blank, .dla-ls__cell--hot .dla-ls__px { border: 2px solid var(--dlv-orange); }
+.dla-ls__celllab { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.dla-ls__cell--s .dla-ls__celllab { font-size: 0.52rem; }
+.dla-ls__cell--hot .dla-ls__celllab { color: var(--dlv-orange); font-weight: 700; }
+.dla-ls__thumbs .dla-choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dla-ls__thumbs--3 .dla-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dla-ls__thumbs .dla-choice { flex-direction: column; align-items: center; padding: 0.55rem 0.5rem; }
+.dla-ls__thumbs .dla-choice__body { align-items: center; text-align: center; width: 100%; }
+.dla-ls__thumbs .dla-choice__label { width: 100%; display: flex; justify-content: center; }
+.dla-ls__cap { margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; gap: 0.1rem 0.5rem; }
+@container arcade (max-width: 720px) {
+  .dla-ls__thumbs .dla-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dla-ls__thumbs--3 .dla-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dla-ls__thumbs .dla-choice__n { display: none; }
+  .dla-ls__strip { grid-template-columns: repeat(5, minmax(0, 1fr)); row-gap: 0.6rem; }
+  .dla-ls__strip--3 { grid-template-columns: repeat(3, minmax(0, 96px)); }
+}
+@media (max-width: 480px) {
+  .dla-ls__thumbs .dla-choices--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dla-ls__thumbs--3 .dla-choices--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ── latent loss ──────────────────────────────────────────────────────── */
+.dla-ls__lossfloor { flex-direction: row; align-items: stretch; gap: 1rem; }
+.dla-ls__bells { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 420px); gap: 0.4rem 1.2rem; align-content: start; }
+.dla-ls__bells--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dla-ls__bell { width: 100%; }
+.dla-ls__bell0 { fill: none; stroke: var(--ink-3); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.dla-ls__bell1f { fill: color-mix(in srgb, var(--ls-mu) 16%, transparent); stroke: none; }
+.dla-ls__bell1 { fill: none; stroke: var(--ls-mu); stroke-width: 2.2; }
+.dla-ls__legend { grid-column: 1 / -1; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.5rem; font-size: 0.74rem; color: var(--ink-3); }
+.dla-ls__key { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--ls-mu); margin-left: 0.4rem; }
+.dla-ls__key--0 { border-top: 2px dashed var(--ink-3); margin-left: 0; }
+.dla-ls__heat { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; flex: none; width: 4.4rem; }
+.dla-ls__heattube { position: relative; flex: 1; min-height: 110px; width: 18px; border-radius: 99px; border: 1px solid var(--line-2); background: var(--surface-hi); overflow: hidden; }
+.dla-ls__heatfill { position: absolute; inset: 0; transform-origin: bottom; background: linear-gradient(to top, var(--dlv-yellow), var(--dlv-orange) 55%, var(--dlv-red)); }
+.dla-ls__heatyou { position: absolute; left: -2px; right: -2px; height: 3px; margin-bottom: -1.5px; background: var(--ink); }
+.dla-ls__heatv { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+.dla-ls__heat .dla-k { text-align: center; }
+
+/* ── formula questions ────────────────────────────────────────────────── */
+.dla-ls__eqfloor { overflow-x: auto; }
+.dla-ls__tchoices .dla-choice__label .katex { font-size: 1.1em; }
+
+/* motion (never under reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .dla-ls__meterfill { transition: transform 0.12s ease-out, background 0.2s; }
+  .dla-ls__heatfill { transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+  .dla-ls__cursor { transition: left 0.06s linear, top 0.06s linear; }
+  .dla-ls__floor--hot .dla-ls__fig--you .dla-ls__px { animation: dla-ls-glow 0.9s ease-in-out infinite alternate; }
+  @keyframes dla-ls-glow { from { box-shadow: 0 0 0 2px var(--accent-soft); } to { box-shadow: 0 0 0 6px var(--accent-soft); } }
+}
+
+/* labels keep their case (μ, γ, X_valid must not be uppercased) */
+.dla-ls__lab { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; letter-spacing: 0.02em; color: var(--ink-3); }
+
+/* the SVGs scale down on a phone: lift their type so it stays readable */
+@container arcade (max-width: 720px) {
+  .dla-ls__wire .dla-t { font-size: 15px; }
+  .dla-ls__wire .dla-t--s { font-size: 12.5px; }
+  .dla-ls__line .dla-t--xs { font-size: 14px; }
+  .dla-ls__line .dla-t--s { font-size: 15px; }
+  .dla-ls__bell .dla-t--s { font-size: 13px; }
+  .dla-ls__lossfloor { gap: 0.6rem; }
+  .dla-ls__bells--2 { grid-template-columns: minmax(0, 1fr); }
+  .dla-ls__heat { width: 3.6rem; }
+}
+@media (max-width: 480px) {
+  .dla-ls__tchoices .dla-choices--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
