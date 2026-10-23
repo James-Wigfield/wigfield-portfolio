@@ -89,3 +89,9 @@ See `Documents/cits5017/dl-arcade-report.md` (written at the end) — decisions 
   `Documents/cits5017/dl-arcade-report.md`; vault + memory updated. Pending at the time of writing: the whole-arcade
   re-audit and the visual QA report (their findings get applied on top). Batch 2 not started.
 - 2026-10-23: visual QA (54 shots) and the whole-arcade re-audit done; all findings fixed; every check green; final commit. Batch 2 not started.
+- 2026-10-23 evening: PixelLab art (trial plan, pixen, 28 of 40 generations): mascot, 15 cabinet icons, 8 in-game pieces behind
+  `core/art.js` `useSprite` with the SVG kept as fallback. Batch 2 built in the brief's order by Opus 5.5 builders (Boundary Bash,
+  Signal Keeper, Forger, Forecast Desk, Block Builder, Wave Stamp, Overfit Clinic), each audited by a fresh checker (blind
+  58/58, 68/68, 70/70, 73/73, 58/58, 72/72, 91/91; every WRONG fixed and re-checked). `arcade-check.mjs` now lets the Exam run every
+  planned round (15 games → 15 rounds); full run green (96 screenshots, zero console noise), build and lint clean. ~50 commits on
+  `feat/dl-arcade`, nothing pushed or merged. Not done: a whole-arcade re-audit over Batch 2; visual QA with the sprites in place.
