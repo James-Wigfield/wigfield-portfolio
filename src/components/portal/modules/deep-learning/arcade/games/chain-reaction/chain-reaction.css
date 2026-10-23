@@ -1,0 +1,163 @@
+/* Chain Reaction — the computation graph, the fuse, the collapse, the task
+   cards (.dla-cr*). Roles: forward signal = --dl8s-k, gradients = --dl8s-q,
+   inputs = --dl8s-v. Every animation sits behind prefers-reduced-motion:
+   no-preference; with reduced motion the states are drawn statically. */
+
+.dla-cr__floor { display: flex; flex-direction: column; gap: 0.6rem; }
+.dla-cr__graphwrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.6rem 1.2rem; }
+.dla-cr__graph { flex: 1 1 320px; max-width: 580px; min-width: 0; }
+.dla-cr__inset { flex: 0 1 220px; width: 220px; max-width: 100%; }
+.dla-cr__collapse, .dla-cr__curvebox { max-width: 640px; margin: 0 auto; }
+
+/* ── the graph ────────────────────────────────────────────────────────── */
+.dla-cr .dla-cr__edge { stroke: var(--ink-3); stroke-width: 1.3; opacity: 0.5; }
+.dla-cr .dla-cr__edge--hot { stroke: var(--dl8s-k); stroke-width: 2.4; opacity: 1; }
+.dla-cr .dla-cr__edge--grad { stroke: var(--dl8s-q); stroke-width: 2.4; opacity: 1; }
+.dla-cr .dla-cr__spark { stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 1 15; fill: none; }
+.dla-cr .dla-cr__spark--fwd { stroke: var(--dl8s-k); }
+.dla-cr .dla-cr__spark--bwd { stroke: var(--dl8s-q); }
+.dla-cr .dla-cr__arrow { fill: var(--dl8s-k); }
+.dla-cr .dla-cr__arrow--grad { fill: var(--dl8s-q); }
+.dla-cr .dla-cr__node { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1.6; }
+.dla-cr .dla-cr__node--in { stroke: var(--dl8s-v); stroke-width: 2; }
+.dla-cr .dla-cr__node--lit { fill: color-mix(in srgb, var(--dl8s-k) 13%, var(--surface)); stroke: var(--dl8s-k); }
+.dla-cr .dla-cr__node--ghost { stroke-dasharray: 3 3; }
+.dla-cr .dla-cr__div { stroke: var(--line); stroke-width: 1; }
+.dla-cr .dla-cr__glyph { fill: none; stroke: var(--ink-2); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.dla-cr .dla-cr__sigma { font-size: 14px; fill: var(--ink-2); font-family: var(--font-body, system-ui, sans-serif); }
+.dla-cr .dla-cr__sigma--s { font-size: 11px; }
+.dla-cr .dla-cr__xn { fill: var(--dl8s-v); font-weight: 700; }
+.dla-cr .dla-cr__wl { font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; }
+.dla-cr .dla-cr__wn { fill: var(--ink-3); font-size: 11.5px; }
+.dla-cr .dla-cr__wv { fill: var(--ink); font-weight: 700; }
+.dla-cr .dla-cr__wl--hot .dla-cr__wn { fill: var(--ink-2); }
+.dla-cr .dla-cr__wu { fill: var(--dl8s-q); font-weight: 700; }
+.dla-cr .dla-cr__tag { font-family: var(--font-mono, ui-monospace, monospace); font-size: 13.5px; fill: var(--ink-2); }
+.dla-cr .dla-cr__tag--q { fill: var(--accent-ink); font-weight: 700; }
+.dla-cr .dla-cr__tag--grad { fill: var(--dl8s-q); font-weight: 700; }
+.dla-cr .dla-cr__tag--y { fill: var(--dl8s-dec); font-weight: 700; }
+.dla-cr .dla-cr__gap { stroke: var(--dlv-red); stroke-width: 2.4; stroke-dasharray: 4 3; }
+.dla-cr .dla-cr__ring { fill: none; stroke: var(--accent); stroke-width: 2.6; transform-box: fill-box; transform-origin: center; }
+.dla-cr .dla-cr__ring--grad { stroke: var(--dl8s-q); }
+.dla-cr .dla-cr__graph--dim { opacity: 0.45; }
+.dla-cr[data-feedback='right'] .dla-cr__ring { stroke: var(--dla-right); stroke-width: 4; }
+.dla-cr[data-feedback='wrong'] .dla-cr__ring { stroke: var(--dla-wrong); }
+
+/* ── inset + Figure 10-8 curve ────────────────────────────────────────── */
+.dla-cr .dla-cr__grid { stroke: var(--line); stroke-width: 1; opacity: 0.7; }
+.dla-cr .dla-cr__axis { stroke: var(--ink-3); stroke-width: 1.2; }
+.dla-cr .dla-cr__curve { fill: none; stroke: var(--dl8s-k); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.dla-cr .dla-cr__curve--thin { stroke-width: 2.2; }
+.dla-cr .dla-cr__guide { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.dla-cr .dla-cr__dot { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.dla-cr .dla-cr__zl { fill: var(--accent-ink) !important; font-weight: 700; }
+.dla-cr .dla-cr__jump { stroke: var(--ink-3); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.dla-cr .dla-cr__x line { stroke: var(--dlv-red); stroke-width: 2; }
+
+/* ── the collapse (slide 23) ──────────────────────────────────────────── */
+.dla-cr .dla-cr__lbox { fill: var(--surface); stroke: var(--dl8s-k); stroke-width: 1.6; }
+.dla-cr .dla-cr__wire { stroke: var(--ink-3); stroke-width: 1.4; }
+.dla-cr .dla-cr__funnel { stroke: var(--dl8s-k); stroke-width: 1.2; stroke-dasharray: 3 4; opacity: 0.7; }
+.dla-cr .dla-cr__phibox { fill: none; stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.dla-cr .dla-cr__phi { opacity: 0.55; }
+.dla-cr .dla-cr__strike { stroke: var(--dlv-red); stroke-width: 2.2; stroke-linecap: round; }
+.dla-cr .dla-cr__mbox { fill: color-mix(in srgb, var(--dl8s-k) 9%, var(--surface)); stroke: var(--dl8s-k); stroke-width: 2; }
+.dla-cr .dla-cr__mline { font-size: 21px; }
+.dla-cr .dla-cr__lfx { font-size: 16px; }
+.dla-cr .dla-cr__mq { fill: var(--accent-ink); }
+
+/* ── the fuse (level 2) ───────────────────────────────────────────────── */
+.dla-cr__fuse { display: flex; align-items: center; gap: 0.6rem; }
+.dla-cr__fusetrack { position: relative; flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.dla-cr__fusefill { position: absolute; inset: 0; border-radius: 2px; background: var(--dlv-orange); transform-origin: left center; }
+.dla-cr__fusespark { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; background: var(--dlv-yellow); transform: translate(-50%, -50%); box-shadow: 0 0 10px var(--dlv-orange); }
+.dla-cr__fusesecs { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink-2); min-width: 2.4em; text-align: right; }
+.dla-cr__fuse[data-low='true'] .dla-cr__fusefill { background: var(--dlv-red); }
+.dla-cr__fuse[data-low='true'] .dla-cr__fusesecs { color: var(--dlv-red); font-weight: 700; }
+
+/* ── the reverse-pass ledger ──────────────────────────────────────────── */
+.dla-cr__ledger { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1.1rem; border-top: 1px solid var(--line); padding-top: 0.5rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8rem; }
+.dla-cr__lg { display: inline-flex; gap: 0.4rem; align-items: baseline; white-space: nowrap; }
+.dla-cr__lgk { color: var(--ink-3); }
+.dla-cr__lgv { color: var(--dl8s-q); font-weight: 700; }
+.dla-cr__lg--target .dla-cr__lgk { color: var(--ink); }
+.dla-cr__lg--target .dla-cr__lgv { color: var(--accent-ink); border-bottom: 2px solid var(--accent); }
+
+/* ── prompt extras ────────────────────────────────────────────────────── */
+.dla-cr__side { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.dla-cr__sub { display: inline; }
+.dla-cr__bdot { display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--dlv-violet); margin-right: 0.4rem; }
+
+/* ── task card + the output layer picture ─────────────────────────────── */
+.dla-cr__card { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 0.8rem 1.4rem; align-items: center; }
+.dla-cr__cardtext { min-width: 0; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.dla-cr__cardline { margin: 0.35rem 0 0; font-family: var(--font-display, Georgia, serif); font-size: 1.22rem; line-height: 1.35; color: var(--ink); }
+
+.dla-cr svg.dla-cr__headpic { max-width: 250px; width: 100%; justify-self: center; }
+.dla-cr .dla-cr__softmax { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.4; }
+.dla-cr .dla-cr__losst { font-size: 12px; fill: var(--ink); font-weight: 700; }
+.dla-cr .dla-cr__losst--q { fill: var(--ink-3); font-weight: 400; }
+
+/* ── order pad + head builder ─────────────────────────────────────────── */
+.dla-cr__order, .dla-cr__head { display: flex; flex-direction: column; gap: 0.5rem; }
+.dla-cr__steps { display: grid; gap: 0.4rem; }
+.dla-cr__step {
+  display: grid; grid-template-columns: 1.9rem minmax(0, 1fr) auto; align-items: center; gap: 0.6rem;
+  min-height: 48px; padding: 0.45rem 0.7rem; text-align: left;
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+}
+.dla-cr__step:hover:not(:disabled) { border-color: var(--ink-3); }
+.dla-cr__step:focus-visible, .dla-cr__chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dla-cr__step--on { border-color: var(--accent); }
+.dla-cr__stepn {
+  display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; border: 1px dashed var(--ink-3);
+  font-family: var(--font-mono, ui-monospace, monospace); font-weight: 700; font-size: 0.85rem; color: var(--accent-ink);
+}
+.dla-cr__step--on .dla-cr__stepn { border: 2px solid var(--accent); }
+.dla-cr__stepb { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.dla-cr__stepb b { font-size: 0.92rem; }
+.dla-cr__stepb span { font-size: 0.76rem; line-height: 1.35; color: var(--ink-3); }
+.dla-cr__stepkey { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); }
+.dla-cr__row { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
+.dla-cr__btn { min-height: 44px; min-width: 88px; }
+.dla-cr__hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.dla-cr__hk { flex: 0 0 100%; }
+.dla-cr__chip {
+  min-height: 44px; min-width: 48px; padding: 0.35rem 0.8rem;
+  font: inherit; font-size: 0.9rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+}
+.dla-cr__chip:hover:not(:disabled) { border-color: var(--ink-3); }
+.dla-cr__chip[aria-checked='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent-ink); font-weight: 700; }
+
+@container arcade (max-width: 640px) {
+  .dla-cr__card { grid-template-columns: 1fr; }
+  .dla-cr__inset { flex-basis: 70%; width: 70%; }
+}
+
+/* ── motion (only when the viewer allows it) ──────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes dla-cr-flow { to { stroke-dashoffset: -16; } }
+  @keyframes dla-cr-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.55; } }
+  @keyframes dla-cr-ignite { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1.15); } }
+  @keyframes dla-cr-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes dla-cr-fadeout { from { opacity: 1; } to { opacity: 0.35; } }
+  @keyframes dla-cr-merge { 0% { opacity: 0; transform: translateY(-26px) scale(0.6); } 60% { opacity: 1; transform: translateY(2px) scale(1.04); } 100% { opacity: 1; transform: none; } }
+  @keyframes dla-cr-slide { 0% { transform: translateY(0); } 50% { transform: translateY(8px); } 100% { transform: translateY(0); } }
+  @keyframes dla-cr-strike { from { stroke-dashoffset: 60; } to { stroke-dashoffset: 0; } }
+  @keyframes dla-cr-flicker { 0%, 100% { box-shadow: 0 0 8px var(--dlv-orange); } 50% { box-shadow: 0 0 16px var(--dlv-yellow); } }
+  @keyframes dla-cr-gap { to { stroke-dashoffset: -14; } }
+
+  .dla-cr .dla-cr__spark--fwd, .dla-cr .dla-cr__spark--bwd { animation: dla-cr-flow 0.8s linear infinite; }
+  .dla-cr .dla-cr__ring { animation: dla-cr-pulse 1.3s ease-in-out infinite; }
+  .dla-cr[data-feedback='right'] .dla-cr__ring { animation: dla-cr-ignite 0.45s ease-out forwards; }
+  .dla-cr .dla-cr__gap { animation: dla-cr-gap 0.7s linear infinite; }
+  .dla-cr .dla-cr__curve--draw { stroke-dasharray: 1; animation: dla-cr-draw 0.7s ease-out both; }
+  .dla-cr .dla-cr__phi { animation: dla-cr-fadeout 0.6s ease 0.3s both; }
+  .dla-cr .dla-cr__strike { stroke-dasharray: 60; animation: dla-cr-strike 0.4s ease-out 0.2s both; }
+  .dla-cr .dla-cr__layer { transform-box: fill-box; animation: dla-cr-slide 0.6s ease calc(0.5s + var(--i, 0) * 0.08s) both; }
+  .dla-cr .dla-cr__merged { transform-box: fill-box; transform-origin: center; animation: dla-cr-merge 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.7s both; }
+  .dla-cr__fusefill { transition: transform 0.1s linear; }
+  .dla-cr__fusespark { animation: dla-cr-flicker 0.35s ease-in-out infinite; transition: left 0.1s linear; }
+  .dla-cr__step, .dla-cr__chip { transition: border-color 0.15s, box-shadow 0.15s; }
+}
