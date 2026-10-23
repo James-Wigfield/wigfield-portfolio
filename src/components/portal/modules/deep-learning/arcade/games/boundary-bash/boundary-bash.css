@@ -1,0 +1,124 @@
+/* Boundary Bash — the plane, the ledger, the XOR plot and Figure 10-6b
+   (.dla-bb*). Roles: y = 1 squares = --dl8s-v (Figure 10-6a's green
+   squares), y = 0 triangles = --dl8s-dec (its red triangles), the w arrow =
+   --dl8s-k, candidate boundaries = --dl8s-pos, the incoming point's ring =
+   --dl8s-q. Every animation sits behind prefers-reduced-motion:
+   no-preference; with reduced motion the states are drawn statically. */
+
+.dla-bb__floor { display: flex; flex-direction: column; gap: 0.5rem; }
+.dla-bb__scene { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem 1.6rem; }
+.dla-bb__plot { flex: 0 1 330px; width: 100%; max-width: 330px; min-width: 0; }
+.dla-bb__aside { flex: 0 1 230px; min-width: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.dla-bb__xorplot { flex: 0 1 250px; width: 100%; max-width: 250px; min-width: 0; }
+.dla-bb__xorplot--solo { flex-basis: 300px; max-width: 300px; }
+.dla-bb__net { flex: 0 1 290px; width: 100%; max-width: 290px; min-width: 0; }
+.dla-bb__scene--xor .dla-bb__legend { flex-basis: 100%; justify-content: center; }
+.dla-bb__ctl { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.dla-bb__head { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.dla-bb__head--top { display: none; }
+
+/* ── the plane ────────────────────────────────────────────────────────── */
+.dla-bb .dla-bb__bg { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.dla-bb .dla-bb__side--1 { fill: color-mix(in srgb, var(--dl8s-v) 14%, transparent); }
+.dla-bb .dla-bb__side--0 { fill: color-mix(in srgb, var(--dl8s-dec) 6%, transparent); }
+.dla-bb .dla-bb__band { fill: color-mix(in srgb, var(--dl8s-v) 16%, transparent); }
+.dla-bb .dla-bb__grid { stroke: var(--line); stroke-width: 1; opacity: 0.65; }
+.dla-bb .dla-bb__grid--axis { stroke: var(--ink-3); opacity: 0.8; }
+.dla-bb .dla-bb__axl { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; fill: var(--ink-2); font-weight: 700; }
+.dla-bb .dla-bb__line { stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; }
+.dla-bb .dla-bb__line--old { stroke: var(--ink-3); stroke-width: 1.6; stroke-dasharray: 4 4; opacity: 0.7; }
+.dla-bb .dla-bb__line--new { stroke: var(--accent); stroke-width: 3.2; }
+.dla-bb .dla-bb__w line { stroke: var(--dl8s-k); stroke-width: 2.4; stroke-linecap: round; }
+.dla-bb .dla-bb__w polygon { fill: var(--dl8s-k); }
+.dla-bb .dla-bb__wl { font-family: var(--font-mono, ui-monospace, monospace); font-weight: 700; fill: var(--dl8s-k) !important; }
+.dla-bb .dla-bb__pt { stroke: var(--surface); stroke-width: 1.2; }
+.dla-bb .dla-bb__pt--1 { fill: var(--dl8s-v); }
+.dla-bb .dla-bb__pt--0 { fill: var(--dl8s-dec); }
+.dla-bb .dla-bb__pt--old { opacity: 0.5; }
+.dla-bb .dla-bb__pt--cur { stroke: var(--ink); stroke-width: 1.6; }
+.dla-bb .dla-bb__ring { fill: none; stroke: var(--dl8s-q); stroke-width: 2.2; transform-box: fill-box; transform-origin: center; }
+.dla-bb .dla-bb__ring--done { stroke: var(--dla-right); }
+.dla-bb__floor--right .dla-bb__ring { stroke: var(--dla-right); stroke-width: 3; }
+.dla-bb__floor--wrong .dla-bb__ring { stroke: var(--dla-wrong); }
+.dla-bb .dla-bb__xl { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; font-weight: 700; }
+.dla-bb .dla-bb__probedot { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.dla-bb .dla-bb__fresh { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; fill: var(--accent-ink) !important; letter-spacing: 0.04em; }
+
+/* candidate boundaries (level 1's rule items) */
+.dla-bb .dla-bb__ghost line { stroke: var(--dl8s-pos); stroke-width: 2; stroke-dasharray: 6 4; }
+.dla-bb .dla-bb__ghost circle { fill: var(--surface); stroke: var(--dl8s-pos); stroke-width: 1.6; }
+.dla-bb .dla-bb__ghostn { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11.5px; font-weight: 700; fill: var(--dl8s-pos) !important; }
+.dla-bb .dla-bb__ghost--right line { stroke: var(--dla-right); stroke-width: 3; stroke-dasharray: none; }
+.dla-bb .dla-bb__ghost--right circle { stroke: var(--dla-right); }
+.dla-bb .dla-bb__ghost--wrong line { stroke: var(--dla-wrong); }
+.dla-bb .dla-bb__ghost--wrong circle { stroke: var(--dla-wrong); }
+.dla-bb .dla-bb__ghost--off { opacity: 0.25; }
+
+/* ── the ledger + legend ──────────────────────────────────────────────── */
+.dla-bb__ledger { margin: 0; display: grid; grid-template-columns: 1fr; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.86rem; }
+.dla-bb__lrow { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); align-items: baseline; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid var(--line); }
+.dla-bb__lrow dt { color: var(--ink-3); font-size: 0.8rem; }
+.dla-bb__lrow dd { margin: 0; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+.dla-bb__lrow .dla-k { margin-left: 0.3rem; font-weight: 400; }
+.dla-bb__ask { color: var(--accent-ink); border-bottom: 2px solid var(--accent); }
+.dla-bb__next { color: var(--accent-ink); }
+.dla-bb__hid { color: var(--dl8s-q); }
+.dla-bb__chip { display: inline-block; width: 10px; height: 10px; margin-right: 0.4rem; vertical-align: -0.05em; }
+.dla-bb__chip--1 { background: var(--dl8s-v); border-radius: 1.5px; }
+.dla-bb__chip--0 { background: var(--dl8s-dec); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.dla-bb__swatch { display: inline-block; width: 14px; height: 10px; margin-right: 0.4rem; vertical-align: -0.05em; background: color-mix(in srgb, var(--dl8s-v) 22%, transparent); border: 1px solid color-mix(in srgb, var(--dl8s-v) 45%, transparent); }
+.dla-bb__legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; color: var(--ink-3); }
+
+/* ── XOR plot + Figure 10-6b ──────────────────────────────────────────── */
+.dla-bb .dla-bb__try line { stroke: var(--dl8s-pos); stroke-width: 2; stroke-dasharray: 6 4; }
+.dla-bb .dla-bb__hl { font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; font-weight: 700; fill: var(--ink-2) !important; }
+.dla-bb .dla-bb__tryl { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; fill: var(--dl8s-pos) !important; font-weight: 700; }
+.dla-bb .dla-bb__hidline line { stroke: var(--ink-2); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.dla-bb .dla-bb__edge line { stroke: var(--ink-3); stroke-width: 1.6; }
+.dla-bb .dla-bb__edge polygon { fill: var(--ink-3); }
+.dla-bb .dla-bb__edge--hot line { stroke: var(--dl8s-k); stroke-width: 2.4; }
+.dla-bb .dla-bb__edge--hot polygon { fill: var(--dl8s-k); }
+.dla-bb .dla-bb__tlu circle { fill: color-mix(in srgb, var(--dl8s-k) 12%, var(--surface)); stroke: var(--ink-3); stroke-width: 1.6; }
+.dla-bb .dla-bb__tlu--hot circle { stroke: var(--dl8s-k); stroke-width: 2.2; }
+.dla-bb .dla-bb__tludiv { stroke: var(--ink-3); stroke-width: 1; }
+.dla-bb .dla-bb__tlustep { fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
+.dla-bb .dla-bb__sigma { font-size: 13px; fill: var(--ink-2); }
+.dla-bb .dla-bb__slot circle { fill: var(--surface); stroke: var(--dl8s-q); stroke-width: 1.4; }
+.dla-bb .dla-bb__slot text { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; font-weight: 700; }
+.dla-bb .dla-bb__slot--s circle { stroke: color-mix(in srgb, var(--dl8s-q) 55%, var(--line)); }
+.dla-bb .dla-bb__slot--blank circle { stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 3 2; }
+.dla-bb .dla-bb__slot--blank text { fill: var(--accent-ink); font-size: 12px; }
+.dla-bb .dla-bb__xn { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; font-weight: 700; fill: var(--dl8s-v) !important; }
+.dla-bb .dla-bb__tag { font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; font-weight: 700; fill: var(--accent-ink) !important; }
+
+@container arcade (max-width: 560px) {
+  .dla-bb__head--top { display: flex; }
+  .dla-bb__head--side { display: none; }
+  .dla-bb__plot { flex-basis: 270px; max-width: 270px; }
+  .dla-bb__aside { flex-basis: 100%; }
+  .dla-bb__ledger { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 0.8rem; }
+  .dla-bb__ledger .dla-bb__lrow:first-child { grid-column: 1 / -1; }
+  .dla-bb__lrow { grid-template-columns: 1.4rem minmax(0, 1fr); }
+  .dla-bb__xorplot { flex-basis: 210px; max-width: 210px; }
+  .dla-bb__xorplot--solo { flex-basis: 280px; max-width: 280px; }
+  .dla-bb__net { flex-basis: 100%; max-width: 300px; }
+}
+
+/* ── motion (only when the viewer allows it) ──────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes dla-bb-land { 0% { transform: translateY(-14px) scale(0.6); opacity: 0; } 70% { transform: translateY(1px) scale(1.08); opacity: 1; } 100% { transform: none; } }
+  @keyframes dla-bb-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: 0.5; } }
+  @keyframes dla-bb-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes dla-bb-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes dla-bb-dash { to { stroke-dashoffset: -20; } }
+
+  .dla-bb .dla-bb__cur, .dla-bb .dla-bb__probe { transform-box: fill-box; transform-origin: center; animation: dla-bb-land 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+  .dla-bb .dla-bb__ring { animation: dla-bb-pulse 1.2s ease-in-out infinite; }
+  .dla-bb__floor--right .dla-bb__ring, .dla-bb__floor--wrong .dla-bb__ring { animation: none; }
+  .dla-bb .dla-bb__line--new { stroke-dasharray: 1; animation: dla-bb-draw 0.4s ease-out both; }
+  .dla-bb .dla-bb__side { animation: dla-bb-fade 0.3s ease both; }
+  .dla-bb .dla-bb__ghost line, .dla-bb .dla-bb__try line { animation: dla-bb-dash 1.4s linear infinite; }
+  .dla-bb .dla-bb__ghost--right line { animation: none; }
+  .dla-bb .dla-bb__try { animation: dla-bb-fade 0.4s ease calc(var(--i, 0) * 0.25s) both; }
+  .dla-bb .dla-bb__slot--blank circle { transform-box: fill-box; transform-origin: center; animation: dla-bb-pulse 1.3s ease-in-out infinite; }
+}
