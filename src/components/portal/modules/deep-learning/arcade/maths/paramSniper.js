@@ -78,7 +78,7 @@ function howParams(spec, nIn, counts) {
       return `Four FC layers (i, f, o, g), each with W_x (${nIn} × ${spec.units}), W_h (${spec.units} × ${spec.units}) and a bias: 4 × (${nIn} × ${spec.units} + ${spec.units} × ${spec.units} + ${spec.units}) = ${fmt(total)}.`;
     case 'GRU': {
       const one = 3 * (nIn * spec.units + spec.units * spec.units + spec.units);
-      return `Three blocks (z, r, g). Keras’s default GRU (reset_after=True) keeps two bias vectors per block: 3 × (${nIn} × ${spec.units} + ${spec.units} × ${spec.units} + 2 × ${spec.units}) = ${fmt(total)}. Slide 49’s equations show one bias per block (${fmt(one)}); the slide’s printed 1,401 uses the Keras default.`;
+      return `Three blocks (z, r, g). Keras’s default GRU (reset_after=True) keeps two bias vectors per block: 3 × (${nIn} × ${spec.units} + ${spec.units} × ${spec.units} + 2 × ${spec.units}) = ${fmt(total)}. Slide 49’s equations show one bias per block (${fmt(one)}); the printed 1,401 only comes out with Keras’s two-bias layout, which the slide does not spell out.`;
     }
     case 'Bidirectional': {
       const inner = layerParams({ ...spec.layer, inputShape: [null, nIn] }).total;
@@ -193,7 +193,8 @@ function distractors(rand, spec, nIn, answer) {
     case 'BatchNormalization': add(2 * nIn); add(3 * nIn); add(nIn); add(8 * nIn); break;
     case 'SimpleRNN': add(nIn * u + u); add(nIn * u + u * u); add(2 * (nIn * u + u * u + u)); add(u * u + u); break;
     case 'LSTM': add(3 * (nIn * u + u * u + u)); add(nIn * u + u * u + u); add(4 * (nIn * u + u * u)); add(4 * (nIn * u + u * u + 2 * u)); break;
-    case 'GRU': add(3 * (nIn * u + u * u + u)); add(4 * (nIn * u + u * u + u)); add(nIn * u + u * u + u); add(3 * (nIn * u + u * u)); break;
+    // (never 3·(n·u + u² + u): that is slide 49's own one-bias count, a fair reading of the slide)
+    case 'GRU': add(4 * (nIn * u + u * u + u)); add(nIn * u + u * u + u); add(3 * (nIn * u + u * u)); add(4 * (nIn * u + u * u + 2 * u)); break;
     case 'MaxPool2D': case 'AvgPool2D': case 'GlobalAvgPool2D': case 'Flatten': case 'Dropout': {
       const [h, w, c] = [nIn, nIn, nIn];
       add(4); add(c); add(h * w); add(2 * c + 1); add(9); break;
@@ -227,7 +228,7 @@ function singleItem(rand, type, { choice = false, ask = 'total' } = {}) {
     src: R.src,
     beyond: R.beyond || undefined,
     lines,
-    question: spec.type === 'DenseTranspose' ? 'Param # of the DenseTranspose layer?' : q,
+    question: spec.type === 'DenseTranspose' ? 'Trainable params this DenseTranspose adds?' : q,
     ask,
     promptText: spec.type === 'DenseTranspose' ? `DenseTranspose of Dense(${spec.tied.units}) on ${spec.tied.nIn} inputs · ${q}` : `${specLine(spec)} on ${fmtShapeIn(inputShape)} · ${q}`,
     why: howParams(spec, nIn, counts),
@@ -309,7 +310,7 @@ function stackItem(rand, types, { ask = 'total' } = {}) {
     ask,
     promptText: `${specs.map(specLine).join(' → ')} on ${fmtShapeIn(first.inputShape)} · ${q}`,
     answer,
-    why: `Layer by layer: ${perLayer.join('; ')}. Total ${fmt(total)}${nonTrainable ? ` (${fmt(nonTrainable)} of them non-trainable: BatchNormalization’s moving means and variances)` : ''}.`,
+    why: `Layer by layer: ${perLayer.join('; ')}. Total ${fmt(total)}${nonTrainable ? `, of which ${fmt(nonTrainable)} are non-trainable (BatchNormalization’s moving means and variances), leaving ${fmt(trainable)} trainable` : ''}.`,
   };
 }
 const hardOf = (t) => ({ GRU: 5, LSTM: 4, MultiHeadAttention: 5, BatchNormalization: 4, Bidirectional: 4, DenseTranspose: 4, Conv2DTranspose: 3, Conv2D: 3, SimpleRNN: 3, Conv1D: 3, Dense: 2 }[t] ?? 1);
@@ -322,7 +323,7 @@ function slideModelItem(rand, m, ask) {
   const R = RULES[hardest.type] ?? RULES.Dense;
   return {
     id: nextId(m.id),
-    concept: ask === 'nonTrainable' || ask === 'trainable' ? 'bn.params' : R.concept,
+    concept: ask === 'nonTrainable' || ask === 'trainable' ? 'bn.params' : (m.concept ?? R.concept),
     src: m.src,
     kind: 'number',
     lines: m.lines,
@@ -339,7 +340,7 @@ function slideModelItem(rand, m, ask) {
 const L1_TYPES = ['Dense', 'Dense', 'Conv2D', 'Conv2D', 'MaxPool2D', 'Flatten', 'BatchNormalization', 'SimpleRNN', 'LSTM', 'GRU', 'Conv2DTranspose'];
 const L2_TYPES = ['Dense', 'Conv2D', 'Conv2D', 'Conv2DTranspose', 'BatchNormalization', 'SimpleRNN', 'LSTM', 'GRU', 'Conv1D', 'DenseTranspose', 'Bidirectional', 'GlobalAvgPool2D'];
 const L2_SHAPES = ['Conv2D', 'MaxPool2D', 'Flatten', 'SimpleRNN', 'GlobalAvgPool2D', 'LSTM', 'Bidirectional'];
-const L3_STACKS = [['Conv2D', 'MaxPool2D', 'Dense'], ['Conv2D', 'BatchNormalization'], ['LSTM', 'Dense'], ['GRU', 'GRU'], ['SimpleRNN', 'LSTM'], ['Conv2D', 'Conv2D', 'Flatten']];
+const L3_STACKS = [['Conv2D', 'MaxPool2D', 'Dense'], ['Dense', 'BatchNormalization', 'Dense'], ['LSTM', 'Dense'], ['GRU', 'GRU'], ['SimpleRNN', 'LSTM'], ['Conv2D', 'Conv2D', 'Flatten']];
 
 export function makeItems(rand, level = 1) {
   counter = 0;

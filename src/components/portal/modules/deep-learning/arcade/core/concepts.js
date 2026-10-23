@@ -36,9 +36,11 @@ function merge(lists) {
     if (!c || !c.id) return;
     if (!out[c.id]) out[c.id] = { hard: 2, slides: [], ...c };
     else {
-      // the same id from two sources: keep the first, union the slides
+      // the same id from two sources: keep the first; union the slides only
+      // within the same lecture, and list another lecture's slides under `also`
       const prev = out[c.id];
-      out[c.id] = { ...prev, slides: [...new Set([...(prev.slides ?? []), ...(c.slides ?? [])])].sort((a, b) => a - b) };
+      if (c.lecture === prev.lecture) out[c.id] = { ...prev, slides: [...new Set([...(prev.slides ?? []), ...(c.slides ?? [])])].sort((a, b) => a - b) };
+      else out[c.id] = { ...prev, also: [...(prev.also ?? []), { lecture: c.lecture, slides: c.slides ?? [] }] };
     }
   });
   return out;

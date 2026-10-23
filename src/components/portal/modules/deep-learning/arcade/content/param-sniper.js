@@ -29,7 +29,7 @@ export const RULES = {
   Conv2DTranspose: {
     concept: 'params.convT',
     src: { lecture: 6, slides: [6] },
-    rule: 'counted like a Conv2D: kernel height × width × input channels × filters, plus one bias per filter; slide 6’s conv_decoder summary prints 4,464 = 3 × 3 × 16 × 32 + 32, 4,640 and 4,624',
+    rule: 'counted like a Conv2D: kernel height × width × input channels × filters, plus one bias per filter; slide 6’s conv_decoder summary prints 4,640 = 3 × 3 × 16 × 32 + 32, 4,624 and 145',
     anchor: 'conv_decoder.summary(): 4,464 · 4,640 · 4,624 · 145, total 13,873',
   },
   Conv1D: {
@@ -63,7 +63,7 @@ export const RULES = {
   },
   BatchNormalization: {
     concept: 'bn.params',
-    src: { lecture: 2, slides: [24, 27] },
+    src: { lecture: 2, slides: [23, 24, 27] },
     also: [{ lecture: 2, slides: [23] }],
     rule: 'four parameter vectors per input feature: γ (scale) and β (shift) are trainable; the moving mean and moving variance are not. 4 × features in the summary, of which 2 × features are non-trainable',
     anchor: 'slide 27: BN on 784 features prints 3,136 = 4 × 784; the model’s non-trainable total is 2,368 = 2 × (784 + 300 + 100)',
@@ -71,7 +71,7 @@ export const RULES = {
   SimpleRNN: {
     concept: 'params.simpleRnn',
     src: { lecture: 4, slides: [9, 27] },
-    rule: 'W_x is n_inputs × n_neurons, W_h is n_neurons × n_neurons and b_h has n_neurons entries (slide 9); slide 27 prints 1 × 32 + 32 × 32 + 32 = 1,088 for SimpleRNN(32) on one feature',
+    rule: 'W_x is n_inputs × n_neurons, W_h is n_neurons × n_neurons and b_h has n_neurons entries (slide 9); slide 27 prints 1,088 for SimpleRNN(32) on one feature, which is 1 × 32 + 32 × 32 + 32',
     anchor: 'slides 27 and 29 print 1,088, 2,080 and 5,281',
   },
   LSTM: {
@@ -94,7 +94,7 @@ export const RULES = {
   },
   DenseTranspose: {
     concept: 'params.tied',
-    src: { lecture: 5, slides: [20, 21] },
+    src: { lecture: 5, slides: [19, 20, 21] },
     rule: 'a tied decoder layer reuses the matching encoder layer’s kernel transposed and creates no kernel of its own; its only trainable parameters are its biases',
     anchor: 'slide 21: tied_ae has 82,414 trainable parameters against stacked_ae’s 163,814',
   },
@@ -107,7 +107,7 @@ export const RULES = {
   },
   Dropout: {
     concept: 'params.pool',
-    src: { lecture: 2, slides: [62] },
+    src: { lecture: 2, slides: [63] },
     rule: 'dropout only switches neurons off during training; it has nothing to learn',
     beyond: true,
     note: 'No slide prints a Dropout row in a summary; the count is Keras’s.',
@@ -147,12 +147,12 @@ export const SHAPE_RULES = {
   },
   SimpleRNN: {
     concept: 'rnn.deep',
-    src: { lecture: 4, slides: [27, 29] },
+    src: { lecture: 4, slides: [27, 28, 29] },
     rule: 'a recurrent layer outputs one vector of `units` numbers for the last time step, (None, units); with return_sequences=True it outputs one per time step, (None, None, units)',
   },
-  LSTM: { concept: 'rnn.deep', src: { lecture: 4, slides: [43, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True' },
-  GRU: { concept: 'rnn.deep', src: { lecture: 4, slides: [49, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True' },
-  Bidirectional: { concept: 'params.bidirectional', src: { lecture: 8, slides: [8, 14] }, rule: 'the forward and backward outputs are concatenated: twice the wrapped layer’s width (slide 14: two SimpleRNN(16) states become (None, 32))' },
+  LSTM: { concept: 'rnn.deep', src: { lecture: 4, slides: [27, 28, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True' },
+  GRU: { concept: 'rnn.deep', src: { lecture: 4, slides: [27, 28, 29] }, rule: 'as for SimpleRNN: (None, units), or (None, None, units) with return_sequences=True' },
+  Bidirectional: { concept: 'params.bidirectional', src: { lecture: 8, slides: [7, 14] }, rule: 'the forward and backward outputs are concatenated: twice the wrapped layer’s width (slide 14: two SimpleRNN(16) states become (None, 32))' },
 };
 
 /* Models whose totals the slides print. `ask` lists what a question may ask
@@ -239,6 +239,7 @@ export const SLIDE_MODELS = [
   {
     id: 'l4.cnnGru',
     name: 'cnn_gru_model',
+    concept: 'params.conv1d',
     src: { lecture: 4, slides: [50] },
     input: [null, 1],
     specs: [{ type: 'Conv1D', filters: 8, kernel: 3, strides: 1 }, { type: 'Conv1D', filters: 16, kernel: 3, strides: 2 }, { type: 'GRU', units: 10 }, { type: 'Dense', units: 1 }],
