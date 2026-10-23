@@ -117,7 +117,7 @@ export const planExam = (games, boxes, today, rand) => planRounds(games, boxes, 
 export function gradeByLecture(outcomes, concepts) {
   const per = {};
   outcomes.forEach((o) => {
-    const lec = concepts[o.concept]?.lecture;
+    const lec = o.src?.lecture ?? concepts[o.concept]?.lecture;
     if (lec === undefined) return;
     per[lec] = per[lec] ?? { right: 0, total: 0, pct: 0 };
     per[lec].total += 1;

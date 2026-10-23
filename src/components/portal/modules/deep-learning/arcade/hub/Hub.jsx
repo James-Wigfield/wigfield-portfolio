@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import Icon from '../../../../icons';
 import { GAMES } from '../core/games';
-import { CONCEPTS, CONCEPT_IDS, LECTURES, byLecture } from '../core/concepts';
+import { CONCEPTS, LECTURES } from '../core/concepts';
 import { dueConcepts, mastery } from '../core/scheduler';
 import { getBoxes, getProfile, getMix, getExam, resetAll } from '../core/storage';
 import { levelProgress, maxLevelUnlocked, examUnlocked, EXAM_GAMES_NEEDED } from '../core/progress';
@@ -16,12 +16,16 @@ import './hub.css';
    cabinet per game · the mastery panel (a ring per lecture, concepts behind
    a toggle). A grid of cabinets and panels, never an article.
    ========================================================================== */
+// only the concepts some game drills can be reviewed, so due counts and mastery are over those
+const DRILLED = [...new Set(GAMES.flatMap((g) => g.concepts ?? []))].filter((id) => CONCEPTS[id]);
+const drilledIn = (n) => DRILLED.filter((id) => CONCEPTS[id].lecture === n);
+
 export function Hub({ onOpen }) {
   const today = todayISO();
   const [tick, setTick] = useState(0);
   const profile = useMemo(() => getProfile(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const boxes = useMemo(() => getBoxes(), [tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  const due = useMemo(() => dueConcepts(boxes, CONCEPT_IDS, today), [boxes, today]);
+  const due = useMemo(() => dueConcepts(boxes, DRILLED, today), [boxes, today]);
   const lp = levelProgress(profile.xp);
   const mix = getMix();
   const mixLive = mix && mix.date === today && mix.done.length < mix.plan.length;
@@ -30,7 +34,7 @@ export function Hub({ onOpen }) {
   const examOk = examUnlocked(profile);
   const [showConcepts, setShowConcepts] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const overall = mastery(boxes, CONCEPT_IDS);
+  const overall = mastery(boxes, DRILLED);
 
   return (
     <div className="dla-hub">
@@ -38,7 +42,7 @@ export function Hub({ onOpen }) {
         <div className="dla-marquee" aria-label="Gradient Arcade">
           <span className="dla-marquee__lights" aria-hidden="true" />
           <h2 className="dla-marquee__title">Gradient Arcade</h2>
-          <p className="dla-marquee__sub">CITS5017 · exam drills · {GAMES.length} games · {CONCEPT_IDS.length} concepts</p>
+          <p className="dla-marquee__sub">CITS5017 · exam drills · {GAMES.length} games · {DRILLED.length} concepts</p>
         </div>
         <div className="dla-strip" role="group" aria-label="Your progress">
           <div className="dla-strip__cell">
@@ -55,7 +59,7 @@ export function Hub({ onOpen }) {
           <div className="dla-strip__cell">
             <span className="dla-k">due today</span>
             <span className="dla-strip__v">{due.length}</span>
-            <span className="dla-strip__sub">of {CONCEPT_IDS.length} concepts</span>
+            <span className="dla-strip__sub">of {DRILLED.length} drilled concepts</span>
           </div>
           <div className="dla-strip__cell dla-strip__cell--ring">
             <Ring t={overall} size={44} stroke={5} label={`${Math.round(overall * 100)} % overall mastery`} />
@@ -101,7 +105,7 @@ export function Hub({ onOpen }) {
         </div>
         <div className="dla-lecs">
           {LECTURES.map((L) => {
-            const ids = byLecture(L.n);
+            const ids = drilledIn(L.n);
             const m = mastery(boxes, ids);
             const d = ids.filter((id) => due.includes(id)).length;
             return (
@@ -116,11 +120,11 @@ export function Hub({ onOpen }) {
         </div>
         {showConcepts && (
           <ul className="dla-concepts">
-            {CONCEPT_IDS.slice().sort((a, b) => CONCEPTS[a].lecture - CONCEPTS[b].lecture || a.localeCompare(b)).map((id) => {
+            {DRILLED.slice().sort((a, b) => CONCEPTS[a].lecture - CONCEPTS[b].lecture || a.localeCompare(b)).map((id) => {
               const c = CONCEPTS[id];
               const b = boxes[id]?.box ?? 0;
               return (
-                <li key={id} className={`dla-concept${due.includes(id) ? ' dla-concept--due' : ''}`} title={`${c.title} · Lecture ${c.lecture} · slides ${(c.slides ?? []).join(', ')}`}>
+                <li key={id} className={`dla-concept${due.includes(id) ? ' dla-concept--due' : ''}`} title={`${c.title} · ${c.lecture === 6 ? 'Lectures 6–7' : `Lecture ${c.lecture}`} · slides ${(c.slides ?? []).join(', ')}`}>
                   <span className="dla-concept__boxes" aria-label={`box ${b} of 5`}>
                     {[1, 2, 3, 4, 5].map((k) => <span key={k} className={`dla-concept__box${k <= b ? ' dla-concept__box--on' : ''}`} />)}
                   </span>
