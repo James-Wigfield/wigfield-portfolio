@@ -1,0 +1,130 @@
+/* The Long Short-Term Line — the train, the line and the levers (.dla-ll*)
+   Roles: state / cargo = --dl8s-v · crate x(t), g(t) = --dl8s-k ·
+   readout h(t) = y(t) = --dl8s-q · gates = --dl8s-pos. Every animation and
+   transition sits behind prefers-reduced-motion: no-preference. */
+
+.dla-ll { display: flex; flex-direction: column; gap: 0.8rem; min-width: 0; }
+.dla-ll__floor { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.7rem 0.8rem 0.5rem; }
+.dla-ll-scene { max-width: 640px; margin: 0 auto; }
+.dla-ll-scene--narrow { display: none; }
+.dla-ll-caption { margin: 0; text-align: center; font-size: 0.72rem; color: var(--ink-3); }
+@container arcade (max-width: 560px) {
+  .dla-ll-scene--wide { display: none; }
+  .dla-ll-scene--narrow { display: block; }
+  /* the level-1 pictures keep their layout; their words grow */
+  .dla-ll-scene:not(.dla-ll-scene--narrow) .dla-t--xs { font-size: 13px; }
+  .dla-ll__floor { padding: 0.6rem 0.4rem 0.4rem; }
+}
+.dla-ll-scene--signal { max-width: 520px; }
+
+/* ── the deck: card on the left, levers on the right ──────────────────── */
+.dla-ll__deck { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.9rem; align-items: start; }
+.dla-ll__card { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.dla-ll__levers { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(112px, 1fr)); gap: 0.5rem; align-items: stretch; }
+.dla-ll__go { grid-column: 1 / -1; justify-content: center; }
+@container arcade (max-width: 720px) {
+  .dla-ll__deck { grid-template-columns: 1fr; }
+  .dla-ll__levers { grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); }
+}
+
+/* a lever */
+.dla-ll-lever {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.45rem;
+  min-height: 64px; padding: 0.45rem 0.55rem; text-align: left; font: inherit; color: var(--ink-2);
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer;
+}
+.dla-ll-lever:hover:not(:disabled) { border-color: var(--dl8s-pos); }
+.dla-ll-lever:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dla-ll-lever:disabled { cursor: default; }
+.dla-ll-lever--on { border-color: var(--dl8s-pos); color: var(--ink); }
+.dla-ll-lever__svg { width: 20px; height: 40px; }
+.dla-ll-lever__slot { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.dla-ll-lever__knob { fill: var(--surface); stroke: var(--ink-3); stroke-width: 2; }
+.dla-ll-lever--on .dla-ll-lever__knob { fill: var(--dl8s-pos); stroke: var(--dl8s-pos); }
+.dla-ll-lever__body { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.dla-ll-lever__sym { font-size: 0.98rem; color: var(--ink); white-space: nowrap; }
+.dla-ll-lever__sym b { font-family: var(--font-mono, ui-monospace, monospace); margin-left: 0.15rem; }
+.dla-ll-lever__word { font-size: 0.7rem; line-height: 1.2; color: var(--ink-3); }
+.dla-ll-lever--on .dla-ll-lever__word { color: var(--dl8s-pos); }
+.dla-ll-lever__kbd { align-self: start; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.3rem; }
+@container arcade (max-width: 480px) {
+  .dla-ll-lever { grid-template-columns: auto minmax(0, 1fr); padding: 0.4rem; gap: 0.3rem; }
+  .dla-ll-lever__kbd { display: none; }
+  .dla-ll-lever__word { font-size: 0.64rem; }
+}
+
+/* ── the line (route strip) ───────────────────────────────────────────── */
+.dla-ll-route { position: relative; list-style: none; margin: 0 auto; padding: 0; display: flex; justify-content: space-between; width: min(100%, 560px); }
+.dla-ll-route::before { content: ''; position: absolute; left: 6px; right: 6px; top: 25px; height: 2px; background: var(--line); }
+.dla-ll-route__st { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 24px; }
+.dla-ll-route__bar { display: block; width: 6px; height: 16px; background: var(--dl8s-v); border-radius: 2px 2px 0 0; transform-origin: center bottom; }
+.dla-ll-route__dot { position: relative; width: 12px; height: 12px; border-radius: 99px; background: var(--dl8s-floor); border: 2px solid var(--ink-3); }
+.dla-ll-route__dot--due { border-radius: 2px; border-color: var(--dl8s-q); }
+.dla-ll-route__st--past .dla-ll-route__dot { background: var(--ink-3); }
+.dla-ll-route__st--past .dla-ll-route__dot--due { background: var(--dl8s-q); }
+.dla-ll-route__st--miss .dla-ll-route__dot { border-color: var(--dlv-red); background: var(--dlv-red); }
+.dla-ll-route__st--now .dla-ll-route__dot { width: 16px; height: 16px; margin-top: -2px; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.dla-ll-route__t { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; color: var(--ink-3); }
+.dla-ll-route__st--now .dla-ll-route__t { color: var(--ink); font-weight: 700; }
+
+/* ── the train scene ──────────────────────────────────────────────────── */
+.dla-ll-car { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1.5; }
+.dla-ll-cargo { fill: var(--dl8s-v); opacity: 0.8; transform-box: fill-box; transform-origin: center bottom; }
+.dla-ll-cargo--soft { opacity: 0.28; }
+.dla-ll-ghost { stroke: var(--dl8s-v); stroke-width: 2; stroke-dasharray: 5 4; }
+.dla-ll-hatch line, line.dla-ll-hatch { stroke: var(--dlv-red); stroke-width: 3; stroke-linecap: round; }
+line.dla-ll-hatch.dla-ll-on { stroke: var(--ink-3); }
+.dla-ll-loco { fill: var(--surface-hi); stroke: var(--ink-3); stroke-width: 1.5; stroke-linejoin: round; }
+.dla-ll-loco__win { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.dla-ll-wheel { fill: var(--dl8s-floor); stroke: var(--ink-3); stroke-width: 1.5; }
+.dla-ll-rail { stroke: var(--ink-3); stroke-width: 2; }
+.dla-ll-platform { fill: var(--surface-hi); stroke: var(--line); stroke-width: 1; }
+.dla-ll-crate rect { fill: var(--surface); stroke: var(--dl8s-k); stroke-width: 1.5; }
+.dla-ll-crate__x { stroke: var(--dl8s-k); stroke-width: 1; opacity: 0.35; }
+.dla-ll-crate.dla-ll-on rect { stroke-width: 2.5; }
+.dla-ll-crate-s { fill: var(--surface); stroke: var(--dl8s-k); stroke-width: 1.2; }
+.dla-ll-crane { fill: none; stroke: var(--dl8s-k); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: 0.45; }
+.dla-ll-crane.dla-ll-on { stroke-width: 3; stroke-dasharray: none; opacity: 1; }
+.dla-ll-x { stroke: var(--dlv-red); stroke-width: 2; stroke-linecap: round; }
+.dla-ll-read { fill: none; stroke: var(--dl8s-q); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: 0.45; }
+.dla-ll-read.dla-ll-on { stroke-width: 3; stroke-dasharray: none; opacity: 1; }
+.dla-ll-board__frame { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.dla-ll-board.dla-ll-on .dla-ll-board__frame { stroke: var(--dl8s-q); }
+.dla-svg text.dla-ll-ink-q { fill: var(--dl8s-q); }
+.dla-ll-fill-k { fill: var(--dl8s-k); }
+.dla-ll-fill-q { fill: var(--dl8s-q); }
+.dla-ll-rpipe path { fill: none; stroke: var(--dl8s-pos); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: 0.5; }
+.dla-ll-rpipe.dla-ll-on path { stroke-width: 3; stroke-dasharray: none; opacity: 1; }
+.dla-ll-valve { fill: var(--surface); stroke: var(--dl8s-pos); stroke-width: 1.5; }
+.dla-ll-rpipe.dla-ll-on .dla-ll-valve { stroke-width: 2.5; }
+
+/* level 1 pictures */
+.dla-ll-link { fill: none; stroke: var(--ink-3); stroke-width: 1.5; }
+.dla-ll-link--out { stroke: var(--dl8s-q); }
+.dla-ll-link--k { stroke: var(--dl8s-k); }
+.dla-ll-neuron { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.dla-ll-rule { stroke: var(--line); stroke-width: 1; }
+
+/* the signal */
+.dla-ll-signal { fill: var(--surface-hi); stroke: var(--ink-3); stroke-width: 1.2; }
+.dla-ll-lamp { fill: var(--dl8s-floor); stroke: var(--ink-3); stroke-width: 1; }
+.dla-ll-lamp--stop { fill: var(--dlv-red); }
+.dla-ll-lamp--go { fill: var(--dl8s-v); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dla-ll-cargo { transition: transform 0.35s ease-out; }
+  .dla-ll-route__bar { transition: transform 0.35s ease-out; }
+  .dla-ll-lever__knob { transition: cy 0.12s ease-out, fill 0.12s; }
+  .dla-ll-lever { transition: border-color 0.12s; }
+  .dla-ll--go .dla-ll-train { animation: dla-ll-chug 0.45s ease-out; }
+  .dla-ll--miss .dla-ll-car { animation: dla-ll-miss 0.4s ease-out; }
+}
+@keyframes dla-ll-chug {
+  0% { transform: translateX(0); }
+  60% { transform: translateX(14px); }
+  100% { transform: translateX(10px); }
+}
+@keyframes dla-ll-miss {
+  0%, 100% { stroke: var(--ink-3); }
+  40% { stroke: var(--dlv-red); stroke-width: 3; }
+}
