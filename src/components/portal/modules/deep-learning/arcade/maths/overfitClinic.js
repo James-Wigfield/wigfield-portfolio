@@ -14,7 +14,8 @@
    screen); `record` carries the Dx / Rx written on the case card so far.
 
    Charts (all this page's own illustrations of the named failure, except
-   maeBars, which plots the MAEs printed on slides 26 and 29):
+   maeBars (the MAEs printed on L4 slides 26 and 29), rnn1Summary (L4 slide
+   25's summary) and fewLabels (L2 slide 31's numbers), drawn from the slides):
      line   overfit · diverge · slow · spiky · forecast · stateGrowth ·
             oscillate · sweep;  panels  adagrad (loss + step size)
      bars   gradBars · deadBars · trace · maeBars · aeCopy · classHist

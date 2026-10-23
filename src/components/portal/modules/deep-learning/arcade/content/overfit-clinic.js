@@ -35,7 +35,7 @@ export const LEVEL_NAMES = ['diagnose', 'diagnose + prescribe', 'multi-step case
 export const INTRO = {
   line: 'Read the chart, name what the slides call this failure, then prescribe their fix.',
   controls: [
-    'Each patient brings a chart, a model summary or a sample strip (this page’s own illustration of the failure).',
+    'Each patient brings a chart, a model summary or a sample strip (mostly this page’s own illustration of the failure; a few are drawn from the numbers printed on the slides).',
     'Pick with a tap or keys 1–4. Level 2 adds the prescription, level 3 a follow-up per case.',
     'Ordering steps: tap the cards in order (keys 1–6), Backspace undoes, Enter submits.',
   ],
@@ -153,7 +153,7 @@ export const FIXES = {
   l2: { label: 'ℓ2 regularization: kernel_regularizer=l2(0.01)', concept: 'reg.l1l2',
     src: { lecture: 2, slides: [60] }, treats: ['overfit'], avoid: ['aeCopy', 'tooBig'] },
   dropout: { label: 'Dropout: Dropout(rate=0.2) before each Dense layer', concept: 'reg.dropout',
-    src: { lecture: 2, slides: [62, 63, 64] }, treats: ['overfit', 'rnnExplode'], avoid: ['aeCopy', 'tooBig'] },
+    src: { lecture: 2, slides: [62, 63, 64] }, treats: ['overfit', 'rnnExplode'], avoid: ['aeCopy', 'tooBig', 'ganUnstable'] },
   augment: { label: 'Data augmentation: realistic variants of each training image', concept: 'reg.dataAugmentation',
     src: { lecture: 3, slides: [39, 40] }, treats: ['overfit'], avoid: ['aeCopy', 'tooBig', 'fewLabels'] },
   lrLower: { label: 'Lower the learning rate (best: about half the rate where training diverges)', concept: 'optim.learningRate',
@@ -164,8 +164,8 @@ export const FIXES = {
     src: { lecture: 1, slides: [61] }, treats: ['bigBatch'], avoid: ['lrHigh', 'exploding', 'ganUnstable', 'rnnExplode'] },
   init: { label: 'Glorot initialization (σ² = 1/fan_avg)', concept: 'init.glorot',
     src: { lecture: 2, slides: [7, 8] }, treats: ['vanishing', 'exploding', 'rnnExplode'], avoid: ['deadRelu'] },
-  nonsat: { label: 'A nonsaturating activation: ReLU or one of its variants', concept: 'act.which',
-    src: { lecture: 2, slides: [10, 11] }, treats: ['vanishing'], avoid: ['deadRelu', 'exploding', 'lrLow'] },
+  nonsat: { label: 'A nonsaturating activation: ReLU or one of its variants', concept: 'act.relu',
+    src: { lecture: 2, slides: [10, 11] }, treats: ['vanishing'], avoid: ['deadRelu', 'exploding', 'lrLow', 'ganUnstable'] },
   bn: { label: 'Batch Normalization in every hidden layer', concept: 'bn.algorithm',
     src: { lecture: 2, slides: [23, 25] }, treats: ['vanishing', 'exploding'],
     avoid: ['overfit', 'lrHigh', 'lrLow', 'rnnExplode', 'bigBatch', 'ganUnstable', 'deadRelu'] },
@@ -184,7 +184,7 @@ export const FIXES = {
   biggerRnn: { label: 'A larger recurrent layer, say 32 recurrent neurons', concept: 'forecast.univar',
     src: { lecture: 4, slides: [26] }, treats: ['tinyMemory'], avoid: ['shortMemory'] },
   rnnTanh: { label: 'A smaller learning rate or a saturating activation (tanh)', concept: 'rnn.longSeq',
-    src: { lecture: 4, slides: [40] }, treats: ['rnnExplode'], avoid: ['lrHigh', 'exploding', 'deadRelu'] },
+    src: { lecture: 4, slides: [40] }, treats: ['rnnExplode'], avoid: ['lrHigh', 'exploding', 'deadRelu', 'bigBatch', 'ganUnstable'] },
   lstm: { label: 'LSTM cells (or GRU cells): long-term memory', concept: 'lstm.cell',
     src: { lecture: 4, slides: [42, 48] }, treats: ['shortMemory'], avoid: ['finalState', 'rnnExplode', 'tinyMemory'] },
   lessPowerful: { label: 'An autoencoder that is not so powerful', concept: 'ae.stacked',
@@ -269,7 +269,7 @@ export const CASES = [
     fuRx: ['nonsat', 'bn'],
     fu: {
       type: 'pick', concept: 'init.which', src: { lecture: 2, slides: [8] },
-      prompt: 'This network keeps its logistic activation. Which initialization does Table 11-1 pair with it?',
+      prompt: 'Suppose the network keeps its logistic activation. Which initialization does Table 11-1 pair with it?',
       choices: [
         { key: 'glorot', label: 'Glorot · σ² = 1/fan_avg' },
         { key: 'he', label: 'He · σ² = 2/fan_in' },
@@ -417,12 +417,12 @@ export const CASES = [
     dxWhy: 'The series reaches about %max% but no prediction gets to 1: SimpleRNN’s default activation is tanh, so the recurrent layer can only output values between −1 and +1 and cannot predict values between 1.0 and 1.4 (slide 26).',
     dxSrc: { lecture: 4, slides: [26] },
     rx: {
-      denseOut: { why: 'Slide 26 adds a dense output layer with a single output neuron and no activation function, which can output values above 1; a larger recurrent layer alone would still output through tanh.', src: { lecture: 4, slides: [26] } },
+      denseOut: { why: 'Slide 26 makes both changes together; the part that lifts the range is the dense output layer with a single output neuron and no activation function, which can output values above 1; a larger recurrent layer alone would still output through tanh.', src: { lecture: 4, slides: [26] } },
     },
     fu: {
       type: 'rx2', dx: 'tinyMemory', fix: 'biggerRnn', chart: 'rnn1Summary', concept: 'forecast.simpleRnn1', src: { lecture: 4, slides: [25, 26] },
-      prompt: 'Slide 25 gives a second reason, and this summary shows it. Which fix answers that one?',
-      why: 'One recurrent neuron and 3 parameters: the only data it can use at each time step is the current input and its previous output, so its memory is extremely limited (slide 25). Slide 26’s fix: a larger recurrent layer, say 32 recurrent neurons; the Dense(1) output fixes the range, not the memory.',
+      prompt: 'Slide 25 gives the other reason (reason 1), and this summary shows it. Which fix answers that one?',
+      why: 'One recurrent neuron and 3 parameters: the only data it can use at each time step is the current input and its previous output, so its memory is extremely limited (slide 25). Slide 26 makes both changes together; the part that answers the memory is the larger recurrent layer, say 32 recurrent neurons, while the Dense(1) output fixes the range.',
     },
   },
   {
@@ -431,7 +431,7 @@ export const CASES = [
     dxWhy: 'One recurrent neuron, 3 parameters: the only data it can use at each time step is the current input and its own previous output, so the RNN’s memory is extremely limited (slide 25).',
     dxSrc: { lecture: 4, slides: [24, 25] },
     rx: {
-      biggerRnn: { why: 'Slide 26 builds univar_model with a larger recurrent layer, say 32 recurrent neurons (plus a Dense(1) output with no activation for the range); its validation MAE is around 27,703.', src: { lecture: 4, slides: [26] } },
+      biggerRnn: { why: 'Slide 26 makes both changes together in univar_model; the part that answers the memory is the larger recurrent layer, say 32 recurrent neurons (the Dense(1) output with no activation is for the range); its validation MAE is around 27,703.', src: { lecture: 4, slides: [26] } },
     },
   },
   {
@@ -507,7 +507,7 @@ export const CASES = [
     dxWhy: 'Both weights keep swinging and never settle: because the generator and the discriminator are constantly pushing against each other, their parameters may end up oscillating and becoming unstable, and the GAN may seem to forget what it learned (slides 26–27).',
     dxSrc: { lecture: 6, slides: [26, 27] },
     rx: {
-      dcgan: { why: 'Slide 28’s DCGAN guidelines are for building stable convolutional GANs: strided / transposed convolutions instead of pooling, Batch Normalization except in the generator’s output and the discriminator’s input layer, no fully connected hidden layers, ReLU (tanh output) in the generator, leaky ReLU in the discriminator. They work in many cases, but not always.', src: { lecture: 6, slides: [28] } },
+      dcgan: { why: 'Slide 28’s DCGAN guidelines are for building stable convolutional GANs: strided / transposed convolutions instead of pooling, Batch Normalization except in the generator’s output and the discriminator’s input layer, no fully connected hidden layers for deeper architectures, ReLU (tanh output) in the generator, leaky ReLU in the discriminator. They work in many cases, but not always.', src: { lecture: 6, slides: [28] } },
     },
     fu: {
       type: 'slots', concept: 'dcgan.guidelines', src: { lecture: 6, slides: [28] },
