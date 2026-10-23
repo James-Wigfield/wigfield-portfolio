@@ -1,0 +1,85 @@
+/* Kernel Rush — the drop stage (.dla-kr*). Role colours from lecture8-study/stage.css:
+   input --dl8s-enc · conv kernel --dl8s-q · pooling window --dl8s-k · output --dl8s-v ·
+   the block you are typing --dl8s-pos · a wrong block --dlv-red. */
+.dla-kr-root { min-width: 0; }
+.dla-kr__grid { align-items: start; }
+.dla-kr__left { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dla-kr__floor { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.65rem 0.75rem 0.3rem; }
+.dla-kr__floor--hit { box-shadow: var(--dl8s-shadow), inset 0 0 0 1.5px color-mix(in srgb, var(--dl8s-v) 55%, transparent); }
+.dla-kr__floor--miss { box-shadow: var(--dl8s-shadow), inset 0 0 0 1.5px color-mix(in srgb, var(--dlv-red) 55%, transparent); }
+
+/* the spec card: the slides' Keras code, ruled, no box */
+.dla-kr__spec { display: flex; flex-direction: column; gap: 0.2rem; border-bottom: 1px solid var(--line); padding-bottom: 0.4rem; min-width: 0; }
+.dla-kr__title { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); }
+.dla-kr__code { margin: 0; display: flex; flex-direction: column; gap: 0.08rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.84rem; line-height: 1.4; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+.dla-kr__lncode { font-weight: 600; }
+.dla-kr__lnout { color: var(--dl8s-v); font-weight: 700; }
+
+/* the SVG stage */
+.dla-kr-svg { max-height: 360px; touch-action: manipulation; }
+.dla-kr-lab { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; font-weight: 600; fill: var(--ink) !important; }
+.dla-kr-lab__k { fill: var(--ink-3); font-size: 10px; font-weight: 500; }
+.dla-kr-lab--layer { font-size: 11px; fill: var(--ink-2) !important; }
+
+/* blocks: one colour per role, faces shaded from it */
+.dla-kr-blk { --kr: var(--ink-3); }
+.dla-kr-blk--in { --kr: var(--dl8s-enc); }
+.dla-kr-blk--kernel { --kr: var(--dl8s-q); }
+.dla-kr-blk--pool { --kr: var(--dl8s-k); }
+.dla-kr-blk--out { --kr: var(--dl8s-v); }
+.dla-kr-blk--preview { --kr: var(--dl8s-pos); }
+.dla-kr-blk--yours { --kr: var(--dlv-red); }
+.dla-kr-blk__front, .dla-kr-blk__top, .dla-kr-blk__side { stroke: var(--kr); stroke-width: 1.4; stroke-linejoin: round; }
+.dla-kr-blk__front { fill: color-mix(in srgb, var(--kr) 20%, var(--dl8s-floor)); }
+.dla-kr-blk__top { fill: color-mix(in srgb, var(--kr) 10%, var(--dl8s-floor)); }
+.dla-kr-blk__side { fill: color-mix(in srgb, var(--kr) 32%, var(--dl8s-floor)); }
+.dla-kr-blk__slab { fill: none; stroke: var(--kr); stroke-width: 0.9; opacity: 0.45; }
+.dla-kr-blk--kernel .dla-kr-blk__front { fill: color-mix(in srgb, var(--kr) 42%, var(--dl8s-floor)); }
+.dla-kr-blk--kernel .dla-kr-blk__side { fill: color-mix(in srgb, var(--kr) 55%, var(--dl8s-floor)); }
+.dla-kr-blk--pool .dla-kr-blk__front { fill: color-mix(in srgb, var(--kr) 16%, transparent); stroke-width: 2; }
+.dla-kr-blk--ghost .dla-kr-blk__front, .dla-kr-blk--ghost .dla-kr-blk__top, .dla-kr-blk--ghost .dla-kr-blk__side { fill: none; stroke-dasharray: 4 4; }
+.dla-kr-blk--preview .dla-kr-blk__front, .dla-kr-blk--preview .dla-kr-blk__top, .dla-kr-blk--preview .dla-kr-blk__side,
+.dla-kr-blk--yours .dla-kr-blk__front, .dla-kr-blk--yours .dla-kr-blk__top, .dla-kr-blk--yours .dla-kr-blk__side { stroke-dasharray: 5 3; }
+.dla-kr-blk--preview .dla-kr-blk__front { fill: color-mix(in srgb, var(--kr) 10%, var(--dl8s-floor)); }
+
+/* captions: a labelled dot */
+.dla-kr-cap circle { fill: var(--ink-3); }
+.dla-kr-cap--in circle { fill: var(--dl8s-enc); }
+.dla-kr-cap--out circle { fill: var(--dl8s-v); }
+.dla-kr-cap--yours circle { fill: var(--dlv-red); }
+.dla-kr-cap__t { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; fill: var(--ink-2) !important; }
+.dla-kr-cap__x { font-weight: 700; }
+.dla-kr-cap__x--kernel { fill: var(--dl8s-q); }
+.dla-kr-cap__x--pool { fill: var(--dl8s-k); }
+
+/* receptive-field grids */
+.dla-kr-grid { fill: color-mix(in srgb, var(--dl8s-enc) 9%, var(--dl8s-floor)); stroke: var(--dl8s-enc); stroke-width: 1.3; }
+.dla-kr-grid--out { fill: color-mix(in srgb, var(--dl8s-v) 8%, var(--dl8s-floor)); stroke: var(--dl8s-v); }
+.dla-kr-gridl { fill: none; stroke: var(--ink-3); stroke-width: 0.6; opacity: 0.45; }
+.dla-kr-idx { font-family: var(--font-mono, ui-monospace, monospace); font-size: 9.5px; fill: var(--ink-3) !important; }
+.dla-kr-idx--on { fill: var(--ink) !important; font-weight: 700; }
+.dla-kr-neuron { fill: var(--dl8s-q); stroke: var(--dl8s-q); stroke-width: 1.2; }
+.dla-kr-window { fill: color-mix(in srgb, var(--dl8s-q) 14%, transparent); stroke: var(--dl8s-q); stroke-width: 2.2; }
+.dla-kr-field { fill: color-mix(in srgb, var(--dl8s-v) 30%, transparent); stroke: var(--dl8s-v); stroke-width: 1.6; }
+.dla-kr-cone { fill: color-mix(in srgb, var(--dl8s-q) 14%, transparent); stroke: none; }
+.dla-kr-band { fill: none; stroke-width: 2; stroke-dasharray: 5 3; }
+.dla-kr-band--preview { stroke: var(--dl8s-pos); fill: color-mix(in srgb, var(--dl8s-pos) 10%, transparent); }
+.dla-kr-band--yours { stroke: var(--dlv-red); fill: color-mix(in srgb, var(--dlv-red) 8%, transparent); }
+
+/* juice: only when motion is welcome */
+@media (prefers-reduced-motion: no-preference) {
+  .dla-kr__floor { transition: box-shadow 0.2s; }
+  .dla-kr-fall { transition: transform 0.09s linear; }
+  .dla-kr-fall--landed { transition: transform 0.16s cubic-bezier(0.55, 0, 0.8, 0.2); }
+  .dla-kr-land { animation: dla-kr-land 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+  .dla-kr-yours { animation: dla-kr-yours 0.4s ease-out 0.08s both; }
+  .dla-kr-blk--landed .dla-kr-blk__front { animation: dla-kr-thud 0.3s ease-out; }
+}
+@keyframes dla-kr-land { from { transform: translateY(-20px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dla-kr-yours { from { transform: translateX(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dla-kr-thud { 0% { stroke-width: 4; } 100% { stroke-width: 1.4; } }
+@media (prefers-reduced-motion: reduce) {
+  .dla-kr__floor, .dla-kr-fall, .dla-kr-fall--landed { transition: none; }
+  .dla-kr-land, .dla-kr-yours, .dla-kr-blk--landed .dla-kr-blk__front { animation: none; }
+}
+@media (max-width: 600px) { .dla-kr__code { font-size: 0.74rem; } }
