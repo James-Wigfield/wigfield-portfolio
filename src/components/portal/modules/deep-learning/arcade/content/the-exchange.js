@@ -14,7 +14,7 @@ const L8 = (slides) => ({ lecture: 8, slides });
 export const CHOICE = [
   // ── level 1: one cable (the bottleneck) and what attention changes ─────
   {
-    id: 'x.l1.finalState', level: 1, concept: 'encdec.finalState', src: L8([5, 12, 13]),
+    id: 'x.l1.finalState', level: 1, concept: 'encdec.finalState', src: L8([5, 12, 13, 20]),
     prompt: 'Without attention, what does the encoder hand to the decoder?',
     choices: [
       { value: 'final', label: 'Only its final hidden state' },

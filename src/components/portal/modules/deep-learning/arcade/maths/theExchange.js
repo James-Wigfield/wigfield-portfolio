@@ -20,6 +20,7 @@ import { softmax, dot, weightedSum } from '../../lecture8-study/attn.js';
 import { allSentences, translate } from '../../lecture8-study/toyMT.js';
 
 const fmt2 = (x) => x.toFixed(2);
+const tok = (w) => (w === '<sos>' ? '⟨SOS⟩' : w === '<eos>' ? '⟨EOS⟩' : w);
 const fmtVec = (v, dp = 2) => `[${v.map((x) => x.toFixed(dp)).join(', ')}]`;
 const L8 = (slides) => ({ lecture: 8, slides });
 let counter = 0;
@@ -68,13 +69,13 @@ function patchItem(rand, model, kind, used) {
       used.add(key);
       const { i } = rand.pick(rows);
       const answer = W[i].map((x) => Math.round(x * 100) / 100);
-      const query = t.decIn[i];
-      const produces = t.out[i] ?? '⟨EOS⟩';
+      const query = tok(t.decIn[i]);
+      const produces = tok(t.out[i] ?? '<eos>');
       return {
         id: nextId('patch-cross'),
         kind: 'custom',
         concept: 'attn.weightedSum',
-        src: L8([20, 21, 40]),
+        src: L8([20, 21, 27, 40]),
         board: { mode: 'cross', keys: words, query, produces, sentence: words, out: t.out },
         answer,
         check: (given) => gradePatch(given, answer),
@@ -140,7 +141,7 @@ function dotItem(rand) {
 }
 
 function weightedSumItem(rand) {
-  const alphas = rand.pick([[0.7, 0.2, 0.1], [0.5, 0.3, 0.2], [0.1, 0.1, 0.8], [0.6, 0.4, 0.0], [0.2, 0.5, 0.3]]);
+  const alphas = rand.pick([[0.7, 0.2, 0.1], [0.5, 0.3, 0.2], [0.1, 0.1, 0.8], [0.6, 0.3, 0.1], [0.2, 0.5, 0.3]]);
   const ys = [0, 1, 2].map(() => [rand.int(-2, 2), rand.int(-2, 2)]);
   const h = weightedSum(alphas, ys);
   const j = rand.int(0, 1);
@@ -165,7 +166,7 @@ function scaledItem(rand) {
     question: `A query·key score is ${s} and d_keys = ${d}. The scaled score QKᵀ/√d_keys = ?`,
     promptText: `${s} / √${d}`,
     answer,
-    why: `Slides 37–38: $\\text{Attention}(\\mathbf{Q},\\mathbf{K},\\mathbf{V}) = \\text{softmax}(\\mathbf{Q}\\mathbf{K}^{\\top}/\\sqrt{d_{\\text{keys}}})\\mathbf{V}$, so ${s} / √${d} = ${s} / ${Math.sqrt(d)} = ${answer}. The scaling keeps the softmax from saturating (tiny gradients).`,
+    why: `Slides 37–38: $\\text{Attention}(\\mathbf{Q},\\mathbf{K},\\mathbf{V}) = \\text{softmax}(\\mathbf{Q}\\mathbf{K}^{\\top}/\\sqrt{d_{\\text{keys}}})\\mathbf{V}$, so ${s} / √${d} = ${s} / ${Math.sqrt(d)} = ${answer}. The scaling keeps the softmax from saturating (tiny gradients). Slide 38’s bullet writes the factor as 1/d_keys; the equation on slides 37–38 divides by √d_keys, which is what is drilled here.`,
   };
 }
 
@@ -184,7 +185,7 @@ function maskItem(rand) {
   const words = ['⟨SOS⟩', 'me', 'gusta', 'el', 'fútbol'];
   const i = rand.int(1, 3);
   const allowed = words.slice(0, i + 1);
-  const wrongA = words.slice(0, i);
+  const wrongA = [words[0]];
   const wrongB = words.slice(i);
   const choices = rand.shuffle([
     { value: 'ok', label: allowed.join(', ') },
@@ -236,9 +237,8 @@ export function makeItems(rand, level = 1, model = null) {
   const pick = (lvl, n) => rand.shuffle(CHOICE.filter((c) => c.level === lvl)).slice(0, n).map((c) => choiceItem(rand, c));
   const items = [];
   if (level <= 1) {
-    items.push(...pick(1, 3));
+    items.push(...pick(1, model ? 3 : 6));
     if (model) for (let k = 0; k < 4; k++) { const it = patchItem(rand, model, 'cross', used); if (it) items.push(it); }
-    else items.push(...pick(1, 3));
     items.push(softmaxItem(rand));
     return items;
   }
