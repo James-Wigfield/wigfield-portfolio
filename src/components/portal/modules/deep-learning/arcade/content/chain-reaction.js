@@ -55,7 +55,7 @@ export const ACTIVATIONS = {
     tex: '\\tanh(z) = 2\\sigma(2z) - 1',
     concept: 'act.tanh',
     src: { lecture: 1, slides: [21] },
-    curve: 'the same S shape as the logistic function, but ranging from −1 to +1 and passing through 0 at $z = 0$',
+    curve: 'a similar S shape to the logistic function (slide 21), but ranging from −1 to +1 and passing through 0 at $z = 0$',
     deriv: 'the taller, narrower bell that peaks at 1.0 at $z = 0$',
     figSrc: { lecture: 1, slides: [21, 22] },
   },
@@ -185,7 +185,7 @@ export const T = {
   },
   dsig: {
     concept: 'act.sigmoid',
-    src: { lecture: 1, slides: [20] },
+    src: { lecture: 1, slides: [20, 22] },
     prompt: 'The sigmoid’s slope at hidden neuron %k%: $\\sigma\'(z_%k%)$, where $\\sigma(z_%k%) = h_%k% = %h%$.',
     promptText: 'σ′(z%K%) with σ(z%K%) = h%K% = %h%',
     why: 'Slide 20: $\\sigma\'(z) = \\sigma(z)(1 - \\sigma(z))$. With $\\sigma(z_%k%) = %h%$: $%h% \\times (1 - %h%) = %h% \\times %omh% = %ans%$ (to 2 decimals). It peaks at 0.25 at $z = 0$ (Figure 10-8).',
@@ -240,7 +240,7 @@ export const T = {
       note: 'tanh′(z) = 1 − tanh²(z) is standard; the deck shows the tanh derivative only as a curve (Figure 10-8), and the chain rule is not printed.',
       prompt: 'Reverse pass through a tanh neuron: $\\partial\\mathcal{L}/\\partial z_%k% = (\\hat{y} - y)\\,v_%k%\\,(1 - h_%k%^2)$.',
       promptText: '∂ℒ/∂z%K% through tanh with ŷ − y = %e%, v%K% = %v%, h%K% = tanh(z%K%) = %h%',
-      why: 'Beyond the slides: $\\tanh\'(z) = 1 - \\tanh^2(z)$ (Figure 10-8 shows only its curve, peaking at 1.0 at $z = 0$), and the chain rule gives $(\\hat{y} - y)\\,v_%k%\\,(1 - h_%k%^2) = %ep% \\times %vp% \\times (1 - %hp%^2) = %ans%$.',
+      why: 'Beyond the slides: $\\tanh\'(z) = 1 - \\tanh^2(z)$ (Figure 10-8 shows only its curve, peaking at 1.0 at $z = 0$), and the chain rule gives $(\\hat{y} - y)\\,v_%k%\\,(1 - \\tanh^2 z_%k%)$. Graded from the exact $z_%k% = %z%$: $%ep% \\times %vp% \\times (1 - \\tanh^2(%z%)) = %ans%$. From the shown $h_%k%$ (2 decimals): $%ep% \\times %vp% \\times (1 - %hp%^2) = %ansh%$. The ±%tol% tolerance accepts both ways of working.',
       maths: [{ text: 'Beyond the slides: $\\tanh\'(z) = 1 - \\tanh^2(z)$, then the chain rule.' }, { tex: '\\partial\\mathcal{L}/\\partial z_%k% = %ep% \\times %vp% \\times (1 - %hp%^2)' }],
     },
     relu: {
@@ -306,22 +306,22 @@ export const TASKS = [
   {
     id: 'reg.one', type: 'regression', kicker: 'Regression', text: 'Predict one real value per instance; it can be any number.',
     neurons: 1, act: ['none'], loss: ['mse'], concept: 'mlp.regression', src: { lecture: 1, slides: [24, 27] },
-    why: 'Slide 24: for regression the output neurons usually do not need an activation function. Slide 27’s table: 1 output neuron per prediction dimension, loss MSE.',
+    why: 'Slide 24: for regression the output neurons usually do not need an activation function. Slide 27’s table: 1 output neuron per prediction dimension, loss MSE. The table keeps Huber for a training set with outliers, and this one has none.',
   },
   {
     id: 'reg.multi', type: 'regression', kicker: 'Multivariate regression', text: 'Predict %k% real values per instance, each any number.',
     neurons: 'k', ks: [2, 3], act: ['none'], loss: ['mse'], concept: 'mlp.regression', src: { lecture: 1, slides: [24, 27] },
-    why: 'Slide 24: multivariate regression needs multiple output neurons; slide 27: 1 output neuron per prediction dimension (here %k%), no output activation, loss MSE.',
+    why: 'Slide 24: multivariate regression needs multiple output neurons; slide 27: 1 output neuron per prediction dimension (here %k%), no output activation, loss MSE. Slide 27’s table keeps Huber for a training set with outliers, and this one has none.',
   },
   {
     id: 'reg.positive', type: 'regression', kicker: 'Regression', text: 'Predict one value that must always be positive.',
     neurons: 1, act: ['relu', 'softplus'], loss: ['mse'], concept: 'mlp.regression', src: { lecture: 1, slides: [24, 27] },
-    why: 'Slide 24: when the output must always be positive, use the ReLU or softplus$(z) = \\log(1 + \\exp(z))$ activation. Slide 27: 1 output neuron, loss MSE.',
+    why: 'Slide 24: when the output must always be positive, use the ReLU or softplus$(z) = \\log(1 + \\exp(z))$ activation. Slide 27: 1 output neuron, loss MSE (the table keeps Huber for a training set with outliers, and this one has none).',
   },
   {
     id: 'reg.bounded', type: 'regression', kicker: 'Regression', text: 'Predict one value that must lie in a certain range of values.',
     neurons: 1, act: ['sigmoid', 'tanh'], loss: ['mse'], concept: 'mlp.regression', src: { lecture: 1, slides: [24, 27] },
-    why: 'Slide 24: when the output must be in a certain range, use the logistic or hyperbolic tangent and then scale the value to the required range (slide 27: sigmoid/tanh if bounded outputs). 1 output neuron, loss MSE.',
+    why: 'Slide 24: when the output must be in a certain range, use the logistic or hyperbolic tangent and then scale the value to the required range (slide 27: sigmoid/tanh if bounded outputs). 1 output neuron, loss MSE (slide 27’s table keeps Huber for a training set with outliers, and this one has none).',
   },
   {
     id: 'reg.outliers', type: 'regression', kicker: 'Regression', text: 'Predict one real value per instance (any number); the training set has outliers.',
@@ -347,7 +347,8 @@ export const TASKS = [
 
 /* Game tuning (rules of play, not slide facts). */
 export const TUNING = {
-  tol: { exact: 0.01, curve: 0.05, product: 0.01, chain: 0.02 },
+  // tanh: L3's reverse step is graded from the exact z; 0.04 also accepts working from the 2-decimal h
+  tol: { exact: 0.01, curve: 0.05, product: 0.01, chain: 0.02, tanh: 0.04 },
   eta: [0.1, 0.5],
   // level 2's per-item fuse: a share of the round clock, clamped (ms)
   fuse: { share: 0.22, minMs: 9000, maxMs: 15000, untimedMs: 15000 },
@@ -376,7 +377,7 @@ export const INTRO = {
     controls: [
       'Task cards: tap one chip per row (neurons, activation, loss), then Build or Enter.',
       'Keypad for numbers (digits, . and ±, Enter); keys 1–4 for choices.',
-      'Slides 24–31’s tables are the answer key.',
+      'The tables on slides 27 (regression) and 31 (classification) are the answer key.',
     ],
   },
 };

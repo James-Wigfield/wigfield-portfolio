@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GAMES, gameById } from '../core/games';
 import { CONCEPTS, LECTURES } from '../core/concepts';
 import { planMix, planExam, gradeByLecture } from '../core/scheduler';
@@ -45,6 +45,8 @@ export function Run({ kind, onExit }) {
     return live ? saved : makeRun(kind, today);
   });
   const setRun = useCallback((next) => { setRunState(next); cfg.set(next); }, [cfg]);
+  // persist a freshly planned run at once, so a reload (or the headless check) sees its plan
+  useEffect(() => { cfg.set(run); }, [cfg, run]);
   const i = run.done.length;
   const finished = i >= run.plan.length;
   const gameId = run.plan[i];

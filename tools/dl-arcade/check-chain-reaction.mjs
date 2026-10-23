@@ -84,6 +84,13 @@ ok(three.a === -12 && three.b === 10, `3-layer collapse: got ${three.a}z + ${thr
 ok(near(Math.max(...M.curve('sigmoid', 'deriv').segments[0].map((p) => p[1])), 0.25, 1e-9), 'σ′ peak');
 ok(near(Math.max(...M.curve('tanh', 'deriv').segments[0].map((p) => p[1])), 1, 1e-9), 'tanh′ peak');
 ok(M.dRelu(-1) === 0 && M.dRelu(1) === 1 && M.dHeaviside(2) === 0, 'ReLU′ / Heaviside′');
+// the left panel has no markers (only Heaviside's jump line); the right panel marks ReLU′'s and Heaviside′'s jump
+ok(M.curve('heaviside', 'act').markers.length === 0 && M.curve('heaviside', 'act').jump, 'left-panel Heaviside: jump line, no marker');
+ok(M.curve('relu', 'deriv').markers.length === 1 && M.curve('heaviside', 'deriv').markers.length === 1, 'right-panel ReLU′ / Heaviside′ markers');
+// the makeNet fallback never puts a ReLU net at z = 0 (ReLU′ undefined there)
+const stuck = { pick: (a) => a[0], int: (lo) => lo, chance: () => false };
+ok(M.forward(M.makeNet(stuck, 'relu')).z.every((z) => z !== 0), 'ReLU fallback net has a z = 0');
+ok(JSON.stringify(M.makeNet(stuck, 'sigmoid')) === JSON.stringify(net), 'sigmoid fallback is HAND_NET');
 // the Lecture 1 content anchors this game can reproduce
 const anchor = (id) => L1.ANCHORS.find((a) => a.id === id);
 ok(anchor('l1.sigmoid.at0').value === M.sigmoid(0), 'anchor l1.sigmoid.at0');
@@ -171,7 +178,12 @@ function recompute(it) {
   if (/^dz\d$/.test(t)) {
     const k = Number(t[2]);
     if (n.act === 'sigmoid') return round2(vals.e * n.v[k] * led[`ds${k}`]);
-    if (n.act === 'tanh') return round2(vals.e * n.v[k] * (1 - vals.h[k] ** 2));
+    if (n.act === 'tanh') {
+      // graded from the exact z on show; the tolerance must also accept working from the 2-decimal h
+      const fromH = round2(vals.e * n.v[k] * (1 - vals.h[k] ** 2));
+      ok(grade(it, fromH) === true, `${it.id}: working from the shown h (${fromH}) grades wrong against ${it.answer} ±${it.tol}`);
+      return round2(vals.e * n.v[k] * (1 - Math.tanh(vals.z[k]) ** 2));
+    }
     return round2(vals.e * n.v[k] * (vals.z[k] > 0 ? 1 : 0));
   }
   if (/^dw\d\d$/.test(t)) return round2(led[`dz${t[3]}`] * n.x[Number(t[2])]);

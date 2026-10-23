@@ -125,12 +125,13 @@ export function curve(fn, panel = 'act', n = 161) {
   const zs = Array.from({ length: n }, (_, i) => -4 + (8 * i) / (n - 1));
   const f = panel === 'deriv' ? DPHI[fn] : PHI[fn];
   if (fn === 'heaviside' || (fn === 'relu' && panel === 'deriv')) {
-    // a jump at z = 0: two pieces and a marker at the jump (as the figure marks it)
+    // a jump at z = 0: two pieces; the right panel marks the jump with a ×, the left
+    // panel draws only the jump line (Figure 10-8 has no marker there)
     const left = zs.filter((z) => z < 0).map((z) => [z, f(z)]);
     const right = zs.filter((z) => z > 0).map((z) => [z, f(z)]);
     left.push([0, f(-1e-9)]);
     right.unshift([0, f(1e-9)]);
-    return { segments: [left, right], markers: [[0, panel === 'deriv' && fn === 'relu' ? 1 : f(0)]], jump: panel === 'act' || fn === 'relu' };
+    return { segments: [left, right], markers: panel === 'deriv' ? [[0, fn === 'relu' ? 1 : f(0)]] : [], jump: panel === 'act' || fn === 'relu' };
   }
   return { segments: [zs.map((z) => [z, f(z)])], markers: [], jump: false };
 }
@@ -167,7 +168,8 @@ export function makeNet(rand, act, { firstNegative = null } = {}) {
     } else if (z.some((zz) => Math.abs(zz) > 2)) continue;
     return net;
   }
-  return { ...HAND_NET, act };
+  // HAND_NET's z₁ is 0, where ReLU′ is undefined (slide 21): nudge b₁ so a ReLU net never asks it
+  return act === 'relu' ? { ...HAND_NET, act, b: [1, HAND_NET.b[1]] } : { ...HAND_NET, act };
 }
 
 // what the player sees: z exact, h and ŷ to 2 decimals (ŷ from the shown h)
@@ -544,9 +546,11 @@ function dzOtherItem(rand, id) {
   const sK = subDigit(K);
   const C = T.dzOther[act];
   const deriv = act === 'relu' ? dRelu(d.z[k]) : r2(1 - d.h[k] ** 2);
-  const ans = act === 'relu' ? r2(d.e * d.v[k] * deriv) : r2(d.e * d.v[k] * (1 - d.h[k] ** 2));
-  const tol = act === 'relu' ? TUNING.tol.product : TUNING.tol.chain;
-  const vars = { k: K, K: sK, e: fmt(d.e), ep: tp(d.e), v: fmt(d.v[k]), vp: tp(d.v[k]), h: fmt(d.h[k]), hp: tp(d.h[k]), z: tx(d.z[k]), zt: fmt(d.z[k]), d: String(deriv) };
+  // tanh: graded from the exact z (on show); ±TUNING.tol.tanh also accepts working from the 2-decimal h
+  const ansH = r2(d.e * d.v[k] * (1 - d.h[k] ** 2));
+  const ans = act === 'relu' ? r2(d.e * d.v[k] * deriv) : r2(d.e * d.v[k] * (1 - tanh(d.z[k]) ** 2));
+  const tol = act === 'relu' ? TUNING.tol.product : TUNING.tol.tanh;
+  const vars = { k: K, K: sK, e: fmt(d.e), ep: tp(d.e), v: fmt(d.v[k]), vp: tp(d.v[k]), h: fmt(d.h[k]), hp: tp(d.h[k]), z: tx(d.z[k]), zt: fmt(d.z[k]), d: String(deriv), ansh: tx(ansH), tol: tol.toFixed(2) };
   return {
     id, kind: 'number', answer: ans, tol,
     concept: T.dzOther.concept, src: T.dzOther.src, beyond: true, note: C.note, uses: ['chain', act === 'relu' ? 'drelu' : 'dtanh'],
