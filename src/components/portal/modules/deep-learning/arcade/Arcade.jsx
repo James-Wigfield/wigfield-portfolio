@@ -35,7 +35,11 @@ export default function DeepLearningArcade() {
   const head = (sub || '').split('/')[0];
   const game = useMemo(() => gameById(head), [head]);
 
-  useEffect(() => { migrate(); }, []);
+  useEffect(() => {
+    migrate();
+    // DEV: the headless check reads the game list from here
+    if (import.meta.env.DEV) window.__dlaGames = GAMES.map((g) => ({ id: g.id, title: g.title, levels: g.levels ?? 3, concepts: g.concepts }));
+  }, []);
 
   const go = useCallback((to) => setSub(to === 'hub' ? '' : to), [setSub]);
   const exitToHub = useCallback(() => setSub(''), [setSub]);
