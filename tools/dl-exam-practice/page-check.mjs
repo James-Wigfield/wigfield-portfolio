@@ -476,7 +476,11 @@ try {
 
   // ── the other Deep Learning modules still render ─────────────────────────
   if (want('others')) {
-    for (const id of ['dl-lecture-1', 'dl-lecture-2', 'dl-lecture-3', 'dl-lecture-3-study', 'dl-lecture-4-study', 'dl-lecture-5-study', 'dl-lecture-6-7-study', 'dl-lecture-8-study', 'dl-game', 'dl-arcade', 'dl-code-lab', 'dl-project-2']) {
+    // every other Deep Learning module in the registry, so new ones are covered too
+    const registry = fs.readFileSync(path.join(REPO, 'src/components/portal/registry.js'), 'utf8');
+    const others = [...registry.matchAll(/id: '(dl-[a-z0-9-]+)'/g)].map((m) => m[1]).filter((id) => id !== 'dl-exam-practice');
+    ok(others.length >= 12, 'the registry lists the other Deep Learning modules', others.length);
+    for (const id of others) {
       const before = consoleMsgs.length;
       const lp = await open({ tag: id, route: `/portal/${id}`, wait: '.portal__content', clear: false });
       await sleep(600);
