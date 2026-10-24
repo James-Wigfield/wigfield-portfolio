@@ -39,7 +39,8 @@ export function BackpropLab() {
   const narrow = useWidth(wrap) < 470;
   const g = useMemo(() => mlpBackward(NET, X, Y), []);
   const BEATS = useMemo(() => beatsFor(g.yhat), [g]);
-  const story = useStory(BEATS.length, { ms: 1700 });
+  // opens on the reverse pass: the edge widths show each connection's gradient
+  const story = useStory(BEATS.length, { ms: 1700, start: 2 });
   const { beat } = story;
   const [hover, setHover] = useState(null);
   const next = useMemo(() => mlpUpdate(NET, g, ETA), [g]);
@@ -78,7 +79,7 @@ export function BackpropLab() {
     <Stage
       title="Backpropagation in four steps"
       slides="L1 · slides 19–20"
-      tryThis="Before pressing ▶, guess which connection gets the biggest gradient; then watch the reverse pass and hover the thick ones."
+      tryThis="Which connections get the biggest gradients, and why are x₂’s so thin? Hover (or Tab to) an edge, then press ▶ for all four steps."
       story={<StoryBar story={story} beats={BEATS} />}
       caption={`One training instance, one step: the loss falls from ${fmt(g.loss, 3)} to ${fmt(lossAfter, 3)}. Backpropagation repeats this for every instance (slide 19); it works because the sigmoid has a nonzero derivative everywhere (slide 20).`}
       maths={
@@ -95,7 +96,17 @@ export function BackpropLab() {
       <div ref={wrap}>
         <svg className="dl12r-svg" viewBox={`0 0 ${W} ${H}`} style={{ maxWidth: W + 40 }} role="group" aria-label={`A 2-2-1 network, step ${beat + 1} of 4: ${BEATS[Math.max(0, beat)].label}`}>
           {edges.map((e) => (
-            <g key={e.id} className="dl12r-bp__hit" onPointerEnter={() => setHover(e.id)} onPointerLeave={() => setHover(null)}>
+            <g
+              key={e.id}
+              className="dl12r-bp__hit"
+              tabIndex={0}
+              role="img"
+              aria-label={`${e.id}: weight ${fmt(e.w)}, gradient ${fmt(e.gr, 4)}, new weight ${fmt(e.nw, 3)}`}
+              onPointerEnter={() => setHover(e.id)}
+              onPointerLeave={() => setHover(null)}
+              onFocus={() => setHover(e.id)}
+              onBlur={() => setHover(null)}
+            >
               <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke="transparent" strokeWidth={14} />
               <line className={ecls(e)} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} style={{ strokeWidth: ew(e) }} />
             </g>
@@ -146,7 +157,7 @@ export function BackpropLab() {
 /* ── Figure 10-8, live ──────────────────────────────────────────────────── */
 const ACTS = [
   { k: 'heaviside', sw: '--dlv-red', dead: () => true },
-  { k: 'relu', sw: '--dlv-magenta', dead: (z) => z < 0 },
+  { k: 'relu', sw: '--ink-2', dash: 'dashed', dead: (z) => z < 0 },
   { k: 'sigmoid', sw: '--dlv-green', dead: (z) => ACT.sigmoid.d(z) < 0.05 },
   { k: 'tanh', sw: '--dlv-blue', dead: (z) => ACT.tanh.d(z) < 0.05 },
 ];
@@ -206,9 +217,29 @@ function Panel({ title, x0, w, h, yDom, ticksY, sel, deriv, hz, onHover }) {
         const d = jump
           ? `${fnPath(f(a), lin(Z[0], -0.001, sx(Z[0]), sx(-0.001)), sy)}${fnPath(f(a), lin(0, Z[1], sx(0), sx(Z[1])), sy)}`
           : fnPath(f(a), sx, sy);
-        return <path key={a.k} clipPath={`url(#${clip})`} className={`dl12r-curve${on ? '' : ' dl12r-curve--dim'}`} d={d} style={{ stroke: `var(${a.sw})`, strokeWidth: on ? 3 : undefined }} />;
+        return <path key={a.k} clipPath={`url(#${clip})`} className={`dl12r-curve${on ? '' : ' dl12r-curve--dim'}`} d={d} style={{ stroke: `var(${a.sw})`, strokeWidth: on ? 3 : undefined, strokeDasharray: a.dash ? '7 4' : undefined }} />;
       })}
-      <rect className="dl12r-plotgrid" x={sx(Z[0])} y={sy(yDom[1])} width={sx(Z[1]) - sx(Z[0])} height={sy(yDom[0]) - sy(yDom[1])} fill="transparent" onPointerMove={move} onPointerLeave={() => onHover(null)} />
+      <rect
+        className="dl12r-plotgrid"
+        x={sx(Z[0])}
+        y={sy(yDom[1])}
+        width={sx(Z[1]) - sx(Z[0])}
+        height={sy(yDom[0]) - sy(yDom[1])}
+        fill="transparent"
+        tabIndex={0}
+        role="slider"
+        aria-label={`${title}: read the value at z (arrow keys)`}
+        aria-valuemin={Z[0]}
+        aria-valuemax={Z[1]}
+        aria-valuenow={hz ?? 0}
+        onPointerMove={move}
+        onPointerLeave={() => onHover(null)}
+        onFocus={() => { if (hz === null) onHover(0); }}
+        onKeyDown={(e) => {
+          const d = { ArrowLeft: -0.25, ArrowRight: 0.25, ArrowDown: -0.25, ArrowUp: 0.25 }[e.key];
+          if (d) { e.preventDefault(); onHover(Math.max(Z[0], Math.min(Z[1], (hz ?? 0) + d))); }
+        }}
+      />
       {hz !== null && val !== null && Number.isFinite(val) && (
         <g pointerEvents="none">
           <line className="dl12r-hair" x1={sx(hz)} x2={sx(hz)} y1={sy(yDom[0])} y2={sy(yDom[1])} />
@@ -240,7 +271,7 @@ export function ActivationsLab() {
     <Stage
       title="Activation functions and their derivatives"
       slides="L1 · slides 20–22"
-      tryThis="Pick a function and look at the right-hand panel: where is its derivative (almost) zero? Hover to read values."
+      tryThis="Pick a function and look at its derivative: where is it (almost) zero? Hover to read values."
       caption="Gradient descent needs a derivative: the step has none, the sigmoid has one everywhere but it fades where the curve flattens (shaded). That is why the step was replaced (slide 20) and why ReLU helps (slide 21)."
       own="curves computed live · Figure 10-8 rebuilt"
       maths={
@@ -254,7 +285,7 @@ export function ActivationsLab() {
       <div ref={wrap}>
         <div className="dl12r-picker" role="group" aria-label="Activation function">
           {ACTS.map((a) => (
-            <button key={a.k} type="button" className="dl12r-pickbtn" aria-pressed={sel === a.k} style={{ '--sw': `var(${a.sw})` }} onClick={() => setSel(a.k)}>
+            <button key={a.k} type="button" className="dl12r-pickbtn" aria-pressed={sel === a.k} style={{ '--sw': `var(${a.sw})`, '--sd': a.dash ?? 'solid' }} onClick={() => setSel(a.k)}>
               <i aria-hidden="true" /> {ACT[a.k].name}
             </button>
           ))}

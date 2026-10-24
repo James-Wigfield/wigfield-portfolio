@@ -620,7 +620,7 @@ export default function Lectures12Refresher() {
                 <p className="dl12r-hero__stats">
                   <span><b>{SECTIONS.length}</b> sections</span>
                   <span><b>{LAB_COUNT}</b> quick labs</span>
-                  <span><b>{PAGES.length}</b> notebook pages · {TOTAL_LINES} lines</span>
+                  <span><b>{PAGES.length}</b> notebook pages · {TOTAL_LINES} tickable lines</span>
                   <span>Esc leaves focus mode</span>
                 </p>
               </div>

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tex, Eq, Code, Note, Unfold, Fnote } from '../kit';
 import { useStudy } from './context';
@@ -98,6 +98,27 @@ export function Rich({ text }) {
   return <>{parse(String(text ?? ''))}</>;
 }
 
+// A table head as plain text (for the stacked cards on narrow screens).
+const plainOf = (t) => String(t ?? '').replace(/\$([^$]+)\$/g, (_, m) => texText(m)).replace(/\*\*|`/g, '');
+
+// A Slide check: a quiet, closed row on screen (tap to read), always open in
+// print. Keeps the Read beat short without hiding the discrepancy.
+function SlideCheck({ text }) {
+  const { printing } = useStudy();
+  const [open, setOpen] = useState(false);
+  const shown = open || printing;
+  return (
+    <div className={`dl12r-sc${shown ? ' dl12r-sc--open' : ''}`}>
+      <button type="button" className="dl12r-sc__btn" aria-expanded={shown} onClick={() => setOpen((o) => !o)}>
+        <span className="dl12r-sc__dot" aria-hidden="true" />
+        Slide check
+        <span className="dl12r-sc__chev" aria-hidden="true">▾</span>
+      </button>
+      {shown && <p className="dl12r-sc__body"><Rich text={text} /></p>}
+    </div>
+  );
+}
+
 export function Blocks({ blocks }) {
   return blocks.map((b, i) => {
     if (typeof b === 'string') return <p key={i} className="dl12r-p"><Rich text={b} /></p>;
@@ -120,7 +141,7 @@ export function Blocks({ blocks }) {
             <tbody>
               {b.table.rows.map((r, j) => (
                 <tr key={j}>
-                  {r.map((cell, c) => (c === 0 ? <th key={c} scope="row"><Rich text={cell} /></th> : <td key={c}><Rich text={cell} /></td>))}
+                  {r.map((cell, c) => (c === 0 ? <th key={c} scope="row"><Rich text={cell} /></th> : <td key={c} data-label={plainOf(b.table.head[c])}><Rich text={cell} /></td>))}
                 </tr>
               ))}
             </tbody>
@@ -137,7 +158,7 @@ export function Blocks({ blocks }) {
     }
     if (b.code) return <Code key={i} code={NAMED_CODE[b.code.src] ?? b.code.src} label={b.code.label} meta={b.code.meta} />;
     if (b.note) return <Note key={i} label={b.label ?? 'Note'}><p><Rich text={b.note} /></p></Note>;
-    if (b.slideNote) return <Note key={i} label="Slide check" tone="warn"><p><Rich text={b.slideNote} /></p></Note>;
+    if (b.slideNote) return <SlideCheck key={i} text={b.slideNote} />;
     if (b.fig) return <figure key={i} className="dl12r-readfig"><Diagram fig={b.fig} /></figure>;
     if (b.unfold) {
       return (

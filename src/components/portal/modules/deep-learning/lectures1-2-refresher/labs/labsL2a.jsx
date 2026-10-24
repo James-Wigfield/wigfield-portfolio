@@ -15,12 +15,12 @@ import './labsL1.css';
                 bar per layer for the size of its weight gradient (log scale),
                 for the activation (sigmoid · tanh · ReLU) and initialization
                 (N(0, 1) · Glorot · He) you pick. ReLU + He is always drawn
-                as a ghost for reference. Opens on the slides' culprit,
-                sigmoid with N(0, 1).
+                as a ghost for reference. Opens on tanh with N(0, 1)
+                (exploding); Glorot brings it back.
    RaceLab      six update rules from slides 34–43 on one elongated bowl
-                (this page's own), step by step: SGD zigzags across the steep
-                direction, momentum rolls past the bottom, NAG overshoots
-                less, the adaptive ones head more directly for the minimum.
+                (this page's own, 100:1), step by step: SGD drops down the
+                steep side then crawls, momentum rolls past the bottom, NAG
+                overshoots less, the adaptive ones reach the minimum first.
    L2's running example: one deep stack of dense layers, and one loss surface.
    ========================================================================== */
 
@@ -34,6 +34,7 @@ function verdict(g) {
   const gmax = Math.max(...g);
   const ratio = g[0] / g[LAYERS - 1];
   if (gmax > 100) return { k: 'exploding', text: `exploding: gradients near ${pow10Label(Math.round(Math.log10(gmax)))}` };
+  if (gmax > 1 || ratio > 100) return { k: 'exploding', text: `exploding: layer 1 gets about ${Math.round(ratio)}× layer ${LAYERS}’s gradient` };
   if (ratio < 0.01) return { k: 'vanishing', text: `vanishing: layer 1 gets about ${pow10Label(Math.round(Math.log10(ratio)))} of layer ${LAYERS}’s gradient` };
   if (gmax < 0.01) return { k: 'tiny', text: 'tiny at every layer: little to learn from' };
   return { k: 'stable', text: 'stable: every layer gets a usable gradient' };
@@ -42,7 +43,7 @@ function verdict(g) {
 export function GradFlowLab() {
   const wrap = useRef(null);
   const narrow = useWidth(wrap) < 520;
-  const [act, setAct] = useState('sigmoid');
+  const [act, setAct] = useState('tanh');
   const [init, setInit] = useState('normal');
   const [hover, setHover] = useState(null);
   const [stableSeen, setStableSeen] = useState(() => new Set());
@@ -64,15 +65,15 @@ export function GradFlowLab() {
     <Stage
       title="How big is each layer’s gradient?"
       slides="L2 · slides 5–8"
-      tryThis="Predict what sigmoid with N(0, 1) does to the lower layers, then switch to ReLU with He and compare the bars with the ghost."
-      caption={`${v.text[0].toUpperCase()}${v.text.slice(1)}. Slide 8 pairs Glorot with tanh/sigmoid and He with the ReLU family${act === 'sigmoid' && init !== 'normal' ? '; even so, the sigmoid’s derivative (at most 0.25, L1 slide 22) shrinks the gradient at every layer; §2.2’s nonsaturating activations avoid that (slide 10)' : ''}.`}
+      tryThis="Switch tanh from N(0, 1) to Glorot: watch the lower layers’ bars come back into the usable band."
+      caption={`${v.text[0].toUpperCase()}${v.text.slice(1)}. Slide 8 pairs Glorot with tanh/sigmoid and He with the ReLU family${act === 'sigmoid' && init !== 'normal' ? '; even so, the sigmoid’s derivative (at most 0.25, L1 slide 22) shrinks the gradient at every layer (Glorot’s variance assumes a slope of 1 at 0, like tanh’s: this page’s working); §2.2’s nonsaturating activations avoid that (slide 10)' : ''}.`}
       challenge={{ text: `Find two stable combinations${stableSeen.size ? ` (${stableSeen.size} found)` : ''}.`, done: stableSeen.size >= 2 }}
       maths={
         <>
           <MLine text={`Initialization variance (slides 7–8): N(0, 1) uses $\\sigma^2 = 1$; Glorot $\\sigma^2 = 1/\\text{fan}_{\\text{avg}}$ = 1/40; He $\\sigma^2 = 2/\\text{fan}_{\\text{in}}$ = 2/40 (every layer here has 40 inputs and 40 outputs).`} />
           <MLine text={`Each bar: the mean of $|\\partial \\mathcal{L}/\\partial w|$ over a layer’s $40 \\times 40$ weights, for a batch of 32 standardized inputs and an output gradient drawn from N(0, 1). Now: layer 1 ${res.gradW[0].toExponential(1)}, layer ${LAYERS} ${res.gradW[LAYERS - 1].toExponential(1)}.`} />
-          <MLine text={`Forward signal (std of each layer’s outputs), layer 1 → ${LAYERS}: ${res.outStd.map((s) => (s >= 100 ? s.toExponential(0) : fmt(s))).join(', ')}. Slide 6: with N(0, 1) the output variance grows layer by layer, and the sigmoid saturates.`} />
-          <MNote text="The network, its random weights (seed 7), the batch and the “tiny” threshold (0.01) are this page’s own; the bars are recomputed in your browser when you switch." />
+          <MLine text={`Forward signal (std of each layer’s outputs), layer 1 → ${LAYERS}: ${res.outStd.map((s) => (s >= 100 ? s.toExponential(0) : fmt(s))).join(', ')}. Slide 6: with N(0, 1) each layer’s output variance is much greater than its input’s, so S-shaped units saturate (outputs near their limits).`} />
+          <MNote text="The network, its random weights (seed 7), the batch and the thresholds (“tiny” below 0.01, “exploding” above 1 or growing 100× towards the input) are this page’s own; the bars are recomputed in your browser when you switch." />
         </>
       }
     >
@@ -103,7 +104,7 @@ export function GradFlowLab() {
             const x = sx(l + 1);
             const y = sy(Math.min(1e5, Math.max(1e-8, g)));
             return (
-              <g key={l} onPointerEnter={() => setHover(l)} onPointerLeave={() => setHover(null)}>
+              <g key={l} tabIndex={0} role="img" aria-label={`layer ${l + 1}: ${g.toExponential(1)}`} onPointerEnter={() => setHover(l)} onPointerLeave={() => setHover(null)} onFocus={() => setHover(l)} onBlur={() => setHover(null)}>
                 <rect className={`dl12r-gf__bar dl12r-gf__bar--${v.k}`} x={x - bw / 2} y={y} width={bw} height={sy(1e-8) - y} rx={3} />
                 <line className="dl12r-gf__ghost" x1={x - bw / 2 - 3} x2={x + bw / 2 + 3} y1={sy(ref.gradW[l])} y2={sy(ref.gradW[l])} />
                 <text x={x} y={H - 18} textAnchor="middle" className="dl12r-t dl12r-t--xs dl12r-t--m">{l + 1}</text>
@@ -133,12 +134,12 @@ const lossJ = ([a, b]) => 0.5 * (CA * a * a + CB * b * b);
 const START = [-9, 2.4];
 const STEPS = [0, 5, 15, 40];
 const RACERS = [
-  { k: 'sgd', name: 'SGD', sw: '--dlv-blue', hp: { eta: 0.45 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_\\theta J(\\boldsymbol{\\theta})', hpText: '$\\eta = 0.45$' },
-  { k: 'momentum', name: 'momentum', sw: '--dlv-orange', hp: { eta: 0.1, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.1$, $\\beta = 0.9$' },
-  { k: 'nag', name: 'NAG', sw: '--dlv-magenta', hp: { eta: 0.1, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta} + \\beta\\mathbf{m}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.1$, $\\beta = 0.9$' },
-  { k: 'adagrad', name: 'AdaGrad', sw: '--dlv-green', hp: { eta: 1.2 }, rule: '\\mathbf{s} \\leftarrow \\mathbf{s} + \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 1.2$, $\\epsilon = 10^{-10}$' },
-  { k: 'rmsprop', name: 'RMSProp', sw: '--dlv-violet', hp: { eta: 0.35, rho: 0.9 }, rule: '\\mathbf{s} \\leftarrow \\rho\\mathbf{s} + (1 - \\rho)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 0.35$, $\\rho = 0.9$' },
-  { k: 'adam', name: 'Adam', sw: '--dlv-red', hp: { eta: 0.6, beta1: 0.9, beta2: 0.999 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\quad (\\text{slide 43, steps 1–5})', hpText: '$\\eta = 0.6$, $\\beta_1 = 0.9$, $\\beta_2 = 0.999$' },
+  { k: 'sgd', name: 'SGD', sw: '--dlv-blue', dash: 'solid', hp: { eta: 0.45 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_\\theta J(\\boldsymbol{\\theta})', hpText: '$\\eta = 0.45$' },
+  { k: 'momentum', name: 'momentum', sw: '--dlv-orange', dash: 'solid', hp: { eta: 0.1, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.1$, $\\beta = 0.9$' },
+  { k: 'nag', name: 'NAG', sw: '--dlv-orange', dash: 'dashed', hp: { eta: 0.1, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta} + \\beta\\mathbf{m}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.1$, $\\beta = 0.9$' },
+  { k: 'adagrad', name: 'AdaGrad', sw: '--dlv-violet', dash: 'dotted', hp: { eta: 1.2 }, rule: '\\mathbf{s} \\leftarrow \\mathbf{s} + \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 1.2$, $\\epsilon = 10^{-10}$' },
+  { k: 'rmsprop', name: 'RMSProp', sw: '--dlv-violet', dash: 'dashed', hp: { eta: 0.35, rho: 0.9 }, rule: '\\mathbf{s} \\leftarrow \\rho\\mathbf{s} + (1 - \\rho)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 0.35$, $\\rho = 0.9$' },
+  { k: 'adam', name: 'Adam', sw: '--dlv-violet', dash: 'solid', hp: { eta: 0.6, beta1: 0.9, beta2: 0.999 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\quad (\\text{slide 43, steps 1–5})', hpText: '$\\eta = 0.6$, $\\beta_1 = 0.9$, $\\beta_2 = 0.999$' },
 ];
 const PATHS = Object.fromEntries(RACERS.map((r) => [r.k, optPath(r.k, START, gradJ, STEPS[STEPS.length - 1], r.hp)]));
 const BEATS = [
@@ -154,7 +155,8 @@ export function RaceLab() {
   const clip = useId().replace(/:/g, '');
   const story = useStory(BEATS.length, { ms: 1400 });
   const step = STEPS[Math.max(0, story.beat)];
-  const [on, setOn] = useState(() => new Set(RACERS.map((r) => r.k)));
+  // opens on one of each family: plain SGD, momentum, Adam
+  const [on, setOn] = useState(() => new Set(['sgd', 'momentum', 'adam']));
   const [focus, setFocus] = useState('nag');
   const W = narrow ? 330 : 620;
   const H = narrow ? 230 : 300;
@@ -176,9 +178,9 @@ export function RaceLab() {
     <Stage
       title="Six optimizers, one bowl"
       slides="L2 · slides 34–47"
-      tryThis="Press ▶ and watch the first 15 steps: who zigzags, who overshoots, who heads straight for the centre? Click a name to show or hide it."
+      tryThis="Press ▶ and watch: who crawls, who overshoots, who reaches the centre first? Click a name to add or hide an optimizer."
       story={<StoryBar story={story} beats={BEATS} numbered={false} />}
-      caption="Momentum uses the gradient as an acceleration, so it can roll past the bottom; NAG looks ahead and ends closer; AdaGrad, RMSProp and Adam shrink the step along the steep direction (slides 34–43)."
+      caption="Momentum uses the gradient as an acceleration, so it can roll past the bottom; NAG looks ahead and ends closer; AdaGrad and RMSProp shrink the step along the steep direction, and Adam (which keeps momentum’s m) swings past once before settling (slides 34–43)."
       maths={
         <>
           <MEq tex={F.rule} />
@@ -191,7 +193,7 @@ export function RaceLab() {
       <div ref={wrap}>
         <div className="dl12r-picker" role="group" aria-label="Optimizers to show">
           {RACERS.map((r) => (
-            <button key={r.k} type="button" className="dl12r-pickbtn" aria-pressed={on.has(r.k)} style={{ '--sw': `var(${r.sw})` }} onClick={() => toggle(r.k)}>
+            <button key={r.k} type="button" className="dl12r-pickbtn" aria-pressed={on.has(r.k)} style={{ '--sw': `var(${r.sw})`, '--sd': r.dash }} onClick={() => toggle(r.k)}>
               <i aria-hidden="true" /> {r.name}
             </button>
           ))}
@@ -215,7 +217,7 @@ export function RaceLab() {
             const end = pts[pts.length - 1];
             return (
               <g key={r.k} className={`dl12r-race__run${r.k === focus ? ' dl12r-race__run--on' : ''}`} style={{ color: `var(${r.sw})` }} onPointerEnter={() => setFocus(r.k)}>
-                <path className="dl12r-race__path" d={ptsPath(pts, sx, sy)} />
+                <path className="dl12r-race__path" d={ptsPath(pts, sx, sy)} style={{ strokeDasharray: { dashed: '7 4', dotted: '1.5 4', solid: undefined }[r.dash] }} />
                 <circle cx={sx(end[0])} cy={sy(end[1])} r={r.k === focus ? 5.5 : 4} className="dl12r-race__head" />
               </g>
             );

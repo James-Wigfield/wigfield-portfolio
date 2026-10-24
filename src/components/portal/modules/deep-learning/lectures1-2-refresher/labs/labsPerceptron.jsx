@@ -325,7 +325,7 @@ export function XorLab() {
       maths={
         <>
           <MLine text="Figure 10-6b’s weights (slide 17): both hidden TLUs get weight 1 from $x_1$ and from $x_2$; biases $-\tfrac{3}{2}$ (left) and $-\tfrac{1}{2}$ (right); the output TLU gets $-1$ and $+1$ from them, bias $-\tfrac{1}{2}$." />
-          <MLine text={`Point $(${P.x.join(', ')})$: $h_1 = \\text{step}(${P.x[0]} + ${P.x[1]} - 1.5) = ${trace.h[0]}$, $h_2 = \\text{step}(${P.x[0]} + ${P.x[1]} - 0.5) = ${trace.h[1]}$, output $= \\text{step}(-${trace.h[0]} + ${trace.h[1]} - 0.5) = ${trace.y}$.`} />
+          <MLine text={`Point $(${P.x.join(', ')})$: $h_1 = \\text{step}(${P.x[0]} + ${P.x[1]} - 1.5) = ${trace.h[0]}$, $h_2 = \\text{step}(${P.x[0]} + ${P.x[1]} - 0.5) = ${trace.h[1]}$, output $= \\text{step}(-1 \\cdot ${trace.h[0]} + 1 \\cdot ${trace.h[1]} - 0.5) = ${trace.y}$.`} />
           <MNote text="$h_1$ acts as AND and $h_2$ as OR, so the output is “OR but not AND”: XOR (this page’s reading of the weights)." />
         </>
       }
@@ -362,8 +362,8 @@ export function XorLab() {
                 <polygon className="dl12r-half" points={band.map(([x, y]) => `${sx(x)},${sy(y)}`).join(' ')} />
                 {L([1, 1], -1.5, 'dl12r-dline dl12r-dline--h')}
                 {L([1, 1], -0.5, 'dl12r-dline dl12r-dline--h')}
-                <text x={sx(1.46)} y={sy(0.42)} textAnchor="end" className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₁: x₁ + x₂ = 3/2</text>
-                <text x={sx(-0.46)} y={sy(0.62)} className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₂: x₁ + x₂ = 1/2</text>
+                <text x={sx(1.46)} y={sy(1.38)} textAnchor="end" className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₁: x₁ + x₂ = 3/2</text>
+                <text x={sx(-0.46)} y={sy(-0.36)} className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₂: x₁ + x₂ = 1/2</text>
               </g>
             ) : (
               <g>
@@ -429,7 +429,7 @@ function XorNet({ trace, x, narrow }) {
       {X.map((xi) => <line key={`o${xi}`} className="dl12r-net__w" x1={xi} y1={Y.hid - 15} x2={W / 2} y2={Y.out + 15} />)}
       <text x={82} y={Y.hid + 50} className="dl12r-t dl12r-t--xs dl12r-t--m">1</text>
       <text x={144} y={Y.hid + 50} className="dl12r-t dl12r-t--xs dl12r-t--m">1</text>
-      <text x={76} y={Y.out + 44} className="dl12r-t dl12r-t--xs dl12r-t--m">−1</text>
+      <text x={64} y={Y.out + 46} className="dl12r-t dl12r-t--xs dl12r-t--m">−1</text>
       <text x={146} y={Y.out + 44} className="dl12r-t dl12r-t--xs dl12r-t--m">+1</text>
       {X.map((xi, i) => (
         <g key={`i${i}`} className={`dl12r-net__n${on(x[i])}`}>

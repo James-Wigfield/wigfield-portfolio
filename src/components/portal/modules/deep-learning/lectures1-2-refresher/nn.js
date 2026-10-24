@@ -429,7 +429,7 @@ export function optPath(kind, start, gradAt, steps, hp) {
 export const powerLR = (t, { eta0 = 0.01, r = 1, s = 10, c = 1 } = {}) => eta0 / (1 + (r * t) / s) ** c;
 // slide 52: η(t) = η₀ r^(t/s)
 export const expLR = (t, { eta0 = 0.1, r = 0.1, s = 15 } = {}) => eta0 * r ** (t / s);
-// slide 55–56: a constant rate per interval; boundaries like PiecewiseConstantDecay
+// slides 55–56: a constant rate per interval, switching at t ≥ boundary (slide 55's chart; Keras's PiecewiseConstantDecay switches just after it)
 export function piecewiseLR(t, { boundaries = [5, 20, 30], values = [0.1, 0.04, 0.02, 0.01] } = {}) {
   let k = 0;
   while (k < boundaries.length && t >= boundaries[k]) k += 1;

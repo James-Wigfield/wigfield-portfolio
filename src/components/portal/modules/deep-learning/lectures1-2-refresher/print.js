@@ -59,7 +59,7 @@ export const PRINT_CSS = `
     --accent: #15a292; --accent-ink: #0d7267; --accent-soft: rgba(21, 162, 146, 0.12);
   }
   ${P} .hp.portal[data-portal-theme] .dl.dl12r {
-    --dlv-blue: #2a78d6; --dlv-orange: #eb6834; --dlv-aqua: #1baf7a; --dlv-yellow: #eda100;
+    --dlv-blue: #2a78d6; --dlv-orange: #eb6834; --dlv-aqua: #1baf7a; --dlv-yellow: #a06e00;
     --dlv-magenta: #e87ba4; --dlv-green: #008300; --dlv-violet: #4a3aa7; --dlv-red: #e34948;
   }
 
@@ -77,15 +77,20 @@ export const PRINT_CSS = `
   ${P} .dl12r-hero { padding: 0 0 4mm; border-bottom: 2px solid var(--ink); }
   ${P} .dl12r-hero__title { font-size: 1.7rem; max-width: none; }
   ${P} .dl12r-hero__printlead { margin: 3mm 0 0; font-size: 0.86rem; line-height: 1.55; color: var(--ink-2); }
-  ${P} .dl12r-sec { display: block; break-before: page; }
+  ${P} .dl12r-sec { display: block; margin-top: 9mm; }
+  ${P} .dl12r-sec__head, ${P} .dl12r-part { break-inside: avoid; break-after: avoid; }
   ${P} .dl12r-part { display: block; break-before: page; margin: 0; padding-top: 3mm; }
-  ${P} .dl12r-part + .dl12r-sec { break-before: avoid; margin-top: 6mm; }
+  ${P} .dl12r-part + .dl12r-sec { margin-top: 6mm; }
   ${P} .dl12r-hero + .dl12r-part { break-before: auto; margin-top: 6mm; }
   ${P} .dl12r-part__title { font-size: 1.5rem; }
   ${P} .dl12r-gist { font-size: 0.95rem; }
   ${P} .dl12r-table--read { min-width: 0; font-size: 0.74rem; }
   ${P} .dl12r-tablewrap { overflow: visible; }
   ${P} .dl12r-receipt { color: var(--ink-2); }
+  ${P} .dl12r-sc__chev { display: none; }
+  ${P} .dl12r-sc__btn { padding: 1mm 0 0.5mm; color: var(--ink); cursor: default; }
+  ${P} .dl12r-sc { break-inside: avoid; }
+  ${P} .dl12r-sc__body { font-size: 0.8rem; }
   /* the heading reads in order on paper: § and title, then the L1/L2 receipt */
   ${P} .dl12r-sec__head { display: block; }
   ${P} .dl12r-sec__no { margin-right: 2.5mm; }
@@ -119,6 +124,16 @@ export const PRINT_CSS = `
   ${P} .dl12r .dlk-code__bar { background: #eef2f4; border-bottom: 1px solid var(--line); }
   ${P} .dl12r .dlk-code__file { color: #333; }
   ${P} .dl12r .dlk-code__pre { background: #f7f9fa; color: #1f1f1f; font-size: 0.66rem; line-height: 1.5; overflow: visible; white-space: pre-wrap; }
+  ${P} .dl12r .dlk-code__pre { padding: 2.5mm 3mm; }
+  /* the labs' mini listings wrap on paper and sit under their picture */
+  ${P} .dl12r .dl12r-mini { white-space: pre-wrap; overflow: visible; font-size: 0.62rem; background: #f7f9fa; color: #1f1f1f; border: 1px solid var(--line); }
+  ${P} .dl12r .dl12r-mini span.on { background: rgba(56, 139, 253, 0.16); color: #1f1f1f; }
+  ${P} .dl12r .dl12r-mini .k { color: #0000ff; }
+  ${P} .dl12r .dl12r-mini .s { color: #a31515; }
+  ${P} .dl12r .dl12r-mini .n { color: #098658; }
+  ${P} .dl12r .dl12r-mini .c { color: #3d7a2f; }
+  ${P} .dl12r .dl12r-mini .f { color: #795e26; }
+  ${P} .dl12r-apis { grid-template-columns: minmax(0, 1fr) !important; }
   ${P} .dl12r .dlk-code__code { min-width: 0; }
   ${P} .dl12r .dlk-code__line { padding-left: 2.2em; text-indent: -2.2em; white-space: pre-wrap; opacity: 1 !important; }
   ${P} .dl12r .dlk-code__line::before { content: none; }

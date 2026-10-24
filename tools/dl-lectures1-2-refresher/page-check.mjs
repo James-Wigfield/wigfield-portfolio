@@ -387,11 +387,15 @@ try {
     const rp = await open({ tag: 'reduced', reduced: true });
     const n = await rp.$$eval('.dl12r-stage', (els) => els.length);
     ok(n === LABS, 'reduced motion: every lab renders', `${n}/${LABS} labs`);
+    // backprop (§1.3) and batch norm (§2.3) open on a chosen middle beat; the rest on their last
     const stories = await rp.$$eval('.dl12r-story', (els) => els.map((s) => {
       const beats = [...s.querySelectorAll('.dl12r-story__beat')];
-      return beats.length ? beats[beats.length - 1].getAttribute('aria-current') === 'step' : true;
+      const sec = s.closest('.dl12r-sec')?.id;
+      const on = beats.findIndex((b) => b.getAttribute('aria-current') === 'step');
+      if (sec === 'dl12r-s13' || sec === 'dl12r-s23') return on === 2;
+      return beats.length ? on === beats.length - 1 : true;
     }));
-    ok(stories.length > 0 && stories.every(Boolean), `reduced motion: every story lab opens on its last beat (${stories.length} story labs)`);
+    ok(stories.length > 0 && stories.every(Boolean), `reduced motion: every story lab opens on its finished (or chosen) beat (${stories.length} story labs)`);
     const tr = await rp.evaluate(() => ['.dl12r-dline', '.dl12r-bp__edge', '.dl12r-fade', '.dl12r-curve', '.dl12r-gf__bar'].map((sel) => {
       const el = document.querySelector(sel);
       return el ? getComputedStyle(el).transitionDuration.split(',').every((d) => parseFloat(d) === 0) : true;
@@ -445,7 +449,7 @@ try {
     await kp.keyboard.press('Enter');
     await sleep(200);
     const shown = await kp.$$eval('#dl12r-s26 .dl12r-race__run', (els) => els.length);
-    ok(shown === 5, '§2.6: Enter on a name hides that optimizer', `${shown} paths`);
+    ok(shown === 2, '§2.6: Enter on a name hides that optimizer (3 shown by default → 2)', `${shown} paths`);
     await kp.close();
   }
 
@@ -455,6 +459,7 @@ try {
     const ep = await open({ tag: 'export' });
     // move story labs off their last beat first: printing must still show it
     await ep.$$eval('#dl12r-s13 .dl12r-story__beat', (els) => els[0].click());
+    await ep.$$eval('#dl12r-s23 .dl12r-story__beat', (els) => els[0].click());
     await ep.$$eval('#dl12r-s26 .dl12r-story__beat', (els) => els[0].click());
     const title0 = await ep.title();
     await ep.evaluate(() => [...document.querySelectorAll('.dl12r-export button')].find((b) => /Export PDF/.test(b.textContent))?.click());
@@ -463,7 +468,7 @@ try {
       calls: window.__printCalls || 0,
       cls: document.documentElement.classList.contains('dl12r-printing'),
       title: document.title,
-      lastBeats: ['#dl12r-s13', '#dl12r-s26'].map((s) => [...document.querySelectorAll(`${s} .dl12r-story__beat`)].pop()?.getAttribute('aria-current')),
+      lastBeats: ['#dl12r-s13', '#dl12r-s23', '#dl12r-s26'].map((s) => [...document.querySelectorAll(`${s} .dl12r-story__beat`)].pop()?.getAttribute('aria-current')),
       drawers: document.querySelectorAll('.dl12r-maths').length,
       open: document.querySelectorAll('.dl12r-maths__body').length,
     }));
@@ -506,7 +511,7 @@ try {
       ['the perceptron rule', /w_i,j\^\(next step\) = w_i,j \+ η\(y/],
       ['the BN normalization', /\(x⁽ⁱ⁾ − μ_B\)\/\(√\(σ_B² \+ [εϵ]\)\)/],
       ['Adam’s bias correction', /m̂ ?← m\/\(1 − β₁ᵗ\)/],
-      ['cross-entropy', /J\(θ\) = −1\/m Σᵢ Σₖ yₖ⁽ⁱ⁾ log/],
+      ['cross-entropy', /J\(θ\) = −\(1\/m\) Σᵢ₌₁\^m Σₖ₌₁\^K yₖ⁽ⁱ⁾ log/],
       ['AdaGrad', /s ← s \+ ∇_θ J\(θ\) ⊗ ∇_θ J\(θ\)/],
       ['the power schedule', /η\(t\) = η₀\/\(1 \+ rt\/s\)\^c/],
       ['Glorot’s variance', /σ² = 1\/fan_avg|1\/fan_avg/],

@@ -6,7 +6,7 @@ export default {
       h: 'Faster optimizers',
       at: 'L2 · 33–47',
       items: [
-        { formula: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}), \\qquad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}' },
+        { formula: '\\text{momentum: } \\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}), \\qquad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}' },
         {
           table: {
             head: ['optimizer', 'idea', 'defaults'],
@@ -22,6 +22,7 @@ export default {
       margin: [
         { q: 'What do AdaMax, Nadam, AdamW change?', a: 'AdaMax: $\\mathbf{s} \\leftarrow \\max(\\beta_2\\mathbf{s}, \\text{abs}(\\nabla J))$; Nadam: + Nesterov; AdamW: + weight decay (slide 45).' },
         { q: 'Adam’s usual η?', a: '0.001: it needs less tuning (slide 44).' },
+        { q: 'Adam’s bias correction?', a: '$\\widehat{\\mathbf{m}} = \\mathbf{m}/(1 - \\beta_1^t)$, $\\widehat{\\mathbf{s}} = \\mathbf{s}/(1 - \\beta_2^t)$ (slide 43).' },
       ],
     },
     {
@@ -53,8 +54,8 @@ export default {
       at: 'L2 · 60–64',
       items: [
         'ℓ1/ℓ2: `regularizers.l2(0.01)`; the penalty is {g|added to the loss}.',
-        'Dropout: drop each neuron (not outputs) with probability $p$,',
-        { line: '10%–50%, at each step; {g|none dropped at test time}.' },
+        'Dropout ignores each non-output neuron with probability $p$',
+        { line: '(10%–50%) at each training step; {g|none at test time}.' },
       ],
       margin: [
         { q: 'Why evaluate the training loss without dropout?', a: 'With dropout on, training and validation losses can look alike while the model overfits (slide 64).' },

@@ -174,8 +174,8 @@ export function HeadsLab() {
         ? 'Drag the error out to 4: which loss explodes, and which grows only in a straight line?'
         : 'Raise one logit: watch every probability move, because they must still add up to 1.'}
       caption={task === 'reg'
-        ? 'Regression: one output neuron per prediction dimension, usually no activation, loss MSE (or Huber if outliers). Huber is quadratic near 0 and linear beyond δ, so one big error can’t dominate (slides 27–28).'
-        : 'Classification: one output per class with softmax, so the outputs are probabilities summing to 1, and the cross-entropy (log loss) punishes a low probability for the true class (slide 29).'}
+        ? 'Huber is quadratic near 0 and linear beyond δ, so one big error can’t dominate the loss (slides 27–28).'
+        : 'Softmax makes the outputs probabilities summing to 1; the cross-entropy (log loss) punishes a low probability for the true class (slide 29).'}
       own={task === 'reg' ? 'curves of slide 28’s losses · error this page’s own' : 'toy logits · this page’s own'}
       maths={task === 'reg' ? (
         <>
@@ -296,9 +296,20 @@ export function LrSweepLab() {
           <rect className="dl12r-good" x={sx(tenth)} y={sy(yMax)} width={sx(half) - sx(tenth)} height={sy(0) - sy(yMax)} />
           <path clipPath={`url(#${clip})`} className="dl12r-curve" d={ptsPath(finite.map((p) => [p.lr, p.loss]), sx, sy)} style={{ stroke: 'var(--ink-3)', strokeWidth: 1, opacity: 0.5 }} />
           <path clipPath={`url(#${clip})`} className="dl12r-curve" d={ptsPath(finite.map((p) => [p.lr, p.smooth]), sx, sy)} style={{ stroke: 'var(--dl12r-bwd)', strokeWidth: 2.6 }} />
-          {mark(upAt.lr, 'shoots up', `η ≈ ${fmt(upAt.lr, 2)}`, 'dl12r-mk dl12r-mk--up', 0)}
-          {mark(tenth, '÷ 10', `≈ ${fmt(tenth, 2)}`, 'dl12r-mk', -1)}
-          {mark(half, '÷ 2', `≈ ${fmt(half, 2)}`, 'dl12r-mk', -44)}
+          {narrow ? (
+            [[tenth, '÷10', 0, ''], [half, '÷2', 16, ''], [upAt.lr, 'up', 32, ' dl12r-mk--up']].map(([lr, tag, dy, cls]) => (
+              <g key={tag} className={`dl12r-mk${cls}`}>
+                <line className="dl12r-mark" x1={sx(lr)} x2={sx(lr)} y1={sy(0)} y2={sy(yMax)} />
+                <text x={sx(lr) + 3} y={sy(yMax) + 12 + dy} className="dl12r-t dl12r-t--xs dl12r-t--b dl12r-halo">{tag}</text>
+              </g>
+            ))
+          ) : (
+            <>
+              {mark(upAt.lr, 'shoots up', `η ≈ ${fmt(upAt.lr, 2)}`, 'dl12r-mk dl12r-mk--up', 0)}
+              {mark(tenth, '÷ 10', `≈ ${fmt(tenth, 2)}`, 'dl12r-mk', -1)}
+              {mark(half, '÷ 2', `≈ ${fmt(half, 2)}`, 'dl12r-mk', -44)}
+            </>
+          )}
           {diverged && <text x={sx(last.lr) + 6} y={sy(1.2)} className="dl12r-t dl12r-t--xs dl12r-t--bwd dl12r-halo">diverges</text>}
           {h && !drag && (
             <g pointerEvents="none">
@@ -324,6 +335,7 @@ export function LrSweepLab() {
         </svg>
         <p className="dl12r-legend">
           <span className="dl12r-legend__score">{chosen ? `your η = ${chosen.toExponential(1)}: ${verdict(chosen)}` : 'drag the dot on the floor to pick a rate'}</span>
+          {narrow && <span>÷10 ≈ {fmt(tenth, 2)} · ÷2 ≈ {fmt(half, 2)} · up ≈ {fmt(upAt.lr, 2)}</span>}
           <span style={{ color: 'var(--dl12r-bwd)' }}><i className="dl12r-legend__swatch" /> <span className="dl12r-legend__txt">smoothed loss</span></span>
           <span><i className="dl12r-legend__swatch" style={{ color: 'var(--ink-3)' }} /> raw loss</span>
         </p>

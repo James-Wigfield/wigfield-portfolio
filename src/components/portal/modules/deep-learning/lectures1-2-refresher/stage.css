@@ -309,3 +309,7 @@
 @media (prefers-reduced-motion: reduce) {
   .dl12r-beam, .dl12r-cell, .dl12r-fade, .dl12r-pop, .dl12r-knob__bar, .dl12r-knob__dot, .dl12r-tok rect { transition: none !important; }
 }
+
+/* inline maths in a lab's lines matches the text size; code chips stay tight */
+.dl12r-stage__try .katex, .dl12r-chal .katex, .dl12r-stage__cap .katex { font-size: 1em; }
+.dl12r-stage__cap code, .dl12r-stage__try code { padding: 0 0.15em; }

@@ -200,7 +200,7 @@ export function ShootoutLab() {
           </defs>
           {/* ReLU's dead zone: gradient exactly 0 */}
           <rect x={sx(SO_Z[0])} y={T} width={sx(0) - sx(SO_Z[0])} height={B - T} fill={`url(#${hatchId})`} className="dl12r-l2zone" />
-          <text x={sx(SO_Z[0]) + 6} y={T + 14} className="dl12r-t dl12r-t--xs dl12r-halo">ReLU’s dead zone: f′ = 0</text>
+          <text x={sx(SO_Z[0]) + 6} y={T + 14} className="dl12r-t dl12r-t--xs dl12r-halo">ReLU’s dead zone (f′ = 0)</text>
           {tiny.map(([a, b]) => (
             <rect key={a} className="dl12r-so__tiny" x={sx(a)} y={T} width={Math.max(1.5, sx(b) - sx(a))} height={B - T} />
           ))}
@@ -299,11 +299,11 @@ export function BatchNormLab() {
   const sd = Math.sqrt(bn.var + BN_EPS);
   const beats = [
     { label: 'mini-batch', say: `Twelve values of one input feature, $m_B = 12$ (this page’s own): mean $\\boldsymbol{μ}_B = ${fmt(bn.mu)}$, variance $\\boldsymbol{σ}_B^2 = ${fmt(bn.var)}$.` },
-    { label: 'subtract μ_B', say: 'Subtract $\\boldsymbol{μ}_B$ from every $\\mathbf{x}^{(i)}$: the batch slides over to be centred on 0, with the same spread.' },
-    { label: 'divide by √(σ_B² + ϵ)', say: `Divide by $\\sqrt{\\boldsymbol{σ}_B^2 + ϵ} = ${fmt(sd, 3)}$: the $\\hat{\\mathbf{x}}^{(i)}$ have mean 0 and variance $σ_B^2/(σ_B^2 + ϵ) = ${fmt(bn.var / (bn.var + BN_EPS), 4)}$, almost exactly 1.` },
+    { label: 'subtract the mean', say: 'Subtract $\\boldsymbol{μ}_B$ from every $\\mathbf{x}^{(i)}$: the batch slides over to be centred on 0, with the same spread.' },
+    { label: 'divide by the spread', say: `Divide by $\\sqrt{\\boldsymbol{σ}_B^2 + ϵ} = ${fmt(sd, 3)}$: the $\\hat{\\mathbf{x}}^{(i)}$ have mean 0 and variance $σ_B^2/(σ_B^2 + ϵ) = ${fmt(bn.var / (bn.var + BN_EPS), 4)}$, almost exactly 1.` },
     { label: 'scale γ, shift β', say: '$\\mathbf{z}^{(i)} = \\boldsymbol{γ} ⊗ \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{β}$, with $\\boldsymbol{γ}$ and $\\boldsymbol{β}$ trainable: β sets the new centre and γ the new spread (drag their handles).' },
   ];
-  const story = useStory(4, { ms: 1800 });
+  const story = useStory(4, { ms: 1800, start: 2 }); // opens on x̂: mean 0, spread 1
   const beat = story.beat;
   const stage = Math.max(0, beat);
   const sx = lin(BN_DOM[0], BN_DOM[1], 18, W - 18);
@@ -552,7 +552,7 @@ export function ClipLab() {
         <>
           <MLine text="Slide 29: `SGD(clipvalue=1.0)` clips every component of the gradient vector to a value between −1.0 and 1.0; use `clipnorm=1.0` instead if you want to retain the gradient vector orientation." />
           <MEq tex={'\\text{clipvalue: } g_i \\to \\max\\left(-1, \\min(1, g_i)\\right) \\qquad \\text{clipnorm: } \\mathbf{g} \\to \\frac{\\mathbf{g}}{\\|\\mathbf{g}\\|} \\text{ if } \\|\\mathbf{g}\\| > 1'} />
-          <MLine text={`With $\\mathbf{g} = (${fmt(g[0])}, ${fmt(g[1])})$: by value $(${fmt(cv[0])}, ${fmt(cv[1])})$, at ${fmt(angleDeg(cv), 1)}° instead of ${fmt(angleDeg(g), 1)}°. ${n > 1 ? `$\\|\\mathbf{g}\\| = \\sqrt{${fmt(g[0])}^2 + ${fmt(g[1])}^2} = ${fmt(n)} > 1$, so by norm $\\mathbf{g}/${fmt(n)} = (${fmt(cn[0])}, ${fmt(cn[1])})$, still at ${fmt(angleDeg(cn), 1)}°.` : `$\\|\\mathbf{g}\\| = ${fmt(n)} \\le 1$, so by norm it is unchanged.`}`} />
+          <MLine text={`With $\\mathbf{g} = (${fmt(g[0])}, ${fmt(g[1])})$: by value $(${fmt(cv[0])}, ${fmt(cv[1])})$, at ${fmt(angleDeg(cv), 1)}° instead of ${fmt(angleDeg(g), 1)}°. ${n > 1 ? `$\\|\\mathbf{g}\\| = \\sqrt{(${fmt(g[0])})^2 + (${fmt(g[1])})^2} = ${fmt(n)} > 1$, so by norm $\\mathbf{g}/${fmt(n)} = (${fmt(cn[0])}, ${fmt(cn[1])})$, still at ${fmt(angleDeg(cn), 1)}°.` : `$\\|\\mathbf{g}\\| = ${fmt(n)} \\le 1$, so by norm it is unchanged.`}`} />
           <MNote text="The two rules are this page’s reading of slide 29’s words (the slide gives no formula and no example vector); the threshold 1.0 is the slide’s. Angles are measured from the $g_1$ axis." />
         </>
       }
@@ -686,7 +686,7 @@ function lrMaths(kind, t) {
     case 'piecewise':
       return (
         <>
-          <MEq tex="η(t) = \begin{cases} 0.1 & t < 5 \\ 0.04 & 5 \le t < 20 \\ 0.02 & 20 \le t < 30 \\ 0.01 & t \ge 30 \end{cases}" />
+          <MEq tex="η(t) = \begin{cases} 0.1 & \text{if } t < 5 \\ 0.04 & \text{if } 5 \le t < 20 \\ 0.02 & \text{if } 20 \le t < 30 \\ 0.01 & \text{if } t \ge 30 \end{cases}" />
           <MLine text={`Read off slide 55’s chart (its text’s example, 0.1 for 5 iterations then 0.001 for 50, doesn’t match the chart: see the Read beat). ${at}`} />
           <MLine text="Keras, slide 56’s own example: `PiecewiseConstantDecay(boundaries=[50_000, 80_000], values=[0.01, 0.005, 0.001])`; this chart’s steps would be `boundaries=[5, 20, 30], values=[0.1, 0.04, 0.02, 0.01]`." />
         </>
@@ -934,7 +934,7 @@ export function PenaltiesLab() {
       title="ℓ1 vs ℓ2: what the penalty does to the weights"
       slides="L2 · slides 60–61"
       tryThis="Predict which penalty can make a weight exactly 0, press ▶ to run 60 steps on the penalty alone, and switch between ℓ1 and ℓ2."
-      caption="ℓ1 pulls every weight towards 0 by the same amount each step, so small weights land on exactly 0; ℓ2 pulls in proportion to the weight, so they shrink but never reach it. Beyond the slides: that behaviour comes from simple linear models (slide 60: “just like you did for simple linear models”)."
+      caption="ℓ1 pulls every weight by the same amount each step, so small ones reach exactly 0; ℓ2 pulls in proportion, so they shrink but never reach it. Beyond the slides: this comes from simple linear models (slide 60)."
       own="toy weights and run · this page’s own"
       maths={
         <>

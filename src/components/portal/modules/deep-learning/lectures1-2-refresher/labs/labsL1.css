@@ -88,7 +88,7 @@
   align-items: center;
   gap: 0.4rem;
 }
-.dl12r-pickbtn i { display: inline-block; width: 14px; height: 0; border-top: 2.5px solid var(--sw, currentColor); }
+.dl12r-pickbtn i { display: inline-block; width: 16px; height: 0; border-top: 2.5px solid var(--sw, currentColor); border-top-style: var(--sd, solid); }
 .dl12r-pickbtn:hover { color: var(--ink); border-color: var(--ink-3); }
 .dl12r-pickbtn[aria-pressed='true'] { color: var(--ink); border-color: var(--sw, var(--accent)); box-shadow: inset 0 0 0 1px var(--sw, var(--accent)); }
 

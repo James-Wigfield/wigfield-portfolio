@@ -155,7 +155,7 @@ export const SECTIONS = [
           rows: [
             ['output neurons', '1 per prediction dimension', '1', '1 per binary label', '1 per class'],
             ['output activation', 'none; ReLU/softplus if positive; sigmoid/tanh if bounded', 'sigmoid', 'sigmoid', 'softmax'],
-            ['loss', 'MSE, or Huber if outliers', 'X-entropy', 'X-entropy', 'X-entropy'],
+            ['loss', 'MSE, or Huber if outliers', 'cross-entropy', 'cross-entropy', 'cross-entropy'],
           ],
         },
       },
@@ -164,7 +164,7 @@ export const SECTIONS = [
           'Typical: 1 to 5 hidden layers; for regression 10 to 100 neurons per hidden layer, ReLU hidden activation (slides 27, 31).',
           '$\\text{softplus}(z) = \\log(1 + \\exp(z))$: like ReLU but smooth at the origin (slide 25).',
           'MAE is more robust to outliers than MSE; **Huber** is quadratic for $|z| \\le \\delta$, linear beyond (slides 27–28).',
-          'Softmax makes the outputs probabilities that sum to 1; cross-entropy (log loss) $J(\\boldsymbol{\\theta}) = -\\frac{1}{m}\\sum_{i}\\sum_{k} y_k^{(i)}\\log(\\hat{p}_k^{(i)})$ over $K$ classes (slide 29).',
+          'Softmax makes the outputs probabilities that sum to 1; cross-entropy (log loss) $J(\\boldsymbol{\\theta}) = -\\frac{1}{m}\\sum_{i=1}^{m}\\sum_{k=1}^{K} y_k^{(i)}\\log\\left(\\hat{p}_k^{(i)}\\right)$ over $K$ classes (slide 29).',
           'Slide 26: Scikit-Learn’s `MLPRegressor` (3 hidden layers of 50) on California housing, RMSE about 0.505, around 10% error.',
         ],
       },
@@ -372,7 +372,7 @@ export const SECTIONS = [
     slides: '23–28',
     read: [
       { gist: 'Batch normalization standardizes a layer’s inputs over each mini-batch, then scales and shifts them with two learned vectors, $\\boldsymbol{\\gamma}$ and $\\boldsymbol{\\beta}$.' },
-      { eq: { name: 'The BN algorithm (slide 24)', tex: '\\boldsymbol{\\mu}_B = \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\mathbf{x}^{(i)} \\qquad \\boldsymbol{\\sigma}_B^2 = \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\left(\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B\\right)^2 \\qquad \\hat{\\mathbf{x}}^{(i)} = \\frac{\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B}{\\sqrt{\\boldsymbol{\\sigma}_B^2 + \\epsilon}} \\qquad \\mathbf{z}^{(i)} = \\boldsymbol{\\gamma} \\otimes \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{\\beta}', read: 'mean and variance per feature over the mini-batch $B$; $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$: trainable scale and shift (one per input feature); $\\otimes$: element-wise' } },
+      { eq: { name: 'The BN algorithm (slide 24)', tex: '\\begin{aligned} \\boldsymbol{\\mu}_B &= \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\mathbf{x}^{(i)} \\\\ \\boldsymbol{\\sigma}_B^2 &= \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\left(\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B\\right)^2 \\\\ \\hat{\\mathbf{x}}^{(i)} &= \\frac{\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B}{\\sqrt{\\boldsymbol{\\sigma}_B^2 + \\epsilon}} \\\\ \\mathbf{z}^{(i)} &= \\boldsymbol{\\gamma} \\otimes \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{\\beta} \\end{aligned}', read: 'mean and variance per feature over the mini-batch $B$; $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$: trainable scale and shift (one per input feature); $\\otimes$: element-wise' } },
       {
         list: [
           'Why: He initialization with ELU helps at the start of training, but the vanishing/exploding problems can come back during training. BN is an extra operation before or after each hidden layer’s activation; at test time, moving averages of the mini-batch statistics are used (slide 23).',
@@ -447,7 +447,7 @@ export const SECTIONS = [
           ],
         },
       },
-      { eq: { name: 'Adam (slide 43)', tex: '\\begin{aligned} &1.\\ \\mathbf{m} \\leftarrow \\beta_1\\mathbf{m} + (1 - \\beta_1)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\qquad 2.\\ \\mathbf{s} \\leftarrow \\beta_2\\mathbf{s} + (1 - \\beta_2)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\\\ &3.\\ \\widehat{\\mathbf{m}} \\leftarrow \\mathbf{m}/(1 - \\beta_1^{\\,t}) \\qquad 4.\\ \\widehat{\\mathbf{s}} \\leftarrow \\mathbf{s}/(1 - \\beta_2^{\\,t}) \\qquad 5.\\ \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\end{aligned}', read: 'steps 3–4 boost $\\mathbf{m}$ and $\\mathbf{s}$, which start near zero; $t$ is the iteration number' } },
+      { eq: { name: 'Adam (slide 43)', tex: '\\begin{aligned} &1.\\ \\mathbf{m} \\leftarrow \\beta_1\\mathbf{m} + (1 - \\beta_1)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\\\ &2.\\ \\mathbf{s} \\leftarrow \\beta_2\\mathbf{s} + (1 - \\beta_2)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\\\ &3.\\ \\widehat{\\mathbf{m}} \\leftarrow \\mathbf{m}/(1 - \\beta_1^{\\,t}) \\\\ &4.\\ \\widehat{\\mathbf{s}} \\leftarrow \\mathbf{s}/(1 - \\beta_2^{\\,t}) \\\\ &5.\\ \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\end{aligned}', read: 'steps 3–4 boost $\\mathbf{m}$ and $\\mathbf{s}$, which start near zero; $t$ is the iteration number' } },
       {
         list: [
           'Momentum uses the gradient as an **acceleration**, not a speed, and can roll past local optima; NAG measures it ahead, at $\\boldsymbol{\\theta} + \\beta\\mathbf{m}$, ending closer to the optimum (slides 34–37).',

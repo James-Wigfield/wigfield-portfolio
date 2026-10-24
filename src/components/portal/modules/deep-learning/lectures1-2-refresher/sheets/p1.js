@@ -46,8 +46,8 @@ export default {
             head: ['task', 'outputs', 'activation', 'loss'],
             rows: [
               ['regression', '1 per dimension', 'none', 'MSE, Huber'],
-              ['binary, multilabel', '1 per label', 'sigmoid', 'X-entropy'],
-              ['multiclass', '1 per class', '{g|softmax}', 'X-entropy'],
+              ['binary, multilabel', '1 per label', 'sigmoid', 'cross-entropy'],
+              ['multiclass', '1 per class', '{g|softmax}', 'cross-entropy'],
             ],
           },
         },
@@ -71,6 +71,7 @@ export default {
             ],
           },
         },
+        'A Dense layer has {g|inputs × units + units} parameters.',
       ],
       margin: [
         { q: 'What does EarlyStopping keep?', a: 'With `restore_best_weights=True`, the best weights on the validation set (slide 52).' },
@@ -90,5 +91,5 @@ export default {
       ],
     },
   ],
-  skip: 'layer maths, Scikit-Learn, Huber formula, Fashion MNIST, Wide & Deep, other callbacks, TensorBoard.',
+  skip: 'layer maths, Scikit-Learn, Huber, Fashion MNIST, Wide & Deep, other callbacks, TensorBoard.',
 };

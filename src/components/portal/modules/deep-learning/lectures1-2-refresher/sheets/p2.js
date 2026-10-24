@@ -7,7 +7,7 @@ export default {
       at: 'L2 · 4–6',
       items: [
         'Gradients shrink or grow on the way down to the lower layers.',
-        'Cause: sigmoid with $\\mathcal{N}(0, 1)$ weights; σ {g|saturates}, slope ≈ 0.',
+        'With $\\mathcal{N}(0, 1)$ weights, sigmoid units {g|saturate} (slope ≈ 0).',
       ],
       margin: [
         { q: 'Why is the sigmoid a problem?', a: 'Mean 0.5, not 0, and it saturates at 0 or 1, where its derivative is close to 0 (slide 6).' },
@@ -29,7 +29,7 @@ export default {
           },
         },
         { formula: '\\text{fan}_{\\text{avg}} = (\\text{fan}_{\\text{in}} + \\text{fan}_{\\text{out}})/2' },
-        'Keras default: Glorot uniform; `kernel_initializer="he_normal"`.',
+        'Keras uses Glorot uniform unless you pass `"he_normal"`.',
       ],
       margin: [
         { q: 'Glorot as a uniform range?', a: '$[-r, +r]$ with $r = \\sqrt{3/\\text{fan}_{\\text{avg}}}$ (slide 7).' },
@@ -53,9 +53,10 @@ export default {
       h: 'Batch normalization',
       at: 'L2 · 23–28',
       items: [
-        { formula: '\\hat{\\mathbf{x}}^{(i)} = (\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B)/\\sqrt{\\boldsymbol{\\sigma}_B^2 + \\epsilon}, \\qquad \\mathbf{z}^{(i)} = \\boldsymbol{\\gamma} \\otimes \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{\\beta}' },
+        { formula: '\\hat{\\mathbf{x}}^{(i)} = (\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B)/\\sqrt{\\boldsymbol{\\sigma}_B^2 + \\epsilon}' },
+        { formula: '\\mathbf{z}^{(i)} = \\boldsymbol{\\gamma} \\otimes \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{\\beta}' },
         '{g|γ, β} are learned; at test time, moving averages are used.',
-        'Gains: tanh usable, larger η, it regularizes; costs time.',
+        'It allows tanh and larger η and regularizes, but costs time.',
       ],
       margin: [
         { q: 'BN before the activation?', a: '`Dense(…, use_bias=False)`, then `BatchNormalization()`, then `Activation("relu")` (slide 28).' },

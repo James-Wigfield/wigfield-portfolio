@@ -20,7 +20,7 @@ const SYMBOLS = {
   le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', in: '∈', mid: '|', infty: '∞', minus: '−', pm: '±', quad: ' ', qquad: '  ',
   alpha: 'α', beta: 'β', theta: 'θ', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
   langle: '⟨', rangle: '⟩', div: '÷', pi: 'π', exp: 'exp', tanh: 'tanh', sin: 'sin', cos: 'cos', log: 'log', max: 'max',
-  eta: 'η', rho: 'ρ', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', Phi: 'Φ', nabla: '∇', partial: '∂',
+  eta: 'η', rho: 'ρ', gamma: 'γ', delta: 'δ', epsilon: 'ϵ', varepsilon: 'ε', Phi: 'Φ', nabla: '∇', partial: '∂', '|': '‖',
   otimes: '⊗', oslash: '⊘', leftarrow: '←', gets: '←', Rightarrow: '⇒', prime: '′', sqrt: '√', min: 'min', abs: 'abs',
   limits: '', nolimits: '', displaystyle: '', ',': ' ', ';': ' ', ':': ' ', '!': '', '{': '{', '}': '}', '%': '%', '#': '#', '_': '_',
 };
@@ -77,7 +77,9 @@ export function texText(src) {
         const [b, k] = arg(s, j);
         const ta = texText(a);
         const tb = texText(b);
-        out += ta === '1' && tb === '2' ? '½' : `${wrap(ta)}/${wrap(tb)}`;
+        const fr = ta === '1' && tb === '2' ? '½' : `${wrap(ta)}/${wrap(tb)}`;
+        // a fraction followed by more of its term is grouped: (1/m) Σ …
+        out += fr !== '½' && /^\s*(?:\\(?:sum|left|log|exp)(?![A-Za-z])|[(\p{L}])/u.test(s.slice(k)) ? `(${fr})` : fr;
         i = k;
       } else if (name === 'sum') {
         // Σ with its limits, then a space before the summand: Σᵢ₌₁^m_B x⁽ⁱ⁾
@@ -90,7 +92,7 @@ export function texText(src) {
           const c2 = s[i];
           const [a, j] = arg(s, i + 1);
           const t = texText(a).trim();
-          out += script(t, c2 === '_' ? SUBS : SUPS) ?? `${c2}${/^[\w′]+$/u.test(t) ? t : wrap(t)}`;
+          out += script(t, c2 === '_' ? SUBS : SUPS) ?? `${c2}${/^[\p{L}\p{N}′]+$/u.test(t) ? t : `(${t})`}`;
           i = j;
         }
         out += ' ';
@@ -126,6 +128,10 @@ export function texText(src) {
         // a matrix keeps its brackets; a cases brace prints as its rows
         if (/matrix/.test(env)) out += name === 'begin' ? '[' : ']';
         i = j;
+      } else if (name === 'qquad') {
+        // a wide gap between two equations reads as a separator, not a product
+        out = out.replace(/\s+$/, '');
+        out += /[,;:]$/.test(out) ? ' ' : '; ';
       } else if (name === '\\') {
         out += '; ';
       } else {
@@ -136,8 +142,9 @@ export function texText(src) {
     } else if (c === '_' || c === '^') {
       const [a, j] = arg(s, i + 1);
       const t = texText(a).trim();
-      const uni = script(t, c === '_' ? SUBS : SUPS);
-      if (c === '^' && (t === 'ᵀ' || t === '⊤' || a.trim() === '\\top')) out += 'ᵀ';
+      // \text{…} subscripts stay as words (fan_in and fan_out alike)
+      const uni = /^\\text/.test(a.trim()) && t.length > 1 ? null : script(t, c === '_' ? SUBS : SUPS);
+      if (c === '^' && (t === 'ᵀ' || t === '⊤' || t === 'T' || a.trim() === '\\top')) out += 'ᵀ';
       else if (c === '^' && t === '′') out += '′';
       else if (c === '^' && /^\\text/.test(a.trim())) out += t;
       else if (uni) out += uni;
@@ -164,5 +171,5 @@ export function texText(src) {
       i += 1;
     }
   }
-  return out.replace(/\s+/g, ' ').replace(/\s+([,;)\]])/g, '$1').replace(/([([])\s+/g, '$1').trim();
+  return out.replace(/\s+/g, ' ').replace(/\s+([,;)\]])/g, '$1').replace(/([([])\s+/g, '$1').replace(/∂ /g, '∂').trim();
 }
