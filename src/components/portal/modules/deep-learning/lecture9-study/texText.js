@@ -4,19 +4,20 @@
    KaTeX's HTML comes out of a PDF's text layer as scattered glyphs. Every
    formula on this page also prints a plain-text twin built here, in the
    usual linear notation, e.g.
-     Attention(Q, K, V) = softmax((QKᵀ)/(√d_keys)) V
-     α_(t,i) = exp(e_(t,i)) / Σ_i′ exp(e_(t,i′))
-     h̃_(t) = Σᵢ α_(t,i) y_(i)
-     P_p,i = sin(p/1000^(i/d)) if i is even; cos(p/1000^((i−1)/d)) if i is odd
-   It covers the commands this module uses (√, ᵀ, Σ with limits, the cases
-   brace, wide tilde, ⟨SOS⟩, underbraces, \text…); anything else falls back to
-   its bare argument rather than leaking a backslash.
+     V*(s) = max_a Σ_s′ T(s, a, s′) [R(s, a, s′) + γ V*(s′)] for all s
+     Qₖ₊₁(s, a) ← Σ_s′ T(s, a, s′) [R(s, a, s′) + γ max_a′ Qₖ(s′, a′)]
+     π*(s) = argmax_a Q*(s, a)
+     y(s, a) = r + γ max_a′ Q_θ(s′, a′)
+   It covers the commands this module uses (Greek letters, stars, primes,
+   ←, max / argmax and Σ with their subscripts, sub/superscripts, matrices,
+   \text…); anything else falls back to its bare argument rather than
+   leaking a backslash.
    ========================================================================== */
 
 const SYMBOLS = {
   ell: 'ℓ', top: 'ᵀ', cdots: '…', ldots: '…', dots: '…', times: '×', cdot: '·', to: '→', rightarrow: '→', approx: '≈',
   le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', in: '∈', mid: '|', infty: '∞', minus: '−', pm: '±', quad: ' ', qquad: '  ',
-  alpha: 'α', beta: 'β', theta: 'θ', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
+  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', theta: 'θ', leftarrow: '←', gets: '←', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
   langle: '⟨', rangle: '⟩', div: '÷', pi: 'π', exp: 'exp', tanh: 'tanh', sin: 'sin', cos: 'cos', log: 'log', max: 'max',
   limits: '', nolimits: '', displaystyle: '', ',': ' ', ';': ' ', ':': ' ', '!': '', '{': '{', '}': '}', '%': '%', '#': '#', '_': '_',
 };
@@ -64,6 +65,7 @@ export function texText(src) {
       const name = m[1];
       i += m[0].length;
       if (STYLE.has(name)) {
+        if (name === 'operatorname' && s[i] === '*') i += 1; // \operatorname*{argmax}
         const [a, j] = arg(s, i);
         // text styles keep their words as typed (hyphens stay hyphens)
         out += /^text|^operatorname/.test(name) && !a.includes('\\') ? a.replace(/[{}]/g, '') : texText(a);
@@ -115,11 +117,12 @@ export function texText(src) {
       const t = texText(a).trim();
       const uni = script(t, c === '_' ? SUBS : SUPS);
       if (c === '^' && (t === 'ᵀ' || t === '⊤' || a.trim() === '\\top')) out += 'ᵀ';
+      else if (c === '^' && t === '*') out += '*';
       else if (c === '^' && t === '′') out += '′';
       else if (c === '^' && /^\\text/.test(a.trim())) out += t;
       else if (uni) out += uni;
       // a bare word or an unbracketed index list prints as typed: d_keys, e_3,i, P_p,i
-      else if (/^[\w′]+(?:,[\w′]+)*$/u.test(t)) out += `${c}${t}`;
+      else if (/^[\w′\u0370-\u03ff]+(?:,[\w′\u0370-\u03ff]+)*$/u.test(t)) out += `${c}${t}`;
       else out += `${c}${wrap(t)}`;
       i = j;
     } else if (c === '{' || c === '}') {

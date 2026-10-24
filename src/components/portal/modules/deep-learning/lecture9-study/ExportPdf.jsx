@@ -8,7 +8,7 @@ import { NLM_PROMPT, NLM_PARTS, NLM_STEPS } from './exportPrompt';
    A secondary button in the hero ("Export PDF", the shell's exportPdf: print
    mode + the browser's Save as PDF) and, under it, a quiet disclosure with
    the NotebookLM prompts: one for a single video, and a two-part variant
-   (§0–§8, §9–§17) for a deck this long. Each has its own Copy button, which
+   (§0–§9, §10–§18) for a deck this long. Each has its own Copy button, which
    uses navigator.clipboard and falls back to selecting the text. Nothing
    here prints.
    ========================================================================== */
@@ -58,7 +58,7 @@ export default function ExportPdf({ onExport }) {
   const [open, setOpen] = useState(false);
   return (
     <span className="dl9s-export">
-      <button type="button" className="dl9s-btn dl9s-btn--big" onClick={onExport} title="Print the Read and Play beats to an A4 PDF (choose Save as PDF)">
+      <button type="button" className="dl9s-btn dl9s-btn--big" onClick={onExport} title="Print the Read and Play beats and the code cards to an A4 PDF (choose Save as PDF)">
         <Icon name="printer" size={16} /> Export PDF
       </button>
       <button type="button" className="dl9s-export__toggle" aria-expanded={open} aria-controls="dl9s-nlm" onClick={() => setOpen((o) => !o)}>
@@ -73,8 +73,9 @@ export default function ExportPdf({ onExport }) {
           <p className="dl9s-nlm__or">Or, for a lecture this long, two videos:</p>
           {NLM_PARTS.map((p, i) => <PromptBlock key={p.label} id={`part${i + 1}`} label={`${p.label} · Explainer`} text={p.text} />)}
           <p className="dl9s-nlm__note">
-            NotebookLM publishes no length limit for the steering prompt (checked October 2026), so each prompt is kept under 1,000 characters.
-            They ask for the PDF’s sections in order, the running example, the Slide checks, and to skip §16 (not examined).
+            NotebookLM’s help page lists the Cinematic, Explainer and Short formats and publishes no length limit for the steering
+            prompt (checked October 2026), so each prompt is kept under 1,000 characters. They ask for the PDF’s sections in order,
+            its two running examples, plain-words explanations of the code, and to flag this page’s own numbers.
           </p>
         </div>
       )}

@@ -2,30 +2,31 @@
    LECTURE 9 STUDY — THE NOTEBOOKLM VIDEO PROMPTS
    ----------------------------------------------------------------------------
    Pasted into NotebookLM's Video Overview steering prompt, with the exported
-   PDF (Read + Play) as the only source. Checked 2026-10-22: Google's help
-   page (support.google.com/notebooklm/answer/16454555) lists the formats
-   Cinematic, Explainer and Brief and a custom prompt that steers the video;
-   a July 2026 guide (eesel.ai) calls the short one "Short" and gives it
-   about 60 seconds. Neither states a character limit for the prompt, so each
-   prompt here stays under 1,000 characters. Explainer ("a structured,
-   comprehensive overview") is the format to pick.
+   PDF (Read + Play + the code cards) as the only source. Checked 2026-10-24:
+   Google's help page (support.google.com/notebooklm/answer/16454555) lists
+   the formats Cinematic (18+, English only), Explainer ("a structured,
+   comprehensive overview that connects the dots within your sources") and
+   Short (~60-second videos; Lecture 8's note of 2026-10-22 called it Brief),
+   and an optional steering prompt with a suggested or custom topic. It
+   states no character limit for the prompt, so each prompt here stays under
+   1,000 characters. Explainer is the format to pick.
 
-   The deck is long, so there is a single-video prompt and a two-part
-   variant: part 1 = §0–§8 (RNN encoder–decoders to attention in Keras),
-   part 2 = §9–§17 (transformers and ViT). The page shows these and never
-   prints them.
+   The deck is long (69 slides), so there is a single-video prompt and a
+   two-part variant: part 1 = §0–§9 (the policy side: the RL loop to policy
+   gradients), part 2 = §10–§18 (the value side: Markov chains to deep
+   Q-learning). The page shows these and never prints them.
    ========================================================================== */
 
-export const NLM_PROMPT = `Use only this PDF: a CITS5017 study page on attention, transformers and vision transformers. Teach a student revising for a test who knows RNNs, LSTMs and Keras but is new to attention. Follow its sections in order, in its notation, with its running example "I like soccer" → "me gusta el fútbol". Intuition first, then the precise statement. Most time on: attention as a shorter path (a weighted sum of encoder outputs, the alignment model); Bahdanau (additive) vs Luong (multiplicative) and Luong's three scores; queries, keys and values; scaled dot-product attention, its shapes and why we divide by √d_keys; multi-head attention; positional encodings; masking and ⟨SOS⟩ → ⟨EOS⟩ generation; self- vs cross-attention; the transformer's data flow; visual attention and ViT. Keep the bus/rail code light; skip §16 (not examined). Numbers marked "this page's own" are illustrations, not the lecture's results: say so. Point out the Slide checks. End with a recap and three self-test questions.`;
+export const NLM_PROMPT = `Use only this PDF: a CITS5017 study page on reinforcement learning. Teach a student new to RL who is revising for an exam that shows code and asks for a diagram or an explanation. Follow the sections in order, in the PDF's notation, with its two running examples: CartPole and Figure 18-8's three-state MDP. Intuition first, then the precise statement. Most time on: the agent-environment loop; policies and policy search; credit assignment and discounted returns (γ = 0.8 gives −22); REINFORCE's four steps; Markov chains and MDPs; the Bellman equation, value and Q-value iteration (why γ = 0.95 sends s1 into the fire); TD learning; Q-learning and ε-greedy; approximate and deep Q-learning (the target y(s,a), the replay buffer); catastrophic forgetting. For each code block, say in plain words what it does. Numbers marked "this page's own" are not the lecture's: say so. End with five self-test questions.`;
 
 export const NLM_PARTS = [
   {
-    label: 'Part 1 of 2 · §0–§8',
-    text: `Part 1 of 2. Use only this PDF, sections §0 to §8: a CITS5017 study page on encoder-decoders and attention. Teach a student revising for a test who knows RNNs, LSTMs and Keras but is new to attention. Follow the sections in order, in the PDF's notation, with the running example "I like soccer" → "me gusta el fútbol". Intuition first, then the precise statement. Briefly: encoder-decoders for NMT, why a causal RNN can't look ahead, bidirectional layers, the bus/rail encoder-decoder's training vs testing stage. Most time on: attention as a shorter path, the weights α(t, i) and the weighted sum of encoder outputs, the alignment model; Bahdanau (additive) vs Luong (multiplicative) and Luong's three scores; Keras's Attention and AdditiveAttention, return_sequences=True; queries, keys and values. Numbers marked "this page's own" are illustrations, not the lecture's results. Point out the Slide checks. End with a recap and three self-test questions.`,
+    label: 'Part 1 of 2 · §0–§9',
+    text: `Part 1 of 2. Use only this PDF, sections §0 to §9: a CITS5017 study page on reinforcement learning, the policy side. Teach a student new to RL who is revising for an exam that shows code and asks for a diagram or an explanation. Follow the sections in order, in the PDF's notation, with CartPole as the running example. Intuition first, then the precise statement. Most time on: the agent-environment loop and the goal of maximising expected long-term rewards; what a policy is, stochastic policies, and policy search (brute force, genetic algorithms, policy gradients); CartPole's observation, actions and env.step's five return values; neural network policies and sampling the action; credit assignment, discounted returns (γ = 0.8 gives −22) and action advantages; REINFORCE's four steps; y_target = 1 − action and the training loop. Explain each code block in plain words. Numbers marked "this page's own" are not the lecture's. End with four self-test questions.`,
   },
   {
-    label: 'Part 2 of 2 · §9–§17',
-    text: `Part 2 of 2. Use only this PDF, sections §9 to §17: a CITS5017 study page on transformers and vision transformers. Teach a student revising for a test who already knows attention, queries, keys and values. Follow the sections in order, in the PDF's notation, with the running example "I like soccer" → "me gusta el fútbol". Intuition first, then the precise statement. Most time on: the transformer's structure and why it isn't recurrent; where each attention layer's queries, keys and values come from; positional encodings; scaled dot-product attention, its shapes and why we divide by √d_keys; multi-head attention; self- vs cross-attention; masking and ⟨SOS⟩ → ⟨EOS⟩ generation; visual attention; the ViT recipe and why it needs so much data. Keep the Keras code light; skip §16 (not examined). Numbers marked "this page's own" are illustrations, not the lecture's results. Point out the Slide checks. End with a recap and three self-test questions.`,
+    label: 'Part 2 of 2 · §10–§18',
+    text: `Part 2 of 2. Use only this PDF, sections §10 to §18: a CITS5017 study page on reinforcement learning, the value side. Teach a student who knows the RL loop and policy gradients but is new to MDPs, revising for an exam that shows code and asks for a diagram or an explanation. Follow the sections in order, in the PDF's notation, with Figure 18-8's three-state MDP and CartPole as running examples. Intuition first, then the precise statement. Most time on: Markov chains and the transition matrix; MDPs; the Bellman optimality equation; value and Q-value iteration and the argmax policy (why γ = 0.95 sends s1 into the fire); the TD update, target and error; Q-learning, off- vs on-policy, ε-greedy; approximate Q-learning and the DQN target y(s,a); the replay buffer and training_step; catastrophic forgetting. Explain each code block in plain words. Numbers marked "this page's own" are not the lecture's. End with four self-test questions.`,
   },
 ];
 

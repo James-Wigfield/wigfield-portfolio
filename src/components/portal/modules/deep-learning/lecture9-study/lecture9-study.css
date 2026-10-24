@@ -635,10 +635,6 @@ html.dl9s-pseudo-on body { overflow: hidden !important; }
 .dl9s-figcap { margin: 0; font-size: 0.72rem; line-height: 1.5; color: var(--ink-3); font-style: italic; border-top: 1px solid var(--line-2); padding-top: 0.4rem; }
 .dl9s-figcap__k { font-style: normal; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 0.3rem; }
 
-/* §16: the not-examined flag (slide 47), a labelled dot, never a pill */
-.dl9s-flag { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--ink-2); white-space: nowrap; }
-.dl9s-flag::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 99px; background: var(--dlv-yellow); margin-right: 0.4rem; vertical-align: 0; }
-
 /* the NotebookLM dropdown holds three prompts: keep it scrollable */
 .dl9s-nlm { max-height: min(78vh, 46rem); overflow-y: auto; }
 .dl9s-nlm__block { display: flex; flex-direction: column; gap: 0.35rem; border-top: 1px solid var(--line-2); padding-top: 0.5rem; }

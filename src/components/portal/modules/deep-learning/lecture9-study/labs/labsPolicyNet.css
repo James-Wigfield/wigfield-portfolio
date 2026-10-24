@@ -1,0 +1,44 @@
+/* §6 · the policy network (slides 23–25) */
+.dl9s-pn { display: flex; flex-direction: column; gap: 0.9rem; }
+.dl9s-pn__top { display: flex; gap: 1.2rem; align-items: center; }
+.dl9s-pn__obs { flex: 0 0 250px; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.dl9s-pn__netcol { flex: 1 1 0; min-width: 0; }
+.dl9s-pn--narrow .dl9s-pn__top { flex-direction: column; align-items: stretch; }
+.dl9s-pn--narrow .dl9s-pn__obs { flex: none; width: 100%; }
+.dl9s-pn__net { max-width: 560px; }
+.dl9s-pn__scrub { margin-top: -0.2rem; }
+.dl9s-pn .dl9s-switch { align-self: flex-start; margin: 0.2rem 0 0; }
+.dl9s-pn__loading { margin: 3rem 0; font-size: 0.82rem; color: var(--ink-3); text-align: center; }
+
+.dl9s-pn__edge { stroke: var(--ink-2); fill: none; transition: opacity 0.3s ease; }
+.dl9s-pn__in circle { fill: var(--dl9s-floor); stroke: var(--dl9s-obs); stroke-width: 2; }
+.dl9s-pn__in--off circle { stroke-dasharray: 3 3; opacity: 0.6; }
+.dl9s-pn__xi { font-size: 11px; font-weight: 700; fill: var(--dl9s-obs) !important; }
+.dl9s-pn__val { font-size: 10.5px; fill: var(--dl9s-obs) !important; }
+.dl9s-pn__val--off { font-size: 13px; font-weight: 800; fill: var(--ink-3) !important; }
+.dl9s-pn__hid { stroke: var(--ink-2); stroke-width: 1.6; transition: fill 0.3s ease; }
+.dl9s-pn__out { stroke: var(--dl9s-pol); stroke-width: 2.6; transition: fill 0.3s ease; }
+.dl9s-pn__p { font-family: var(--font-display, Georgia, serif); font-style: italic; font-weight: 700; font-size: 15px; fill: var(--ink) !important; }
+
+.dl9s-pn__sample { display: flex; flex-direction: column; gap: 0.25rem; border-top: 1px solid var(--line-2); padding-top: 0.6rem; }
+.dl9s-pn__k { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dl9s-pn__bar { max-width: 800px; }
+.dl9s-pn__left { fill: var(--dl9s-pol); opacity: 0.85; }
+.dl9s-pn__right { fill: color-mix(in srgb, var(--dl9s-pol) 22%, var(--dl9s-floor)); }
+.dl9s-pn__cut { stroke: var(--ink); stroke-width: 2; }
+.dl9s-pn__track { fill: none; stroke: var(--line); stroke-width: 1.2; }
+.dl9s-pn__hatch { stroke: var(--dl9s-pol); stroke-width: 1.6; opacity: 0.6; }
+.dl9s-pn__band { stroke: var(--dl9s-pol); stroke-width: 1.2; }
+.dl9s-pn__draw { fill: var(--dl9s-floor); stroke: var(--dl9s-act); stroke-width: 1.6; transition: fill 0.25s ease; }
+.dl9s-pn__draw--l { fill: var(--dl9s-act); }
+.dl9s-pn__again {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--accent-ink);
+  background: none; border: none; border-bottom: 1.5px solid var(--accent);
+  padding: 0.2rem 0.1rem; cursor: pointer;
+}
+.dl9s-pn__again:disabled { opacity: 0.4; cursor: default; }
+@media (prefers-reduced-motion: reduce) {
+  .dl9s-pn__edge, .dl9s-pn__hid, .dl9s-pn__out, .dl9s-pn__draw { transition: none !important; }
+}

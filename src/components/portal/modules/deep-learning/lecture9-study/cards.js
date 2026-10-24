@@ -85,7 +85,7 @@ export const CARDS = {
     snippets: [{ src: 'QVI_LOOP', lines: [1, 16] }],
     prompt: 'Which line is the Q-value iteration equation, and why does `Q_values` start at `-np.inf`?',
     answer: [
-      'The `np.sum([...])` line: for each next state `sp` it adds $T(s, a, s’) \\times [R(s, a, s’) + \\gamma \\max_{a’} Q_k(s’, a’)]$, with `Q_prev[sp].max()` as the max.',
+      'The `np.sum([...])` line: for each next state `sp` it adds $T(s, a, s\') \\times [R(s, a, s\') + \\gamma \\max_{a\'} Q_k(s\', a\')]$, with `Q_prev[sp].max()` as the max.',
       '`-np.inf` marks impossible actions (such as $a_1$ in $s_1$), so `.max()` and `np.argmax` never pick them; the possible actions start at 0.0.',
       '`Q_prev` is a copy of the previous iteration, so every update in iteration $k + 1$ uses only $Q_k$.',
       'After 50 iterations with γ = 0.90, `np.argmax(Q_values, axis=1)` gives `[0, 0, 1]` (slide 49).',
@@ -122,7 +122,7 @@ export const CARDS = {
     prompt: 'Draw the data flow of `training_step`.',
     fig: 'dqnStep',
     answer: [
-      'A batch of 32 experiences goes through the DQN twice. On the next states (`model.predict`), the best next Q-value is kept, zeroed where the episode ended (`runs`), discounted and added to the reward: the target $y(s, a) = r + \\gamma \\max_{a’} Q_\\theta(s’, a’)$ (slide 60).',
+      'A batch of 32 experiences goes through the DQN twice. On the next states (`model.predict`), the best next Q-value is kept, zeroed where the episode ended (`runs`), discounted and added to the reward: the target $y(s, a) = r + \\gamma \\max_{a\'} Q_\\theta(s\', a\')$ (slide 60).',
       'On the current states, inside the tape, the one-hot `mask` keeps only the Q-value of the action actually taken.',
       'The loss is the mean squared error between the targets and those Q-values; its gradients take one Nadam step.',
     ],

@@ -380,3 +380,6 @@
 .dl9s-cellnum--inv { fill: var(--dl9s-floor) !important; stroke: none; }
 /* the slides' own values marked on a scrubber */
 .dl9s-slidemark { fill: var(--accent-ink) !important; font-weight: 700; }
+
+/* mouse focus on a state button draws no box; keyboard focus is the dashed ring above */
+.dl9s-state--btn:focus:not(:focus-visible) { outline: none; }

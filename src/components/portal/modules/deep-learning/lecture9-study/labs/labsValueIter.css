@@ -1,0 +1,28 @@
+/* §11 · the value iteration lab */
+.dl9s-vi { display: flex; flex-direction: column; gap: 0.3rem; }
+.dl9s-vi__k { margin: 0 0 0 0.2rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; }
+.dl9s-vi__kname { font-family: var(--font-display, Georgia, serif); font-size: 1.15rem; color: var(--ink); }
+.dl9s-vi__kname sub { font-size: 0.7em; }
+.dl9s-vi__kmeta { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; color: var(--ink-3); }
+.dl9s-vi__mdp { max-width: 720px; width: 100%; margin: 0 auto; }
+.dl9s-vi__fill { fill: var(--dl9s-val); opacity: 0.55; pointer-events: none; transition: transform 0.25s ease; }
+.dl9s-vi__name { font-size: 15px; font-weight: 700; fill: var(--ink) !important; pointer-events: none; }
+.dl9s-vi__fills { pointer-events: none; }
+.dl9s-vi__line { opacity: 0.55; stroke-width: 2; }
+.dl9s-vi__line--sel { opacity: 1; stroke-width: 2.8; }
+.dl9s-vi__dot { fill: var(--dl9s-floor); stroke: var(--dl9s-val); stroke-width: 2.4; }
+.dl9s-vi__ctl { display: flex; align-items: center; gap: 0.6rem; }
+.dl9s-vi__ctl svg { flex: 1 1 0; min-width: 0; max-width: 780px; }
+.dl9s-vi__play {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2.1rem; height: 2.1rem; border-radius: 99px;
+  border: 1.5px solid var(--accent); background: none; color: var(--accent-ink); cursor: pointer;
+}
+.dl9s-vi__play:hover { background: var(--accent-soft); }
+.dl9s-vi--narrow .dl9s-vi__ctl { flex-direction: column; align-items: flex-start; }
+.dl9s-vi--narrow .dl9s-vi__ctl svg { width: 100%; flex: none; }
+@media (prefers-reduced-motion: reduce) {
+  .dl9s-vi__fill { transition: none; }
+}
+.dl9s-vi__fill--neg { fill: var(--dl9s-rneg); }
+.dl9s-vi__vlab { font-size: 11.5px; }

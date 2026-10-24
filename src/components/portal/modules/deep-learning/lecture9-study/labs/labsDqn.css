@@ -1,0 +1,63 @@
+/* §16 · the replay buffer, one training step, the ε schedule */
+.dl9s-rp { display: flex; flex-direction: column; gap: 0.4rem; }
+.dl9s-rp__ctl { align-items: center; }
+.dl9s-rp__btns { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.dl9s-rp__btn {
+  font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--ink);
+  background: none; border: none; border-bottom: 2px solid var(--line); padding: 0.2rem 0.1rem; cursor: pointer;
+}
+.dl9s-rp__btn:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+.dl9s-rp__btn--pick { border-bottom-color: var(--accent); }
+.dl9s-rp__reset { font: inherit; font-size: 0.76rem; color: var(--ink-3); background: none; border: none; border-bottom: 1px solid var(--line); padding: 0.1rem; cursor: pointer; }
+.dl9s-rp__reset:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+.dl9s-rp__row { display: flex; align-items: flex-start; gap: 1.2rem; }
+.dl9s-rp__left { flex: 0 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.dl9s-rp__right { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.dl9s-rp--narrow .dl9s-rp__row { flex-direction: column; align-items: stretch; }
+.dl9s-rp--narrow .dl9s-rp__left { flex-basis: auto; align-items: center; }
+.dl9s-rp__ring { max-width: 340px; }
+.dl9s-rp__batch { max-width: 420px; }
+.dl9s-rp__track { fill: none; stroke: var(--line); stroke-width: 15; opacity: 0.6; }
+.dl9s-rp__fill { fill: none; stroke: color-mix(in srgb, var(--dl9s-obs) 40%, var(--dl9s-floor)); stroke-width: 15; }
+.dl9s-rp__last { fill: none; stroke: var(--dl9s-obs); stroke-width: 15; }
+.dl9s-rp__done { stroke: var(--dl9s-rneg); stroke-width: 1.2; opacity: 0.8; }
+.dl9s-rp__pick line { stroke: var(--ink); stroke-width: 1; opacity: 0.85; }
+.dl9s-rp__pick circle { fill: var(--ink); }
+.dl9s-rp__pick--on line { stroke: var(--accent); stroke-width: 3; }
+.dl9s-rp__pick--on circle { fill: var(--accent); }
+.dl9s-rp__head circle { fill: none; stroke: var(--ink-2); stroke-width: 1.6; }
+.dl9s-rp__len { font-family: var(--font-display, Georgia, serif); font-size: 30px; fill: var(--ink) !important; }
+.dl9s-rp__key { margin: 0; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-size: 0.7rem; color: var(--ink-3); }
+.dl9s-rp__k::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 99px; margin-right: 0.35rem; vertical-align: 0; }
+.dl9s-rp__k--fill::before { background: color-mix(in srgb, var(--dl9s-obs) 40%, var(--dl9s-floor)); }
+.dl9s-rp__k--last::before { background: var(--dl9s-obs); }
+.dl9s-rp__k--done::before { background: var(--dl9s-rneg); }
+.dl9s-rp__k--pick::before { background: var(--ink); }
+.dl9s-rp__code { margin: 0; font-size: 0.78rem; color: var(--ink-3); }
+.dl9s-rp__code code { font-family: var(--font-mono, ui-monospace, monospace); color: var(--ink); background: none; padding: 0; }
+.dl9s-rp__empty { margin: 3rem 0; font-size: 0.82rem; color: var(--ink-3); }
+.dl9s-rp__name { fill: var(--ink-2) !important; }
+
+.dl9s-ts { display: flex; flex-direction: column; gap: 0.3rem; }
+.dl9s-ts__load { margin: 2rem 0; text-align: center; font-size: 0.85rem; color: var(--ink-3); }
+.dl9s-ts__code { margin: 0; min-height: 2.4em; font-size: 0.78rem; line-height: 1.5; }
+.dl9s-ts__code code { font-family: var(--font-mono, ui-monospace, monospace); color: var(--ink); background: none; padding: 0; overflow-wrap: anywhere; }
+.dl9s-ts__svg { max-width: 840px; }
+.dl9s-ts__quiet { opacity: 0.42; }
+.dl9s-ts__name { fill: var(--ink-3) !important; }
+.dl9s-ts__name--on { fill: var(--ink) !important; font-weight: 700; }
+.dl9s-ts__loss { font-family: var(--font-display, Georgia, serif); font-size: 22px; fill: var(--dl9s-pol) !important; }
+.dl9s-ts__loss--after { fill: var(--ink) !important; }
+
+.dl9s-es { display: flex; flex-direction: column; gap: 0.3rem; }
+.dl9s-es__read { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 1.1rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; color: var(--ink-3); }
+.dl9s-es__read b { color: var(--ink); font-size: 0.92rem; }
+.dl9s-es__read .dl9s-es__eps { color: var(--dl9s-pol); }
+.dl9s-es__on { color: var(--ink); }
+.dl9s-es__on::before, .dl9s-es__off::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; margin-right: 0.4rem; }
+.dl9s-es__on::before { background: var(--accent); }
+.dl9s-es__off::before { background: var(--dl9s-mask); }
+.dl9s-es__svg { max-width: 800px; }
+.dl9s-es__off-zone { fill: var(--dl9s-mask); opacity: 0.14; }
+.dl9s-es__ref { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.7; }
+.dl9s-es__dot { fill: var(--dl9s-floor); stroke: var(--dl9s-pol); stroke-width: 2.6; }
