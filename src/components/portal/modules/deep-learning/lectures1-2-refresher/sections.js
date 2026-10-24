@@ -349,7 +349,7 @@ export const SECTIONS = [
             ['SELU (slides 16–17)', '$1.0507\\,\\text{ELU}_{1.6733}(z)$', 'self-normalizing if inputs standardized, LeCun normal init, no ℓ1/ℓ2, max-norm, BN or dropout'],
           ['GELU (slide 18)', '$z\\Phi(z) \\approx z\\sigma(1.702z)$', 'neither convex nor monotonic; often outperforms the earlier ones; more compute'],
             ['Swish = SiLU (slide 19)', '$z\\sigma(z)$; $\\text{Swish}_\\beta(z) = z\\sigma(\\beta z)$', '`silu` from tf 2.16'],
-            ['Mish (slides 20–21)', '$z\\tanh(\\text{softplus}(z))$', 'beats Swish and GELU by a tiny margin; not in Keras'],
+            ['Mish (slides 20–21)', '$z\\tanh(\\text{softplus}(z))$', 'beats Swish and GELU by a tiny margin; not in Keras (slide 21; see Slide check)'],
           ],
         },
       },

@@ -79,6 +79,7 @@ export const PRINT_CSS = `
   ${P} .dl12r-hero__printlead { margin: 3mm 0 0; font-size: 0.86rem; line-height: 1.55; color: var(--ink-2); }
   ${P} .dl12r-sec { display: block; margin-top: 9mm; }
   ${P} .dl12r-sec__head, ${P} .dl12r-part { break-inside: avoid; break-after: avoid; }
+  ${P} .dl12r-gist, ${P} .dl12r-stage__head, ${P} .dl12r-story__say, ${P} .dl12r-beat__label { break-after: avoid; }
   ${P} .dl12r-part { display: block; break-before: page; margin: 0; padding-top: 3mm; }
   ${P} .dl12r-part + .dl12r-sec { margin-top: 6mm; }
   ${P} .dl12r-hero + .dl12r-part { break-before: auto; margin-top: 6mm; }

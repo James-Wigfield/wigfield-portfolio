@@ -671,9 +671,7 @@ html.dl12r-pseudo-on body { overflow: hidden !important; }
 .dl12r-tablewrap { overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; }
 .dl12r-table--read { font-size: 0.84rem; line-height: 1.45; }
 .dl12r-tablewrap--wide .dl12r-table--read { min-width: 30rem; }
-@media (max-width: 560px) {
-  .dl12r-tablewrap--wide::after { content: 'scroll sideways for the rest →'; display: block; position: sticky; left: 0; margin-top: 0.25rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; color: var(--ink-3); }
-}
+
 .dl12r-table--read thead th { white-space: nowrap; }
 .dl12r-table--read tbody th { text-transform: none; letter-spacing: 0; text-align: left; font-weight: 650; color: var(--ink); border-bottom: 1px solid var(--line-2); padding: 0.4rem 0.5rem; vertical-align: top; font-size: 0.82rem; }
 .dl12r-table--read td { padding: 0.4rem 0.5rem; }
@@ -779,7 +777,6 @@ html.dl12r-pseudo-on body { overflow: hidden !important; }
 
 /* phones: Read tables become stacked cards (row header, then labelled cells) */
 @media (max-width: 560px) {
-  .dl12r-tablewrap--wide::after { content: none; }
   .dl12r-tablewrap .dl12r-table--read { min-width: 0 !important; }
   .dl12r-table--read, .dl12r-table--read tbody, .dl12r-table--read tr, .dl12r-table--read tbody th, .dl12r-table--read td { display: block; width: auto; }
   .dl12r-table--read thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

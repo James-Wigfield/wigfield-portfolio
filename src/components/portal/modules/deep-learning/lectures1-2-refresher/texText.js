@@ -6,9 +6,9 @@
    formula on this page also prints a plain-text twin built here, in the
    usual linear notation, e.g.
      w_i,j^(next step) = w_i,j + η(yⱼ − ŷⱼ)xᵢ
-     x̂⁽ⁱ⁾ = (x⁽ⁱ⁾ − μ_B)/(√(σ_B² + ε))
+     x̂⁽ⁱ⁾ = (x⁽ⁱ⁾ − μ_B)/√(σ_B² + ϵ)
      m̂ ← m/(1 − β₁ᵗ)      s ← ρs + (1 − ρ)∇_θ J(θ) ⊗ ∇_θ J(θ)
-     J(θ) = −1/m Σᵢ₌₁^m Σₖ₌₁^K yₖ⁽ⁱ⁾ log(p̂ₖ⁽ⁱ⁾)      Huber_δ(z) = ½z² if |z| ≤ δ; …
+     J(θ) = −(1/m) Σᵢ₌₁^m Σₖ₌₁^K yₖ⁽ⁱ⁾ log(p̂ₖ⁽ⁱ⁾)      Huber_δ(z) = ½z² if |z| ≤ δ; …
    It covers the commands this module uses (√, ᵀ, Σ with its limits, ½, the
    cases brace, hats, Greek letters incl. η, σ, ∇, β, ε, ρ, γ, ⊗, ⊘, ←, ℓ,
    \text…); anything else falls back to its bare argument rather than
@@ -46,8 +46,8 @@ function arg(s, i) {
 }
 
 // a token prints bare when it is one simple run (QKᵀ, √d_keys, x₍₁₎), else in brackets
-const SIMPLE = /^(?:[\p{L}\p{N}ᵀ′ℓ…√_₀-ₜᵢⱼ]|̂|̃)+$/u;
-const wrap = (t) => (SIMPLE.test(t) || (/^\(.*\)$/.test(t) && !/^\(.*\).*\(.*\)$/.test(t)) ? t : `(${t})`);
+const SIMPLE = /^(?:[\p{L}\p{N}ᵀ′ℓ…√_₀-ₜᵢⱼ∂‖]|̂|̃)+$/u;
+const wrap = (t) => (SIMPLE.test(t) || /^√\([^()]*(?:\([^()]*\)[^()]*)*\)$/.test(t) || (/^\(.*\)$/.test(t) && !/^\(.*\).*\(.*\)$/.test(t)) ? t : `(${t})`);
 
 // Unicode sub/superscripts where every character has one: x₁, X₍₁₎, N², Σᵢ
 const SUBS = {

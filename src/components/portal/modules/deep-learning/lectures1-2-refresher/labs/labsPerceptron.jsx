@@ -362,8 +362,8 @@ export function XorLab() {
                 <polygon className="dl12r-half" points={band.map(([x, y]) => `${sx(x)},${sy(y)}`).join(' ')} />
                 {L([1, 1], -1.5, 'dl12r-dline dl12r-dline--h')}
                 {L([1, 1], -0.5, 'dl12r-dline dl12r-dline--h')}
-                <text x={sx(1.46)} y={sy(1.38)} textAnchor="end" className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₁: x₁ + x₂ = 3/2</text>
-                <text x={sx(-0.46)} y={sy(-0.36)} className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₂: x₁ + x₂ = 1/2</text>
+                <text x={sx(0.86)} y={sy(0.5)} transform={`rotate(45 ${sx(0.86)} ${sy(0.5)})`} textAnchor="middle" className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₁: x₁ + x₂ = 3/2</text>
+                <text x={sx(0.36)} y={sy(0.28)} transform={`rotate(45 ${sx(0.36)} ${sy(0.28)})`} textAnchor="middle" className="dl12r-t dl12r-t--xs dl12r-t--fwd dl12r-halo">h₂: x₁ + x₂ = 1/2</text>
               </g>
             ) : (
               <g>

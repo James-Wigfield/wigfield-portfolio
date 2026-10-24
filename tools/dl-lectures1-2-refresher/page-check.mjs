@@ -509,7 +509,7 @@ try {
     ok(leaked.length === 0, 'no notebook (Write) text in the PDF', leaked.join(' | '));
     const formulas = [
       ['the perceptron rule', /w_i,j\^\(next step\) = w_i,j \+ η\(y/],
-      ['the BN normalization', /\(x⁽ⁱ⁾ − μ_B\)\/\(√\(σ_B² \+ [εϵ]\)\)/],
+      ['the BN normalization', /\(x⁽ⁱ⁾ − μ_B\)\/√\(σ_B² \+ [εϵ]\)/],
       ['Adam’s bias correction', /m̂ ?← m\/\(1 − β₁ᵗ\)/],
       ['cross-entropy', /J\(θ\) = −\(1\/m\) Σᵢ₌₁\^m Σₖ₌₁\^K yₖ⁽ⁱ⁾ log/],
       ['AdaGrad', /s ← s \+ ∇_θ J\(θ\) ⊗ ∇_θ J\(θ\)/],
@@ -565,6 +565,7 @@ try {
       ['/portal/dl-lecture-5-study', '.dl5s-sec'],
       ['/portal/dl-lecture-6-7-study', '.dl67s-sec'],
       ['/portal/dl-lecture-8-study', '.dl8s-sec'],
+      ['/portal/dl-lecture-9-study', '.portal__content *'],
       ['/portal/dl-arcade', '.portal__content *'],
       ['/portal/dl-code-lab', '.portal__content *'],
       ['/portal/dl-project-2', '.portal__content *'],

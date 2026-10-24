@@ -55,6 +55,7 @@ export function GradFlowLab() {
   };
   const ref = useMemo(() => flowOf('relu', 'he'), []);
   const v = verdict(res.gradW);
+  const factor = (res.gradW[0] / res.gradW[LAYERS - 1]) ** (1 / (LAYERS - 1));
   const W = narrow ? 330 : 600;
   const H = 280;
   const sx = lin(0.5, LAYERS + 0.5, 54, W - 14);
@@ -66,13 +67,14 @@ export function GradFlowLab() {
       title="How big is each layer’s gradient?"
       slides="L2 · slides 5–8"
       tryThis="Switch tanh from N(0, 1) to Glorot: watch the lower layers’ bars come back into the usable band."
-      caption={`${v.text[0].toUpperCase()}${v.text.slice(1)}. Slide 8 pairs Glorot with tanh/sigmoid and He with the ReLU family${act === 'sigmoid' && init !== 'normal' ? '; even so, the sigmoid’s derivative (at most 0.25, L1 slide 22) shrinks the gradient at every layer (Glorot’s variance assumes a slope of 1 at 0, like tanh’s: this page’s working); §2.2’s nonsaturating activations avoid that (slide 10)' : ''}.`}
+      caption={`${v.text[0].toUpperCase()}${v.text.slice(1)}.${act === 'sigmoid' && init === 'normal' ? ' This is slide 6’s case: with N(0, 1) weights many sigmoids saturate, where their slope is close to 0.' : ''} Slide 8 pairs Glorot with tanh/sigmoid and He with the ReLU family${act === 'sigmoid' && init !== 'normal' ? '; even so, the sigmoid’s derivative (at most 0.25, L1 slide 22) shrinks the gradient at every layer (Glorot’s variance assumes a slope of 1 at 0, like tanh’s: this page’s working); §2.2’s nonsaturating activations avoid that (slide 10)' : ''}.`}
       challenge={{ text: `Find two stable combinations${stableSeen.size ? ` (${stableSeen.size} found)` : ''}.`, done: stableSeen.size >= 2 }}
       maths={
         <>
           <MLine text={`Initialization variance (slides 7–8): N(0, 1) uses $\\sigma^2 = 1$; Glorot $\\sigma^2 = 1/\\text{fan}_{\\text{avg}}$ = 1/40; He $\\sigma^2 = 2/\\text{fan}_{\\text{in}}$ = 2/40 (every layer here has 40 inputs and 40 outputs).`} />
           <MLine text={`Each bar: the mean of $|\\partial \\mathcal{L}/\\partial w|$ over a layer’s $40 \\times 40$ weights, for a batch of 32 standardized inputs and an output gradient drawn from N(0, 1). Now: layer 1 ${res.gradW[0].toExponential(1)}, layer ${LAYERS} ${res.gradW[LAYERS - 1].toExponential(1)}.`} />
           <MLine text={`Forward signal (std of each layer’s outputs), layer 1 → ${LAYERS}: ${res.outStd.map((s) => (s >= 100 ? s.toExponential(0) : fmt(s))).join(', ')}. Slide 6: with N(0, 1) each layer’s output variance is much greater than its input’s, so S-shaped units saturate (outputs near their limits).`} />
+          <MLine text={`Going down from layer ${LAYERS} to layer 1, the gradient changes by about ×${fmt(factor, 2)} per layer (this page’s working: (layer 1 ÷ layer ${LAYERS})^(1/${LAYERS - 1})). ${factor > 1.25 ? 'Above 1: it grows towards the input.' : factor < 0.8 ? 'Below 1: it shrinks towards the input.' : 'Close to 1: the bars stay level, so the initialization mainly sets how big they all are.'}`} />
           <MNote text="The network, its random weights (seed 7), the batch and the thresholds (“tiny” below 0.01, “exploding” above 1 or growing 100× towards the input) are this page’s own; the bars are recomputed in your browser when you switch." />
         </>
       }
@@ -143,10 +145,10 @@ const RACERS = [
 ];
 const PATHS = Object.fromEntries(RACERS.map((r) => [r.k, optPath(r.k, START, gradJ, STEPS[STEPS.length - 1], r.hp)]));
 const BEATS = [
-  { label: 'start', say: 'Six optimizers start at the same point on a bowl that is steep along $\\theta_2$ and very flat along $\\theta_1$.' },
+  { label: 'start', say: 'Every optimizer starts at the same point on a bowl that is steep along $\\theta_2$ and very flat along $\\theta_1$.' },
   { label: '5 steps', say: 'Plain SGD drops straight down the steep side, then has almost no gradient left along the flat floor.' },
-  { label: '15 steps', say: 'Momentum builds speed but rolls past the valley floor and swings back; NAG, measuring the gradient ahead, swings less.' },
-  { label: '40 steps', say: 'AdaGrad, RMSProp and Adam scale each direction by its gradient history, so they are nearly at the minimum while SGD is still crawling.' },
+  { label: '15 steps', say: 'Momentum rolls past the valley floor and swings back; Adam is already beside the minimum.' },
+  { label: '40 steps', say: 'SGD is still crawling along the flat floor; Adam overshot once and is looping back to the minimum. Add NAG, AdaGrad or RMSProp to compare.' },
 ];
 
 export function RaceLab() {
@@ -157,20 +159,19 @@ export function RaceLab() {
   const step = STEPS[Math.max(0, story.beat)];
   // opens on one of each family: plain SGD, momentum, Adam
   const [on, setOn] = useState(() => new Set(['sgd', 'momentum', 'adam']));
-  const [focus, setFocus] = useState('nag');
+  const [focus, setFocus] = useState('adam');
   const W = narrow ? 330 : 620;
   const H = narrow ? 230 : 300;
-  const sx = lin(-10, 1.5, 12, W - 12);
+  const sx = lin(-10, 2, 12, W - 12);
   const sy = lin(-2.7, 2.8, H - 12, 12);
   const levels = [0.05, 0.25, 0.75, 1.6, 3, 5, 7.5];
   const toggle = (k) => {
-    setOn((prev) => {
-      const next = new Set(prev);
-      if (next.has(k)) next.delete(k);
-      else next.add(k);
-      return next;
-    });
-    setFocus(k);
+    const next = new Set(on);
+    if (next.has(k)) next.delete(k);
+    else next.add(k);
+    setOn(next);
+    // the maths drawer always follows a racer that is drawn
+    setFocus(next.has(k) ? k : (RACERS.find((r) => next.has(r.k))?.k ?? k));
   };
   const F = RACERS.find((r) => r.k === focus);
   const fp = PATHS[focus][step];
@@ -180,7 +181,7 @@ export function RaceLab() {
       slides="L2 · slides 34–47"
       tryThis="Press ▶ and watch: who crawls, who overshoots, who reaches the centre first? Click a name to add or hide an optimizer."
       story={<StoryBar story={story} beats={BEATS} numbered={false} />}
-      caption="Momentum uses the gradient as an acceleration, so it can roll past the bottom; NAG looks ahead and ends closer; AdaGrad and RMSProp shrink the step along the steep direction, and Adam (which keeps momentum’s m) swings past once before settling (slides 34–43)."
+      caption="Momentum uses the gradient as an acceleration, so it can roll past the bottom; NAG looks ahead and ends closer; AdaGrad and RMSProp shrink the step along the steep direction, and Adam, which keeps momentum’s m as well, overshoots and loops back (slides 34–43)."
       maths={
         <>
           <MEq tex={F.rule} />
@@ -199,8 +200,8 @@ export function RaceLab() {
           ))}
         </div>
         <svg className="dl12r-svg" viewBox={`0 0 ${W} ${H}`} style={{ maxWidth: W + 40 }} role="group" aria-label={`Optimizer paths after ${step} steps`}>
-          <clipPath id={clip}><rect x={sx(-10)} y={sy(2.8)} width={sx(1.5) - sx(-10)} height={sy(-2.7) - sy(2.8)} /></clipPath>
-          <rect x={sx(-10)} y={sy(2.8)} width={sx(1.5) - sx(-10)} height={sy(-2.7) - sy(2.8)} className="dl12r-plotbox" />
+          <clipPath id={clip}><rect x={sx(-10)} y={sy(2.8)} width={sx(2) - sx(-10)} height={sy(-2.7) - sy(2.8)} /></clipPath>
+          <rect x={sx(-10)} y={sy(2.8)} width={sx(2) - sx(-10)} height={sy(-2.7) - sy(2.8)} className="dl12r-plotbox" />
           <g clipPath={`url(#${clip})`}>
           {levels.map((c) => {
             const rx = Math.sqrt((2 * c) / CA);
@@ -209,7 +210,7 @@ export function RaceLab() {
           })}
           </g>
           <circle cx={sx(0)} cy={sy(0)} r={3.5} className="dl12r-race__min" />
-          <text x={sx(0) + 6} y={sy(0) - 6} className="dl12r-t dl12r-t--xs">minimum</text>
+          <text x={sx(0) - 6} y={sy(0) - 7} textAnchor="end" className="dl12r-t dl12r-t--xs dl12r-halo">minimum</text>
           <circle cx={sx(START[0])} cy={sy(START[1])} r={4} className="dl12r-race__start" />
           <text x={sx(START[0]) + 7} y={sy(START[1]) + 4} className="dl12r-t dl12r-t--xs">start</text>
           {RACERS.filter((r) => on.has(r.k)).map((r) => {

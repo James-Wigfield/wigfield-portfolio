@@ -69,8 +69,8 @@ export function BackpropLab() {
 
   const nodeVal = (kind, j) => {
     if (kind === 'in') return fmt(X[j], 0);
-    if (kind === 'hid') return bwdOn ? fmt(g.dHid[j], 3) : fmt(stepOn ? after.h[j] : g.h[j]);
-    return bwdOn ? fmt(g.dOut, 3) : fmt(stepOn ? after.yhat : g.yhat);
+    if (kind === 'hid') return bwdOn ? fmt(g.dHid[j], 2) : fmt(stepOn ? after.h[j] : g.h[j]);
+    return bwdOn ? fmt(g.dOut, 2) : fmt(stepOn ? after.yhat : g.yhat);
   };
   const nodeCls = (kind) => `dl12r-bp__node${bwdOn && kind !== 'in' ? ' dl12r-bp__node--bwd' : fwdOn ? ' dl12r-bp__node--fwd' : ''}`;
   const tip = hover ? edges.find((e) => e.id === hover) : null;

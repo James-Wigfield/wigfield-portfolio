@@ -91,5 +91,5 @@ export default {
       ],
     },
   ],
-  skip: 'layer maths, Scikit-Learn, Huber, Fashion MNIST, Wide & Deep, other callbacks, TensorBoard.',
+  skip: 'layer maths, Scikit-Learn, Fashion MNIST, Wide & Deep, other callbacks, TensorBoard.',
 };

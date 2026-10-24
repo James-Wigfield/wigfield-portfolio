@@ -29,7 +29,7 @@ export default {
           },
         },
         { formula: '\\text{fan}_{\\text{avg}} = (\\text{fan}_{\\text{in}} + \\text{fan}_{\\text{out}})/2' },
-        'Keras uses Glorot uniform unless you pass `"he_normal"`.',
+        'Keras defaults to Glorot uniform; set `kernel_initializer` to change it.',
       ],
       margin: [
         { q: 'Glorot as a uniform range?', a: '$[-r, +r]$ with $r = \\sqrt{3/\\text{fan}_{\\text{avg}}}$ (slide 7).' },
