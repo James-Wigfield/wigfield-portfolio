@@ -125,28 +125,27 @@ export function GradFlowLab() {
 }
 
 /* ── §2.6 ─────────────────────────────────────────────────────────────── */
-// J(θ) = ½(0.1 θ₁² + 2 θ₂²): flat along θ₁, steep along θ₂ (this page's own)
-const CA = 0.1;
+// J(θ) = ½(0.02 θ₁² + 2 θ₂²): very flat along θ₁, steep along θ₂ (this page's own)
+const CA = 0.02;
 const CB = 2;
 const gradJ = ([a, b]) => [CA * a, CB * b];
 const lossJ = ([a, b]) => 0.5 * (CA * a * a + CB * b * b);
 const START = [-9, 2.4];
-const STEPS = [0, 5, 15, 40, 120];
+const STEPS = [0, 5, 15, 40];
 const RACERS = [
-  { k: 'sgd', name: 'SGD', sw: '--dlv-blue', hp: { eta: 0.85 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_\\theta J(\\boldsymbol{\\theta})', hpText: '$\\eta = 0.85$' },
-  { k: 'momentum', name: 'momentum', sw: '--dlv-orange', hp: { eta: 0.05, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.05$, $\\beta = 0.9$' },
-  { k: 'nag', name: 'NAG', sw: '--dlv-magenta', hp: { eta: 0.05, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta} + \\beta\\mathbf{m}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.05$, $\\beta = 0.9$' },
+  { k: 'sgd', name: 'SGD', sw: '--dlv-blue', hp: { eta: 0.45 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_\\theta J(\\boldsymbol{\\theta})', hpText: '$\\eta = 0.45$' },
+  { k: 'momentum', name: 'momentum', sw: '--dlv-orange', hp: { eta: 0.1, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.1$, $\\beta = 0.9$' },
+  { k: 'nag', name: 'NAG', sw: '--dlv-magenta', hp: { eta: 0.1, beta: 0.9 }, rule: '\\mathbf{m} \\leftarrow \\beta\\mathbf{m} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta} + \\beta\\mathbf{m}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} + \\mathbf{m}', hpText: '$\\eta = 0.1$, $\\beta = 0.9$' },
   { k: 'adagrad', name: 'AdaGrad', sw: '--dlv-green', hp: { eta: 1.2 }, rule: '\\mathbf{s} \\leftarrow \\mathbf{s} + \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 1.2$, $\\epsilon = 10^{-10}$' },
-  { k: 'rmsprop', name: 'RMSProp', sw: '--dlv-violet', hp: { eta: 0.12, rho: 0.9 }, rule: '\\mathbf{s} \\leftarrow \\rho\\mathbf{s} + (1 - \\rho)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 0.12$, $\\rho = 0.9$' },
-  { k: 'adam', name: 'Adam', sw: '--dlv-red', hp: { eta: 0.3, beta1: 0.9, beta2: 0.999 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\quad (\\text{slide 43, steps 1–5})', hpText: '$\\eta = 0.3$, $\\beta_1 = 0.9$, $\\beta_2 = 0.999$' },
+  { k: 'rmsprop', name: 'RMSProp', sw: '--dlv-violet', hp: { eta: 0.35, rho: 0.9 }, rule: '\\mathbf{s} \\leftarrow \\rho\\mathbf{s} + (1 - \\rho)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}); \\quad \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\oslash \\sqrt{\\mathbf{s} + \\epsilon}', hpText: '$\\eta = 0.35$, $\\rho = 0.9$' },
+  { k: 'adam', name: 'Adam', sw: '--dlv-red', hp: { eta: 0.6, beta1: 0.9, beta2: 0.999 }, rule: '\\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\quad (\\text{slide 43, steps 1–5})', hpText: '$\\eta = 0.6$, $\\beta_1 = 0.9$, $\\beta_2 = 0.999$' },
 ];
 const PATHS = Object.fromEntries(RACERS.map((r) => [r.k, optPath(r.k, START, gradJ, STEPS[STEPS.length - 1], r.hp)]));
 const BEATS = [
-  { label: 'start', say: 'Six optimizers start at the same point on a bowl that is steep along $\\theta_2$ and flat along $\\theta_1$.' },
-  { label: '5 steps', say: 'Plain SGD jumps across the steep direction; momentum and NAG are still building speed.' },
-  { label: '15 steps', say: 'Momentum rolls past the valley floor and swings back; NAG, measuring the gradient ahead, swings less.' },
-  { label: '40 steps', say: 'The adaptive ones scale each direction by its gradient history, so they head more directly for the minimum.' },
-  { label: '120 steps', say: 'All arrive here. On a simple quadratic bowl AdaGrad does well (slide 40); on deep networks it stops too early.' },
+  { label: 'start', say: 'Six optimizers start at the same point on a bowl that is steep along $\\theta_2$ and very flat along $\\theta_1$.' },
+  { label: '5 steps', say: 'Plain SGD drops straight down the steep side, then has almost no gradient left along the flat floor.' },
+  { label: '15 steps', say: 'Momentum builds speed but rolls past the valley floor and swings back; NAG, measuring the gradient ahead, swings less.' },
+  { label: '40 steps', say: 'AdaGrad, RMSProp and Adam scale each direction by its gradient history, so they are nearly at the minimum while SGD is still crawling.' },
 ];
 
 export function RaceLab() {
@@ -184,7 +183,7 @@ export function RaceLab() {
         <>
           <MEq tex={F.rule} />
           <MLine text={`${F.name} here: ${F.hpText}. After ${step} steps $\\boldsymbol{\\theta} = (${fmt(fp[0])}, ${fmt(fp[1])})$ and $J(\\boldsymbol{\\theta}) = ${fmt(lossJ(fp), 4)}$.`} />
-          <MLine text={'The bowl: $J(\\boldsymbol{\\theta}) = \\tfrac{1}{2}(0.1\\,\\theta_1^2 + 2\\,\\theta_2^2)$, so $\\nabla_{\\boldsymbol{\\theta}} J = (0.1\\,\\theta_1,\\ 2\\,\\theta_2)$, starting from $(-9, 2.4)$.'} />
+          <MLine text={'The bowl: $J(\\boldsymbol{\\theta}) = \\tfrac{1}{2}(0.02\\,\\theta_1^2 + 2\\,\\theta_2^2)$, so $\\nabla_{\\boldsymbol{\\theta}} J = (0.02\\,\\theta_1,\\ 2\\,\\theta_2)$, starting from $(-9, 2.4)$.'} />
           <MNote text="The bowl, the start and every learning rate are this page’s own, chosen so each rule’s character shows; β = 0.9, ρ = 0.9, β₁ = 0.9, β₂ = 0.999 and ε = 10⁻¹⁰ are the slides’ values (slides 34, 38, 41, 44)." />
         </>
       }
