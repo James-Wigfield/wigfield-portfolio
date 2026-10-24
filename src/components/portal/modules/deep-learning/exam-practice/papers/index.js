@@ -1,7 +1,7 @@
-import { SAMPLE } from './sample';
-import { PAPER_A } from './paperA';
-import { PAPER_B } from './paperB';
-import { LEC, topicReceipt } from './lectures';
+import { SAMPLE } from './sample.js';
+import { PAPER_A } from './paperA.js';
+import { PAPER_B } from './paperB.js';
+import { LEC, topicReceipt } from './lectures.js';
 
 /* ============================================================================
    EXAM PRACTICE — THE PAPERS (schema, builders, derived facts)
@@ -47,7 +47,7 @@ import { LEC, topicReceipt } from './lectures';
      slip(text)          the one quiet "Common slip:" line, grey
    ========================================================================== */
 
-export { w, h, eq, ul, tbl, fig, slip } from './ink';
+export { w, h, eq, ul, tbl, fig, slip } from './ink.js';
 
 export const PAPERS = [SAMPLE, PAPER_A, PAPER_B];
 export const PAPER = Object.fromEntries(PAPERS.map((p) => [p.id, p]));

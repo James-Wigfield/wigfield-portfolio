@@ -1,5 +1,5 @@
 import { PAPERS, paperLeaves, leafLabel, receiptOf, paperMarks } from './papers';
-import { Cover, Prompt, MarginLabel, TopicLine } from './Paper';
+import { Cover, Prompt, TopicLine } from './Paper';
 import { Ink } from './Ink';
 
 /* ============================================================================
@@ -30,13 +30,13 @@ function PrintPart({ part }) {
                   <span className="dlxp-sub__l">{s.label}</span>
                   <div className="dlxp-sub__body">
                     <Prompt blocks={s.prompt} marks={s.marks} />
-                    <p className="dlxp-book__covers">Lecture slides: <MarginLabel leaf={s} /></p>
+                    <p className="dlxp-book__covers">Lecture slides: {receiptOf(s)}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="dlxp-book__covers">Lecture slides: <MarginLabel leaf={part} /></p>
+            <p className="dlxp-book__covers">Lecture slides: {receiptOf(part)}</p>
           )}
         </div>
       </div>

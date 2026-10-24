@@ -1,4 +1,4 @@
-import { texText } from './texText';
+import { texText } from './texText.js';
 
 /* ============================================================================
    EXAM PRACTICE — THE INLINE MARKUP, AS PLAIN TEXT

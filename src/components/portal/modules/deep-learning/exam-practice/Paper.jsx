@@ -90,6 +90,20 @@ export function Prompt({ blocks, marks }) {
             </figure>
           );
         }
+        if (b.table) {
+          return (
+            <table key={i} className="dlxp-ptable">
+              <thead>
+                <tr>{b.table.head.map((c, j) => <th key={j}><Rich text={c} /></th>)}</tr>
+              </thead>
+              <tbody>
+                {b.table.rows.map((r, j) => (
+                  <tr key={j}>{r.map((c, k) => <td key={k}><Rich text={c} /></td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        }
         return null;
       })}
       {marks != null && !attach && <p className="dlxp-prompt__p dlxp-prompt__p--marks"><Marks n={marks} /></p>}

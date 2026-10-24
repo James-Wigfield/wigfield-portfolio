@@ -342,6 +342,11 @@
 .dlxp-prompt__eq { margin: 8px 0 10px; overflow-x: auto; overflow-y: hidden; }
 .dlxp-prompt__fig { margin: 10px 0 14px; display: flex; flex-direction: column; align-items: center; }
 .dlxp-fig { display: block; width: 100%; height: auto; }
+/* a given table, set like LaTeX's booktabs */
+.dlxp-ptable { margin: 8px auto 12px; border-collapse: collapse; border-top: 1.3px solid #111; border-bottom: 1.3px solid #111; font-size: 15px; }
+.dlxp-ptable th { font-weight: 400; border-bottom: 0.7px solid #111; padding: 3px 16px; text-align: center; }
+.dlxp-ptable td { padding: 2px 16px; text-align: center; }
+.dlxp-ptable td:first-child, .dlxp-ptable th:first-child { text-align: left; }
 .dlxp-figdesc, .dlxp-texalt { display: none; }
 .dl.dlxp .dlxp-c { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.86em; color: inherit; background: none; border: none; padding: 0; }
 

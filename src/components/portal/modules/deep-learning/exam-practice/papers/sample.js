@@ -1,4 +1,4 @@
-import { w, h, eq, ul, tbl, fig, slip } from './ink';
+import { w, h, eq, ul, tbl, fig, slip } from './ink.js';
 
 /* ============================================================================
    EXAM PRACTICE — THE OFFICIAL SAMPLE PAPER (sampleExam2026-s2.pdf)
@@ -258,7 +258,7 @@ model = tf.keras.Model(inputs=[input_], outputs=[output])`,
                 { lec: 'L4', slides: 34, name: 'Forecasting by looping' },
               ],
               answer: [
-                w('Predict both corners at once from the last time step (as for the 14-days-ahead forecast): a recurrent layer that returns only its last output, e.g. `SimpleRNN(32)`, then `Dense(4)` with no activation; loss MSE.', 1),
+                w('Predict both corners at once from the last time step (as for the 14-days-ahead forecast): a recurrent layer that returns only its last output, e.g. `SimpleRNN(32)`, then `Dense(4)` with no activation; a regression loss: MSE (the slides\' forecasting models use the Huber loss).', 1),
                 w('$X$: $(m, 3, 2)$ (3 corners of $(x, y)$); $y$: $(m, 4)$, the $(x, y)$ of corners 3 and 4 in one vector (like $X$ (32, 56, 5) → $y$ (32, 14) on the slides).', 1),
                 w('(Or train the one-step model and loop: predict corner 3, append it to the input, then predict corner 4.)'),
               ],
