@@ -20,4 +20,5 @@ export default {
       ],
     },
   ],
+  skip: 'the 1992 paper’s title (footnote 1).',
 };

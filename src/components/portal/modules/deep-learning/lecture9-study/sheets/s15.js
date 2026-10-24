@@ -15,4 +15,5 @@ export default {
       ],
     },
   ],
+  skip: 'slide 59’s hand-crafted features (Ms. Pac-Man’s ghost distances).',
 };

@@ -23,4 +23,5 @@ export default {
       ],
     },
   ],
+  skip: 'each example’s observations, actions and rewards in detail (slides 7–10).',
 };

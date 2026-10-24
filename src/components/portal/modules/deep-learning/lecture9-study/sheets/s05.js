@@ -14,4 +14,5 @@ export default {
       ],
     },
   ],
+  skip: 'the 500-episode loop line by line (see the code card) and the demo video.',
 };

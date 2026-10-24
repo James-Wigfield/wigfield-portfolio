@@ -32,4 +32,5 @@ export default {
       ],
     },
   ],
+  skip: 'the slide 47–48 listings and slide 49’s full Q-table (see the code card and the lab).',
 };

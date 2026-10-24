@@ -17,7 +17,7 @@ export default {
       h: 'Choosing $\\gamma$',
       at: '28',
       items: [
-        '$\\gamma$ near 0: only immediate rewards count. $\\gamma$ near 1: far-future rewards count almost as much.',
+        '$\\gamma$ near 0: future rewards count for little next to immediate ones. $\\gamma$ near 1: far-future rewards count almost as much.',
         '$0.95^{13} \\approx 0.5$ and $0.99^{69} \\approx 0.5$ (half weight 13 or 69 steps ahead); CartPole uses {g|0.95}.',
       ],
     },
@@ -33,4 +33,5 @@ export default {
       ],
     },
   ],
+  skip: 'Figure 18-6’s “discount ratio” label and the deck’s three names for γ (rate, ratio, `discount_factor`).',
 };

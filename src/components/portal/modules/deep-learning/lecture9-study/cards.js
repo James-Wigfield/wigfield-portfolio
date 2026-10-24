@@ -16,6 +16,21 @@
    ========================================================================== */
 
 export const CARDS = {
+  makeEnv: {
+    title: 'Creating CartPole and taking one step',
+    slide: '17–20',
+    snippets: [
+      { src: 'MAKE_ENV', lines: [1, 5] },
+      { src: 'STEP', lines: [1, 4] },
+    ],
+    prompt: 'Name the four numbers in `obs` and the five values `env.step(action)` returns. Why does slide 20 choose `action = 1`?',
+    answer: [
+      '`obs` holds the cart’s horizontal position (0.0 = centre), its velocity (positive = right), the pole’s angle (0.0 = vertical) and its angular velocity (positive = clockwise) (slide 17).',
+      '`env.step(action)` performs the action once and returns the new `obs`, the `reward` (1.0), `done`, `truncated` and `info` (an empty dictionary) (slide 20).',
+      'Action 0 accelerates the cart left and action 1 right (`Discrete(2)`, slide 19). The pole was leaning right (`obs[2] > 0`), so slide 20 pushes right.',
+      'As printed, `reader_mode="rgb_array"` is a typo for `render_mode`: this page’s run shows it raises a TypeError.',
+    ],
+  },
   basicLoop: {
     title: 'basic_policy over 500 episodes',
     slide: '21–22',
@@ -136,7 +151,19 @@ export const CARDS = {
       'Each episode resets the environment and plays up to 200 steps with `play_one_step`, which stores every experience in the replay buffer.',
       '`epsilon = max(1 - episode / 500, 0.01)` falls in a straight line from 1 (always random) at episode 0 to 0.01 at episode 495, then stays at 0.01.',
       '`training_step` runs once per episode, but only after episode 50: the first 51 episodes (0–50) only fill the buffer.',
-      '`best_weights` keeps the weights from the episode that lasted longest (`step >= best_score`), and they are put back at the end.',
+      '`best_weights` keeps the weights from the latest episode that lasted at least as long as every earlier one (`step >= best_score`), and they are put back at the end.',
+    ],
+  },
+  dqnPlot: {
+    title: 'Plotting the DQN’s rewards',
+    slide: '65',
+    snippets: [{ src: 'DQN_PLOT', lines: [1, 8] }],
+    prompt: 'What exactly does this chart plot for each episode, and how does it relate to slide 64’s loop?',
+    answer: [
+      'It plots the `rewards` list from slide 64’s loop: one value per episode, with the episode on the x-axis.',
+      'Each value is `step`, the index of the episode’s last step, so it is one less than the episode’s length; the print’s “Steps: 100” is `step + 1`.',
+      'With a reward of 1.0 per step, an episode’s total reward is its length, so the “Sum of rewards” label is off by one (slide 64 appends `step`).',
+      'Slide 66 reads the curve: a slow start while ε is high, a first max, then drops: catastrophic forgetting.',
     ],
   },
 };

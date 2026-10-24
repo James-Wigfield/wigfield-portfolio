@@ -16,4 +16,5 @@ export default {
       ],
     },
   ],
+  skip: 'slide 24’s noisy observations (average the last few) and slide 25’s code (see the code card).',
 };

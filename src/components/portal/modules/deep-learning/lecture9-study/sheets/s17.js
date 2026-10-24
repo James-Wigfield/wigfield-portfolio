@@ -18,4 +18,5 @@ export default {
       ],
     },
   ],
+  skip: 'the plot code (see the code card), slide 66’s episode numbers (290, 550, step 143) and Géron’s closing sentence.',
 };

@@ -31,4 +31,5 @@ export default {
       ],
     },
   ],
+  skip: 'Figure 18-8 in full (every probability) and slide 42’s guess at the best strategy.',
 };

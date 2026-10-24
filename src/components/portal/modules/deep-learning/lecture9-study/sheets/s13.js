@@ -13,4 +13,5 @@ export default {
       ],
     },
   ],
+  skip: 'slide 50’s “experience each state many times” and slide 52’s running-average reading.',
 };

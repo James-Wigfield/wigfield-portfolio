@@ -28,4 +28,5 @@ export default {
       ],
     },
   ],
+  skip: 'the vacuum robot’s details (30 minutes, a random angle in ±r degrees) and Figure 18-3’s four points.',
 };

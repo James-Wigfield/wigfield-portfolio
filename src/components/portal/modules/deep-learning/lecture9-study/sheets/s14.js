@@ -38,4 +38,5 @@ export default {
       ],
     },
   ],
+  skip: 'the drunk-monkey golf image, slide 55’s (s₂, a₁) chart and the example α = 0.01.',
 };
