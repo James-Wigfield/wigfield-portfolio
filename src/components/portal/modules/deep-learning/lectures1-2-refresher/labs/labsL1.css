@@ -1,0 +1,139 @@
+/* ============================================================================
+   LECTURES 1–2 REFRESHER — PART 1 LABS (and shared lab bits)
+   Role colours come from ../stage.css (--dl12r-c1, -c0, -fwd, -bwd, -w,
+   -off); series colours from ../../common.css (--dlv-*).
+   ========================================================================== */
+
+/* plot frames and axes */
+.dl12r-plotbox { fill: none; stroke: var(--line); stroke-width: 1; }
+.dl12r-axisline { stroke: var(--ink-3); stroke-width: 1; opacity: 0.6; }
+.dl12r-gridline { stroke: var(--line-2); stroke-width: 1; }
+
+/* two classes: circles (y = 1) and squares (y = 0) */
+.dl12r-dot circle, .dl12r-dot rect { stroke-width: 2.2; transition: transform 0.3s ease; }
+.dl12r-dot--c1 circle { fill: color-mix(in srgb, var(--dl12r-c1) 30%, var(--dl12r-floor)); stroke: var(--dl12r-c1); }
+.dl12r-dot--c0 rect { fill: color-mix(in srgb, var(--dl12r-c0) 22%, var(--dl12r-floor)); stroke: var(--dl12r-c0); }
+.dl12r-dot--wrong circle, .dl12r-dot--wrong rect { stroke-dasharray: 3 2; }
+.dl12r-dot__ring { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.dl12r-dot--hot circle, .dl12r-dot--hot rect { stroke-width: 3; }
+.dl12r-drag { cursor: grab; touch-action: none; }
+.dl12r-drag:active { cursor: grabbing; }
+.dl12r-drag:focus-visible, .dl12r-pick:focus-visible, .dl12r-handle:focus-visible { outline: none; }
+.dl12r-drag:focus-visible .dl12r-dot circle, .dl12r-drag:focus-visible .dl12r-dot rect,
+.dl12r-pick:focus-visible .dl12r-dot circle, .dl12r-pick:focus-visible .dl12r-dot rect { stroke: var(--accent); stroke-width: 3; }
+.dl12r-pick { cursor: pointer; }
+
+/* the decision line and its ŷ = 1 side */
+.dl12r-dline { stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; transition: all 0.45s ease; }
+.dl12r-dline--old { stroke: var(--ink-3); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.dl12r-dline--h { stroke: var(--dl12r-fwd); stroke-width: 2; }
+.dl12r-half { fill: var(--dl12r-c1); opacity: 0.08; transition: all 0.45s ease; }
+.portal[data-portal-theme='arcade'] .dl12r-half { opacity: 0.12; }
+.dl12r-handle { cursor: grab; touch-action: none; }
+.dl12r-handle__dot { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 2; }
+.dl12r-handle:focus-visible .dl12r-handle__dot { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 4 2; }
+
+/* legend line under a plot: labelled marks, no boxes */
+.dl12r-legend { margin: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-size: 0.76rem; color: var(--ink-3); }
+.dl12r-legend > span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.dl12r-legend__score { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dl12r-legend svg { width: 16px; height: 16px; overflow: visible; }
+.dl12r-legend__ring::before { content: ''; width: 12px; height: 12px; border: 1.5px dashed var(--ink); border-radius: 99px; display: inline-block; }
+.dl12r-legend__swatch { display: inline-block; width: 18px; height: 0; border-top: 2.5px solid currentColor; }
+.dl12r-legend__swatch--dash { border-top-style: dashed; }
+
+/* XOR: the plot and the little network side by side when there's room */
+.dl12r-xor { display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 15rem); gap: 2rem; align-items: center; justify-content: start; }
+.dl12r-xor--narrow { grid-template-columns: minmax(0, 1fr); }
+.dl12r-net__w { stroke: var(--ink-3); stroke-width: 1.3; opacity: 0.6; }
+.dl12r-net__n circle { fill: var(--dl12r-floor); stroke: var(--ink-3); stroke-width: 1.6; transition: stroke 0.3s ease; }
+.dl12r-net__n--on circle { stroke: var(--dl12r-fwd); stroke-width: 2.6; }
+.dl12r-net__n--on > text:first-of-type { fill: var(--dl12r-fwd); font-weight: 700; }
+
+/* the "this page's own" maths note */
+.dl12r-mnote { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--ink-3); }
+
+/* the backprop network */
+.dl12r-bp__edge { fill: none; stroke: var(--ink-3); stroke-linecap: round; opacity: 0.5; transition: stroke 0.4s ease, opacity 0.4s ease, stroke-width 0.4s ease; }
+.dl12r-bp__edge--fwd { stroke: var(--dl12r-fwd); opacity: 0.95; }
+.dl12r-bp__edge--bwd { stroke: var(--dl12r-bwd); opacity: 0.95; }
+.dl12r-bp__edge--step { stroke: var(--dl12r-w); opacity: 0.95; }
+.dl12r-bp__node circle { fill: var(--dl12r-floor); stroke: var(--ink-3); stroke-width: 1.8; transition: stroke 0.4s ease; }
+.dl12r-bp__node--fwd circle { stroke: var(--dl12r-fwd); stroke-width: 2.6; }
+.dl12r-bp__node--bwd circle { stroke: var(--dl12r-bwd); stroke-width: 2.6; }
+.dl12r-bp__val { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11.5px; font-weight: 700; }
+.dl12r-bp__err { fill: none; stroke: var(--dl12r-bwd); stroke-width: 2; stroke-dasharray: 4 3; }
+.dl12r-bp__hit { cursor: help; }
+
+/* activation curves */
+.dl12r-curve { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; transition: opacity 0.3s ease, stroke-width 0.3s ease; }
+.dl12r-curve--dim { opacity: 0.22; stroke-width: 1.4; }
+.dl12r-sat { fill: var(--dl12r-off); opacity: 0.13; }
+.dl12r-hair { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.dl12r-pt { stroke: var(--dl12r-floor); stroke-width: 1.5; }
+.dl12r-plotgrid { pointer-events: all; cursor: crosshair; }
+
+/* the token row that picks one curve (outlined, never filled) */
+.dl12r-picker { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.6rem; }
+.dl12r-pickbtn {
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  background: none;
+  border: 1.4px solid var(--line);
+  border-radius: 6px;
+  padding: 0.22rem 0.6rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dl12r-pickbtn i { display: inline-block; width: 14px; height: 0; border-top: 2.5px solid var(--sw, currentColor); }
+.dl12r-pickbtn:hover { color: var(--ink); border-color: var(--ink-3); }
+.dl12r-pickbtn[aria-pressed='true'] { color: var(--ink); border-color: var(--sw, var(--accent)); box-shadow: inset 0 0 0 1px var(--sw, var(--accent)); }
+
+/* the parameter blocks of the Sequential model */
+.dl12r-pm__mat { stroke-width: 1.6; transition: opacity 0.25s ease; cursor: pointer; }
+.dl12r-pm__mat--w { fill: color-mix(in srgb, var(--dl12r-w) 16%, var(--dl12r-floor)); stroke: var(--dl12r-w); }
+.dl12r-pm__mat--b { fill: color-mix(in srgb, var(--dl12r-w) 40%, var(--dl12r-floor)); stroke: var(--dl12r-w); }
+.dl12r-pm__layer--dim .dl12r-pm__mat { opacity: 0.32; }
+.dl12r-pm__layer:focus-visible { outline: none; }
+.dl12r-pm__layer:focus-visible .dl12r-pm__mat--w { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 5 3; }
+
+/* a mini code listing beside a lab, with the hovered line lit */
+.dl12r-mini {
+  margin: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: #d4d4d4;
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+.dl12r-mini span { display: block; border-radius: 3px; padding: 0 0.3rem; margin: 0 -0.3rem; transition: background 0.2s ease; }
+.dl12r-mini span.on { background: rgba(56, 139, 253, 0.28); color: #fff; }
+.dl12r-mini .k { color: #569cd6; }
+.dl12r-mini .s { color: #ce9178; }
+.dl12r-mini .n { color: #b5cea8; }
+.dl12r-mini .c { color: #6a9955; }
+.dl12r-mini .f { color: #dcdcaa; }
+
+/* graph nodes for the Keras APIs */
+.dl12r-g__box rect { fill: var(--dl12r-floor); stroke: var(--ink-3); stroke-width: 1.5; transition: stroke 0.25s ease; }
+.dl12r-g__box text { font-size: 11.5px; fill: var(--ink); }
+.dl12r-g__box--on rect { stroke: var(--dl12r-fwd); stroke-width: 2.6; }
+.dl12r-g__box--hidden rect { stroke-dasharray: 4 3; }
+.dl12r-g__edge { fill: none; stroke: var(--ink-3); stroke-width: 1.4; }
+.dl12r-g__edge--hidden { stroke-dasharray: 3 4; opacity: 0.5; }
+.dl12r-g__fog { fill: var(--dl12r-off); opacity: 0.1; stroke: var(--dl12r-off); stroke-dasharray: 5 4; }
+.dl12r-g__box:focus-visible { outline: none; }
+.dl12r-g__box:focus-visible rect { stroke: var(--accent); stroke-dasharray: 4 2; stroke-width: 2.6; }
+.dl12r-apis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 21rem); gap: 1rem; align-items: start; }
+.dl12r-apis--narrow { grid-template-columns: minmax(0, 1fr); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dl12r-dline, .dl12r-half, .dl12r-bp__edge, .dl12r-bp__node circle, .dl12r-curve, .dl12r-net__n circle, .dl12r-pm__mat { transition: none !important; }
+}

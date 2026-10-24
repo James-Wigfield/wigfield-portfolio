@@ -38,6 +38,7 @@ import Run5Handoff from './modules/Run5Handoff';
 import DeepLearningLecture1 from './modules/deep-learning/lecture1/Lecture1';
 import DeepLearningLecture2 from './modules/deep-learning/lecture2/Lecture2';
 import DeepLearningLecture3 from './modules/deep-learning/lecture3/Lecture3';
+import DeepLearningLectures12Refresher from './modules/deep-learning/lectures1-2-refresher/Lectures12Refresher';
 import DeepLearningLecture3Study from './modules/deep-learning/lecture3-study/Lecture3Study';
 import DeepLearningLecture4Study from './modules/deep-learning/lecture4-study/Lecture4Study';
 import DeepLearningLecture5Study from './modules/deep-learning/lecture5-study/Lecture5Study';
@@ -170,6 +171,7 @@ export const MODULES = [
     group: 'Deep Learning',
     component: DeepLearningLecture3,
   },
+  { id: 'dl-lectures-1-2-refresher', label: 'Lectures 1–2 · Refresher (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLectures12Refresher },
   {
     id: 'dl-lecture-3-study',
     label: 'Lecture 3 · CNNs (Study)',

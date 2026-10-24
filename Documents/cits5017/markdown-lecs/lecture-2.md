@@ -1,21 +1,19 @@
 # CITS5017 Deep Learning
 
-Lectures for Semester 2, 2025 — Topic 2: Training Deep Neural Networks — Associate Professor Du Huynh (Unit Coordinator and Lecturer) — UWA — 2025
+Topic 2: Training Deep Neural Networks — Associate Professor Du Huynh (Unit Coordinator and Lecturer) — Semester 2, 2026 — The University of Western Australia
 
 ---
 
 ## Slide 1 — CITS5017 Deep Learning
-
-Lectures for Semester 2, 2025
 
 Topic 2: Training Deep Neural Networks
 
 Associate Professor Du Huynh
 (Unit Coordinator and Lecturer)
 
-UWA
+Semester 2, 2026
 
-2025
+*[UWA crest and "The University of Western Australia" wordmark]*
 
 ---
 
@@ -48,7 +46,7 @@ Here are the main topics we will briefly cover:
   - AdaGrad
   - RMSProp
   - Adam and its variants
-- Learning rate scheduling
+  - Learning rate scheduling
 - Avoiding overfitting
   - $\ell_1$ and $\ell_2$ regularization
   - Dropout
@@ -83,7 +81,7 @@ Training a DNN isn't a walk in the park. Here are some of the problems you could
 - the variance of the outputs of each layer is much greater than the variance of its inputs;
 - the logistic activation function has mean $0.5$ rather than $0$. Also, when inputs become large (negative or positive), the function saturates at $0$ or $1$, with a derivative extremely close to $0$. *[numerical values highlighted blue]*
 
-> **Figure 11-1.** Line plot of the logistic activation function. Legend entry (blue solid line): $\sigma(z) = \dfrac{1}{1 + e^{-z}}$. Horizontal axis labelled $z$, ranging from about $-5$ to $5$ with ticks at $-4, -2, 0, 2, 4$. Vertical axis ranging from $-0.2$ to $1.2$ with ticks at $-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2$. A green dashed straight line passes through the origin with the slope of the sigmoid at $z=0$ (the linear approximation), rising off the top of the plot near $z \approx 1$ and leaving the bottom near $z \approx -2.7$. A black horizontal dashed line is drawn at $y = 1.0$. Solid black horizontal and vertical axis lines are drawn at $y = 0$ and $z = 0$. Three thick black arrows with text annotations: "Saturating" pointing to the flat left tail near $z \approx -4.5$, $y \approx 0$; "Linear" pointing to the central region of the curve near $z = 0$, $y = 0.5$; "Saturating" pointing to the flat right tail near $z \approx 4.5$, $y \approx 1$. Grid lines shown.
+> **Figure 11-1.** Line plot of the logistic activation function. Legend entry (blue solid line): $\sigma(z) = \dfrac{1}{1 + e^{-z}}$. Horizontal axis labelled $z$, ranging from about $-5$ to $5$ with ticks at $-4, -2, 0, 2, 4$. Vertical axis ranging from $-0.2$ to $1.2$ with ticks at $-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2$. A green dashed straight line is the tangent to the sigmoid at $z=0$ (the linear approximation): it passes through $(0, 0.5)$, crosses $y = 0$ at $z = -2$ and $y = 1$ at $z = 2$, leaving the bottom of the plot near $z \approx -2.8$ and the top near $z \approx 2.8$. A black horizontal dashed line is drawn at $y = 1.0$. Solid black horizontal and vertical axis lines are drawn at $y = 0$ and $z = 0$. Three thick black arrows with text annotations: "Saturating" pointing to the flat left tail near $z \approx -4.5$, $y \approx 0$; "Linear" pointing to the central region of the curve near $z = 0$, $y = 0.5$; "Saturating" pointing to the flat right tail near $z \approx 4.5$, $y \approx 1$. Grid lines shown.
 
 *Caption:* Figure 11-1. Logistic activation function saturation.
 
@@ -201,10 +199,10 @@ Can also use LeakyReLU as a separate layer:
 
 ```python
 model = tf.keras.models.Sequential([
-    # [...]  # more layers
-    tf.keras.layers.Dense(50, kernel_initializer="he_normal"),  # no activation
-    tf.keras.layers.LeakyReLU(negative_slope=0.2),  # activation in a separate layer
-    # [...]  # more layers
+  # [...]  # more layers
+  tf.keras.layers.Dense(50, kernel_initializer="he_normal"), # no activation
+  tf.keras.layers.LeakyReLU(negative_slope=0.2),  # activation in a separate layer
+  # [...]  # more layers
 ])
 ```
 
@@ -357,7 +355,7 @@ where $\text{softplus}(z) = \log(1 + \exp(z))$.
 
 **Comparing GELU, Swish (= SiLU), and Mish**
 
-> **Figure 11-4.** Line plot comparing four activation functions. Horizontal axis labelled $z$, ranging from $-4$ to $2$ with ticks at $-4, -3, -2, -1, 0, 1, 2$. Vertical axis ranging from $-1.0$ to $2.0$ with ticks at $-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0$. Legend entries: blue solid line $\text{GELU}(z) = z\,\Phi(z)$; red dashed line $\text{Swish}(z) = \text{SiLU}(z) = z\,\sigma(z)$; red dotted line $\text{Swish}_{\beta = 0.6}(z) = z\,\sigma(0.6z)$; green dotted line $\text{Mish}(z) = z\tanh(\text{softplus}(z))$. All four curves rise together for $z > 0$ (GELU and Mish nearly coincide and are highest; Swish is slightly lower; $\text{Swish}_{\beta=0.6}$ is lowest, reaching about 1.5 at $z = 2$). All curves dip below zero for negative $z$: GELU reaches a minimum of about $-0.17$ near $z \approx -0.75$ then returns toward 0 as $z \to -4$; Swish and Mish reach minima of about $-0.28$ near $z \approx -1.3$; $\text{Swish}_{\beta=0.6}$ dips deepest to about $-0.45$ near $z \approx -1.5$ and is still about $-0.33$ at $z = -4$. Solid black horizontal and vertical axis lines at $y = 0$ and $z = 0$. Grid lines shown.
+> **Figure 11-4.** Line plot comparing four activation functions. Horizontal axis labelled $z$, ranging from $-4$ to $2$ with ticks at $-4, -3, -2, -1, 0, 1, 2$. Vertical axis ranging from $-1.0$ to $2.0$ with ticks at $-1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0$. Legend entries: blue solid line $\text{GELU}(z) = z\,\Phi(z)$; red dashed line $\text{Swish}(z) = \text{SiLU}(z) = z\,\sigma(z)$; red dotted line $\text{Swish}_{\beta = 0.6}(z) = z\,\sigma(0.6z)$; green dotted line $\text{Mish}(z) = z\tanh(\text{softplus}(z))$. All four curves rise together for $z > 0$ (GELU and Mish nearly coincide and are highest; Swish is slightly lower; $\text{Swish}_{\beta=0.6}$ is lowest, reaching about 1.5 at $z = 2$). All curves dip below zero for negative $z$: GELU reaches a minimum of about $-0.17$ near $z \approx -0.75$ then returns toward 0 as $z \to -4$; Swish and Mish reach minima of about $-0.28$ near $z \approx -1.3$; $\text{Swish}_{\beta=0.6}$ dips deepest to about $-0.46$ near $z \approx -2$ and is still about $-0.33$ at $z = -4$. Solid black horizontal and vertical axis lines at $y = 0$ and $z = 0$. Grid lines shown.
 
 *Caption:* Figure 11-4. GELU, SiLU, parametrized Swish, and Mish activation functions
 
@@ -374,7 +372,7 @@ Keras supports GELU and SiLU: just use `activation="gelu"` or `activation="silu"
   - SiLU (Swish) is probably a better default; you can also try the parametrized Swish and tune the hyperparameter $\beta$.
   - Mish may give you slightly better results, but it requires a bit more compute.
   - If latency is a concern, then you may prefer a simpler activation function like leaky ReLU or PReLU.
-- For very deep MLPs, try SELU but make sure the constraints listed on slide 16 are met.
+  - For very deep MLPs, try SELU but make sure the constraints listed on slide 16 are met.
 
 ---
 
@@ -385,7 +383,7 @@ Keras supports GELU and SiLU: just use `activation="gelu"` or `activation="silu"
 Although using He initialization along with ELU (or any variant of ReLU) can mitigate the vanishing/exploding gradients problems at the beginning of training, it doesn't guarantee that they won't come back during training. To overcome these problems, the batch normalization¹⁰ algorithm was proposed:
 
 - An extra operation is inserted before or after the activation function in each hidden layer to normalize the input to have mean = 0 and variance = 1.
-- This normalization introduces two trainable parameters, $\gamma$ and $\beta$, that the training process must learn together with the connection weights.
+- This normalization introduces two trainable parameters, $\boldsymbol{\gamma}$ and $\boldsymbol{\beta}$, that the training process must learn together with the connection weights.
 - The mean and variance of each layer's outputs for entire training set are estimated using the moving average of the minibatches. They are used in the predictions on the testing set.
 
 **Footnotes:**
@@ -402,14 +400,14 @@ Summary of the algorithm:
 
 $$
 \begin{aligned}
-\mu_B &= \frac{1}{m_B}\sum_{i=1}^{m_B} \mathbf{x}^{(i)} \\
-\sigma_B^2 &= \frac{1}{m_B}\sum_{i=1}^{m_B}\left(\mathbf{x}^{(i)} - \mu_B\right)^2 \\
-\hat{\mathbf{x}}^{(i)} &= \frac{\mathbf{x}^{(i)} - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}} \\
-\mathbf{z}^{(i)} &= \gamma \otimes \hat{\mathbf{x}}^{(i)} + \beta
+\boldsymbol{\mu}_B &= \frac{1}{m_B}\sum_{i=1}^{m_B} \mathbf{x}^{(i)} \\
+\boldsymbol{\sigma}_B^2 &= \frac{1}{m_B}\sum_{i=1}^{m_B}\left(\mathbf{x}^{(i)} - \boldsymbol{\mu}_B\right)^2 \\
+\hat{\mathbf{x}}^{(i)} &= \frac{\mathbf{x}^{(i)} - \boldsymbol{\mu}_B}{\sqrt{\boldsymbol{\sigma}_B^2 + \epsilon}} \\
+\mathbf{z}^{(i)} &= \boldsymbol{\gamma} \otimes \hat{\mathbf{x}}^{(i)} + \boldsymbol{\beta}
 \end{aligned}
 $$
 
-where $\mu_B$ and $\sigma_B^2$ are the mean and variance vectors computed from the minibatch $B$; $\hat{\mathbf{x}}^{(i)}$ is a zero-centred and normalized input vector used internally in the BN layer; $\gamma$ and $\beta$ are the trainable scale and shift vectors (one parameter per input feature); and $\otimes$ represents element-wise multiplication.
+where $\boldsymbol{\mu}_B$ and $\boldsymbol{\sigma}_B^2$ are the mean and variance vectors computed from the minibatch $B$; $\hat{\mathbf{x}}^{(i)}$ is a zero-centred and normalized input vector used internally in the BN layer; $\boldsymbol{\gamma}$ and $\boldsymbol{\beta}$ are the trainable *scale* and *shift* vectors (one parameter per input feature); and $\otimes$ represents element-wise multiplication.
 
 ---
 
@@ -436,7 +434,7 @@ The extra computation overhead above can also be avoided by fusing the BN layer 
 ### Implementing Batch Normalization with Keras
 
 ```python
-model = keras.models.Sequential([
+  model = keras.models.Sequential([
     tf.keras.layers.InputLayer(shape=[28, 28]),
     tf.keras.layers.Flatten(),
     tf.keras.layers.BatchNormalization(),
@@ -563,7 +561,7 @@ flowchart BT
   AH3 -- "Reuse" --> BH3
 ```
 
-> **Figure 11-5.** Two vertical stacks of labelled boxes side by side. Left stack, captioned "Existing DNN for task A" (bold), from bottom to top: "Input layer" (green), "Hidden 1", "Hidden 2", "Hidden 3", "Hidden 4", "Hidden 5", "Output" (all blue), with an upward arrow leaving the top of "Output". Right stack, captioned "New DNN for similar task B" (bold), from bottom to top: "Input layer" (green), "Hidden 1", "Hidden 2", "Hidden 3", "Hidden 4", "Output" (white boxes), with an upward arrow leaving the top. Horizontal arrows run from the left stack to the right stack at the Input layer, Hidden 1, and Hidden 2 levels, and a labelled arrow marked "Reuse" runs from Hidden 3 of task A to Hidden 3 of task B. A dashed rectangle encloses Hidden 1 and Hidden 2 of the new DNN. On the right-hand margin are two padlock icons: an open orange padlock labelled "Trainable weights" aligned with the upper layers (Hidden 3, Hidden 4, Output), and a closed orange padlock labelled "Fixed weights" aligned with the dashed-box layers (Hidden 1, Hidden 2).
+> **Figure 11-5.** Two vertical stacks of labelled boxes side by side. Left stack, captioned "Existing DNN for task A" (bold), from bottom to top: "Input layer" (green), "Hidden 1", "Hidden 2", "Hidden 3", "Hidden 4", "Hidden 5", "Output" (all blue), with an upward arrow leaving the top of "Output". Right stack, captioned "New DNN for similar task B" (bold), from bottom to top: "Input layer" (green), "Hidden 1", "Hidden 2", "Hidden 3" (blue, like the reused layers of task A), "Hidden 4", "Output" (white boxes, i.e., new layers), with an upward arrow leaving the top. Horizontal arrows run from the left stack to the right stack at the Input layer, Hidden 1, and Hidden 2 levels, and a labelled arrow marked "Reuse" runs from Hidden 3 of task A to Hidden 3 of task B. A dashed rectangle encloses Hidden 1 and Hidden 2 of the new DNN. On the right-hand margin are two padlock icons: an open orange padlock labelled "Trainable weights" drawn level with Hidden 4 (the upper layers), and a closed orange padlock labelled "Fixed weights" aligned with the dashed-box layers (Hidden 1, Hidden 2).
 
 *Caption:* Figure 11-5. Reusing pretrained layers.
 
@@ -581,15 +579,19 @@ model_B_on_A.add(tf.keras.layers.Dense(1, activation="sigmoid"))
 
 # freeze the reused layers for the first epochs
 for layer in model_B_on_A.layers[:-1]:
-    layer.trainable = False
+   layer.trainable = False
+
 optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
 model_B_on_A.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+
 # for example, train the model for 4 epochs
 history = model_B_on_A.fit(X_train_B, y_train_B, epochs=4, validation_data=(X_valid_B, y_valid_B))
 
-# unfreeze the layers and train for 16 epochs. Note that the model needs to be recompiled
+# unfreeze the layers and train for 16 epochs. Note that the model
+needs to be recompiled
 for layer in model_B_on_A.layers[:-1]:
-    layer.trainable = True
+   layer.trainable = True
+
 optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
 model_B_on_A.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_valid_B, y_valid_B))
@@ -633,19 +635,19 @@ Huge speed boost comes from using a faster optimizer than the regular Gradient D
 
 *(Slide 34 / 68)*
 
-Recall that Gradient Descent simply updates the weights $\theta$ as follows:
+Recall that Gradient Descent simply updates the weights $\boldsymbol{\theta}$ as follows:
 
-$$\theta \leftarrow \theta - \eta \nabla_\theta J(\theta)$$
+$$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} - \eta \nabla_\theta J(\boldsymbol{\theta})$$
 
 (where $J$ corresponds to the error or loss that we try to minimize). It does not care about what the earlier gradients were. If the local gradient is tiny, it goes very slowly.
 
-In momentum optimization, a momentum vector $\mathbf{m}$ is used to keep track of gradients in the previous iterations. The updates of the weights involve using only $\mathbf{m}$, which contains information about the past momentum and the current error gradient. That is, the gradient is used as an **acceleration** term, rather than a **speed** term of the update. The algorithm can also help roll past local optima. It introduces a new hyperparameter $\beta < 1$ (usually set to $0.9$).
+In momentum optimization, a momentum vector $\mathbf{m}$ is used to keep track of gradients in the previous iterations. The updates of the weights involve using only $\mathbf{m}$, which contains information about the past momentum and the current error gradient. That is, the gradient is used as an acceleration term, rather than a speed term of the update. The algorithm can also help roll past local optima. It introduces a new hyperparameter $\beta < 1$ (usually set to $0.9$).
 
 The update equations are:
 
-$$\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_\theta J(\theta)$$
+$$\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta})$$
 
-$$\theta \leftarrow \theta + \mathbf{m}$$
+$$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \mathbf{m}$$
 
 Note that past momentum vector $\mathbf{m}$ exponentially decays over iterations.
 
@@ -671,15 +673,15 @@ A drawback of momentum optimization is that it adds yet another hyperparameter t
 
 *(Slide 36 / 68)*
 
-Also known as **Nesterov momentum optimization**, this optimizer was proposed by Nesterov[^12]. It is a small variant of the momentum optimizer which measures the gradient of the loss function **not** at the local position $\theta$ but slightly ahead in the direction of the momentum, at $\theta + \beta \mathbf{m}$.
+Also known as *Nesterov momentum optimization*, this optimizer was proposed by Nesterov[^12]. It is a small variant of the momentum optimizer which measures the gradient of the loss function not at the local position $\boldsymbol{\theta}$ but slightly ahead in the direction of the momentum, at $\boldsymbol{\theta} + \beta \mathbf{m}$.
 
-$$\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_\theta J(\theta + \beta \mathbf{m})$$
+$$\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta} + \beta \mathbf{m})$$
 
-$$\theta \leftarrow \theta + \mathbf{m}$$
+$$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \mathbf{m}$$
 
 This small tweak works because in general the momentum vector will be pointing in the right direction (i.e., toward the optimum), so the update ends up slightly closer to the optimum.
 
-[^12]: Yurii Nesterov, "A Method for Unconstrained Convex Minimization Problem with the Rate of Convergence $O(1/k^2)$," *Doklady AN USSR* 269 (1983): 543-547.
+[^12]: Yurii Nesterov, "A Method for Unconstrained Convex Minimization Problem with the Rate of Convergence O(1/k2)," *Doklady AN USSR* 269 (1983): 543-547.
 
 ### Nesterov Accelerated Gradient (NAG) (cont.)
 
@@ -690,7 +692,7 @@ This small tweak works because in general the momentum vector will be pointing i
 > A 2D contour plot of the cost surface, with $\theta_1$ on the horizontal axis and $\theta_2$ on the vertical axis. A legend in the top-right corner is labelled **"Cost"** and shows a graded colour bar (light/white = low cost at the centre, darker orange = higher cost towards the outside). The contours form an irregular blob, with nested dashed contour rings converging on a small white region (the optimum) on the right-hand side of the blob.
 >
 > From a **"Starting point"** (a small dot on the left inside the blob):
-> - A short blue arrow labelled $-\eta\nabla_1$ points down-right from the starting point (the current gradient step).
+> - A short blue arrow labelled $-\eta\nabla_1$ points up-right from the starting point (the current gradient step).
 > - A long black arrow labelled $\beta\mathbf{m}$ points right from the starting point to an intermediate position (the momentum step), landing near the optimum region.
 > - From the tip of the momentum arrow, a **dashed blue** arrow labelled $-\eta\nabla_1$ points up-right to a blue dot labelled **"Regular momentum update"** — this is the gradient measured at the *original* position $\theta$, which overshoots past the optimum.
 > - Also from the tip of the momentum arrow, a **solid green** arrow labelled $-\eta\nabla_2$ points down-right to a green dot labelled **"Nesterov update"** — this is the gradient measured *ahead* at $\theta + \beta\mathbf{m}$, which lands inside the small white (lowest-cost) contour.
@@ -712,9 +714,9 @@ optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
 
 Consider the elongated bowl problem again: gradient descent starts by quickly going down the steepest slope, which does not point straight toward the global optimum, then it very slowly goes down to the bottom of the valley. The AdaGrad algorithm[^13] corrects the gradient vector to point a bit more toward the global minimum by scaling it down along the steepest dimensions:
 
-$$\mathbf{s} \leftarrow \mathbf{s} + \nabla_\theta J(\theta) \otimes \nabla_\theta J(\theta)$$
+$$\mathbf{s} \leftarrow \mathbf{s} + \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \otimes \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta})$$
 
-$$\theta \leftarrow \theta - \eta \nabla_\theta J(\theta) \oslash \sqrt{\mathbf{s} + \epsilon}$$
+$$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} - \eta \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \oslash \sqrt{\mathbf{s} + \epsilon}$$
 
 where $\mathbf{s}$ is a vector that accumulates the magnitudes of the error gradients; $\otimes$ and $\oslash$, respectively, denote element-wise multiplication and element-wise division; and $\epsilon$ is a small number (usually $10^{-10}$) used to avoid division by zero.
 
@@ -746,7 +748,7 @@ optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
 
 *(Slide 40 / 68)*
 
-Keras has an AdaGrad optimizer:
+Keras has an `AdaGrad` optimizer:
 
 ```python
 optimizer = tf.keras.optimizers.Adagrad(learning_rate=0.001)
@@ -754,7 +756,7 @@ optimizer = tf.keras.optimizers.Adagrad(learning_rate=0.001)
 
 A shortcoming of this algorithm is it frequently performs well for simple quadratic problems, but it often stops too early when training neural networks: the learning rate gets scaled down so much that the algorithm ends up stopping entirely before reaching the global optimum.
 
-So even though Keras has an AdaGrad optimizer, you should **not** use it to train deep neural networks (it may be efficient for simpler tasks such as linear regression, though). Still, understanding AdaGrad is helpful to comprehend the other adaptive learning rate optimizers.
+So even though Keras has an AdaGrad optimizer, you should not use it to train deep neural networks (it may be efficient for simpler tasks such as linear regression, though). Still, understanding AdaGrad is helpful to comprehend the other adaptive learning rate optimizers.
 
 ---
 
@@ -762,11 +764,11 @@ So even though Keras has an AdaGrad optimizer, you should **not** use it to trai
 
 *(Slide 41 / 68)*
 
-The problem of slowing down too fast in AdaGrad is overcome in RMSProp[^14]. In this algorithm, $\mathbf{s}$ accumulates the error gradient magnitudes from the **most recent** iterations:
+The problem of slowing down too fast in AdaGrad is overcome in RMSProp[^14]. In this algorithm, $\mathbf{s}$ accumulates the error gradient magnitudes from the most recent iterations:
 
-$$\mathbf{s} \leftarrow \rho\,\mathbf{s} + (1 - \rho)\nabla_\theta J(\theta) \otimes \nabla_\theta J(\theta)$$
+$$\mathbf{s} \leftarrow \rho\,\mathbf{s} + (1 - \rho)\nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \otimes \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta})$$
 
-$$\theta \leftarrow \theta - \eta \nabla_\theta J(\theta) \oslash \sqrt{\mathbf{s} + \epsilon}$$
+$$\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} - \eta \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \oslash \sqrt{\mathbf{s} + \epsilon}$$
 
 where the decay rate $\rho$ is typically set to $0.9$. This is another hyperparameter, but $\rho = 0.9$ has been shown to work well, so you may not need to tune it at all.
 
@@ -790,15 +792,15 @@ Except on very simple problems, this optimizer almost always performs much bette
 
 *(Slide 43 / 68)*
 
-Adam (`https://goo.gl/Un8Axa`)[^15], which stands for **adaptive moment estimation**, combines the ideas of momentum optimization and RMSProp. It estimates the mean and variance of the error gradients to keep track of the exponentially decaying average of past squared gradients.
+Adam (`https://goo.gl/Un8Axa`)[^15], which stands for *adaptive moment estimation*, combines the ideas of momentum optimization and RMSProp. It estimates the mean and variance of the error gradients to keep track of the exponentially decaying average of past squared gradients.
 
 $$
 \begin{aligned}
-&1.\quad \mathbf{m} \leftarrow \beta_1 \mathbf{m} + (1 - \beta_1)\nabla_\theta J(\theta) \\[4pt]
-&2.\quad \mathbf{s} \leftarrow \beta_2 \mathbf{s} + (1 - \beta_2)\nabla_\theta J(\theta) \otimes \nabla_\theta J(\theta) \\[4pt]
-&3.\quad \hat{\mathbf{m}} \leftarrow \mathbf{m} / (1 - \beta_1^{\,t}) \\[4pt]
-&4.\quad \hat{\mathbf{s}} \leftarrow \mathbf{s} / (1 - \beta_2^{\,t}) \\[4pt]
-&5.\quad \theta \leftarrow \theta - \eta\, \hat{\mathbf{m}} \oslash \sqrt{\hat{\mathbf{s}} + \epsilon}
+&1.\quad \mathbf{m} \leftarrow \beta_1 \mathbf{m} + (1 - \beta_1)\nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \\[4pt]
+&2.\quad \mathbf{s} \leftarrow \beta_2 \mathbf{s} + (1 - \beta_2)\nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \otimes \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \\[4pt]
+&3.\quad \widehat{\mathbf{m}} \leftarrow \mathbf{m} / (1 - \beta_1^{\,t}) \\[4pt]
+&4.\quad \widehat{\mathbf{s}} \leftarrow \mathbf{s} / (1 - \beta_2^{\,t}) \\[4pt]
+&5.\quad \boldsymbol{\theta} \leftarrow \boldsymbol{\theta} - \eta\, \widehat{\mathbf{m}} \oslash \sqrt{\widehat{\mathbf{s}} + \epsilon}
 \end{aligned}
 $$
 
@@ -830,13 +832,13 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.001,
 
 **\* AdaMax**[^16] is the same as Adam except that Step 2 of the algorithm (Slide 43) is replaced by
 
-$$\mathbf{s} \leftarrow \max\!\big(\beta_2 \mathbf{s},\ \text{abs}(\nabla_\theta J(\theta))\big).$$
+$$\mathbf{s} \leftarrow \max\!\big(\beta_2 \mathbf{s},\ \text{abs}(\nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}))\big).$$
 
 Its performance seems to depend on the dataset and, in general, Adam performs better.
 
 **\* Nadam**[^17] combines Adam optimization with the Nesterov trick. The author Dozat found that Nadam generally outperforms Adam but is sometimes outperformed by RMSProp.
 
-**\* AdamW**[^18] integrates into Adam a regularization technique called **weight decay**, which reduces the size of the model's weights at each training iteration by multiplying them by a decay factor such as $0.99$.
+**\* AdamW**[^18] integrates into Adam a regularization technique called *weight decay*, which reduces the size of the model's weights at each training iteration by multiplying them by a decay factor such as $0.99$.
 
 [^16]: from the same Adam paper.
 [^17]: Timothy Dozat, "Incorporating Nesterov Momentum into Adam" (2016).
@@ -848,21 +850,21 @@ Its performance seems to depend on the dataset and, in general, Adam performs be
 
 Examples:
 
-To use **AdaMax**:
+To use AdaMax:
 
 ```python
 optimizer = tf.keras.optimizers.Adamax(learning_rate=0.001,
                                        beta_1=0.9, beta_2=0.999)
 ```
 
-To use **Nadam**:
+To use Nadam:
 
 ```python
 optimizer = tf.keras.optimizers.Nadam(learning_rate=0.001,
                                       beta_1=0.9, beta_2=0.999)
 ```
 
-To use **AdamW**:
+To use AdamW:
 
 ```python
 optimizer = tf.optimizers.AdamW(weight_decay=1e-5, learning_rate=0.001,
@@ -917,7 +919,7 @@ Finding a good learning rate is very important. If you set it too high, training
 
 If you start with a large learning rate and then reduce it once training stops making fast progress, you can reach a good solution faster than with the optimal constant learning rate.
 
-There are many different strategies to reduce the learning rate during training. It can also be beneficial to start with a low learning rate, increase it, then drop it again. These strategies are called **learning schedules**.
+There are many different strategies to reduce the learning rate during training. It can also be beneficial to start with a low learning rate, increase it, then drop it again. These strategies are called *learning schedules*.
 
 ---
 
@@ -944,6 +946,10 @@ So, after $s$ steps (i.e., when $t = s$), the learning rate is down to $\eta_0/(
 > - **Red curve**, legend *"decay = 0.05 ($s = 20$)"* — decays more slowly; passes through $\eta = 0.005$ at $t = 20$ and $\eta \approx 0.00333$ at $t = 40$; ends near $0.0029$ at $t = 50$.
 >
 > Two horizontal dashed reference lines are drawn and labelled at $0.005$ and $0.00333$, marking the $\eta_0/(1+r)$ and $\eta_0/(1+2r)$ levels.
+
+Blue curve ($r = 1$, $s = 10$) after $s$, $2s$, $3s$, ... steps, $\eta$ drops to $1/2$, $1/3$, $1/4$, ... of $\eta_0$.
+
+Red curve ($r = 1$, $s = 20$): it requires twice the number of steps for $\eta$ to drop to $1/2$, $1/3$, $1/4$, ... of $\eta_0$.
 
 ### Implementing power scheduling in Keras
 
@@ -978,7 +984,7 @@ optimizer = tf.keras.optimizers.SGD(learning_rate=lr_schedule)
 
 $$\eta(t) = \eta_0 r^{\,t/s}.$$
 
-makes the learning rate gradually drop by a factor of $r$ every $s$ steps. The hyperparameters $r$ and $s$ are referred to as the *decay rate* and *decay steps*.
+makes the learning rate gradually drop by a factor of $r$ every $s$ steps. The hyperparameter $r$ and $s$ are referred to as the *decay rate* and *decay steps*.
 
 So if $r = 0.1$ and $s = 15$, then
 
@@ -994,6 +1000,8 @@ So if $r = 0.1$ and $s = 15$, then
 > - **Red curve**, legend *"$r = 0.2$"* — decays faster, reaching $\eta = 0.02$ at $t = 10$ (marked by red dotted guide lines), and is essentially flat near $0$ from about $t = 30$ onward.
 >
 > Caption: *Two example exponential scheduling functions.*
+>
+> (Both curves have $s = 10$. With $r = 0.5$, the learning rate $\eta$ for the blue curve drops to $0.5$, $0.25$, $0.125$, ... of $\eta_0$ after $10$, $20$, $30$, ... steps. With $r = 0.2$, learning rate $\eta$ for the red curve drops to $0.2$, $0.04$, $0.008$, ... of $\eta_0$ after $10$, $20$, $30$, ... steps.)
 
 ### Implementing exponential scheduling in Keras
 
@@ -1032,11 +1040,12 @@ def exponential_decay(lr0, s):
     return exp_decay_fn
 
 my_exp_decay_fn = exponential_decay(lr0=0.01, s=20)
+
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(my_exp_decay_fn)
 history = model.fit(X_train, y_train, ..., callbacks=[lr_scheduler])
 ```
 
-Note that, by default, callback functions are run at the end of each **epoch**, not at each gradient descent update step. An optimizer is still needed.
+Note that, by default, callback functions are run at the end of each *epoch*, <u>not</u> at each gradient descent update *step*. An optimizer is still needed.
 
 Another way to implement your own scheduler is to subclass the `tf.keras.optimizers.schedules.LearningRateSchedule` base class.
 
@@ -1083,7 +1092,7 @@ optimizer = tf.keras.optimizers.SGD(learning_rate=lr_schedule)
 
 Measure the validation error every $N$ steps (just like for early stopping), and reduce the learning rate by a factor of $\lambda$ when the error stops dropping.
 
-To implement performance scheduling, use the `ReduceLROnPlateau` callback:
+To implement performance scheduling, use the `ReduceOnPlateau` callback:
 
 ```python
 lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(factor=0.5,
@@ -1116,7 +1125,7 @@ After training is complete, the learning rate versus the validation loss can be 
 
 *(Slide 59 / 68)*
 
-**1Cycle scheduling**[^19] — Contrary to the other approaches, 1Cycle starts by increasing $\eta_0$, growing linearly up to $\eta_1$ halfway through training, then it decreases the learning rate linearly down to $\eta_0$ again during the second half of training, finishing the last few epochs by dropping the learning rate down by several orders of magnitude (still linearly). The author reported that good validation accuracy was achieved with fewer training epochs on the CIFAR10 image dataset.
+**1Cycle scheduling**[^19] Contrary to the other approaches, 1Cycle starts by increasing $\eta_0$, growing linearly up to $\eta_1$ halfway through training, then it decreases the learning rate linearly down to $\eta_0$ again during the second half of training, finishing the last few epochs by dropping the learning rate down by several orders of magnitude (still linearly). The author reported that good validation accuracy was achieved with fewer training epochs on the CIFAR10 image dataset.
 
 [^19]: Leslie N. Smith, "A Disciplined Approach to Neural Network Hyper-Parameters: Part 1 – Learning Rate, Batch Size, Momentum, and Weight Decay," arXiv preprint arXiv:1803.09820 (2018).
 
@@ -1140,7 +1149,7 @@ layer = tf.keras.layers.Dense(100, activation="elu",
 
 At each step during training, the regularization function computes the regularization loss, which is then added to the final loss.
 
-- For the $\ell_1$ regularization, use `tf.keras.regularizers.l2(...)`.
+- For the $\ell_1$ regularization, use `tf.keras.regularizers.l1(...)`.
 - For both $\ell_1$ and $\ell_2$ regularization together, use `tf.keras.regularizers.l1_l2(...)`.
 
 ### $\ell_1$ and $\ell_2$ Regularization (cont.)
@@ -1151,11 +1160,10 @@ If you want the same regularization for every `Dense` layer, you can use Python'
 
 ```python
 from functools import partial
-
 RegularizedDense = partial(tf.keras.layers.Dense,
-                           activation="relu",
-                           kernel_initializer="he_normal",
-                           kernel_regularizer=tf.keras.regularizers.l2(0.01))
+    activation="relu",
+    kernel_initializer="he_normal",
+    kernel_regularizer=tf.keras.regularizers.l2(0.01))
 
 model = tf.keras.Sequential([
     tf.keras.layers.InputLayer(shape=[28, 28]),
@@ -1249,22 +1257,22 @@ flowchart BT
 
 *(Slide 64 / 68)*
 
-**Example:** The code below applies dropout regularization before every `Dense` layer, using a dropout rate of $0.2$:
+**Example:** The code below applies dropout regularization before every Dense layer, using a dropout rate of $0.2$:
 
 ```python
 model = tf.keras.models.Sequential([
-    tf.keras.layers.InputLayer(shape=[28, 28]),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dropout(rate=0.2),
-    tf.keras.layers.Dense(100, activation="relu", kernel_initializer="he_normal"),
-    tf.keras.layers.Dropout(rate=0.2),
-    tf.keras.layers.Dense(100, activation="relu", kernel_initializer="he_normal"),
-    tf.keras.layers.Dropout(rate=0.2),
-    tf.keras.layers.Dense(10, activation="softmax")
+  tf.keras.layers.InputLayer(shape=[28, 28]),
+  tf.keras.layers.Flatten(),
+  tf.keras.layers.Dropout(rate=0.2),
+  tf.keras.layers.Dense(100, activation="relu", kernel_initializer="he_normal"),
+  tf.keras.layers.Dropout(rate=0.2),
+  tf.keras.layers.Dense(100, activation="relu", kernel_initializer="he_normal"),
+  tf.keras.layers.Dropout(rate=0.2),
+  tf.keras.layers.Dense(10, activation="softmax")
 ])
 ```
 
-Since dropout is only active during training, comparing the training loss and the validation loss can be misleading. In particular, a model may be overfitting the training set and yet have similar training and validation losses. So, make sure to evaluate the training loss **without** dropout (e.g., after training).
+Since dropout is only active during training, comparing the training loss and the validation loss can be misleading. In particular, a model may be overfitting the training set and yet have similar training and validation losses. So, make sure to evaluate the training loss without dropout (e.g., after training).
 
 ---
 
@@ -1289,7 +1297,7 @@ The configuration below works fine in most cases; however, do not consider them 
 
 *(Slide 66 / 68)*
 
-If the network is a simple stack of dense layers, then it can **self-normalize**, and you should use the configuration in the table below instead.
+If the network is a simple stack of dense layers, then it can self-normalize, and you should use the configuration in the Table below instead.
 
 | Hyperparameter | Default value |
 |---|---|
@@ -1313,7 +1321,72 @@ If the network is a simple stack of dense layers, then it can **self-normalize**
 - Know a few unsaturating activation functions
 - Understand when to use batch normalization and how it works
 - Know a few fast optimizers and their associated hyperparameters
-- Understand learning rate scheduling
+- Understand learning rate scheduling.
 - Understand $\ell_1$ and $\ell_2$ regularization
 - Understand the concept of dropout
+
+---
+
+# For the next topic...
+
+*(Slide 68 / 68)*
+
+Read up to Chapters 14 on Deep Computer Vision Using Convolutional Neural Networks
+
+And that's all for this lecture.
+
+Have a good week.
+
+---
+
+---
+
+## Quirks
+
+Things on the slides that look wrong, inconsistent or ambiguous. They are recorded here and **not** fixed in the transcript above.
+
+- **Slide 2:** The slide text writes "Hands-on" (lowercase "on"), while the cover reads "Hands-On".
+- **Slide 3:** "Learning rate scheduling" is indented as a sub-topic of "Faster Optimizers", but slides 48–59 present it as a section of its own with its own title. Transfer learning (slides 30–32) is not in the outline at all.
+- **Slides 5 and 7:** Footnotes 1 and 2 cite the same Glorot & Bengio paper with different punctuation: the comma is inside the closing quote on slide 5 ("Networks,"") and outside it on slide 7 ("Networks",).
+- **Slide 9:** Example 2 calls its initializer `he_avg_init` (`scale=2.`, i.e. He-style variance $2/\text{fan}_{\text{avg}}$) but attaches it to a layer with `activation="sigmoid"`. Slide 8's table pairs sigmoid with Glorot ($1/\text{fan}_{\text{avg}}$), and $2/\text{fan}_{\text{avg}}$ is not in the table at all. (The example is Géron's.)
+- **Slide 10:** "Unfortunately, like the logistic activation function, it suffers from a problem known as the dying ReLUs". The logistic function's problem is saturation (slide 6), not dying units, so the comparison is confusing. "This happens when the input to ReLU is negative" is looser than the usual statement: a neuron dies when its input is negative for every training instance, so its gradient stays at 0.
+- **Slides 11–12:** Slide 11 gives $\alpha = 0.01$ as a typical leak and says $\alpha = 0.2$ tends to do better. The slide 12 code comments say the Keras default is 0.3. Figure 11-2 doesn't state its $\alpha$; the plotted leak (about $-0.5$ at $z = -5$) corresponds to $\alpha \approx 0.1$, which is neither value.
+- **Slide 14:** "PReLU is the same as RReLU, except that $\alpha$ is learned". RReLU's defining feature is a *random* $\alpha$, so PReLU is more naturally "leaky ReLU with a learned $\alpha$". The slide also lists ELU and SELU as "smooth variants of ReLU", but slide 15 says ELU is smooth everywhere only when $\alpha = 1$. SELU uses $\alpha = 1.6733$, so its derivative jumps at $z = 0$: from $s\alpha \approx 1.0507 \times 1.6733 \approx 1.758$ on the left to $s = 1.0507$ on the right.
+- **Slide 16:** The list of constraints leaves out one that Géron gives and that slide 66 implies: self-normalization is only guaranteed for a plain stack of dense layers (a sequential MLP).
+- **Slide 17 (Figure 11-3):** The legend writes $\text{ELU}_\alpha$ without saying which $\alpha$ is plotted (the asymptote at $-1$ means $\alpha = 1$). It rounds SELU's constants to 1.05 and 1.67, while slide 16 gives 1.0507 and 1.6733.
+- **Slide 20:** The second bullet starts with a lowercase "the author Misra".
+- **Slide 21:** "it does not support Mish … yet" appears to be out of date. The rest of the deck targets TF ≥ 2.16, i.e. Keras 3 (`negative_slope`, `silu`), and Keras 3 includes a `mish` activation.
+- **Slide 23:** The third bullet says the moving averages estimate "the mean and variance of each layer's outputs", but slide 24's equations normalize the layer's *inputs* $\mathbf{x}^{(i)}$. "for entire training set" is missing "the". No formula is given for the moving averages or their momentum.
+- **Slide 24:** $\epsilon$ appears in $\hat{\mathbf{x}}^{(i)}$ but is not defined on the slide. It is a small smoothing term; the deck only defines an $\epsilon$ later, for AdaGrad on slide 38.
+- **Slide 26:** The code calls `keras.models.Sequential`, while every layer (and every other slide) uses `tf.keras`, and `keras` is never imported. The first line is indented by two spaces but the closing `])` sits at column 0, so pasting the code as-is raises an `IndentationError`.
+- **Slide 27:** The numbers check out, but the slide doesn't explain them. Each BN layer has 4 parameters per feature ($\gamma$, $\beta$, moving mean, moving variance): $4 \times 784 = 3{,}136$, $4 \times 300 = 1{,}200$ and $4 \times 100 = 400$. The moving mean and variance are the non-trainable ones: $2 \times (784 + 300 + 100) = 2{,}368$. That leaves $271{,}346 - 2{,}368 = 268{,}978$ trainable.
+- **Slide 29:** The parenthesis opened at "(this is mostly useful for recurrent neural networks (RNNs) …" is never closed. No example gradient vector is given to contrast `clipvalue` with `clipnorm`.
+- **Slide 30 (Figure 11-5):** The open "Trainable weights" padlock sits beside Hidden 4, and the dashed "Fixed weights" box holds only Hidden 1–2. Whether the reused Hidden 3 is frozen or trainable is not stated.
+- **Slide 31:** "`mode_A`" is a typo for `model_A`. The comment "# unfreeze … Note that the model" wraps onto a second line, "needs to be recompiled", that has no `#`, so the code raises a `SyntaxError` as printed. Both `fit(...)` lines run past the right edge of the code box, and the loop bodies are indented by 3 spaces. `model_B_on_A` is built directly from `model_A.layers`, so the two models share layer objects and training `model_B_on_A` also changes `model_A`. Géron first clones model A (`clone_model` + `set_weights`); the slide omits this. Model A excludes sandal and shirt, yet task B uses T-shirt and pullover, which are two of model A's own 8 classes. `X_train_B`, `y_train_B`, `X_valid_B` and `y_valid_B` are never defined.
+- **Slide 32:** "an improvement of 2%" means 2 percentage points (91.85% → 93.85%). In "$(8.15 - 6.15)/8.15\,\% = 2/8.15\,\%$" the % signs are misplaced: the ratio is 0.245, i.e. 24.5% ("almost 25%"), not $2/8.15$ of one percent. The second bullet lacks the full stop the first one has. "deep convolution neural networks" should be "convolutional".
+- **Slide 34:** In the inline gradient-descent rule the subscript of $\nabla$ is a plain $\theta$, while the displayed momentum equations use a bold $\boldsymbol{\theta}$. Momentum is written $\mathbf{m} \leftarrow \beta\mathbf{m} - \eta\nabla J$, $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \mathbf{m}$. Adam (slide 43) uses $\mathbf{m} \leftarrow \beta_1\mathbf{m} + (1-\beta_1)\nabla J$ and subtracts in the $\boldsymbol{\theta}$ update. The two $\mathbf{m}$'s have opposite signs and different scaling, so slide 44's "$\beta_1$ corresponds to $\beta$" holds only for their role as decay rates.
+- **Slide 36:** Footnote 12 prints the convergence rate as "O(1/k2)", meaning $O(1/k^2)$.
+- **Slide 38:** "Consider the elongated bowl problem again" refers to material that is not in this deck. The slide says both "global optimum" and "global minimum". $\epsilon$ is "usually $10^{-10}$" (Géron's value); the Keras optimizers' own default `epsilon` is `1e-07`, which the slides don't mention.
+- **Slide 39:** The code box repeats the NAG optimizer from slide 37 (`SGD(learning_rate=0.001, momentum=0.9, nesterov=True)`) on an AdaGrad slide without explanation; the AdaGrad code is on slide 40. The box also overlaps the page number.
+- **Slide 40:** The text sets `AdaGrad` in code font, but the Keras class is `Adagrad` (as in the code line). "A shortcoming of this algorithm is it frequently performs well for simple quadratic problems" reads oddly: performing well isn't the shortcoming; stopping too early is.
+- **Slide 43:** The title is "Faster Optimizers" without "(cont.)", unlike slides 34–42 and 44–47. Step 5 puts $\epsilon$ inside the square root, $\sqrt{\widehat{\mathbf{s}} + \epsilon}$. The original Adam paper (and the Keras implementation) adds it outside: $\widehat{\mathbf{m}} \oslash (\sqrt{\widehat{\mathbf{s}}} + \epsilon)$. The numerical difference is negligible. Steps 3–4 are called "normalization"; they are usually called bias correction.
+- **Slide 45:** "AdaMax is the same as Adam except that Step 2 … is replaced" is incomplete. Géron's description also drops step 4 (no bias correction of $\mathbf{s}$) and divides by $\mathbf{s}$ itself, not $\sqrt{\mathbf{s}}$, in step 5. Footnote 18 cites Wilson et al., "The Marginal Value of Adaptive Gradient Methods in Machine Learning", for AdamW, but AdamW comes from Loshchilov & Hutter, "Decoupled Weight Decay Regularization". Footnote 17 has no closing full stop.
+- **Slide 46:** The AdamW example uses `tf.optimizers.AdamW`, while every other optimizer uses `tf.keras.optimizers`. Both work in TF 2.x, but they are inconsistent.
+- **Slide 47:** The "Class" column lists AdaGrad and AdaMax, but the Keras classes are `Adagrad` and `Adamax` (slides 40 and 46).
+- **Slide 48:** The title "Learning rate scheduling" is in lowercase, while slides 49–59 use "Learning Rate Scheduling".
+- **Slide 50:** The chart title writes $\eta(t) = \eta_0/(1 + t/s)^c$ (no $r$), and the legend reads "decay = 0.1 ($s = 10$)" and "decay = 0.05 ($s = 20$)". The captions say both curves have $r = 1$. So the legend's "decay" is $r/s$, not the slide's decay rate $r$, and the title's formula equals the text's formula only when $r = 1$.
+- **Slide 51:** The comment says `decay_step`, but the argument is `decay_steps`.
+- **Slide 52:** "The hyperparameter $r$ and $s$ are" pairs a singular noun with a plural verb. The worked example uses $s = 15$, while the chart uses $s = 10$.
+- **Slide 54:** `exponential_decay(lr0, s)` hard-codes the decay rate 0.1 instead of taking $r$ as a parameter. Its schedule runs per **epoch** (the callback fires at the end of each epoch), while the `ExponentialDecay` schedule on slide 53 counts optimizer steps, so `s=20` here means 20 epochs. The `LearningRateScheduler` line runs past the edge of the code box.
+- **Slide 55:** The text's example ($\eta_0 = 0.1$ for 5 iterations, then $\eta_1 = 0.001$ for the next 50) doesn't match the chart. The chart drops $0.1 \to 0.04$ at $t = 5$, $\to 0.02$ at $t = 20$ and $\to 0.01$ at $t = 30$, over only 50 iterations in total. The caption reads "A example".
+- **Slide 57:** The text calls the callback `ReduceOnPlateau`; the class (and the code) is `ReduceLROnPlateau`. The text describes measuring the error "every $N$ steps" and reducing "by a factor of $\lambda$". The code instead uses `factor=0.5` and `patience=5`, and the sentence below talks about epochs. "reduce the learning rate by 0.5" means multiply it by 0.5.
+- **Slide 59:** No formula, values or Keras code are given for 1cycle. "starts by increasing $\eta_0$" literally says that $\eta_0$ itself increases; the meaning is that the rate starts at $\eta_0$ and rises. The slide writes "1Cycle", while the tables on slides 65–66 write "1cycle".
+- **Slide 60:** No formula is given for the $\ell_1$ or $\ell_2$ penalty, only the Keras calls and the factor 0.01.
+- **Slide 61:** "all the last three layers" is ungrammatical. `model.layers[1:3]` refers to the two ReLU layers only because the `InputLayer` is not counted in `model.layers` (the comments number `Flatten` as layer 0), and the slide doesn't say so.
+- **Slide 63:** After training, "you simply use the connection weights that have been learned". There is no mention of rescaling. Without it, each neuron would receive roughly $1/(1-p)$ times more input at test time than it did during training. Géron covers the correction: multiply the weights by the keep probability $(1-p)$ after training, or divide the kept outputs by $(1-p)$ during training. Keras's `Dropout` layer does the latter ("inverted dropout"). The slide omits both.
+- **Slide 64:** The warning is stated correctly (training loss is computed with dropout on, so compare against a training loss evaluated without dropout). The slide doesn't show how to do this in code, e.g. `model.evaluate(X_train, y_train)` after training, when dropout is inactive.
+- **Slide 65:** "do not consider them as hard rules" uses "them" for a singular "configuration".
+- **Slide 66:** The Regularization row recommends alpha dropout but marks it "(not covered in CITS5017)". The Optimizer row says "Nesterov accelerated gradients" (plural), while slide 36 names it "Nesterov Accelerated Gradient". "the Table below" capitalizes "Table". The table doesn't repeat slide 16's constraint that the input features be standardized.
+- **Slide 67:** "unsaturating" here versus "Nonsaturating" on slides 10–21. "Understand learning rate scheduling." is the only bullet with a full stop. The summary leaves out gradient clipping (slide 29) and transfer learning (slides 30–32).
+- **Slide 68:** "Read up to Chapters 14" uses a plural for a single chapter, and the line has no full stop.
 

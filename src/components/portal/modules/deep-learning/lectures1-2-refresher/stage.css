@@ -1,0 +1,311 @@
+/* ============================================================================
+   LECTURES 1–2 REFRESHER — THE LABS' VISUAL LANGUAGE  (.dl12r-stage*, …)
+   ----------------------------------------------------------------------------
+   The Lecture 8 lab kit, re-tokened. Every Play lab is drawn from one small
+   vocabulary, defined here once and themed for Jade, Coral and Arcade:
+
+     roles      one colour each, for strokes, dots, bars and small labels —
+                never for big fills or boxes:
+                  --dl12r-c1    class 1 / the positive class (y = 1)
+                  --dl12r-c0    class 0 / the negative class (y = 0)
+                  --dl12r-fwd   the forward signal: activations, outputs
+                  --dl12r-bwd   the backward signal: errors, gradients
+                  --dl12r-w     weights and other parameters (γ, β, η)
+                  --dl12r-off   dropped / frozen / dead (a grey hatch)
+     series     several curves at once (activations, optimizers, schedules)
+                use the validated --dlv-* palette from ../common.css
+     frame      Stage: title + "L1 · slide" receipt, a one-line "Try this",
+                the stage floor (the picture), an optional story bar (▶ +
+                named beats), a quiet challenge, a "Show the maths" drawer
+
+   Numbers are never the main view: they appear on hover / focus, and in the
+   maths drawer (which print opens).
+   ========================================================================== */
+
+.dl12r {
+  --dl12r-c1: #c2410c;
+  --dl12r-c0: #1d5fc9;
+  --dl12r-fwd: #0e7490;
+  --dl12r-bwd: #be185d;
+  --dl12r-w: #6d3fc0;
+  --dl12r-off: #64748b;
+  --dl12r-neg: #8a8178;
+  --dl12r-floor: color-mix(in srgb, var(--surface-hi) 45%, #ffffff);
+  --dl12r-floor-line: rgba(30, 41, 59, 0.08);
+  --dl12r-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 10px 26px -18px rgba(15, 23, 42, 0.35);
+}
+.portal[data-portal-theme='coral'] .dl12r {
+  --dl12r-floor: color-mix(in srgb, var(--surface-hi) 70%, #ffffff);
+  --dl12r-floor-line: rgba(80, 30, 36, 0.08);
+}
+.portal[data-portal-theme='arcade'] .dl12r {
+  --dl12r-c1: #ff8a5c;
+  --dl12r-c0: #7aa7ff;
+  --dl12r-fwd: #3cc3dc;
+  --dl12r-bwd: #f47bb8;
+  --dl12r-w: #b79cff;
+  --dl12r-off: #94a3b8;
+  --dl12r-neg: #a39b93;
+  --dl12r-floor: #171a21;
+  --dl12r-floor-line: rgba(200, 210, 228, 0.07);
+  --dl12r-shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 14px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* ── the lab frame ────────────────────────────────────────────────────── */
+.dl12r-stage {
+  container: stage / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.dl12r-stage + .dl12r-stage { margin-top: 1.6rem; }
+.dl12r-stage__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; }
+.dl12r-stage__title {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 500;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dl12r-stage__slides { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); white-space: nowrap; }
+.dl12r-stage__try { margin: 0; display: flex; gap: 0.55rem; align-items: baseline; font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); max-width: 78ch; }
+.dl12r-stage__tryk {
+  flex: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.dl12r-stage__floor {
+  position: relative;
+  background: var(--dl12r-floor);
+  background-image: radial-gradient(var(--dl12r-floor-line) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  border-radius: 12px;
+  box-shadow: var(--dl12r-shadow);
+  padding: clamp(0.6rem, 2.2cqi, 1.4rem);
+  min-width: 0;
+}
+.dl12r-stage__cap { margin: 0; font-size: 0.82rem; line-height: 1.55; color: var(--ink-3); max-width: 76ch; }
+.dl12r-stage__cap b { color: var(--ink-2); }
+.dl12r-stage__foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1.2rem; }
+
+/* "this page's own" marker: a labelled dot */
+.dl12r-own { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.03em; color: var(--ink-3); }
+.dl12r-own::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--dlv-violet); margin-right: 0.4rem; vertical-align: 0; }
+.dl12r-slideval::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--accent); margin-right: 0.4rem; vertical-align: 0; }
+
+/* a light challenge: one quiet line, a check when it's met */
+.dl12r-chal { margin: 0; display: inline-flex; align-items: baseline; gap: 0.5rem; font-size: 0.82rem; color: var(--ink-3); }
+.dl12r-chal__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dl12r-chal__ok { display: inline-flex; align-items: center; gap: 0.25rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--accent-ink); }
+.dl12r-chal--done .dl12r-chal__text { color: var(--ink-2); }
+
+/* ── story mode: ▶ + named beats, one sentence for the current beat ────── */
+.dl12r-story { display: flex; flex-direction: column; gap: 0.45rem; }
+.dl12r-story__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.4rem; }
+.dl12r-story__play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-right: 0.3rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--accent);
+  background: none;
+  color: var(--accent-ink);
+  cursor: pointer;
+  flex: none;
+}
+.dl12r-story__play:hover { background: var(--accent-soft); }
+.dl12r-story__beat {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--line-2);
+  padding: 0.3rem 0.35rem 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dl12r-story__beat b { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; margin-right: 0.3rem; color: inherit; }
+.dl12r-story__beat:hover { color: var(--ink); }
+.dl12r-story__beat--past { color: var(--ink-2); border-bottom-color: var(--line); }
+.dl12r-story__beat--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl12r-story__say { margin: 0; min-height: 1.5em; font-size: 0.88rem; line-height: 1.5; color: var(--ink-2); max-width: 76ch; }
+.dl12r-story__say .katex { font-size: 1em; }
+
+/* ── "Show the maths": a ruled drawer, closed on screen, open in print ── */
+.dl12r-maths { border-top: 1px solid var(--line-2); }
+.dl12r-maths__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.5rem 0.1rem 0.4rem;
+  cursor: pointer;
+}
+.dl12r-maths__btn:hover { color: var(--accent-ink); }
+.dl12r-maths__chev { display: inline-block; transition: transform 0.2s; font-size: 0.75em; }
+.dl12r-maths__chev--open { transform: rotate(180deg); }
+.dl12r-maths__body { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.2rem 0.1rem 0.8rem; max-width: 80ch; }
+.dl12r-maths__body .dlk-eq { margin: 0; }
+.dl12r-mline { margin: 0; font-size: 0.86rem; line-height: 1.65; color: var(--ink-2); overflow-x: auto; }
+.dl12r-mline .katex { font-size: 1.02em; }
+.dl12r-mline b { color: var(--ink); }
+.dl12r-mnote { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--ink-3); }
+
+/* ── SVG vocabulary ───────────────────────────────────────────────────── */
+.dl12r-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-body, system-ui, sans-serif); }
+.dl12r-svg text { fill: var(--ink); }
+.dl12r-t { font-size: 13px; }
+.dl12r-t--s { font-size: 11px; fill: var(--ink-3) !important; }
+.dl12r-t--xs { font-size: 10px; fill: var(--ink-3) !important; }
+.dl12r-t--m { font-family: var(--font-mono, ui-monospace, monospace); }
+.dl12r-t--b { font-weight: 700; }
+.dl12r-t--c1 { fill: var(--dl12r-c1) !important; }
+.dl12r-t--c0 { fill: var(--dl12r-c0) !important; }
+.dl12r-t--fwd { fill: var(--dl12r-fwd) !important; }
+.dl12r-t--bwd { fill: var(--dl12r-bwd) !important; }
+.dl12r-t--w { fill: var(--dl12r-w) !important; }
+.dl12r-t--off { fill: var(--dl12r-off) !important; }
+.dl12r-halo { paint-order: stroke; stroke: var(--dl12r-floor); stroke-width: 4px; stroke-linejoin: round; }
+
+/* tokens: words in outlined boxes */
+.dl12r-tok rect { fill: var(--dl12r-floor); stroke: var(--ink-3); stroke-width: 1.4; transition: stroke-width 0.2s, fill 0.2s; }
+.dl12r-tok text { font-size: 14px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+.dl12r-tok--c1 rect { stroke: var(--dl12r-c1); }
+.dl12r-tok--c0 rect { stroke: var(--dl12r-c0); }
+.dl12r-tok--fwd rect { stroke: var(--dl12r-fwd); }
+.dl12r-tok--bwd rect { stroke: var(--dl12r-bwd); }
+.dl12r-tok--w rect { stroke: var(--dl12r-w); }
+.dl12r-tok--off rect { stroke: var(--dl12r-off); stroke-dasharray: 4 3; }
+.dl12r-tok--ghost rect { stroke-dasharray: 4 3; }
+.dl12r-tok--ghost text { fill: var(--ink-3); }
+.dl12r-tok--on rect { stroke-width: 2.8; fill: color-mix(in srgb, currentColor 0%, var(--dl12r-floor)); }
+.dl12r-tok--btn { cursor: pointer; }
+.dl12r-tok--btn:hover rect { stroke-width: 2.4; }
+.dl12r-tok--btn:focus-visible { outline: none; }
+/* keyboard focus is a dashed accent outline, so it never looks like a selection */
+.dl12r-tok--btn:focus-visible rect { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 5 3; }
+
+/* beams: width and opacity = the weight */
+.dl12r-beam { fill: none; stroke: var(--dl12r-fwd); stroke-linecap: round; transition: stroke-width 0.45s ease, opacity 0.45s ease; }
+.dl12r-beam--bwd { stroke: var(--dl12r-bwd); }
+.dl12r-beam--w { stroke: var(--dl12r-w); }
+.dl12r-wire { fill: none; stroke: var(--ink-3); stroke-width: 1.3; opacity: 0.55; }
+.dl12r-wire--on { stroke: var(--ink); opacity: 0.9; stroke-width: 1.8; }
+.dl12r-arrowhead { fill: var(--ink-3); }
+
+/* heatmap cells (fill is set inline from the value) */
+.dl12r-cell { stroke: var(--dl12r-floor); stroke-width: 1.5; transition: fill 0.45s ease, opacity 0.35s ease; }
+.dl12r-cell--hit { stroke: var(--ink); stroke-width: 2; }
+.dl12r-grid-frame { fill: none; stroke: var(--line); stroke-width: 1; }
+.dl12r-grid-frame--fwd { stroke: var(--dl12r-fwd); }
+.dl12r-grid-frame--bwd { stroke: var(--dl12r-bwd); }
+.dl12r-grid-frame--w { stroke: var(--dl12r-w); }
+.dl12r-rowband { fill: var(--ink); opacity: 0.07; transition: opacity 0.2s; }
+.dl12r-tip { pointer-events: none; }
+.dl12r-tip rect { fill: var(--ink); opacity: 0.92; }
+.dl12r-tip text { fill: var(--dl12r-floor) !important; font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 600; }
+
+/* draggable score knobs */
+.dl12r-knob { cursor: ns-resize; touch-action: none; }
+.dl12r-knob__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dl12r-knob__bar { fill: var(--ink-3); transition: transform 0.5s ease; }
+.dl12r-knob__dot { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 2; transition: transform 0.5s ease; }
+.dl12r-knob:hover .dl12r-knob__dot { stroke-width: 3; }
+.dl12r-knob:focus-visible .dl12r-knob__dot { stroke: var(--accent); stroke-width: 3.4; stroke-dasharray: 4 2; }
+.dl12r-knob:focus-visible { outline: none; }
+.dl12r-knob--drag .dl12r-knob__bar, .dl12r-knob--drag .dl12r-knob__dot { transition: none; }
+
+/* a quiet ruled switch (two or three options, underline = on) */
+.dl12r-switch { display: inline-flex; flex-wrap: wrap; gap: 0.2rem; margin: 0 0 0.6rem; border-bottom: 1px solid var(--line-2); }
+.dl12r-switch__opt {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+.dl12r-switch__opt:hover { color: var(--ink); }
+.dl12r-switch__opt--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl12r-floorrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+
+/* line charts */
+.dl12r-ax { stroke: var(--line); stroke-width: 1; }
+.dl12r-grid-line { stroke: var(--line-2); stroke-width: 1; }
+.dl12r-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dl12r-line--truth { stroke: var(--ink-2); }
+.dl12r-line--fwd { stroke: var(--dl12r-fwd); stroke-width: 2.6; }
+.dl12r-line--bwd { stroke: var(--dl12r-bwd); stroke-width: 2.6; }
+.dl12r-line--w { stroke: var(--dl12r-w); stroke-width: 2.6; }
+.dl12r-line--ghost { stroke: var(--ink-3); stroke-dasharray: 5 4; opacity: 0.8; }
+
+/* bars (0…1, grown by scaleY) */
+.dl12r-sbar { fill: var(--dl12r-fwd); transition: transform 0.4s ease; }
+
+/* a horizontal scrubber */
+.dl12r-scrub { cursor: ew-resize; touch-action: none; }
+.dl12r-scrub:focus-visible { outline: none; }
+.dl12r-scrub__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dl12r-scrub__knob { transition: transform 0.25s ease; }
+.dl12r-scrub--drag .dl12r-scrub__knob { transition: none; }
+.dl12r-scrub__knob circle { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 2.2; }
+.dl12r-scrub:focus-visible .dl12r-scrub__knob circle { stroke-width: 3.4; stroke: var(--accent); }
+
+/* the ⊕ node where weighted parts are summed */
+.dl12r-plus__c { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 1.6; }
+.dl12r-plus__x { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+
+/* a small in-stage text button (e.g. "reset scores"), top right of the floor */
+.dl12r-floorbtn {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.7rem;
+  z-index: 1;
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0.1rem 0.1rem;
+  cursor: pointer;
+}
+.dl12r-floorbtn:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+
+/* things that fade between story beats */
+.dl12r-fade { transition: opacity 0.45s ease; }
+.dl12r-hide { opacity: 0 !important; pointer-events: none; }
+.dl12r-dim { opacity: 0.28; }
+.dl12r-pop { transform-box: fill-box; transform-origin: center; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.3), opacity 0.35s ease; }
+
+/* narrow stages: a simplified picture instead of a shrunken one */
+.dl12r-only-narrow { display: none; }
+@container stage (max-width: 560px) {
+  .dl12r-only-wide { display: none; }
+  .dl12r-only-narrow { display: block; }
+  .dl12r-stage__title { font-size: 1.12rem; }
+  .dl12r-story__beat { font-size: 0.76rem; padding-inline: 0.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dl12r-beam, .dl12r-cell, .dl12r-fade, .dl12r-pop, .dl12r-knob__bar, .dl12r-knob__dot, .dl12r-tok rect { transition: none !important; }
+}
