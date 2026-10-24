@@ -514,6 +514,8 @@ try {
     ];
     const badF = formulas.filter(([, re]) => !re.test(text)).map(([n]) => n);
     ok(badF.length === 0, 'key formulas read as plain text in the PDF', badF.join(', '));
+    // case-sensitive on purpose: with /i, σ and Σ match each other
+    ok(/σ²\s*\((?:normal|NORMAL)\)/.test(text) && !/Σ²\s*\((?:normal|NORMAL)\)/.test(text), 'uppercase table heads leave maths alone (σ² stays σ², not Σ²)');
     ok(/this page’s own/i.test(text), 'page-own numbers are labelled in the PDF');
     ok(/Slide check/i.test(text), 'Slide checks print');
     const leak = /\\(?:frac|mathbf|boldsymbol|theta|eta)|\b(?:boldsymbol|mathbf|tfrac|mathcal|widehat|leftarrow)\b/.exec(text);

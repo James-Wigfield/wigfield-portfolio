@@ -112,7 +112,7 @@ export function Blocks({ blocks }) {
     if (b.gist) return <p key={i} className="dl12r-gist"><Rich text={b.gist} /></p>;
     if (b.table) {
       return (
-        <div key={i} className="dl12r-tablewrap dl12r-keep">
+        <div key={i} className={`dl12r-tablewrap dl12r-keep${b.table.head.length > 3 ? ' dl12r-tablewrap--wide' : ''}`}>
           <table className="dl12r-table dl12r-table--read">
             <thead>
               <tr>{b.table.head.map((h, c) => <th key={c} scope="col"><Rich text={h} /></th>)}</tr>
