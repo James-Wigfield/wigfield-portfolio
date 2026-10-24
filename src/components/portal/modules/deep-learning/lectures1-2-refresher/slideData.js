@@ -7,44 +7,12 @@
      L2  CITS5017 Topic 2, "Training Deep Neural Networks" (68 slides,
          Géron Chapter 11)
    Code listings are verbatim (indentation as on the slide images), keyed by
-   name for sections.js; the numbers the slides print; footnotes. Checked
+   name for sections.js, and footnotes. Checked
    against Documents/cits5017/markdown-lecs/lecture-1.md and lecture-2.md.
 
    Nothing here is computed: the page's own numbers come from ./nn.js and
    are labelled "this page's own" wherever they are shown.
    ========================================================================== */
-
-/* ── numbers the slides print ────────────────────────────────────────────── */
-export const PRINTED = {
-  // L1
-  fashionTrain: { value: 60000, at: 'L1 · 35' },
-  fashionTest: { value: 10000, at: 'L1 · 35' },
-  fashionValid: { value: 5000, at: 'L1 · 35' },
-  hidden1Weights: { text: '(784, 300)', at: 'L1 · 36' },
-  hidden1Biases: { text: '(300,)', at: 'L1 · 36' },
-  testAccuracy: { value: 0.8733000159263611, at: 'L1 · 39' },
-  mlpRegRmse: { value: 0.505, at: 'L1 · 26' },
-  kerasRegRmse: { value: 0.539, at: 'L1 · 41' },
-  // L2
-  bnSummary: {
-    at: 'L2 · 27',
-    rows: [
-      ['flatten (Flatten)', '(None, 784)', '0'],
-      ['batch_normalization (BatchNormalization)', '(None, 784)', '3,136'],
-      ['dense (Dense)', '(None, 300)', '235,500'],
-      ['batch_normalization_1 (BatchNormalization)', '(None, 300)', '1,200'],
-      ['dense_1 (Dense)', '(None, 100)', '30,100'],
-      ['batch_normalization_2 (BatchNormalization)', '(None, 100)', '400'],
-      ['dense_2 (Dense)', '(None, 10)', '1,010'],
-    ],
-    total: '271,346',
-    trainable: '268,978',
-    nonTrainable: '2,368',
-  },
-  modelB: { value: 0.9185, at: 'L2 · 31' },
-  modelBonAEval: { text: '[0.2546142041683197, 0.9384999871253967]', at: 'L2 · 32' },
-  modelBonA: { value: 0.9385, at: 'L2 · 32' },
-};
 
 /* ── footnotes (Fnote / RefsProvider), verbatim ──────────────────────────── */
 export const REFS = {};
@@ -131,10 +99,6 @@ for layer in model_B_on_A.layers[:-1]:
 optimizer = tf.keras.optimizers.SGD(learning_rate=0.001)
 model_B_on_A.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_valid_B, y_valid_B))`,
-  /* L2 · slide 57 */
-  L2_PLATEAU: `lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(factor=0.5,
-                                                    patience=5)
-history = model.fit(X_train, y_train, [...], callbacks=[lr_scheduler])`,
   /* L2 · slide 60 */
   L2_L2REG: `layer = tf.keras.layers.Dense(100, activation="elu",
                               kernel_initializer="he_normal",
@@ -151,25 +115,3 @@ history = model.fit(X_train, y_train, [...], callbacks=[lr_scheduler])`,
   tf.keras.layers.Dense(10, activation="softmax")
 ])`,
 };
-
-/* ── the decks' summary slides ───────────────────────────────────────────── */
-export const L1_OUTCOMES = [
-  'Understand the architecture of Perceptrons',
-  'Know how to train a Perceptron and understand its weakness',
-  'Understand multi-layer Perceptrons and backpropagation',
-  'Understand what activation functions are and know a few commonly used activation functions',
-  'Know how to train a DNN using Keras in TensorFlow',
-  'Understanding the MLP sequential API, function API, and subclassing.',
-  'Understand how to use TensorBoard',
-  'Understand some of the important hyperparameters in a DNN; in particular, the number of hidden layers, the number of neurons per layer, and the activation functions.',
-];
-export const L2_OUTCOMES = [
-  'Understand the vanishing and exploding gradients problems',
-  'Understand the importance of properly initializing connection weights',
-  'Know a few unsaturating activation functions',
-  'Understand when to use batch normalization and how it works',
-  'Know a few fast optimizers and their associated hyperparameters',
-  'Understand learning rate scheduling',
-  'Understand ℓ1 and ℓ2 regularization',
-  'Understand the concept of dropout',
-];

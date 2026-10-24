@@ -645,7 +645,7 @@ export default function Lectures12Refresher() {
                 <p>
                   End of the refresher. Sources: <em>CITS5017 Topic 1: Introduction to Artificial Neural Networks</em> (64 slides) and
                   <em> Topic 2: Training Deep Neural Networks</em> (68 slides), A/Prof Du Huynh, UWA, Semester 2 2026. The toy data and
-                  numbers in the labs are this page’s own, not the slides’.
+                  computed numbers in the labs are this page’s own; numbers quoted from the slides carry a slide receipt.
                 </p>
               </footer>
             </main>

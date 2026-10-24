@@ -934,12 +934,12 @@ export function PenaltiesLab() {
       title="ℓ1 vs ℓ2: what the penalty does to the weights"
       slides="L2 · slides 60–61"
       tryThis="Predict which penalty can make a weight exactly 0, press ▶ to run 60 steps on the penalty alone, and switch between ℓ1 and ℓ2."
-      caption="ℓ1 pulls every weight towards 0 by the same amount each step, so small weights land on exactly 0; ℓ2 pulls in proportion to the weight, so they shrink but never reach it. That is the behaviour from simple linear models (slide 60: “just like you did for simple linear models”); these slides don’t restate it."
+      caption="ℓ1 pulls every weight towards 0 by the same amount each step, so small weights land on exactly 0; ℓ2 pulls in proportion to the weight, so they shrink but never reach it. Beyond the slides: that behaviour comes from simple linear models (slide 60: “just like you did for simple linear models”)."
       own="toy weights and run · this page’s own"
       maths={
         <>
           <MLine text="Slide 60 gives only the Keras calls: `kernel_regularizer=tf.keras.regularizers.l2(0.01)`, `l1(...)` for ℓ1 and `l1_l2(...)` for both. At each training step the regularization loss is added to the final loss; slide 61 repeats the settings with `functools.partial()`." />
-          <MNote text="From simple linear models (not restated on these slides): the penalty terms, their gradients, and one step on the penalty alone." />
+          <MNote text="Beyond the slides (from simple linear models): the penalty terms, their gradients, and one step on the penalty alone." />
           <MEq tex={'\\ell_1:\\; λ\\sum_i |w_i|,\\quad w_i \\leftarrow w_i - ηλ\\,\\text{sign}(w_i) \\qquad \\ell_2:\\; λ\\sum_i w_i^2,\\quad w_i \\leftarrow w_i - 2ηλ\\,w_i'} />
           <MLine text={`Here $λ = 0.01$ (slide 60’s factor) and $η = 1$ (this page’s), so ℓ1 subtracts 0.01 from every $|w_i|$ each step (a weight that would cross 0 stops at 0, this page’s handling) and ℓ2 multiplies every weight by $1 - 2(1)(0.01) = 0.98$. After ${step} steps the ${kind === 'l1' ? 'ℓ1' : 'ℓ2'} term is $${termTex} = ${fmt(P[step], 4)}$ (it started at ${fmt(P[0], 4)}).`} />
           <MLine text={`For example $w_3 = 0.15$: ℓ1 reaches exactly 0 at step ${PEN_ZERO[2]}; ℓ2 leaves $0.15 × 0.98^{60} = ${fmt(PEN_RUN.l2[PEN_STEPS][2], 3)}$, small but not 0.`} />

@@ -65,7 +65,7 @@ export function GradFlowLab() {
       title="How big is each layer’s gradient?"
       slides="L2 · slides 5–8"
       tryThis="Predict what sigmoid with N(0, 1) does to the lower layers, then switch to ReLU with He and compare the bars with the ghost."
-      caption={`${v.text[0].toUpperCase()}${v.text.slice(1)}. Slide 8 pairs Glorot with tanh/sigmoid and He with the ReLU family${act === 'sigmoid' && init !== 'normal' ? '; even so, the sigmoid’s small derivative (at most 0.25) shrinks the gradient at every layer, which is why nonsaturating activations (§2.2) and batch norm (§2.3) came next' : ''}.`}
+      caption={`${v.text[0].toUpperCase()}${v.text.slice(1)}. Slide 8 pairs Glorot with tanh/sigmoid and He with the ReLU family${act === 'sigmoid' && init !== 'normal' ? '; even so, the sigmoid’s derivative (at most 0.25, L1 slide 22) shrinks the gradient at every layer; §2.2’s nonsaturating activations avoid that (slide 10)' : ''}.`}
       challenge={{ text: `Find two stable combinations${stableSeen.size ? ` (${stableSeen.size} found)` : ''}.`, done: stableSeen.size >= 2 }}
       maths={
         <>

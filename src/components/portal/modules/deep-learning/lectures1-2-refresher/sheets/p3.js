@@ -71,8 +71,8 @@ export default {
             rows: [
               ['init', 'He', 'LeCun'],
               ['activation', 'ReLU if shallow, Swish if deep', 'SELU'],
-              ['normalization', 'batch norm if deep', 'none'],
-              ['regularization', 'early stopping, weight decay', 'alpha dropout*'],
+              ['normalization', 'none if shallow, BN if deep', 'none'],
+              ['regularization', 'early stopping; weight decay†', 'alpha dropout*'],
               ['optimizer', 'NAG or AdamW', 'NAG'],
               ['LR schedule', 'performance or 1cycle', 'the same'],
             ],
@@ -80,6 +80,7 @@ export default {
         },
       ],
       margin: [
+        { nb: '† weight decay only “if needed” (slide 65).' },
         { nb: '* alpha dropout: “not covered in CITS5017” (slide 66).' },
       ],
     },

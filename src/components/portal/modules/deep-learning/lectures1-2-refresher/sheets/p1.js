@@ -8,7 +8,7 @@ export default {
       items: [
         { formula: 'z = \\mathbf{w}^T\\mathbf{x} + b, \\qquad h_{\\mathbf{w},b}(\\mathbf{x}) = \\text{step}(z)' },
         { formula: 'w_{i,j}^{(\\text{next step})} = w_{i,j} + \\eta\\left(y_j - \\hat{y}_j\\right)x_i' },
-        'Converges only if {g|linearly separable}: XOR needs an MLP.',
+        'Converges if {g|linearly separable}; XOR isn’t, so it needs an MLP.',
       ],
       margin: [
         { q: 'Which step do Perceptrons usually use?', a: 'Heaviside: 0 if $z < 0$, 1 if $z \\ge 0$ (slide 5).' },
@@ -90,5 +90,5 @@ export default {
       ],
     },
   ],
-  skip: 'layer maths, Scikit-Learn, Huber formula, Fashion MNIST, Wide & Deep, callbacks, TensorBoard.',
+  skip: 'layer maths, Scikit-Learn, Huber formula, Fashion MNIST, Wide & Deep, other callbacks, TensorBoard.',
 };

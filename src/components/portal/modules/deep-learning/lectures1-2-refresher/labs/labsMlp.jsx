@@ -233,7 +233,7 @@ export function ActivationsLab() {
   const MATHS = {
     heaviside: { f: '\\text{heaviside}(z) = 0 \\text{ if } z < 0,\\ 1 \\text{ if } z \\ge 0', d: 'Its derivative is 0 wherever it exists (undefined at $z = 0$): no gradient to work with (slide 20).' },
     relu: { f: '\\text{ReLU}(z) = \\max(0, z)', d: 'Derivative 0 for $z < 0$ and 1 for $z > 0$; not differentiable at 0, but fast and with no maximum output (slide 21).' },
-    sigmoid: { f: '\\sigma(z) = \\frac{1}{1 + \\exp(-z)} \\qquad \\sigma^{\\prime}(z) = \\sigma(z)\\left(1 - \\sigma(z)\\right)', d: 'The derivative peaks at 0.25 at $z = 0$ and fades to almost 0 at both ends: the shaded “saturating” zones (slides 20, 22).' },
+    sigmoid: { f: '\\sigma(z) = \\frac{1}{1 + \\exp(-z)} \\qquad \\sigma^{\\prime}(z) = \\sigma(z)\\left(1 - \\sigma(z)\\right)', d: 'The derivative peaks at 0.25 at $z = 0$ and fades to almost 0 at both ends (Figure 10-8, slide 22; slide 62 says such functions saturate).' },
     tanh: { f: '\\tanh(z) = 2\\sigma(2z) - 1', d: 'S-shaped like the sigmoid, from −1 to +1; its derivative peaks at 1.0 (Figure 10-8). (Its formula, $1 - \\tanh^2(z)$, is this page’s, not the slide’s.)' },
   };
   return (

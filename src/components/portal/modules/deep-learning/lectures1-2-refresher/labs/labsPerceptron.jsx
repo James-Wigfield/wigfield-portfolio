@@ -181,7 +181,7 @@ export function PerceptronLab() {
       story={<StoryBar story={story} beats={beats} numbered={false} />}
       caption={run.converged
         ? `Converged after ${run.epochs} epochs and ${run.updates.length} updates: the data are linearly separable, so the rule finds *a* line (slide 12: not a unique one).`
-        : `No line separates these points: after ${MAX_EPOCHS} epochs the rule is still making mistakes, which is exactly the XOR weakness (slide 16).`}
+        : `Still making mistakes after ${MAX_EPOCHS} epochs. If no line can separate these points, the rule never converges (the XOR weakness, slide 16); if one can, it only needs more epochs (slide 12).`}
       maths={
         <>
           <MEq tex={'w_{i,j}^{(\\text{next step})} = w_{i,j} + \\eta\\left(y_j - \\hat{y}_j\\right)x_i'} />
@@ -315,6 +315,7 @@ export function XorLab() {
   return (
     <Stage
       title="XOR: one line can’t, a hidden layer can"
+      own="Figure 10-6b’s weights (slide 17) · the dragged line is this page’s own"
       slides="L1 · slides 16–17"
       tryThis="In “one TLU”, drag the two handles and try to put every circle on one side; then switch back to the MLP and click a point to trace it."
       caption={mode === 'one'

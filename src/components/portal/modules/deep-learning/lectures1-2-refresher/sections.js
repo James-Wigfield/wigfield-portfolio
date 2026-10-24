@@ -95,7 +95,7 @@ export const SECTIONS = [
     short: 'Perceptron training & XOR',
     slides: '9–17',
     read: [
-      { gist: 'After each wrong prediction, the perceptron rule moves every weight by $\\eta(y_j - \\hat{y}_j)x_i$; it converges when the classes are linearly separable, so it can never solve XOR on its own.' },
+      { gist: 'After each wrong prediction, the perceptron rule moves every weight by $\\eta(y_j - \\hat{y}_j)x_i$. Its decision boundary is linear: it converges if the classes are linearly separable (slide 12), and it can never solve XOR on its own (slide 16).' },
       { eq: { name: 'Perceptron learning rule (slide 10)', tex: 'w_{i,j}^{(\\text{next step})} = w_{i,j} + \\eta\\left(y_j - \\hat{y}_j\\right)x_i', read: '$w_{i,j}$: input $i$ → output $j$ · $x_i$: input value · $\\hat{y}_j$: output · $y_j$: target · $\\eta$: learning rate' } },
       {
         list: [
@@ -106,7 +106,7 @@ export const SECTIONS = [
           'Minsky and Papert (1969): a Perceptron can’t solve **XOR**; an **MLP** can (Figure 10-6b) (slides 16–17).',
         ],
       },
-      { slideNote: 'Slide 11’s derivation uses a linear output with no step function. A real Perceptron’s step has a zero derivative almost everywhere, so the derivation shows the rule has the *same form* as gradient descent on a linear unit’s squared error, not that it is the Perceptron’s own gradient. Slide 13’s `astype(np.int)` fails on current NumPy (`np.int` was removed in 1.24; use `int`), and since `y` holds integers, `predict` returns `1` and `0`, not “True and False”.' },
+      { slideNote: 'Slide 11’s derivation uses a linear output with no step function. A real Perceptron’s step has a zero derivative almost everywhere, so the derivation shows the rule has the *same form* as gradient descent on a linear unit’s squared error, not that it is the Perceptron’s own gradient. Slide 13’s `astype(np.int)` fails on current NumPy (`np.int` was removed in 1.24; use `int`).' },
     ],
     play: ['perceptron', 'xor'],
   },
@@ -118,7 +118,7 @@ export const SECTIONS = [
     short: 'MLPs, backprop, activations',
     slides: '18–23',
     read: [
-      { gist: 'Backpropagation is gradient descent using reverse-mode autodiff: forward pass, error, reverse pass, update; it needs a differentiable activation in place of the step.' },
+      { gist: 'Backpropagation is gradient descent using reverse-mode autodiff: forward pass, error, reverse pass, update; it needs an activation with a usable gradient in place of the step (slide 20).' },
       {
         list: [
           'An MLP: one passthrough **input layer**, one or more **hidden layers** of TLUs, one **output layer** (slide 18, Figure 10-7).',
@@ -151,7 +151,7 @@ export const SECTIONS = [
       { gist: 'The task fixes the output layer and the loss: regression usually has no output activation and MSE; classification uses sigmoid or softmax outputs and cross-entropy.' },
       {
         table: {
-          head: ['', 'regression (slide 27)', 'binary', 'multilabel', 'multiclass (slide 31)'],
+          head: ['', 'regression (slide 27)', 'binary', 'multilabel', 'multiclass (slides 30–31)'],
           rows: [
             ['output neurons', '1 per prediction dimension', '1', '1 per binary label', '1 per class'],
             ['output activation', 'none; ReLU/softplus if positive; sigmoid/tanh if bounded', 'sigmoid', 'sigmoid', 'softmax'],
@@ -168,6 +168,7 @@ export const SECTIONS = [
           'Slide 26: Scikit-Learn’s `MLPRegressor` (3 hidden layers of 50) on California housing, RMSE about 0.505, around 10% error.',
         ],
       },
+      { slideNote: 'Slide 26’s `mean_squared_error(..., squared=False)` was removed in Scikit-Learn 1.6 (use `root_mean_squared_error`). Its “normalised to the range $[0, 5]$” is loose: the target is in units of 100,000 US dollars, capped at about 5, so 0.505 is about 10% of that range.' },
     ],
     play: ['heads'],
   },
@@ -183,9 +184,9 @@ export const SECTIONS = [
       {
         list: [
           'Keras: a high-level API by François Chollet (2015), TensorFlow-only since 2.4; the unit uses TensorFlow 2.17.0 and Keras 3.10.0 (slides 32–33).',
-          '**Fashion MNIST**: 10 classes of 28 × 28 images, 60,000 training (the last 5,000 for validation) and 10,000 test, pixels ÷ 255 (slides 34–35).',
+          '**Fashion MNIST**: 10 classes of 28 × 28 images, 60,000 training (the last 5,000 for validation) and 10,000 test, pixels ÷ 255; a linear model gets about 92% on MNIST but only about 83% here (slides 34–35).',
           '`Flatten` → `Dense(300, relu)` → `Dense(100, relu)` → `Dense(10, softmax)`: 266,610 parameters; the first layer’s weights are (784, 300), its biases (300,) (slides 35–36).',
-          '`sparse_categorical_crossentropy` (labels are class indices), 30 epochs, default `batch_size` 32; `history` gives learning curves; test accuracy 0.8733; `predict` gives probabilities, `argmax` the classes (slides 37–40).',
+          '`sparse_categorical_crossentropy`, 30 epochs, default `batch_size` 32; `history` gives learning curves; test accuracy 0.8733; `predict` gives probabilities, `argmax` the classes (slides 37–40).',
           'Regression: `Normalization`, three `Dense(50, relu)`, `Dense(1)`, Adam, MSE; test RMSE about 0.539, not very good, so more complex topologies follow (slides 41–42).',
         ],
       },
@@ -218,6 +219,7 @@ export const SECTIONS = [
           '**Wide & Deep** (Cheng et al., 2016): the deep path learns deep patterns, the short path simple rules; `Concatenate()` joins them (slides 43–44).',
           'Multiple inputs: features 0–4 go wide, 2–7 go deep; `fit((X_train_wide, X_train_deep), y_train, …)` (slide 46).',
           'Multiple outputs: an auxiliary output on `hidden2`, `loss=("mse", "mse")`, `loss_weights=(0.9, 0.1)`: the deep branch is likelier to overfit, so the auxiliary output regularises (slide 47).',
+          '`model.summary()` of the functional model adds a “Connected to” column: 1,256 parameters, 17 of them non-trainable (slide 45).',
         ],
       },
       { unfold: { label: 'Slide 44: Wide & Deep with the Functional API, verbatim', blocks: [{ code: { src: 'L1_WIDE_DEEP', label: 'L1 · slide 44' } }] } },
@@ -335,7 +337,7 @@ export const SECTIONS = [
     short: 'Nonsaturating activations',
     slides: '10–22',
     read: [
-      { gist: 'ReLU doesn’t saturate for positive inputs but its neurons can “die” (output only 0); its variants keep a slope for $z < 0$, and the smooth ones usually do better.' },
+      { gist: 'ReLU doesn’t saturate for positive inputs but its neurons can “die” (output only 0); its variants keep a slope for $z < 0$.' },
       {
         table: {
           head: ['function', 'definition', 'remember'],
@@ -345,7 +347,7 @@ export const SECTIONS = [
             ['PReLU (slide 14)', '$\\alpha$ learned with the weights', 'strong on large image sets; may overfit small ones'],
             ['ELU (slide 15)', '$\\alpha(\\exp(z) - 1)$ if $z < 0$, else $z$', 'negative outputs, nonzero gradient for $z < 0$; smooth everywhere if $\\alpha = 1$'],
             ['SELU (slides 16–17)', '$1.0507\\,\\text{ELU}_{1.6733}(z)$', 'self-normalizing if inputs standardized, LeCun normal init, no ℓ1/ℓ2, max-norm, BN or dropout'],
-            ['GELU (slide 18)', '$z\\Phi(z) \\approx z\\sigma(1.702z)$', 'neither convex nor monotonic; often the best; more compute'],
+          ['GELU (slide 18)', '$z\\Phi(z) \\approx z\\sigma(1.702z)$', 'neither convex nor monotonic; often outperforms the earlier ones; more compute'],
             ['Swish = SiLU (slide 19)', '$z\\sigma(z)$; $\\text{Swish}_\\beta(z) = z\\sigma(\\beta z)$', '`silu` from tf 2.16'],
             ['Mish (slides 20–21)', '$z\\tanh(\\text{softplus}(z))$', 'beats Swish and GELU by a tiny margin; not in Keras'],
           ],
@@ -357,7 +359,7 @@ export const SECTIONS = [
           '**Which one?** (slide 22) ReLU for simple tasks; for complex tasks SiLU (Swish), or parametrized Swish tuning $\\beta$; Mish slightly better but more compute; leaky ReLU or PReLU if latency matters; SELU for very deep MLPs if slide 16’s constraints hold.',
         ],
       },
-      { slideNote: 'Slide 14 lists SELU among the smooth variants, but slide 15 says ELU is smooth everywhere only when $\\alpha = 1$. SELU uses $\\alpha = 1.6733$, so its slope jumps at $z = 0$: from $1.0507 \\times 1.6733 \\approx 1.758$ just left of 0 to $1.0507$ just right (this page’s working; the shoot-out lab’s derivative view shows the jump).' },
+      { slideNote: 'Slide 14 lists SELU among the smooth variants, but slide 15 says ELU is smooth everywhere only when $\\alpha = 1$. SELU uses $\\alpha = 1.6733$, so its slope jumps at $z = 0$: from $1.0507 \\times 1.6733 \\approx 1.758$ just left of 0 to $1.0507$ just right (this page’s working; the shoot-out lab’s derivative view shows it). Slide 21 says Keras doesn’t support Mish yet; Keras 3 (L1 slide 33’s 3.10.0) has `activation="mish"`.' },
     ],
     play: ['shootout'],
   },
@@ -373,14 +375,14 @@ export const SECTIONS = [
       { eq: { name: 'The BN algorithm (slide 24)', tex: '\\boldsymbol{\\mu}_B = \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\mathbf{x}^{(i)} \\qquad \\boldsymbol{\\sigma}_B^2 = \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\left(\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B\\right)^2 \\qquad \\hat{\\mathbf{x}}^{(i)} = \\frac{\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B}{\\sqrt{\\boldsymbol{\\sigma}_B^2 + \\epsilon}} \\qquad \\mathbf{z}^{(i)} = \\boldsymbol{\\gamma} \\otimes \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{\\beta}', read: 'mean and variance per feature over the mini-batch $B$; $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$: trainable scale and shift (one per input feature); $\\otimes$: element-wise' } },
       {
         list: [
-          'An extra operation before or after each hidden layer’s activation; at test time, moving averages of the mini-batch statistics are used (slide 23).',
+          'Why: He initialization with ELU helps at the start of training, but the vanishing/exploding problems can come back during training. BN is an extra operation before or after each hidden layer’s activation; at test time, moving averages of the mini-batch statistics are used (slide 23).',
           'Gains (slide 25): better ImageNet results, tanh usable again, much larger learning rates, a regularizing effect, no `StandardScaler` needed; a runtime cost, offset by fewer epochs (BN can be fused into the previous layer after training).',
           '`BatchNormalization()` after `Flatten` and each hidden layer (slide 26): 271,346 parameters, 2,368 non-trainable (slide 27), i.e. 4 per input feature, $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$ and the two moving averages (this page’s working).',
           'The BN paper preferred BN **before** the activation: `Dense(…, use_bias=False)`, then `BatchNormalization()`, then `Activation("relu")` (slide 28).',
         ],
       },
       { unfold: { label: 'Slide 26: BN layers in a Sequential model, verbatim', blocks: [{ code: { src: 'L2_BN', label: 'L2 · slide 26' } }] } },
-      { slideNote: 'Slide 23 says the moving averages estimate the mean and variance of each layer’s *outputs*, while slide 24’s equations normalize the layer’s *inputs* $\\mathbf{x}^{(i)}$; and $\\epsilon$ in slide 24 is never defined (a small smoothing term). Slide 26’s code starts with `keras.models.Sequential`, although every layer uses `tf.keras` and `keras` is never imported.' },
+      { slideNote: 'Slide 23 says the moving averages estimate the mean and variance of each layer’s *outputs*, while slide 24’s equations normalize the layer’s *inputs* $\\mathbf{x}^{(i)}$; and $\\epsilon$ in slide 24 is never defined (a small smoothing term). Slide 26’s code starts with `keras.models.Sequential`, although every layer uses `tf.keras` and the L2 deck never imports `keras` (L1 slide 33 does); its first line is indented, so pasting it as-is raises an `IndentationError`.' },
     ],
     play: ['batchNorm'],
   },
@@ -449,12 +451,11 @@ export const SECTIONS = [
       {
         list: [
           'Momentum uses the gradient as an **acceleration**, not a speed, and can roll past local optima; NAG measures it ahead, at $\\boldsymbol{\\theta} + \\beta\\mathbf{m}$, ending closer to the optimum (slides 34–37).',
-          'AdaGrad decays the rate faster on steep dimensions (an *adaptive learning rate*) but stops too early; RMSProp keeps only recent gradients (slides 38–42).',
           '**AdaMax**: step 2 becomes $\\mathbf{s} \\leftarrow \\max(\\beta_2\\mathbf{s}, \\text{abs}(\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta})))$; **Nadam** = Adam + Nesterov; **AdamW** adds weight decay, `AdamW(weight_decay=1e-5, …)` (slides 45–46).',
-          'Table 11-2 (slide 47): `SGD` is slow (`*`) but converges well (`***`); momentum and NAG `**`; the adaptive ones `***` fast, quality `**` or `***`, except AdaGrad (`*`, stops too early).',
+          'Table 11-2 (slide 47): `SGD` is slow (`*`) but converges well (`***`); momentum and NAG are `**` fast and `***` good; the adaptive ones are `***` fast with quality `**` or `***`, except AdaGrad (`*`, stops too early).',
         ],
       },
-      { slideNote: 'Momentum’s $\\mathbf{m}$ (slide 34) subtracts $\\eta\\nabla$, while Adam’s $\\mathbf{m}$ (slide 43) adds $(1 - \\beta_1)\\nabla$ and step 5 subtracts, so slide 44’s “$\\beta_1$ corresponds to $\\beta$” holds for their role as decay rates only. Slide 43 puts $\\epsilon$ inside the square root; the Adam paper and Keras add it outside, a negligible difference. Slide 38’s $\\epsilon = 10^{-10}$ is Géron’s value (Keras’s default is `1e-07`), and slide 39 repeats the NAG code on an AdaGrad slide (AdaGrad’s is on slide 40).' },
+      { slideNote: 'Momentum’s $\\mathbf{m}$ (slide 34) subtracts $\\eta\\nabla$, while Adam’s $\\mathbf{m}$ (slide 43) adds $(1 - \\beta_1)\\nabla$ and step 5 subtracts, so slide 44’s “$\\beta_1$ corresponds to $\\beta$” holds for their role as decay rates only. Slide 39 repeats the NAG code on an AdaGrad slide (AdaGrad’s is on slide 40).' },
     ],
     play: ['race'],
   },
@@ -466,10 +467,10 @@ export const SECTIONS = [
     short: 'Learning-rate schedules',
     slides: '48–59',
     read: [
-      { gist: 'Start with a high learning rate and reduce it: you reach a good solution faster than with the best constant rate.' },
+      { gist: 'Start with a high learning rate and reduce it: you can reach a good solution faster than with the best constant rate.' },
       {
         list: [
-          'Too high: training diverges; too low: it converges, but very slowly (slide 48, Figure 11-9). Strategies that change $\\eta$ during training are **learning schedules**; some even start low, rise, then drop (slide 49).',
+          'Too high: training may diverge; too low: it converges, but very slowly (slide 48, Figure 11-9). Strategies that change $\\eta$ during training are **learning schedules**; some even start low, rise, then drop (slide 49).',
         ],
       },
       {
@@ -489,7 +490,7 @@ export const SECTIONS = [
           '`staircase=True` turns the smooth decay into steps (slides 51, 53). A `LearningRateScheduler` callback runs a function of the **epoch** (callbacks run at the end of each epoch, not each step); or subclass `LearningRateSchedule` (slide 54).',
         ],
       },
-      { slideNote: 'Slide 55’s example in words ($\\eta_0 = 0.1$ for 5 iterations, then $\\eta_1 = 0.001$ for the next 50) is not its chart, which steps 0.1 → 0.04 at $t = 5$ → 0.02 at 20 → 0.01 at 30 over 50 iterations (the lab draws the chart’s steps). Slide 57’s text says `ReduceOnPlateau` and “every $N$ steps … by a factor of $\\lambda$”; its code is `ReduceLROnPlateau(factor=0.5, patience=5)`, counted in epochs. Slide 50’s chart legend “decay = 0.1 ($s = 10$)” is $r/s$ with $r = 1$, not the decay rate $r$.' },
+      { slideNote: 'Slide 55’s example in words ($\\eta_0 = 0.1$ for 5 iterations, then $\\eta_1 = 0.001$ for the next 50) is not its chart, which steps 0.1 → 0.04 at $t = 5$ → 0.02 at 20 → 0.01 at 30 over 50 iterations (the lab draws the chart’s steps). Slide 57’s text says `ReduceOnPlateau` and “every $N$ steps … by a factor of $\\lambda$”; its code is `ReduceLROnPlateau(factor=0.5, patience=5)`, counted in epochs.' },
     ],
     play: ['schedules'],
   },
@@ -504,8 +505,8 @@ export const SECTIONS = [
       { gist: 'ℓ1/ℓ2 add a penalty on the weights to the loss; dropout ignores each neuron with probability $p$ at every training step, and drops nothing at test time.' },
       {
         list: [
-          '`kernel_regularizer=tf.keras.regularizers.l2(0.01)`: the regularization loss is added to the final loss; also `l1(...)`, `l1_l2(...)`, and `functools.partial()` to repeat settings (slides 60–61).',
-          'Dropout (Hinton et al., 2012) gave even state-of-the-art networks 1% to 2% more accuracy: at 95%, almost 40% less error (slide 62).',
+          '`kernel_regularizer=tf.keras.regularizers.l2(0.01)`: the penalty is added to the final loss; `l1(...)`, `l1_l2(...)`; `functools.partial()` repeats the settings (slides 60–61).',
+          'Dropout (Hinton et al., 2012) gave even state-of-the-art networks 1% to 2% more accuracy; at 95%, a 2% boost cuts the error rate by almost 40% (5% to roughly 3%) (slide 62).',
           'Each neuron, inputs included but **never the outputs**, is dropped with probability $p$ (the **dropout rate**, 10% to 50%) for one step; after training nothing is dropped and the learned weights are used (slide 63, Figure 11-10).',
           '`Dropout(rate=0.2)` before every `Dense` layer; **evaluate the training loss without dropout**, since with it on the two losses can look alike while the model overfits (slide 64).',
         ],

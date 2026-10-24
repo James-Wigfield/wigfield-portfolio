@@ -258,7 +258,7 @@ export function LrSweepLab() {
       title="Find the learning rate with one sweep"
       slides="L1 · slide 60"
       tryThis="Find where the loss shoots up, then drag the dot along the floor to pick a rate: where do the slide’s two rules of thumb land?"
-      caption={`The loss shoots up at about η = ${fmt(upAt.lr, 2)}. Slide 60 gives two rules: about 10 times lower than that (≈ ${fmt(tenth, 2)}), or about half the maximum rate above which training diverges (≈ ${fmt(half, 2)} here); both land where the loss is lowest.`}
+      caption={`The loss shoots up at about η = ${fmt(upAt.lr, 2)}. Slide 60 gives two rules: about 10 times lower than that (≈ ${fmt(tenth, 2)}), or about half the maximum rate (≈ ${fmt(half, 2)}, taking the shoot-up point as that maximum: this page’s assumption). On this toy run both land in the low-loss region.`}
       challenge={{ text: 'Pick a rate in the good zone.', done: chosen !== null && verdict(chosen) === 'in the good zone' }}
       maths={
         <>
