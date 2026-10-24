@@ -383,3 +383,16 @@ button.dl12r-sh__tr { font: inherit; line-height: var(--sh-step); color: inherit
 .dl12r .dl12r-sh--dense p.dl12r-sh__skip { margin-top: 0; }
 /* the hidden measuring copy never shows focus or hover states */
 .dl12r-sh--measure { box-shadow: none; }
+/* dense: the header is one ruled line (receipt and counter side by side) */
+.dl12r-sh--dense .dl12r-sh__date { flex-direction: row; align-items: baseline; gap: 0.7rem; line-height: var(--sh-step); padding-top: 0; }
+.dl12r-sh--dense .dl12r-sh__count { line-height: var(--sh-step); }
+/* dense: a boxed formula sits on one rule (no gap above, tight box) */
+.dl12r-sh--dense .dl12r-sh__fbox { margin-top: 0; padding: 0 0.6rem; }
+.dl12r-sh--dense .dl12r-sh__fbox .katex-display { margin: 0.12rem 0; }
+.dl12r-sh--dense .dl12r-sh__fbox .katex { font-size: 1em; }
+.dl12r-sh--dense .dl12r-sh__date { align-items: center; height: var(--sh-step); }
+/* dense: tables written a little smaller, columns closer together */
+.dl12r-sh--dense .dl12r-sh__table { font-size: 0.93em; }
+.dl12r-sh--dense .dl12r-sh__th, .dl12r-sh--dense .dl12r-sh__td { padding-right: 0.55rem; }
+.dl12r-sh--dense .dl12r-sh__th:nth-child(n + 3), .dl12r-sh--dense .dl12r-sh__td:nth-child(n + 3) { padding-left: 0.55rem; }
+.dl12r-sh--dense .dl12r-sh__head { align-items: center; }

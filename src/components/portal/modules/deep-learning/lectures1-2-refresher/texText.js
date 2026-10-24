@@ -18,9 +18,11 @@ const SYMBOLS = {
   le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', in: '∈', mid: '|', infty: '∞', minus: '−', pm: '±', quad: ' ', qquad: '  ',
   alpha: 'α', beta: 'β', theta: 'θ', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
   langle: '⟨', rangle: '⟩', div: '÷', pi: 'π', exp: 'exp', tanh: 'tanh', sin: 'sin', cos: 'cos', log: 'log', max: 'max',
+  eta: 'η', rho: 'ρ', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', Phi: 'Φ', nabla: '∇', partial: '∂',
+  otimes: '⊗', oslash: '⊘', leftarrow: '←', gets: '←', Rightarrow: '⇒', prime: '′', sqrt: '√', min: 'min', abs: 'abs',
   limits: '', nolimits: '', displaystyle: '', ',': ' ', ';': ' ', ':': ' ', '!': '', '{': '{', '}': '}', '%': '%', '#': '#', '_': '_',
 };
-const STYLE = new Set(['mathbf', 'mathrm', 'mathit', 'boldsymbol', 'text', 'textbf', 'textit', 'texttt', 'textsf', 'operatorname', 'mathsf', 'bm']);
+const STYLE = new Set(['mathbf', 'mathrm', 'mathit', 'boldsymbol', 'text', 'textbf', 'textit', 'texttt', 'textsf', 'operatorname', 'mathsf', 'bm', 'mathcal']);
 const SIZES = new Set(['left', 'right', 'big', 'Big', 'bigg', 'Bigg', 'bigl', 'bigr', 'Bigl', 'Bigr']);
 
 // read one argument: a {…} group or a single token, from position i

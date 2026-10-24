@@ -230,6 +230,54 @@ export const huber = (z, delta = 1) => (Math.abs(z) <= delta ? 0.5 * z * z : del
 /* Dense layer parameters: inputs × units weights + units biases. */
 export const denseParams = (inputs, units) => inputs * units + units;
 
+/* ── L1 · the learning-rate sweep (slide 60) ────────────────────────────── */
+/* Slide 60's recipe on a toy problem (this page's own): train a small linear
+   regression with mini-batch gradient descent while the learning rate grows
+   geometrically from `lo` to `hi` over `iters` iterations, and record the
+   loss at each one. Returns [{ lr, loss, smooth }] (smooth = an exponential
+   moving average of the loss, as such plots are usually drawn). */
+export function lrSweep({ lo = 1e-5, hi = 10, iters = 500, batch = 16, seed = 60 } = {}) {
+  const R = rng(seed);
+  const n = 256;
+  const X = Array.from({ length: n }, () => [R.normal(), R.normal(), R.normal()]);
+  const trueW = [1.5, -2, 0.7];
+  const Y = X.map((x) => dot(trueW, x) + 0.5 + 0.3 * R.normal());
+  let w = [0, 0, 0];
+  let b = 0;
+  const mse = () => X.reduce((s, x, i) => s + (dot(w, x) + b - Y[i]) ** 2, 0) / n;
+  const out = [];
+  const k = (hi / lo) ** (1 / (iters - 1));
+  let ema = null;
+  for (let t = 0; t < iters; t++) {
+    const lr = lo * k ** t;
+    const gw = [0, 0, 0];
+    let gb = 0;
+    for (let j = 0; j < batch; j++) {
+      const i = Math.floor(R.next() * n);
+      const e = dot(w, X[i]) + b - Y[i];
+      for (let d = 0; d < 3; d++) gw[d] += (2 * e * X[i][d]) / batch;
+      gb += (2 * e) / batch;
+    }
+    w = w.map((v, d) => v - lr * gw[d]);
+    b -= lr * gb;
+    const loss = mse();
+    if (!Number.isFinite(loss) || loss > 1e6) { out.push({ lr, loss: Infinity, smooth: Infinity }); break; }
+    ema = ema === null ? loss : 0.9 * ema + 0.1 * loss;
+    out.push({ lr, loss, smooth: ema });
+  }
+  return out;
+}
+
+/* Where a sweep's loss "starts to shoot up": the first point after the
+   minimum of the smoothed loss where it exceeds `factor` × that minimum. */
+export function shootUp(sweep, factor = 4) {
+  let best = Infinity;
+  let bi = 0;
+  sweep.forEach((p, i) => { if (p.smooth < best) { best = p.smooth; bi = i; } });
+  const j = sweep.findIndex((p, i) => i > bi && p.smooth > factor * best);
+  return { minAt: sweep[bi], upAt: sweep[j >= 0 ? j : sweep.length - 1] };
+}
+
 /* ── L2 · gradients through depth (slides 5–8) ──────────────────────────── */
 /* A deep MLP of `layers` dense layers of `width` units. Weights are drawn
    from N(0, σ²) with σ² from the initialisation (slide 7–8):

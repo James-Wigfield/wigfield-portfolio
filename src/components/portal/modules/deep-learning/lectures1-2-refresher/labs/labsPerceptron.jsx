@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Stage, StoryBar, MLine, MEq } from '../stage';
+import { Stage, StoryBar, MLine, MEq, MNote } from '../stage';
 import { useStory } from '../story';
 import { useWidth } from '../useWidth';
 import { svgPoint } from '../hooks';
@@ -322,7 +322,7 @@ export function XorLab() {
         <>
           <MLine text="Figure 10-6b’s weights (slide 17): both hidden TLUs get weight 1 from $x_1$ and from $x_2$; biases $-\tfrac{3}{2}$ (left) and $-\tfrac{1}{2}$ (right); the output TLU gets $-1$ and $+1$ from them, bias $-\tfrac{1}{2}$." />
           <MLine text={`Point $(${P.x.join(', ')})$: $h_1 = \\text{step}(${P.x[0]} + ${P.x[1]} - 1.5) = ${trace.h[0]}$, $h_2 = \\text{step}(${P.x[0]} + ${P.x[1]} - 0.5) = ${trace.h[1]}$, output $= \\text{step}(-${trace.h[0]} + ${trace.h[1]} - 0.5) = ${trace.y}$.`} />
-          <p className="dl12r-mnote">$h_1$ acts as AND and $h_2$ as OR, so the output is “OR but not AND”: XOR (this page’s reading of the weights).</p>
+          <MNote text="$h_1$ acts as AND and $h_2$ as OR, so the output is “OR but not AND”: XOR (this page’s reading of the weights)." />
         </>
       }
     >

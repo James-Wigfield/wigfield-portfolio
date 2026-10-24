@@ -101,7 +101,7 @@
 .dl12r-pm__layer:focus-visible .dl12r-pm__mat--w { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 5 3; }
 
 /* a mini code listing beside a lab, with the hovered line lit */
-.dl12r-mini {
+.dl12r .dl12r-mini {
   margin: 0;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.72rem;
@@ -131,9 +131,23 @@
 .dl12r-g__fog { fill: var(--dl12r-off); opacity: 0.1; stroke: var(--dl12r-off); stroke-dasharray: 5 4; }
 .dl12r-g__box:focus-visible { outline: none; }
 .dl12r-g__box:focus-visible rect { stroke: var(--accent); stroke-dasharray: 4 2; stroke-width: 2.6; }
-.dl12r-apis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 21rem); gap: 1rem; align-items: start; }
+.dl12r-apis { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 1.4rem; align-items: start; }
 .dl12r-apis--narrow { grid-template-columns: minmax(0, 1fr); }
 
 @media (prefers-reduced-motion: reduce) {
   .dl12r-dline, .dl12r-half, .dl12r-bp__edge, .dl12r-bp__node circle, .dl12r-curve, .dl12r-net__n circle, .dl12r-pm__mat { transition: none !important; }
 }
+
+/* §1.4: the head summary line above the plot */
+.dl12r .dl12r-head { margin: 0 0 0.6rem; font-size: 0.84rem; line-height: 1.5; color: var(--ink-2); }
+.dl12r-head b { color: var(--ink); }
+.dl12r-legend__txt { color: var(--ink-2); }
+.dl12r-legend__txt b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* §1.8: rule-of-thumb markers and the good zone */
+.dl12r-mark { stroke: var(--ink-2); stroke-width: 1.3; stroke-dasharray: 4 3; }
+.dl12r-mk--up .dl12r-mark { stroke: var(--dl12r-bwd); stroke-width: 1.8; }
+.dl12r-good { fill: var(--accent); opacity: 0.1; }
+.dl12r-mini-s { font-size: 0.86em; color: var(--ink-3); }
+.dl12r-apis--seq { grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); }
+.dl12r-apis--seq.dl12r-apis--narrow { grid-template-columns: minmax(0, 1fr); }

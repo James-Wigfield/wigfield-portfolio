@@ -35,8 +35,9 @@ export function ticks(d0, d1, n = 5) {
   return out;
 }
 
-// an SVG path through f(x) sampled over the x-domain of sx, clipped to the
-// y-range of sy (gaps where f leaves the plot, or is not finite)
+// an SVG path through f(x) sampled over the x-domain of sx. Points far
+// outside the y-range (or not finite) break the line; draw it inside a
+// clipPath of the plot box to cut the rest cleanly.
 export function fnPath(f, sx, sy, n = 160) {
   const [x0, x1] = sx.domain;
   const [y0, y1] = sy.domain;
@@ -47,9 +48,8 @@ export function fnPath(f, sx, sy, n = 160) {
   for (let i = 0; i <= n; i++) {
     const x = x0 + ((x1 - x0) * i) / n;
     const y = f(x);
-    if (!Number.isFinite(y) || y < lo - (hi - lo) * 0.5 || y > hi + (hi - lo) * 0.5) { pen = false; continue; }
-    const cy = Math.max(lo - (hi - lo) * 0.05, Math.min(hi + (hi - lo) * 0.05, y));
-    d += `${pen ? 'L' : 'M'}${sx(x).toFixed(2)} ${sy(cy).toFixed(2)}`;
+    if (!Number.isFinite(y) || y < lo - (hi - lo) || y > hi + (hi - lo)) { pen = false; continue; }
+    d += `${pen ? 'L' : 'M'}${sx(x).toFixed(2)} ${sy(y).toFixed(2)}`;
     pen = true;
   }
   return d;

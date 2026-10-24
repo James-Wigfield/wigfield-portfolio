@@ -3,7 +3,7 @@
    (puppeteer-core + local Edge, seeded through the portal gate)
    ----------------------------------------------------------------------------
      node tools/dl-lectures1-2-refresher/shot.mjs <outDir> [ids…] [--theme=jade|coral|arcade]
-          [--width=1440] [--part=all|play|nb|read|hero] [--full] [--focus] [--reduce]
+          [--width=1440] [--part=all|play|nb|read|hero|measure] [--full] [--focus] [--reduce]
 
    For each section id (s00, s01, … or "all") it saves
      <outDir>/<id>-<part>-<theme>-<width>.png
@@ -49,6 +49,8 @@ try {
   if (flags.focus) await page.evaluate(() => document.querySelector('.dl12r-hero__actions .dl12r-btn--primary')?.click());
   // element shots: keep the sticky bars from painting over the element
   if (!flags.full) await page.addStyleTag({ content: '.dl12r-bar, .portal__topbar, .dl12r-rail { position: static !important; }' });
+  // --part=measure: show each notebook page's hidden 760 px measuring copy
+  if (part === 'measure') await page.addStyleTag({ content: '.dl12r-measure { position: static !important; width: auto !important; height: auto !important; overflow: visible !important; visibility: visible !important; }' });
   await new Promise((r) => setTimeout(r, 900));
   if (!ids.length || ids.includes('all')) ids = await page.$$eval('.dl12r-sec', (els) => els.map((e) => e.id.replace('dl12r-', '')));
   if (part === 'hero') ids = ['hero'];
@@ -59,6 +61,7 @@ try {
       nb: `#dl12r-${id}-nb`,
       read: `#dl12r-${id} .dl12r-beat--read`,
       hero: '.dl12r-hero',
+      measure: `#dl12r-${id} .dl12r-measure__box`,
     }[part];
     const el = await page.$(sel);
     if (!el) { console.log(`missing ${sel}`); continue; }

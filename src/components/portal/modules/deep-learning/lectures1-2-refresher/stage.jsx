@@ -110,6 +110,11 @@ export function MLine({ text, children }) {
   );
 }
 
+// A small grey note at the foot of the drawer (Rich markup, so $…$ works).
+export function MNote({ text }) {
+  return <p className="dl12r-mnote"><Rich text={text} /></p>;
+}
+
 // A display equation inside the drawer, with its print twin.
 export function MEq({ tex }) {
   return (
