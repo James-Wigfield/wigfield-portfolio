@@ -86,7 +86,12 @@ export const PRINT_CSS = `
   ${P} .dl12r-table--read { min-width: 0; font-size: 0.74rem; }
   ${P} .dl12r-tablewrap { overflow: visible; }
   ${P} .dl12r-receipt { color: var(--ink-2); }
-  ${P} .dl12r-sec__head { border-top: 2px solid var(--ink); padding-top: 2mm; break-after: avoid; }
+  /* the heading reads in order on paper: § and title, then the L1/L2 receipt */
+  ${P} .dl12r-sec__head { display: block; }
+  ${P} .dl12r-sec__no { margin-right: 2.5mm; }
+  ${P} .dl12r-sec__title { display: inline; }
+  ${P} .dl12r-sec__head .dl12r-receipt { display: flex; margin-top: 1.2mm; }
+  ${P} .dl12r-sec__head { border-top-width: 2px; border-top-style: solid; padding-top: 2mm; break-after: avoid; }
   ${P} .dl12r-beat { display: block; margin-top: 4mm; }
   ${P} .dl12r-beat__label { break-after: avoid; margin-bottom: 2mm; }
   ${P} .dl12r-read { max-width: none; display: block; }
@@ -129,7 +134,7 @@ export const PRINT_CSS = `
      beat), its caption, and its maths drawer opened with the lab's values */
   ${P} .hp.portal[data-portal-theme] .dl.dl12r {
     --dl12r-c1: #c2410c; --dl12r-c0: #1d5fc9; --dl12r-fwd: #0e7490; --dl12r-bwd: #be185d; --dl12r-w: #6d3fc0;
-    --dl12r-off: #64748b; --dl12r-neg: #8a8178; --dl12r-l1: #1f45a6; --dl12r-l2: #9a3c0e;
+    --dl12r-off: #64748b; --dl12r-neg: #8a8178; --dl12r-l1: #1f45a6; --dl12r-l2: #84300a;
     --dl12r-floor: #ffffff; --dl12r-floor-line: transparent; --dl12r-shadow: none;
   }
   ${P} .dl12r-stage { break-inside: auto; margin-top: 4mm; display: block; }

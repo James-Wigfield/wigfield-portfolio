@@ -151,3 +151,21 @@
 .dl12r-mini-s { font-size: 0.86em; color: var(--ink-3); }
 .dl12r-apis--seq { grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); }
 .dl12r-apis--seq.dl12r-apis--narrow { grid-template-columns: minmax(0, 1fr); }
+
+/* §2.1: gradient bars per layer */
+.dl12r-switches { display: flex; flex-wrap: wrap; gap: 0 1.4rem; }
+.dl12r-gf__bar { stroke-width: 1.4; transition: y 0.4s ease, height 0.4s ease; }
+.dl12r-gf__bar--stable { fill: color-mix(in srgb, var(--dl12r-fwd) 35%, var(--dl12r-floor)); stroke: var(--dl12r-fwd); }
+.dl12r-gf__bar--vanishing { fill: color-mix(in srgb, var(--dl12r-bwd) 30%, var(--dl12r-floor)); stroke: var(--dl12r-bwd); }
+.dl12r-gf__bar--exploding { fill: color-mix(in srgb, var(--dl12r-c1) 35%, var(--dl12r-floor)); stroke: var(--dl12r-c1); }
+.dl12r-gf__bar--tiny { fill: color-mix(in srgb, var(--dl12r-off) 30%, var(--dl12r-floor)); stroke: var(--dl12r-off); }
+.dl12r-gf__ghost { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 4 2; }
+
+/* §2.6: the race */
+.dl12r-race__contour { fill: none; stroke: var(--ink-3); stroke-width: 1; opacity: 0.35; }
+.dl12r-race__min { fill: var(--ink); }
+.dl12r-race__start { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 1.6; }
+.dl12r-race__path { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; opacity: 0.75; }
+.dl12r-race__run--on .dl12r-race__path { stroke-width: 3; opacity: 1; }
+.dl12r-race__head { fill: currentColor; stroke: var(--dl12r-floor); stroke-width: 1.5; }
+@media (prefers-reduced-motion: reduce) { .dl12r-gf__bar { transition: none !important; } }

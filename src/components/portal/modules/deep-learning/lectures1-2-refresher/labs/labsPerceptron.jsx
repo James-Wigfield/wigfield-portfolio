@@ -144,7 +144,10 @@ export function PerceptronLab() {
   const prev = ep ? ep.before : null;
   const ringed = new Set(ep ? ep.ups.map((u) => u.idx) : []);
   const right = accuracy(data, shown.w, shown.b);
-  const first = ep?.ups[0];
+  // the update written out in the drawer: this epoch's first mistake, or (on
+  // the start beat, or an epoch with none) the run's last update
+  const first = ep?.ups[0] ?? run.updates[run.updates.length - 1];
+  const firstLabel = ep?.ups[0] ? 'First mistake of this epoch' : 'The run’s last update';
 
   const onDown = (i) => (e) => {
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -184,11 +187,11 @@ export function PerceptronLab() {
           <MEq tex={'w_{i,j}^{(\\text{next step})} = w_{i,j} + \\eta\\left(y_j - \\hat{y}_j\\right)x_i'} />
           {first ? (
             <>
-              <MLine text={`First mistake of this epoch: $\\mathbf{x} = (${first.x.map((v) => fmt(v)).join(', ')})$, target $y = ${first.y}$, but $z = \\mathbf{w}^T\\mathbf{x} + b = ${fmt(first.before.w[0] * first.x[0] + first.before.w[1] * first.x[1] + first.before.b)}$, so $\\hat{y} = \\text{heaviside}(z) = ${first.yhat}$ and $y - \\hat{y} = ${first.err > 0 ? '+1' : '-1'}$.`} />
+              <MLine text={`${firstLabel} (epoch ${first ? first.epoch + 1 : ''}): $\\mathbf{x} = (${first.x.map((v) => fmt(v)).join(', ')})$, target $y = ${first.y}$, but $z = \\mathbf{w}^T\\mathbf{x} + b = ${fmt(first.before.w[0] * first.x[0] + first.before.w[1] * first.x[1] + first.before.b)}$, so $\\hat{y} = \\text{heaviside}(z) = ${first.yhat}$ and $y - \\hat{y} = ${first.err > 0 ? '+1' : '-1'}$.`} />
               <MLine text={`$w_1 \\leftarrow ${fmt(first.before.w[0])} + ${eta}\\,(${first.err > 0 ? '+1' : '-1'})\\,(${fmt(first.x[0])}) = ${fmt(first.after.w[0])}$, $w_2 \\leftarrow ${fmt(first.before.w[1])} + ${eta}\\,(${first.err > 0 ? '+1' : '-1'})\\,(${fmt(first.x[1])}) = ${fmt(first.after.w[1])}$, $b \\leftarrow ${fmt(first.before.b)} + ${eta}\\,(${first.err > 0 ? '+1' : '-1'}) = ${fmt(first.after.b)}$.`} />
             </>
           ) : (
-            <MLine text="Step to an epoch with a mistake to see one update written out." />
+            <MLine text="These points need no update: the starting line already separates them." />
           )}
           <p className="dl12r-mnote">The bias is updated like a weight whose input is always 1 (this page’s choice; slide 10 writes the rule for the weights). Points, start line and η are this page’s own.</p>
         </>

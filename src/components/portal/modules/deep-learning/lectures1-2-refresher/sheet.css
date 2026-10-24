@@ -396,3 +396,5 @@ button.dl12r-sh__tr { font: inherit; line-height: var(--sh-step); color: inherit
 .dl12r-sh--dense .dl12r-sh__th, .dl12r-sh--dense .dl12r-sh__td { padding-right: 0.55rem; }
 .dl12r-sh--dense .dl12r-sh__th:nth-child(n + 3), .dl12r-sh--dense .dl12r-sh__td:nth-child(n + 3) { padding-left: 0.55rem; }
 .dl12r-sh--dense .dl12r-sh__head { align-items: center; }
+/* the closing line's small label must not stretch its ruled line */
+.dl12r-sh__skip :is(.dl12r-sh__skipk, code, .dlk-tex-inline) { line-height: 1; }

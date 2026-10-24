@@ -1,0 +1,131 @@
+/* ============================================================================
+   LECTURES 1–2 REFRESHER — PART 2 LABS (./labsL2b.jsx)
+   Role colours from ../stage.css (--dl12r-fwd activations, -bwd gradients,
+   -w parameters, -off dropped / dead as a grey hatch); series colours from
+   ../../common.css (--dlv-*). Shared plot bits (.dl12r-curve, .dl12r-hair,
+   .dl12r-pt, .dl12r-legend, .dl12r-picker …) come from ./labsL1.css.
+   ========================================================================== */
+
+/* the dead / dropped hatch (an SVG <pattern>), and its legend swatches */
+.dl12r-xhatch { stroke: var(--dl12r-off); stroke-width: 1.3; opacity: 0.42; }
+.dl12r-l2zone { opacity: 0.85; }
+.dl12r-l2sw { display: inline-block; flex: none; width: 14px; height: 11px; border-radius: 2px; }
+.dl12r-l2sw--hatch {
+  border: 1px dashed var(--dl12r-off);
+  background: repeating-linear-gradient(45deg, transparent 0 3px, color-mix(in srgb, var(--dl12r-off) 55%, transparent) 3px 4.3px);
+}
+.dl12r-l2sw--tint { background: color-mix(in srgb, var(--dl12r-off) 22%, transparent); }
+.dl12r-l2sw--dot { width: 11px; border-radius: 99px; border: 2px solid var(--dl12r-fwd); background: color-mix(in srgb, var(--dl12r-fwd) 22%, transparent); }
+.dl12r-l2sw--handle { width: 11px; border-radius: 99px; border: 2px solid var(--dl12r-w); }
+.dl12r-l2sw--ghost { border: 1.4px dashed var(--ink-3); }
+.dl12r-l2sw--bar { border: 1.6px solid var(--dl12r-w); background: color-mix(in srgb, var(--dl12r-w) 12%, transparent); }
+.dl12r-l2sw--node { width: 12px; height: 12px; border-radius: 99px; border: 2px solid var(--dl12r-fwd); }
+
+/* a plot that reads where the pointer is: focus = a dashed accent frame */
+.dl12r-so__hit { cursor: crosshair; touch-action: pan-y; }
+.dl12r-svg .dl12r-so__slider:focus-visible { outline: none; }
+.dl12r-so__ring { fill: none; stroke: none; }
+.dl12r-so__slider:focus-visible .dl12r-so__ring { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 3; }
+
+/* ── §2.2 shoot-out ───────────────────────────────────────────────────── */
+.dl12r-so__ref { fill: none; stroke: var(--ink-3); stroke-width: 1.6; stroke-dasharray: 5 4; opacity: 0.85; }
+.dl12r-so__tiny { fill: var(--dl12r-off); opacity: 0.12; }
+.portal[data-portal-theme='arcade'] .dl12r-so__tiny { opacity: 0.2; }
+.dl12r-so__tan { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.dl12r-so__open { fill: var(--dl12r-floor); stroke-width: 2; }
+
+/* ── §2.3 batch norm: dots that slide between the four lines ────────────── */
+.dl12r-bn__axis { stroke: var(--ink-3); stroke-width: 1.2; }
+.dl12r-bn__tick { stroke: var(--ink-3); stroke-width: 1; opacity: 0.7; }
+.dl12r-bn__centre { stroke: var(--ink-2); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.dl12r-bn__brk { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.dl12r-bn__mv, .dl12r-bn__brk { transition: transform 0.8s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.dl12r-bn__dot { transition: transform 0.8s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.4s ease; }
+.dl12r-bn__dotc { fill: color-mix(in srgb, var(--dl12r-fwd) 22%, var(--dl12r-floor)); stroke: var(--dl12r-fwd); stroke-width: 2; }
+.dl12r-bn__ring { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 3 2.5; }
+.dl12r-bn__h { cursor: ew-resize; touch-action: none; }
+.dl12r-svg .dl12r-bn__h:focus-visible { outline: none; }
+.dl12r-bn__hdot { fill: var(--dl12r-floor); stroke: var(--dl12r-w); stroke-width: 2.6; }
+.dl12r-bn__h:hover .dl12r-bn__hdot { stroke-width: 3.4; }
+.dl12r-bn__h:focus-visible .dl12r-bn__hdot { stroke: var(--accent); stroke-dasharray: 4 2; stroke-width: 3.2; }
+.dl12r-bn--drag .dl12r-bn__mv, .dl12r-bn--drag .dl12r-bn__dot, .dl12r-bn--drag .dl12r-bn__brk { transition: none; }
+
+/* ── §2.4 clipping ────────────────────────────────────────────────────── */
+.dl12r-clip { display: grid; grid-template-columns: minmax(0, 29rem) minmax(0, 1fr); gap: 1rem 1.6rem; align-items: center; }
+.dl12r-clip--narrow { grid-template-columns: minmax(0, 1fr); }
+.dl12r-clip__plot { cursor: crosshair; touch-action: none; }
+.dl12r-clip__box { fill: color-mix(in srgb, var(--dlv-blue) 6%, transparent); stroke: var(--dlv-blue); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.dl12r-clip__circle { fill: none; stroke: var(--dlv-orange); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.dl12r-clip__guide { stroke: var(--dlv-blue); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.dl12r-clip__arc { fill: none; stroke: var(--dlv-blue); stroke-width: 1.5; }
+.dl12r-clip__vec line { stroke-linecap: round; }
+.dl12r-clip__vec--g line { stroke: var(--dl12r-bwd); stroke-width: 2.4; }
+.dl12r-clip__vec--g polygon { fill: var(--dl12r-bwd); }
+.dl12r-clip__vec--v line { stroke: var(--dlv-blue); stroke-width: 3; }
+.dl12r-clip__vec--v polygon { fill: var(--dlv-blue); }
+.dl12r-clip__vec--n line { stroke: var(--dlv-orange); stroke-width: 3.4; }
+.dl12r-clip__vec--n polygon { fill: var(--dlv-orange); }
+.dl12r-clip__h { cursor: grab; }
+.dl12r-svg .dl12r-clip__h:focus-visible { outline: none; }
+.dl12r-clip__hdot { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 2; }
+.dl12r-clip__h:focus-visible .dl12r-clip__hdot { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 4 2; }
+.dl12r-clip__plot--drag .dl12r-clip__h { cursor: grabbing; }
+.dl12r-clip__side { min-width: 0; }
+.dl12r-clip__tab { border-collapse: collapse; font-size: 0.8rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.dl12r-clip__tab th, .dl12r-clip__tab td { padding: 0.32rem 0.7rem 0.32rem 0; text-align: left; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.dl12r-clip__tab thead th { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.dl12r-clip__tab tbody th { font-weight: 500; color: var(--ink); }
+.dl12r-clip__tab td { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.76rem; }
+.dl12r-clip__tab code { font-size: 0.74rem; }
+.dl12r-clip__sw { display: inline-block; width: 16px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 0.25rem; }
+.dl12r-clip__sw--g { border-color: var(--dl12r-bwd); }
+.dl12r-clip__sw--v { border-color: var(--dlv-blue); }
+.dl12r-clip__sw--n { border-color: var(--dlv-orange); }
+@container stage (max-width: 430px) {
+  .dl12r-clip__tab th, .dl12r-clip__tab td { padding-right: 0.45rem; }
+  .dl12r-clip__tab td { font-size: 0.7rem; }
+}
+
+/* ── §2.7 schedules ───────────────────────────────────────────────────── */
+.dl12r-lrs__cut { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.6; }
+.dl12r-lrs__val { fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linejoin: round; }
+.dl12r-lrs__best { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 1.6; }
+.dl12r-lrs__brk { fill: none; stroke: var(--ink-2); stroke-width: 1.2; }
+.dl12r-lrs__vpt { fill: var(--ink-2); }
+
+/* ── §2.8 penalties ───────────────────────────────────────────────────── */
+.dl12r-runbar { display: inline-flex; align-items: center; gap: 0.2rem; margin: 0 0 0.6rem; }
+.dl12r-runbar__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.dl12r-pen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 15.6rem); gap: 0.8rem 1.4rem; align-items: start; }
+.dl12r-pen--narrow { grid-template-columns: minmax(0, 1fr); }
+.dl12r-pen__zero { stroke: var(--ink-3); stroke-width: 1.2; }
+.dl12r-pen__ghost { fill: none; stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.dl12r-pen__bar { fill: color-mix(in srgb, var(--dl12r-w) 12%, var(--dl12r-floor)); stroke: var(--dl12r-w); stroke-width: 1.8; }
+.dl12r-pen__nil { fill: var(--dl12r-floor); stroke: var(--dl12r-w); stroke-width: 2.2; }
+.dl12r-pen__plot { cursor: ew-resize; touch-action: pan-y; }
+.dl12r-pen__pghost { fill: none; stroke: var(--dl12r-w); stroke-width: 1.4; stroke-dasharray: 3 4; opacity: 0.45; }
+.dl12r-pen__pline { fill: none; stroke: var(--dl12r-w); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.dl12r-pen__head { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.dl12r-pen__hdot { fill: var(--dl12r-floor); stroke: var(--ink); stroke-width: 2; }
+.dl12r-svg .dl12r-pen__scrub:focus-visible { outline: none; }
+.dl12r-pen__scrub:focus-visible .dl12r-pen__hdot { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 4 2; }
+
+/* ── §2.8 dropout ─────────────────────────────────────────────────────── */
+.dl12r-dout { display: grid; grid-template-columns: minmax(0, 22.5rem) minmax(0, 14rem); gap: 1rem 2rem; align-items: center; justify-content: start; }
+.dl12r-dout--narrow { grid-template-columns: minmax(0, 1fr); }
+.dl12r-dout__io line { stroke: var(--ink-3); stroke-width: 1.4; }
+.dl12r-dout__io polygon { fill: var(--ink-3); }
+.dl12r-dout__e { stroke: var(--dl12r-fwd); stroke-width: 1.5; opacity: 0.7; transition: opacity 0.35s ease, stroke 0.35s ease; }
+.dl12r-dout__e--off { stroke: var(--dl12r-off); stroke-dasharray: 4 4; opacity: 0.4; }
+.dl12r-dout__n circle { fill: var(--dl12r-floor); stroke: var(--dl12r-fwd); stroke-width: 2.2; transition: stroke 0.35s ease; }
+.dl12r-dout__n--out circle { stroke: var(--ink-2); }
+.dl12r-dout__n--off circle { stroke: var(--dl12r-off); stroke-dasharray: 4 3; }
+.dl12r-dout__x line { stroke: var(--dl12r-off); stroke-width: 2.4; stroke-linecap: round; }
+.dl12r-dout__lbl { font-size: 12px; font-weight: 600; }
+.dl12r-dout__c { fill: color-mix(in srgb, var(--dl12r-fwd) 12%, var(--dl12r-floor)); stroke: var(--dl12r-fwd); stroke-width: 1.3; }
+.dl12r-dout__c--off { stroke: var(--dl12r-off); stroke-dasharray: 3 2; }
+.dl12r-dout__c--later { fill: none; stroke: var(--line); stroke-dasharray: 2 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dl12r-bn__mv, .dl12r-bn__brk, .dl12r-bn__dot, .dl12r-dout__e, .dl12r-dout__n circle { transition: none !important; }
+}

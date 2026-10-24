@@ -187,7 +187,7 @@ export function HeadsLab() {
         <>
           <MEq tex={'J(\\boldsymbol{\\theta}) = -\\frac{1}{m}\\sum_{i=1}^{m}\\sum_{k=1}^{K} y_k^{(i)} \\log\\left(\\hat{p}_k^{(i)}\\right)'} />
           <MLine text={`One instance ($m = 1$) whose true class is ${truth}: $y_k^{(1)} = 1$ only for $k = ${truth}$, so $J = -\\log \\hat{p}_{${truth}} = -\\log(${fmt(p[truth], 3)}) = ${fmt(crossEntropy(p, truth), 3)}$.`} />
-          <MNote text="Softmax here is the usual $\\hat{p}_k = \\exp(z_k) / \\sum_j \\exp(z_j)$: slide 29 names softmax and says its outputs are probabilities summing to 1, but prints no formula." />
+          <MNote text={'Softmax here is the usual $\\hat{p}_k = \\exp(z_k) / \\sum_j \\exp(z_j)$: slide 29 names softmax and says its outputs are probabilities summing to 1, but prints no formula.'} />
         </>
       )}
     >

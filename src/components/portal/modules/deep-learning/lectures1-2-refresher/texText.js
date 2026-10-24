@@ -1,16 +1,18 @@
 /* ============================================================================
-   LECTURE 8 STUDY — MATHS AS PLAIN TEXT (for print)
+   LECTURES 1–2 REFRESHER — MATHS AS PLAIN TEXT (for print; copied from
+   the Lecture 8 module and extended)
    ----------------------------------------------------------------------------
    KaTeX's HTML comes out of a PDF's text layer as scattered glyphs. Every
    formula on this page also prints a plain-text twin built here, in the
    usual linear notation, e.g.
-     Attention(Q, K, V) = softmax((QKᵀ)/(√d_keys)) V
-     α_(t,i) = exp(e_(t,i)) / Σ_i′ exp(e_(t,i′))
-     h̃_(t) = Σᵢ α_(t,i) y_(i)
-     P_p,i = sin(p/1000^(i/d)) if i is even; cos(p/1000^((i−1)/d)) if i is odd
-   It covers the commands this module uses (√, ᵀ, Σ with limits, the cases
-   brace, wide tilde, ⟨SOS⟩, underbraces, \text…); anything else falls back to
-   its bare argument rather than leaking a backslash.
+     w_i,j^(next step) = w_i,j + η(yⱼ − ŷⱼ)xᵢ
+     x̂⁽ⁱ⁾ = (x⁽ⁱ⁾ − μ_B)/(√(σ_B² + ε))
+     m̂ ← m/(1 − β₁ᵗ)      s ← ρs + (1 − ρ)∇_θ J(θ) ⊗ ∇_θ J(θ)
+     J(θ) = −1/m Σᵢ₌₁^m Σₖ₌₁^K yₖ⁽ⁱ⁾ log(p̂ₖ⁽ⁱ⁾)      Huber_δ(z) = ½z² if |z| ≤ δ; …
+   It covers the commands this module uses (√, ᵀ, Σ with its limits, ½, the
+   cases brace, hats, Greek letters incl. η, σ, ∇, β, ε, ρ, γ, ⊗, ⊘, ←, ℓ,
+   \text…); anything else falls back to its bare argument rather than
+   leaking a backslash.
    ========================================================================== */
 
 const SYMBOLS = {
@@ -52,7 +54,7 @@ const SUBS = {
   0: '₀', 1: '₁', 2: '₂', 3: '₃', 4: '₄', 5: '₅', 6: '₆', 7: '₇', 8: '₈', 9: '₉', '(': '₍', ')': '₎', '+': '₊', '−': '₋', '=': '₌',
   i: 'ᵢ', j: 'ⱼ', t: 'ₜ', k: 'ₖ', n: 'ₙ', p: 'ₚ',
 };
-const SUPS = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', '(': '⁽', ')': '⁾', '+': '⁺', '−': '⁻' };
+const SUPS = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', '(': '⁽', ')': '⁾', '+': '⁺', '−': '⁻', i: 'ⁱ', n: 'ⁿ', t: 'ᵗ' };
 const script = (t, map) => (t.length <= 3 && [...t].every((ch) => map[ch]) ? [...t].map((ch) => map[ch]).join('') : null);
 
 export function texText(src) {
@@ -73,8 +75,25 @@ export function texText(src) {
       } else if (name === 'frac' || name === 'dfrac' || name === 'tfrac') {
         const [a, j] = arg(s, i);
         const [b, k] = arg(s, j);
-        out += `${wrap(texText(a))}/${wrap(texText(b))}`;
+        const ta = texText(a);
+        const tb = texText(b);
+        out += ta === '1' && tb === '2' ? '½' : `${wrap(ta)}/${wrap(tb)}`;
         i = k;
+      } else if (name === 'sum') {
+        // Σ with its limits, then a space before the summand: Σᵢ₌₁^m_B x⁽ⁱ⁾
+        if (out && !/[\s(]$/.test(out)) out += ' ';
+        out += 'Σ';
+        for (let n = 0; n < 3; n++) {
+          while (s[i] === ' ') i += 1;
+          if (s.startsWith('\\limits', i)) { i += 7; continue; }
+          if (s[i] !== '_' && s[i] !== '^') break;
+          const c2 = s[i];
+          const [a, j] = arg(s, i + 1);
+          const t = texText(a).trim();
+          out += script(t, c2 === '_' ? SUBS : SUPS) ?? `${c2}${/^[\w′]+$/u.test(t) ? t : wrap(t)}`;
+          i = j;
+        }
+        out += ' ';
       } else if (name === 'sqrt') {
         const [a, j] = arg(s, i);
         const t = texText(a);
@@ -110,6 +129,8 @@ export function texText(src) {
       } else if (name === '\\') {
         out += '; ';
       } else {
+        // operator names get a space after a preceding term: yₖ⁽ⁱ⁾ log(p̂ₖ⁽ⁱ⁾)
+        if (/^(exp|log|tanh|sin|cos|max|min|abs)$/.test(name) && out && !/[\s(−+=/]$/.test(out)) out += ' ';
         out += SYMBOLS[name] ?? name;
       }
     } else if (c === '_' || c === '^') {
