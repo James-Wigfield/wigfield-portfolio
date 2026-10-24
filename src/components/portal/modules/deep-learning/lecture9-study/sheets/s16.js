@@ -39,5 +39,5 @@ export default {
       ],
     },
   ],
-  skip: 'the layer sizes (two `Dense(32, "elu")`) and the code line by line (see the code cards).',
+  skip: 'the code line by line (see the code cards).',
 };

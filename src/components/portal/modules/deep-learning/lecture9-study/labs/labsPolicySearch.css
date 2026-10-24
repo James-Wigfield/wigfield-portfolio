@@ -72,4 +72,4 @@
 }
 
 /* generation 2: the survivors outlined, their copies faded */
-.dl9s-gen__copy { opacity: 0.55; }
+.dl9s-gen__copy { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 2; }

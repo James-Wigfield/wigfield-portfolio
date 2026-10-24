@@ -146,7 +146,7 @@ export function QLearningLab() {
       title="Knowing the MDP vs learning by watching"
       slides="slides 53–55"
       tryThis="Predict which curve reaches the dashed line first, then press new run a few times."
-      caption="Left: slide 48’s Q-value iteration, which knows $T$ and $R$. Right: this page’s own Q-learning run, a purely random explorer with a learning rate reduced gradually as slide 52 advises ($\alpha_k = 0.05/(1 + 0.005k)$), still heads for the dashed $Q^*$ (within about 10%, depending on the seed): Q-learning is off-policy (slide 56)."
+      caption="Left: slide 48’s Q-value iteration, which knows $T$ and $R$. Right: this page’s own Q-learning run, with a purely random explorer and a learning rate reduced gradually as slide 52 advises ($\alpha_k = 0.05/(1 + 0.005k)$), still heads for the dashed $Q^*$ (within about 10%, depending on the seed), because Q-learning is off-policy (slide 56)."
       own={`Q-learning run, seed ${sd} · this page’s own`}
       maths={
         <>
@@ -268,7 +268,7 @@ export function EpsilonLab() {
       title="Explore or exploit: the ε-greedy policy"
       slides="slides 56–57"
       tryThis="Predict how often s₀ picks a₀ when ε = 1, drag ε, then sample 100 actions."
-      caption="With probability $\epsilon$ the agent explores (a random action, so each of $s_0$’s three actions gets $\epsilon/3$); otherwise it exploits the highest Q-value, so $P(a_0) = 1 - \epsilon + \epsilon/3$. (this page’s working)."
+      caption="With probability $\epsilon$ the agent explores (a random action, so each of $s_0$’s three actions gets $\epsilon/3$); otherwise it exploits the highest Q-value, so $P(a_0) = 1 - \epsilon + \epsilon/3$ (this page’s working)."
       challenge={{ text: 'Find the ε where the best action is chosen 90% of the time.', done }}
       own="Q-values from §12’s Q-value iteration · samples this page’s own"
       maths={

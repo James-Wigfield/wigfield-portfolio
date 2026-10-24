@@ -384,3 +384,7 @@
 
 /* mouse focus on a state button draws no box; keyboard focus is the dashed ring above */
 .dl9s-state--btn:focus:not(:focus-visible) { outline: none; }
+
+/* the squeezed (narrow) Figure 18-8 keeps its labels off the rings */
+.dl9s-mdp--compact .dl9s-rew { font-size: 12.5px; }
+.dl9s-mdp--compact .dl9s-prob { font-size: 11px; }

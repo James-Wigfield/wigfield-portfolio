@@ -85,7 +85,7 @@ function RlLoop() {
     <Svg w={360} h={150} label="The reinforcement learning loop: the agent sends an action to the environment; the environment sends back an observation and a reward to the agent">
       <P k="agent">
         <Box x={14} y={52} w={92} h={40} label="Agent" s={11.5} />
-        <T x={60} y={46} s={9.5} i>(policy)</T>
+        <T x={66} y={44} a="start" s={9.5} i>(policy)</T>
       </P>
       <P k="env"><Box x={252} y={52} w={96} h={40} label="Environment" s={11} /></P>
       <P k="act">
@@ -99,7 +99,7 @@ function RlLoop() {
         <T x={180} y={138} s={10.5}>observation + reward</T>
       </P>
       <T x={179} y={70} s={9.5} i>goal: maximise</T>
-      <T x={179} y={83} s={9.5} i>long-term rewards</T>
+      <T x={179} y={83} s={9.5} i>expected long-term rewards</T>
     </Svg>
   );
 }

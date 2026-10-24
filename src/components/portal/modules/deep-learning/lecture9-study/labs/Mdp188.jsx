@@ -26,7 +26,7 @@ export default function Mdp188({ policy, on, here = null, onState, showP = true,
     return '';
   };
   return (
-    <svg className={`dl9s-svg dl9s-mdp ${className}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label ?? 'Figure 18-8: the three-state MDP'}>
+    <svg className={`dl9s-svg dl9s-mdp${compact ? ' dl9s-mdp--compact' : ''} ${className}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label ?? 'Figure 18-8: the three-state MDP'}>
       {/* state → action stubs */}
       {ACTS.map((n) => {
         const st = role(n.s, n.a);

@@ -152,7 +152,7 @@ export function DqnCurveLab() {
               onKeyDown={onKey}
             >
               <rect x={x(0)} y={T} width={x(51) - x(0)} height={H - T - B} className="dl9s-dq__notrain" />
-              <text x={x(0) + 4} y={T + 12} className="dl9s-t dl9s-t--xs">{narrow ? 'no train' : 'no training'}</text>
+              <text x={x(0) + 4} y={T + 12} className="dl9s-t dl9s-t--xs dl9s-halo">{narrow ? 'no train' : 'no training'}</text>
               {[0, 50, 100, 150, 200].map((v) => (
                 <g key={v}>
                   <line x1={L} y1={y(v)} x2={W - R} y2={y(v)} className="dl9s-grid-line" />
