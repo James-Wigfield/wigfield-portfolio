@@ -99,11 +99,11 @@ export const SECTIONS = [
       { eq: { name: 'Perceptron learning rule (slide 10)', tex: 'w_{i,j}^{(\\text{next step})} = w_{i,j} + \\eta\\left(y_j - \\hat{y}_j\\right)x_i', read: '$w_{i,j}$: input $i$ → output $j$ · $x_i$: input value · $\\hat{y}_j$: output · $y_j$: target · $\\eta$: learning rate' } },
       {
         list: [
-          'Inspired by **Hebb’s rule**, “cells that fire together, wire together”: one instance at a time; for each wrong output, reinforce the weights from inputs that would have given the right answer (slide 9).',
-          'Slide 11’s handwriting writes it as a gradient-descent step, $w_{i,j} - \\eta\\,\\partial\\mathcal{L}_j/\\partial w_{i,j}$, with $\\mathcal{L}_j = \\tfrac{1}{2}(\\hat{y}_j - y_j)^2$ and a linear output $\\hat{y}_j = \\sum_i x_i w_{i,j}$, so $\\partial\\mathcal{L}_j/\\partial w_{i,j} = (\\hat{y}_j - y_j)x_i$.',
-          'Each output’s decision boundary is **linear**. If the data are linearly separable it converges (the **Perceptron convergence theorem**; the solution is generally not unique) (slide 12).',
-          'Scikit-Learn’s `Perceptron` (iris demo) = `SGDClassifier(loss="perceptron", learning_rate="constant", eta0=1, penalty=None)`; unlike Logistic Regression it gives no class probability, just a hard threshold (slides 13–15).',
-          'Minsky and Papert (1969): a Perceptron can’t solve **XOR**, so many researchers dropped connectionism. Stacking Perceptrons into an **MLP** can (Figure 10-6b) (slides 16–17).',
+          'Inspired by **Hebb’s rule**, “cells that fire together, wire together”: one instance at a time, reinforcing the weights that would have given the right answer (slide 9).',
+          'Slide 11’s handwriting writes it as gradient descent on $\\mathcal{L}_j = \\tfrac{1}{2}(\\hat{y}_j - y_j)^2$ with a linear output, where $\\partial\\mathcal{L}_j/\\partial w_{i,j} = (\\hat{y}_j - y_j)x_i$.',
+          'The decision boundary is **linear**; on linearly separable data the rule converges (the **Perceptron convergence theorem**), though not to a unique solution (slide 12).',
+          'Scikit-Learn’s `Perceptron` = `SGDClassifier(loss="perceptron", learning_rate="constant", eta0=1, penalty=None)`; it gives no class probability, unlike Logistic Regression (slides 13–15).',
+          'Minsky and Papert (1969): a Perceptron can’t solve **XOR**; an **MLP** can (Figure 10-6b) (slides 16–17).',
         ],
       },
       { slideNote: 'Slide 11’s derivation uses a linear output with no step function. A real Perceptron’s step has a zero derivative almost everywhere, so the derivation shows the rule has the *same form* as gradient descent on a linear unit’s squared error, not that it is the Perceptron’s own gradient. Slide 13’s `astype(np.int)` fails on current NumPy (`np.int` was removed in 1.24; use `int`), and since `y` holds integers, `predict` returns `1` and `0`, not “True and False”.' },
@@ -182,11 +182,11 @@ export const SECTIONS = [
       { gist: 'Stack layers in `tf.keras.Sequential([...])`, then `compile` (loss, optimizer, metrics), `fit` (epochs, validation data), `evaluate` and `predict`.' },
       {
         list: [
-          'Keras: a high-level API by François Chollet (open source March 2015), TensorFlow-only since 2.4; the unit uses TensorFlow 2.17.0 and Keras 3.10.0 (slides 32–33).',
-          '**Fashion MNIST**: 10 classes of 28 × 28 images, 60,000 training and 10,000 test; the last 5,000 training images are the validation set; pixels ÷ 255. A linear model reaches about 92% on MNIST but only about 83% here (slides 34–35).',
-          'The model: `Flatten` → `Dense(300, relu)` → `Dense(100, relu)` → `Dense(10, softmax)`; `model.summary()` counts 235,500 + 30,100 + 1,010 = 266,610 parameters, and the first hidden layer’s weights are (784, 300), its biases (300,) (slides 35–36).',
-          '`sparse_categorical_crossentropy`: labels are class indices; `fit` for 30 epochs (default `batch_size` 32) returns a `history` for learning curves (slides 37–38). Test accuracy 0.8733 (slide 39); `predict` gives class probabilities, `argmax` the classes (slide 40).',
-          'Regression (California housing): a `Normalization` layer, three `Dense(50, relu)`, `Dense(1)`; Adam, `loss="mse"`; test RMSE around 0.539, not very good, which motivates more complex topologies (slides 41–42).',
+          'Keras: a high-level API by François Chollet (2015), TensorFlow-only since 2.4; the unit uses TensorFlow 2.17.0 and Keras 3.10.0 (slides 32–33).',
+          '**Fashion MNIST**: 10 classes of 28 × 28 images, 60,000 training (the last 5,000 for validation) and 10,000 test, pixels ÷ 255 (slides 34–35).',
+          '`Flatten` → `Dense(300, relu)` → `Dense(100, relu)` → `Dense(10, softmax)`: 266,610 parameters; the first layer’s weights are (784, 300), its biases (300,) (slides 35–36).',
+          '`sparse_categorical_crossentropy` (labels are class indices), 30 epochs, default `batch_size` 32; `history` gives learning curves; test accuracy 0.8733; `predict` gives probabilities, `argmax` the classes (slides 37–40).',
+          'Regression: `Normalization`, three `Dense(50, relu)`, `Dense(1)`, Adam, MSE; test RMSE about 0.539, not very good, so more complex topologies follow (slides 41–42).',
         ],
       },
       { unfold: { label: 'Slides 35 and 37: the classifier, verbatim', blocks: [{ code: { src: 'L1_MODEL', label: 'L1 · slide 35' } }, { code: { src: 'L1_COMPILE', label: 'L1 · slide 37' } }] } },
@@ -305,9 +305,9 @@ export const SECTIONS = [
       { gist: 'Gradients can shrink (vanish) or grow (explode) on the way down to the lower layers; the first cure is to draw each layer’s initial weights with the right variance.' },
       {
         list: [
-          'Training a DNN can hit: vanishing/exploding gradients, too little (labelled) data, very slow training, overfitting with millions of parameters (slide 4).',
-          'Vanishing: the lower layers’ weights barely change and training never converges well; exploding: gradients grow larger and larger (slide 5).',
-          'Glorot and Bengio (2010) blamed the logistic sigmoid with $\\mathcal{N}(0, 1)$ initialization: each layer’s output variance is much greater than its input’s, the sigmoid’s mean is 0.5 not 0, and it **saturates** at 0 or 1 where its derivative is close to 0 (slides 5–6, Figure 11-1).',
+          'Problems: vanishing/exploding gradients, too little (labelled) data, slow training, overfitting (slide 4).',
+          'Vanishing: the lower layers barely change; exploding: gradients grow larger and larger (slide 5).',
+          'Glorot and Bengio (2010) blamed the sigmoid with $\\mathcal{N}(0, 1)$ initialization: output variance much greater than input variance, a mean of 0.5 not 0, and **saturation** at 0 or 1 with a derivative near 0 (slides 5–6, Figure 11-1).',
           'Glorot (slide 7): normal with $\\sigma^2 = 1/\\text{fan}_{\\text{avg}}$, or uniform on $[-r, +r]$ with $r = \\sqrt{3/\\text{fan}_{\\text{avg}}}$, where $\\text{fan}_{\\text{avg}} = (\\text{fan}_{\\text{in}} + \\text{fan}_{\\text{out}})/2$.',
           'Keras defaults to Glorot uniform; choose with `kernel_initializer="he_normal"` or a `VarianceScaling(scale=2., mode="fan_avg", distribution="uniform")` initializer (slide 9).',
         ],
@@ -373,9 +373,9 @@ export const SECTIONS = [
       { eq: { name: 'The BN algorithm (slide 24)', tex: '\\boldsymbol{\\mu}_B = \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\mathbf{x}^{(i)} \\qquad \\boldsymbol{\\sigma}_B^2 = \\frac{1}{m_B}\\sum_{i=1}^{m_B}\\left(\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B\\right)^2 \\qquad \\hat{\\mathbf{x}}^{(i)} = \\frac{\\mathbf{x}^{(i)} - \\boldsymbol{\\mu}_B}{\\sqrt{\\boldsymbol{\\sigma}_B^2 + \\epsilon}} \\qquad \\mathbf{z}^{(i)} = \\boldsymbol{\\gamma} \\otimes \\hat{\\mathbf{x}}^{(i)} + \\boldsymbol{\\beta}', read: 'mean and variance per feature over the mini-batch $B$; $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$: trainable scale and shift (one per input feature); $\\otimes$: element-wise' } },
       {
         list: [
-          'An extra operation before or after each hidden layer’s activation; at test time it uses moving averages of the mini-batch statistics (slide 23).',
-          'Gains (slide 25): much better ImageNet results; vanishing gradients reduced enough to use tanh; much larger learning rates; acts as a regularizer; no need for `StandardScaler`. A runtime cost, offset by fewer epochs; BN can be fused into the previous layer after training.',
-          'In Keras: `BatchNormalization()` after `Flatten` and after each hidden layer (slide 26). The summary (slide 27): 3,136 parameters for 784 inputs, 271,346 in total, 2,368 non-trainable. That is 4 per input feature, $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$ and the two moving averages, which are the non-trainable ones: $2 \\times (784 + 300 + 100) = 2{,}368$ (this page’s working; the slide doesn’t explain the counts).',
+          'An extra operation before or after each hidden layer’s activation; at test time, moving averages of the mini-batch statistics are used (slide 23).',
+          'Gains (slide 25): better ImageNet results, tanh usable again, much larger learning rates, a regularizing effect, no `StandardScaler` needed; a runtime cost, offset by fewer epochs (BN can be fused into the previous layer after training).',
+          '`BatchNormalization()` after `Flatten` and each hidden layer (slide 26): 271,346 parameters, 2,368 non-trainable (slide 27), i.e. 4 per input feature, $\\boldsymbol{\\gamma}$, $\\boldsymbol{\\beta}$ and the two moving averages (this page’s working).',
           'The BN paper preferred BN **before** the activation: `Dense(…, use_bias=False)`, then `BatchNormalization()`, then `Activation("relu")` (slide 28).',
         ],
       },
@@ -414,10 +414,10 @@ export const SECTIONS = [
       { gist: 'Reuse the lower layers of a network trained on a similar task, replace its output layer, freeze the reused layers at first, then unfreeze and fine-tune.' },
       {
         list: [
-          'The more similar the tasks, the more layers to reuse, starting from the bottom; for very similar tasks keep every hidden layer and replace only the output layer (slide 30, Figure 11-5).',
-          'Example: `model_A` was trained on 8 Fashion MNIST classes (all but sandal and shirt); `model_B` (T-shirt vs pullover, 200 labelled images) gets 91.85% test accuracy (slide 31).',
-          'Copy `model_A.layers[:-1]`, add `Dense(1, activation="sigmoid")`; set `layer.trainable = False` and train 4 epochs; set it back to `True`, **recompile**, train 16 more (slide 31).',
-          '`model_B_on_A`: 93.85%, so the error falls from 8.15% to 6.15%, almost 25% less. But it took many trials (random seeds); transfer learning works poorly with small dense networks and well with deep CNNs (slide 32).',
+          'The more similar the tasks, the more (lower) layers to reuse; for very similar tasks keep every hidden layer and replace only the output layer (slide 30, Figure 11-5).',
+          '`model_A`: 8 Fashion MNIST classes; `model_B` (T-shirt vs pullover, 200 labelled images): 91.85% test accuracy (slide 31).',
+          'Reuse `model_A.layers[:-1]` plus `Dense(1, activation="sigmoid")`; `trainable = False`, train 4 epochs; `True`, **recompile**, train 16 (slide 31).',
+          '93.85%: the error falls from 8.15% to 6.15%, almost 25% less; but it took many trials, and it suits deep CNNs, not small dense networks (slide 32).',
         ],
       },
       { unfold: { label: 'Slide 31: freeze, train, unfreeze, recompile, verbatim', blocks: [{ code: { src: 'L2_TRANSFER', label: 'L2 · slide 31' } }] } },
@@ -448,10 +448,10 @@ export const SECTIONS = [
       { eq: { name: 'Adam (slide 43)', tex: '\\begin{aligned} &1.\\ \\mathbf{m} \\leftarrow \\beta_1\\mathbf{m} + (1 - \\beta_1)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\qquad 2.\\ \\mathbf{s} \\leftarrow \\beta_2\\mathbf{s} + (1 - \\beta_2)\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\otimes \\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta}) \\\\ &3.\\ \\widehat{\\mathbf{m}} \\leftarrow \\mathbf{m}/(1 - \\beta_1^{\\,t}) \\qquad 4.\\ \\widehat{\\mathbf{s}} \\leftarrow \\mathbf{s}/(1 - \\beta_2^{\\,t}) \\qquad 5.\\ \\boldsymbol{\\theta} \\leftarrow \\boldsymbol{\\theta} - \\eta\\,\\widehat{\\mathbf{m}} \\oslash \\sqrt{\\widehat{\\mathbf{s}} + \\epsilon} \\end{aligned}', read: 'steps 3–4 boost $\\mathbf{m}$ and $\\mathbf{s}$, which start near zero; $t$ is the iteration number' } },
       {
         list: [
-          'Momentum uses the gradient as an **acceleration**, not a speed, and can roll past local optima; NAG measures the gradient slightly ahead, at $\\boldsymbol{\\theta} + \\beta\\mathbf{m}$, so it ends closer to the optimum (slides 34–37).',
-          'AdaGrad decays the learning rate faster along steep dimensions (an *adaptive learning rate*) but often stops before the optimum; RMSProp accumulates only recent gradients (slides 38–42).',
-          'Variants (slides 45–46): **AdaMax** replaces step 2 with $\\mathbf{s} \\leftarrow \\max(\\beta_2\\mathbf{s}, \\text{abs}(\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta})))$; **Nadam** = Adam + the Nesterov trick; **AdamW** adds weight decay (e.g. multiply weights by 0.99 each iteration), `AdamW(weight_decay=1e-5, …)`.',
-          'Table 11-2 (slide 47): plain `SGD` converges slowest (`*`) but well (`***`); momentum and NAG are `**` fast; the adaptive ones are fast (`***`) with quality `**` or `***`, except AdaGrad (`*`: stops too early).',
+          'Momentum uses the gradient as an **acceleration**, not a speed, and can roll past local optima; NAG measures it ahead, at $\\boldsymbol{\\theta} + \\beta\\mathbf{m}$, ending closer to the optimum (slides 34–37).',
+          'AdaGrad decays the rate faster on steep dimensions (an *adaptive learning rate*) but stops too early; RMSProp keeps only recent gradients (slides 38–42).',
+          '**AdaMax**: step 2 becomes $\\mathbf{s} \\leftarrow \\max(\\beta_2\\mathbf{s}, \\text{abs}(\\nabla_{\\boldsymbol{\\theta}} J(\\boldsymbol{\\theta})))$; **Nadam** = Adam + Nesterov; **AdamW** adds weight decay, `AdamW(weight_decay=1e-5, …)` (slides 45–46).',
+          'Table 11-2 (slide 47): `SGD` is slow (`*`) but converges well (`***`); momentum and NAG `**`; the adaptive ones `***` fast, quality `**` or `***`, except AdaGrad (`*`, stops too early).',
         ],
       },
       { slideNote: 'Momentum’s $\\mathbf{m}$ (slide 34) subtracts $\\eta\\nabla$, while Adam’s $\\mathbf{m}$ (slide 43) adds $(1 - \\beta_1)\\nabla$ and step 5 subtracts, so slide 44’s “$\\beta_1$ corresponds to $\\beta$” holds for their role as decay rates only. Slide 43 puts $\\epsilon$ inside the square root; the Adam paper and Keras add it outside, a negligible difference. Slide 38’s $\\epsilon = 10^{-10}$ is Géron’s value (Keras’s default is `1e-07`), and slide 39 repeats the NAG code on an AdaGrad slide (AdaGrad’s is on slide 40).' },
@@ -504,10 +504,10 @@ export const SECTIONS = [
       { gist: 'ℓ1/ℓ2 add a penalty on the weights to the loss; dropout ignores each neuron with probability $p$ at every training step, and drops nothing at test time.' },
       {
         list: [
-          '`kernel_regularizer=tf.keras.regularizers.l2(0.01)`: at each step the regularization loss is added to the final loss; `l1_l2(...)` for both (slide 60). `functools.partial()` repeats the same settings for every `Dense` layer (slide 61).',
-          'Dropout (Hinton et al., 2012): even state-of-the-art networks gained 1% to 2% accuracy; at 95% that drops the error by almost 40% (5% to roughly 3%) (slide 62).',
-          'Every neuron, inputs included but **never the outputs**, is dropped with probability $p$ (the **dropout rate**, typically 10% to 50%) for one step; after training nothing is dropped and you simply use the learned weights (slide 63, Figure 11-10).',
-          '`Dropout(rate=0.2)` before every `Dense` layer (slide 64). Training and validation losses can look alike while the model overfits, so **evaluate the training loss without dropout** (slide 64).',
+          '`kernel_regularizer=tf.keras.regularizers.l2(0.01)`: the regularization loss is added to the final loss; also `l1(...)`, `l1_l2(...)`, and `functools.partial()` to repeat settings (slides 60–61).',
+          'Dropout (Hinton et al., 2012) gave even state-of-the-art networks 1% to 2% more accuracy: at 95%, almost 40% less error (slide 62).',
+          'Each neuron, inputs included but **never the outputs**, is dropped with probability $p$ (the **dropout rate**, 10% to 50%) for one step; after training nothing is dropped and the learned weights are used (slide 63, Figure 11-10).',
+          '`Dropout(rate=0.2)` before every `Dense` layer; **evaluate the training loss without dropout**, since with it on the two losses can look alike while the model overfits (slide 64).',
         ],
       },
       { unfold: { label: 'Slides 60 and 64: ℓ2 and dropout in Keras, verbatim', blocks: [{ code: { src: 'L2_L2REG', label: 'L2 · slide 60' } }, { code: { src: 'L2_DROPOUT', label: 'L2 · slide 64' } }] } },

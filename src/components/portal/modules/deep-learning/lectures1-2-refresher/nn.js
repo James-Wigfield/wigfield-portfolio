@@ -435,14 +435,15 @@ export function piecewiseLR(t, { boundaries = [5, 20, 30], values = [0.1, 0.04, 
   while (k < boundaries.length && t >= boundaries[k]) k += 1;
   return values[k];
 }
-/* slide 59 (1cycle): up linearly from η₀ to η₁ halfway, back down linearly to
-   η₀, then the last few epochs drop by several orders of magnitude (still
-   linearly). `tail` is the fraction of training spent on that last drop. */
+/* slide 59 (1cycle): up linearly from η₀ to η₁ halfway through training,
+   back down linearly to η₀ during the second half, finishing the last few
+   epochs by dropping several orders of magnitude (still linearly). `tail`
+   is the fraction of training spent on that last drop (this page's choice). */
 export function oneCycleLR(t, { T = 50, eta0 = 0.01, eta1 = 0.1, tail = 0.1, floor = 0.0001 } = {}) {
+  const half = T / 2;
   const tEnd = T * (1 - tail);
-  const half = tEnd / 2;
   if (t <= half) return eta0 + ((eta1 - eta0) * t) / half;
-  if (t <= tEnd) return eta1 - ((eta1 - eta0) * (t - half)) / half;
+  if (t <= tEnd) return eta1 - ((eta1 - eta0) * (t - half)) / (tEnd - half);
   return eta0 - ((eta0 - floor) * (t - tEnd)) / (T - tEnd);
 }
 /* slide 57 (performance scheduling, ReduceLROnPlateau(factor, patience)):

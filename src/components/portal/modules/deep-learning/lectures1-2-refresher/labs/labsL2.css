@@ -81,6 +81,11 @@
 .dl12r-clip__sw--g { border-color: var(--dl12r-bwd); }
 .dl12r-clip__sw--v { border-color: var(--dlv-blue); }
 .dl12r-clip__sw--n { border-color: var(--dlv-orange); }
+/* stack by the stage's own width too, so print (laid out after the JS
+   measured the screen) stacks the table under the plot */
+@container stage (max-width: 820px) {
+  .dl12r-clip { grid-template-columns: minmax(0, 1fr); }
+}
 @container stage (max-width: 430px) {
   .dl12r-clip__tab th, .dl12r-clip__tab td { padding-right: 0.45rem; }
   .dl12r-clip__tab td { font-size: 0.7rem; }

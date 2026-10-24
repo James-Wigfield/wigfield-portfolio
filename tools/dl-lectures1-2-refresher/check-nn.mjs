@@ -190,7 +190,7 @@ ok(nn.piecewiseLR(60000, { boundaries: [50000, 80000], values: [0.01, 0.005, 0.0
 {
   const o = { T: 50, eta0: 0.01, eta1: 0.1, tail: 0.1, floor: 0.0001 };
   near(nn.oneCycleLR(0, o), 0.01, 1e-12, '1cycle starts at η₀');
-  near(nn.oneCycleLR(22.5, o), 0.1, 1e-12, '1cycle peaks at η₁ halfway');
+  near(nn.oneCycleLR(25, o), 0.1, 1e-12, '1cycle peaks at η₁ halfway through training (slide 59)');
   near(nn.oneCycleLR(45, o), 0.01, 1e-12, '1cycle back to η₀');
   near(nn.oneCycleLR(50, o), 0.0001, 1e-12, '1cycle ends orders of magnitude lower');
   const lr = nn.performanceLR([1, 0.9, 0.8, 0.8, 0.81, 0.82, 0.83, 0.84, 0.7], { eta0: 0.01, factor: 0.5, patience: 5 });

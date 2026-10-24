@@ -651,7 +651,7 @@ const LR_KINDS = [
   { k: 'exponential', sw: '--dlv-orange', name: 'exponential', tL: 33 },
   { k: 'piecewise', sw: '--dlv-aqua', name: 'piecewise constant', tL: 40 },
   { k: 'performance', sw: '--dlv-yellow', name: 'performance', tL: 45 },
-  { k: 'onecycle', sw: '--dlv-magenta', name: '1cycle', tL: 22.5 },
+  { k: 'onecycle', sw: '--dlv-magenta', name: '1cycle', tL: 25 },
 ];
 const LR_PTS = Object.fromEntries(LR_KINDS.map(({ k }) => [k, lrPoints(k)]));
 const LR_MAX = Object.fromEntries(LR_KINDS.map(({ k }) => [k, Math.max(...LR_PTS[k].map((p) => p[1]))]));
@@ -703,7 +703,7 @@ function lrMaths(kind, t) {
       return (
         <>
           <MLine text="Slide 59: start at $η_0$, grow linearly up to $η_1$ halfway through training, decrease linearly back to $η_0$ in the second half, and finish the last few epochs by dropping the rate by several orders of magnitude (still linearly)." />
-          <MLine text={`This page’s numbers: $η_0 = 0.01$, $η_1 = 0.1$ at $t = 22.5$, back to 0.01 at $t = 45$, then down to 0.0001 at $t = 50$ (the last 10% of training). ${at}`} />
+          <MLine text={`This page’s numbers: $η_0 = 0.01$, $η_1 = 0.1$ at $t = 25$ (halfway), back to 0.01 at $t = 45$, then down to 0.0001 at $t = 50$ (the last 10% of training). ${at}`} />
           <MNote text="Slide 59 gives no formula, values or Keras call for 1cycle." />
         </>
       );
