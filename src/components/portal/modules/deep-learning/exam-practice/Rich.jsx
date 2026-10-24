@@ -53,8 +53,18 @@ function parse(text, key = 'r') {
     const tk = `${key}.${k++}`;
     const tok = m[0];
     if (m[1]) out.push(<code key={tk} className="dlxp-c">{tok.slice(1, -1)}</code>);
-    else if (m[2]) out.push(<M key={tk} src={tok.slice(1, -1)} />);
-    else if (m[3]) out.push(<b key={tk}>{parse(tok.slice(2, -2), tk)}</b>);
+    else if (m[2]) {
+      // punctuation straight after a short formula stays on its line (a long
+      // one keeps KaTeX's own break points, so it can still wrap at 390 px)
+      const after = rest.slice(m.index + tok.length);
+      const p = /^[.,;:!?)\]]+/.exec(after);
+      if (p && tok.length <= 40) {
+        out.push(<span key={tk} className="dlxp-nobr"><M src={tok.slice(1, -1)} />{p[0]}</span>);
+        rest = after.slice(p[0].length);
+        continue;
+      }
+      out.push(<M key={tk} src={tok.slice(1, -1)} />);
+    } else if (m[3]) out.push(<b key={tk}>{parse(tok.slice(2, -2), tk)}</b>);
     else out.push(<em key={tk}>{parse(tok.slice(1, -1), tk)}</em>);
     rest = rest.slice(m.index + tok.length);
   }

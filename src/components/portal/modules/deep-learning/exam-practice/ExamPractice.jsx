@@ -76,7 +76,21 @@ export default function ExamPractice() {
   const [printing, setPrinting] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [stick, setStick] = useState(0);
   const deskRef = useRef(null);
+
+  // The portal's topbar is sticky: the question bar sticks just under it,
+  // and page turns scroll the stepper clear of it.
+  useEffect(() => {
+    const bar = document.querySelector('.portal__topbar');
+    if (!bar || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => {
+      const fixed = getComputedStyle(bar).position === 'sticky';
+      setStick(fixed ? Math.round(bar.getBoundingClientRect().height) : 0);
+    });
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
 
   const paper = PAPER[paperId];
   const page = Math.min(at[paperId] ?? 0, paper.questions.length);
@@ -218,7 +232,7 @@ export default function ExamPractice() {
   return (
     <XpCtx.Provider value={ctx}>
       <style>{PRINT_CSS}</style>
-      <div className="dl dlxp">
+      <div className="dl dlxp" style={{ '--dlxp-stick': `${stick}px` }}>
         {printing && <PrintBook />}
 
         <header className="dlxp-hero">
@@ -246,6 +260,7 @@ export default function ExamPractice() {
                 onClick={() => openPaper(p.id)}
               >
                 <span className="dlxp-tab__name">{p.tab}</span>
+                <span className="dlxp-tab__short" aria-hidden="true">{p.id === 'sample' ? 'Sample' : `Paper ${p.id}`}</span>
                 <span className="dlxp-tab__score">{scoreOf(ls)} / {paperMarks(p)}</span>
               </button>
             );
@@ -339,9 +354,16 @@ export default function ExamPractice() {
             ) : (
               <>
                 <div className="dlxp-qbar">
-                  <span className="dlxp-qbar__t">Question {question.n} <span className="dlxp-qbar__of">· {scoreOf(leavesOf(question))} / 20 marked</span></span>
+                  <span className="dlxp-qbar__t">Question {question.n} <span className="dlxp-qbar__of">· your mark {scoreOf(leavesOf(question))} / 20</span></span>
+                  {started && <span className={`dlxp-timer${left <= 0 ? ' dlxp-timer--up' : ''}`} aria-hidden="true">{left > 0 ? `${clock(left)} left` : 'Time is up'}</span>}
                   <button type="button" className="dlxp-textbtn" onClick={() => setReveal(leavesOf(question).map((l) => l.id), true)}>Reveal all parts</button>
-                  <button type="button" className="dlxp-textbtn" onClick={() => setReveal(leavesOf(question).map((l) => l.id), false)}>Hide answers</button>
+                  {leavesOf(question).some((l) => reveal[l.id]) && (
+                    <button type="button" className="dlxp-textbtn" onClick={() => setReveal(leavesOf(question).map((l) => l.id), false)}>Hide answers</button>
+                  )}
+                  <span className="dlxp-qbar__turn">
+                    <button type="button" className="dlxp-textbtn" aria-label={page <= 1 ? 'Back to the cover' : `Back to question ${page - 1}`} onClick={() => goTo(page - 1)}>←</button>
+                    <button type="button" className="dlxp-textbtn" disabled={page >= paper.questions.length} aria-label={`On to question ${page + 1}`} onClick={() => goTo(page + 1)}>→</button>
+                  </span>
                 </div>
                 <QuestionView paper={paper} question={question} last={page === paper.questions.length} />
               </>

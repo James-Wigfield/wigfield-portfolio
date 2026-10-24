@@ -55,8 +55,23 @@ function PromptBlock({ text, label }) {
 
 export default function ExportPdf({ onExport }) {
   const [open, setOpen] = useState(false);
+  const boxRef = useRef(null);
+
+  // Esc or a click outside closes the disclosure.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const onDown = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [open]);
+
   return (
-    <span className="dlxp-export">
+    <span className="dlxp-export" ref={boxRef}>
       <button type="button" className="dlxp-btn dlxp-btn--big" onClick={onExport} title="Print all three papers, each followed by its model answers, to an A4 PDF (choose Save as PDF)">
         <Icon name="printer" size={16} /> Export PDF
       </button>

@@ -1,7 +1,7 @@
 import { SAMPLE } from './sample.js';
 import { PAPER_A } from './paperA.js';
 import { PAPER_B } from './paperB.js';
-import { LEC, topicReceipt } from './lectures.js';
+import { LEC, receiptText } from './lectures.js';
 
 /* ============================================================================
    EXAM PRACTICE — THE PAPERS (schema, builders, derived facts)
@@ -92,10 +92,10 @@ export const leafLectures = (leaf) => [...new Set(leaf.topics.map((t) => t.lec))
 export const partLectures = (part) => [...new Set((part.subs ?? [part]).flatMap((s) => s.topics.map((t) => t.lec)))];
 
 // the grey receipt under an answer: "L1 · slides 43–45 · L2 · slide 66"
+// (one entry per lecture, its slide ranges merged)
 export function receiptOf(leaf) {
   if (leaf.receipt) return leaf.receipt;
-  const seen = new Set();
-  return leaf.topics.map(topicReceipt).filter((r) => (seen.has(r) ? false : seen.add(r))).join(' · ');
+  return receiptText(leaf.topics);
 }
 
 export const lectureLabel = (code) => LEC[code]?.label ?? code;

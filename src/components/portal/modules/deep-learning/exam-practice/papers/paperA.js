@@ -68,8 +68,10 @@ export const PAPER_A = {
           source: 'new',
           prompt: [
             R`Given below are the equations of batch normalization (BN) for a minibatch $B$ of $m_B$ instances:`,
-            { eq: R`\boldsymbol{\mu}_B = \frac{1}{m_B}\sum_{i=1}^{m_B}\mathbf{x}^{(i)} \qquad \boldsymbol{\sigma}_B^2 = \frac{1}{m_B}\sum_{i=1}^{m_B}\left(\mathbf{x}^{(i)} - \boldsymbol{\mu}_B\right)^2` },
-            { eq: R`\hat{\mathbf{x}}^{(i)} = \frac{\mathbf{x}^{(i)} - \boldsymbol{\mu}_B}{\sqrt{\boldsymbol{\sigma}_B^2 + \epsilon}} \qquad \mathbf{z}^{(i)} = \boldsymbol{\gamma} \otimes \hat{\mathbf{x}}^{(i)} + \boldsymbol{\beta}` },
+            { eq: R`\boldsymbol{\mu}_B = \frac{1}{m_B}\sum_{i=1}^{m_B}\mathbf{x}^{(i)}` },
+            { eq: R`\boldsymbol{\sigma}_B^2 = \frac{1}{m_B}\sum_{i=1}^{m_B}\left(\mathbf{x}^{(i)} - \boldsymbol{\mu}_B\right)^2` },
+            { eq: R`\hat{\mathbf{x}}^{(i)} = \frac{\mathbf{x}^{(i)} - \boldsymbol{\mu}_B}{\sqrt{\boldsymbol{\sigma}_B^2 + \epsilon}}` },
+            { eq: R`\mathbf{z}^{(i)} = \boldsymbol{\gamma} \otimes \hat{\mathbf{x}}^{(i)} + \boldsymbol{\beta}` },
             R`where $\epsilon$ is a small constant. Briefly explain what $\boldsymbol{\mu}_B$, $\boldsymbol{\sigma}_B^2$, $\hat{\mathbf{x}}^{(i)}$, $\boldsymbol{\gamma}$ and $\boldsymbol{\beta}$ are. What does BN use in place of $\boldsymbol{\mu}_B$ and $\boldsymbol{\sigma}_B^2$ when making predictions on the test set?`,
           ],
           topics: [
@@ -514,10 +516,12 @@ gan = tf.keras.Sequential([generator, discriminator])`,
               prompt: [R`Briefly explain what $\mathbf{Q}$, $\mathbf{K}$ and $\mathbf{V}$ contain, and why the similarity scores are divided by $\sqrt{d_{\text{keys}}}$.`],
               topics: [
                 { lec: 'L8', slides: [27, 28], name: 'Queries, keys and values' },
+                { lec: 'L8', slides: 31, name: 'Self-attention' },
                 { lec: 'L8', slides: [37, 38], name: 'Scaled dot-product attention' },
+                { lec: 'L8', slides: 40, name: 'Cross-attention' },
               ],
               answer: [
-                w(R`$\mathbf{Q}$ holds the **queries**, one row per query, $[n_{\text{queries}}, d_{\text{keys}}]$ (from the decoder's outputs); $\mathbf{K}$ the **keys**, $[n_{\text{keys}}, d_{\text{keys}}]$, and $\mathbf{V}$ the **values**, $[n_{\text{keys}}, d_{\text{values}}]$ (from the encoder's outputs). Like a dictionary lookup: each query is matched against every key and returns a weighted sum of the values.`, 1),
+                w(R`$\mathbf{Q}$ holds the **queries**, one row per query, $[n_{\text{queries}}, d_{\text{keys}}]$; $\mathbf{K}$ the **keys**, $[n_{\text{keys}}, d_{\text{keys}}]$, and $\mathbf{V}$ the **values**, $[n_{\text{keys}}, d_{\text{values}}]$. Like a dictionary lookup: each query is matched against every key and returns a weighted sum of the values. In the decoder's cross-attention layer the queries come from the decoder and the keys and values from the encoder's outputs; in a self-attention layer (the encoder's, or the decoder's masked one) all three come from the same sentence.`, 1),
                 w(R`Dividing by $\sqrt{d_{\text{keys}}}$ scales down the scores to avoid saturating the softmax function, which would lead to tiny gradients.`, 1),
               ],
               difficulty: 2,

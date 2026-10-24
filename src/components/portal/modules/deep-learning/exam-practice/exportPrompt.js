@@ -33,8 +33,10 @@
         QKᵀ shapes, with the V-has-one-row-per-key trap
      5. Practice Paper B · Question 4 (b)   difficulty 4  L9  two value-
         iteration steps by hand on the slides' MDP: six values, easy slips
-   check-papers.mjs checks each pick exists and that its label appears in the
-   prompt verbatim; page-check.mjs checks each label is in the PDF's text.
+   Every pick prints a "Common slip:" line in its model answer, so the video
+   never has to invent one. check-papers.mjs checks each pick exists, has a
+   slip, and that its label appears in the prompt verbatim; page-check.mjs
+   checks each label is in the PDF's text.
    ========================================================================== */
 
 export const NLM_FORMAT = 'Explainer';
@@ -48,7 +50,7 @@ export const NLM_PICKS = [
   { id: 'b-q4-b', difficulty: 4 },
 ];
 
-export const NLM_PROMPT = `Use only this PDF. Make a revision session in which the CITS5017 lecturer works through five exam parts at the whiteboard, in this order: Sample Paper · Question 1 (c); Sample Paper · Question 2 (a) iii.; Practice Paper B · Question 2 (b); Practice Paper A · Question 4 (a) ii.; Practice Paper B · Question 4 (b). Skip every other question. For each part: read it out with its marks; say what the marks and the command word signal about how much to write; think aloud through the approach; give the model answer exactly as printed under that label in the PDF's Model answers, in its notation and with its numbers, adding no alternatives or outside facts; then point out where the ticks fall and the one common slip. End with a short recap of exam technique: the marks guide the depth, at about 1.5 minutes per mark.`;
+export const NLM_PROMPT = `Use only this PDF. Make a revision session in which the CITS5017 lecturer works through five exam parts at the whiteboard, in this order: Sample Paper · Question 1 (c); Sample Paper · Question 2 (a) iii.; Practice Paper B · Question 2 (b); Practice Paper A · Question 4 (a) ii.; Practice Paper B · Question 4 (b). Skip every other question. For each part: read it out, with the stem it depends on, and its marks; say what the marks and the command word signal about how much to write; think aloud through the approach; give the model answer exactly as printed under that label in the PDF's Model answers, in its notation and with its numbers, adding nothing from outside the PDF; then point out where the ticks fall and the common slip printed with it. End with a short recap of exam technique: the marks guide the depth, at about 1.5 minutes per mark.`;
 
 export const NLM_STEPS = [
   'Export the PDF with the button above (in the print dialog, choose “Save as PDF”).',

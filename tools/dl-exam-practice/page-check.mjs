@@ -12,7 +12,8 @@
    Checks
      render     three tabs; each paper opens on its cover; the stepper has
                 Cover + one step per question; every question's sheets render
-                with the running head, "Page N of M" and its topic line
+                with the running head, "Page N of M" and its topic line, and
+                every margin label stays on its sheet
      reveal     every part's Reveal writes its answer onto the paper (and Hide
                 takes it off); "Reveal all parts" / "Hide answers" per question
      hand       the answers use Patrick Hand (body) and Caveat (headings and
@@ -128,6 +129,7 @@ try {
   if (want('render')) {
     const tabs = await page.$$eval('.dlxp-tab', (els) => els.map((e) => e.querySelector('.dlxp-tab__name').textContent));
     ok(tabs.join('|') === PAPERS.map((p) => p.tab).join('|'), 'three tabs, one per paper', tabs.join(' · '));
+    const offSheet = [];
     for (const paper of PAPERS) {
       await goPaper(page, paper.id);
       await goStep(page, 0);
@@ -148,7 +150,11 @@ try {
           topics: document.querySelectorAll('.dlxp-topics__t').length,
           parts: [...document.querySelectorAll('.dlxp-part')].map((e) => e.dataset.part),
           katexErr: document.querySelectorAll('.dlxp-sheet .katex-error').length,
+          offSheet: [...document.querySelectorAll('.dlxp-mlabel__t')]
+            .filter((e) => e.getBoundingClientRect().right > e.closest('.dlxp-sheet').getBoundingClientRect().right - 4)
+            .map((e) => e.textContent),
         }));
+        offSheet.push(...r.offSheet.map((t) => `${paper.id} Q${q.n}: ${t}`));
         const pages = [...new Set(q.parts.map((p) => p.page))];
         ok(r.sheets === pages.length && r.heads.every((h) => h === paper.head) && r.feet.join('|') === pages.map((n) => `Page ${n} of ${paper.pages}`).join('|'), `${paper.name} Q${q.n}: ${pages.length} sheets with running head and "Page N of ${paper.pages}"`, r.feet.join(', '));
         ok(r.qhead === `Question ${q.n}. (20 marks)` && r.topics > 0, `${paper.name} Q${q.n}: heading + topic line`, `${r.qhead} · ${r.topics} lecture groups`);
@@ -156,6 +162,7 @@ try {
         ok(r.katexErr === 0, `${paper.name} Q${q.n}: no KaTeX errors`);
       }
     }
+    ok(offSheet.length === 0, 'every margin label (lecture · slides) stays on its sheet', offSheet.join(' | '));
   }
 
   // ── reveal ────────────────────────────────────────────────────────────────

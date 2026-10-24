@@ -195,6 +195,7 @@ for (const pick of NLM_PICKS) {
   if (!hit) continue;
   const label = leafLabel(hit.paper, hit.l.question, hit.l);
   ok(NLM_PROMPT.includes(label), `NotebookLM prompt doesn't name "${label}" verbatim`);
+  ok((hit.l.answer || []).some((b) => b.t === 'slip'), `NotebookLM pick ${pick.id} prints no "Common slip:" line (the prompt asks for it)`);
 }
 
 console.log(`${checks - fails}/${checks} checks passed${fails ? ` · ${fails} FAILED` : ''}`);

@@ -113,7 +113,7 @@ export const PAPER_B = {
               ],
               answer: [
                 w(R`$\mathbf{m}$: an exponentially decaying average of past gradients (an estimate of their mean), like the momentum vector of momentum optimization.`, 1),
-                w(R`$\mathbf{s}$: an exponentially decaying average of past **squared** gradients ($\otimes$ element-wise; an estimate of their variance), as in RMSProp. Adam (adaptive moment estimation) combines **momentum optimization** and **RMSProp**.`, 1),
+                w(R`$\mathbf{s}$: an exponentially decaying average of past **squared** gradients ($\otimes$ element-wise; an estimate of their uncentred variance), as in RMSProp. Adam (adaptive moment estimation) combines **momentum optimization** and **RMSProp**.`, 1),
               ],
               difficulty: 2,
               likelihood: 'high',
@@ -482,6 +482,7 @@ for layer in model_B_on_A.layers[:-1]:
               prompt: ['Explain what the `return` line computes and how its result is used.'],
               topics: [
                 { lec: 'L67', slides: 11, name: 'Mean and standard deviation codings' },
+                { lec: 'L67', slides: 12, name: 'γ = log σ²' },
                 { lec: 'L67', slides: [14, 15], name: 'Sampling the codings' },
               ],
               answer: [
@@ -841,6 +842,7 @@ target_Q_values = rewards + runs * discount_factor * max_next_Q_values`,
           source: 'new',
           prompt: ['*Policy gradient* algorithms optimize a policy\'s parameters by following the gradients toward higher rewards. Briefly explain the four steps of the REINFORCE variant covered in the lecture.'],
           topics: [
+            { lec: 'L9', slides: 27, name: 'An action\'s return' },
             { lec: 'L9', slides: [29, 31], name: 'Policy gradients · REINFORCE' },
           ],
           answer: [

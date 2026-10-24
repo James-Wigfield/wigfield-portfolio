@@ -74,6 +74,15 @@ export const PRINT_CSS = `
   ${P} .dlxp-book .dlxp-mlabel__t { display: inline; margin-right: 2.5mm; }
   ${P} .dlxp-book__covers { margin: 1mm 0 0; font-size: 8pt; color: #555; }
   ${P} .dlxp-book .dlxp-figdesc { display: block !important; margin: 1mm auto 0; max-width: 150mm; font-size: 8pt; font-style: italic; color: #444; text-align: center; }
+  ${P} .dlxp-book .dlxp-topics__more { display: none; }
+  ${P} .dlxp-book .dlxp-topics__rest { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; }
+  ${P} .dlxp-book .dlxp-nobr { white-space: normal; }
+  /* answer sketches: drawn large enough to read, the description underneath */
+  ${P} .dlxp-book .dlxp-ink__fig { flex-direction: column; align-items: flex-start; }
+  ${P} .dlxp-book .dlxp-ink__fig .dlxp-fig { min-width: 62%; max-width: 72% !important; }
+  ${P} .dlxp-book .dlxp-ink__fig .dlxp-figdesc { margin: 1.5mm 0 0; max-width: none; font-size: 8.5pt; text-align: left; }
+  ${P} .dlxp-book .dlxp-ink__tblwrap { flex-direction: column; align-items: flex-start; }
+  ${P} .dlxp-book .dlxp-ink__eq .dlxp-tick, ${P} .dlxp-book .dlxp-ink__tblwrap .dlxp-tick, ${P} .dlxp-book .dlxp-ink__fig .dlxp-tick { position: static !important; margin: 0; font-size: 11pt; }
 
   /* model answers */
   ${P} .dlxp-book__answers { break-before: page; }

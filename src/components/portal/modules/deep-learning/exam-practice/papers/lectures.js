@@ -31,3 +31,32 @@ export function slideText(slides) {
 export function topicReceipt(t) {
   return `${LEC[t.lec]?.label ?? t.lec} · ${slideText(t.slides)}`;
 }
+
+// A part's topics as one row per lecture, its slide ranges sorted and merged
+// (a range inside another, or touching it, joins it):
+//   [{ lec: 'L3', ranges: [[15, 16], [20, 28], [31, 31]], text: '15–16, 20–28, 31' }]
+export function slideRows(topics) {
+  const byLec = new Map();
+  topics.forEach((t) => {
+    const [a, b] = Array.isArray(t.slides) ? t.slides : [t.slides, t.slides];
+    if (!byLec.has(t.lec)) byLec.set(t.lec, []);
+    byLec.get(t.lec).push([a, b]);
+  });
+  return [...byLec].map(([lec, list]) => {
+    const merged = [];
+    list.sort((p, q) => p[0] - q[0] || p[1] - q[1]).forEach(([a, b]) => {
+      const last = merged[merged.length - 1];
+      if (last && a <= last[1] + 1) last[1] = Math.max(last[1], b);
+      else merged.push([a, b]);
+    });
+    return { lec, ranges: merged, text: merged.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(', ') };
+  });
+}
+
+// "L3 · slides 15–16, 20–28, 31 · L1 · slide 36": the grey receipt line
+export function receiptText(topics) {
+  return slideRows(topics).map((r) => {
+    const one = r.ranges.length === 1 && r.ranges[0][0] === r.ranges[0][1];
+    return `${LEC[r.lec]?.label ?? r.lec} · slide${one ? '' : 's'} ${r.text}`;
+  }).join(' · ');
+}

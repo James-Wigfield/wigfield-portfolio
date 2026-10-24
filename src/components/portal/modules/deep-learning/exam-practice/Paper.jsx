@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Tex } from '../kit';
 import { Rich } from './Rich';
 import { Figure } from './figures';
@@ -5,7 +6,7 @@ import { Ink } from './Ink';
 import { texText } from './texText';
 import { pyTokens } from './pycode';
 import { useXp } from './context';
-import { LEC, slideText } from './papers/lectures';
+import { LEC, slideRows } from './papers/lectures';
 import { questionTopics, receiptOf, leafLectures } from './papers';
 
 /* ============================================================================
@@ -30,7 +31,7 @@ const Marks = ({ n }) => <span className="dlxp-marks">{marksText(n)}</span>;
 
 export function Sheet({ paper, page, cover = false, className = '', children }) {
   return (
-    <article className={`dlxp-sheet${cover ? ' dlxp-sheet--cover' : ''} ${className}`} aria-label={`${paper.name}, page ${page} of ${paper.pages}`}>
+    <article lang="en" className={`dlxp-sheet${cover ? ' dlxp-sheet--cover' : ''} ${className}`} aria-label={`${paper.name}, page ${page} of ${paper.pages}`}>
       {!cover && (
         <header className="dlxp-runhead">
           <span className="dlxp-runhead__l">{paper.head}</span>
@@ -51,7 +52,6 @@ export function PaperCode({ code }) {
         {lines.map((ln, i) => (
           <span key={i} className="dlxp-code__line">
             {pyTokens(ln).map((t, j) => (t.cls ? <span key={j} className={`dlxp-tk-${t.cls}`}>{t.t}</span> : t.t))}
-            {'\n'}
           </span>
         ))}
       </code>
@@ -111,40 +111,45 @@ export function Prompt({ blocks, marks }) {
   );
 }
 
-// "● L3 · 7–16": a part's lectures and slides, in the margin (inline when narrow)
+// "● L3 · 15–16, 20–28, 31": a part's lectures, one row each, with their
+// slide ranges merged, in the margin (inline when narrow)
 export function MarginLabel({ leaf }) {
-  const seen = new Set();
-  const rows = leaf.topics.filter((t) => {
-    const k = `${t.lec}|${slideText(t.slides)}`;
-    return seen.has(k) ? false : seen.add(k);
-  });
+  const rows = slideRows(leaf.topics);
   return (
-    <span className="dlxp-mlabel" aria-label={`Covers ${rows.map((t) => `${LEC[t.lec]?.label} ${slideText(t.slides)}`).join(', ')}`}>
-      {rows.map((t, i) => (
-        <span key={i} className="dlxp-mlabel__t">
-          <i className="dlxp-dot" style={{ '--dot': LEC[t.lec]?.dot }} aria-hidden="true" />
-          {LEC[t.lec]?.label} · {slideText(t.slides).replace(/^slides? /, '')}
+    <span className="dlxp-mlabel" aria-label={`Covers ${rows.map((r) => `${LEC[r.lec]?.label} slides ${r.text}`).join('; ')}`}>
+      {rows.map((r) => (
+        <span key={r.lec} className="dlxp-mlabel__t">
+          <i className="dlxp-dot" style={{ '--dot': LEC[r.lec]?.dot }} aria-hidden="true" />
+          {LEC[r.lec]?.label} · {r.text}
         </span>
       ))}
     </span>
   );
 }
 
-// The question's quiet topic line: every topic it covers, one labelled dot
-// per lecture, in the order the parts meet them.
+// The question's quiet topic line: one labelled dot per lecture with its
+// first two topics (the full list in the tooltip and for screen readers).
 export function TopicLine({ question }) {
   const byLec = new Map();
   questionTopics(question).forEach((t) => {
     if (!byLec.has(t.lec)) byLec.set(t.lec, []);
-    byLec.get(t.lec).push(t.name);
+    if (!byLec.get(t.lec).includes(t.name)) byLec.get(t.lec).push(t.name);
   });
   return (
     <p className="dlxp-topics">
       <span className="dlxp-topics__k">Topics</span>
       {[...byLec].map(([lec, names]) => (
-        <span key={lec} className="dlxp-topics__t">
+        <span key={lec} className="dlxp-topics__t" title={`${LEC[lec]?.label}: ${names.join(', ')}`}>
           <i className="dlxp-dot" style={{ '--dot': LEC[lec]?.dot }} aria-hidden="true" />
-          <span><span className="dlxp-topics__lec">{LEC[lec]?.label}</span> {names.join(', ')}</span>
+          <span>
+            <span className="dlxp-topics__lec">{LEC[lec]?.label}</span> {names.slice(0, 2).join(', ')}
+            {names.length > 2 && (
+              <>
+                <span className="dlxp-topics__more" aria-hidden="true"> …</span>
+                <span className="dlxp-topics__rest">, {names.slice(2).join(', ')}</span>
+              </>
+            )}
+          </span>
         </span>
       ))}
     </p>
@@ -182,12 +187,57 @@ function MarkRow({ leaf, value, onMark }) {
   );
 }
 
+// After a reveal or hide, the ruled space above the controls changes height
+// (an answer is usually shorter than its blank lines, and its formulas settle
+// a frame later), which would throw the clicked button hundreds of pixels
+// away from the pointer. For a moment after the click, scroll by however far
+// the row moved so it stays put, but never push the top of a newly revealed
+// answer under the sticky question bar, and let go as soon as anything else
+// scrolls the page (the reader, or the browser's own scroll anchoring).
+function useStayPut(rowRef) {
+  const stop = useRef(null);
+  useEffect(() => () => stop.current?.(), []);
+  return (revealing) => {
+    stop.current?.();
+    const row = rowRef.current;
+    const ruled = row?.closest('.dlxp-part')?.querySelector('.dlxp-ruled');
+    if (!ruled || typeof ResizeObserver === 'undefined') return;
+    const want = row.getBoundingClientRect().top;
+    let expect = window.scrollY;
+    const hold = () => {
+      if (Math.abs(window.scrollY - expect) > 1) {
+        stop.current?.();
+        return;
+      }
+      let by = row.getBoundingClientRect().top - want;
+      if (Math.abs(by) < 1) return;
+      const bar = document.querySelector('.dl.dlxp .dlxp-qbar');
+      if (revealing && by > 0 && bar) {
+        const room = ruled.getBoundingClientRect().top - (bar.getBoundingClientRect().bottom + 8);
+        by = Math.max(0, Math.min(by, room));
+      }
+      if (by) window.scrollBy({ top: by, behavior: 'instant' });
+      expect = window.scrollY;
+    };
+    const ro = new ResizeObserver(hold);
+    ro.observe(ruled);
+    const t = window.setTimeout(() => stop.current?.(), 900);
+    stop.current = () => {
+      ro.disconnect();
+      window.clearTimeout(t);
+      stop.current = null;
+    };
+  };
+}
+
 function LeafCtl({ leaf, sub }) {
   const { reveal, marks, picks, setReveal, setMark } = useXp();
   const shown = !!reveal[leaf.id];
+  const rowRef = useRef(null);
+  const stayPut = useStayPut(rowRef);
   const what = sub ? `${leaf.parentLabel} ${leaf.label}` : leaf.label;
   return (
-    <div className="dlxp-ctl__row">
+    <div className="dlxp-ctl__row" ref={rowRef}>
       {sub && <span className="dlxp-ctl__k">{leaf.label}</span>}
       <button
         type="button"
@@ -195,12 +245,12 @@ function LeafCtl({ leaf, sub }) {
         aria-pressed={shown}
         aria-label={`${shown ? 'Hide' : 'Reveal'} the model answer to ${what}`}
         data-leaf={leaf.id}
-        onClick={() => setReveal([leaf.id], !shown)}
+        onClick={() => { stayPut(!shown); setReveal([leaf.id], !shown); }}
       >
         {shown ? 'Hide answer' : 'Reveal answer'}
       </button>
       {shown && <MarkRow leaf={leaf} value={marks[leaf.id]} onMark={(n) => setMark(leaf.id, n)} />}
-      {picks.has(leaf.id) && <span className="dlxp-pick">in the NotebookLM video</span>}
+      {picks.has(leaf.id) && <span className="dlxp-pick"><span className="dlxp-pick__in">in the </span>NotebookLM video</span>}
     </div>
   );
 }

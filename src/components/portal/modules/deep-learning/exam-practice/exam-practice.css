@@ -212,7 +212,8 @@
   gap: 0.5rem 1rem;
   border-bottom: 1px solid var(--line-2);
   padding-bottom: 0.4rem;
-  scroll-margin-top: 0.75rem;
+  /* clear the portal's sticky topbar when a page turn scrolls back up */
+  scroll-margin-top: calc(var(--dlxp-stick, 0px) + 0.75rem);
 }
 .dlxp-steps { display: flex; flex-wrap: wrap; gap: 0.15rem; }
 .dlxp-step {
@@ -255,9 +256,25 @@
   to { opacity: 1; transform: none; }
 }
 .dlxp-qbar, .dlxp-pager, .dlxp-coverctl { width: 100%; max-width: 900px; margin: 0 auto; }
-.dlxp-qbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1.1rem; margin-bottom: -0.6rem; }
+/* the question bar stays in reach (score, reveal all, timer, page turns)
+   while a long question scrolls, just under the portal's sticky topbar */
+.dlxp-qbar {
+  position: sticky;
+  top: var(--dlxp-stick, 0px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 1.1rem;
+  margin-bottom: -0.6rem;
+  padding: 0.4rem 0.2rem;
+  background: var(--ground);
+  border-bottom: 1px solid var(--line-2);
+}
 .dlxp-qbar__t { font-family: var(--font-display, Georgia, serif); font-size: 1.05rem; color: var(--ink); margin-right: auto; }
 .dlxp-qbar__of { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; color: var(--ink-3); }
+.dlxp-qbar__turn { display: inline-flex; gap: 0.6rem; }
+.dlxp-qbar .dlxp-timer { font-size: 0.74rem; }
 .dlxp-pager { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
 .dlxp-pager__at { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; color: var(--ink-3); text-align: center; }
 .dlxp-coverctl { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
@@ -325,6 +342,10 @@
 .dlxp-topics__k { font-style: normal; font-variant: small-caps; letter-spacing: 0.03em; color: #5b626d; }
 .dlxp-topics__t { display: inline-flex; align-items: baseline; gap: 5px; }
 .dlxp-topics__lec { font-style: normal; color: #2f3540; }
+/* on screen the line shows two topics per lecture; the rest is read out to
+   screen readers and printed in full (print.js) */
+.dlxp-topics__rest { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dlxp-code__line { display: block; min-height: 1.5em; }
 
 /* parts */
 .dlxp-part { margin: 0 0 22px; transition: opacity 0.25s; }
@@ -349,6 +370,7 @@
 .dlxp-ptable td:first-child, .dlxp-ptable th:first-child { text-align: left; }
 .dlxp-figdesc, .dlxp-texalt { display: none; }
 .dl.dlxp .dlxp-c { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.86em; color: inherit; background: none; border: none; padding: 0; }
+.dlxp-nobr { white-space: nowrap; }
 
 /* given code: Light+ on paper, a typewriter face, no frame */
 .dlxp-code {
@@ -385,17 +407,22 @@
   line-height: 1.35;
   color: #4b5260;
 }
-.dlxp-mlabel__t { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+/* a long run of slide ranges wraps under itself, never past the sheet edge */
+.dlxp-mlabel__t { display: inline-flex; align-items: baseline; gap: 5px; }
 
 /* ruled answer space: the handwriting sits on these lines */
 .dlxp-ruled {
   position: relative;
   margin-top: 8px;
+  margin-left: 2.25em;
   min-height: calc(var(--lines, 8) * var(--rule));
   background-image: linear-gradient(180deg, transparent calc(var(--rule) - 1px), var(--rule-ink) calc(var(--rule) - 1px), var(--rule-ink) var(--rule));
   background-size: 100% var(--rule);
   background-position: 0 var(--rule-shift);
 }
+/* once the tutor has written in it, the space ends one line after the
+   writing, so "Your mark" sits right under the answer it grades */
+.dlxp-ruled:has(.dlxp-ink) { min-height: 0; padding-bottom: var(--rule); }
 
 /* reveal + self-mark controls (under the ruled space) */
 .dlxp-ctl { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-family: var(--font-body, system-ui, sans-serif); }
@@ -434,7 +461,8 @@
 }
 .dlxp-mark__n:hover { border-color: var(--pen-ink); }
 .dlxp-mark__n--on { border-color: transparent; color: var(--pen-red); font-weight: 700; }
-.dlxp-ring { position: absolute; inset: -5px -6px; width: calc(100% + 12px); height: calc(100% + 10px); pointer-events: none; overflow: visible; }
+/* the portal's global svg { max-width: 100% } would squash the ring */
+.dl.dlxp .dlxp-ring { position: absolute; left: -6px; top: -5px; width: calc(100% + 12px); height: calc(100% + 10px); max-width: none; pointer-events: none; overflow: visible; }
 .dlxp-ring path { fill: none; stroke: var(--pen-red); stroke-width: 2.1; stroke-linecap: round; stroke-dasharray: 120; stroke-dashoffset: 0; animation: dlxp-ring 0.35s ease-out both; }
 @keyframes dlxp-ring { from { stroke-dashoffset: 120; } to { stroke-dashoffset: 0; } }
 .dlxp-mark__of { font-family: var(--paper-serif); font-size: 15px; color: #333; margin-left: 2px; }
@@ -462,12 +490,13 @@
 .dlxp-ink__scroll { min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 .dlxp-ink__eq .dlxp-ink__scroll { flex: 1; }
 .dlxp-ink__eq .dlk-tex-block { display: block; width: 100%; }
-.dlxp-ink__eq .katex-display { margin: 0; text-align: left; padding: 2px 0 2px 1.2em; }
-/* a formula taller than a line is written over the rules: the ink hides them */
-.dlxp-ink__eq .katex-display > .katex { display: inline-block; background: var(--paper); box-shadow: 0 0 0 4px var(--paper); }
+.dlxp-ink__eq .katex-display { margin: 0; text-align: left; padding: 2px 0; }
+/* a formula taller than a line is written over the rules: the ink hides
+   them, indent included, so no rule stubs show to its left */
+.dlxp-ink__eq .katex-display > .katex { display: inline-block; padding-left: 1.2em; background: var(--paper); box-shadow: 0 0 0 4px var(--paper); }
 .dlxp-ink__ul { position: relative; list-style: none; margin: 0; padding: 0; }
 .dlxp-ink__ul li { position: relative; padding-left: 1.3em; }
-.dlxp-ink__ul li::before { content: '–'; position: absolute; left: 0.25em; color: var(--pen-red); }
+.dlxp-ink__ul li::before { content: '–'; position: absolute; left: 0.25em; color: var(--pen-ink); }
 .dlxp-ink__tblwrap { position: relative; display: flex; align-items: flex-start; }
 /* one table row per ruled line: the paper's rules are the row lines */
 .dlxp-ink__tbl { border-collapse: collapse; font-size: 17px; color: var(--pen-ink); }
@@ -495,8 +524,9 @@
 }
 .dlxp-ink__eq .dlxp-tick, .dlxp-ink__tblwrap .dlxp-tick, .dlxp-ink__fig .dlxp-tick { top: 50%; margin-top: calc(var(--rule) / -2); }
 
-/* ink-in: each block is written left to right, top to bottom */
-.dlxp-ink--write > * { animation: dlxp-ink 0.75s cubic-bezier(0.35, 0.55, 0.4, 1) both; animation-delay: calc(var(--i, 0) * 120ms); }
+/* ink-in: each block is written left to right, top to bottom; "backwards"
+   so the clip is gone once the line is written (nothing stays cut off) */
+.dlxp-ink--write > * { animation: dlxp-ink 0.75s cubic-bezier(0.35, 0.55, 0.4, 1) backwards; animation-delay: calc(var(--i, 0) * 120ms); }
 @keyframes dlxp-ink {
   from { clip-path: inset(-6px 100% -6px -6px); opacity: 0.3; }
   to { clip-path: inset(-6px -180px -6px -6px); opacity: 1; }
@@ -506,7 +536,14 @@
 @container (max-width: 720px) {
   .dlxp-sheet { min-height: 0; padding: 24px 16px 18px; font-size: 15.5px; --rule: 32px; }
   .dlxp-sheet--cover { padding-top: 40px; }
-  .dlxp-runhead { font-size: 12.5px; }
+  .dlxp-runhead { font-size: 10.5px; white-space: nowrap; }
+  .dlxp-ruled { margin-left: 0; }
+  /* code wraps with a hanging indent instead of running off the sheet */
+  .dlxp-code { white-space: pre-wrap; }
+  .dlxp-code__line { padding-left: 4ch; text-indent: -4ch; }
+  .dlxp-prompt__eq .katex-display > .katex { font-size: 0.86em; }
+  .dlxp-prompt__fig { overflow-x: auto; }
+  .dlxp-prompt__fig .dlxp-fig--printed { min-width: 360px; }
   .dlxp-foot, .dlxp-end { font-size: 13px; }
   .dlxp-part__q { grid-template-columns: 1.95em minmax(0, 1fr); }
   .dlxp-sub { grid-template-columns: 2.2em minmax(0, 1fr); }
@@ -514,17 +551,31 @@
   .dlxp-code { margin-left: 0; font-size: 11.5px; }
   .dlxp-mlabel { position: static; width: auto; flex-direction: row; flex-wrap: wrap; gap: 2px 10px; margin: 4px 0 2px; }
   .dlxp-ink { font-size: 18px; }
-  .dlxp-tick { position: static; float: right; margin: 0 0 0 8px; transform: rotate(-5deg); }
-  .dlxp-ink__eq .dlxp-tick, .dlxp-ink__tblwrap .dlxp-tick, .dlxp-ink__fig .dlxp-tick { position: absolute; top: 0; right: 0; margin-top: 0; float: none; }
+  /* ticks keep a lane of their own at the right of each ticked block */
+  .dl.dlxp .dlxp-ink__w, .dlxp-ink__ul li, .dlxp-ink__eq { padding-right: 38px; }
+  .dlxp-tick { position: absolute; right: 0; top: auto; bottom: 0; margin: 0; float: none; }
+  .dlxp-ink__eq .dlxp-tick, .dlxp-ink__fig .dlxp-tick { top: 0; bottom: auto; margin-top: 0; }
+  .dlxp-ink__tblwrap { flex-direction: column; }
+  .dlxp-ink__tblwrap .dlxp-tick { position: static; align-self: flex-end; }
   .dlxp-ink__tbl { font-size: 15px; }
   .dlxp-ink__tbl th { font-size: 17px; }
-  .dlxp-ink__tbl th, .dlxp-ink__tbl td { padding-right: 8px; }
+  .dlxp-ink__tbl th, .dlxp-ink__tbl td { padding-right: 8px; white-space: normal; height: auto; min-height: var(--rule); }
   .dlxp-mark__n { width: 28px; height: 28px; }
 }
+.dlxp-tab__short { display: none; }
+.dlxp-pick__in { display: inline; }
 @media (max-width: 560px) {
   .dlxp-tab { margin-right: 0.7rem; padding-right: 0.3rem; }
-  .dlxp-tab__name { font-size: 0.95rem; }
+  .dlxp-tab__name { display: none; }
+  .dlxp-tab__short { display: inline; font-family: var(--font-display, Georgia, serif); font-size: 1rem; line-height: 1.2; color: var(--ink-2); white-space: nowrap; }
+  .dlxp-tab--on .dlxp-tab__short { color: var(--ink); font-weight: 600; }
   .dlxp-bar__right { width: 100%; }
+  /* the stepper fits one row: the status keeps its dot, drops its words */
+  .dlxp-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; }
+  .dlxp-step { margin-right: 0; padding-right: 0.2rem; }
+  .dlxp-step__st { font-size: 0; gap: 0; }
+  .dlxp-step__st .dlxp-st { font-size: 0.6rem; }
+  .dlxp-pick__in { display: none; }
 }
 
 /* ── Reduced motion: the answer just appears ──────────────────────────── */
