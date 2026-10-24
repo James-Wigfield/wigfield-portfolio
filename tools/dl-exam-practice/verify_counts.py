@@ -118,7 +118,9 @@ fix = tf.keras.Sequential([tf.keras.layers.InputLayer(shape=[None, 1]), tf.keras
 check("A Q2(c) fixed model params", counts(fix)[0], 1121)
 
 
-# ── Practice A Q2(d): tied vs untied stacked autoencoder (L5 slides 12, 20–21) ─
+# ── Practice A Q2(d): tied vs untied stacked autoencoder (L5 slides 12, 18–21) ─
+# The slide's DenseTranspose reads the tied layer's input size from
+# self.dense.input.shape[-1]; the kernel's first dimension is the same number.
 class DenseTranspose(tf.keras.layers.Layer):
     def __init__(self, dense, activation=None, **kwargs):
         super().__init__(**kwargs)
@@ -134,19 +136,25 @@ class DenseTranspose(tf.keras.layers.Layer):
         return self.activation(z + self.biases)
 
 
-dense_1 = tf.keras.layers.Dense(100, activation="relu")
-dense_2 = tf.keras.layers.Dense(30, activation="relu")
-tied_encoder = tf.keras.Sequential([tf.keras.layers.InputLayer(shape=[28, 28]), tf.keras.layers.Flatten(), dense_1, dense_2])
-tied_decoder = tf.keras.Sequential([DenseTranspose(dense_2, activation="relu"), DenseTranspose(dense_1), tf.keras.layers.Reshape([28, 28])])
-tied_ae = tf.keras.Sequential([tied_encoder, tied_decoder])
-tied_ae(np.zeros((1, 28, 28), dtype="float32"))
-check("A Q2(d) tied AE params to learn", counts(tied_ae)[0], 82414)
-untied = tf.keras.Sequential([
-    tf.keras.layers.InputLayer(shape=[28, 28]), tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(100, activation="relu"), tf.keras.layers.Dense(30, activation="relu"),
-    tf.keras.layers.Dense(100, activation="relu"), tf.keras.layers.Dense(28 * 28), tf.keras.layers.Reshape([28, 28]),
-])
-check("A Q2(d) untied AE params (for comparison)", counts(untied)[0], 163814)
+def tied_and_untied(n1, n2):
+    d1 = tf.keras.layers.Dense(n1, activation="relu")
+    d2 = tf.keras.layers.Dense(n2, activation="relu")
+    enc = tf.keras.Sequential([tf.keras.layers.InputLayer(shape=[28, 28]), tf.keras.layers.Flatten(), d1, d2])
+    dec = tf.keras.Sequential([DenseTranspose(d2, activation="relu"), DenseTranspose(d1), tf.keras.layers.Reshape([28, 28])])
+    tied = tf.keras.Sequential([enc, dec])
+    tied(np.zeros((1, 28, 28), dtype="float32"))
+    untied = tf.keras.Sequential([
+        tf.keras.layers.InputLayer(shape=[28, 28]), tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(n1, activation="relu"), tf.keras.layers.Dense(n2, activation="relu"),
+        tf.keras.layers.Dense(n1, activation="relu"), tf.keras.layers.Dense(28 * 28), tf.keras.layers.Reshape([28, 28]),
+    ])
+    return counts(tied)[0], counts(untied)[0]
+
+
+check("L5 slides 12, 21: 784-100-30 stacked AE untied / tied", tied_and_untied(100, 30)[::-1], (163814, 82414))
+tied, untied = tied_and_untied(256, 64)
+check("A Q2(d) tied AE 784-256-64-256-784: parameters to learn", tied, 218448)
+check("A Q2(d) the same AE untied", untied, 435536)
 
 # ── Practice A Q3(a): small GAN ──────────────────────────────────────────────
 codings_size = 20

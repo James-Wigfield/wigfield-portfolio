@@ -252,6 +252,40 @@ function MemCell() {
   );
 }
 
+// Practice B Q2(d): Lab Sheet 4's noisy squares, vertices numbered 0–3 in
+// the order they are listed: left anti-clockwise, right clockwise.
+const SQ_L = [[118, 132], [124, 30], [22, 24], [18, 128]];
+const SQ_R = [[226, 28], [326, 34], [320, 136], [218, 130]];
+
+function SquareSeq({ pts }) {
+  return (
+    <g>
+      <polygon points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke="#111" strokeWidth="1.2" />
+      {pts.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r={2.2} fill="#111" />
+          <text x={x + (x < 60 || (x > 200 && x < 260) ? -12 : 6)} y={y + (y < 80 ? -4 : 13)} fontFamily={SANS} fontSize="10" fill="#111">{i}</text>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+function Squares() {
+  return (
+    <Printed viewBox="0 0 345 160" width="380px" label="Two noisy squares with vertices numbered 0 to 3 in the order they appear in the sequence: the left square is listed anti-clockwise, the right square clockwise.">
+      {() => (
+        <>
+          <SquareSeq pts={SQ_L} />
+          <SquareSeq pts={SQ_R} />
+          <text x={70} y={156} textAnchor="middle" fontFamily={SERIF} fontSize="10.5" fontStyle="italic" fill="#333">anti-clockwise (label 0)</text>
+          <text x={272} y={156} textAnchor="middle" fontFamily={SERIF} fontSize="10.5" fontStyle="italic" fill="#333">clockwise (label 1)</text>
+        </>
+      )}
+    </Printed>
+  );
+}
+
 // Practice A Q3(e): Bahdanau attention's alignment model at decoder step 3
 // (L8 slides 22–23): h(2) and each encoder output y(i) go into one Dense
 // neuron; the scores go through a softmax into the weights α(3, i).
@@ -608,6 +642,7 @@ const FIGS = {
   stars: Stars,
   gate: Gate,
   memCell: MemCell,
+  squares: Squares,
   bahdanau: Bahdanau,
   xorMlp: XorMlp,
   lstm: Lstm,
