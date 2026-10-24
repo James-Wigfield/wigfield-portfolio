@@ -1,0 +1,67 @@
+# The sample paper's question text, transcribed from the page images of
+# Documents/temp/past-exam-info/sampleExam2026-s2.pdf (pages 2–8), typos kept.
+# One block per part or subpart: "## <id>" then its text. Maths is written in
+# the plain-text notation the page prints (texText.js); code is verbatim.
+# check-papers.mjs compares papers/sample.js's prompts against this file.
+
+## s-q1-a
+Explain what are involved in a Convolutional layer. Include in your explanation the parameters that define the layer.
+
+## s-q1-b
+List two advantages of using a CNN over a fully connected MLP for image classification.
+
+## s-q1-c
+Given below is the code for a deep neural network:
+normalization_layer = tf.keras.layers.Normalization()
+hidden_layer = tf.keras.layers.Dense(20, activation="gelu")
+concat_layer = tf.keras.layers.Concatenate()
+output_layer = tf.keras.layers.Dense(3, activation="softmax")
+input_ = tf.keras.layers.Input(shape=[10])
+normalized = normalization_layer(input_)
+hidden = hidden_layer(normalized)
+concat = concat_layer([normalized, hidden])
+output = output_layer(concat)
+model = tf.keras.Model(inputs=[input_], outputs=[output])
+Draw a diagram to illustrate the architecture of the network. Compute the number of trainable parameters in each layer and the total number of trainable parameters in the network. For what problem would it be suitable to use this network?
+
+## s-q1-d
+Given below are the update of the variable θ (containing the model parameters) for the classical Gradient Descent optimizer:
+θ ← θ − η∇_θ J(θ)
+Briefly explain what each term means and how the optimizer works.
+
+## s-q1-e
+The diagram below is a small module of a large DNN:
+where each of the FC blocks is just a linear layer consisting of a weight matrix and a bias term. Based on the given diagram,
+
+## s-q1-e-i
+write down the equations for g₍ₜ₎ and h₍ₜ₎, and then the equation for z₍ₜ₎.
+
+## s-q1-e-ii
+what are the ranges of values for g₍ₜ₎ and h₍ₜ₎?
+
+## s-q2-a
+Suppose that you are asked to develop a recurrent neural network (RNN) that, given the 2D coordinates of the first 4 corners of a hand-sketched star, would predict the last corner, as shown in the diagram below:
+The corners of each star are numbered from 0 to 4. For each star, the corner that the RNN needs to learn to predict is marked in red (corner #4). The corners of each star can be in any order: anti-clockwise (left diagram) or clockwise (right diagram). The starting corner can be arbitrary.
+
+## s-q2-a-i
+What should be the shapes of the input X and output y in your training set? Briefly explain your answer.
+
+## s-q2-a-ii
+What loss function would be suitable to use for this problem? Briefly explain your answer.
+
+## s-q2-a-iii
+If you were to implement a RNN that, given the first 3 corners, can predict the last 2 corners, how would you set up the RNN layers and loss function? What would be the shapes of the input X and output y in your training set? Explain yur answer.
+
+## s-q2-b
+Briefly explain what variational autoencoders are and how you would train them. Give an application that would be suitable to use a variational autoencoder.
+
+## s-q2-c
+List two key components in the classical transformer architecture and briefly explain each one of them.
+
+## s-q2-d
+What are Markov chains? What are the two differences between Markov chains and Markov decision processes (MDPs)?
+
+## s-q2-e
+Given below is the value iteration algorithm in reinforcement learning:
+V_k+1(s) ← max_a Σ_s′ T(s, a, s′) [R(s, a, s′) + γV_k(s′)] for all s
+Briefly state what this algorithm is used for and what each of the terms T(s, a, s′), R(s, a, s′), γ, and V_k(s′) means.
