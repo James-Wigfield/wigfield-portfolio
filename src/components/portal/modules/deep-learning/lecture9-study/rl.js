@@ -19,7 +19,7 @@
      epsilonGreedy                   slide 61's epsilon_greedy_policy
      dqnTargets                      slide 63's target_Q_values (runs mask)
      dense / forward / backward      a tiny dense network (policy net, DQN)
-     nadam                           a Nadam step (Keras's formula)
+     nadam                           a Nadam step (Keras 3's formula)
      paramCount                      inputs·units + units, summed per layer
    ========================================================================== */
 
@@ -321,7 +321,8 @@ export function bceGrad(layers, obs, yTarget) {
   return { p: cache.out[0], grads: backward(layers, cache, [-(yTarget / p) + (1 - yTarget) / (1 - p)]) };
 }
 
-/* Keras's Nadam (β1 0.9, β2 0.999, ε 1e-7), one step on every parameter.
+/* Keras 3's Nadam (β1 0.9, β2 0.999, ε 1e-7, momentum decay 0.96^t),
+   one step on every parameter.
    state = { t, uProduct, m, v } is created on first use. */
 export function nadam(layers, grads, state, lr = 0.01) {
   const b1 = 0.9;
@@ -335,8 +336,8 @@ export function nadam(layers, grads, state, lr = 0.01) {
   }
   state.t += 1;
   const t = state.t;
-  const uT = b1 * (1 - 0.5 * 0.96 ** (t * 0.004));
-  const uT1 = b1 * (1 - 0.5 * 0.96 ** ((t + 1) * 0.004));
+  const uT = b1 * (1 - 0.5 * 0.96 ** t);
+  const uT1 = b1 * (1 - 0.5 * 0.96 ** (t + 1));
   const uProdT = state.uProduct * uT;
   const uProdT1 = uProdT * uT1;
   state.uProduct = uProdT;

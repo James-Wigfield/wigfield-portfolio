@@ -184,7 +184,7 @@ export function CartPoleLab() {
     <Stage
       title="Balance the pole yourself"
       slides="slides 17–20"
-      tryThis="Predict which way to push when the pole leans right (obs[2] > 0), then press → once: you get exactly slide 20’s numbers."
+      tryThis="Predict which way to push when the pole leans right (obs[2] > 0), then press → once: you get slide 20’s numbers (to within 10⁻⁸)."
       caption="Each push is one `env.step(action)`: 0 accelerates the cart left, 1 right, and every step earns a reward of 1.0. The episode is `done` when the pole tilts past 12° or the cart leaves ±2.4."
       challenge={{ text: 'Keep the pole up for 100 steps yourself.', done: best >= 100 }}
       own="this page’s port of CartPole"

@@ -70,3 +70,6 @@
 @media (prefers-reduced-motion: reduce) {
   .dl9s-gen__dot { transition: none !important; }
 }
+
+/* generation 2: the survivors outlined, their copies faded */
+.dl9s-gen__copy { opacity: 0.55; }

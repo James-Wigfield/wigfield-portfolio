@@ -223,26 +223,26 @@
 
 /* MDPs: states (circles), actions (diamonds), transitions (arrows) */
 .dl9s-state circle { fill: var(--dl9s-floor); stroke: var(--dl9s-obs); stroke-width: 2; transition: stroke-width 0.25s; }
-.dl9s-state text { font-size: 15px; font-weight: 700; fill: var(--ink); pointer-events: none; }
+.dl9s-state text { font-size: 17px; font-weight: 700; fill: var(--ink); pointer-events: none; }
 .dl9s-state--on circle { stroke-width: 3.6; }
 .dl9s-state--abs circle { stroke-dasharray: 5 3; }
 .dl9s-state--btn { cursor: pointer; }
 .dl9s-state--btn:focus-visible { outline: none; }
 .dl9s-state--btn:focus-visible circle { stroke: var(--accent); stroke-dasharray: 5 3; stroke-width: 3; }
 .dl9s-act rect { fill: var(--dl9s-floor); stroke: var(--dl9s-act); stroke-width: 1.6; transition: stroke-width 0.25s, opacity 0.3s; }
-.dl9s-act text { font-size: 12px; font-weight: 700; fill: var(--ink); pointer-events: none; }
+.dl9s-act text { font-size: 13px; font-weight: 700; fill: var(--ink); pointer-events: none; }
 .dl9s-act--best rect { stroke-width: 3.4; }
 .dl9s-act--dim { opacity: 0.4; }
 .dl9s-tr { fill: none; stroke: var(--ink-3); stroke-linecap: round; opacity: 0.75; transition: stroke-width 0.3s, opacity 0.3s, stroke 0.3s; }
 .dl9s-tr--on { stroke: var(--ink); opacity: 1; }
-.dl9s-tr--best { stroke: var(--dl9s-act); opacity: 1; }
+.dl9s-tr--best { stroke: var(--dl9s-pol); opacity: 1; }
 .dl9s-tr--dim { opacity: 0.25; }
 .dl9s-trhead { fill: var(--ink-3); opacity: 0.85; transition: opacity 0.3s, fill 0.3s; }
 .dl9s-trhead--on { fill: var(--ink); opacity: 1; }
-.dl9s-trhead--best { fill: var(--dl9s-act); opacity: 1; }
+.dl9s-trhead--best { fill: var(--dl9s-pol); opacity: 1; }
 .dl9s-trhead--dim { opacity: 0.25; }
-.dl9s-prob { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; fill: var(--ink-3) !important; }
-.dl9s-rew { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; font-weight: 800; }
+.dl9s-prob { font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; fill: var(--ink-3) !important; }
+.dl9s-rew { font-family: var(--font-mono, ui-monospace, monospace); font-size: 15px; font-weight: 800; }
 .dl9s-rew--pos { fill: var(--dl9s-rpos) !important; }
 .dl9s-rew--neg { fill: var(--dl9s-rneg) !important; }
 .dl9s-token { fill: var(--dl9s-agent); transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }
@@ -274,6 +274,7 @@
 .dl9s-grid-frame--val { stroke: var(--dl9s-val); }
 .dl9s-grid-frame--ret { stroke: var(--dl9s-ret); }
 .dl9s-grid-frame--pol { stroke: var(--dl9s-pol); }
+.dl9s-grid-frame--env { stroke: var(--dl9s-env); }
 .dl9s-rowband { fill: var(--ink); opacity: 0.07; transition: opacity 0.2s; }
 .dl9s-tip { pointer-events: none; }
 .dl9s-tip rect { fill: var(--ink); opacity: 0.92; }

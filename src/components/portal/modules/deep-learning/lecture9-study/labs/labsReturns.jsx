@@ -73,9 +73,9 @@ export function ReturnsLab() {
         <>
           <MEq tex={'10 + \\gamma \\times 0 + \\gamma^2 \\times (-50)'} />
           <MLine text={`With $\\gamma = ${g.toFixed(2)}$: $10 + ${g.toFixed(2)} \\times 0 + ${(g * g).toFixed(4)} \\times (-50) = ${fmt(ret[0], 2)}$. Slide 26, with $\\gamma = 0.8$: $10 + 0 - 0.64 \\times 50 = -22$.`} />
-          <MLine text={`Figure 18-6 works backwards: $-50$; then $0 + ${g.toFixed(2)} \\times (${fmt(ret[2], 2)}) = ${fmt(ret[1], 2)}$; then $10 + ${g.toFixed(2)} \\times (${fmt(ret[1], 2)}) = ${fmt(ret[0], 2)}$. That is slide 34’s \`discount_rewards\`.`} />
+          <MLine text={`Figure 18-6 works backwards: $-50$; then $0 + ${g.toFixed(2)} \\times (${fmt(ret[2], 2)}) = ${fmt(ret[1], 2)}$; then $10 + ${g.toFixed(2)} \\times (${fmt(ret[1], 2)}) = ${fmt(ret[0], 2)}$. That is slide 34’s \`discount_rewards\` (with float rewards; on this integer list NumPy truncates each sum unless it is whole, as it is at $\\gamma = 0.8$).`} />
           <MLine text={`The first return is positive when $10 - 50\\gamma^2 > 0$, i.e. $\\gamma < \\sqrt{0.2} \\approx 0.447$ (this page’s working).`} />
-          <MLine text={`Half weight: $\\gamma^n = 0.5$ when $n = \\ln 0.5 / \\ln \\gamma$${g > 0 ? ` $= ${hl.toFixed(1)}$ for $\\gamma = ${g.toFixed(2)}$` : ''}. Slide 28: $0.95^{13} \\approx 0.5$ (exactly $0.513$) and $0.99^{69} \\approx 0.5$ (exactly $0.500$).`} />
+          <MLine text={`Half weight: $\\gamma^n = 0.5$ when $n = \\ln 0.5 / \\ln \\gamma$${g > 0 ? ` $= ${hl.toFixed(1)}$ for $\\gamma = ${g.toFixed(2)}$` : ''}. Slide 28: $0.95^{13} \\approx 0.5$ ($0.513$ to three decimals) and $0.99^{69} \\approx 0.5$ ($0.500$ to three decimals).`} />
         </>
       }
     >

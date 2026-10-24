@@ -73,7 +73,7 @@ export function DqnCurveLab() {
     const ep = Math.round(((pt.x - L) / (W - L - R)) * N);
     if (ep < 0 || ep >= run.curve.length) { setHover(null); return; }
     setHover(ep);
-    if (ep >= 500 && ep <= 550 && smooth[ep] < 150) setFound(true);
+    if (ep >= 520 && ep <= 560 && smooth[ep] < 150) setFound(true);
   };
   const onKey = (e) => {
     if (!run) return;
@@ -82,7 +82,7 @@ export function DqnCurveLab() {
     e.preventDefault();
     const ep = Math.max(0, Math.min(run.curve.length - 1, (hover ?? 0) + d));
     setHover(ep);
-    if (ep >= 500 && ep <= 550 && smooth[ep] < 150) setFound(true);
+    if (ep >= 520 && ep <= 560 && smooth[ep] < 150) setFound(true);
   };
 
   const play = () => {
@@ -121,8 +121,8 @@ export function DqnCurveLab() {
       title="A DQN learns, then forgets"
       slides="slides 64–67"
       tryThis="Predict where a run could ‘forget’ after looking stable, then hover the curve: find this run’s own dip after it sat near the max."
-      caption="Blue: the `step` this page’s run of slides 61–64 saved per episode (thin) and its 10-episode mean (thick); amber dashes: $\epsilon$ = `max(1 - episode / 500, 0.01)`. Below the axis: the slides’ own run, as slide 66 describes it."
-      challenge={{ text: 'Find this run’s own catastrophic-forgetting dip (between episodes 500 and 550).', done: found }}
+      caption="Blue: the `step` this page’s run of slides 61–64 saved per episode (thin) and its 10-episode mean (thick); magenta dashes: $\epsilon$ = `max(1 - episode / 500, 0.01)`. Below the axis: the slides’ own run, as slide 66 describes it."
+      challenge={{ text: 'Find this run’s own catastrophic-forgetting dip (around episodes 525–550).', done: found }}
       own="this page’s own run · TensorFlow"
       maths={
         run && (
@@ -152,21 +152,21 @@ export function DqnCurveLab() {
               onKeyDown={onKey}
             >
               <rect x={x(0)} y={T} width={x(51) - x(0)} height={H - T - B} className="dl9s-dq__notrain" />
-              <text x={x(25)} y={H - B - 6} textAnchor="middle" className="dl9s-t dl9s-t--xs">{narrow ? "no train" : "no training"}</text>
+              <text x={x(0) + 4} y={T + 12} className="dl9s-t dl9s-t--xs">{narrow ? 'no train' : 'no training'}</text>
               {[0, 50, 100, 150, 200].map((v) => (
                 <g key={v}>
                   <line x1={L} y1={y(v)} x2={W - R} y2={y(v)} className="dl9s-grid-line" />
                   <text x={L - 6} y={y(v) + 4} textAnchor="end" className="dl9s-t dl9s-t--xs dl9s-t--m">{v}</text>
                 </g>
               ))}
-              {!narrow && [1, 0.5, 0].map((v) => <text key={v} x={W - R + 6} y={ye(v) + 4} className="dl9s-t dl9s-t--xs dl9s-t--m dl9s-t--ret">{v === 1 ? 'ε 1' : v}</text>)}
+              {!narrow && [1, 0.5, 0].map((v) => <text key={v} x={W - R + 6} y={ye(v) + 4} className="dl9s-t dl9s-t--xs dl9s-t--m dl9s-t--pol">{v === 1 ? 'ε 1' : v}</text>)}
               {[0, 100, 200, 300, 400, 500, 600].map((e) => <text key={e} x={x(e)} y={H - B + 15} textAnchor="middle" className="dl9s-t dl9s-t--xs dl9s-t--m">{e}</text>)}
               <text x={(L + W - R) / 2} y={H - B + 29} textAnchor="middle" className="dl9s-t dl9s-t--xs">episode</text>
               <path d={epsPath} className="dl9s-dq__eps" />
               <path d={path(run.curve)} className="dl9s-line dl9s-dq__raw" />
               <path d={path(smooth)} className="dl9s-line dl9s-line--val" />
               <line x1={x(run.episodes)} y1={T} x2={x(run.episodes)} y2={H - B} className="dl9s-dq__stop" />
-              {!narrow && <text x={x(run.episodes) + 4} y={T + 26} className="dl9s-t dl9s-t--xs">time box: {run.episodes}</text>}
+              {!narrow && <text x={x(run.episodes) - 4} y={H - B - 22} textAnchor="end" className="dl9s-t dl9s-t--xs dl9s-halo">time box: {run.episodes}</text>}
               {hover !== null && (
                 <g>
                   <line x1={x(hover)} y1={T} x2={x(hover)} y2={H - B} className="dl9s-today" />

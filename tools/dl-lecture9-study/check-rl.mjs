@@ -108,17 +108,24 @@ console.log('rl.js');
   const v = RL.valueIteration({ gamma: 0.9, iterations: 400 }).V;
   const q = RL.qValueIteration({ gamma: 0.9, iterations: 400 }).Q;
   ok(v.every((x, s) => near(x, Math.max(...q[s]), 1e-9)), 'value iteration converges to max_a Q*(s, a)');
-  const adv = RL.discountAndNormalizeRewards([[1, 1, 1], [1, 1, 1, 1, 1, 1]], 0.95).flat();
-  ok(near(RL.mean(adv), 0, 1e-12) && near(RL.std(adv), 1, 1e-12), 'normalised advantages have mean 0 and std 1');
-  const run = RL.qLearningRun({ seed: 1 });
-  ok(Math.abs(run.Q[0][0] - 700 / 37) / (700 / 37) < 0.1 && JSON.stringify(RL.argmaxRows(run.Q)) === '[0,0,1]', 'the page’s Q-learning run (seed 1) lands within 10% of Q*(s0, a0) with the right policy', run.Q[0][0].toFixed(3));
+  const adv = RL.discountAndNormalizeRewards([[10, 0, -50], [10, 20]], 0.8);
+  const np = [[-0.2843507, -0.8659772, -1.189103], [1.2666532, 1.0727777]];
+  ok(adv.every((r, i) => r.every((v, j) => near(v, np[i][j], 1e-6))), 'discount_and_normalize_rewards matches NumPy (population std) on [[10, 0, −50], [10, 20]], γ 0.8');
+  const runs = Array.from({ length: 10 }, (_, k) => RL.qLearningRun({ seed: k + 1 }));
+  const worst = Math.max(...runs.map((r) => Math.abs(r.Q[0][0] - 700 / 37) / (700 / 37)));
+  ok(worst < 0.11 && runs.every((r) => JSON.stringify(RL.argmaxRows(r.Q)) === '[0,0,1]'), 'the page’s Q-learning runs (seeds 1–10) land within about 10% of Q*(s0, a0), each with the right policy', `worst ${(worst * 100).toFixed(1)}%`);
+  // Keras 3's Nadam on a scalar (reference: momentum decay 0.96^t)
+  const L1 = [{ act: 'linear', W: [[0]], b: [0] }];
+  const st = {};
+  [0.3, -0.1, 0.5, 0.2, 0.2, -0.4, 0.1, 0.9, 0.3, 0.3].forEach((g) => RL.nadam(L1, [{ W: [[g]], b: [0] }], st, 0.01));
+  ok(near(L1[0].W[0][0], -0.04617416, 1e-8), 'nadam follows Keras 3 (10 scalar steps → −0.04617416)', L1[0].W[0][0].toFixed(8));
 }
 
 /* ── cartpole.js ──────────────────────────────────────────────────────── */
 console.log('cartpole.js');
 {
   const r = CP.step(CP.SLIDE17_OBS, 1);
-  ok(r.obs.every((x, i) => near(x, CP.SLIDE20_OBS[i], 1e-7)) && r.reward === 1 && r.terminated === false, 'slide 17’s obs, then step(1), gives slide 20’s obs (to 1e-7), reward 1.0, done False');
+  ok(r.obs.every((x, i) => near(x, CP.SLIDE20_OBS[i], 1e-8)) && r.reward === 1 && r.terminated === false, 'slide 17’s obs, then step(1), gives slide 20’s obs (to 1e-8), reward 1.0, done False');
   ok(CP.isDone([2.41, 0, 0, 0]) && CP.isDone([-2.41, 0, 0, 0]) && !CP.isDone([2.39, 0, 0, 0]), 'done when the cart leaves ±2.4');
   ok(CP.isDone([0, 0, 0.21, 0]) && CP.isDone([0, 0, -0.21, 0]) && !CP.isDone([0, 0, 0.2, 0]), 'done when the pole tilts past ±12° (0.2094 rad)');
   ok(near(CP.THETA_LIMIT, (12 * Math.PI) / 180, 1e-12), '12° in radians');
@@ -221,9 +228,43 @@ console.log('content');
     ["y(s,a) = r + \\gamma \\max_{a'} Q_{\\boldsymbol{\\theta}}(s',a')", 'y(s,a) = r + γ max_a′ Q_θ(s′,a′)'],
     ['\\pi^*(s) = \\operatorname*{argmax}_{a} Q^*(s,a)', 'π*(s) = argmax_a Q*(s,a)'],
     ["\\delta_k(s, r, s') = r + \\gamma V_k(s') - V_k(s)", 'δₖ(s, r, s′) = r + γ Vₖ(s′) − Vₖ(s)'],
+    ['\\tau = 0.02', 'τ = 0.02'],
+    ['\\frac{2\\epsilon}{3} = 0.1', '2ε/3 = 0.1'],
     ['\\epsilon', 'ε'],
   ];
   twins.forEach(([tex, want]) => ok(texText(tex) === want, `texText: ${want}`, texText(tex)));
+
+  // Rich's tokeniser: no markup asterisk survives as plain text anywhere
+  const { TOKEN, firstSentence } = await imp('richToken.js');
+  const plainOf = (text) => {
+    const out = [];
+    let rest = text;
+    while (rest) {
+      const m = TOKEN.exec(rest);
+      if (!m) { out.push(rest); break; }
+      out.push(rest.slice(0, m.index));
+      if (m[3]) out.push(...plainOf(m[0].slice(3, -3)));
+      else if (m[4]) out.push(...plainOf(m[0].slice(2, -2)));
+      else if (m[7]) out.push(...plainOf(m[0].slice(1, -1)));
+      rest = rest.slice(m.index + m[0].length);
+    }
+    return out;
+  };
+  const strings = [];
+  const collect = (x) => {
+    if (typeof x === 'string') strings.push(x);
+    else if (Array.isArray(x)) x.forEach(collect);
+    else if (x && typeof x === 'object') Object.entries(x).forEach(([k, v]) => { if (!['tex', 'formula', 'code', 'src'].includes(k)) collect(v); });
+  };
+  collect(SECTIONS.map((s) => s.read));
+  collect(Object.values(CARDS).map((c) => [c.prompt, c.answer]));
+  collect(Object.values(SHEETS));
+  const stray = strings.filter((t) => plainOf(t).some((p) => p.includes('*')));
+  ok(stray.length === 0, `no stray markup asterisks in ${strings.length} strings (***bold italic*** parses as one token)`, stray.slice(0, 2).map((t) => t.slice(0, 60)).join(' | '));
+  const bi = TOKEN.exec('a ***agent*** makes');
+  ok(bi && bi[3] === '***agent***', '***term*** is a single bold-italic token');
+  ok(firstSentence('One. Two is long enough to fold away here, really quite long, more than the minimum of characters, honestly yes. Three.', 40) === 'One.', 'a Slide check folds to its first sentence');
+  ok(firstSentence('Uses `a.b` and $x. Y$ first. Rest of it is long enough to fold away, well over the minimum length set here for this test.', 40) === 'Uses `a.b` and $x. Y$ first.', 'the fold never cuts inside code or TeX');
 }
 
 note.forEach((n) => console.log(`  note: ${n}`));

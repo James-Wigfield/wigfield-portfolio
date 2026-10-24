@@ -2,6 +2,15 @@
 export default {
   blocks: [
     {
+      id: 'net',
+      h: 'The DQN',
+      at: '61',
+      fig: { key: 'dqnNet', hl: ['out'], cap: 'Slide 61’s network: one Q-value per action.', place: 'side' },
+      items: [
+        'In: the 4 observations. Out: {g|one Q-value per action}, no activation (the policy net output one probability).',
+      ],
+    },
+    {
       id: 'buf',
       h: 'Replay buffer',
       at: '61–62',
@@ -30,5 +39,5 @@ export default {
       ],
     },
   ],
-  skip: 'the DQN’s layers (two `Dense(32, "elu")`, then one output per action) and the code line by line (see the code cards).',
+  skip: 'the layer sizes (two `Dense(32, "elu")`) and the code line by line (see the code cards).',
 };

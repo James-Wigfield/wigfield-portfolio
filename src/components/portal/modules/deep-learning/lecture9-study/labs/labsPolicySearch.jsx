@@ -299,7 +299,7 @@ export function GeneticLab() {
       slides="slide 14"
       tryThis="Predict how many *different* policies the second generation holds, then step through the beats and count."
       story={<StoryBar story={story} beats={GEN_BEATS} />}
-      caption="Each offspring is an exact copy of its parent (slide 14), so the second generation can be no better than its best survivor. Hover a policy to see its numbers and its copies."
+      caption="Each offspring is an exact copy of its parent (slide 14), so the second generation can be no better than its best survivor."
       own="scores: dust in a 10-minute run of the vacuum above · this page’s own"
       maths={
         <>
@@ -347,7 +347,7 @@ export function GeneticLab() {
               const y = gy + row * CELL;
               return (
                 <g key={i} onPointerEnter={() => setHover(i)} className={`dl9s-gen__cell dl9s-fade${empty ? ' dl9s-hide' : ''}`}>
-                  <rect x={x + 1.5} y={y + 1.5} width={CELL - 3} height={CELL - 3} rx={3} className={`dl9s-cell${i < 20 && (beat === 2 || beat === 3) ? ' dl9s-gen__surv' : ''}${inFamily(i) ? ' dl9s-cell--hit' : ''}`} style={{ fill }} />
+                  <rect x={x + 1.5} y={y + 1.5} width={CELL - 3} height={CELL - 3} rx={3} className={`dl9s-cell${i < 20 && beat >= 2 ? ' dl9s-gen__surv' : ''}${i >= 20 && beat >= 3 ? ' dl9s-gen__copy' : ''}${inFamily(i) ? ' dl9s-cell--hit' : ''}`} style={{ fill }} />
                   {dead && <path d={`M${x + 8} ${y + 8}L${x + CELL - 8} ${y + CELL - 8}M${x + CELL - 8} ${y + 8}L${x + 8} ${y + CELL - 8}`} className="dl9s-gen__x" />}
                 </g>
               );

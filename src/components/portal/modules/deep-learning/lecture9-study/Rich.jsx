@@ -1,31 +1,35 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tex, Eq, Code, Note, Unfold, Fnote } from '../kit';
 import { useStudy } from './context';
 import { NAMED_CODE } from './slideData';
 import { Diagram } from './diagrams';
 import { texText } from './texText';
+import { TOKEN, firstSentence } from './richToken';
 
 /* ============================================================================
    LECTURE 9 STUDY — TEXT RENDERING
    ----------------------------------------------------------------------------
      Rich            one string of inline markup → React nodes:
-                       **bold**  *italic*  `code`  $tex$  [label](#id)  [^n]
+                       ***bold italic***  **bold**  *italic*  `code`  $tex$
+                       [label](#id)  [^n]
                        [label](/portal/…)  a link to another portal page
                        {g|…}  green pen (notebook pages only)
                      (an earliest-match tokeniser, like ../../markdownLite.js,
                      so nothing is ever injected as HTML)
      Blocks          a section's `read` array → paragraphs, equations, code
                      (inline, or a named slide listing from slideData.js),
-                     notes, slide checks, unfolds and { fig } (a line-art
-                     diagram from diagrams.jsx shown in the Read beat)
+                     notes, slide checks (folded to their first sentence
+                     on screen, open in print), unfolds and { fig } (a
+                     line-art diagram from diagrams.jsx shown in the Read
+                     beat)
 
    Maths prints twice over: KaTeX for the eye, and a print-only plain-text
    twin (.dl9s-texalt, from texText.js) so the PDF's text layer reads as
    words a reader — or NotebookLM — can follow.
    ========================================================================== */
 
-const TOKEN = /(`[^`]+`)|(\$[^$]+\$)|(\*\*.+?\*\*)|(\[\^\d+\])|(\[[^\]]+\]\((?:#[a-z0-9]+|\/[^)\s]+)\))|(\*[^*\n]+?\*)/;
+// the tokeniser lives in ./richToken.js (TOKEN)
 
 function SecLink({ id, children }) {
   const { jumpTo } = useStudy();
@@ -82,9 +86,10 @@ function parse(text, key = 'r') {
     const tok = m[0];
     if (m[1]) out.push(<code key={tk}>{tok.slice(1, -1)}</code>);
     else if (m[2]) out.push(<M key={tk} src={tok.slice(1, -1)} />);
-    else if (m[3]) out.push(<b key={tk}>{parse(tok.slice(2, -2), tk)}</b>);
-    else if (m[4]) out.push(<Fnote key={tk} n={Number(tok.slice(2, -1))} />);
-    else if (m[5]) {
+    else if (m[3]) out.push(<b key={tk}><em>{parse(tok.slice(3, -3), tk)}</em></b>);
+    else if (m[4]) out.push(<b key={tk}>{parse(tok.slice(2, -2), tk)}</b>);
+    else if (m[5]) out.push(<Fnote key={tk} n={Number(tok.slice(2, -1))} />);
+    else if (m[6]) {
       const [, label, target] = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(tok);
       if (target.startsWith('/')) out.push(<Link key={tk} className="dl9s-link" to={target}>{parse(label, tk)}</Link>);
       else out.push(<SecLink key={tk} id={target.slice(1)}>{parse(label, tk)}</SecLink>);
@@ -96,6 +101,30 @@ function parse(text, key = 'r') {
 
 export function Rich({ text }) {
   return <>{parse(String(text ?? ''))}</>;
+}
+
+// A Slide check: its first sentence, then "more" for the rest (print: all)
+function SlideCheck({ text }) {
+  const { printing } = useStudy();
+  const [open, setOpen] = useState(false);
+  const head = firstSentence(text);
+  const folds = head !== text;
+  const shown = !folds || open || printing ? text : head;
+  return (
+    <Note label="Slide check" tone="warn">
+      <p>
+        <Rich text={shown} />
+        {folds && !printing && (
+          <>
+            {' '}
+            <button type="button" className="dl9s-more" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+              {open ? 'less' : 'more'}
+            </button>
+          </>
+        )}
+      </p>
+    </Note>
+  );
 }
 
 export function Blocks({ blocks }) {
@@ -118,7 +147,7 @@ export function Blocks({ blocks }) {
     }
     if (b.code) return <Code key={i} code={NAMED_CODE[b.code.src] ?? b.code.src} label={b.code.label} meta={b.code.meta} />;
     if (b.note) return <Note key={i} label={b.label ?? 'Note'}><p><Rich text={b.note} /></p></Note>;
-    if (b.slideNote) return <Note key={i} label="Slide check" tone="warn"><p><Rich text={b.slideNote} /></p></Note>;
+    if (b.slideNote) return <SlideCheck key={i} text={b.slideNote} />;
     if (b.fig) return <figure key={i} className="dl9s-readfig"><Diagram fig={b.fig} /></figure>;
     if (b.unfold) {
       return (

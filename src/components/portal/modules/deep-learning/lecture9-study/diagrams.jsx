@@ -16,6 +16,8 @@ import { createContext, useContext } from 'react';
      mdp        Figure 18-8, simplified: s0, s1, s2 and the +10, −50, +40
      sample     slide 62: sample_experiences(32) → 6 arrays of 32
      dqnStep    slide 63: the data flow of training_step
+     chain      Figure 18-7: the four-state Markov chain
+     dqnNet     slide 61: the DQN, 4 → 32 → 32 → 2 Q-values
 
    Highlighting: <Diagram fig="…" hl={['…']} sheet /> draws the named parts
    (<P k="…">) in the notebook's green pen. The part keys per figure are
@@ -83,7 +85,7 @@ function RlLoop() {
     <Svg w={360} h={150} label="The reinforcement learning loop: the agent sends an action to the environment; the environment sends back an observation and a reward to the agent">
       <P k="agent">
         <Box x={14} y={52} w={92} h={40} label="Agent" s={11.5} />
-        <T x={60} y={108} s={9.5} i>policy</T>
+        <T x={60} y={46} s={9.5} i>(policy)</T>
       </P>
       <P k="env"><Box x={252} y={52} w={96} h={40} label="Environment" s={11} /></P>
       <P k="act">
@@ -96,7 +98,8 @@ function RlLoop() {
         <Head x={60} y={94} dir={-Math.PI / 2} />
         <T x={180} y={138} s={10.5}>observation + reward</T>
       </P>
-      <T x={180} y={78} s={9.5} i>maximise the expected long-term rewards</T>
+      <T x={179} y={70} s={9.5} i>goal: maximise</T>
+      <T x={179} y={83} s={9.5} i>long-term rewards</T>
     </Svg>
   );
 }
@@ -251,6 +254,73 @@ function DqnStep() {
   );
 }
 
+/* §10 — Figure 18-7: the four-state Markov chain */
+function Chain() {
+  return (
+    <Svg w={340} h={176} label="Figure 18-7: four states. s0 stays with 0.7, goes to s1 with 0.2 and to s3 with 0.1; s1 goes to s2 with 0.9 and to s3 with 0.1; s2 goes back to s1 with 1.0; s3 stays in s3 with 1.0">
+      {[[60, 56, 's₀'], [170, 56, 's₁'], [280, 56, 's₂'], [115, 140, 's₃']].map(([x, y, n]) => (
+        <g key={n}>
+          <circle cx={x} cy={y} r={16} />
+          <T x={x} y={y + 4.5} s={12}>{n}</T>
+        </g>
+      ))}
+      <P k="loops">
+        <path d="M46 48 C 16 30, 16 82, 46 64" />
+        <Head x={46} y={64} dir={0.5} />
+        <T x={14} y={60} a="end" s={10}>0.7</T>
+        <path d="M105 156 C 90 186, 140 186, 125 156" />
+        <Head x={125} y={156} dir={-1.3} />
+        <T x={146} y={176} s={10}>1.0</T>
+      </P>
+      <Arrow x1={76} y1={56} x2={152} y2={56} head={4} />
+      <T x={114} y={50} s={10}>0.2</T>
+      <P k="cycle">
+        <path d="M184 46 C 210 26, 240 26, 266 46" />
+        <Head x={266} y={46} dir={0.6} />
+        <T x={225} y={26} s={10}>0.9</T>
+        <path d="M266 66 C 240 86, 210 86, 184 66" />
+        <Head x={184} y={66} dir={Math.PI + 0.6} />
+        <T x={225} y={94} s={10}>1.0</T>
+      </P>
+      <Arrow x1={70} y1={70} x2={104} y2={126} head={4} />
+      <T x={76} y={106} a="end" s={10}>0.1</T>
+      <Arrow x1={160} y1={70} x2={126} y2={126} head={4} />
+      <T x={154} y={106} a="start" s={10}>0.1</T>
+    </Svg>
+  );
+}
+
+/* §16 — slide 61: the DQN */
+function DqnNet() {
+  return (
+    <Svg w={380} h={150} label="Slide 61's DQN: the 4 observation numbers go into Dense 32 with elu, then Dense 32 with elu, then Dense 2 with no activation: one Q-value per action, Q of s and left, Q of s and right; 1,282 parameters">
+      <Box x={6} y={58} w={50} h={34} label="state" s={10} />
+      <T x={31} y={106} s={9} i>4 obs</T>
+      <Arrow x1={56} y1={75} x2={76} y2={75} head={4} />
+      <P k="hidden">
+        <Box x={78} y={40} w={70} h={70} />
+        <T x={113} y={70} s={10}>Dense 32</T>
+        <T x={113} y={86} s={10} i>elu</T>
+        <Arrow x1={148} y1={75} x2={166} y2={75} head={4} />
+        <Box x={168} y={40} w={70} h={70} />
+        <T x={203} y={70} s={10}>Dense 32</T>
+        <T x={203} y={86} s={10} i>elu</T>
+      </P>
+      <Arrow x1={238} y1={75} x2={256} y2={75} head={4} />
+      <P k="out">
+        <Box x={258} y={40} w={56} h={70} />
+        <T x={286} y={70} s={10}>Dense 2</T>
+        <T x={286} y={86} s={9} i>linear</T>
+        <Arrow x1={314} y1={60} x2={330} y2={52} head={4} />
+        <Arrow x1={314} y1={90} x2={330} y2={98} head={4} />
+        <T x={334} y={52} a="start" s={9.5}>Q(s, 0)</T>
+        <T x={334} y={102} a="start" s={9.5}>Q(s, 1)</T>
+      </P>
+      <T x={190} y={136} s={9.5} i>one Q-value per action · 1,282 parameters</T>
+    </Svg>
+  );
+}
+
 const FIGS = {
   rlLoop: RlLoop,
   policyNet: PolicyNet,
@@ -258,6 +328,8 @@ const FIGS = {
   mdp: Mdp,
   sample: Sample,
   dqnStep: DqnStep,
+  chain: Chain,
+  dqnNet: DqnNet,
 };
 
 export function Diagram({ fig, sheet = false, lab = false, hl = NO_HL }) {

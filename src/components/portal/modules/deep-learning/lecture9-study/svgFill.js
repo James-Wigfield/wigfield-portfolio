@@ -11,6 +11,7 @@ export const ROLE_VAR = {
   obs: '--dl9s-obs',
   agent: '--dl9s-agent',
   rpos: '--dl9s-rpos',
+  env: '--dl9s-env',
 };
 
 export function cellFill(role, v, max = 1) {

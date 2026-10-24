@@ -7,8 +7,9 @@ import { geom } from './mdp188Geom';
    States are outlined circles, actions small diamonds, every transition an
    arrow whose thickness is its probability (written beside it), rewards are
    signed markers on their arrows (+10, −50 "the fire", +40). Props:
-     policy     [a for s0, a for s1, a for s2]: those actions and their arrows
-                are drawn "best" (action colour), the other actions dim
+     policy     [a for s0, a for s1, a for s2]: those actions are drawn
+                "best" (a thicker diamond, their arrows in the policy colour),
+                the other actions dim
      on         { s, a } an action whose arrows are drawn in ink (a step)
      here       the state the agent is in (a ring), for explorer labs
      onState    makes the states keyboard-reachable buttons

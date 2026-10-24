@@ -107,15 +107,16 @@ export const CARDS = {
     ],
   },
   epsGreedy: {
-    title: 'epsilon_greedy_policy',
+    title: 'The DQN and epsilon_greedy_policy',
     slide: '61',
-    snippets: [{ src: 'DQN_MODEL', lines: [9, 14] }],
-    prompt: 'What does this function return when `epsilon = 0.3`, and why is a random action needed at all?',
+    snippets: [{ src: 'DQN_MODEL', lines: [1, 14] }],
+    prompt: 'Draw the network this code builds, then say what `epsilon_greedy_policy` returns when `epsilon = 0.3`.',
+    fig: 'dqnNet',
     answer: [
+      'The DQN reads the 4 observation numbers, has two `Dense(32, activation="elu")` layers and a `Dense(n_outputs)` output with no activation: one Q-value per action (2 for CartPole).',
       'With probability 0.3 (`np.random.rand() < epsilon`) it returns a random action, `np.random.randint(n_outputs)`: 0 or 1.',
       'Otherwise it runs the DQN on the state and returns the action with the highest predicted Q-value (`argmax`).',
       'The random actions are the exploration: Q-learning can work only if the exploration policy explores the MDP thoroughly (slide 57).',
-      'The training loop lowers epsilon from 1 towards 0.01 (slide 64), so the agent explores less as it learns.',
     ],
   },
   sample: {

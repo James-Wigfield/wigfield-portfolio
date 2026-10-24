@@ -49,7 +49,9 @@ function arc(r, from, len) {
 const slotOf = (buf, i) => buf.appended - buf.items.length + i; // deque index i → append number
 
 function openReplay() {
-  const buf = fillBuffer(BASE, OPEN_EPISODES);
+  // open on a full ring: keep playing until the deque has dropped its oldest
+  let buf = fillBuffer(BASE, OPEN_EPISODES);
+  while (!((buf.dropped ?? 0) > 0)) buf = appendEpisode(buf, playRandomEpisode(episodeSeed(BASE, buf.episodes)));
   const R = rng(SAMPLE_SEED);
   return { buf, R, indices: sampleIndices(R, buf.items.length) };
 }
@@ -166,7 +168,7 @@ function Batch({ arrays, onHot, narrow }) {
       })}
       <text x={24} y={y0 + 5} textAnchor="end" className="dl9s-t dl9s-t--xs dl9s-t--m">0</text>
       <text x={24} y={y0 + BATCH * ch} textAnchor="end" className="dl9s-t dl9s-t--xs dl9s-t--m">31</text>
-      {!narrow && <text x={W - 6} y={H - 2} textAnchor="end" className="dl9s-t dl9s-t--xs">hover a row</text>}
+      {!narrow && <text x={W - 6} y={H - 2} textAnchor="end" className="dl9s-t dl9s-t--xs dl9s-noprint">hover a row</text>}
       {tip && <Tip x={tip.x} y={tip.y} text={tip.text} />}
     </svg>
   );
@@ -184,26 +186,19 @@ export function ReplayLab() {
   const arrays = useMemo(() => (indices ? regroup(buf.items, indices) : null), [buf, indices]);
 
   const playOne = () => setState((s) => ({ buf: appendEpisode(s.buf, playRandomEpisode(episodeSeed(BASE, s.buf.episodes))), indices: null }));
-  const playFull = () => setState((s) => {
-    let b = s.buf;
-    while (b.items.length < MAXLEN) b = appendEpisode(b, playRandomEpisode(episodeSeed(BASE, b.episodes)));
-    b = appendEpisode(b, playRandomEpisode(episodeSeed(BASE, b.episodes)));
-    return { buf: b, indices: null };
-  });
   const sample = () => {
     if (!gen.current) gen.current = openReplay().R;
     const ix = sampleIndices(gen.current, buf.items.length);
     setState((s) => ({ ...s, indices: ix }));
   };
-  const reset = () => { gen.current = null; setState(OPEN_REPLAY); };
 
   return (
     <Stage
       title="The replay buffer: a ring of 2,000 experiences"
       slides="slides 61–62"
-      tryThis="Predict what happens once all 2,000 slots are full, then press play until full."
+      tryThis="Predict which experiences a new episode replaces in this full buffer, then play one and watch the write head overwrite the oldest."
       caption="Each step `play_one_step` appends one 6-field experience (slide 61’s comment lists 5) and `deque(maxlen=2000)` drops the oldest once it is full; `sample_experiences(32)` draws 32 random indices, with replacement, and regroups that batch field by field into 6 arrays."
-      challenge={{ text: 'Fill the buffer until its oldest experiences start dropping out.', done: (buf.dropped ?? 0) > 0 }}
+      challenge={{ text: 'Sample until a batch draws the same experience twice (indices are drawn with replacement).', done: !!indices && new Set(indices).size < indices.length && state !== OPEN_REPLAY }}
       own="random-action episodes of this page’s CartPole port"
       maths={
         <>
@@ -222,10 +217,8 @@ export function ReplayLab() {
         <div className="dl9s-floorrow dl9s-rp__ctl dl9s-noprint">
           <div className="dl9s-rp__btns">
             <button type="button" className="dl9s-rp__btn" onClick={playOne}>play an episode</button>
-            <button type="button" className="dl9s-rp__btn" onClick={playFull}>play until full</button>
             <button type="button" className="dl9s-rp__btn dl9s-rp__btn--pick" onClick={sample}>sample a batch of 32</button>
           </div>
-          <button type="button" className="dl9s-rp__reset" onClick={reset}>reset</button>
         </div>
         <div className="dl9s-rp__row">
           <div className="dl9s-rp__left">
@@ -268,7 +261,7 @@ const ACTIVE = [
   ['dones', 'truncateds', 'runs'],
   ['rewards', 'runs', 'maxNext', 'targets'],
   ['states', 'actions', 'mask', 'allQ', 'qs'],
-  ['targets', 'qs', 'err'],
+  ['rewards', 'runs', 'maxNext', 'targets', 'qs', 'err'],
 ];
 const FROM_BEAT = { states: 0, actions: 0, rewards: 0, next_states: 0, dones: 0, truncateds: 0, nextQ: 1, maxNext: 1, runs: 2, targets: 3, mask: 4, allQ: 4, qs: 4, err: 5 };
 
@@ -364,7 +357,7 @@ export function TrainStepLab() {
       slides="slide 63"
       tryThis="Predict which row ends up with the biggest error, then step through the beats."
       story={<StoryBar story={story} beats={TS_BEATS} />}
-      caption="Each array carries the slide’s variable name; the rows are 4 of the 32 in one batch. The row whose episode ended (`done = True`) gets `runs = 0`, so its target is just its reward, far below what the DQN predicts, and it dominates the loss."
+      caption="Each array carries the slide’s variable name; the rows are 4 of the 32 in one batch. The row whose episode ended (`done = True`) gets `runs = 0`, so its target is just its reward, far below what the DQN predicts: its error dwarfs the other rows shown, and the batch’s ended rows make up almost all of the loss."
       own="experiences and trained DQN · this page’s own"
       maths={
         D && (
@@ -408,7 +401,7 @@ export function TrainStepLab() {
                       weights={k === 'actions' || k === 'rewards' || k === 'mask' || k === 'runs'}
                       max={1}
                       frame={false}
-                      values={numbers ? (_, i, j) => show(M[i][j], k) : undefined}
+                      values={numbers && active ? (_, i, j) => show(M[i][j], k) : undefined}
                       onHover={(hv) => setTip(hv ? { x: p.x + hv.j * p.c + p.c / 2, y: p.y + hv.i * L.ch, text: `${LABEL[k]}[${hv.i}${p.w > 1 ? `, ${hv.j}` : ''}] = ${k === 'dones' || k === 'truncateds' ? (M[hv.i][hv.j] ? 'True' : 'False') : fmt(M[hv.i][hv.j], 4)}` } : null)}
                     />
                   </g>

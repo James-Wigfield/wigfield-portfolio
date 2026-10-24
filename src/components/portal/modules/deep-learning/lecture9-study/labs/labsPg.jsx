@@ -74,7 +74,8 @@ export function YTargetLab() {
           <line x1={toX(p)} y1={by - 26} x2={toX(p)} y2={by + bh + 4} className="dl9s-yt__edge" />
           {/* the random number u */}
           <Scrub x0={x0} x1={x1} y={by + bh + 62} value={u} min={0} max={0.99} step={0.01} big={0.1} onChange={setU} label="u, the uniform random number" show={(v) => `u = ${v.toFixed(2)}`} className="dl9s-yt__u" />
-          <line x1={toX(u)} y1={by - 4} x2={toX(u)} y2={by + bh + 4} className="dl9s-yt__needle" />
+          <line x1={toX(u)} y1={by - 10} x2={toX(u)} y2={by + 2} className="dl9s-yt__needle" />
+          <line x1={toX(u)} y1={by + bh - 2} x2={toX(u)} y2={by + bh + 30} className="dl9s-yt__needle" />
           {/* the result */}
           <g transform={`translate(${W / 2} ${by + bh + 108})`}>
             <text x={0} y={0} textAnchor="middle" className="dl9s-t dl9s-t--b">
@@ -197,7 +198,7 @@ export function TrainPgLab() {
       title="Train the policy network, live"
       slides="slides 33–37"
       tryThis="Predict how many iterations it takes to pass 100 steps, then press Train and watch the mean reward per iteration climb."
-      caption={`Grey: this page’s offline run of the slides’ code in TensorFlow (iteration 150: ${offline ? offline[offline.length - 1] : '…'}). Magenta: the same algorithm in this browser on this page’s CartPole port. The dot is slide 36’s printed “mean rewards: 190.3”.`}
+      caption={`Grey: this page’s offline run of the slides’ code in TensorFlow (iteration 150: ${offline ? offline[offline.length - 1] : '…'}); magenta: the same algorithm in this browser, on this page’s CartPole port. The dot is slide 36’s printed “mean rewards: 190.3”.`}
       challenge={{ text: 'Train until an iteration’s mean reward passes 190, then watch the policy play.', done: !!last && Math.max(...shownLive) > 190 && !!film }}
       own="both runs · this page’s own"
       maths={

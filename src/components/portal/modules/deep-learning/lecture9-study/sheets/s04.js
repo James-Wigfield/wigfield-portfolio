@@ -25,7 +25,7 @@ export default {
       h: 'One step',
       at: '20',
       items: [
-        { code: 'obs, reward, done, truncated, info = env.step(action)', read: 'a reward of 1.0 per step; `done` = the episode is over' },
+        { code: 'obs, reward, done, truncated, info = env.step(action)', read: 'a reward of 1.0 per step; `done` = the episode is over; `truncated` = a time limit cut it off; `info` = `{}`' },
       ],
       margin: [
         { q: 'What does `env.reset(seed=42)` return?', a: '`obs, info`: the first observation and an empty dictionary (slide 17).' },

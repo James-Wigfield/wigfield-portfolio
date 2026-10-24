@@ -8,4 +8,6 @@ export const FIG_PARTS = {
   mdp: ['plus10', 'fire', 'plus40'],
   sample: ['pick', 'arrays'],
   dqnStep: ['target', 'q', 'loss'],
+  chain: ['loops', 'cycle'],
+  dqnNet: ['hidden', 'out'],
 };

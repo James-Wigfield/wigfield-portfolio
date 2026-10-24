@@ -147,7 +147,7 @@ export function ReinforceLab() {
       slides="slides 30–31"
       tryThis="Predict which way the policy will move, then press ▶ and watch the red arrows flip before they are averaged."
       story={<StoryBar story={story} beats={BEATS} />}
-      caption="The arrows are this page’s own toy vectors in a 2-D stand-in for the network’s parameters; the scores are the real normalised advantages of two episodes of 5 and 3 steps (every reward +1, γ = 0.95). Hover a step to find its arrow."
+      caption="The arrows are this page’s own toy vectors in a 2-D stand-in for the network’s parameters; the scores are the real normalised advantages of two episodes of 5 and 3 steps (every reward +1, γ = 0.95)."
       own="toy gradient vectors · this page’s own"
       maths={
         <>

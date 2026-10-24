@@ -171,7 +171,6 @@ export function TdLab() {
     tick();
   };
   const onAlpha = (v) => { aRef.current = v; setAlpha(v); };
-  const reset = () => { stop(); live.current = null; gen.current = null; setSim(INITIAL); };
 
   const { STATES } = geom(narrow);
   const spSt = STATES[t.sp];
@@ -182,7 +181,7 @@ export function TdLab() {
       title="One transition, one small step"
       slides="slides 50–52"
       tryThis="Predict where the new V(s) lands, drag α, then observe the next transition."
-      caption="Each observed transition moves $V(s)$ a fraction $\alpha$ of the way from its old estimate toward the TD target $r + \gamma V(s')$; the gap between them is the TD error $\delta$. The actions come from a random exploration policy (slide 51), so these estimates head for the values of that random policy."
+      caption="Each observed transition moves $V(s)$ a fraction $\alpha$ of the way from its old estimate toward the TD target $r + \gamma V(s')$; the gap between them is the TD error $\delta$."
       challenge={{ text: 'Set α so the estimate moves exactly halfway to the target.', done: Math.abs(a - 0.5) < 1e-9 }}
       own="random explorer, seeded · this page’s own run"
       maths={
@@ -192,7 +191,7 @@ export function TdLab() {
           <MEq tex={"V_{k+1}(s) \\leftarrow V_k(s) + \\alpha\\, \\delta_k(s, r, s') \\quad \\text{with} \\quad \\delta_k(s, r, s') = r + \\gamma V_k(s') - V_k(s)"} />
           <MLine text={`TD error $\\delta = ${t.r} + 0.90 \\times ${fmt(V[t.sp], 2)} - ${fmt(V[t.s], 2)} = ${fmt(u.error, 2)}$, so $V_{k+1}(s_${t.s}) = ${fmt(V[t.s], 2)} + ${a.toFixed(2)} \\times ${fmt(u.error, 2)} = ${fmt(u.next, 2)}$: the same number.`} />
           <MLine text="Slide 52: like SGD, TD learning only truly converges if you gradually reduce the learning rate $\alpha$; with a fixed $\alpha$ the estimates keep bouncing around." />
-          <p className="dl9s-mnote">For comparison, the values of the random exploration policy itself (this page’s own working: each state’s average over its possible actions of Σ T [R + 0.90 V]) are V(s₀) ≈ {fmt(V_RANDOM[0], 2)}, V(s₁) ≈ {fmt(V_RANDOM[1], 2)}, V(s₂) ≈ {fmt(V_RANDOM[2], 2)}.</p>
+          <p className="dl9s-mnote">The actions come from a random exploration policy (slide 51), so these estimates head for the values of that random policy. For comparison, the values of the random exploration policy itself (this page’s own working: each state’s average over its possible actions of Σ T [R + 0.90 V]) are V(s₀) ≈ {fmt(V_RANDOM[0], 2)}, V(s₁) ≈ {fmt(V_RANDOM[1], 2)}, V(s₂) ≈ {fmt(V_RANDOM[2], 2)}.</p>
         </>
       }
     >
@@ -200,7 +199,7 @@ export function TdLab() {
         <div className="dl9s-td__row">
           <div className="dl9s-td__mdp">
             <Mdp188 here={t.s} on={{ s: t.s, a: t.a }} compact={narrow} label={`Figure 18-8: the agent in ${NAMES[t.s]} took a${t.a} and landed in ${NAMES[t.sp]} with reward ${t.r}. Estimates: ${NAMES.map((n, i) => `${n} ${fmt(shownV[i], 2)}`).join(', ')}`}>
-              <ValueFills V={shownV} compact={narrow} uid={uid} vmax={50} labels />
+              <ValueFills V={shownV} compact={narrow} uid={uid} vmax={50} />
               <g className="dl9s-td__sp" aria-hidden="true">
                 <circle cx={spSt.x} cy={spSt.y} r={28} />
                 <text x={spSt.x - 24} y={spSt.y - 22} textAnchor="end" className="dl9s-t dl9s-t--b dl9s-t--obs dl9s-halo">s′</text>
@@ -223,7 +222,6 @@ export function TdLab() {
             <button type="button" className="dl9s-td__play" onClick={running ? stop : auto} aria-label={running ? 'Pause' : 'Keep observing transitions'}>
               <Icon name={running ? 'pause' : 'play'} size={14} />
             </button>
-            <button type="button" className="dl9s-td__reset" onClick={reset}>reset</button>
           </div>
           <svg className="dl9s-svg dl9s-td__alpha" viewBox="0 0 340 66" role="group" aria-label="The learning rate alpha">
             <text x={24} y={16} className="dl9s-t dl9s-t--s">learning rate α</text>

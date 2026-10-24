@@ -9,7 +9,7 @@
 .dl9s-qt__kname sub { font-size: 0.7em; }
 .dl9s-qt__kmeta { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; color: var(--ink-3); }
 .dl9s-qt__table { max-width: 360px; }
-.dl9s-qt__best { fill: none; stroke: var(--dl9s-act); stroke-width: 2.6; pointer-events: none; }
+.dl9s-qt__best { fill: none; stroke: var(--dl9s-pol); stroke-width: 2.6; pointer-events: none; }
 .dl9s-qt__cell { cursor: pointer; }
 .dl9s-qt__cell--inf { cursor: default; }
 .dl9s-qt__cell:focus-visible { outline: none; }

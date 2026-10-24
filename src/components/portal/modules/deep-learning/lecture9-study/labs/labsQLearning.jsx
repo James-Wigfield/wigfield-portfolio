@@ -146,7 +146,7 @@ export function QLearningLab() {
       title="Knowing the MDP vs learning by watching"
       slides="slides 53–55"
       tryThis="Predict which curve reaches the dashed line first, then press new run a few times."
-      caption="Left: slide 48’s Q-value iteration, which knows $T$ and $R$. Right: this page’s own Q-learning run, a random explorer with a learning rate that is gradually reduced (slide 52), $\alpha_k = 0.05/(1 + 0.005k)$; the slides’ “fewer than 20” and “about 8,000” iterations describe the slides’ run, and this one lands within roughly 10% of the dashed line, depending on the seed."
+      caption="Left: slide 48’s Q-value iteration, which knows $T$ and $R$. Right: this page’s own Q-learning run, a purely random explorer with a learning rate reduced gradually as slide 52 advises ($\alpha_k = 0.05/(1 + 0.005k)$), still heads for the dashed $Q^*$ (within about 10%, depending on the seed): Q-learning is off-policy (slide 56)."
       own={`Q-learning run, seed ${sd} · this page’s own`}
       maths={
         <>
@@ -268,7 +268,7 @@ export function EpsilonLab() {
       title="Explore or exploit: the ε-greedy policy"
       slides="slides 56–57"
       tryThis="Predict how often s₀ picks a₀ when ε = 1, drag ε, then sample 100 actions."
-      caption="With probability $\epsilon$ the agent explores (a random action, so each of $s_0$’s three actions gets $\epsilon/3$); otherwise it exploits the highest Q-value, so $P(a_0) = 1 - \epsilon + \epsilon/3$. Q-learning is off-policy, so it can learn from such an explorer (even a purely random one, $\epsilon = 1$), while policy gradients are on-policy: they explore with the policy being trained (slide 56)."
+      caption="With probability $\epsilon$ the agent explores (a random action, so each of $s_0$’s three actions gets $\epsilon/3$); otherwise it exploits the highest Q-value, so $P(a_0) = 1 - \epsilon + \epsilon/3$. (this page’s working)."
       challenge={{ text: 'Find the ε where the best action is chosen 90% of the time.', done }}
       own="Q-values from §12’s Q-value iteration · samples this page’s own"
       maths={
@@ -276,7 +276,7 @@ export function EpsilonLab() {
           <MLine text="The slides describe the $\epsilon$-greedy policy in words (slide 57) and code (slide 61); written as a probability (this page’s own working, $[\dots]$ is 1 when true, 0 otherwise):" />
           <MEq tex={'P(a) = \\frac{\\epsilon}{|A(s)|} + (1 - \\epsilon)\\,[\\,a = \\operatorname*{argmax}_{a\'} Q(s, a\')\\,]'} />
           <MLine text={`In $s_0$, $|A(s_0)| = 3$ and the highest Q-value is $Q(s_0, a_0) = ${fmt(Q_S0[0], 2)}$ (then $a_1$: ${fmt(Q_S0[1], 2)}, $a_2$: ${fmt(Q_S0[2], 2)}). With $\\epsilon = ${e.toFixed(2)}$: $P(a_0) = 1 - ${e.toFixed(2)} + ${e.toFixed(2)}/3 = ${pGreedy(e).toFixed(4)}$ and $P(a_1) = P(a_2) = ${(e / 3).toFixed(4)}$.`} />
-          <MLine text="For 90%: $1 - \epsilon + \epsilon/3 = 0.9$, so $\tfrac{2}{3}\epsilon = 0.1$ and $\epsilon = 0.15$." />
+          <MLine text="For 90%: $1 - \epsilon + \epsilon/3 = 0.9$, so $\frac{2\epsilon}{3} = 0.1$ and $\epsilon = 0.15$." />
           <MLine text="Slide 61’s `epsilon_greedy_policy` explores with `np.random.randint(n_outputs)`, a draw over all the network’s actions. In $s_0$ all three actions are possible, so that is the same as drawing from $s_0$’s possible actions." />
           <MLine text="Slide 57: $\epsilon$ is often set close to 1 initially and gradually reduced to a small value (e.g. 0.05); slide 64’s code goes down to 0.01 (see §16)." />
         </>

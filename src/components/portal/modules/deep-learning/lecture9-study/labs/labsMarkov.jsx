@@ -147,7 +147,7 @@ function Matrix({ row, hot, onHot }) {
                 onClick={set}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set(); } }}
               >
-                <rect className="dl9s-cell" x={MX + j * MC + 1.5} y={MY + i * MC + 1.5} width={MC - 3} height={MC - 3} rx={4} style={{ fill: p > 0 ? weightFill('pol', 0.15 + 0.75 * p) : 'var(--dl9s-floor)' }} />
+                <rect className="dl9s-cell" x={MX + j * MC + 1.5} y={MY + i * MC + 1.5} width={MC - 3} height={MC - 3} rx={4} style={{ fill: p > 0 ? weightFill('env', 0.15 + 0.75 * p) : 'var(--dl9s-floor)' }} />
                 <text x={MX + j * MC + MC / 2} y={MY + i * MC + MC / 2 + 4.5} textAnchor="middle" className={`dl9s-cellnum${p >= 0.65 ? ' dl9s-cellnum--inv' : ''}${p === 0 ? ' dl9s-cellnum--inf' : ''}`}>{p.toFixed(1)}</text>
                 {ex && <circle cx={MX + j * MC + MC - 7} cy={MY + i * MC + 7} r={3.2} className="dl9s-mk__slidedot" />}
               </g>
@@ -156,7 +156,7 @@ function Matrix({ row, hot, onHot }) {
           <text x={MX + 4 * MC + 10} y={MY + i * MC + MC / 2 + 5} className="dl9s-t dl9s-t--m dl9s-t--s">= 1</text>
         </g>
       ))}
-      <rect className="dl9s-grid-frame dl9s-grid-frame--pol" x={MX - 0.5} y={MY - 0.5} width={4 * MC + 1} height={4 * MC + 1} rx={4} />
+      <rect className="dl9s-grid-frame dl9s-grid-frame--env" x={MX - 0.5} y={MY - 0.5} width={4 * MC + 1} height={4 * MC + 1} rx={4} />
     </svg>
   );
 }

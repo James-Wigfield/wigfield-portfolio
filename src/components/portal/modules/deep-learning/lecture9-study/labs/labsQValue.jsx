@@ -75,7 +75,7 @@ function QTable({ Q, best, sel, onSel, hover, onHover, narrow }) {
               </g>
             );
           })}
-          <text x={GX + 3 * CELL_W + 12} y={GY + s * CELL_H + CELL_H / 2 + 5} className="dl9s-t dl9s-t--b dl9s-t--act">{narrow ? `→ ${sub(`a${best[s]}`)}` : `best: ${sub(`a${best[s]}`)}`}</text>
+          <text x={GX + 3 * CELL_W + 12} y={GY + s * CELL_H + CELL_H / 2 + 5} className="dl9s-t dl9s-t--b dl9s-t--pol">{narrow ? `→ ${sub(`a${best[s]}`)}` : `best: ${sub(`a${best[s]}`)}`}</text>
         </g>
       ))}
       <rect className="dl9s-grid-frame dl9s-grid-frame--val" x={GX - 0.5} y={GY - 0.5} width={3 * CELL_W + 1} height={3 * CELL_H + 1} rx={4} />
@@ -134,7 +134,7 @@ export function QTableLab() {
       title="The Q-table fills in, iteration by iteration"
       slides="slides 46–49"
       tryThis="Predict s₁’s best action, then drag γ to the right and watch s₁’s row: when does the agent choose the fire?"
-      caption={`Each cell is $Q_k(s, a)$ after $k$ iterations of slide 48’s loop (hatched: impossible actions, $-\\infty$). The orange arrows are the policy $\\pi^*(s) = \\text{argmax}_a\\, Q^*(s, a)$: the brightest cell in each row.`}
+      caption={`Each cell is $Q_k(s, a)$ after $k$ iterations of slide 48’s loop (hatched: impossible actions, $-\\infty$). The magenta arrows are the policy $\\pi^*(s) = \\text{argmax}_a\\, Q^*(s, a)$: the outlined cell in each row (its largest Q-value).`}
       challenge={{ text: 'Find the γ where s₁’s best action flips to a₂ (“going into the fire!”).', done: flipped }}
       own={null}
       maths={

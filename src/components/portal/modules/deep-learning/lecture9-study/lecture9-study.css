@@ -658,3 +658,7 @@ html.dl9s-pseudo-on body { overflow: hidden !important; }
 .dl9s-card__list { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.3rem; }
 .dl9s-card__list li { font-size: 0.88rem; line-height: 1.6; color: var(--ink-2); }
 .dl9s-card__fig { margin: 0; max-width: 34rem; color: var(--ink-2); }
+
+/* "more" / "less" on a folded Slide check */
+.dl9s-more { font: inherit; font-size: 0.78rem; color: var(--ink-2); background: none; border: none; border-bottom: 1px solid var(--line); padding: 0; cursor: pointer; }
+.dl9s-more:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
