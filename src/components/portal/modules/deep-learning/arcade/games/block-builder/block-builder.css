@@ -1,0 +1,180 @@
+/* ============================================================================
+   BLOCK BUILDER — styles (.dla-bk*). Blocks are outlined in Figure 14-15's
+   colours via --dlv-* tokens (conv blue, pool pink, LRN / dropout green,
+   inception yellow, fully connected aqua, softmax orange); fills are a light
+   tint of the outline on the stage floor. Motion only under no-preference.
+   ========================================================================== */
+
+/* ── tones ─────────────────────────────────────────────────────────────── */
+.dla-bk [data-tone], .dla-bk-blk, .dla-bk-box, .dla-bk-chip, .dla-bk-card { --bk-tone: var(--line); }
+.dla-bk [data-tone='in'] { --bk-tone: var(--ink-3); }
+.dla-bk [data-tone='conv'], .dla-bk [data-tone='layer'] { --bk-tone: var(--dlv-blue); }
+.dla-bk [data-tone='pool'] { --bk-tone: var(--dlv-magenta); }
+.dla-bk [data-tone='fc'] { --bk-tone: var(--dlv-aqua); }
+.dla-bk [data-tone='out'], .dla-bk [data-tone='add'] { --bk-tone: var(--dlv-orange); }
+.dla-bk [data-tone='lrn'], .dla-bk [data-tone='drop'], .dla-bk [data-tone='concat'] { --bk-tone: var(--dlv-green); }
+.dla-bk [data-tone='inc'] { --bk-tone: var(--dlv-yellow); }
+.dla-bk [data-tone='step'] { --bk-tone: var(--dlv-violet); }
+
+/* ── layout ────────────────────────────────────────────────────────────── */
+.dla-bk__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 360px); }
+.dla-bk__left { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dla-bk__solo { display: flex; flex-direction: column; gap: 0.6rem; max-width: 640px; min-width: 0; }
+.dla-bk__floor { display: flex; justify-content: center; min-height: 140px; align-items: center; }
+.dla-bk__input { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dla-bk__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; border-top: 1px solid var(--line-2); padding-top: 0.5rem; }
+.dla-bk__bar > .dla-k { flex: 1 1 6rem; }
+.dla-bk__bar .dla-btn { min-height: 44px; }
+@container arcade (max-width: 720px) {
+  .dla-bk__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.dla-bk-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; width: 100%; min-width: 0; }
+.dla-bk-cap { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; letter-spacing: 0.03em; color: var(--ink-3); text-align: center; }
+
+/* ── the tower (Figure 14-15's blocks), bottom → top ──────────────────── */
+.dla-bk-tower { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column-reverse; gap: 13px; width: min(100%, 330px); }
+.dla-bk-tower--down { flex-direction: column; width: min(100%, 460px); }
+.dla-bk-tower--compact { gap: 9px; }
+.dla-bk-blk {
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0 0.45rem;
+  min-height: 40px; padding: 0.4rem 0.7rem;
+  border: 1.5px solid var(--bk-tone); border-radius: 7px;
+  background: color-mix(in srgb, var(--bk-tone) 13%, var(--dl8s-floor));
+  color: var(--ink); text-align: center; line-height: 1.25;
+}
+.dla-bk-tower--compact .dla-bk-blk { min-height: 30px; padding: 0.22rem 0.6rem; }
+.dla-bk-blk__name { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; font-weight: 700; color: var(--ink-3); }
+.dla-bk-blk__label { font-size: 0.84rem; font-weight: 600; }
+.dla-bk-blk__sub { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; color: var(--ink-2); }
+.dla-bk-tower--compact .dla-bk-blk__label { font-size: 0.78rem; }
+.dla-bk-blk--code { justify-content: flex-start; text-align: left; flex-direction: column; align-items: flex-start; }
+.dla-bk-blk--code .dla-bk-blk__sub { font-size: 0.68rem; overflow-wrap: anywhere; }
+/* the arrow from the block below (DOM-previous) into this one */
+.dla-bk-blk + .dla-bk-blk::before { content: ''; position: absolute; left: 50%; top: 100%; height: 13px; border-left: 1.5px solid var(--ink-3); }
+.dla-bk-blk + .dla-bk-blk::after { content: ''; position: absolute; left: calc(50% - 4px); top: calc(100% + 1px); border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-bottom: 6px solid var(--ink-3); }
+.dla-bk-tower--compact .dla-bk-blk + .dla-bk-blk::before { height: 9px; }
+/* steps run top → bottom: the arrow sits above the block and points down */
+.dla-bk-tower--down .dla-bk-blk + .dla-bk-blk::before { top: auto; bottom: 100%; }
+.dla-bk-tower--down .dla-bk-blk + .dla-bk-blk::after { top: auto; bottom: 100%; border-bottom: none; border-top: 6px solid var(--ink-3); }
+.dla-bk-blk--more { border-style: dashed; background: none; color: var(--ink-3); }
+.dla-bk-blk--more .dla-bk-blk__label { font-weight: 400; font-size: 0.74rem; color: var(--ink-3); }
+.dla-bk-blk--slot { border: 1.5px dashed var(--line); background: none; color: var(--ink-3); align-items: center; }
+.dla-bk-blk--next { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* a block the player placed: a dashed accent ring around it */
+.dla-bk-blk--filled { outline: 1.5px dashed var(--accent); outline-offset: 3px; }
+.dla-bk-blk--filled.dla-bk-blk--ok, .dla-bk-blk--filled.dla-bk-blk--bad { outline: none; }
+.dla-bk-blk__q { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; font-weight: 700; }
+.dla-bk-blk--ok { box-shadow: 0 0 0 2px var(--accent); }
+.dla-bk-blk--bad { border-color: var(--dlv-red); box-shadow: 0 0 0 2px var(--dlv-red); }
+
+/* ── slide tables ──────────────────────────────────────────────────────── */
+.dla-bk-tablewrap { width: 100%; overflow-x: auto; }
+.dla-bk-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--ink); }
+.dla-bk-table th { text-align: left; font-family: var(--font-mono, ui-monospace, monospace); font-weight: 600; font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); padding: 0.3rem 0.4rem; border-bottom: 2px solid var(--dlv-green); vertical-align: bottom; }
+.dla-bk-table td { padding: 0.32rem 0.4rem; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.dla-bk-td--n { color: var(--dl8s-k); font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.76rem; }
+.dla-bk-table__more td { color: var(--ink-3); font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; text-align: center; }
+.dla-bk-td--q { padding: 0.15rem 0.3rem !important; }
+.dla-bk-q { display: inline-block; min-width: 2.6em; padding: 0.15rem 0.4rem; border: 1.5px dashed var(--accent); border-radius: 5px; font-family: var(--font-mono, ui-monospace, monospace); font-weight: 800; color: var(--accent-ink); text-align: center; background: var(--accent-soft); }
+.dla-bk-td--ok .dla-bk-q { border-style: solid; }
+.dla-bk-td--bad .dla-bk-q { border: 1.5px solid var(--dlv-red); color: var(--dlv-red); background: none; }
+.dla-bk-x { padding: 0 0.28em; }
+.dla-bk-note { font-size: 0.82em; }
+.dla-bk-th--short { display: none; }
+@container arcade (max-width: 520px) {
+  .dla-bk-th--long { display: none; }
+  .dla-bk-th--short { display: inline; }
+  .dla-bk-table { font-size: 0.68rem; }
+  .dla-bk-table th { font-size: 0.54rem; padding: 0.25rem 0.22rem; }
+  .dla-bk-table td { padding: 0.3rem 0.22rem; }
+  .dla-bk-td--n { font-size: 0.64rem; letter-spacing: -0.02em; }
+  .dla-bk-x { padding: 0 0.04em; }
+  .dla-bk__floor { padding: 0.45rem; }
+  .dla-bk-table td:nth-child(2) { white-space: normal; line-height: 1.2; }
+}
+
+/* ── the plaque (claims and exhibits) ──────────────────────────────────── */
+.dla-bk-plaque { margin: 0; width: 100%; max-width: 44ch; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.7rem 0.2rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.dla-bk-plaque__q { margin: 0; font-family: var(--font-display, Georgia, serif); font-size: clamp(1.05rem, 2.4vw, 1.3rem); line-height: 1.35; color: var(--ink); }
+.dla-bk-plaque--big .dla-bk-plaque__q { font-size: clamp(1.4rem, 3.4vw, 1.9rem); letter-spacing: -0.01em; }
+
+/* ── SVG figures (14-14, 14-16, the depth bar) ─────────────────────────── */
+.dla-bk-svg { max-width: 420px; }
+.dla-bk-svg--res { max-width: 360px; }
+.dla-bk-frame { fill: color-mix(in srgb, var(--dlv-yellow) 9%, transparent); stroke: var(--dlv-yellow); stroke-width: 1.4; }
+.dla-bk-line { stroke: var(--ink-3); stroke-width: 1.4; fill: none; }
+.dla-bk-line--ghost { stroke-dasharray: 3 3; opacity: 0.6; }
+.dla-bk-arrow line { stroke: var(--ink-3); stroke-width: 1.4; }
+.dla-bk-arrow polygon { fill: var(--ink-3); }
+.dla-bk-box rect { fill: color-mix(in srgb, var(--bk-tone) 14%, var(--dl8s-floor)); stroke: var(--bk-tone); stroke-width: 1.4; }
+.dla-bk-box .dla-bk-res__hit { fill: transparent; stroke: none; }
+.dla-bk-box__t { font-size: 10.5px; font-weight: 600; }
+.dla-bk-box__s { font-size: 9.5px; font-family: var(--font-mono, ui-monospace, monospace); fill: var(--ink-2) !important; }
+.dla-bk-box__plus { font-size: 20px; font-weight: 800; }
+.dla-bk-box__key { font-size: 9px; font-family: var(--font-mono, ui-monospace, monospace); fill: var(--ink-3) !important; }
+.dla-bk-box__q { font-size: 15px; font-weight: 800; font-family: var(--font-mono, ui-monospace, monospace); fill: var(--ink-3) !important; }
+.dla-bk-box--ok rect { stroke: var(--accent); stroke-width: 2.4; }
+.dla-bk-box--bad rect { stroke: var(--dlv-red); stroke-width: 2.4; }
+.dla-bk-incslot rect { fill: none; stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.dla-bk-incslot--next rect { stroke: var(--accent); stroke-width: 2; }
+.dla-bk-incslot--next .dla-bk-box__q { fill: var(--accent-ink) !important; }
+.dla-bk-sym { font-size: 13px; font-style: italic; font-family: var(--font-display, Georgia, serif); }
+.dla-bk-sym--s { font-size: 11px; }
+.dla-bk-skip path { stroke: var(--dlv-orange); stroke-width: 2; }
+.dla-bk-skip polygon { fill: var(--dlv-orange); }
+.dla-bk-skip--ok path { stroke: var(--accent); }
+.dla-bk-skip--ok polygon { fill: var(--accent); }
+.dla-bk-skip--bad path { stroke: var(--dlv-red); }
+.dla-bk-skip--bad polygon { fill: var(--dlv-red); }
+.dla-bk-res__btn { cursor: pointer; outline: none; }
+.dla-bk-res__btn[aria-disabled='true'] { cursor: default; }
+.dla-bk-res__btn:hover rect:not(.dla-bk-res__hit), .dla-bk-res__btn:focus-visible rect:not(.dla-bk-res__hit) { stroke: var(--accent); stroke-width: 2.2; }
+.dla-bk-res__btn:focus-visible .dla-bk-res__hit { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.dla-bk-res__btn--from rect:not(.dla-bk-res__hit) { stroke: var(--dlv-orange); stroke-width: 2.6; }
+.dla-bk-sum { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 100%; }
+.dla-bk-bar { max-width: 380px; }
+.dla-bk-seg rect { stroke-width: 1.4; }
+.dla-bk-seg--k rect { fill: color-mix(in srgb, var(--dl8s-k) 20%, var(--dl8s-floor)); stroke: var(--dl8s-k); }
+.dla-bk-seg--v rect { fill: color-mix(in srgb, var(--dl8s-v) 20%, var(--dl8s-floor)); stroke: var(--dl8s-v); }
+.dla-bk-seg--q rect { fill: color-mix(in srgb, var(--dl8s-q) 20%, var(--dl8s-floor)); stroke: var(--dl8s-q); }
+.dla-bk-seg--pos rect { fill: color-mix(in srgb, var(--dl8s-pos) 20%, var(--dl8s-floor)); stroke: var(--dl8s-pos); }
+.dla-bk-seg__t { font-size: 11px; font-weight: 700; font-family: var(--font-mono, ui-monospace, monospace); }
+
+/* ── cards ─────────────────────────────────────────────────────────────── */
+.dla-bk-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.dla-bk-cards--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dla-bk-card {
+  width: 100%; min-height: 50px; display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.5rem; font: inherit; text-align: left; color: var(--ink-2); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+}
+/* tone = a labelled dot before the label (no coloured edge) */
+.dla-bk-card[data-tone] .dla-bk-card__label::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 99px; background: var(--bk-tone); margin-right: 0.4rem; vertical-align: 0.05em; }
+.dla-bk-card:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.dla-bk-card:disabled { cursor: default; }
+.dla-bk-card--on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); opacity: 0.8; }
+.dla-bk-card__n { flex: none; width: 1.5rem; height: 1.5rem; display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--line); border-radius: 5px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; font-weight: 800; color: var(--accent-ink); }
+.dla-bk-card--on .dla-bk-card__n { border: 1px solid var(--accent); }
+.dla-bk-card__body { flex: 1; display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+.dla-bk-card__label { font-size: 0.86rem; font-weight: 600; color: var(--ink); }
+.dla-bk-card__sub { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.dla-bk-card__key { flex: none; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; color: var(--ink-3); }
+.dla-bk-card--branch { align-items: center; min-height: 84px; }
+.dla-bk-chips { flex: 1; display: flex; flex-direction: column-reverse; gap: 5px; min-width: 0; }
+.dla-bk-chip { display: block; padding: 0.2rem 0.4rem; border: 1.2px solid var(--bk-tone); border-radius: 5px; background: color-mix(in srgb, var(--bk-tone) 12%, transparent); font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-2); line-height: 1.3; }
+.dla-bk-chip b { font-family: var(--font-body, system-ui, sans-serif); font-weight: 600; color: var(--ink); }
+
+/* ── juice (motion only when allowed) ─────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes dla-bk-drop { 0% { transform: translateY(-14px); opacity: 0.2; } 70% { transform: translateY(2px); opacity: 1; } 100% { transform: translateY(0); } }
+  @keyframes dla-bk-settle { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
+  @keyframes dla-bk-wobble { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-1.6deg); } 70% { transform: rotate(1.4deg); } }
+  .dla-bk-blk--filled { animation: dla-bk-drop 0.26s ease-out; }
+  .dla-bk-floor--right .dla-bk-blk, .dla-bk-floor--right .dla-bk-box rect { animation: dla-bk-settle 0.4s ease; transform-box: fill-box; transform-origin: center; }
+  .dla-bk-blk--bad { animation: dla-bk-wobble 0.36s ease; }
+  .dla-bk-card { transition: border-color 0.12s ease, background-color 0.12s ease, opacity 0.12s ease; }
+  .dla-bk-skip path { stroke-dasharray: 400; animation: dla-bk-draw 0.35s ease-out; }
+  @keyframes dla-bk-draw { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+}

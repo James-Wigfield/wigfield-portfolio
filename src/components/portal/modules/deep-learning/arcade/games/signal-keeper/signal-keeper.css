@@ -1,0 +1,133 @@
+/* Signal Keeper — the stack and its pictures (.dla-sk*). Colours are the L8
+   role tokens: histograms --dl8s-enc, healthy --dl8s-v, vanishing --dl8s-k,
+   exploding --dl8s-q, saturated --dl8s-dec, weight distributions --dl8s-pos. */
+.dla-sk__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; align-items: start; min-width: 0; }
+@container arcade (min-width: 860px) {
+  .dla-sk__grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); }
+  .dla-sk__grid--wide { grid-template-columns: minmax(0, 1fr); }
+}
+.dla-sk__grid > .dla-pad { width: 100%; max-width: 340px; }
+.dla-sk__floor { padding: 0.6rem 0.7rem; min-width: 0; }
+.dla-sk .dla-prompt__line { overflow-wrap: anywhere; }
+.dla-sk__answer { min-width: 0; }
+@container arcade (max-width: 859px) {
+  /* the keypad stays in reach under the picture */
+  .dla-sk__grid > .dla-pad, .dla-sk__vec { width: 100%; justify-self: center; max-width: 360px; position: sticky; bottom: 0.4rem; z-index: 2; background: var(--ground); padding-top: 0.3rem; border-radius: 10px; }
+}
+
+/* ── the stack ────────────────────────────────────────────────────────── */
+.dla-sk__stack { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.dla-sk__cfg { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; font-size: 0.8rem; color: var(--ink-2); padding: 0 0.1rem 0.45rem; border-bottom: 1px solid var(--line); }
+.dla-sk__cfg .dla-k { margin-right: 0.3rem; }
+.dla-sk__health { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; color: var(--ink-2); }
+.dla-sk__hdot { width: 8px; height: 8px; border-radius: 99px; background: var(--dlv-red); display: inline-block; }
+.dla-sk__health--ok { color: var(--accent-ink); }
+.dla-sk__health--ok .dla-sk__hdot { background: var(--dl8s-v); }
+.dla-sk__svg { max-height: 62vh; }
+.dla-sk__band { fill: color-mix(in srgb, var(--dl8s-v) 11%, transparent); }
+.dla-sk__centre { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 2 3; }
+.dla-sk__axis { stroke: var(--ink-3); stroke-width: 1; opacity: 0.6; }
+.dla-sk__gl { stroke: var(--line); stroke-width: 0.8; }
+.dla-sk__bin { fill: var(--dl8s-enc); opacity: 0.88; }
+.dla-sk__bar { fill: var(--ink-2); }
+.dla-sk__bar--healthy { fill: var(--dl8s-v); }
+.dla-sk__bar--vanishing { fill: var(--dl8s-k); }
+.dla-sk__bar--exploding { fill: var(--dl8s-q); }
+.dla-sk__bar--saturated { fill: var(--dl8s-dec); }
+.dla-sk__over { fill: var(--ink-2); }
+.dla-sk__dot { fill: var(--ink-3); stroke: none; }
+.dla-sk__dot--hidden { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.dla-sk__dot--healthy { fill: var(--dl8s-v); }
+.dla-sk__dot--vanishing { fill: var(--dl8s-k); }
+.dla-sk__dot--exploding { fill: var(--dl8s-q); }
+.dla-sk__dot--saturated { fill: var(--dl8s-dec); }
+.dla-sk__legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.9rem; font-size: 0.72rem; color: var(--ink-3); padding-top: 0.35rem; border-top: 1px solid var(--line-2); }
+.dla-sk__ldot { display: inline-block; width: 7px; height: 7px; border-radius: 99px; margin-right: 0.35rem; vertical-align: 0.05em; background: var(--ink-3); }
+.dla-sk__ldot--healthy { background: var(--dl8s-v); }
+.dla-sk__ldot--vanishing { background: var(--dl8s-k); }
+.dla-sk__ldot--exploding { background: var(--dl8s-q); }
+.dla-sk__ldot--saturated { background: var(--dl8s-dec); }
+.dla-sk__ldot--hidden { background: none; box-shadow: inset 0 0 0 1.2px var(--ink-3); }
+.dla-sk__note { flex-basis: 100%; color: var(--accent-ink); font-weight: 600; }
+
+/* ── one layer's weights ──────────────────────────────────────────────── */
+.dla-sk__layer, .dla-sk__curve, .dla-sk__batch, .dla-sk__clip { max-width: 460px; margin: 0 auto; }
+.dla-sk__wire { stroke: var(--line); stroke-width: 0.8; }
+.dla-sk__node { fill: var(--surface); stroke: var(--dl8s-enc); stroke-width: 1.8; }
+.dla-sk__node--out { stroke: var(--dl8s-dec); }
+.dla-sk__dist { fill: color-mix(in srgb, var(--dl8s-pos) 16%, transparent); stroke: var(--dl8s-pos); stroke-width: 1.8; stroke-linejoin: round; }
+.dla-svg .dla-sk__reveal { fill: var(--accent-ink) !important; font-weight: 700; }
+
+/* ── Table 11-1 ───────────────────────────────────────────────────────── */
+.dla-sk__table { margin: 0; overflow-x: auto; }
+.dla-sk__table table { width: 100%; border-collapse: collapse; font-size: 0.88rem; color: var(--ink); }
+.dla-sk__table th, .dla-sk__table td { text-align: left; padding: 0.5rem 0.55rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.dla-sk__table thead th { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--ink-3); font-weight: 600; }
+.dla-sk__table tbody th { font-weight: 700; white-space: nowrap; }
+.dla-sk__trow--ask { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.dla-sk__hidden { color: var(--ink-3); letter-spacing: 0.2em; }
+.dla-sk__table figcaption { margin-top: 0.45rem; font-size: 0.72rem; color: var(--ink-3); }
+
+/* ── curves, formulas, code ───────────────────────────────────────────── */
+.dla-sk__fz { fill: none; stroke: var(--dl8s-k); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.dla-sk__curve2 { fill: none; stroke: var(--dl8s-q); stroke-width: 1.8; stroke-dasharray: 5 4; }
+.dla-sk__floorline { stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.dla-sk__markline { stroke: var(--dl8s-q); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.dla-sk__pt { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.dla-sk__formula { font-size: 1.2rem; padding: 1.2rem 0.4rem; overflow-x: auto; color: var(--ink); text-align: center; }
+.dla-sk__code { min-width: 0; overflow-x: auto; }
+.dla-sk__code .dlk-code { margin: 0; }
+
+/* ── BN: the batch, the parameters, the placement ─────────────────────── */
+.dla-sk__inst { fill: var(--dl8s-enc); stroke: var(--surface); stroke-width: 1.5; }
+.dla-sk__inst--on { fill: var(--dl8s-q); }
+.dla-sk__mu { stroke: var(--dl8s-pos); stroke-width: 2; }
+.dla-sk__params { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.4rem 0.2rem; }
+.dla-sk__params .dla-k { margin: 0; }
+.dla-sk__pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.dla-sk__pcell { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.7rem 0.6rem; border-bottom: 1px solid var(--line); font-size: 0.95rem; color: var(--ink); min-height: 64px; }
+.dla-sk__pcell:nth-child(odd) { border-right: 1px solid var(--line); }
+.dla-sk__pcell--on { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.dla-sk__ptag { font-size: 0.72rem; color: var(--ink-3); }
+.dla-sk__pipes { display: flex; flex-direction: column; gap: 0; padding: 0.3rem 0.1rem; }
+.dla-sk__pipe { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.4rem; padding: 0.75rem 0.4rem; border-bottom: 1px solid var(--line); }
+.dla-sk__pipe:first-child { border-top: 1px solid var(--line); }
+.dla-sk__pipe > .dla-k { width: 1.4rem; }
+.dla-sk__pipe--on { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.dla-sk__pbox { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dla-sk__pbox code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.3rem 0.45rem; }
+.dla-sk__arrow { color: var(--ink-3); }
+
+/* ── clipping ─────────────────────────────────────────────────────────── */
+.dla-sk__clipline { stroke: var(--dl8s-k); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.dla-sk__gbar { fill: var(--dl8s-q); }
+.dla-sk__gbar--clipped { fill: var(--dl8s-v); }
+
+/* ── answers: the SELU checklist and the vector pad ───────────────────── */
+.dla-sk__check { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dla-sk__checklist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+@container arcade (max-width: 640px) { .dla-sk__checklist { grid-template-columns: minmax(0, 1fr); } }
+.dla-sk__tick { width: 100%; min-height: 52px; text-align: left; }
+.dla-sk__box { width: 1.3rem; height: 1.3rem; flex: none; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid var(--ink-3); border-radius: 4px; font-size: 0.85rem; font-weight: 800; color: var(--accent-ink); }
+.dla-sk__tick--on { border-color: var(--accent); color: var(--ink); }
+.dla-sk__tick--on .dla-sk__box { border-color: var(--accent); }
+.dla-sk__tick .dla-choice__label { font-weight: 500; }
+.dla-sk__lock { display: flex; align-items: center; justify-content: flex-end; gap: 0.8rem; }
+.dla-sk__lock .dla-btn { min-height: 46px; }
+.dla-sk__vec { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; max-width: 340px; width: 100%; }
+.dla-sk__vec > .dla-pad { width: 100%; }
+.dla-sk__slots { display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; }
+.dla-sk__slotcell { display: inline-flex; align-items: center; gap: 0.2rem; }
+.dla-sk__slot { min-width: 64px; }
+.dla-sk__paren, .dla-sk__comma { font-family: var(--font-mono, ui-monospace, monospace); font-size: 1.3rem; color: var(--ink-3); }
+.dla-sk__mblock { display: flex; flex-direction: column; gap: 0.1rem; }
+.dla-sk__mblock .dla-k { margin: 0.3rem 0 0; }
+
+/* ── motion (only when the viewer allows it) ──────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  /* only the heal animates (not the first layout after the stage measures itself) */
+  .dla-sk__stack--healed .dla-sk__bin, .dla-sk__stack--healed .dla-sk__bar, .dla-sk__gbar--clipped { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .dla-sk__stack--healed .dla-sk__dot { transition: fill 0.25s ease; }
+  .dla-sk__stack--healed .dla-sk__health--ok { animation: dla-sk-pulse 0.6s ease; }
+  @keyframes dla-sk-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+}

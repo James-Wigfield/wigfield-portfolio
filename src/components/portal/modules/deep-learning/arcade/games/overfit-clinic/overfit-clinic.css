@@ -1,0 +1,163 @@
+/* Overfit Clinic (.dla-oc*). Colours only from theme tokens, --dlv-* and
+   --dl8s-*; every motion sits behind prefers-reduced-motion: no-preference. */
+.dla-oc {
+  --oc-train: var(--dl8s-k);
+  --oc-valid: var(--dl8s-q);
+  --oc-truth: var(--dl8s-enc);
+  --oc-pred: var(--dl8s-dec);
+  --oc-aux: var(--dl8s-pos);
+  --oc-gen: var(--dl8s-dec);
+  --oc-disc: var(--dl8s-enc);
+}
+.dla-oc__patient { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dla-oc__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.3rem 1rem; border-bottom: 1px solid var(--line); padding-bottom: 0.45rem; }
+.dla-oc__split { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@container arcade (max-width: 780px) { .dla-oc__split { grid-template-columns: minmax(0, 1fr); } }
+.dla-oc__answer { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+
+/* ── the steps strip ──────────────────────────────────────────────────── */
+.dla-oc__steps { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; }
+.dla-oc__step { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dla-oc__stepdot { width: 8px; height: 8px; border-radius: 99px; border: 1.5px solid var(--ink-3); }
+.dla-oc__step--now { color: var(--ink); font-weight: 700; }
+.dla-oc__step--now .dla-oc__stepdot { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.dla-oc__step--done { color: var(--accent-ink); }
+.dla-oc__step--done .dla-oc__stepdot { background: var(--accent); border-color: var(--accent); }
+
+/* ── the patient's card ───────────────────────────────────────────────── */
+.dla-oc__card { margin: 0; padding: 0.75rem 0.8rem 0.2rem; display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; position: relative; overflow: hidden; }
+.dla-oc__complaint { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.76rem; line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
+.dla-oc__second { margin: 0; }
+.dla-oc__chart { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.dla-oc__svg { max-width: 100%; }
+.dla-oc__grid { stroke: var(--line); stroke-width: 1; }
+.dla-oc__axis { stroke: var(--ink-3); stroke-width: 1.2; }
+.dla-oc__guide { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.dla-oc__guide--zero { stroke-dasharray: none; opacity: 0.5; }
+.dla-oc__ln { fill: none; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.dla-oc__ln--train { stroke: var(--oc-train); }
+.dla-oc__ln--valid { stroke: var(--oc-valid); }
+.dla-oc__ln--truth { stroke: var(--oc-truth); }
+.dla-oc__ln--pred { stroke: var(--oc-pred); stroke-dasharray: 6 3; }
+.dla-oc__ln--aux { stroke: var(--oc-aux); }
+.dla-oc__ln--gen { stroke: var(--oc-gen); stroke-width: 2; }
+.dla-oc__ln--disc { stroke: var(--oc-disc); stroke-width: 2; }
+.dla-oc__off path { fill: var(--oc-train); }
+.dla-oc__legend { margin: 0; display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; font-size: 0.74rem; color: var(--ink-2); }
+.dla-oc__legend > span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dla-oc__key { display: inline-block; width: 16px; height: 0; border-top: 2.6px solid var(--oc-aux); }
+.dla-oc__key--train { border-color: var(--oc-train); }
+.dla-oc__key--valid { border-color: var(--oc-valid); }
+.dla-oc__key--truth { border-color: var(--oc-truth); }
+.dla-oc__key--pred { border-top-style: dashed; border-color: var(--oc-pred); }
+.dla-oc__key--gen { border-color: var(--oc-gen); }
+.dla-oc__key--disc { border-color: var(--oc-disc); }
+
+.dla-oc__bar { fill: color-mix(in srgb, var(--oc-train) 78%, transparent); }
+.dla-oc__bar--flag { fill: var(--oc-valid); }
+.dla-oc__zero { stroke: var(--oc-valid); stroke-width: 2; stroke-linecap: round; fill: none; }
+.dla-oc__cell { stroke: var(--line); stroke-width: 1; }
+.dla-svg text.dla-oc__hv { font-size: 10px; fill: var(--ink-2); }
+.dla-svg text.dla-oc__hv--strong { fill: var(--dl8s-floor); font-weight: 700; }
+
+/* the encoder–decoder drawing */
+.dla-oc__link { stroke: var(--ink-3); stroke-width: 1.6; }
+.dla-oc__link--state { stroke-dasharray: 4 3; }
+.dla-oc__hop { stroke: var(--oc-valid); stroke-width: 3.4; stroke-linecap: round; opacity: 0.85; }
+.dla-oc__rcell { stroke-width: 1.8; }
+.dla-oc__rcell--enc { fill: color-mix(in srgb, var(--dl8s-enc) 16%, var(--surface)); stroke: var(--dl8s-enc); }
+.dla-oc__rcell--dec { fill: color-mix(in srgb, var(--dl8s-dec) 14%, var(--surface)); stroke: var(--dl8s-dec); }
+.dla-oc__rcell--on { stroke-width: 3; stroke: var(--oc-valid); }
+
+/* code cards: the slide-style grey block, scrolling inside itself */
+.dla-oc__code { min-width: 0; max-width: 100%; border-top: 1px solid var(--line); padding-top: 0.35rem; }
+.dla-oc__code pre {
+  margin: 0; padding: 0.55rem 0.65rem; overflow-x: auto; max-width: 100%;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; line-height: 1.55; color: var(--ink);
+  background: var(--surface-hi); border-radius: 6px;
+}
+.dla-oc__codeline { display: block; white-space: pre; }
+.dla-oc__codeline--title { color: var(--ink-2); }
+.dla-oc__ln-n { display: inline-block; min-width: 1.4em; text-align: right; color: var(--ink-3); }
+.dla-oc__cm { color: var(--ink-3); font-style: italic; }
+@container arcade (max-width: 520px) { .dla-oc__code pre { font-size: 0.66rem; } }
+.dla-oc__grid-code {
+  display: flex; flex-direction: column; padding: 0.55rem 0.65rem; background: var(--surface-hi); border-radius: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; line-height: 1.5; color: var(--ink);
+}
+.dla-oc__gl { display: grid; grid-template-columns: 1.4em minmax(0, 1fr) auto; column-gap: 0.5rem; align-items: baseline; }
+.dla-oc__gl--title { display: block; color: var(--ink-2); }
+.dla-oc__gt { white-space: pre-wrap; overflow-wrap: anywhere; padding-left: 1.2em; text-indent: -1.2em; }
+.dla-oc__gl .dla-oc__cm { white-space: nowrap; }
+@container arcade (max-width: 520px) {
+  .dla-oc__grid-code { font-size: 0.68rem; }
+  .dla-oc__gl { grid-template-columns: 1.4em minmax(0, 1fr); }
+  .dla-oc__gl .dla-oc__cm { grid-column: 2; padding-left: 1.2em; }
+}
+
+/* the Dx / Rx lines: ruled, a labelled dot when written in */
+.dla-oc__record { margin: 0; display: flex; flex-direction: column; }
+.dla-oc__record > div { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 0.4rem; align-items: baseline; padding: 0.35rem 0; border-top: 1px solid var(--line); }
+.dla-oc__record dt { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; font-weight: 700; color: var(--ink-3); }
+.dla-oc__record dd { margin: 0; font-size: 0.84rem; line-height: 1.4; color: var(--ink-3); }
+.dla-oc__rec--on dt { color: var(--accent-ink); }
+.dla-oc__rec--on dd { color: var(--ink); font-weight: 600; }
+.dla-oc__rec--on dd::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--accent); margin-right: 0.45rem; vertical-align: 0.06em; }
+
+/* the rubber stamp on a right answer (outline only, no fill) */
+.dla-oc__stamp {
+  position: absolute; top: 34%; left: 50%; z-index: 2; pointer-events: none;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 1.05rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--accent-ink); border: 2.5px solid var(--accent); border-radius: 5px; padding: 0.2rem 0.65rem;
+  text-shadow: 0 0 3px var(--dl8s-floor), 0 0 6px var(--dl8s-floor); transform: translateX(-50%) rotate(-8deg);
+}
+
+/* ── ordering / slots ─────────────────────────────────────────────────── */
+.dla-oc__order { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.dla-oc__slots { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.dla-oc__slot { display: grid; grid-template-columns: minmax(2rem, auto) minmax(0, 1fr); gap: 0.6rem; align-items: center; padding: 0.4rem 0.2rem; border-bottom: 1px solid var(--line); min-height: 44px; font-size: 0.86rem; color: var(--ink-3); }
+.dla-oc__slot--on { color: var(--ink); }
+.dla-oc__slot--right .dla-oc__slotv { color: var(--accent-ink); font-weight: 600; }
+.dla-oc__slot--answer .dla-oc__slotv { color: var(--ink); font-weight: 600; }
+.dla-oc__slotk { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; font-weight: 700; color: var(--accent-ink); max-width: 13rem; }
+.dla-oc__cards { display: flex; flex-direction: column; gap: 0.4rem; }
+.dla-oc__cardbtn {
+  display: grid; grid-template-columns: 1.8rem minmax(0, 1fr) auto; align-items: center; gap: 0.55rem;
+  min-height: 48px; padding: 0.45rem 0.65rem; text-align: left;
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; touch-action: manipulation;
+}
+.dla-oc__cardbtn:hover:not(:disabled) { border-color: var(--ink-3); }
+.dla-oc__cardbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dla-oc__cardbtn:disabled { cursor: default; opacity: 0.8; }
+.dla-oc__cardbtn--on { border-color: var(--accent); }
+.dla-oc__cardn {
+  display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 1px dashed var(--ink-3);
+  font-family: var(--font-mono, ui-monospace, monospace); font-weight: 700; font-size: 0.82rem; color: var(--accent-ink);
+}
+.dla-oc__cardbtn--on .dla-oc__cardn { border: 2px solid var(--accent); }
+.dla-oc__cardt { font-size: 0.88rem; line-height: 1.35; overflow-wrap: anywhere; }
+.dla-oc__cardkey { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); }
+.dla-oc__btns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+.dla-oc__btns .dla-btn { min-height: 44px; }
+@container arcade (max-width: 520px) { .dla-oc__btns .dla-btn--primary { flex: 1; justify-content: center; } }
+
+/* ── motion (never under reduced motion) ──────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .dla-oc__ln { stroke-dasharray: 1; stroke-dashoffset: 1; animation: dla-oc-draw 0.9s ease-out forwards; }
+  .dla-oc__ln--pred { stroke-dasharray: 6 3; stroke-dashoffset: 0; animation: dla-oc-fade 0.6s ease-out both 0.3s; }
+  .dla-oc__ln--valid, .dla-oc__ln--disc { animation-delay: 0.18s; }
+  .dla-oc__bar { transform-box: fill-box; transform-origin: 50% 100%; animation: dla-oc-grow 0.5s ease-out both; animation-delay: calc(var(--i, 0) * 22ms); }
+  .dla-oc__cell { animation: dla-oc-fade 0.45s ease-out both; }
+  .dla-oc__hop { stroke-dasharray: 60; stroke-dashoffset: 60; animation: dla-oc-hop 0.5s ease-out forwards; }
+  .dla-oc__stamp { animation: dla-oc-stamp 0.34s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+  .dla-oc__rec--on dd { animation: dla-oc-fade 0.3s ease-out both; }
+  .dla-oc__card--right { animation: dla-oc-glow 0.5s ease-out; }
+  .dla-oc__cardbtn { transition: border-color 0.15s, transform 0.15s; }
+  .dla-oc__cardbtn:active:not(:disabled) { transform: scale(0.98); }
+}
+@keyframes dla-oc-draw { to { stroke-dashoffset: 0; } }
+@keyframes dla-oc-hop { to { stroke-dashoffset: 0; } }
+@keyframes dla-oc-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes dla-oc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dla-oc-stamp { from { opacity: 0; transform: translateX(-50%) rotate(-8deg) scale(1.8); } to { opacity: 1; transform: translateX(-50%) rotate(-8deg) scale(1); } }
+@keyframes dla-oc-glow { 0% { box-shadow: var(--dl8s-shadow), 0 0 0 0 var(--accent-soft); } 40% { box-shadow: var(--dl8s-shadow), 0 0 0 6px var(--accent-soft); } 100% { box-shadow: var(--dl8s-shadow), 0 0 0 0 transparent; } }

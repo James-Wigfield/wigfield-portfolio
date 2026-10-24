@@ -1,0 +1,156 @@
+/* Bottleneck — the four stages (.dla-bn*). Tokens only: --dlv-* (lecture palette), --dl8s-* (L8
+   stage), the portal's --ink / --line / --accent. Every transition and animation sits behind
+   prefers-reduced-motion: no-preference. */
+
+.dla-bn__head { display: flex; flex-direction: column; gap: 0.25rem; }
+.dla-bn__grid { grid-template-columns: minmax(0, 1fr) 300px; }
+.dla-bn__floor { display: flex; flex-direction: column; gap: 0.5rem; }
+.dla-bn__side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+.dla-bn__go { width: 100%; justify-content: center; }
+.dla-bn__rcpt { margin-left: 0.35rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; color: var(--ink-3); white-space: nowrap; }
+.dla-bn__beyond { color: var(--dlv-violet); }
+.dla-bn__mcode { white-space: normal; word-break: break-word; }
+.dla-bn__mrow { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.6rem; }
+
+/* ── stage 1 · the plane ─────────────────────────────────────────────── */
+.dla-bn__cloud { touch-action: none; cursor: grab; max-height: 420px; }
+.dla-bn__cloud:active { cursor: grabbing; }
+.dla-bn__plane { fill: var(--dlv-blue); fill-opacity: calc(0.1 + 0.14 * var(--q, 0)); stroke: var(--dlv-blue); stroke-opacity: 0.6; stroke-width: 1.2; stroke-linejoin: round; }
+.dla-bn__res { stroke: var(--ink-3); stroke-opacity: 0.6; stroke-width: 1; }
+.dla-bn__proj { fill: var(--dlv-blue); }
+.dla-bn__pt { fill: var(--dlv-red); stroke: var(--dl8s-floor); stroke-width: 0.8; }
+.dla-bn__pt--below { fill-opacity: 0.38; }
+.dla-bn__target { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+.dla-bn--right .dla-bn__plane { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.6; }
+.dla-bn__axes line { stroke: var(--ink-3); stroke-width: 1.2; }
+.dla-bn__legend { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.9rem; font-size: 0.74rem; color: var(--ink-2); }
+.dla-bn__legend > span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.dla-bn__sw { display: inline-block; width: 8px; height: 8px; border-radius: 99px; background: var(--dlv-red); }
+.dla-bn__sw--below { opacity: 0.38; }
+.dla-bn__sw--proj { border-radius: 1px; background: var(--dlv-blue); }
+
+/* meters (plane MSE, build budget) */
+.dla-bn__meter, .dla-bn__budget { display: flex; flex-direction: column; gap: 0.3rem; border-bottom: 1px solid var(--line-2); padding-bottom: 0.7rem; }
+.dla-bn__mse { font-family: var(--font-mono, ui-monospace, monospace); font-size: 1.7rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.dla-bn__bar { position: relative; height: 8px; border-radius: 99px; background: var(--line-2); }
+.dla-bn__fill { position: absolute; inset: 0; border-radius: 99px; background: var(--accent); transform-origin: left center; }
+.dla-bn__budget--over .dla-bn__fill { background: var(--dlv-red); }
+.dla-bn__budget--over .dla-bn__mse { color: var(--dlv-red); }
+.dla-bn__line { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.dla-bn__floorv { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.7rem; color: var(--ink-3); }
+
+.dla-bn__slider { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr) 3rem; align-items: center; gap: 0.5rem; }
+.dla-bn__slider input { width: 100%; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; touch-action: pan-y; }
+.dla-bn__slider output { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9rem; font-weight: 700; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── stage 2 · the sandwich ──────────────────────────────────────────── */
+.dla-bn__sand { max-height: 400px; }
+.dla-bn__box rect { stroke-width: 1.4; }
+.dla-bn__box--io rect { fill: color-mix(in srgb, var(--dlv-green) 26%, var(--surface)); stroke: var(--dlv-green); }
+.dla-bn__box--hid rect { fill: color-mix(in srgb, var(--dlv-blue) 20%, var(--surface)); stroke: var(--dlv-blue); }
+.dla-bn__box--code rect { fill: color-mix(in srgb, var(--dlv-magenta) 22%, var(--surface)); stroke: var(--dlv-magenta); }
+.dla-svg .dla-bn__boxt { font-size: 11px; }
+.dla-bn__link line { stroke: var(--ink-2); stroke-width: 1.6; }
+.dla-bn__link .dla-bn__tick { stroke: var(--dlv-blue); stroke-width: 1; stroke-dasharray: 2 3; }
+.dla-bn__link--tied > line:first-child { stroke-dasharray: 4 3; }
+.dla-bn__link--ask > line:first-child { stroke: var(--accent); stroke-width: 2.6; }
+.dla-svg text.dla-bn__w { font-size: 13px; font-weight: 700; fill: var(--dlv-blue); font-family: var(--font-body, system-ui, sans-serif); }
+.dla-svg text.dla-bn__w--ask { fill: var(--accent-ink); font-size: 15px; }
+.dla-bn__wsub { font-size: 9px; }
+
+.dla-bn__pick { display: flex; flex-direction: column; gap: 0.35rem; }
+.dla-bn__chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dla-bn__chip {
+  min-width: 52px; min-height: 44px; padding: 0 0.6rem; font: inherit; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.95rem; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.dla-bn__chip:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.dla-bn__chip--on { border-color: var(--accent); border-width: 2px; color: var(--accent-ink); font-weight: 800; box-shadow: 0 0 0 3px var(--accent-soft); }
+.dla-bn__chip:disabled { cursor: default; opacity: 0.7; }
+.dla-bn__fixed { margin: 0; }
+
+/* ── stage 3 · the cards ─────────────────────────────────────────────── */
+.dla-bn__cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.dla-bn__card {
+  width: 100%; display: grid; grid-template-columns: 30px auto minmax(0, 1fr) auto; align-items: center; gap: 0.65rem;
+  text-align: left; font: inherit; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.55rem 0.75rem; min-height: 54px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.dla-bn__card:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.dla-bn__card:disabled { cursor: default; }
+.dla-bn__card--on { border-color: var(--accent); color: var(--ink); }
+.dla-bn__card--ok { border-color: var(--accent); background: var(--accent-soft); }
+.dla-bn__card--bad { border-color: var(--dlv-red); }
+.dla-bn__cardn {
+  width: 28px; height: 28px; border-radius: 99px; border: 1.5px dashed var(--line); display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9rem; font-weight: 800; color: var(--accent-ink);
+}
+.dla-bn__card--on .dla-bn__cardn { border: 1.5px solid var(--accent); }
+.dla-bn__card--bad .dla-bn__cardn { border-color: var(--dlv-red); color: var(--dlv-red); }
+.dla-bn__cardbody { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; grid-column: 3; }
+.dla-bn__card > .dla-bn__mini + .dla-bn__cardbody { grid-column: 3; }
+.dla-bn__cardt { font-size: 0.9rem; line-height: 1.4; }
+.dla-bn__cardc { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; line-height: 1.45; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+.dla-bn__cardk { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); border: 1px solid var(--line-2); border-radius: 4px; padding: 0.05rem 0.3rem; grid-column: 4; }
+.dla-bn__mini { grid-column: 2; display: block; }
+.dla-bn__mini--io { fill: color-mix(in srgb, var(--dlv-green) 45%, var(--surface)); }
+.dla-bn__mini--hid { fill: color-mix(in srgb, var(--dlv-blue) 45%, var(--surface)); }
+.dla-bn__mini--code { fill: color-mix(in srgb, var(--dlv-magenta) 45%, var(--surface)); }
+.dla-bn__mini--soft { fill: color-mix(in srgb, var(--dlv-orange) 55%, var(--surface)); }
+.dla-bn__orderbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.dla-bn__orderbar > .dla-k { flex: 1 1 12rem; }
+.dla-bn__orderbar .dla-bn__go { width: auto; min-width: 11rem; }
+
+/* ── stage 4 · the map ───────────────────────────────────────────────── */
+.dla-bn__mapgrid { grid-template-columns: minmax(0, 1fr) 220px; }
+.dla-bn__map { cursor: pointer; touch-action: manipulation; max-height: 560px; }
+.dla-bn__dots { fill: none; stroke-width: 7; stroke-linecap: round; opacity: 0.85; }
+.dla-bn__map--picked .dla-bn__dots { opacity: 0.2; }
+.dla-bn__map--picked .dla-bn__dots--on { opacity: 1; stroke-width: 10; }
+.dla-svg text.dla-bn__cls { font-size: 30px; font-weight: 600; stroke-width: 10px; }
+.dla-svg text.dla-bn__cls--on { font-size: 36px; font-weight: 800; }
+.dla-svg text.dla-bn__cls--ans { fill: var(--accent-ink); }
+.dla-bn__landed circle { fill: none; stroke: var(--ink); stroke-width: 5; }
+.dla-svg .dla-bn__landed text { font-size: 26px; font-weight: 700; stroke-width: 9px; }
+.dla-bn--wrong .dla-bn__landed circle { stroke: var(--dlv-red); }
+.dla-bn--right .dla-bn__landed circle { stroke: var(--accent); }
+.dla-bn__ownmap { margin: 0; }
+.dla-bn__item { align-items: stretch; }
+.dla-bn__thumbwrap { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; border-bottom: 1px solid var(--line-2); padding-bottom: 0.6rem; }
+.dla-bn__thumb { width: 112px; height: 112px; display: block; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.dla-bn__thumb rect { fill: currentColor; }
+.dla-bn__thumb--wait { opacity: 0.5; }
+.dla-bn__itemk { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); }
+.dla-bn__pickname { margin: 0; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 700; color: var(--ink); min-height: 1.6em; }
+
+/* ── phones ──────────────────────────────────────────────────────────── */
+@container arcade (max-width: 720px) {
+  .dla-bn__grid, .dla-bn__mapgrid { grid-template-columns: 1fr; }
+  .dla-bn__side { width: 100%; }
+  .dla-bn__item { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem 0.8rem; }
+  .dla-bn__item .dla-bn__thumbwrap { grid-row: span 2; border-bottom: none; padding-bottom: 0; }
+  .dla-bn__thumb { width: 84px; height: 84px; }
+  .dla-bn__cardk { display: none; }
+  .dla-svg .dla-bn__units, .dla-svg .dla-bn__bias, .dla-svg .dla-bn__num { font-size: 12px; }
+  .dla-svg .dla-bn__boxt { font-size: 12.5px; }
+  .dla-svg .dla-bn__cnt { font-size: 12.5px; }
+  .dla-svg text.dla-bn__w { font-size: 15px; }
+  .dla-svg text.dla-bn__cls { font-size: 40px; stroke-width: 12px; }
+  .dla-svg text.dla-bn__cls--on { font-size: 46px; }
+  .dla-bn__card { grid-template-columns: 30px auto minmax(0, 1fr); }
+  .dla-bn__orderbar .dla-bn__go { flex: 1 1 100%; }
+}
+
+/* ── juice (motion only when allowed) ────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .dla-bn__fill { transition: transform 0.15s ease, background 0.15s; }
+  .dla-bn__chip, .dla-bn__card { transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+  .dla-bn__card:active:not(:disabled), .dla-bn__chip:active:not(:disabled) { transform: scale(0.98); }
+  .dla-bn__dots { transition: opacity 0.2s, stroke-width 0.2s; }
+  .dla-bn__target { animation: dla-bn-dash 0.6s linear infinite; }
+  .dla-bn--right .dla-bn__plane { animation: dla-bn-glow 0.5s ease; }
+  .dla-bn__landed circle { animation: dla-bn-ping 0.5s ease-out; transform-box: fill-box; transform-origin: center; }
+  @keyframes dla-bn-dash { to { stroke-dashoffset: -20; } }
+  @keyframes dla-bn-glow { 0% { fill-opacity: 0.45; } 100% { fill-opacity: 0.24; } }
+  @keyframes dla-bn-ping { 0% { transform: scale(2.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+}
