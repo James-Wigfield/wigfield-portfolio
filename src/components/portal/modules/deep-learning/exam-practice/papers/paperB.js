@@ -112,8 +112,8 @@ export const PAPER_B = {
                 { lec: 'L2', slides: [34, 41], name: 'Momentum and RMSProp' },
               ],
               answer: [
-                w(R`$\mathbf{m}$ keeps track of past gradients, decaying exponentially, like the momentum vector of momentum optimization.`, 1),
-                w(R`$\mathbf{s}$ keeps track of past **squared** gradients ($\otimes$ element-wise), decaying exponentially, as in RMSProp. Adam (adaptive moment estimation) combines **momentum optimization** and **RMSProp**.`, 1),
+                w(R`$\mathbf{m}$: an exponentially decaying average of past gradients (an estimate of their mean), like the momentum vector of momentum optimization.`, 1),
+                w(R`$\mathbf{s}$: an exponentially decaying average of past **squared** gradients ($\otimes$ element-wise; an estimate of their variance), as in RMSProp. Adam (adaptive moment estimation) combines **momentum optimization** and **RMSProp**.`, 1),
               ],
               difficulty: 2,
               likelihood: 'high',
@@ -157,7 +157,7 @@ export const PAPER_B = {
           page: 4,
           lines: 14,
           source: 'new',
-          prompt: ['A convolutional layer with 64 filters of size 3 × 3, a stride of 1 and "same" padding is applied to RGB images of 224 × 224 pixels. All values are stored as 32-bit floats.'],
+          prompt: ['A convolutional layer with 64 filters of size 3 × 3, a stride of 1 and “same” padding is applied to RGB images of 224 × 224 pixels. All values are stored as 32-bit floats.'],
           subs: [
             {
               id: 'b-q1-c-i',
@@ -330,7 +330,7 @@ for layer in model_B_on_A.layers[:-1]:
     tf.keras.layers.Dense(1)
 ])`,
             },
-            '`Conv1D` uses a stride of 1 and "valid" padding (i.e. no padding) by default. Draw a diagram of the network, showing the shape of the data between layers. Compute the number of parameters of each layer and of the whole network. What does the output of the `Conv1D` layer represent?',
+            '`Conv1D` uses a stride of 1 and “valid” padding (i.e. no padding) by default. Draw a diagram of the network, showing the shape of the data between layers. Compute the number of parameters of each layer and of the whole network. What does the output of the `Conv1D` layer represent?',
           ],
           topics: [
             { lec: 'L4', slides: 50, name: '1D convolutional layers' },
@@ -485,7 +485,7 @@ for layer in model_B_on_A.layers[:-1]:
                 { lec: 'L67', slides: [14, 15], name: 'Sampling the codings' },
               ],
               answer: [
-                w('`tf.exp(logvar / 2)` $= \\exp(\\boldsymbol{\\gamma}/2) = \\boldsymbol{\\sigma}$, so it computes Gaussian noise $\\times\\, \\boldsymbol{\\sigma} + \\boldsymbol{\\mu}$: a coding **sampled** from the Gaussian with mean $\\boldsymbol{\\mu}$ and standard deviation $\\boldsymbol{\\sigma}$.', 1),
+                w('`tf.exp(logvar / 2)` $= \\exp(\\boldsymbol{\\gamma}/2) = \\boldsymbol{\\sigma}$, so it computes standard Gaussian noise (mean 0, standard deviation 1) $\\times\\, \\boldsymbol{\\sigma} + \\boldsymbol{\\mu}$: a coding **sampled** from the Gaussian with mean $\\boldsymbol{\\mu}$ and standard deviation $\\boldsymbol{\\sigma}$.', 1),
                 w('The sampled coding is passed to the decoder, which reconstructs the input from it.', 1),
               ],
               difficulty: 3,
@@ -646,14 +646,14 @@ codings = encoder.predict(X_train)`,
           page: 14,
           lines: 11,
           source: 'new',
-          prompt: ['A trained *transformer* translates the English sentence "I like soccer" into the Spanish "Me gusta el fútbol".'],
+          prompt: ['A trained *transformer* translates the English sentence “I like soccer” into the Spanish “Me gusta el fútbol”.'],
           subs: [
             {
               id: 'b-q4-a-i',
               label: 'i.',
               marks: 2,
               source: 'new',
-              prompt: [R`Describe how the decoder produces the translation at inference time, starting from the $\langle\text{SOS}\rangle$ token. How many times is the whole network run to output "Me gusta el fútbol $\langle\text{EOS}\rangle$"?`],
+              prompt: [R`Describe how the decoder produces the translation at inference time, starting from the $\langle\text{SOS}\rangle$ token. How many times is the whole network run to output “Me gusta el fútbol $\langle\text{EOS}\rangle$”?`],
               topics: [
                 { lec: 'L8', slides: [41, 42], name: 'Generating a translation' },
               ],
@@ -788,6 +788,7 @@ target_Q_values = rewards + runs * discount_factor * max_next_Q_values`,
               prompt: ['Compute the number of trainable parameters of the DQN.'],
               topics: [
                 { lec: 'L9', slides: 61, name: 'A DQN in Keras' },
+                { lec: 'L1', slides: 8, name: 'Dense layers' },
                 { lec: 'L1', slides: 36, name: 'Dense-layer parameters' },
               ],
               answer: [
@@ -844,10 +845,10 @@ target_Q_values = rewards + runs * discount_factor * max_next_Q_values`,
           ],
           answer: [
             ul([
-              ['Let the neural network policy play the game several times; at each step compute the gradients that would make the chosen action even more likely, but don\'t apply them yet.', 1],
-              ['After several episodes, compute each action\'s score: its discounted return, normalized over all the episodes (the **action advantage**).', 1],
-              ['Multiply each gradient vector by its action\'s score: positive scores make good actions more likely, negative scores make bad ones less likely.', 1],
-              ['Compute the mean of all the resulting gradient vectors and use it to perform a gradient descent step.', 1],
+              ['**1.** Let the neural network policy play the game several times; at each step compute the gradients that would make the chosen action even more likely, but don\'t apply them yet.', 1],
+              ['**2.** After several episodes, compute each action\'s score: its discounted return, normalized over all the episodes (the **action advantage**).', 1],
+              ['**3.** Multiply each gradient vector by its action\'s score: positive scores make good actions more likely, negative scores make bad ones less likely.', 1],
+              ['**4.** Compute the mean of all the resulting gradient vectors and use it to perform a gradient descent step.', 1],
             ]),
           ],
           difficulty: 2,

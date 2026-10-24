@@ -556,32 +556,39 @@ function SWideDeep() {
   );
 }
 
-// Practice A Q3(a): the GAN of the question, as data flowing left to right.
+// Practice A Q3(a): the GAN of the question, every arrow labelled with the
+// shape of the data on it (batch dimension written "b").
 function AGan() {
   return (
-    <Pen viewBox="0 0 470 210" width="470px" label="Hand-drawn GAN: noise codings of size 20 go into the generator (Dense 64 ReLU, Dense 784 sigmoid, Reshape) which outputs fake 28 by 28 images; fake and real 28 by 28 images go into the discriminator (Flatten 784, Dense 64 ReLU, Dense 1 sigmoid) which outputs the probability that the image is real.">
+    <Pen viewBox="0 0 470 290" width="470px" label="Hand-drawn GAN: noise codings (b, 20) go into the generator: Dense 64 ReLU gives (b, 64), Dense 784 sigmoid gives (b, 784), Reshape gives fake images (b, 28, 28). Fake and real images (b, 28, 28) go into the discriminator: Flatten gives (b, 784), Dense 64 ReLU gives (b, 64), Dense 1 sigmoid gives (b, 1), the probability that each image is real.">
       {({ arrow }) => (
         <>
-          <PText x={8} y={64} size={15}>noise</PText>
-          <PText x={8} y={82} size={13} color={GREY}>(20)</PText>
-          <line x1={52} y1={70} x2={80} y2={70} markerEnd={arrow} />
-          <PBox x={82} y={30} w={120} h={80} label="" />
-          <PText x={142} y={50} size={16} anchor="middle" color={BLUE}>Generator</PText>
-          <PText x={142} y={70} size={13} anchor="middle">Dense 64, ReLU</PText>
-          <PText x={142} y={86} size={13} anchor="middle">Dense 784, sigmoid</PText>
-          <PText x={142} y={102} size={13} anchor="middle">Reshape</PText>
-          <line x1={204} y1={70} x2={262} y2={92} markerEnd={arrow} />
-          <PText x={206} y={60} size={13}>fake 28×28</PText>
-          <PText x={170} y={178} size={15}>real 28×28 images</PText>
-          <line x1={240} y1={164} x2={262} y2={126} markerEnd={arrow} />
-          <PBox x={264} y={66} w={124} h={80} label="" />
-          <PText x={326} y={86} size={16} anchor="middle" color={BLUE}>Discriminator</PText>
-          <PText x={326} y={106} size={13} anchor="middle">Flatten (784)</PText>
-          <PText x={326} y={122} size={13} anchor="middle">Dense 64, ReLU</PText>
-          <PText x={326} y={138} size={13} anchor="middle">Dense 1, sigmoid</PText>
-          <line x1={390} y1={106} x2={420} y2={106} markerEnd={arrow} />
-          <PText x={424} y={100} size={14}>P(real)</PText>
-          <PText x={424} y={118} size={13} color={GREY}>(1)</PText>
+          <PText x={20} y={14} size={13} color={GREY}>noise (b, 20)</PText>
+          <line x1={60} y1={20} x2={60} y2={38} markerEnd={arrow} />
+          <PBox x={10} y={40} w={110} h={28} label="Dense 64, ReLU" size={13} />
+          <line x1={60} y1={68} x2={60} y2={92} markerEnd={arrow} />
+          <PText x={66} y={84} size={12} color={GREY}>(b, 64)</PText>
+          <PBox x={10} y={94} w={110} h={28} label="Dense 784, sigm." size={13} />
+          <line x1={60} y1={122} x2={60} y2={146} markerEnd={arrow} />
+          <PText x={66} y={138} size={12} color={GREY}>(b, 784)</PText>
+          <PBox x={10} y={148} w={110} h={28} label="Reshape" size={13} />
+          <PText x={18} y={200} size={16} color={BLUE}>Generator</PText>
+          <path d="M120 162 C 170 162, 190 150, 238 150" markerEnd={arrow} />
+          <PText x={128} y={146} size={12} color={GREY}>fake (b, 28, 28)</PText>
+          <PText x={150} y={262} size={13}>real images</PText>
+          <PText x={150} y={278} size={12} color={GREY}>(b, 28, 28)</PText>
+          <path d="M200 250 C 215 210, 222 190, 240 168" markerEnd={arrow} />
+          <PBox x={242} y={136} w={110} h={28} label="Flatten" size={13} />
+          <line x1={297} y1={136} x2={297} y2={112} markerEnd={arrow} />
+          <PText x={303} y={128} size={12} color={GREY}>(b, 784)</PText>
+          <PBox x={242} y={82} w={110} h={28} label="Dense 64, ReLU" size={13} />
+          <line x1={297} y1={82} x2={297} y2={58} markerEnd={arrow} />
+          <PText x={303} y={74} size={12} color={GREY}>(b, 64)</PText>
+          <PBox x={242} y={28} w={110} h={28} label="Dense 1, sigm." size={13} />
+          <line x1={352} y1={42} x2={380} y2={42} markerEnd={arrow} />
+          <PText x={384} y={38} size={13}>P(real)</PText>
+          <PText x={384} y={54} size={12} color={GREY}>(b, 1)</PText>
+          <PText x={250} y={192} size={16} color={BLUE}>Discriminator</PText>
         </>
       )}
     </Pen>
