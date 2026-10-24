@@ -1,0 +1,382 @@
+/* ============================================================================
+   LECTURE 9 STUDY — THE LABS' VISUAL LANGUAGE  (.dl9s-stage*, .dl9s-state …)
+   ----------------------------------------------------------------------------
+   Every Play lab on this page is drawn from one small vocabulary, defined
+   here once and themed for Jade, Coral and Arcade (a copy of Lecture 8's
+   stage kit with reinforcement-learning roles instead of attention roles):
+
+     roles      one colour each, used for strokes, arrows, heatmap ramps and
+                small labels — never for big fills or boxes:
+                  --dl9s-agent  the agent (it chooses)
+                  --dl9s-env    the environment (the world it acts in)
+                  --dl9s-obs    a state / observation
+                  --dl9s-act    an action
+                  --dl9s-rpos   a positive reward   --dl9s-rneg  a negative one
+                  --dl9s-ret    a return, discounting and γ
+                  --dl9s-pol    the policy (and its probabilities)
+                  --dl9s-val    a value V(s) or Q-value Q(s, a)
+                  --dl9s-mask   impossible / masked (drawn as a grey hatch)
+     MDPs       states are outlined circles, actions small outlined diamonds,
+                transitions arrows whose thickness is the probability, and
+                rewards signed text markers (+10 green, −50 red)
+     heatmaps   a Q-table is a grid of cells: value colour for positive
+                values, the negative-reward colour for negative ones, the
+                floor colour at zero, a hatch for −∞ (impossible actions)
+     frame      Stage: title + slide receipt, a one-line "Try this", the
+                stage floor (the picture), an optional story bar (▶ + named
+                beats), a quiet challenge, and a "Show the maths" drawer
+
+   Numbers are never the main view: they appear on hover / focus, and in the
+   maths drawer (which print opens).
+   ========================================================================== */
+
+.dl9s {
+  --dl9s-agent: #6d3fc0;
+  --dl9s-env: #52606d;
+  --dl9s-obs: #0e7490;
+  --dl9s-act: #c2410c;
+  --dl9s-rpos: #15803d;
+  --dl9s-rneg: #c42b2b;
+  --dl9s-ret: #9a6700;
+  --dl9s-pol: #be185d;
+  --dl9s-val: #1d5fc9;
+  --dl9s-mask: #64748b;
+  --dl9s-neg: #c42b2b;
+  --dl9s-floor: color-mix(in srgb, var(--surface-hi) 45%, #ffffff);
+  --dl9s-floor-line: rgba(30, 41, 59, 0.08);
+  --dl9s-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 10px 26px -18px rgba(15, 23, 42, 0.35);
+}
+.portal[data-portal-theme='coral'] .dl9s {
+  --dl9s-floor: color-mix(in srgb, var(--surface-hi) 70%, #ffffff);
+  --dl9s-floor-line: rgba(80, 30, 36, 0.08);
+}
+.portal[data-portal-theme='arcade'] .dl9s {
+  --dl9s-agent: #b79cff;
+  --dl9s-env: #9aa7b6;
+  --dl9s-obs: #3cc3dc;
+  --dl9s-act: #ff8a5c;
+  --dl9s-rpos: #4ade80;
+  --dl9s-rneg: #ff6b6b;
+  --dl9s-ret: #f5c542;
+  --dl9s-pol: #f47bb8;
+  --dl9s-val: #7aa7ff;
+  --dl9s-mask: #94a3b8;
+  --dl9s-neg: #ff6b6b;
+  --dl9s-floor: #171a21;
+  --dl9s-floor-line: rgba(200, 210, 228, 0.07);
+  --dl9s-shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 14px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* ── the lab frame ────────────────────────────────────────────────────── */
+.dl9s-stage {
+  container: stage / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.dl9s-stage + .dl9s-stage { margin-top: 1.6rem; }
+.dl9s-stage__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; }
+.dl9s-stage__title {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 500;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dl9s-stage__slides { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); white-space: nowrap; }
+.dl9s-stage__try { margin: 0; display: flex; gap: 0.55rem; align-items: baseline; font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); max-width: 78ch; }
+.dl9s-stage__tryk {
+  flex: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.dl9s-stage__floor {
+  position: relative;
+  background: var(--dl9s-floor);
+  background-image: radial-gradient(var(--dl9s-floor-line) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  border-radius: 12px;
+  box-shadow: var(--dl9s-shadow);
+  padding: clamp(0.6rem, 2.2cqi, 1.4rem);
+  min-width: 0;
+}
+.dl9s-stage__cap { margin: 0; font-size: 0.82rem; line-height: 1.55; color: var(--ink-3); max-width: 76ch; }
+.dl9s-stage__cap b { color: var(--ink-2); }
+.dl9s-stage__foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1.2rem; }
+
+/* "this page's own" marker: a labelled dot */
+.dl9s-own { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.03em; color: var(--ink-3); }
+.dl9s-own::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--dlv-violet); margin-right: 0.4rem; vertical-align: 0; }
+.dl9s-slideval::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--accent); margin-right: 0.4rem; vertical-align: 0; }
+
+/* a light challenge: one quiet line, a check when it's met */
+.dl9s-chal { margin: 0; display: inline-flex; align-items: baseline; gap: 0.5rem; font-size: 0.82rem; color: var(--ink-3); }
+.dl9s-chal__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dl9s-chal__ok { display: inline-flex; align-items: center; gap: 0.25rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--accent-ink); }
+.dl9s-chal--done .dl9s-chal__text { color: var(--ink-2); }
+
+/* ── story mode: ▶ + named beats, one sentence for the current beat ────── */
+.dl9s-story { display: flex; flex-direction: column; gap: 0.45rem; }
+.dl9s-story__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.4rem; }
+.dl9s-story__play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-right: 0.3rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--accent);
+  background: none;
+  color: var(--accent-ink);
+  cursor: pointer;
+  flex: none;
+}
+.dl9s-story__play:hover { background: var(--accent-soft); }
+.dl9s-story__beat {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--line-2);
+  padding: 0.3rem 0.35rem 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dl9s-story__beat b { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; margin-right: 0.3rem; color: inherit; }
+.dl9s-story__beat:hover { color: var(--ink); }
+.dl9s-story__beat--past { color: var(--ink-2); border-bottom-color: var(--line); }
+.dl9s-story__beat--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl9s-story__say { margin: 0; min-height: 1.5em; font-size: 0.88rem; line-height: 1.5; color: var(--ink-2); max-width: 76ch; }
+.dl9s-story__say .katex { font-size: 1em; }
+
+/* ── "Show the maths": a ruled drawer, closed on screen, open in print ── */
+.dl9s-maths { border-top: 1px solid var(--line-2); }
+.dl9s-maths__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.5rem 0.1rem 0.4rem;
+  cursor: pointer;
+}
+.dl9s-maths__btn:hover { color: var(--accent-ink); }
+.dl9s-maths__chev { display: inline-block; transition: transform 0.2s; font-size: 0.75em; }
+.dl9s-maths__chev--open { transform: rotate(180deg); }
+.dl9s-maths__body { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.2rem 0.1rem 0.8rem; max-width: 80ch; }
+.dl9s-maths__body .dlk-eq { margin: 0; }
+.dl9s-mline { margin: 0; font-size: 0.86rem; line-height: 1.65; color: var(--ink-2); overflow-x: auto; }
+.dl9s-mline .katex { font-size: 1.02em; }
+.dl9s-mline b { color: var(--ink); }
+.dl9s-mnote { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--ink-3); }
+
+/* ── SVG vocabulary ───────────────────────────────────────────────────── */
+.dl9s-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-body, system-ui, sans-serif); }
+.dl9s-svg text { fill: var(--ink); }
+.dl9s-t { font-size: 13px; }
+.dl9s-t--s { font-size: 11px; fill: var(--ink-3) !important; }
+.dl9s-t--xs { font-size: 10px; fill: var(--ink-3) !important; }
+.dl9s-t--m { font-family: var(--font-mono, ui-monospace, monospace); }
+.dl9s-t--b { font-weight: 700; }
+.dl9s-t--agent { fill: var(--dl9s-agent) !important; }
+.dl9s-t--env { fill: var(--dl9s-env) !important; }
+.dl9s-t--obs { fill: var(--dl9s-obs) !important; }
+.dl9s-t--act { fill: var(--dl9s-act) !important; }
+.dl9s-t--rpos { fill: var(--dl9s-rpos) !important; }
+.dl9s-t--rneg { fill: var(--dl9s-rneg) !important; }
+.dl9s-t--ret { fill: var(--dl9s-ret) !important; }
+.dl9s-t--pol { fill: var(--dl9s-pol) !important; }
+.dl9s-t--val { fill: var(--dl9s-val) !important; }
+.dl9s-halo { paint-order: stroke; stroke: var(--dl9s-floor); stroke-width: 4px; stroke-linejoin: round; }
+
+/* tokens: labels in outlined boxes (agent, environment, code names) */
+.dl9s-tok rect { fill: var(--dl9s-floor); stroke: var(--ink-3); stroke-width: 1.4; transition: stroke-width 0.2s, fill 0.2s; }
+.dl9s-tok text { font-size: 14px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+.dl9s-tok--agent rect { stroke: var(--dl9s-agent); }
+.dl9s-tok--env rect { stroke: var(--dl9s-env); }
+.dl9s-tok--obs rect { stroke: var(--dl9s-obs); }
+.dl9s-tok--act rect { stroke: var(--dl9s-act); }
+.dl9s-tok--pol rect { stroke: var(--dl9s-pol); }
+.dl9s-tok--val rect { stroke: var(--dl9s-val); }
+.dl9s-tok--ret rect { stroke: var(--dl9s-ret); }
+.dl9s-tok--ghost rect { stroke-dasharray: 4 3; }
+.dl9s-tok--ghost text { fill: var(--ink-3); }
+.dl9s-tok--on rect { stroke-width: 2.8; }
+.dl9s-tok--btn { cursor: pointer; }
+.dl9s-tok--btn:hover rect { stroke-width: 2.4; }
+.dl9s-tok--btn:focus-visible { outline: none; }
+/* keyboard focus is a dashed accent outline, so it never looks like a selection */
+.dl9s-tok--btn:focus-visible rect { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 5 3; }
+
+/* MDPs: states (circles), actions (diamonds), transitions (arrows) */
+.dl9s-state circle { fill: var(--dl9s-floor); stroke: var(--dl9s-obs); stroke-width: 2; transition: stroke-width 0.25s; }
+.dl9s-state text { font-size: 15px; font-weight: 700; fill: var(--ink); pointer-events: none; }
+.dl9s-state--on circle { stroke-width: 3.6; }
+.dl9s-state--abs circle { stroke-dasharray: 5 3; }
+.dl9s-state--btn { cursor: pointer; }
+.dl9s-state--btn:focus-visible { outline: none; }
+.dl9s-state--btn:focus-visible circle { stroke: var(--accent); stroke-dasharray: 5 3; stroke-width: 3; }
+.dl9s-act rect { fill: var(--dl9s-floor); stroke: var(--dl9s-act); stroke-width: 1.6; transition: stroke-width 0.25s, opacity 0.3s; }
+.dl9s-act text { font-size: 12px; font-weight: 700; fill: var(--ink); pointer-events: none; }
+.dl9s-act--best rect { stroke-width: 3.4; }
+.dl9s-act--dim { opacity: 0.4; }
+.dl9s-tr { fill: none; stroke: var(--ink-3); stroke-linecap: round; opacity: 0.75; transition: stroke-width 0.3s, opacity 0.3s, stroke 0.3s; }
+.dl9s-tr--on { stroke: var(--ink); opacity: 1; }
+.dl9s-tr--best { stroke: var(--dl9s-act); opacity: 1; }
+.dl9s-tr--dim { opacity: 0.25; }
+.dl9s-trhead { fill: var(--ink-3); opacity: 0.85; transition: opacity 0.3s, fill 0.3s; }
+.dl9s-trhead--on { fill: var(--ink); opacity: 1; }
+.dl9s-trhead--best { fill: var(--dl9s-act); opacity: 1; }
+.dl9s-trhead--dim { opacity: 0.25; }
+.dl9s-prob { font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; fill: var(--ink-3) !important; }
+.dl9s-rew { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; font-weight: 800; }
+.dl9s-rew--pos { fill: var(--dl9s-rpos) !important; }
+.dl9s-rew--neg { fill: var(--dl9s-rneg) !important; }
+.dl9s-token { fill: var(--dl9s-agent); transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }
+
+/* a hatch for impossible (−∞) cells */
+.dl9s-hatch-line { stroke: var(--dl9s-mask); stroke-width: 1.4; opacity: 0.55; }
+.dl9s-cell--inf { fill: var(--dl9s-floor) !important; }
+
+/* signed reward / advantage bars */
+.dl9s-bar--pos { fill: var(--dl9s-rpos); }
+.dl9s-bar--neg { fill: var(--dl9s-rneg); }
+.dl9s-bar--ret { fill: var(--dl9s-ret); }
+.dl9s-bar--val { fill: var(--dl9s-val); }
+.dl9s-bar--pol { fill: var(--dl9s-pol); }
+.dl9s-bar--act { fill: var(--dl9s-act); }
+.dl9s-bar { transition: transform 0.4s ease, y 0.4s ease, height 0.4s ease; }
+.dl9s-wire { fill: none; stroke: var(--ink-3); stroke-width: 1.3; opacity: 0.55; }
+.dl9s-wire--on { stroke: var(--ink); opacity: 0.9; stroke-width: 1.8; }
+.dl9s-wire--agent { stroke: var(--dl9s-agent); opacity: 1; stroke-width: 2; }
+.dl9s-wire--env { stroke: var(--dl9s-env); opacity: 1; stroke-width: 2; }
+.dl9s-wire--act { stroke: var(--dl9s-act); opacity: 1; stroke-width: 2.2; }
+.dl9s-wire--obs { stroke: var(--dl9s-obs); opacity: 1; stroke-width: 2.2; }
+.dl9s-arrowhead { fill: var(--ink-3); }
+
+/* heatmap cells (fill is set inline from the value) */
+.dl9s-cell { stroke: var(--dl9s-floor); stroke-width: 1.5; transition: fill 0.45s ease, opacity 0.35s ease; }
+.dl9s-cell--hit { stroke: var(--ink); stroke-width: 2; }
+.dl9s-grid-frame { fill: none; stroke: var(--line); stroke-width: 1; }
+.dl9s-grid-frame--val { stroke: var(--dl9s-val); }
+.dl9s-grid-frame--ret { stroke: var(--dl9s-ret); }
+.dl9s-grid-frame--pol { stroke: var(--dl9s-pol); }
+.dl9s-rowband { fill: var(--ink); opacity: 0.07; transition: opacity 0.2s; }
+.dl9s-tip { pointer-events: none; }
+.dl9s-tip rect { fill: var(--ink); opacity: 0.92; }
+.dl9s-tip text { fill: var(--dl9s-floor) !important; font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 600; }
+
+/* draggable score knobs */
+.dl9s-knob { cursor: ns-resize; touch-action: none; }
+.dl9s-knob__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dl9s-knob__bar { fill: var(--ink-3); transition: transform 0.5s ease; }
+.dl9s-knob__dot { fill: var(--dl9s-floor); stroke: var(--ink); stroke-width: 2; transition: transform 0.5s ease; }
+.dl9s-knob:hover .dl9s-knob__dot { stroke-width: 3; }
+.dl9s-knob:focus-visible .dl9s-knob__dot { stroke: var(--accent); stroke-width: 3.4; stroke-dasharray: 4 2; }
+.dl9s-knob:focus-visible { outline: none; }
+.dl9s-knob--drag .dl9s-knob__bar, .dl9s-knob--drag .dl9s-knob__dot { transition: none; }
+
+/* a quiet ruled switch (two or three options, underline = on) */
+.dl9s-switch { display: inline-flex; flex-wrap: wrap; gap: 0.2rem; margin: 0 0 0.6rem; border-bottom: 1px solid var(--line-2); }
+.dl9s-switch__opt {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+.dl9s-switch__opt:hover { color: var(--ink); }
+.dl9s-switch__opt--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dl9s-floorrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+
+/* line charts (learning curves) */
+.dl9s-ax { stroke: var(--line); stroke-width: 1; }
+.dl9s-grid-line { stroke: var(--line-2); stroke-width: 1; }
+.dl9s-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dl9s-line--truth { stroke: var(--ink-2); }
+.dl9s-line--val { stroke: var(--dl9s-val); stroke-width: 2.4; }
+.dl9s-line--ret { stroke: var(--dl9s-ret); stroke-width: 2.4; }
+.dl9s-line--pol { stroke: var(--dl9s-pol); stroke-width: 2.4; }
+.dl9s-line--act { stroke: var(--dl9s-act); stroke-width: 2.4; }
+.dl9s-line--obs { stroke: var(--dl9s-obs); stroke-width: 2.4; }
+.dl9s-line--agent { stroke: var(--dl9s-agent); stroke-width: 2.4; }
+.dl9s-line--rpos { stroke: var(--dl9s-rpos); stroke-width: 2.4; }
+.dl9s-line--ghost { stroke: var(--ink-3); stroke-dasharray: 5 4; opacity: 0.8; }
+.dl9s-gap { fill: var(--dl9s-ret); opacity: 0.16; }
+.dl9s-today { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 3; }
+
+/* softmax bars (weights 0…1, grown by scaleY) */
+.dl9s-sbar { fill: var(--dl9s-pol); transition: transform 0.4s ease; }
+
+/* a horizontal scrubber (d_keys, positions …) */
+.dl9s-scrub { cursor: ew-resize; touch-action: none; }
+.dl9s-scrub:focus-visible { outline: none; }
+.dl9s-scrub__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dl9s-scrub__knob { transition: transform 0.25s ease; }
+.dl9s-scrub--drag .dl9s-scrub__knob { transition: none; }
+.dl9s-scrub__knob circle { fill: var(--dl9s-floor); stroke: var(--ink); stroke-width: 2.2; }
+.dl9s-scrub:focus-visible .dl9s-scrub__knob circle { stroke-width: 3.4; stroke: var(--accent); }
+
+/* the ⊕ node where weighted parts are summed */
+.dl9s-plus__c { fill: var(--dl9s-floor); stroke: var(--ink); stroke-width: 1.6; }
+.dl9s-plus__x { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+
+/* a small in-stage text button (e.g. "reset scores"), top right of the floor */
+.dl9s-floorbtn {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.7rem;
+  z-index: 1;
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0.1rem 0.1rem;
+  cursor: pointer;
+}
+.dl9s-floorbtn:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+
+/* things that fade between story beats */
+.dl9s-fade { transition: opacity 0.45s ease; }
+.dl9s-hide { opacity: 0 !important; pointer-events: none; }
+.dl9s-dim { opacity: 0.28; }
+.dl9s-pop { transform-box: fill-box; transform-origin: center; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.3), opacity 0.35s ease; }
+
+/* narrow stages: a simplified picture instead of a shrunken one */
+.dl9s-only-narrow { display: none; }
+@container stage (max-width: 560px) {
+  .dl9s-only-wide { display: none; }
+  .dl9s-only-narrow { display: block; }
+  .dl9s-stage__title { font-size: 1.12rem; }
+  .dl9s-story__beat { font-size: 0.76rem; padding-inline: 0.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dl9s-cell, .dl9s-fade, .dl9s-pop, .dl9s-knob__bar, .dl9s-knob__dot, .dl9s-tok rect, .dl9s-state circle, .dl9s-act rect, .dl9s-tr, .dl9s-trhead, .dl9s-token, .dl9s-bar, .dl9s-sbar, .dl9s-scrub__knob { transition: none !important; }
+}
+
+/* numbers written inside heatmap cells (the Q-table) */
+.dl9s-cellnum { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; font-weight: 700; fill: var(--ink) !important; pointer-events: none; paint-order: stroke; stroke: var(--dl9s-floor); stroke-width: 3px; stroke-linejoin: round; }
+.dl9s-cellnum--inf { font-weight: 600; fill: var(--ink-3) !important; }
+.dl9s-cellnum--inv { fill: var(--dl9s-floor) !important; stroke: none; }
+/* the slides' own values marked on a scrubber */
+.dl9s-slidemark { fill: var(--accent-ink) !important; font-weight: 700; }

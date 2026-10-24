@@ -1,0 +1,27 @@
+/* §12 · the Q-table lab */
+.dl9s-qt { display: flex; flex-direction: column; gap: 0.6rem; }
+.dl9s-qt__row { display: flex; align-items: center; gap: 1.2rem; }
+.dl9s-qt__mdp { flex: 1.55 1 0; min-width: 0; }
+.dl9s-qt__tab { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.dl9s-qt--narrow .dl9s-qt__row { flex-direction: column; align-items: stretch; }
+.dl9s-qt__k { margin: 0 0 0 0.2rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; }
+.dl9s-qt__kname { font-family: var(--font-display, Georgia, serif); font-size: 1.15rem; color: var(--ink); }
+.dl9s-qt__kname sub { font-size: 0.7em; }
+.dl9s-qt__kmeta { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; color: var(--ink-3); }
+.dl9s-qt__table { max-width: 360px; }
+.dl9s-qt__best { fill: none; stroke: var(--dl9s-act); stroke-width: 2.6; pointer-events: none; }
+.dl9s-qt__cell { cursor: pointer; }
+.dl9s-qt__cell--inf { cursor: default; }
+.dl9s-qt__cell:focus-visible { outline: none; }
+.dl9s-qt__cell:focus-visible .dl9s-cell, .dl9s-qt__cell--sel .dl9s-cell { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 4 3; }
+.dl9s-qt__ctl { display: flex; align-items: center; gap: 0.6rem; }
+.dl9s-qt__ctl svg { flex: 1 1 0; min-width: 0; max-width: 760px; }
+.dl9s-qt__play {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2.1rem; height: 2.1rem; border-radius: 99px;
+  border: 1.5px solid var(--accent); background: none; color: var(--accent-ink); cursor: pointer;
+}
+.dl9s-qt__play:hover { background: var(--accent-soft); }
+.dl9s-scrollx { overflow-x: auto; overscroll-behavior-x: contain; min-width: 0; }
+.dl9s-qt--narrow .dl9s-qt__ctl { flex-direction: column; align-items: flex-start; }
+.dl9s-qt--narrow .dl9s-qt__ctl svg { width: 100%; flex: none; }
