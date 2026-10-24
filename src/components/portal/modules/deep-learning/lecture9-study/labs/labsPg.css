@@ -1,0 +1,25 @@
+/* §9 · y_target and live REINFORCE */
+.dl9s-yt__part { stroke-width: 1.6; transition: opacity 0.3s; }
+.dl9s-yt__part--left { fill: color-mix(in srgb, var(--dl9s-pol) 22%, var(--dl9s-floor)); stroke: var(--dl9s-pol); }
+.dl9s-yt__part--right { fill: color-mix(in srgb, var(--dl9s-pol) 6%, var(--dl9s-floor)); stroke: var(--line); }
+.dl9s-yt__part--on { stroke: var(--dl9s-act); stroke-width: 3; }
+.dl9s-yt__edge { stroke: var(--dl9s-pol); stroke-width: 2; stroke-dasharray: 4 3; }
+.dl9s-yt__needle { stroke: var(--ink); stroke-width: 2; }
+.dl9s-yt__row { display: flex; justify-content: center; margin-top: 0.2rem; }
+.dl9s-yt__draw { font: inherit; font-size: 0.8rem; color: var(--ink-2); background: none; border: none; border-bottom: 1px solid var(--line); padding: 0.1rem; cursor: pointer; }
+.dl9s-yt__draw:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+
+.dl9s-pg { display: flex; flex-direction: column; gap: 0.6rem; }
+.dl9s-pg__ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; }
+.dl9s-pg__btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--ink);
+  background: none; border: 1.5px solid var(--accent); border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer;
+}
+.dl9s-pg__btn:hover:not(:disabled) { background: var(--accent-soft); }
+.dl9s-pg__btn:disabled { opacity: 0.45; cursor: default; }
+.dl9s-pg__read { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink-3); }
+.dl9s-pg__read b { color: var(--ink); }
+.dl9s-pg__slide { fill: var(--dl9s-floor); stroke: var(--accent); stroke-width: 2.4; }
+.dl9s-pg__film { max-width: 620px; width: 100%; margin: 0 auto; }
+.dl9s-pg__filmk { margin: 0; text-align: center; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; color: var(--ink-3); }

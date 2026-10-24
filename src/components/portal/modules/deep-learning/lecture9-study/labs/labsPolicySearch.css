@@ -1,0 +1,75 @@
+/* §3 · policy search (slides 12–14) */
+
+/* the policy-space pad (Figure 18-3's axes) */
+.dl9s-pad { max-width: 270px; }
+.dl9s-pad__area { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 4; }
+.dl9s-pad__axis { stroke: var(--ink-3); stroke-width: 1.4; }
+.dl9s-pad__arrow { fill: var(--ink-3); }
+.dl9s-pad__name { font-family: var(--font-display, Georgia, serif); font-style: italic; font-weight: 700; font-size: 17px; fill: var(--ink) !important; }
+.dl9s-pad__drag { cursor: crosshair; touch-action: none; }
+.dl9s-pad__drag:focus-visible { outline: none; }
+.dl9s-pad__drag:focus-visible .dl9s-pad__pt { stroke: var(--accent); stroke-dasharray: 4 2; stroke-width: 3; }
+.dl9s-pad__guide { stroke: var(--dl9s-pol); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.55; }
+.dl9s-pad__pt { fill: var(--dl9s-pol); stroke: var(--dl9s-floor); stroke-width: 2.4; }
+.dl9s-pad__tried { stroke: var(--dl9s-rpos); stroke-width: 1; }
+.dl9s-pad__preset { cursor: pointer; }
+.dl9s-pad__preset:focus-visible { outline: none; }
+.dl9s-pad__preset:focus-visible .dl9s-pad__pdot { stroke: var(--accent); stroke-width: 3; }
+.dl9s-pad__pdot { fill: var(--dl9s-floor); stroke: var(--dl9s-pol); stroke-width: 1.8; }
+.dl9s-pad__preset:hover .dl9s-pad__pdot { stroke-width: 3; }
+.dl9s-pad__plabel { font-family: var(--font-display, Georgia, serif); font-size: 13px; font-weight: 700; fill: var(--dl9s-pol) !important; pointer-events: none; }
+
+/* the vacuum lab */
+.dl9s-vac { display: flex; gap: 1.4rem; align-items: flex-start; }
+.dl9s-vac__left { flex: 1.7 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.dl9s-vac__side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.dl9s-vac--narrow { flex-direction: column; gap: 0.8rem; }
+.dl9s-vac--narrow .dl9s-vac__left, .dl9s-vac--narrow .dl9s-vac__side { flex: none; width: 100%; }
+.dl9s-vac--narrow .dl9s-pad { max-width: 250px; margin: 0 auto; }
+.dl9s-vac__room { max-width: 520px; }
+.dl9s-vac__walls { fill: none; stroke: var(--dl9s-env); stroke-width: 2.4; }
+.dl9s-vac__dust { fill: var(--ink-3); opacity: 0.55; }
+.dl9s-vac__dust--got { fill: var(--dl9s-rpos); opacity: 0.95; }
+.dl9s-vac__trail { fill: none; stroke: var(--dl9s-agent); stroke-width: 1.2; stroke-linejoin: round; opacity: 0.55; }
+.dl9s-vac__start { fill: var(--dl9s-agent); opacity: 0.6; }
+.dl9s-vac__robot circle { fill: var(--dl9s-floor); stroke: var(--dl9s-agent); stroke-width: 2.4; }
+.dl9s-vac__robot line { stroke: var(--dl9s-agent); stroke-width: 2.4; stroke-linecap: round; }
+.dl9s-vac__bar { display: flex; align-items: center; gap: 0.6rem; }
+.dl9s-vac__play {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 1.9rem; height: 1.9rem; border-radius: 99px;
+  border: 1.5px solid var(--accent); background: none; color: var(--accent-ink); cursor: pointer;
+}
+.dl9s-vac__play:hover { background: var(--accent-soft); }
+.dl9s-vac__clock { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8rem; color: var(--ink); font-weight: 700; }
+.dl9s-vac__clock span { font-weight: 400; color: var(--ink-3); font-size: 0.7rem; }
+.dl9s-vac__score { margin: 0; display: flex; align-items: baseline; gap: 0.6rem; }
+.dl9s-vac__big { font-family: var(--font-display, Georgia, serif); font-size: 2.3rem; line-height: 1; color: var(--dl9s-rpos); font-variant-numeric: tabular-nums; }
+.dl9s-vac__sub { font-size: 0.76rem; line-height: 1.35; color: var(--ink-3); }
+.dl9s-vac__pol { margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 0.8rem; max-width: 270px; }
+.dl9s-vac__padk { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dl9s-vac__pv { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; color: var(--dl9s-pol); font-weight: 700; }
+.dl9s-vac__pv i { font-family: var(--font-display, Georgia, serif); }
+
+/* the genetic algorithm lab */
+.dl9s-gen { display: flex; gap: 1.6rem; align-items: flex-start; justify-content: center; }
+.dl9s-gen__pad { flex: 0 1 270px; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.dl9s-gen__pop { flex: 0 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.dl9s-gen--narrow { flex-direction: column; align-items: stretch; gap: 0.9rem; }
+.dl9s-gen--narrow .dl9s-gen__pad, .dl9s-gen--narrow .dl9s-gen__pop { flex: none; width: 100%; max-width: 300px; margin: 0 auto; }
+.dl9s-gen__read { margin: 0; min-height: 1.4em; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink); }
+.dl9s-gen__grid { max-width: 320px; }
+.dl9s-gen__dot { stroke: var(--dl9s-pol); stroke-width: 1.3; transition: opacity 0.45s ease, r 0.3s ease; }
+.dl9s-gen__dot--dead { opacity: 0.1; }
+.dl9s-gen__dot--hl { stroke: var(--ink); stroke-width: 2.4; }
+.dl9s-gen__ring { fill: none; stroke: var(--dl9s-pol); stroke-width: 1.3; stroke-dasharray: 2 2; }
+.dl9s-gen__cell .dl9s-cell { stroke: var(--line-2); stroke-width: 1; }
+.dl9s-gen__cell .dl9s-cell.dl9s-cell--hit { stroke: var(--ink); stroke-width: 2.2; }
+.dl9s-gen__cell .dl9s-gen__surv { stroke: var(--dl9s-pol); stroke-width: 2; }
+.dl9s-gen__x { stroke: var(--dl9s-rneg); stroke-width: 1.6; stroke-linecap: round; opacity: 0.75; }
+@media (prefers-reduced-motion: reduce) {
+  .dl9s-gen__dot { transition: none !important; }
+}
+
+/* generation 2: the survivors outlined, their copies faded */
+.dl9s-gen__copy { opacity: 0.55; }

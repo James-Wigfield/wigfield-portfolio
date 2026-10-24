@@ -1,0 +1,34 @@
+/* §8 · REINFORCE (slides 30–31) */
+.dl9s-rf { display: flex; gap: 1.4rem; align-items: center; justify-content: center; }
+.dl9s-rf > svg { min-width: 0; }
+.dl9s-rf__strip { flex: 0 1 330px; max-width: 360px; }
+.dl9s-rf__plane { flex: 0 1 400px; max-width: 420px; }
+.dl9s-rf--narrow { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+.dl9s-rf--narrow .dl9s-rf__strip, .dl9s-rf--narrow .dl9s-rf__plane { flex: none; width: 100%; max-width: none; }
+
+.dl9s-rf__box { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.dl9s-rf__cell--on .dl9s-rf__box { stroke: var(--ink); stroke-width: 1.6; }
+.dl9s-rf__origin { fill: var(--ink-3); }
+.dl9s-rf__vec line { stroke: var(--ink-3); stroke-width: 1.8; stroke-linecap: round; }
+.dl9s-rf__vec polygon { fill: var(--ink-3); }
+.dl9s-rf__vec--pos line { stroke: var(--dl9s-rpos); }
+.dl9s-rf__vec--pos polygon { fill: var(--dl9s-rpos); }
+.dl9s-rf__vec--neg line { stroke: var(--dl9s-rneg); }
+.dl9s-rf__vec--neg polygon { fill: var(--dl9s-rneg); }
+
+.dl9s-rf__raw line { stroke: var(--ink-3); stroke-width: 1.8; stroke-linecap: round; }
+.dl9s-rf__raw polygon { fill: var(--ink-3); }
+.dl9s-rf__raw--ghost { opacity: 0.3; }
+.dl9s-rf__raw--ghost line { stroke-dasharray: 3 3; }
+.dl9s-rf__w line { stroke-width: 2.2; stroke-linecap: round; }
+.dl9s-rf__w--pos line { stroke: var(--dl9s-rpos); }
+.dl9s-rf__w--pos polygon { fill: var(--dl9s-rpos); }
+.dl9s-rf__w--neg line { stroke: var(--dl9s-rneg); }
+.dl9s-rf__w--neg polygon { fill: var(--dl9s-rneg); }
+.dl9s-rf__w--faint { opacity: 0.28; }
+.dl9s-rf__hl { opacity: 1 !important; }
+.dl9s-rf__hl line { stroke-width: 3.4 !important; }
+.dl9s-rf__mean line { stroke: var(--dl9s-pol); stroke-width: 3.6; stroke-linecap: round; }
+.dl9s-rf__mean polygon { fill: var(--dl9s-pol); }
+.dl9s-rf__pt { fill: var(--dl9s-pol); stroke: var(--dl9s-floor); stroke-width: 2.4; }
+.dl9s-rf__pt--old { fill: var(--dl9s-floor); stroke: var(--dl9s-pol); stroke-width: 2; stroke-dasharray: 3 2; }

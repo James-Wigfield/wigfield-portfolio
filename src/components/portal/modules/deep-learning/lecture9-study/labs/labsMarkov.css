@@ -1,0 +1,47 @@
+/* §10 · the Markov chain lab */
+.dl9s-mk { display: flex; flex-direction: column; gap: 0.4rem; }
+.dl9s-mk__ctl { align-items: center; }
+.dl9s-mk__btns { display: flex; align-items: center; gap: 0.7rem; }
+.dl9s-mk__play {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2.1rem; height: 2.1rem; border-radius: 99px;
+  border: 1.5px solid var(--accent); background: none; color: var(--accent-ink); cursor: pointer;
+}
+.dl9s-mk__play:hover:not(:disabled) { background: var(--accent-soft); }
+.dl9s-mk__play:disabled, .dl9s-mk__btn:disabled { opacity: 0.4; cursor: default; }
+.dl9s-mk__btn {
+  font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--ink);
+  background: none; border: none; border-bottom: 2px solid var(--accent);
+  padding: 0.2rem 0.15rem; cursor: pointer;
+}
+.dl9s-mk__btn--quiet { font-weight: 400; font-size: 0.76rem; color: var(--ink-3); border-bottom: 1px solid var(--line); }
+.dl9s-mk__btn--quiet:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+.dl9s-mk__count { margin: 0; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink-3); }
+.dl9s-mk__count b { color: var(--ink); font-size: 0.9rem; }
+
+.dl9s-mk__row { display: flex; align-items: flex-start; gap: 1.4rem; }
+.dl9s-mk__left { flex: 1.35 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.dl9s-mk__right { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; padding-top: 0.6rem; }
+.dl9s-mk--narrow .dl9s-mk__row { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+.dl9s-mk__chain { max-width: 520px; }
+.dl9s-mk__matrix { max-width: 330px; }
+
+.dl9s-mk__token { stroke: var(--dl9s-floor); stroke-width: 2; }
+.dl9s-mk__token--trap { fill: var(--ink-3); }
+
+.dl9s-mk__path { margin: 0; display: flex; flex-wrap: wrap; gap: 0.1rem 0.35rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; color: var(--ink-3); }
+.dl9s-mk__path i { font-style: normal; margin-right: 0.35rem; opacity: 0.6; }
+.dl9s-mk__now { color: var(--ink); font-weight: 700; }
+.dl9s-mk__trap { margin: 0; font-size: 0.78rem; color: var(--ink-2); }
+.dl9s-mk__trap::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--ink-3); margin-right: 0.45rem; }
+
+.dl9s-mk__cell { cursor: pointer; }
+.dl9s-mk__cell:focus-visible { outline: none; }
+.dl9s-mk__cell:focus-visible .dl9s-cell, .dl9s-mk__cell--hot .dl9s-cell { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 4 3; }
+.dl9s-mk__slidedot { fill: var(--accent); pointer-events: none; }
+.dl9s-mk__band { opacity: 0.08; }
+.dl9s-mk__read {
+  margin: 0; min-height: 2.6em; max-width: 34ch;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; line-height: 1.5; color: var(--ink-2);
+}
+.dl9s-mk--narrow .dl9s-mk__read { max-width: none; }

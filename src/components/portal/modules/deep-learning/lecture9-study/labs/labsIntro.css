@@ -1,0 +1,61 @@
+/* §0 route and §17 outcomes: a vertical line with one stop per topic.
+   Stops are outlined circles; a finished stop fills with the accent. */
+.dl9s-route { list-style: none; margin: 0; padding: 0.2rem 0; display: flex; flex-direction: column; position: relative; }
+.dl9s-route::before {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  top: 1.2rem;
+  bottom: 1.2rem;
+  width: 2px;
+  background: var(--line);
+}
+.dl9s-route__stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.7rem minmax(0, 1fr) auto;
+  grid-template-areas: 'dot topic count' 'dot secs secs';
+  gap: 0.2rem 0.8rem;
+  align-items: baseline;
+  padding: 0.55rem 0;
+}
+.dl9s-route__dot {
+  grid-area: dot;
+  align-self: start;
+  z-index: 1;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 99px;
+  border: 2px solid var(--ink-3);
+  background: var(--dl9s-floor);
+  color: var(--ink-2);
+  font: 700 0.72rem var(--font-mono, ui-monospace, monospace);
+  padding: 0;
+}
+.dl9s-route__stop--done .dl9s-route__dot { border-color: var(--accent); background: var(--accent); color: var(--dl9s-floor); }
+.dl9s-route__tick { cursor: pointer; }
+.dl9s-route__tick:hover { border-color: var(--accent); }
+.dl9s-route__topic { grid-area: topic; font-size: 0.95rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.dl9s-route__stop--done .dl9s-route__topic { color: var(--ink-2); }
+.dl9s-route__count { grid-area: count; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); }
+.dl9s-route__secs { grid-area: secs; display: flex; flex-wrap: wrap; gap: 0.15rem 1rem; }
+.dl9s-route__sec { display: inline-flex; align-items: baseline; gap: 0.45rem; }
+.dl9s-route__link, .dl9s-route__nb {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.dl9s-route__link b { font-family: var(--font-mono, ui-monospace, monospace); color: var(--accent-ink); margin-right: 0.15rem; }
+.dl9s-route__link:hover, .dl9s-route__nb:hover { color: var(--accent-ink); text-decoration-color: var(--accent); }
+.dl9s-route__nb { font-size: 0.72rem; color: var(--ink-3); }
+.dl9s-route--outcomes .dl9s-route__stop { grid-template-areas: 'dot topic topic' 'dot secs secs'; }
