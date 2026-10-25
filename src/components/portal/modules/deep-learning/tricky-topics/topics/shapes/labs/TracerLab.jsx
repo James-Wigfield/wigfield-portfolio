@@ -4,7 +4,7 @@ import { Scrub } from '../../../svgParts';
 import { useWidth } from '../../../useWidth';
 import { useStudy } from '../../../context';
 import TensorGlyph from '../../../TensorGlyph';
-import { traceShapes, showShape, glyphKind } from '../../../maths/shapeRules.js';
+import { traceShapes, showShape, glyphKind, prod } from '../../../maths/shapeRules.js';
 import { layerName } from '../../../maths/paramRules.js';
 import { MODELS } from '../../../maths/models.js';
 import { shapeRule } from '../shapeText.js';
@@ -36,6 +36,10 @@ export function TracerLab() {
   const H = narrow ? 380 : 230;
   const kindOf = (s) => glyphKind(s, ch.seq);
   const fit = narrow ? [150, 120] : [230, 150];
+  // the strip under the stage: one bar per layer, as tall as the log of how many numbers come out
+  const sizes = [MODELS[key].model.input, ...rows.map((row) => row.out)].map((s) => Math.log10(prod(s.map((v) => v ?? 1)) + 1));
+  const maxSize = Math.max(...sizes);
+  const next = rows[step + 1];
   return (
     <Stage
       title="Watch a model reshape its data, layer by layer"
@@ -46,6 +50,7 @@ export function TracerLab() {
         <>
           <MLine text={`\`${layerName(r.L)}\`: \`${showShape(r.ins[0])}\` → \`${showShape(r.out)}\`. ${shapeRule(r.L, r.ins, r.out)}`} />
           {key === 'l67-convae' && <MLine text="Slide 5’s comments print these sizes: 14 × 14 × 16, 7 × 7 × 32, 3 × 3 × 64, 3 × 3 × 30, 30, then 3 × 3 × 16, 7 × 7 × 32, 14 × 14 × 16, 28 × 28 × 1 {s|L6–7 · slide 5}." />}
+          <MLine text={`Every output in turn: ${[MODELS[key].model.input, ...rows.map((row) => row.out)].map((s) => `\`${showShape(s)}\``).join(' → ')}.`} />
           {key === 'l4-cnngru' && <MLine text="Slide 50 doesn’t print the lengths: 56 comes from slide 20’s `seq_length = 56`; valid padding gives 56 → 54 → 26 {own}." />}
         </>
       }
@@ -65,14 +70,25 @@ export function TracerLab() {
           <TensorGlyph x={narrow ? 10 : 500} y={narrow ? 182 : 22} shape={r.out} kind={kindOf(r.out)} fit={fit} />
           <Scrub x0={30} x1={W - 30} y={H - 26} value={step} min={0} max={rows.length - 1} step={1} onChange={setStep} label="Layer" show={(v) => `${v + 1}`} ticks={[0, rows.length - 1]} tickLabel={(v) => `${v + 1}`} />
         </svg>
-        <ol className="dltt-ribbon" aria-label="Every layer's output shape">
-          <li className="dltt-ribbon__in"><code>{showShape(MODELS[key].model.input)}</code></li>
+        <div className="dltt-ribbon" aria-label="How many numbers each layer outputs (log scale); pick a layer">
+          <span className="dltt-ribbon__bar dltt-ribbon__bar--in" style={{ height: `${4 + (sizes[0] / maxSize) * 30}px` }} title={`input ${showShape(MODELS[key].model.input)}`} />
           {rows.map((row, i) => (
-            <li key={i} className={i === step ? 'dltt-ribbon--on' : ''}>
-              <button type="button" onClick={() => setStep(i)} title={layerName(row.L)}><code>{showShape(row.out)}</code></button>
-            </li>
+            <button
+              key={i}
+              type="button"
+              className={`dltt-ribbon__btn${i === step ? ' dltt-ribbon--on' : ''}`}
+              onClick={() => setStep(i)}
+              aria-label={`Layer ${i + 1}, ${layerName(row.L)}: ${showShape(row.out)}`}
+              aria-current={i === step ? 'step' : undefined}
+              title={`${layerName(row.L)} → ${showShape(row.out)}`}
+            >
+              <span className="dltt-ribbon__bar" style={{ height: `${4 + (sizes[i + 1] / maxSize) * 30}px` }} />
+            </button>
           ))}
-        </ol>
+        </div>
+        <p className="dltt-ribbon__now">
+          now <code>{showShape(r.out)}</code>{next ? <> → next <code>{showShape(next.out)}</code></> : ' (the output)'}
+        </p>
       </div>
     </Stage>
   );

@@ -18,7 +18,7 @@ export function FreezeLab() {
   const wrap = useRef(null);
   const narrow = useWidth(wrap) < 560;
   const { printing } = useStudy();
-  const [locked, setLocked] = useState([true, true, false]);
+  const [locked, setLocked] = useState([false, false, false]);
   const lk = printing ? [true, true, false] : locked;
   const denseIdx = BASE.layers.map((L, i) => (L.t === 'dense' ? i : -1)).filter((i) => i >= 0);
   const model = { ...BASE, layers: BASE.layers.map((L, i) => (denseIdx.includes(i) && lk[denseIdx.indexOf(i)] ? { ...L, frozen: true } : L)) };
@@ -58,12 +58,10 @@ export function FreezeLab() {
           ))}
         </ul>
         <svg className="dltt-svg" viewBox={`0 0 ${W} 96`} role="img" aria-label={`${C.trainable} trainable and ${C.nonTrainable} non-trainable parameters`}>
-          <text x={20} y={16} className="dltt-t dltt-t--xs">trainable</text>
+          <text x={20} y={16} className="dltt-t dltt-t--xs">trainable <tspan className="dltt-t--m dltt-t--b">{fmt(C.trainable)}</tspan></text>
           <rect x={20} y={22} width={Math.max(2, bar(C.trainable))} height={16} rx={3} className="dltt-vbar dltt-vbar--w" />
-          <text x={24 + bar(C.trainable)} y={35} className="dltt-t dltt-t--xs dltt-t--m">{fmt(C.trainable)}</text>
-          <text x={20} y={60} className="dltt-t dltt-t--xs">non-trainable</text>
+          <text x={20} y={60} className="dltt-t dltt-t--xs">non-trainable <tspan className="dltt-t--m dltt-t--b">{fmt(C.nonTrainable)}</tspan></text>
           <rect x={20} y={66} width={Math.max(2, bar(C.nonTrainable))} height={16} rx={3} className="dltt-vbar dltt-vbar--nt" />
-          <text x={Math.min(24 + bar(C.nonTrainable), W - 70)} y={79} className="dltt-t dltt-t--xs dltt-t--m">{fmt(C.nonTrainable)}</text>
         </svg>
       </div>
     </Stage>

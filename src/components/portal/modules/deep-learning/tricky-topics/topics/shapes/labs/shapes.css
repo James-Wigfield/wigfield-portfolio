@@ -17,15 +17,16 @@
 .dltt-tnum--on { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .dltt-shero__tuple { font-weight: 800; }
 
-/* the tracer's ribbon of output shapes */
-.dltt-ribbon { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.1rem; align-items: center; }
-.dltt-ribbon li { display: inline-flex; align-items: center; }
-.dltt-ribbon li + li::before { content: '→'; color: var(--ink-3); margin: 0 0.25rem; font-size: 0.75rem; }
-.dltt-ribbon button { font: inherit; background: none; border: none; border-bottom: 2px solid transparent; padding: 0.1rem 0.1rem; cursor: pointer; color: var(--ink-3); }
-.dltt-ribbon button:hover { color: var(--ink); }
-.dltt-ribbon code { background: none; padding: 0; font-size: 0.72rem; color: inherit; }
-.dltt-ribbon__in code { font-size: 0.72rem; color: var(--ink-3); background: none; }
-.dltt-ribbon--on button { color: var(--ink); border-bottom-color: var(--accent); font-weight: 700; }
+/* the tracer's strip: one bar per layer, as tall as the log of its output size */
+.dltt-ribbon { margin: 0.6rem 0 0; display: flex; align-items: flex-end; gap: 3px; min-height: 40px; flex-wrap: wrap; }
+.dltt-ribbon__btn { display: inline-flex; align-items: flex-end; height: 38px; padding: 0 2px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; }
+.dltt-ribbon__bar { display: block; width: 14px; border-radius: 2px 2px 0 0; background: color-mix(in srgb, var(--dltt-data) 45%, transparent); }
+.dltt-ribbon__bar--in { background: color-mix(in srgb, var(--dltt-data) 25%, transparent); margin-right: 4px; }
+.dltt-ribbon__btn:hover .dltt-ribbon__bar { background: var(--dltt-data); }
+.dltt-ribbon--on { border-bottom-color: var(--accent); }
+.dltt-ribbon--on .dltt-ribbon__bar { background: var(--accent); }
+.dltt-ribbon__now { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--ink-2); }
+.dltt-ribbon__now code { font-size: 0.82rem; background: none; padding: 0; color: var(--ink); }
 
 /* weights */
 .dltt-wbrick :is(.dltt-box3__front, .dltt-box3__top, .dltt-box3__side) { stroke: var(--dltt-w); }
@@ -39,3 +40,6 @@
 @media (prefers-reduced-motion: reduce) {
   .dltt-bcell { transition: none !important; }
 }
+
+/* BatchLab: the two switches side by side */
+.dltt-batch__ctl { display: flex; flex-wrap: wrap; gap: 0 1.2rem; }

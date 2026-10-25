@@ -52,10 +52,25 @@
 /* activation boxes (Token) */
 .dltt-sm-tok text { font-size: 13px; }
 
-/* the 100% strip */
+/* the 100% strip: one purple, floor-coloured gaps between segments (light
+   purple, .dltt-sm-p--soft, means "not the true class / not selected") */
 .dltt-sm-strack { fill: none; stroke: var(--line); stroke-width: 1; }
-.dltt-sm-seg { fill: var(--dltt-p); stroke: var(--dltt-floor); stroke-width: 2; }
-.dltt-sm-seg--alt { fill: color-mix(in srgb, var(--dltt-p) 58%, var(--dltt-floor)); }
+.dltt-sm-seg { fill: var(--dltt-p); stroke: var(--dltt-floor); stroke-width: 2.5; }
+
+/* bars whose height follows a control (CSS geometry transitions) */
+.dltt-sm-geo { transition: y 0.35s cubic-bezier(0.3, 0.7, 0.3, 1), height 0.35s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dltt-sm-glide { transition: transform 0.35s cubic-bezier(0.3, 0.7, 0.3, 1); }
+
+/* the c = 0 level (the formula's shift): a dashed mark wider than its bar */
+.dltt-sm-pin { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+
+/* a 0–1 probability axis under horizontal bars */
+.dltt-sm-axis { stroke: var(--ink-3); stroke-width: 1.2; }
+
+/* attention: each word's toy vector (dashed), its α-share (filled), the blend h̃ */
+.dltt-sm-vbar { fill: var(--dltt-data); }
+.dltt-sm-vghost { fill: none; stroke: var(--dltt-data); stroke-width: 1; stroke-dasharray: 3 2; opacity: 0.75; }
+.dltt-sm-op { font-size: 18px; fill: var(--ink-3) !important; }
 
 /* knobs drawn as fat score bars: the lab draws the bar, the knob is the handle */
 .dltt-sm-knob .dltt-knob__track, .dltt-sm-knob .dltt-knob__bar { display: none; }
@@ -112,6 +127,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dltt-sm-grow, .dltt-sm-sy, .dltt-sm-sx, .dltt-sm-morph, .dltt-sm-cone { transition: none !important; }
+  .dltt-sm-grow, .dltt-sm-sy, .dltt-sm-sx, .dltt-sm-morph, .dltt-sm-cone, .dltt-sm-geo, .dltt-sm-glide { transition: none !important; }
   .dltt-sm-inx, .dltt-sm-iny, .dltt-sm-flash { animation: none !important; }
 }

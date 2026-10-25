@@ -15,6 +15,7 @@ const KINDS = {
     label: 'Tabular',
     prov: '{s|L1 · slide 45}',
     tuple: '[batch, features]',
+    parts: [['batch', 'batch'], ['features', 'f']],
     eg: '(None, 8): California housing’s 8 features',
     words: 'Each example is one row of numbers.',
   },
@@ -22,6 +23,7 @@ const KINDS = {
     label: 'Images',
     prov: '{s|L3 · slides 16–17}',
     tuple: '[batch, height, width, channels]',
+    parts: [['batch', 'batch'], ['height', 'h'], ['width', 'wd'], ['channels', 'c']],
     eg: '(2, 70, 120, 3)',
     words: 'Each example is a box: rows, columns, colour channels.',
   },
@@ -29,6 +31,7 @@ const KINDS = {
     label: 'Sequences',
     prov: '{s|L4 · slides 24, 36}',
     tuple: '[batch size, time steps, dimensionality]',
+    parts: [['batch size', 'batch'], ['time steps', 't'], ['dim.', 'f']],
     eg: '(32, 56, 5): 56 days of 5 numbers',
     words: 'Each example is a slab: time along one axis, the numbers per step along the other.',
   },
@@ -36,6 +39,7 @@ const KINDS = {
     label: 'Attention',
     prov: '{s|L8 · slides 37–38} {own}',
     tuple: 'Q [n_queries, d_keys], K [n_keys, d_keys]',
+    parts: [['scores: n_queries', null], ['n_keys', null]],
     eg: 'toy sizes: 3 queries, 4 keys, d_keys = 6',
     words: 'Every query meets every key: the scores are [n_queries, n_keys], one row per query.',
   },
@@ -55,7 +59,7 @@ export function GalleryLab() {
       title="Four kinds of data, one picture language"
       prov={K.prov}
       tryThis="Flip through the four kinds. Which axis is always first? Which colour is the time axis?"
-      caption={`${K.words} The batch is always the first axis (the ghost copies).`}
+      caption={k === 'att' ? `${K.words} Toy sizes for one example, so no batch is drawn; Kᵀ is K turned on its side.` : `${K.words} The batch is always the first axis (the ghost copies), the same colour in every layout.`}
       maths={
         <>
           <MLine text={`Layout: ${K.tuple}. Example: ${K.eg}.`} />
@@ -73,8 +77,8 @@ export function GalleryLab() {
             <g>
               <TensorGlyph x={narrow ? 0 : 30} y={20} shape={[3, 6]} kind="grid" fit={[120, 110]} />
               <text x={narrow ? 60 : 90} y={14} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b">Q</text>
-              <TensorGlyph x={narrow ? 110 : 190} y={20} shape={[4, 6]} kind="grid" fit={[120, 110]} />
-              <text x={narrow ? 170 : 250} y={14} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b">K</text>
+              <TensorGlyph x={narrow ? 110 : 190} y={20} shape={[6, 4]} kind="grid" fit={[120, 110]} />
+              <text x={narrow ? 170 : 250} y={14} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b">Kᵀ</text>
               <TensorGlyph x={narrow ? 220 : 360} y={20} shape={[3, 4]} kind="grid" fit={[120, 110]} />
               <text x={narrow ? 275 : 415} y={14} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b">scores QKᵀ</text>
             </g>
@@ -82,14 +86,16 @@ export function GalleryLab() {
           <g transform={`translate(${narrow ? 20 : 400} ${narrow ? H - 60 : 70})`}>
             {!(k === 'att' && !narrow) && (
               <>
-                <text x={0} y={0} className="dltt-t dltt-t--m" style={{ fontSize: 14 }}>{K.tuple.replace('dimensionality', 'dim.')}</text>
+                <text x={0} y={0} className="dltt-t dltt-t--m" style={{ fontSize: 14 }}>
+                  [{K.parts.map(([w, role], i) => <tspan key={w}>{i > 0 && ', '}<tspan className={role ? `dltt-axt--${role} dltt-t--b` : 'dltt-t--b'}>{w}</tspan></tspan>)}]
+                </text>
                 <text x={0} y={22} className="dltt-t dltt-t--s">{K.eg}</text>
               </>
             )}
           </g>
           {k === 'att' && !narrow && (
             <g transform={`translate(30 ${H - 30})`}>
-              <text x={0} y={0} className="dltt-t dltt-t--m" style={{ fontSize: 14 }}>{K.tuple} → scores [n_queries, n_keys]</text>
+              <text x={0} y={0} className="dltt-t dltt-t--m" style={{ fontSize: 14 }}>Q [n_queries, d_keys] × Kᵀ [d_keys, n_keys] → scores [n_queries, n_keys]</text>
             </g>
           )}
         </svg>

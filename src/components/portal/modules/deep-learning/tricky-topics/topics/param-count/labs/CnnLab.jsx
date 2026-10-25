@@ -29,7 +29,7 @@ export function CnnLab() {
   const spatial = C.rows.filter((r) => r.out.length === 3);
   const vec = C.rows.find((r) => r.L.t === 'flatten' || r.L.t === 'gap2d');
   const W = narrow ? 360 : 820;
-  const H = narrow ? 330 : 270;
+  const H = narrow ? 346 : 286;
   const stepX = (W - (narrow ? 90 : 170)) / 9;
   const side = (n) => 6 + n * (narrow ? 1.2 : 2.3);
   const dep = (c) => 4 + Math.sqrt(c) * (narrow ? 1.1 : 1.8);
@@ -40,11 +40,12 @@ export function CnnLab() {
   const barW = W - barX * 2;
   const barY = narrow ? 230 : 196;
   const dense1 = C.rows.find((r) => r.L.t === 'dense');
+  const biggest = params.reduce((a, r) => (r.total > a.total ? r : a), params[0]);
   return (
     <Stage
       title="Where a CNN’s parameters live, and what Flatten costs"
       prov="{s|L3 · slide 35} {own}"
-      tryThis="Guess which single layer holds the most parameters. Then switch Flatten to GlobalAvgPool2D."
+      tryThis="Guess which single layer holds the most parameters, then find the widest segment. Switch Flatten to GlobalAvgPool2D and watch the first Dense segment."
       caption={`The image shrinks while it deepens; \`${layerName(vec.L)}\` hands ${fmt(vec.out[0])} numbers to the first Dense layer, which then holds ${fmt(dense1.total)} parameters.`}
       challenge={{ text: 'Find the version whose total is under 1.2 million.', done: C.total < 1200000 }}
       maths={
@@ -93,15 +94,28 @@ export function CnnLab() {
                 width={Math.max(1.5, w)}
                 height={24}
                 className={`dltt-stack__seg dltt-stack__seg--${r.L.t === 'dense' ? 'd' : i % 2}${hot === r.i ? ' dltt-stack__seg--hot' : ''}`}
+                tabIndex={0}
+                role="button"
+                aria-label={`${layerName(r.L)}: ${r.total.toLocaleString('en-US')} parameters`}
                 onPointerEnter={() => setHot(r.i)}
                 onPointerLeave={() => setHot(null)}
+                onFocus={() => setHot(r.i)}
+                onBlur={() => setHot(null)}
               />
             );
           })}
-          <text x={W / 2} y={barY + 46} textAnchor="middle" className="dltt-t dltt-t--m dltt-t--s">
+          {params.map((r, i) => {
+            // the widest segments carry their count; the biggest also its name
+            const x = barX + ((starts[i] + r.total / 2) / C.total) * barW;
+            const w = (r.total / C.total) * barW;
+            if (r !== biggest && (narrow || w < 58)) return null;
+            const short = r.L.t === 'conv2d' ? `Conv2D(${r.L.filters})` : layerName(r.L);
+            return <text key={`n${r.i}`} x={x} y={barY + 38} textAnchor="middle" className={`dltt-t dltt-t--xs dltt-t--m${r === biggest ? ' dltt-t--b' : ''}`}>{r === biggest ? `${short}: ${fmt(r.total)}` : fmt(r.total)}</text>;
+          })}
+          <text x={W / 2} y={barY + 60} textAnchor="middle" className="dltt-t dltt-t--m dltt-t--s">
             {hot !== null ? `${layerName(C.rows[hot].L)}: ${working(C.rows[hot].L, C.rows[hot].ins)}` : `first Dense: ${working(dense1.L, dense1.ins)}`}
           </text>
-          <text x={barX} y={barY + 66} className="dltt-t dltt-t--xs"><tspan className="dltt-legend dltt-legend--c">■</tspan> conv layers  <tspan className="dltt-legend dltt-legend--d">■</tspan> dense layers</text>
+          <text x={barX} y={barY + 80} className="dltt-t dltt-t--xs"><tspan className="dltt-legend dltt-legend--c">■</tspan> conv layers  <tspan className="dltt-legend dltt-legend--d">■</tspan> dense layers</text>
         </svg>
       </div>
     </Stage>

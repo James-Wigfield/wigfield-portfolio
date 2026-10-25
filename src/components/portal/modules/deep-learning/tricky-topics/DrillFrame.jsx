@@ -63,7 +63,7 @@ function shown(f) {
   return f.type === 'number' ? Number(f.answer).toLocaleString('en-US') : f.answer;
 }
 
-function Question({ q, renderShow, renderWorking, live, idPrefix, onScore }) {
+function Question({ q, renderShow, renderWorking, live, idPrefix, onScore, after = null }) {
   const [vals, setVals] = useState({});
   const [checked, setChecked] = useState(false);
   const [showWork, setShowWork] = useState(false);
@@ -112,6 +112,7 @@ function Question({ q, renderShow, renderWorking, live, idPrefix, onScore }) {
           <button type="button" className="dltt-btn dltt-btn--primary" onClick={check}>Check</button>
           <button type="button" className="dltt-btn" aria-expanded={showWork || checked} onClick={() => setShowWork((s) => !s)}>{showWork || checked ? 'Working shown' : 'Show the working'}</button>
           {allRight && <span className="dltt-mark dltt-mark--ok">all right</span>}
+          {after}
         </div>
       )}
       {(!live || checked || showWork) && (
@@ -163,12 +164,20 @@ export default function DrillFrame({ make, fixed = [], modes, renderShow, render
           <span className="dltt-drill__score" aria-live="polite"><b>{score.right}</b>/{score.tried} right{source === 'random' ? ` · question #${seed}` : ` · ${unitIdx % Math.max(1, fixed.length) + 1} of ${fixed.length}`}</span>
         </div>
         {intro && <p className="dltt-sec__lead"><Rich text={intro} /></p>}
-        <Question key={`${source}-${mode}-${seed}-${unitIdx}`} q={q} renderShow={renderShow} renderWorking={renderWorking} live idPrefix={`dltt-${topicId}-dq`} onScore={onScore} />
-        <div className="dltt-drill__btns">
-          <button type="button" className="dltt-btn" onClick={next}>
-            {source === 'unit' ? 'Next unit question' : 'New question'} <Icon name="arrowRight" size={14} />
-          </button>
-        </div>
+        <Question
+          key={`${source}-${mode}-${seed}-${unitIdx}`}
+          q={q}
+          renderShow={renderShow}
+          renderWorking={renderWorking}
+          live
+          idPrefix={`dltt-${topicId}-dq`}
+          onScore={onScore}
+          after={(
+            <button type="button" className="dltt-btn dltt-drill__next" onClick={next}>
+              {source === 'unit' ? 'Next unit question' : 'New question'} <Icon name="arrowRight" size={14} />
+            </button>
+          )}
+        />
       </div>
       {printing && (
         <div className="dltt-drill__print">

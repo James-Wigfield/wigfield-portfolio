@@ -29,7 +29,7 @@ export function PoolLab() {
     { label: 'The 9th column', say: 'Nine columns hold only four full windows: the last column is dropped (“valid”, no padding).' },
     { label: '3 × 4', say: `The result is ${OR} × ${OC}: height and width halved, rounded down; the depth (not drawn) is kept.` },
   ];
-  const story = useStory(beats.length);
+  const story = useStory(beats.length, { start: -1 }); // opens empty: predict, then play
   const b = story.beat;
   const cell = narrow ? 26 : 34;
   const gx = 20;
@@ -62,19 +62,32 @@ export function PoolLab() {
           {VAL.map((row, i) => row.map((v, j) => {
             const drop = j >= OC * P;
             const inWin = win && i >= 2 * win[0] && i < 2 * win[0] + 2 && j >= 2 * win[1] && j < 2 * win[1] + 2;
+            // each full window's maximum, picked out in bold once every window has been read
+            const isMax = i < OR * P && j < OC * P && v === maxAt(Math.floor(i / P), Math.floor(j / P));
             return (
               <g key={`${i}-${j}`} className={`dltt-fade${drop && dropped ? ' dltt-pool--drop' : ''}`}>
                 <rect x={gx + j * cell + 1} y={gy + i * cell + 1} width={cell - 2} height={cell - 2} rx={3} className={`dltt-incell${inWin ? ' dltt-incell--hit' : ''}${drop && dropped ? ' dltt-incell--ignored' : ''}`} />
-                <text x={gx + j * cell + cell / 2} y={gy + i * cell + cell / 2 + 4} textAnchor="middle" className={`dltt-t dltt-t--xs dltt-t--m${inWin && v === maxAt(win[0], win[1]) ? ' dltt-t--b dltt-t--ink' : ''}`}>{v}</text>
+                <text x={gx + j * cell + cell / 2} y={gy + i * cell + cell / 2 + 4} textAnchor="middle" className={`dltt-t dltt-t--xs dltt-t--m${isMax && (inWin || b >= 2) ? ' dltt-t--b dltt-t--ink' : ''}`}>{v}</text>
               </g>
             );
           }))}
+          {b >= 2 && Array.from({ length: OR }, (_, r) => Array.from({ length: OC }, (_, c) => (
+            <rect key={`b${r}-${c}`} x={gx + P * c * cell + 1} y={gy + P * r * cell + 1} width={P * cell - 2} height={P * cell - 2} rx={4} className="dltt-win dltt-win--ghost" />
+          )))}
           {win && <rect x={gx + 2 * win[1] * cell} y={gy + 2 * win[0] * cell} width={2 * cell} height={2 * cell} rx={4} className="dltt-win" />}
+          {b === 1 && (
+            <g>
+              <path d={`M${gx + cell} ${gy - 3} Q ${gx + 2 * cell} ${gy - 20} ${gx + 3 * cell} ${gy - 3}`} className="dltt-hop" />
+              <text x={gx + 3 * cell + 8} y={gy - 8} className="dltt-t dltt-t--xs dltt-t--jump">stride 2</text>
+            </g>
+          )}
           {dropped && <text x={gx + (COLS - 0.5) * cell} y={gy - 8} textAnchor="middle" className="dltt-t dltt-t--xs">dropped</text>}
-          <text x={ox} y={oy - 10} className="dltt-t dltt-t--xs">output {OR} × {OC}</text>
+          {/* the output's size is the question, so it appears only as the story reaches it */}
+          <text x={ox} y={oy - 10} className="dltt-t dltt-t--xs">output{b >= 2 ? ` ${OR} × ${OC}` : ''}</text>
           {Array.from({ length: OR }, (_, r) => Array.from({ length: OC }, (_, c) => {
             const idx = r * OC + c;
             const on = idx < filled;
+            if (!on && b < 2) return null;
             return (
               <g key={`o${r}-${c}`}>
                 <rect x={ox + c * cell + 1} y={oy + r * cell + 1} width={cell - 2} height={cell - 2} rx={3} className={`dltt-outcell${on ? '' : ' dltt-outcell--empty'}`} />

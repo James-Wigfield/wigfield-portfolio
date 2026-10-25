@@ -5,7 +5,9 @@ import { starts, slots } from './sm.js';
    TOPIC 3 · SOFTMAX — shared SVG parts for the labs
    ----------------------------------------------------------------------------
      ShareStrip   a 100% stacked strip of probabilities: one segment per class
-                  (width ∝ p), its percentage (largest-remainder rounding, so
+                  (width ∝ p), all one purple with floor-coloured gaps (light
+                  purple is kept for "not the true class / not selected"),
+                  its percentage (largest-remainder rounding, so
                   the labels add up to 100) on an evenly spaced label slot
                   joined to its segment by a thin leader, so labels never
                   collide however thin a segment gets. `vertical` stacks it
@@ -26,7 +28,7 @@ export function ShareStrip({ x, y, len, thick = 26, p, names, vertical = false, 
       <g className={`dltt-sm-strip ${className}`}>
         {segments && <rect x={x} y={y} width={thick} height={len} className="dltt-sm-strack" />}
         {segments && p.map((v, i) => (
-          <rect key={i} x={x} y={y + st[i] * len} width={thick} height={Math.max(0, v * len)} className={`dltt-sm-seg${i % 2 ? ' dltt-sm-seg--alt' : ''}`} />
+          <rect key={i} x={x} y={y + st[i] * len} width={thick} height={Math.max(0, v * len)} className="dltt-sm-seg" />
         ))}
         {p.map((v, i) => {
           const cy = y + (st[i] + v / 2) * len;
@@ -48,7 +50,7 @@ export function ShareStrip({ x, y, len, thick = 26, p, names, vertical = false, 
     <g className={`dltt-sm-strip ${className}`}>
       {segments && <rect x={x} y={y} width={len} height={thick} className="dltt-sm-strack" />}
       {segments && p.map((v, i) => (
-        <rect key={i} x={x + st[i] * len} y={y} width={Math.max(0, v * len)} height={thick} className={`dltt-sm-seg${i % 2 ? ' dltt-sm-seg--alt' : ''}`} />
+        <rect key={i} x={x + st[i] * len} y={y} width={Math.max(0, v * len)} height={thick} className="dltt-sm-seg" />
       ))}
       {p.map((v, i) => {
         const cx = x + (st[i] + v / 2) * len;

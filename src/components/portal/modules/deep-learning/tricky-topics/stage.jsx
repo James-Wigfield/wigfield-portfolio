@@ -59,7 +59,7 @@ export function StoryBar({ story, beats }) {
     else if (e.key === 'End') { e.preventDefault(); go(beats.length - 1); }
   };
   return (
-    <div className="dltt-story">
+    <div className="dltt-story" data-start={story.empty ? 'empty' : undefined}>
       <div className="dltt-story__row" role="group" aria-label="Story: step through the beats (arrow keys move between them)" onKeyDown={onKey}>
         <button
           type="button"

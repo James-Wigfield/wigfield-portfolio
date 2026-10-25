@@ -29,7 +29,7 @@ export function StackLab() {
     })),
     { label: 'Total', say: `Add them: ${C.rows.map((r) => fmt(r.total)).join(' + ')} = **${fmt(C.total)}**, slide 36’s total.` },
   ];
-  const story = useStory(beats.length);
+  const story = useStory(beats.length, { start: -1 }); // opens empty: predict, then play
   const shown = story.beat < 0 ? 0 : Math.min(story.beat + 1, 4);
   const W = narrow ? 360 : 760;
   const H = narrow ? 330 : 280;
@@ -44,13 +44,14 @@ export function StackLab() {
   const starts = C.rows.reduce((a, r) => [...a, a[a.length - 1] + r.total], [0]);
   const segs = C.rows.map((r, i) => ({ r, i, x: barX0 + (starts[i] / C.total) * barW, w: (r.total / C.total) * barW }));
   const running = C.rows.slice(0, shown).reduce((s, r) => s + r.total, 0);
+  const maxCount = Math.max(...C.rows.map((r) => r.total));
   return (
     <Stage
       title="Where slide 36’s 266,610 parameters live"
       prov="{s|L1 · slide 36}"
-      tryThis="Before playing: guess which layer holds most of the parameters. Then play, or hover the bar."
+      tryThis="Before each beat, say that layer’s count out loud; then play it, or hover (or tab to) the bar."
       story={<StoryBar story={story} beats={beats} />}
-      caption="Each layer’s inputs are the previous layer’s outputs. The first Dense layer holds 235,500 of the 266,610 (88%) because 784 inputs fan out to 300 neurons."
+      caption="Each layer’s inputs are the previous layer’s outputs. The bands between the columns are as thick as each layer’s count: 784 inputs fanning out to 300 neurons make the first Dense layer 235,500 of the 266,610."
       maths={
         <>
           {C.rows.map((r) => <MLine key={r.i} text={`\`${layerName(r.L)}\`: ${working(r.L, r.ins)}`} />)}
@@ -65,7 +66,11 @@ export function StackLab() {
             const on = i === 0 || i <= shown - 1;
             return (
               <g key={i} className={`dltt-fade${on ? '' : ' dltt-dim'}`}>
-                {i > 0 && <line x1={colX(i - 1) + 14} y1={20 + maxH / 2} x2={colX(i) - 14} y2={20 + maxH / 2} className={`dltt-wire${i <= shown - 1 ? ' dltt-wire--w' : ''}`} />}
+                {i > 0 && (() => {
+                  // the band between two columns: as thick as that layer's count (the biggest fills the column height)
+                  const bh = Math.max(2, (C.rows[i].total / maxCount) * maxH);
+                  return <rect x={colX(i - 1) + 14} y={20 + (maxH - bh) / 2} width={colX(i) - colX(i - 1) - 28} height={bh} rx={2} className={`dltt-band${i <= shown - 1 ? ' dltt-band--w' : ''}`} />;
+                })()}
                 <rect x={colX(i) - 12} y={20 + (maxH - h) / 2} width={24} height={h} rx={5} className={i === 0 ? 'dltt-box3__front' : 'dltt-stack__col'} />
                 <text x={colX(i)} y={maxH + 40} textAnchor="middle" className="dltt-t dltt-t--b dltt-t--m">{labels[i]}</text>
                 <text x={colX(i)} y={maxH + 54} textAnchor="middle" className="dltt-t dltt-t--xs">{i === 0 ? 'after Flatten' : 'neurons'}</text>
@@ -81,8 +86,13 @@ export function StackLab() {
               width={Math.max(i < shown && r.total ? 2.5 : 0, w)}
               height={22}
               className={`dltt-stack__seg dltt-stack__seg--${i % 2}${i < shown ? '' : ' dltt-hide'}${hot === i ? ' dltt-stack__seg--hot' : ''}`}
+              tabIndex={i < shown && r.total ? 0 : -1}
+              role="button"
+              aria-label={`${layerName(r.L)}: ${fmt(r.total)} parameters`}
               onPointerEnter={() => setHot(i)}
               onPointerLeave={() => setHot(null)}
+              onFocus={() => setHot(i)}
+              onBlur={() => setHot(null)}
             />
           ))}
           <text x={barX0} y={barY - 8} className="dltt-t dltt-t--xs">the whole model, one bar</text>

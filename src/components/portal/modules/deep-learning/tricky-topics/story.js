@@ -54,5 +54,6 @@ export function useStory(n, { start = n - 1, ms = 1500 } = {}) {
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  return { beat: printing ? n - 1 : beat, go, play, stop, playing: printing ? false : playing, n };
+  // `empty`: a predict-first lab that opens before its first beat (print still shows the last)
+  return { beat: printing ? n - 1 : beat, go, play, stop, playing: printing ? false : playing, n, empty: start < 0 };
 }

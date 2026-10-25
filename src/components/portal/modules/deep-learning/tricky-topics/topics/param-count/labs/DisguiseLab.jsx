@@ -33,12 +33,14 @@ const HINT = {
 export function DisguiseLab() {
   const { printing } = useStudy();
   const [form, setForm] = useState('equations');
+  const [checked, setChecked] = useState(false); // the answer table waits until you have counted
   const f = printing ? 'equations' : form;
+  const open = printing || checked;
   return (
     <Stage
       title="Same model, five disguises, one answer"
       prov="{s|L4 · slides 9–10} {own}"
-      tryThis="Count it from the equations first. Then flip through the other forms: the table underneath never changes."
+      tryThis="Count it from the equations on paper, then check. Flip through the other forms: the table never changes."
       caption={HINT[f]}
       maths={
         <>
@@ -52,7 +54,12 @@ export function DisguiseLab() {
         <div className="dltt-disguise__form">
           <FormView model={M} form={f} />
         </div>
-        <table className="dltt-drill__table dltt-disguise__table">
+        {!open && (
+          <p className="dltt-disguise__check">
+            <button type="button" className="dltt-btn" onClick={() => setChecked(true)}>Check my count</button>
+          </p>
+        )}
+        {open && <table className="dltt-drill__table dltt-disguise__table">
           <thead>
             <tr><th>Layer</th><th>Weights (shape → count)</th><th className="dltt-num">Params</th></tr>
           </thead>
@@ -66,7 +73,7 @@ export function DisguiseLab() {
             ))}
             <tr className="dltt-disguise__total"><td>Total</td><td /><td className="dltt-num"><b>{C.total}</b></td></tr>
           </tbody>
-        </table>
+        </table>}
       </div>
     </Stage>
   );

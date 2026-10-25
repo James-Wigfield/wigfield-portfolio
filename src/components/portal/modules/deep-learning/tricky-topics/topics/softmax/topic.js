@@ -150,12 +150,12 @@ export default {
       gist: 'A classifier’s last layer gives one probability per class, a translator’s one per word of the vocabulary; the prediction is the tallest bar.',
       read: [
         { list: [
-          'A CNN: “the final layer outputs the prediction (e.g., a softmax layer that outputs estimated class probabilities)” {s|L3 · slide 33}; slide 35 ends `Dense(units=10, activation="softmax")` {s|L3 · slide 35}.',
-          'Translation: `Dense(vocab_size, activation="softmax")`; “The length of the `Y_proba` array corresponds to the vocabulary size” {s|L8 · slides 26, 28}. The transformer ends Linear → Softmax → Output Probabilities {s|L8 · slide 41}.',
+          'A CNN ends with “a softmax layer that outputs estimated class probabilities”, e.g. `Dense(units=10, activation="softmax")` {s|L3 · slides 33, 35}.',
+          'Translation ends `Dense(vocab_size, activation="softmax")`, one probability per word {s|L8 · slides 26, 28}; the transformer, Linear → Softmax → Output Probabilities {s|L8 · slide 41}.',
           'Softmax itself has nothing to learn: the vocabulary-sized Dense (“Linear”) layer under it holds the parameters ([parameter counts](@param-count)) {beyond}.',
           'For a dahlia photo the top 3 are vase 32.66%, daisy 17.81%, honeycomb 12.06%: dahlia isn’t one of the 1,000 classes {s|L3 · slide 49}, and softmax can only share probability among the classes it has {beyond}.',
         ] },
-        { slideNote: 'Slide 41 says “The green softmax layer have many neurons (corresponding to the vocabulary size …)”. Those neurons belong to the Linear layer drawn under it; the softmax has none.' },
+        { slideNote: 'Slide 41 says “The green softmax layer have many neurons (corresponding to the vocabulary size …)”. They belong to the Linear layer under it; softmax has none.' },
       ],
       play: ['last'],
     },

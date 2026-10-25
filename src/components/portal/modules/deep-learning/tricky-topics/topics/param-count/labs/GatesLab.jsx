@@ -94,7 +94,8 @@ export function GatesLab() {
                         <>
                           <text x={ox + a / 2} y={y - 4} textAnchor="middle" className="dltt-t dltt-t--xs">W<tspan dy={2} fontSize={7}>x</tspan></text>
                           <text x={ox + a + b2 / 2} y={y - 4} textAnchor="middle" className="dltt-t dltt-t--xs">W<tspan dy={2} fontSize={7}>h</tspan></text>
-                          <text x={ox + a + b2 + c / 2 + (extra ? c / 2 : 0)} y={y - 4} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--bias">b{extra ? ' b' : ''}</text>
+                          <text x={ox + a + b2 + c / 2} y={y - 4} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--bias">b</text>
+                          {extra && <text x={ox + a + b2 + c + 2 + c / 2} y={y - 4} textAnchor="start" className="dltt-t dltt-t--xs dltt-t--bias">+ b (Keras)</text>}
                         </>
                       )}
                     </g>

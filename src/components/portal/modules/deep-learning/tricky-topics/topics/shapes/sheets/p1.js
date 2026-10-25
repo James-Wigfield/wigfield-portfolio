@@ -7,7 +7,7 @@ export default {
       at: 'L3 · 16–17; L1 · 36',
       items: [
         '(2, 70, 120, 3) = 2 images × 70 rows × 120 columns × 3 colours.',
-        '`summary()` writes the batch as {g|None}; `InputLayer(shape=…)` leaves it out.',
+        '`summary()` writes the batch as **None**; `InputLayer(shape=…)` leaves it out.',
       ],
       margin: [{ q: 'In `shape=[None, 1]`, what is the None?', a: 'The time axis: any sequence length (L4 · 24).' }],
     },
@@ -21,7 +21,7 @@ export default {
           rows: [
             ['tabular', '[batch, features]'],
             ['images', '[batch, height, width, channels]'],
-            ['sequences', '[batch, {g|time steps}, dimensionality]'],
+            ['sequences', '[batch, **time steps**, dimensionality]'],
             ['attention', 'Q $[n_q, d_k]$, K $[n_k, d_k]$, V $[n_k, d_v]$ → $[n_q, d_v]$'],
           ],
         } },
@@ -58,7 +58,7 @@ export default {
       at: 'L3 · 35; sample Q2(a)',
       items: [
         { worked: [
-          'slide 35: 28×28×1 → 28×28×64 → 14 → 7 → {g|3}×3×256 → 2,304 → 128 → 64 → 10',
+          'slide 35: 28×28×1 → 28×28×64 → 14 → 7 → **3**×3×256 → 2,304 → 128 → 64 → 10',
           'star: X $(N, 4, 2)$, y $(N, 2)$: N stars, 4 corners, $(x, y)$',
         ] },
       ],

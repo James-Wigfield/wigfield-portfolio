@@ -26,7 +26,8 @@
      persist   a notebook tick and a "got it" survive a reload; the tab shows
                the progress; "Resume at step N" offers and jumps
      storage   with localStorage throwing, the page renders and ticks
-     reduced   prefers-reduced-motion: story labs open on their last beat; the
+     reduced   prefers-reduced-motion: story labs open on their last beat (or,
+               marked data-start="empty", before their first, to predict); the
                hero sits on its end state
      keyboard  every lab's first control works from the keyboard and changes
                the picture; ≤ 3 controls per lab; the drill marks an answer
@@ -342,10 +343,15 @@ try {
     for (const t of TOPICS) {
       const page = await open({ route: topicUrl(t.id), reduced: true, tag: `reduced ${t.id}` });
       const r = await page.evaluate(() => ({
-        stories: [...document.querySelectorAll('.dltt-story')].map((s) => { const b = s.querySelectorAll('.dltt-story__beat'); return b[b.length - 1]?.classList.contains('dltt-story__beat--on'); }),
+        // a predict-first lab (data-start="empty") opens before its first beat; every other story on its last
+        stories: [...document.querySelectorAll('.dltt-story')].map((s) => {
+          const b = s.querySelectorAll('.dltt-story__beat');
+          if (s.dataset.start === 'empty') return ![...b].some((x) => x.classList.contains('dltt-story__beat--on'));
+          return b[b.length - 1]?.classList.contains('dltt-story__beat--on');
+        }),
         hero: document.querySelector('.dltt-hero-anim svg')?.outerHTML ?? '',
       }));
-      ok(r.stories.every(Boolean), `${t.id}: reduced motion — every story lab opens on its last beat`, `${r.stories.length} stories`);
+      ok(r.stories.every(Boolean), `${t.id}: reduced motion — every story lab opens on its last beat (or empty, to predict)`, `${r.stories.length} stories`);
       // the hero's end state is what print shows: compare the two
       await page.click('.dltt-export > .dltt-btn');
       await page.waitForFunction(() => window.__printCalls === 1, { timeout: 15000 }).catch(() => {});

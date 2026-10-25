@@ -127,7 +127,7 @@ export default {
 Use exactly these three labels, the same way everywhere (Read, labs' `prov`, drills, notebook pages):
 
 - **`{s|L3 · slide 22}`** — a slide states or prints it. Ranges and lists: `{s|L4 · slides 25, 27, 29}`, `{s|L3 · slides 20–21}`. Other sources: `{s|Sample Q1(c)}`, `{s|Lab Sheet 4}`, `{s|Practice A Q1(c)}`.
-- **`{own}`** — *this page's own · checked in TF*: computed by this page **with the shared maths modules** (`maths/paramRules.js`, `shapeRules.js`, `strideRules.js`, `softmax.js`), which `verify_counts.py` checks against Keras — every named model and drill model one by one, sizes over a sweep, softmax over a set of vectors. Use it only for numbers those modules produce (or a `model` / `verify` item you add). **Arithmetic that doesn't go through them** (a product of a printed shape, a percentage, a rate × a count) is not "checked in TF": write it as working next to the receipt of the slide whose numbers or rule it uses (e.g. "$2 \times 70 \times 120 \times 3 = 50{,}400$, from the shape {s|L3 · slide 17}"), or add a `verify` item / a named model so TensorFlow does check it. If unsure, say so in your summary.
+- **`{own}`** — *this page's own · checked in TF*: computed by this page **with the shared maths modules** (`maths/paramRules.js`, `shapeRules.js`, `strideRules.js`, `softmax.js`), which `verify_counts.py` checks against Keras — every named model and drill model one by one, sizes over a sweep, softmax over a set of vectors, sigmoid over a grid of scores. Use it only for numbers those modules produce (or a `model` / `verify` item you add). **Arithmetic that doesn't go through them** (a product of a printed shape, a percentage, a rate × a count) is not "checked in TF": write it as working next to the receipt of the slide whose numbers or rule it uses (e.g. "$2 \times 70 \times 120 \times 3 = 50{,}400$, from the shape {s|L3 · slide 17}"), or add a `verify` item / a named model so TensorFlow does check it. If unsure, say so in your summary.
 - **`{beyond}`** — *beyond the slides*: true and useful but not in the lecture notes. The exam note says textbook material outside the lecture notes isn't examined, so the student must see what is support and what is syllabus.
 
 Rules:
@@ -145,7 +145,7 @@ Copy the shape of an existing lab. Good models: `topics/param-count/labs/LoomLab
 
 The kit (`../../stage.jsx`, `../../svgParts.jsx`, `../../story.js`, `../../stage.css`):
 - `Stage` — `title`, `prov`, `tryThis`, `story`, `caption`, `challenge`, `maths`; the picture is its child.
-- `StoryBar` + `useStory(n)` — ▶ and 3–6 named beats; labs open on their last beat.
+- `StoryBar` + `useStory(n)` — ▶ and 3–6 named beats; labs open on their last beat. If the Try this asks the student to predict first, open empty with `useStory(n, { start: -1 })` (beat −1 = nothing drawn yet) and don't print the answer anywhere on the stage until its beat. Print always shows the last beat.
 - `Maths`, `MLine`, `MEq` — the "Show the maths" drawer (open in print).
 - `Switch`, `Scrub`, `Knob` — keyboard-ready controls. `Box3`, `Neuron`, `Bead`, `Counter`, `Token`, `Grid`.
 - `../../TensorGlyph.jsx` — any tensor drawn by its shape in the axis colours.
@@ -154,7 +154,7 @@ The kit (`../../stage.jsx`, `../../svgParts.jsx`, `../../story.js`, `../../stage
 
 The design rules:
 - One idea per lab, visible in five seconds; open on the finished "aha" state.
-- Picture first; numbers on hover and in the maths drawer.
+- Picture first; numbers on hover and in the maths drawer. Anything that reacts to hover must also take keyboard focus (`tabIndex={0}`, `role="button"`, an `aria-label`, `onFocus`/`onBlur` doing what `onPointerEnter`/`onPointerLeave` do), and the Try this says “hover (or tab to)”.
 - ≤ 3 controls; story beats for processes.
 - **Numbers come from a maths module, never typed twice.**
 - `printing` (from `useStudy()`) pins a finished state; the PDF prints labs on their last beat.

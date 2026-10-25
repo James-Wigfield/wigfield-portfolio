@@ -18,12 +18,12 @@
 .dltt-stack__seg { stroke: var(--dltt-floor); stroke-width: 1.5; transition: opacity 0.4s ease; cursor: pointer; }
 .dltt-stack__seg--0 { fill: var(--dltt-w); }
 .dltt-stack__seg--1 { fill: color-mix(in srgb, var(--dltt-w) 55%, var(--dltt-floor)); }
-.dltt-stack__seg--d { fill: color-mix(in srgb, var(--dltt-b) 75%, var(--dltt-floor)); }
+.dltt-stack__seg--d { fill: color-mix(in srgb, var(--dltt-w) 22%, var(--dltt-floor)); stroke: var(--dltt-w); }
 .dltt-stack__seg--hot { stroke: var(--ink); stroke-width: 2; }
 .dltt-stack__col { fill: color-mix(in srgb, var(--dltt-w) 16%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1.4; }
 .dltt-stack__in { fill: var(--dltt-floor) !important; font-weight: 700; }
 .dltt-legend--c { fill: var(--dltt-w); }
-.dltt-legend--d { fill: color-mix(in srgb, var(--dltt-b) 75%, var(--dltt-floor)); }
+.dltt-legend--d { fill: color-mix(in srgb, var(--dltt-w) 22%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1px; }
 
 /* counting from a diagram */
 .dltt-diag { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -60,7 +60,7 @@
 .dltt-blk--x { fill: color-mix(in srgb, var(--dltt-w) 45%, var(--dltt-floor)); }
 .dltt-blk--h { fill: var(--dltt-w); }
 .dltt-blk--b { fill: var(--dltt-b); }
-.dltt-blk--b2 { fill: none; stroke: var(--dltt-b); stroke-width: 1.6; stroke-dasharray: 3 2; }
+.dltt-blk--b2 { fill: var(--dltt-b); stroke: var(--dltt-floor); stroke-width: 1.5; } /* Keras's second GRU bias: learned, so solid */
 
 /* the autoencoder */
 .dltt-ae__col { fill: color-mix(in srgb, var(--dltt-data) 10%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.4; }
@@ -108,3 +108,10 @@
 .dltt-subswitch { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.7rem; }
 .dltt-subswitch__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .dltt-freeze__row code { background: none; padding: 0; color: var(--ink); }
+
+/* StackLab: the band between two columns, as thick as that layer's count */
+.dltt-band { fill: var(--dltt-floor); opacity: 0.55; transition: fill 0.4s ease, opacity 0.4s ease; }
+.dltt-band--w { fill: color-mix(in srgb, var(--dltt-w) 55%, transparent); opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .dltt-band { transition: none; } }
+.dltt-disguise__check { margin: 0.9rem 0 0.2rem; }
+.portal[data-portal-theme='arcade'] .dltt-stack__seg--1 { fill: color-mix(in srgb, var(--dltt-w) 55%, #ffffff); }

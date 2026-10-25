@@ -11,8 +11,10 @@ import './softmax.css';
    binary = one score through a sigmoid, the other class gets 1 − p;
    multilabel = the same three scores each through its own sigmoid (they
    needn't add up to 1); multiclass = the same three scores through one
-   softmax (they do). Beside the bars, a "sum" tower stacks them against a
-   dashed line at 1, so the difference is a picture, not a sentence. */
+   softmax (they do). Under the bars, a 0–1 axis ("1 = certain") gives
+   their scale; beside them, a "sum" tower stacks them (one purple, gaps
+   between) against a mark at 1, so the difference is a picture, not a
+   sentence. */
 
 const Z = Z_WALK;
 const MODES = [
@@ -35,8 +37,8 @@ function outputs(mode) {
   return { z: Z, p: softmax(Z), ghost: null };
 }
 
-const WIDE = { W: 760, H: 300, nx: 150, rows: [92, 162, 232], one: [162], ax: 214, aw: 86, bx: 340, bl: 230, tx: 668, tw: 30, tBase: 254, tUnit: 90, sayY: 24 };
-const NARROW = { W: 340, H: 310, nx: 26, rows: [96, 164, 232], one: [164], ax: 58, aw: 58, bx: 130, bl: 110, tx: 288, tw: 24, tBase: 262, tUnit: 80, sayY: 22 };
+const WIDE = { W: 760, H: 300, nx: 150, rows: [92, 162, 232], one: [162], ax: 214, aw: 86, bx: 340, bl: 230, tx: 668, tw: 30, tBase: 254, tUnit: 90, sayY: 24, axisY: 262, ticks: [0, 0.5, 1] };
+const NARROW = { W: 340, H: 310, nx: 26, rows: [96, 164, 232], one: [164], ax: 58, aw: 58, bx: 130, bl: 110, tx: 288, tw: 24, tBase: 262, tUnit: 80, sayY: 22, axisY: 262, ticks: [0, 1] };
 
 export function VsLab() {
   const wrap = useRef(null);
@@ -109,13 +111,14 @@ export function VsLab() {
             ))
           )}
 
-          {/* the probabilities, as horizontal bars (full length = 1) */}
-          {!narrow && (
-            <>
-              <line x1={G.bx + G.bl} y1={44} x2={G.bx + G.bl} y2={G.tBase} className="dltt-sm-one" />
-              <text x={G.bx + G.bl} y={40} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--m dltt-t--p">1</text>
-            </>
-          )}
+          {/* the probabilities, as horizontal bars on a 0–1 axis (1 = certain) */}
+          <line x1={G.bx} y1={G.axisY} x2={G.bx + G.bl} y2={G.axisY} className="dltt-sm-axis" />
+          {G.ticks.map((t) => (
+            <g key={`k${t}`}>
+              <line x1={G.bx + t * G.bl} y1={G.axisY} x2={G.bx + t * G.bl} y2={G.axisY + 5} className="dltt-sm-axis" />
+              <text x={G.bx + t * G.bl + (narrow && t === 1 ? 4 : 0)} y={G.axisY + 17} textAnchor={narrow && t === 1 ? 'end' : 'middle'} className={`dltt-t dltt-t--xs dltt-t--m${t === 1 ? ' dltt-t--b dltt-t--p' : ''}`}>{t === 1 ? '1 = certain' : t}</text>
+            </g>
+          ))}
           {o.p.map((v, i) => (
             <g key={`b${mode}${i}`}>
               {multi || i === 0 ? <line x1={G.ax + G.aw + 2} y1={ys[multi ? i : 0]} x2={G.bx - 4} y2={barY(i)} className="dltt-wire dltt-wire--p" /> : null}
@@ -144,7 +147,7 @@ export function VsLab() {
               y={G.tBase - (st[i] + v) * G.tUnit}
               width={G.tw}
               height={Math.max(0.5, v * G.tUnit)}
-              className={`${o.ghost !== null && i === parts.length - 1 ? 'dltt-sm-p--ghost' : `dltt-sm-seg${i % 2 ? ' dltt-sm-seg--alt' : ''}`} dltt-sm-iny`}
+              className={`${o.ghost !== null && i === parts.length - 1 ? 'dltt-sm-p--ghost' : 'dltt-sm-seg'} dltt-sm-iny`}
             />
           ))}
           <text x={G.tx + G.tw / 2} y={G.tBase + 18} textAnchor="middle" className={`dltt-t dltt-t--xs dltt-t--b ${exact ? 'dltt-t--p' : 'dltt-sm-warn'}`}>{exact ? 'exactly 1' : 'not 1'}</text>

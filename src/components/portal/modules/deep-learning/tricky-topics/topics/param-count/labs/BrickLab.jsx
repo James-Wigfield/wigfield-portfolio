@@ -35,7 +35,9 @@ export function BrickLab() {
   const conv = layerCounts({ t: 'conv2d', filters, k, pad: 'same' }, [[ih, iw, C_IN]]).total;
   const dense = ih * iw * (ih * iw * C_IN); // L3 slide 22's footnote: neurons × inputs, weights only
   const W = narrow ? 360 : 780;
-  const H = narrow ? 300 : 250;
+  const H = narrow ? 316 : 262;
+  // how many times bigger: on a log axis 675 million looks only twice 15,200
+  const times = fmt(Number((dense / conv).toPrecision(2)));
 
   // the image slab, scaled so 224 fills the space
   const sc = (narrow ? 90 : 120) / 224;
@@ -74,19 +76,20 @@ export function BrickLab() {
             </g>
           ))}
           <text x={bx} y={(narrow ? 70 : 80) + bs + 34} className="dltt-t dltt-t--s">× {filters} filter{filters > 1 ? 's' : ''}</text>
-          <g transform={`translate(${narrow ? W - 64 : W - 110} ${narrow ? 120 : 105})`}>
+          <g transform={`translate(${narrow ? 70 : W - 110} ${narrow ? 180 : 105})`}>
             <Counter x={0} y={0} value={conv} size={narrow ? 26 : 38} label={`${conv} parameters`} />
             <text x={0} y={20} textAnchor="middle" className="dltt-t dltt-t--s">parameters</text>
           </g>
           {/* slide 22's comparison on a log scale */}
           <line x1={logX(1)} y1={ly + 28} x2={logX(1e12)} y2={ly + 28} className="dltt-ax" />
           {[0, 3, 6, 9, 12].map((e) => (
-            <text key={e} x={logX(10 ** e)} y={ly + 42} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--m">{e === 0 ? '1' : `10${['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '¹⁰', '¹¹', '¹²'][e]}`}</text>
+            <text key={e} x={logX(10 ** e)} y={ly + 42} textAnchor={e === 12 ? 'end' : 'middle'} className="dltt-t dltt-t--xs dltt-t--m">{e === 0 ? '1' : `10${['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '¹⁰', '¹¹', '¹²'][e]}`}</text>
           ))}
           <rect x={logX(1)} y={ly - 4} width={logX(conv) - logX(1)} height={10} rx={2} className="dltt-vbar dltt-vbar--w" />
           <text x={logX(conv) + 6} y={ly + 5} className="dltt-t dltt-t--xs dltt-t--m">conv {fmt(conv)}</text>
           <rect x={logX(1)} y={ly + 10} width={logX(dense) - logX(1)} height={10} rx={2} className="dltt-vbar dltt-vbar--nt" />
-          <text x={narrow ? logX(1) : Math.min(logX(dense) + 6, W - 150)} y={narrow ? ly + 58 : ly + 19} className="dltt-t dltt-t--xs dltt-t--m">dense {fmtBig(dense)}</text>
+          <text x={narrow ? logX(1) : Math.min(logX(dense) + 6, W - 150)} y={narrow ? ly + 58 : ly + 19} className="dltt-t dltt-t--xs dltt-t--m">{narrow ? 'lower bar: ' : ''}dense {fmtBig(dense)}</text>
+          <text x={narrow ? logX(1) : logX(1)} y={narrow ? ly + 76 : ly + 58} className="dltt-t dltt-t--s dltt-t--b">{narrow ? `≈ ${times}× the conv layer (log scale)` : `≈ ${times}× the conv layer’s parameters: each tick on this log scale is 1,000×`}</text>
         </svg>
         <svg className="dltt-svg dltt-ctl" viewBox={`0 0 ${W} ${narrow ? 120 : 64}`} role="group" aria-label="Kernel size and number of filters">
           <text x={20} y={16} className="dltt-t dltt-t--s">kernel k × k</text>

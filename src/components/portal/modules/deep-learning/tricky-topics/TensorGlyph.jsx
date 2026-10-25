@@ -53,7 +53,7 @@ export default function TensorGlyph({ x, y, shape, kind, batch, fit = [180, 120]
           axes={{ h: { role: 'h', label: labels ? h : null }, w: { role: 'wd', label: labels ? w : null }, d: { role: 'c', label: labels ? c : null } }}
         />
         {stack && labels && (
-          <text x={x0 + bw + d * 0.62 + 6} y={y0 - ghostN * off - 2} className={`dltt-t dltt-t--xs dltt-t--b dltt-axt--batch${lit === 'batch' ? ' dltt-box3__lab--lit' : ''}`}>× {batch}</text>
+          <text x={x0 + bw + d * 0.62 + 6} y={y0 - ghostN * off - 2} className={`dltt-t dltt-t--s dltt-t--b dltt-axt--batch${lit === 'batch' ? ' dltt-box3__lab--lit' : ''}`}>× {batch}</text>
         )}
       </g>
     );
@@ -79,7 +79,7 @@ export default function TensorGlyph({ x, y, shape, kind, batch, fit = [180, 120]
         <line x1={x0} y1={y0} x2={x0} y2={y0 + bh} className={`dltt-box3__edge${roleUp ? ` dltt-ax--${roleUp}` : ' dltt-glyph__plain'}${lit === roleUp ? ' dltt-box3__edge--lit' : ''}`} />
         {labels && <text x={x0 + bw / 2} y={y0 + bh + 15} textAnchor="middle" className={`dltt-t dltt-t--xs dltt-t--b dltt-t--m${roleAcross ? ` dltt-axt--${roleAcross}` : ''}`}>{across}</text>}
         {labels && <text x={x0 - 6} y={y0 + bh / 2 + 4} textAnchor="end" className={`dltt-t dltt-t--xs dltt-t--b dltt-t--m${roleUp ? ` dltt-axt--${roleUp}` : ''}`}>{up}</text>}
-        {stack && labels && <text x={x0 + bw + 6} y={y0 - ghostN * off + 4} className="dltt-t dltt-t--xs dltt-t--b dltt-axt--batch">× {batch}</text>}
+        {stack && labels && <text x={x0 + bw + 6} y={y0 - ghostN * off + 4} className="dltt-t dltt-t--s dltt-t--b dltt-axt--batch">× {batch}</text>}
       </g>
     );
   }
@@ -96,7 +96,7 @@ export default function TensorGlyph({ x, y, shape, kind, batch, fit = [180, 120]
       <rect x={x0} y={y0} width={len} height={12} rx={3} className={`dltt-glyph__slab${ghost ? ' dltt-glyph__slab--ghost' : ''}`} />
       <line x1={x0} y1={y0 + 12} x2={x0 + len} y2={y0 + 12} className={`dltt-box3__edge dltt-ax--f${lit === 'f' ? ' dltt-box3__edge--lit' : ''}`} />
       {labels && <text x={x0 + len / 2} y={y0 + 27} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b dltt-t--m dltt-axt--f">{n}</text>}
-      {stack && labels && <text x={x0 + len + 6} y={y0 - ghostN * off + 8} className="dltt-t dltt-t--xs dltt-t--b dltt-axt--batch">× {batch}</text>}
+      {stack && labels && <text x={x0 + len + 6} y={y0 - ghostN * off + 8} className="dltt-t dltt-t--s dltt-t--b dltt-axt--batch">× {batch}</text>}
     </g>
   );
 }

@@ -24,7 +24,7 @@ export default function StripView({ x = 0, y = 0, n, k, s, pad = 'valid', width 
   const hatch = `${idPrefix}-hatch`;
   const hit = hot !== null && W.wins[hot] ? new Set(W.wins[hot].cells) : new Set();
   return (
-    <g className="dltt-strip">
+    <g className={`dltt-strip${hot !== null ? ' dltt-strip--hot' : ''}`}>
       <defs>
         <pattern id={hatch} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="6" className="dltt-pad-line" />
@@ -40,10 +40,19 @@ export default function StripView({ x = 0, y = 0, n, k, s, pad = 'valid', width 
           height={outW - 2}
           rx={3}
           className={`dltt-outcell${w.i >= reveal ? ' dltt-outcell--empty' : ''}${hot === w.i ? ' dltt-outcell--hot' : ''}`}
+          tabIndex={onHot && w.i < reveal ? 0 : undefined}
+          role={onHot ? 'button' : undefined}
+          aria-label={onHot ? `Output ${w.i + 1}` : undefined}
           onPointerEnter={onHot ? () => onHot(w.i) : undefined}
           onPointerLeave={onHot ? () => onHot(null) : undefined}
+          onFocus={onHot ? () => onHot(w.i) : undefined}
+          onBlur={onHot ? () => onHot(null) : undefined}
         />
       ))}
+      {/* brackets: each output numbered like its bracket, so no connector lines are needed */}
+      {mode === 'brackets' && W.wins.map((w) => (w.i < reveal ? (
+        <text key={`on${w.i}`} x={outX0 + w.i * outW + outW / 2} y={outY + outW / 2 + 3} textAnchor="middle" className="dltt-t dltt-t--xs dltt-strip__num" aria-hidden="true">{w.i + 1}</text>
+      ) : null))}
       {/* windows: brackets (Figure 14-8 style) or ghost frames with hops */}
       {W.wins.map((w, i) => {
         const a = cx(w.from);
@@ -56,7 +65,9 @@ export default function StripView({ x = 0, y = 0, n, k, s, pad = 'valid', width 
           return (
             <g key={`w${i}`} className={`dltt-bracket${on ? ' dltt-bracket--on' : ''}${shown ? '' : ' dltt-hide'}`} onPointerEnter={onHot ? () => onHot(i) : undefined} onPointerLeave={onHot ? () => onHot(null) : undefined}>
               <path d={`M${a + 2} ${inY - 3} V${by} H${b - 2} V${inY - 3}`} />
-              <path d={`M${(a + b) / 2} ${by} L${ox} ${outY + outW}`} className="dltt-bracket__stem" />
+              <text x={a - 1} y={by + 4} textAnchor="end" className="dltt-t dltt-t--xs dltt-strip__num">{i + 1}</text>
+              {/* the connector to its output only for the window in focus (all of them at once tangle) */}
+              {on && <path d={`M${(a + b) / 2} ${by} L${ox} ${outY + outW}`} className="dltt-bracket__stem" />}
             </g>
           );
         }

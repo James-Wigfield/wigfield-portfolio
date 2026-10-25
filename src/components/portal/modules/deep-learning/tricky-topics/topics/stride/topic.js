@@ -57,12 +57,12 @@ export default {
       gist: '"valid" never pads, so the last inputs can be left out; "same" pads with zeros, but a stride above 1 still shrinks the output.',
       read: [
         { list: [
-          '"valid" stays inside the input: with a kernel of 7 the output “has 6 fewer pixels than the input” at stride 1 {s|L3 · slide 20}.',
-          '"same" pads zeros so stride 1 keeps the size; “If the stride is greater than 1 (in any direction), then the output size will not be equal to the input size, even if padding="same"” {s|L3 · slide 21}.',
+          '"valid" stays inside the input: a kernel of 7 at stride 1 leaves the output with “6 fewer pixels than the input” {s|L3 · slide 20}.',
+          '"same" pads zeros so stride 1 keeps the size, but with a stride above 1 “the output size will not be equal to the input size, even if padding="same"” {s|L3 · slide 21}.',
           'Figure 14-8: 10 inputs, kernel 7, stride 2. "valid": 2 outputs and the 10th input **ignored**. "same": 2 zeros on the left, 3 on the right, **5** outputs {s|L3 · slide 21}.',
           'The extra zero goes on the right: TensorFlow’s rule, which the slide doesn’t state {beyond}.',
         ] },
-        { slideNote: 'Slide 20 says the default "valid" padding “means zero-padding”. It means no padding at all, as slide 28 says (“"valid" padding (i.e., no padding at all)”); "same" is the one that pads zeros.' },
+        { slideNote: 'Slide 20 says the default "valid" padding “means zero-padding”. It means none: slide 28 says “(i.e., no padding at all)”, and "same" is the one that pads.' },
       ],
       play: ['fig148'],
     },

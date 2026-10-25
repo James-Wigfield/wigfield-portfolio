@@ -80,6 +80,7 @@ function HeroFrame({ Hero, caption }) {
 }
 
 const FOLD = 5;
+const FOLD_NARROW = 3; // phones: fewer rows before step 1 (CSS hides rows past this)
 
 function Opener({ topic, labs, domId, actions, printing }) {
   const Hero = labs[topic.hero?.lab];
@@ -100,11 +101,12 @@ function Opener({ topic, labs, domId, actions, printing }) {
         <section className="dltt-strip" aria-label="Where it shows up">
           <h3 className="dltt-strip__k">Where it shows up</h3>
           <ol className="dltt-strip__list">
-            {shows.map((row) => {
+            {shows.map((row, i) => {
               const r = parseReceipt(row.at);
               const L = r ? LECTURES[r.lec] : null;
+              const fold = !allShows && !printing && i >= FOLD_NARROW;
               return (
-                <li key={row.at + row.what} className="dltt-strip__row">
+                <li key={row.at + row.what} className={`dltt-strip__row${fold ? ' dltt-strip__row--fold' : ''}`}>
                   <span className="dltt-strip__at"><Prov kind="slide" text={row.at} /></span>
                   <span className="dltt-strip__what"><Rich text={row.what} /></span>
                   {L && (
@@ -116,8 +118,8 @@ function Opener({ topic, labs, domId, actions, printing }) {
               );
             })}
           </ol>
-          {topic.showsUp.length > FOLD && !printing && (
-            <button type="button" className="dltt-strip__more" aria-expanded={allShows} onClick={() => setAllShows((v) => !v)}>
+          {topic.showsUp.length > FOLD_NARROW && !printing && (
+            <button type="button" className={`dltt-strip__more${topic.showsUp.length > FOLD ? '' : ' dltt-strip__more--narrow'}`} aria-expanded={allShows} onClick={() => setAllShows((v) => !v)}>
               {allShows ? 'show fewer' : `show all ${topic.showsUp.length}`}
             </button>
           )}

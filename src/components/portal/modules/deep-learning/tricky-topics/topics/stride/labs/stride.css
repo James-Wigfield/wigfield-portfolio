@@ -22,3 +22,12 @@
 @media (prefers-reduced-motion: reduce) {
   .dltt-bracket path, .dltt-upbox { transition: none !important; }
 }
+
+/* StripView brackets: numbers pair each bracket with its output; the window in focus stands out */
+.dltt-strip__num { fill: var(--ink-2); font-size: 10px; pointer-events: none; }
+.dltt-strip--hot .dltt-bracket:not(.dltt-bracket--on) path { opacity: 0.22; }
+.dltt-strip--hot .dltt-bracket:not(.dltt-bracket--on) .dltt-strip__num { opacity: 0.35; }
+
+/* UpsampleLab: stride-2 sizes as faint outlines at strides=1; a kernel stamp in the 1D row */
+.dltt-upbox--ghost { fill: none; stroke: var(--dltt-data); stroke-width: 1; opacity: 0.28; }
+.dltt-stamp { fill: color-mix(in srgb, var(--dltt-w) 70%, transparent); } /* the kernel carries the weights */

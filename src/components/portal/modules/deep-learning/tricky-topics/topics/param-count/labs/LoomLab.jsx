@@ -36,7 +36,7 @@ export function LoomLab() {
     <Stage
       title="Every line is a weight, every bead a bias"
       prov="{s|L1 · slide 8} {s|L1 · slide 36}"
-      tryThis="Predict the count for 5 inputs and 2 neurons, then drag the sizes. Hover a line: the same weight lights up in the grid."
+      tryThis="Predict the count for 5 inputs and 2 neurons, then drag the sizes. Hover a line, or tab through the grid: the same weight lights up in both."
       caption="Keras stores the lines as one $n_{\text{in}} \times n_{\text{out}}$ grid and the beads as one row of $n_{\text{out}}$ biases (slide 36 prints `(784, 300)` and `(300,)`)."
       challenge={{ text: 'Make exactly 20 parameters.', done: trainable === 20 }}
       maths={
@@ -66,7 +66,7 @@ export function LoomLab() {
           )}
           {Array.from({ length: a }, (_, i) => <Neuron key={`i${i}`} x={net.xi} y={yi(i)} r={11} />)}
           {Array.from({ length: b }, (_, j) => (
-            <g key={`o${j}`} onPointerEnter={() => setHot({ b: j })} onPointerLeave={() => setHot(null)}>
+            <g key={`o${j}`} tabIndex={0} role="button" aria-label={`Neuron ${j + 1} and its bias`} onPointerEnter={() => setHot({ b: j })} onPointerLeave={() => setHot(null)} onFocus={() => setHot({ b: j })} onBlur={() => setHot(null)}>
               <Neuron x={net.xo} y={yo(j)} r={13} role="w" />
               <Bead x={net.xo + 11} y={yo(j) - 11} r={hot?.b === j ? 6.5 : 4.5} />
             </g>
@@ -86,8 +86,13 @@ export function LoomLab() {
                 height={cell - 3}
                 rx={3}
                 className={`dltt-wcell${isHot(i, j) ? ' dltt-wcell--hot' : ''}`}
+                tabIndex={0}
+                role="button"
+                aria-label={`Weight from input ${i + 1} to neuron ${j + 1}`}
                 onPointerEnter={() => setHot({ i, j })}
                 onPointerLeave={() => setHot(null)}
+                onFocus={() => setHot({ i, j })}
+                onBlur={() => setHot(null)}
               />
             )),
           )}

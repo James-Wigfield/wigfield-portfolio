@@ -51,7 +51,7 @@
   --dltt-w: #8fa8ff;
   --dltt-b: #d9cc5c;
   --dltt-data: #b4c2cf;
-  --dltt-batch: #d2a679;
+  --dltt-batch: #c9b8a0; /* stone: kept clear of the height orange */
   --dltt-h: #ff9f5a;
   --dltt-wd: #ff74ad;
   --dltt-c: #4fd4e3;
@@ -388,7 +388,7 @@
 .dltt-neuron--w circle { stroke: var(--dltt-w); }
 .dltt-neuron--off { opacity: 0.25; }
 .dltt-bead { fill: var(--dltt-b); stroke: var(--dltt-floor); stroke-width: 1.2; transition: opacity 0.35s; }
-.dltt-bead--off { opacity: 0.15; }
+.dltt-bead--off { fill: none; stroke: var(--dltt-b); stroke-width: 1.3; opacity: 0.8; } /* a bias not counted yet: hollow, still olive (grey would read as non-trainable) */
 .dltt-link-w { stroke: var(--dltt-w); stroke-width: 1.1; opacity: 0.5; transition: opacity 0.3s; }
 .dltt-link-w--hot { opacity: 1; stroke-width: 2; }
 .dltt-counter { font-family: var(--font-mono, ui-monospace, monospace); font-weight: 800; font-variant-numeric: tabular-nums; fill: var(--ink) !important; }
@@ -460,3 +460,6 @@
 /* a layer / cell box, and a dashed "tied to" line */
 .dltt-cell { fill: var(--dltt-floor); stroke: var(--dltt-data); stroke-width: 1.6; }
 .dltt-tie { fill: none; stroke: var(--dltt-w); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: 0.7; }
+
+/* arcade: rails and the darker segment shade need more lift on the dark floor */
+.portal[data-portal-theme='arcade'] .dltt-scrub__track { stroke: rgba(200, 210, 228, 0.28); }

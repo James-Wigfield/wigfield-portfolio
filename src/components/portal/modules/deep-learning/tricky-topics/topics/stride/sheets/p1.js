@@ -5,7 +5,7 @@ export default {
       id: 'what',
       h: 'Stride = how far the window jumps',
       at: 'L3 · 9, 14',
-      items: ['The distance between neighbouring receptive fields: output $i$ reads inputs $i\\,s$ to $i\\,s + f - 1$.'],
+      items: ['The distance between neighbouring receptive fields:', { formula: '\\text{output } i \\text{ reads inputs } i\\,s \\text{ to } i\\,s + f - 1', read: 'window size $f$' }],
     },
     {
       id: 'rules',

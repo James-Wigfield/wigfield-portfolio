@@ -147,7 +147,7 @@ export default {
         { eq: { name: 'Conv2D', tex: '(k_h \\times k_w \\times c_{\\text{in}} + 1) \\times \\text{filters}', read: 'one brick of weights plus one bias, for every filter', prov: '{s|L3 · slide 22}' } },
         { list: [
           'Kernels are `[kernel_height, kernel_width, input_channels, output_channels]`, biases `[output_channels]` {s|L3 · slide 19}. `Conv2D(32, 7)` on RGB: `(7, 7, 3, 32)` and `(32,)`, so $7 \\times 7 \\times 3 \\times 32 + 32 = 4{,}736$ {own}.',
-          '200 filters of 5 × 5 on a 150 × 100 RGB image: $(5 \\times 5 \\times 3 + 1) \\times 200 = 15{,}200$. A dense layer would need 675 million {s|L3 · slide 22}.',
+          '200 filters of 5 × 5 on a 150 × 100 RGB image: $(5 \\times 5 \\times 3 + 1) \\times 200 = 15{,}200$. A dense layer would need 675 million, about 44,000 times as many {s|L3 · slide 22}.',
           'No image size in the formula: one filter is reused at every position {s|L3 · slide 8}. No stride either ([stride](@stride)).',
           '`Conv1D`: $(k \\times c_{\\text{in}} + 1) \\times \\text{filters}$. `Conv2DTranspose` counts like Conv2D: $(3 \\times 3 \\times 16 + 1) \\times 32 = 4{,}640$ {s|L6–7 · slide 6}.',
         ] },
@@ -183,7 +183,7 @@ export default {
         { eq: { name: 'SimpleRNN', tex: '\\text{units} \\times (\\text{units} + n_{\\text{in}}) + \\text{units}', read: 'W_x is n_in × units, W_h is units × units, b has one per unit', prov: '{s|L4 · slide 9} {own}' } },
         { list: [
           'Slide 9’s shapes: $\\mathbf{W}_x$ is $n_{\\text{inputs}} \\times n_{\\text{neurons}}$, $\\mathbf{W}_h$ is $n_{\\text{neurons}} \\times n_{\\text{neurons}}$ {s|L4 · slide 9}.',
-          '`SimpleRNN(1)` on one feature: $1 \\times (1 + 1) + 1 = 3$ {s|L4 · slide 25}. `SimpleRNN(32)`: 1,088 {s|L4 · slide 27}; on 32 inputs: 2,080 {s|L4 · slide 29}.',
+          '`SimpleRNN(1)` on one feature: $1 \\times (1 + 1) + 1 = 3$; `SimpleRNN(32)`: 1,088; stacked on 32 inputs: 2,080 {s|L4 · slides 25, 27, 29}.',
           '56 time steps or a hundred times as many: the same three blocks, the same count.',
           'The output `Dense(1)` is its own layer: $(32 + 1) \\times 1 = 33$ {s|L4 · slide 27}.',
         ] },

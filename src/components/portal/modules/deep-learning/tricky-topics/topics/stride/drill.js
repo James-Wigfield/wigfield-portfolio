@@ -55,7 +55,7 @@ function size(seed, r) {
     id: `z${seed}`,
     prov: '{own}',
     prompt: `${what} with \`kernel_size=${k}, strides=${s}, padding="${pad}"\`. What is the output ${layer === 'conv1d' ? 'length' : 'height (and width)'}?`,
-    fields: [{ key: 'o', label: 'output size', type: 'number', answer: out }],
+    fields: [{ key: 'o', label: 'output size', type: 'number', answer: out, placeholder: 'size' }],
     working: sizeWorking(n, k, s, pad),
     strip: { n: Math.min(n, 20), k, s, pad, full: n <= 20 },
     verify: { kind: 'size', layer, n, k, s, pad, out },
@@ -90,7 +90,7 @@ function cnn(seed, r) {
     show: { code: codeFor(model) },
     model,
     fieldHead: 'Layer',
-    fields: rows.map((row) => ({ key: `l${row.i}`, label: `\`${layerName(row.L)}\``, type: 'number', answer: row.out[0] })),
+    fields: rows.map((row) => ({ key: `l${row.i}`, label: `\`${layerName(row.L)}\``, type: 'number', answer: row.out[0], placeholder: 'height' })),
     working: rows.map((row) => {
       const n = row.ins[0][0];
       if (row.L.t === 'maxpool2d') return `\`MaxPool2D()\`: pool 2, stride 2 (the default): $\\lfloor (${n} - 2) / 2 \\rfloor + 1 = ${row.out[0]}$ {s|L3 · slide 28} {beyond}`;
@@ -107,8 +107,8 @@ function pool(seed, r) {
     prov: '{own}',
     prompt: `\`MaxPool2D()\` is applied to a ${n} × ${n} × 64 feature map. What shape comes out (height, width, channels)?`,
     fields: [
-      { key: 'h', label: 'height = width', type: 'number', answer: out },
-      { key: 'c', label: 'channels', type: 'number', answer: 64 },
+      { key: 'h', label: 'height = width', type: 'number', answer: out, placeholder: 'height' },
+      { key: 'c', label: 'channels', type: 'number', answer: 64, placeholder: 'channels' },
     ],
     working: [
       `The pool size defaults to 2 and the stride to the pool size {s|L3 · slide 28}: $\\lfloor (${n} - 2) / 2 \\rfloor + 1 = ${out}$; the last row and column are dropped {beyond}.`,
@@ -156,7 +156,7 @@ function fixedSize(id, at, prompt, n, k, s, pad, extra = [], layer = 'conv1d', p
     title: `From the unit · ${at}`,
     prov: prov ?? `{s|${at}}`,
     prompt,
-    fields: [{ key: 'o', label: 'output size', type: 'number', answer: out }],
+    fields: [{ key: 'o', label: 'output size', type: 'number', answer: out, placeholder: 'size' }],
     working: [...sizeWorking(n, k, s, pad), ...extra],
     strip: { n: Math.min(n, 20), k, s, pad, full: n <= 20 },
     verify: { kind: 'size', layer, n, k, s, pad, out },

@@ -38,8 +38,9 @@ export function Grid2dLab() {
   const oy = narrow ? gy + totR * cell + 60 : gy + cell;
   const W = narrow ? 340 : 720;
   const H = narrow ? oy + rows.out * cell + 40 : gy + totR * cell + 50;
-  const r = Math.min(hot.r, rows.out - 1);
-  const c = Math.min(hot.c, cols.out - 1);
+  // print: the second window down and across, so both jumps show
+  const r = Math.min(printing ? 1 : hot.r, rows.out - 1);
+  const c = Math.min(printing ? 1 : hot.c, cols.out - 1);
   const fr = rows.wins[r];
   const fc = cols.wins[c];
   const inWin = (i, j) => fr && fc && i >= fr.from && i <= fr.to && j >= fc.from && j <= fc.to;
@@ -47,7 +48,7 @@ export function Grid2dLab() {
     <Stage
       title="In 2D the window jumps down and across"
       prov={s1 === 2 && s2 === 2 && pad === 'same' ? '{s|L3 · slide 9}' : '{s|L3 · slide 9} {own}'}
-      tryThis="Hover the output cells one by one: watch the 3 × 3 window jump. Then change one stride only."
+      tryThis="Hover (or tab to) the output cells one by one: watch the 3 × 3 window jump. Then change one stride only."
       caption={`Rows: ${H_IN} → ${rows.out} with stride ${s1}; columns: ${W_IN} → ${cols.out} with stride ${s2}. Each direction shrinks on its own.`}
       maths={
         <>
@@ -86,6 +87,19 @@ export function Grid2dLab() {
           {fr && fc && (
             <rect x={gx + (fc.from + cols.padLeft) * cell} y={gy + (fr.from + rows.padLeft) * cell} width={F * cell} height={F * cell} rx={4} className="dltt-win" />
           )}
+          {/* the jump that brought the window here: across from the previous column, down from the previous row */}
+          {fr && fc && c > 0 && (() => {
+            const px = gx + (cols.wins[c - 1].from + cols.padLeft) * cell + cell / 2;
+            const cx = gx + (fc.from + cols.padLeft) * cell + cell / 2;
+            const y0 = gy + (fr.from + rows.padLeft) * cell - 2;
+            return <path d={`M${px} ${y0} Q ${(px + cx) / 2} ${y0 - 14} ${cx} ${y0}`} className="dltt-hop" />;
+          })()}
+          {fr && fc && r > 0 && (() => {
+            const py = gy + (rows.wins[r - 1].from + rows.padLeft) * cell + cell / 2;
+            const cy = gy + (fr.from + rows.padLeft) * cell + cell / 2;
+            const x0 = gx + (fc.from + cols.padLeft) * cell - 2;
+            return <path d={`M${x0} ${py} Q ${x0 - 14} ${(py + cy) / 2} ${x0} ${cy}`} className="dltt-hop" />;
+          })()}
           <text x={gx - 8} y={gy + (totR * cell) / 2} textAnchor="end" className="dltt-t dltt-t--xs dltt-axt--h">s<tspan dy={3} fontSize={8}>h</tspan><tspan dy={-3}>={s1}</tspan></text>
           <text x={gx + (totC * cell) / 2} y={gy + totR * cell + 16} textAnchor="middle" className="dltt-t dltt-t--xs dltt-axt--wd">s<tspan dy={3} fontSize={8}>w</tspan><tspan dy={-3}>={s2}</tspan></text>
           <text x={ox} y={oy - 10} className="dltt-t dltt-t--xs">output {rows.out} × {cols.out}</text>

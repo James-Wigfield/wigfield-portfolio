@@ -176,7 +176,10 @@ export function Scrub({ x0, x1, y, value, min, max, step, big, onChange, label, 
       ))}
       <g style={{ transform: `translateX(${toX(value)}px)` }} className="dltt-scrub__knob">
         <circle cx={0} cy={y} r={9} />
-        <text x={0} y={y - 15} textAnchor="middle" className="dltt-t dltt-t--b dltt-t--m">{show(value)}</text>
+        {/* near the left end the value would sit on the slider's own label: move it beside the knob */}
+        {toX(value) - x0 < 64
+          ? <text x={14} y={y - 6} textAnchor="start" className="dltt-t dltt-t--b dltt-t--m">{show(value)}</text>
+          : <text x={0} y={y - 15} textAnchor="middle" className="dltt-t dltt-t--b dltt-t--m">{show(value)}</text>}
       </g>
     </g>
   );

@@ -33,7 +33,7 @@ export function SlideLab() {
     <Stage
       title="The window jumps s inputs at a time"
       prov="{s|L3 · slides 9, 14} {own}"
-      tryThis="Predict how many outputs stride 3 gives, then drag the stride. Hover a window to see which inputs it reads."
+      tryThis="Predict how many outputs stride 3 gives, then drag the stride. Hover a window, or tab through the outputs, to see which inputs each reads."
       caption={`Stride ${s}: the window starts ${s} input${s > 1 ? 's' : ''} further along each time, so ${res.out} positions give ${res.out} outputs${res.ignored.length ? `, and ${res.ignored.length} input${res.ignored.length > 1 ? 's are' : ' is'} never read` : ''}.`}
       challenge={{ text: 'Keep the kernel at 3 and find a stride that reads every input.', done: k === 3 && res.ignored.length === 0 }}
       maths={
