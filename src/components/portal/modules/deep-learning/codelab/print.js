@@ -94,22 +94,57 @@ export const PRINT_CSS = `
   ${P} .dlc-sec__head { break-after: avoid; padding-top: 0; }
   ${P} .dlc-list { display: block; }
   ${P} .dlc-card, ${P} .dlc-lp { animation: none; }
-  /* a card on paper: code full width, then the legend beside the diagram,
-     then the count table */
-  ${P} .dlc-card { display: block; break-inside: avoid; margin: 0 0 3mm; padding: 2.5mm 0 3mm; }
-  ${P} .dlc-card > * + * { margin-top: 1.6mm; }
-  ${P} .dlc-card__why { font-size: 0.8rem; max-width: none; }
-  ${P} .dlc-card__body, ${P} .dlc-card__body--draw { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'code code' 'side draw'; grid-template-rows: auto auto; gap: 2mm 6mm; }
-  ${P} .dlc-card__body:not(.dlc-card__body--draw) { grid-template-areas: 'code code' 'side side'; }
-  ${P} .dlc-card__side { gap: 1.6mm; }
-  ${P} .dlc-dg__svg { width: 54mm; height: auto; }
-  ${P} .dlc-legend li, ${P} .dlc-card__for, ${P} .dlc-card__move { font-size: 0.74rem; line-height: 1.42; }
-  ${P} .dlc-legend { gap: 0.8mm; }
-  ${P} .dlc-shapes { font-size: 0.72rem; }
-  ${P} .dlc-count { font-size: 0.64rem; max-width: none; }
-  ${P} .dlc-check, ${P} .dlc-xref { font-size: 0.7rem; }
+  /* a card on paper, about half a page: the code panel beside its legend,
+     the equations full width, then the count table beside the diagram */
+  ${P} .dlc-card { display: block; break-inside: avoid; margin: 0; padding: 1.8mm 0 2mm; }
+  ${P} .dlc-card > * + * { margin-top: 1mm; }
+  ${P} .dlc-card__head { gap: 0.6mm 2.5mm; }
+  ${P} .dlc-card__title { font-size: 0.86rem; }
+  ${P} .dlc-card__why { font-size: 0.7rem; line-height: 1.35; max-width: none; }
+  ${P} .dlc-card__body { grid-template-columns: minmax(0, 1fr) 66mm; column-gap: 4mm; row-gap: 1.6mm; }
+  ${P} .dlc-card__colA .dlc-move--draw, ${P} .dlc-card__colB .dlc-move--draw { display: none; }
+  ${P} .dlc-move--pdraw { display: flex; grid-column: 1 / -1; }
+  ${P} .dlc-dg--across .dlc-dg__svg { max-width: 100%; height: auto; }
+  /* Shapes in the narrow column: name and shape on a line, meaning below */
+  ${P} .dlc-card__colB .dlc-shapes, ${P} .dlc-card__colB .dlc-shapes tbody { display: block; }
+  ${P} .dlc-card__colB .dlc-shapes tr { display: block; padding: 0.3mm 0; border-bottom: 1px solid var(--line-2); }
+  ${P} .dlc-card__colB .dlc-shapes th, ${P} .dlc-card__colB .dlc-shapes td { display: inline; padding: 0 1.5mm 0 0; border: none; }
+  ${P} .dlc-card__colB .dlc-shapes td:last-child { display: block; padding: 0; }
+  ${P} .dlc-card__colA, ${P} .dlc-card__colB { gap: 1.3mm; }
+  ${P} .dlc-card__side { gap: 1mm; margin: 0; }
+  ${P} .dlc-move { gap: 0.8mm; }
+  ${P} .dlc-move__k { font-size: 0.52rem; padding-bottom: 0.3mm; }
+  ${P} .dlc-legend { gap: 0.5mm; }
+  ${P} .dlc-legend li, ${P} .dlc-card__for, ${P} .dlc-card__move { font-size: 0.64rem; line-height: 1.3; }
+  ${P} .dlc-legend li { padding-left: 1.2rem; text-indent: -1.2rem; }
+  ${P} .dlc-legend__n { width: 1.2rem; }
+  ${P} .dlc .dlc-legend__q { font-size: 0.58rem; padding: 0 0.15em; }
+  ${P} .dlc-legend__where { font-size: 0.56rem; }
+  ${P} .dlc-shapes { font-size: 0.6rem; line-height: 1.25; }
+  ${P} .dlc-shapes th, ${P} .dlc-shapes td { padding: 0.2mm 2mm 0.2mm 0; }
+  ${P} .dlc-count { font-size: 0.56rem; line-height: 1.12; max-width: none; }
+  ${P} .dlc-count th, ${P} .dlc-count td { padding: 0.1mm 1.8mm 0.1mm 0; }
+  ${P} .dlc-count th { font-size: 0.5rem; }
+  ${P} .dlc-count__rule { font-size: 0.54rem; }
+  ${P} .dlc-count td.dlc-mono { font-size: 0.54rem; }
+  ${P} .dlc-count + .dlc-count { margin-top: 1.5mm; }
+  ${P} .dlc-eqs { gap: 1mm; }
+  ${P} .dlc-eq { padding-left: 2mm; }
+  ${P} .dlc-eq .dlk-tex-block { padding: 0; font-size: 0.9em; }
+  ${P} .dlc-eq__plain, ${P} .dlc-eq__code { font-size: 0.62rem; line-height: 1.3; }
+  ${P} .dlc-card__foot { padding-top: 1mm; margin-top: 1.2mm; }
+  ${P} .dlc-card__pcheck { display: block; border-top: 1px dashed var(--line-2); padding-top: 0.8mm; }
+  ${P} .dlc-card__scheck, ${P} .dlc-card__foot--pempty { display: none; }
+  ${P} .dlc-check, ${P} .dlc-xref { font-size: 0.58rem; line-height: 1.28; }
+  ${P} .dlc-xref { display: none; }
+  ${P} .dlc-sec__head { padding-bottom: 1.5mm; }
+  ${P} .dlc-sec__title { font-size: 1.15rem; }
   ${P} .dlc-lp__head { break-after: avoid; }
-  ${P} .dlc-lp { display: block; margin: 0 0 5mm; }
+  ${P} .dlc-lp { display: block; margin: 0; padding: 2.5mm 0 0; }
+  ${P} .dlc-lp__title { font-size: 1rem; }
+  ${P} .dlc-lp__facts { margin: 1mm 0 0; gap: 0.3mm 2.5mm; font-size: 0.64rem; line-height: 1.3; grid-template-columns: 12mm minmax(0, 1fr) 12mm minmax(0, 1fr); }
+  ${P} .dlc-lp__facts dt { font-size: 0.56rem; padding-top: 0.6mm; }
+  ${P} .dlc-lp__q { font-size: 0.62rem; }
 
   /* the code panel: the image, with the code as real text under it */
   ${P} .dlc-codewrap--img .dlc-code { display: none !important; }

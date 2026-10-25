@@ -12,21 +12,21 @@ import { DARK } from './tokens.js';
    the code sits under the image (CodePanel.jsx), so the PDF's text layer
    still holds every line.
 
-   Long lines: the font is the largest from 11 px (8.25 pt) down to 10 px
+   Long lines: the font is the largest from 10.5 px (7.9 pt) down to 10 px
    (7.5 pt) at which the panel's longest line fits; a line that still won't
    fit wraps with a hanging indent and no new line number, so the numbers
    match the screen.
    ========================================================================== */
 
-export const PRINT_PANEL_PX = 703; // the panel's width on A4: 186 mm of content
+export const PRINT_PANEL_PX = 438; // the panel's width on A4: 186 mm − the 66 mm legend column − the gap
 const SCALE = 3;
-const MAX_FONT = 11;
+const MAX_FONT = 10.5;
 const MIN_FONT = 10;
-const BADGE_CH = 1.4; // a circled number takes 1.4 character cells
+const BADGE_CH = 2.2; // a circled number takes 2.2 character cells
 
-// gutter = [0.6ch pad][1.6ch mark][2.6ch number][1.1ch gap]
+// gutter = [0.6ch pad][2.4ch mark][2.6ch number][1.1ch gap]
 const G_PAD = 0.6;
-const G_MARK = 1.6;
+const G_MARK = 2.4;
 const G_NO = 2.6;
 const G_GAP = 1.1;
 const GUTTER = G_PAD + G_MARK + G_NO + G_GAP;
@@ -83,7 +83,7 @@ export function layoutPanel(code, marks, cw1, width = PRINT_PANEL_PX) {
 
 // an outlined circle with the mark's number in it (as .dlc-num-o on screen)
 function circled(ctx, n, cx, cy, font, family, colour) {
-  const r = font * 0.62;
+  const r = font * 0.56;
   ctx.strokeStyle = colour;
   ctx.lineWidth = 1.3;
   ctx.beginPath();
@@ -102,9 +102,9 @@ export function panelImage({ code, marks, file, meta, family }) {
   probe.font = `100px ${family}`;
   const cw1 = probe.measureText('0').width / 100;
   const { font, cw, visual, wrapped } = layoutPanel(code, marks, cw1);
-  const lh = Math.round(font * 1.5);
-  const bar = 30;
-  const padY = 10;
+  const lh = Math.round(font * 1.3 * 10) / 10;
+  const bar = 21;
+  const padY = 5;
   const W = PRINT_PANEL_PX;
   const H = bar + padY * 2 + visual.length * lh;
 
@@ -123,15 +123,15 @@ export function panelImage({ code, marks, file, meta, family }) {
   DARK.dots.forEach((c, i) => {
     ctx.fillStyle = c;
     ctx.beginPath();
-    ctx.arc(14 + i * 14, bar / 2, 4.5, 0, Math.PI * 2);
+    ctx.arc(12 + i * 12, bar / 2, 4, 0, Math.PI * 2);
     ctx.fill();
   });
-  ctx.font = `11.5px ${family}`;
+  ctx.font = `10.5px ${family}`;
   ctx.fillStyle = DARK.file;
-  ctx.fillText(file, 62, bar / 2);
-  const fileEnd = 62 + ctx.measureText(file).width + 18;
+  ctx.fillText(file, 52, bar / 2);
+  const fileEnd = 52 + ctx.measureText(file).width + 14;
   if (meta) {
-    ctx.font = `bold 11px ${family}`;
+    ctx.font = `bold 10px ${family}`;
     let m = meta;
     while (m.length > 4 && ctx.measureText(m).width > W - fileEnd - 12) m = `${m.slice(0, -2)}…`;
     ctx.fillStyle = DARK.file;
@@ -179,7 +179,7 @@ export function panelImage({ code, marks, file, meta, family }) {
       }
       x += w;
       if (seg.badge) {
-        circled(ctx, seg.badge, x + (0.15 + BADGE_CH / 2) * cw, mid, font, family, DARK.markTok);
+        circled(ctx, seg.badge, x + (BADGE_CH / 2) * cw, mid, font, family, DARK.markTok);
         x += BADGE_CH * cw;
       }
     });

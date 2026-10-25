@@ -50,6 +50,7 @@ const imp = (f) => import(pathToFileURL(path.join(MOD, f)).href);
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: 'new', args: ['--hide-scrollbars'] });
 const msgs = [];
 let file;
+let pieces = [];
 try {
   const page = await browser.newPage();
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warn') msgs.push(`${m.type()}: ${m.text()}`); });
@@ -69,8 +70,12 @@ try {
     cls: document.documentElement.className,
     panels: document.querySelectorAll('.dlc-codewrap').length,
     imgs: document.querySelectorAll('.dlc-pimg__img').length,
+    // each panel's text layer, line by line as the image wraps it
+    pieces: [...document.querySelectorAll('.dlc-card')].map((c) => ({ id: c.dataset.card, lines: [...c.querySelectorAll('.dlc-pimg__text > div')].map((d) => d.textContent) })),
     secs: document.querySelectorAll('.dlc-sec').length,
   }));
+  pieces = state.pieces;
+  delete state.pieces;
   console.log(`print() called · ${JSON.stringify(state)}`);
   await page.emulateMediaType('print');
   await new Promise((r) => setTimeout(r, 600));
@@ -93,6 +98,10 @@ if (file && fs.existsSync(file)) {
   const txtFile = path.join(OUT, 'codelab.txt');
   execFileSync('pdftotext', ['-enc', 'UTF-8', file, txtFile]);
   const raw = fs.readFileSync(txtFile, 'utf8');
+  // the layout text keeps each physical line whole, so a code line sitting
+  // beside the legend column isn't interleaved with it
+  execFileSync('pdftotext', ['-enc', 'UTF-8', '-layout', file, path.join(OUT, 'codelab-layout.txt')]);
+  const rawLayout = fs.readFileSync(path.join(OUT, 'codelab-layout.txt'), 'utf8');
   const text = raw.replace(/\s+/g, ' ');
   const info = execFileSync('pdfinfo', [file]).toString();
   const pages = Number(/Pages:\s+(\d+)/.exec(info)?.[1] ?? 0);
@@ -125,16 +134,26 @@ if (file && fs.existsSync(file)) {
   const named = [...new Set([NLM_PROMPT, ...NLM_PARTS.map((p) => p.text)].flatMap((p) => [...p.matchAll(/Card \d+\.\d+ · [^;.:]+?(?=[;.:])/g)].map((m) => m[0])))];
   const notIn = named.filter((n) => !text.includes(norm(n)));
   ok(!notIn.length, 'every card the NotebookLM prompts name is in the PDF verbatim', notIn.length ? notIn.join(' | ') : `${named.length} names`);
-  // every code line (whitespace-normalised) is in the text layer
-  // (whitespace ignored: pdftotext drops or adds spaces in monospace runs)
-  const flatRaw = raw.replace(/\s+/g, '');
+  // every code line is in the text layer: each panel's text layer holds the
+  // lines as the image wraps them, and those pieces must rebuild the card's
+  // code and appear in pdftotext's output (whitespace ignored: pdftotext
+  // drops or adds spaces in monospace runs)
+  const flatRaw = rawLayout.replace(/\s+/g, '');
   const lost = [];
-  CARDS.forEach((c) => c.code.split('\n').forEach((ln) => {
-    const t = ln.replace(/\s+/g, '');
-    if (t && !flatRaw.includes(t)) lost.push(`${c.id}: ${ln.trim()}`);
-  }));
+  CARDS.forEach((c) => {
+    const p = pieces.find((x) => x.id === c.id);
+    if (!p || !p.lines.length) { lost.push(`${c.id}: no text layer`); return; }
+    if (p.lines.join('').replace(/\s+/g, '') !== c.code.replace(/\s+/g, '')) lost.push(`${c.id}: text layer differs from the code`);
+    p.lines.forEach((ln) => {
+      const t = ln.replace(/\s+/g, '');
+      if (t && !flatRaw.includes(t)) lost.push(`${c.id}: ${ln.trim()}`);
+    });
+  });
   ok(!lost.length, 'every code line is in the PDF text', lost.length ? `${lost.length} lost, e.g. ${lost.slice(0, 2).join(' | ')}` : `${CARDS.reduce((s, c) => s + c.code.split('\n').length, 0)} lines`);
-  const ui = ['Search every tab', 'Core only', 'copy', 'NotebookLM video prompt', 'Export PDF'].filter((u) => new RegExp(`\\b${u}\\b`).test(text));
+  // UI strings (the copy button is a line of its own; "copy" inside code is fine)
+  const lines = raw.split(/\r?\n/).map((l) => l.trim());
+  const ui = ['Search every tab', 'Core only', 'NotebookLM video prompt', 'Export PDF'].filter((u) => text.includes(u));
+  if (lines.some((l) => l === 'copy' || l === '✓ copied')) ui.push('copy button');
   ok(!ui.length, 'no UI text in the PDF', ui.join(', '));
 
   // one image per panel

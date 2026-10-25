@@ -3,7 +3,6 @@ import { LABS } from './labs.js';
 import { KERAS } from './keras.js';
 import { TRAINING } from './training.js';
 import { OPTIM } from './optim.js';
-import { TRANSFER } from './transfer.js';
 import { CNN } from './cnn.js';
 import { RNN } from './rnn.js';
 import { AE } from './ae.js';
@@ -15,7 +14,7 @@ import { RL } from './rl.js';
    CODE LAB — THE CARDS
    ----------------------------------------------------------------------------
    One data file per tab; this file joins them in tab order and gives every
-   card its printed label from that order ("Card 7.2" = tab 7, 2nd card), so
+   card its printed label from that order ("Card 6.2" = tab 6, 2nd card), so
    no label is typed by hand. A card = code → understanding:
 
    {
@@ -47,7 +46,6 @@ const BY_SECTION = {
   keras: KERAS,
   training: TRAINING,
   optim: OPTIM,
-  transfer: TRANSFER,
   cnn: CNN,
   rnn: RNN,
   ae: AE,

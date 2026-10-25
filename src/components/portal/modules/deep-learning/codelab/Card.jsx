@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Tex } from '../kit';
 import CodePanel from './CodePanel';
-import { Diagram } from './diagrams';
+import { Diagram, DiagramAcross } from './diagrams';
+import { layoutDiagram, SCREEN } from './diagramLayout';
 import { SPECS } from './specs';
 import { flow, shapeStr, fmt } from './counts';
 import { markQuote, markWhere, codeLines } from './panelModel';
@@ -86,7 +87,7 @@ function CountTable({ spec }) {
           <td colSpan={2}>Total</td>
           <td className="dlc-num">{fmt(f.tr)}</td>
           {hasNt && <td className="dlc-num">{fmt(f.nt)}</td>}
-          <td className="dlc-count__rule">{hasNt ? `${fmt(f.tr + f.nt)} parameters in all` : 'all trainable'}</td>
+          <td className="dlc-count__rule">{hasNt ? `${fmt(f.tr + f.nt)} in all` : 'all trainable'}</td>
         </tr>
       </tfoot>
     </table>
@@ -138,10 +139,37 @@ function Move({ k, kind, children }) {
   );
 }
 
+// the check's label follows where the code came from
+const CHECK = { verbatim: 'Slide check', trimmed: 'Slide check', notebook: 'Notebook check', geron: 'Notebook check', reconstructed: 'Sheet check' };
+// a screen diagram wider than this (px) goes under the code, not beside it
+const WIDE_SCREEN = 300;
+
+// Rough heights of the two stacks, in text lines, to put the Shapes table
+// under the shorter one (the code column is wider, so it rarely is).
+function stackEstimate(card, countSpecs) {
+  const m = card.moves || {};
+  const lines = codeLines(card.code);
+  const a = lines.length + lines.filter((l) => l.length > 68).length + 2
+    + (m.eq ? m.eq.length * 4 : 0) + countSpecs.reduce((s, sp) => s + sp.layers.length + (sp.inputs || []).length + 3, 0);
+  const prose = (t) => Math.ceil((t || '').length / 52);
+  const b = card.marks.reduce((s, mk) => s + prose(`${markQuote(card.code, mk)} ${mk.say}`) + 0.4, 0) + prose(m.say) + prose(m.forWhat) + 1;
+  const shapes = m.shapes ? m.shapes.reduce((s, x) => s + 1 + Math.ceil(`${x.name} ${x.shape} ${x.means}`.length / 60), 1) : 0;
+  return { a, b, shapes };
+}
+
 export function Card({ card, terms, image, onJump, tabName }) {
   const m = card.moves || {};
   const drawSpec = m.draw ? SPECS[m.draw] : null;
-  const countSpec = m.count ? SPECS[m.count] : null;
+  const countSpecs = (Array.isArray(m.count) ? m.count : m.count ? [m.count] : []).map((id) => SPECS[id]);
+  const wide = drawSpec && layoutDiagram(drawSpec, SCREEN).width > WIDE_SCREEN;
+  const draw = drawSpec && <Move k="Draw it" kind="draw"><Diagram spec={drawSpec} /></Move>;
+  const est = stackEstimate(card, countSpecs);
+  const shapesInB = est.a > est.b + est.shapes / 2;
+  // on paper the check goes under the legend when that column has room
+  const checkLines = Math.ceil((card.slideCheck || '').length / 52) + 1;
+  const checkInB = !!card.slideCheck && est.a >= est.b + (shapesInB ? est.shapes : 0) + checkLines - 1;
+  const check = card.slideCheck && <p className="dlc-check"><span className="dlc-eq__k">{CHECK[card.provenance] || 'Slide check'}:</span> <Inline text={card.slideCheck} terms={terms} /></p>;
+  const shapes = m.shapes && <Move k="Shapes" kind="shapes"><Shapes shapes={m.shapes} terms={terms} /></Move>;
   return (
     <article className={`dlc-card dlc-card--${card.rating}`} id={`dlc-${card.id}`} data-card={card.id}>
       <header className="dlc-card__head">
@@ -150,39 +178,54 @@ export function Card({ card, terms, image, onJump, tabName }) {
         </h3>
         <span className="dlc-rate" data-rate={card.rating}><i aria-hidden="true" />{card.rating}</span>
         {tabName && <span className="dlc-card__tab">in {tabName}</span>}
+        <span className="dlc-card__src">
+          {card.sources.map((s) => <span className="dlc-src" key={sourceText(s)}>{sourceText(s)}</span>)}
+          <span className="dlc-prov">{provenanceText(card)}</span>
+        </span>
         <span className="dlc-card__tools"><CopyButton code={card.code} /></span>
       </header>
-      <p className="dlc-card__src">
-        {card.sources.map((s) => <span className="dlc-src" key={sourceText(s)}>{sourceText(s)}</span>)}
-        <span className="dlc-prov">{provenanceText(card)}</span>
-      </p>
       <p className="dlc-card__why"><Inline text={card.why} terms={terms} /></p>
-      <div className={`dlc-card__body${drawSpec ? ' dlc-card__body--draw' : ''}`}>
-        <div className="dlc-card__main">
-          <CodePanel code={card.code} marks={card.marks} file={card.file} meta={fullLabel(card)} image={image} />
+      {/* two stacks, so the long column of one doesn't stretch the other:
+          A = code, shapes, equations, count (and a wide diagram);
+          B = the marks legend, the exam move, the diagram */}
+      <div className="dlc-card__body">
+        <div className="dlc-card__colA">
+          <div className="dlc-card__main">
+            <CodePanel code={card.code} marks={card.marks} file={card.file} meta={fullLabel(card)} image={image} />
+          </div>
+          {!shapesInB && shapes}
+          {m.eq && <Move k="Equation ↔ code" kind="eq"><EqCode eq={m.eq} code={card.code} /></Move>}
+          {countSpecs.length > 0 && (
+            <Move k="Count it" kind="count">
+              {countSpecs.map((sp) => <CountTable key={sp.id} spec={sp} />)}
+            </Move>
+          )}
+          {wide && draw}
         </div>
-        <div className="dlc-card__side">
-          <ol className="dlc-legend">
-            {card.marks.map((mk) => (
-              <li key={mk.n} data-mark={mk.n}>
-                <span className="dlc-legend__n">{CIRCLED[mk.n]}</span>
-                <span className="dlc-legend__where">{markWhere(mk)}</span>{' '}
-                <code className="dlc-legend__q"><Hi text={markQuote(card.code, mk)} terms={terms} /></code>
-                <span className="dlc-legend__say">: <Inline text={mk.say} terms={terms} /></span>
-              </li>
-            ))}
-          </ol>
-          {m.eq && <Move k="Equation ↔ code"><EqCode eq={m.eq} code={card.code} /></Move>}
-          {m.shapes && <Move k="Shapes"><Shapes shapes={m.shapes} terms={terms} /></Move>}
-          {m.say && <p className="dlc-card__move"><Inline text={m.say} terms={terms} /></p>}
-          {m.forWhat && <p className="dlc-card__for"><span className="dlc-eq__k">What’s it for:</span> <Inline text={m.forWhat} terms={terms} /></p>}
+        <div className="dlc-card__colB">
+          <div className="dlc-card__side">
+            <ol className="dlc-legend">
+              {card.marks.map((mk) => (
+                <li key={mk.n} data-mark={mk.n}>
+                  <span className="dlc-legend__n">{CIRCLED[mk.n]}</span>
+                  <span className="dlc-legend__where">{markWhere(mk)}</span>{' '}
+                  <code className="dlc-legend__q"><Hi text={markQuote(card.code, mk)} terms={terms} /></code>
+                  <span className="dlc-legend__say">: <Inline text={mk.say} terms={terms} /></span>
+                </li>
+              ))}
+            </ol>
+            {m.say && <p className="dlc-card__move"><Inline text={m.say} terms={terms} /></p>}
+            {m.forWhat && <p className="dlc-card__for"><span className="dlc-eq__k">What’s it for:</span> <Inline text={m.forWhat} terms={terms} /></p>}
+          </div>
+          {shapesInB && shapes}
+          {checkInB && <div className="dlc-card__pcheck">{check}</div>}
+          {!wide && draw}
         </div>
-        {drawSpec && <Move k="Draw it" kind="draw"><Diagram spec={drawSpec} /></Move>}
+        {drawSpec && <Move k="Draw it" kind="pdraw"><DiagramAcross spec={drawSpec} /></Move>}
       </div>
-      {countSpec && <Move k="Count it" kind="count"><CountTable spec={countSpec} /></Move>}
       {(card.slideCheck || card.xref?.length) && (
-        <footer className="dlc-card__foot">
-          {card.slideCheck && <p className="dlc-check"><span className="dlc-eq__k">Slide check:</span> <Inline text={card.slideCheck} terms={terms} /></p>}
+        <footer className={`dlc-card__foot${checkInB && !card.xref?.length ? ' dlc-card__foot--pempty' : ''}`}>
+          {card.slideCheck && <div className={checkInB ? 'dlc-card__scheck' : undefined}>{check}</div>}
           {card.xref?.map((x) => {
             const to = CARD_BY_ID[x.to];
             return to ? (
@@ -198,6 +241,15 @@ export function Card({ card, terms, image, onJump, tabName }) {
   );
 }
 
+// a panel line: prose, or { q } = an output line quoted from my notebook
+function Fact({ d, terms }) {
+  return (
+    <span className="dlc-lp__line">
+      {typeof d === 'string' ? <Inline text={d} terms={terms} /> : <code className="dlc-lp__q">{d.q}</code>}
+    </span>
+  );
+}
+
 // One Labs & Projects panel: goal, data, models, result, then its cards.
 export function LabPanel({ lp, cards, terms, images, onJump }) {
   return (
@@ -208,9 +260,17 @@ export function LabPanel({ lp, cards, terms, images, onJump }) {
       </header>
       <dl className="dlc-lp__facts">
         <dt>Goal</dt><dd><Inline text={lp.goal} terms={terms} /></dd>
-        <dt>Data</dt><dd>{lp.data.map((d, i) => <span key={i} className="dlc-lp__line"><Inline text={d} terms={terms} /></span>)}</dd>
-        <dt>{lp.models.length > 1 ? 'Models' : 'Model'}</dt><dd>{lp.models.map((d, i) => <span key={i} className="dlc-lp__line"><Inline text={d} terms={terms} /></span>)}</dd>
-        <dt>{lp.resultKind === 'target' ? 'Target' : 'Result'}</dt><dd>{lp.result.map((d, i) => <span key={i} className="dlc-lp__line"><Inline text={d} terms={terms} /></span>)}</dd>
+        {lp.spec && <><dt>Spec</dt><dd><Inline text={lp.spec} terms={terms} /></dd></>}
+        <dt>Data</dt><dd>{lp.data.map((d, i) => <Fact key={i} d={d} terms={terms} />)}</dd>
+        <dt>{lp.models.length > 1 ? 'Models' : 'Model'}</dt><dd>{lp.models.map((d, i) => <Fact key={i} d={d} terms={terms} />)}</dd>
+        <dt>{lp.resultKind === 'target' ? 'Target' : 'Result'}</dt><dd>{lp.result.map((d, i) => <Fact key={i} d={d} terms={terms} />)}</dd>
+        {lp.note && <><dt>Note</dt><dd><Inline text={lp.note} terms={terms} /></dd></>}
+        {lp.see?.map((x) => {
+          const to = CARD_BY_ID[x.to];
+          return to ? (
+            <Fragment key={x.to}><dt>Code</dt><dd>{x.text} → <button type="button" className="dlc-link" onClick={() => onJump?.(to.id)}>{fullLabel(to)}</button></dd></Fragment>
+          ) : null;
+        })}
       </dl>
       <div className="dlc-list">
         {cards.map((c) => <Card key={c.id} card={c} terms={terms} image={images?.[c.id]} onJump={onJump} />)}

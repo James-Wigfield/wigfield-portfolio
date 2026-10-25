@@ -1,0 +1,4205 @@
+{
+ "specs": [
+  {
+   "id": "lab3Wine",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      13
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Normalization"
+    },
+    {
+     "type": "Dense",
+     "units": 5,
+     "act": "gelu"
+    },
+    {
+     "type": "Dense",
+     "units": 5,
+     "act": "gelu"
+    },
+    {
+     "type": "Dense",
+     "units": 5,
+     "act": "gelu"
+    },
+    {
+     "type": "Dense",
+     "units": 3,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       13
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Normalization",
+      "out": [
+       13
+      ],
+      "tr": 0,
+      "nt": 27
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       5
+      ],
+      "tr": 70,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       5
+      ],
+      "tr": 30,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       5
+      ],
+      "tr": 30,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Dense",
+      "out": [
+       3
+      ],
+      "tr": 18,
+      "nt": 0
+     }
+    ],
+    "tr": 148,
+    "nt": 27,
+    "outputs": [
+     "l4"
+    ]
+   }
+  },
+  {
+   "id": "lab4Clockwise",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      2
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "SimpleRNN",
+     "units": 16
+    },
+    {
+     "type": "Dense",
+     "units": 1,
+     "act": "sigmoid"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "SimpleRNN",
+      "out": [
+       16
+      ],
+      "tr": 304,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 17,
+      "nt": 0
+     }
+    ],
+    "tr": 321,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "lab4NextVertex",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      2
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "SimpleRNN",
+     "units": 16
+    },
+    {
+     "type": "Dense",
+     "units": 2
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "SimpleRNN",
+      "out": [
+       16
+      ],
+      "tr": 304,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       2
+      ],
+      "tr": 34,
+      "nt": 0
+     }
+    ],
+    "tr": 338,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "p1Cnn",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      64,
+      64,
+      3
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Rescaling",
+     "scale": 0.00392156862745098,
+     "label": "Rescaling 1/255"
+    },
+    {
+     "type": "Conv2D",
+     "filters": 16,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 16,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 24,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 40,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "GlobalAvgPool2D"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.2
+    },
+    {
+     "type": "Dense",
+     "units": 32,
+     "act": "relu"
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "diagram": {
+    "fold": 8
+   },
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       64,
+       64,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Rescaling",
+      "out": [
+       64,
+       64,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Conv2D",
+      "out": [
+       64,
+       64,
+       16
+      ],
+      "tr": 448,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "MaxPool2D",
+      "out": [
+       32,
+       32,
+       16
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Conv2D",
+      "out": [
+       32,
+       32,
+       16
+      ],
+      "tr": 2320,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "MaxPool2D",
+      "out": [
+       16,
+       16,
+       16
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Conv2D",
+      "out": [
+       16,
+       16,
+       24
+      ],
+      "tr": 3480,
+      "nt": 0
+     },
+     {
+      "id": "l6",
+      "type": "MaxPool2D",
+      "out": [
+       8,
+       8,
+       24
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l7",
+      "type": "Conv2D",
+      "out": [
+       8,
+       8,
+       40
+      ],
+      "tr": 8680,
+      "nt": 0
+     },
+     {
+      "id": "l8",
+      "type": "MaxPool2D",
+      "out": [
+       4,
+       4,
+       40
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l9",
+      "type": "GlobalAvgPool2D",
+      "out": [
+       40
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l10",
+      "type": "Dropout",
+      "out": [
+       40
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l11",
+      "type": "Dense",
+      "out": [
+       32
+      ],
+      "tr": 1312,
+      "nt": 0
+     },
+     {
+      "id": "l12",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 330,
+      "nt": 0
+     }
+    ],
+    "tr": 16570,
+    "nt": 0,
+    "outputs": [
+     "l12"
+    ]
+   }
+  },
+  {
+   "id": "p1CnnLargest",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      64,
+      64,
+      3
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Rescaling",
+     "scale": 0.00392156862745098
+    },
+    {
+     "type": "Conv2D",
+     "filters": 16,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 24,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 32,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 48,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "GlobalAvgPool2D"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.3
+    },
+    {
+     "type": "Dense",
+     "units": 48,
+     "act": "relu"
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       64,
+       64,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Rescaling",
+      "out": [
+       64,
+       64,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Conv2D",
+      "out": [
+       64,
+       64,
+       16
+      ],
+      "tr": 448,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "MaxPool2D",
+      "out": [
+       32,
+       32,
+       16
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Conv2D",
+      "out": [
+       32,
+       32,
+       24
+      ],
+      "tr": 3480,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "MaxPool2D",
+      "out": [
+       16,
+       16,
+       24
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Conv2D",
+      "out": [
+       16,
+       16,
+       32
+      ],
+      "tr": 6944,
+      "nt": 0
+     },
+     {
+      "id": "l6",
+      "type": "MaxPool2D",
+      "out": [
+       8,
+       8,
+       32
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l7",
+      "type": "Conv2D",
+      "out": [
+       8,
+       8,
+       48
+      ],
+      "tr": 13872,
+      "nt": 0
+     },
+     {
+      "id": "l8",
+      "type": "MaxPool2D",
+      "out": [
+       4,
+       4,
+       48
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l9",
+      "type": "GlobalAvgPool2D",
+      "out": [
+       48
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l10",
+      "type": "Dropout",
+      "out": [
+       48
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l11",
+      "type": "Dense",
+      "out": [
+       48
+      ],
+      "tr": 2352,
+      "nt": 0
+     },
+     {
+      "id": "l12",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 490,
+      "nt": 0
+     }
+    ],
+    "tr": 27586,
+    "nt": 0,
+    "outputs": [
+     "l12"
+    ]
+   }
+  },
+  {
+   "id": "p1Nasnet",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      64,
+      64,
+      3
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Resizing",
+     "height": 224,
+     "width": 224
+    },
+    {
+     "type": "Rescaling",
+     "scale": 0.00784313725490196,
+     "offset": -1,
+     "label": "Rescaling 1/127.5, −1"
+    },
+    {
+     "type": "Pretrained",
+     "base": "NASNetMobile",
+     "frozen": true
+    },
+    {
+     "type": "GlobalAvgPool2D"
+    },
+    {
+     "type": "Dense",
+     "units": 64,
+     "act": "relu"
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       64,
+       64,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Resizing",
+      "out": [
+       224,
+       224,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Rescaling",
+      "out": [
+       224,
+       224,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Pretrained",
+      "out": [
+       7,
+       7,
+       1056
+      ],
+      "tr": 0,
+      "nt": 4269716
+     },
+     {
+      "id": "l3",
+      "type": "GlobalAvgPool2D",
+      "out": [
+       1056
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Dense",
+      "out": [
+       64
+      ],
+      "tr": 67648,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 650,
+      "nt": 0
+     }
+    ],
+    "tr": 68298,
+    "nt": 4269716,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "p2Model1",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      2
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Normalization",
+     "fixed": true,
+     "label": "Normalization (z-scores)"
+    },
+    {
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh",
+     "returnSeq": true
+    },
+    {
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh"
+    },
+    {
+     "type": "Dense",
+     "units": 24
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      12,
+      2
+     ]
+    },
+    {
+     "type": "Normalization",
+     "fixed": true,
+     "invert": true,
+     "label": "Normalization (invert, °C)"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Normalization",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "GRU",
+      "out": [
+       null,
+       16
+      ],
+      "tr": 960,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "GRU",
+      "out": [
+       16
+      ],
+      "tr": 1632,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       24
+      ],
+      "tr": 408,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Reshape",
+      "out": [
+       12,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Normalization",
+      "out": [
+       12,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 3000,
+    "nt": 0,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "p2Model2",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      2
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Normalization",
+     "fixed": true
+    },
+    {
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh",
+     "returnSeq": true
+    },
+    {
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh"
+    },
+    {
+     "type": "Dense",
+     "units": 2
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      1,
+      2
+     ]
+    },
+    {
+     "type": "Normalization",
+     "fixed": true,
+     "invert": true
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Normalization",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "GRU",
+      "out": [
+       null,
+       16
+      ],
+      "tr": 960,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "GRU",
+      "out": [
+       16
+      ],
+      "tr": 1632,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       2
+      ],
+      "tr": 34,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Reshape",
+      "out": [
+       1,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Normalization",
+      "out": [
+       1,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 2626,
+    "nt": 0,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "p2Model3",
+   "inputs": [
+    {
+     "id": "encoder_input",
+     "shape": [
+      null,
+      2
+     ],
+     "label": "encoder input"
+    },
+    {
+     "id": "decoder_input",
+     "shape": [
+      null,
+      2
+     ],
+     "label": "decoder input"
+    }
+   ],
+   "layers": [
+    {
+     "id": "enc_norm",
+     "type": "Normalization",
+     "fixed": true,
+     "from": "encoder_input",
+     "label": "Normalization"
+    },
+    {
+     "id": "dec_norm",
+     "type": "Normalization",
+     "fixed": true,
+     "from": "decoder_input",
+     "label": "Normalization"
+    },
+    {
+     "id": "encoder_gru1",
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh",
+     "returnSeq": true,
+     "from": "enc_norm",
+     "label": "encoder GRU 16, seq"
+    },
+    {
+     "id": "decoder_gru1",
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh",
+     "returnSeq": true,
+     "from": "dec_norm",
+     "state": "encoder_gru1",
+     "label": "decoder GRU 16, seq"
+    },
+    {
+     "id": "encoder_gru2",
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh",
+     "from": "encoder_gru1",
+     "label": "encoder GRU 16"
+    },
+    {
+     "id": "decoder_gru2",
+     "type": "GRU",
+     "units": 16,
+     "act": "tanh",
+     "returnSeq": true,
+     "from": "decoder_gru1",
+     "state": "encoder_gru2",
+     "label": "decoder GRU 16, seq"
+    },
+    {
+     "id": "next_month",
+     "type": "Dense",
+     "units": 2,
+     "from": "decoder_gru2"
+    },
+    {
+     "id": "denorm",
+     "type": "Normalization",
+     "fixed": true,
+     "invert": true,
+     "label": "Normalization (invert)"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "encoder_input",
+      "type": "Input",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "decoder_input",
+      "type": "Input",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "enc_norm",
+      "type": "Normalization",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "dec_norm",
+      "type": "Normalization",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "encoder_gru1",
+      "type": "GRU",
+      "out": [
+       null,
+       16
+      ],
+      "tr": 960,
+      "nt": 0
+     },
+     {
+      "id": "decoder_gru1",
+      "type": "GRU",
+      "out": [
+       null,
+       16
+      ],
+      "tr": 960,
+      "nt": 0
+     },
+     {
+      "id": "encoder_gru2",
+      "type": "GRU",
+      "out": [
+       16
+      ],
+      "tr": 1632,
+      "nt": 0
+     },
+     {
+      "id": "decoder_gru2",
+      "type": "GRU",
+      "out": [
+       null,
+       16
+      ],
+      "tr": 1632,
+      "nt": 0
+     },
+     {
+      "id": "next_month",
+      "type": "Dense",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 34,
+      "nt": 0
+     },
+     {
+      "id": "denorm",
+      "type": "Normalization",
+      "out": [
+       null,
+       2
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 5218,
+    "nt": 0,
+    "outputs": [
+     "denorm"
+    ]
+   }
+  },
+  {
+   "id": "p2VaeEncoder",
+   "inputs": [
+    {
+     "id": "inputs",
+     "shape": [
+      84
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Reshape",
+     "target": [
+      84,
+      1
+     ]
+    },
+    {
+     "type": "Conv1D",
+     "filters": 16,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "Conv1D",
+     "filters": 32,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "id": "flat",
+     "type": "Flatten"
+    },
+    {
+     "id": "z_mean",
+     "type": "Dense",
+     "units": 4,
+     "from": "flat",
+     "label": "z_mean Dense 4"
+    },
+    {
+     "id": "z_log_var",
+     "type": "Dense",
+     "units": 4,
+     "from": "flat",
+     "label": "z_log_var Dense 4"
+    },
+    {
+     "id": "z",
+     "type": "Sampling",
+     "from": [
+      "z_mean",
+      "z_log_var"
+     ]
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "inputs",
+      "type": "Input",
+      "out": [
+       84
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Reshape",
+      "out": [
+       84,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Conv1D",
+      "out": [
+       42,
+       16
+      ],
+      "tr": 96,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Conv1D",
+      "out": [
+       21,
+       32
+      ],
+      "tr": 2592,
+      "nt": 0
+     },
+     {
+      "id": "flat",
+      "type": "Flatten",
+      "out": [
+       672
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "z_mean",
+      "type": "Dense",
+      "out": [
+       4
+      ],
+      "tr": 2692,
+      "nt": 0
+     },
+     {
+      "id": "z_log_var",
+      "type": "Dense",
+      "out": [
+       4
+      ],
+      "tr": 2692,
+      "nt": 0
+     },
+     {
+      "id": "z",
+      "type": "Sampling",
+      "out": [
+       4
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 8072,
+    "nt": 0,
+    "outputs": [
+     "z"
+    ]
+   }
+  },
+  {
+   "id": "p2VaeDecoder",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "codings",
+     "shape": [
+      4
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 672,
+     "act": "relu"
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      21,
+      32
+     ]
+    },
+    {
+     "type": "Conv1DTranspose",
+     "filters": 16,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "Conv1DTranspose",
+     "filters": 1,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same"
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      84
+     ]
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "codings",
+      "type": "Input",
+      "out": [
+       4
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       672
+      ],
+      "tr": 3360,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Reshape",
+      "out": [
+       21,
+       32
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Conv1DTranspose",
+      "out": [
+       42,
+       16
+      ],
+      "tr": 2576,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Conv1DTranspose",
+      "out": [
+       84,
+       1
+      ],
+      "tr": 81,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Reshape",
+      "out": [
+       84
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 6017,
+    "nt": 0,
+    "outputs": [
+     "l4"
+    ]
+   }
+  },
+  {
+   "id": "fashionMlp",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Flatten"
+    },
+    {
+     "type": "Dense",
+     "units": 300,
+     "act": "relu"
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu"
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Flatten",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       300
+      ],
+      "tr": 235500,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 30100,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 1010,
+      "nt": 0
+     }
+    ],
+    "tr": 266610,
+    "nt": 0,
+    "outputs": [
+     "l3"
+    ]
+   }
+  },
+  {
+   "id": "wideDeep",
+   "inputs": [
+    {
+     "id": "input_",
+     "shape": [
+      8
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "id": "normalized",
+     "type": "Normalization"
+    },
+    {
+     "id": "hidden1",
+     "type": "Dense",
+     "units": 30,
+     "act": "relu"
+    },
+    {
+     "id": "hidden2",
+     "type": "Dense",
+     "units": 30,
+     "act": "relu"
+    },
+    {
+     "id": "concat",
+     "type": "Concatenate",
+     "from": [
+      "normalized",
+      "hidden2"
+     ]
+    },
+    {
+     "id": "output",
+     "type": "Dense",
+     "units": 1
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input_",
+      "type": "Input",
+      "out": [
+       8
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "normalized",
+      "type": "Normalization",
+      "out": [
+       8
+      ],
+      "tr": 0,
+      "nt": 17
+     },
+     {
+      "id": "hidden1",
+      "type": "Dense",
+      "out": [
+       30
+      ],
+      "tr": 270,
+      "nt": 0
+     },
+     {
+      "id": "hidden2",
+      "type": "Dense",
+      "out": [
+       30
+      ],
+      "tr": 930,
+      "nt": 0
+     },
+     {
+      "id": "concat",
+      "type": "Concatenate",
+      "out": [
+       38
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "output",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 39,
+      "nt": 0
+     }
+    ],
+    "tr": 1239,
+    "nt": 17,
+    "outputs": [
+     "output"
+    ]
+   }
+  },
+  {
+   "id": "sampleQ1c",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "input_",
+     "shape": [
+      10
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "id": "normalized",
+     "type": "Normalization"
+    },
+    {
+     "id": "hidden",
+     "type": "Dense",
+     "units": 20,
+     "act": "gelu"
+    },
+    {
+     "id": "concat",
+     "type": "Concatenate",
+     "from": [
+      "normalized",
+      "hidden"
+     ]
+    },
+    {
+     "id": "output",
+     "type": "Dense",
+     "units": 3,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input_",
+      "type": "Input",
+      "out": [
+       10
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "normalized",
+      "type": "Normalization",
+      "out": [
+       10
+      ],
+      "tr": 0,
+      "nt": 21
+     },
+     {
+      "id": "hidden",
+      "type": "Dense",
+      "out": [
+       20
+      ],
+      "tr": 220,
+      "nt": 0
+     },
+     {
+      "id": "concat",
+      "type": "Concatenate",
+      "out": [
+       30
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "output",
+      "type": "Dense",
+      "out": [
+       3
+      ],
+      "tr": 93,
+      "nt": 0
+     }
+    ],
+    "tr": 313,
+    "nt": 21,
+    "outputs": [
+     "output"
+    ]
+   }
+  },
+  {
+   "id": "wideDeepTwo",
+   "inputs": [
+    {
+     "id": "input_wide",
+     "shape": [
+      5
+     ],
+     "label": "input_wide"
+    },
+    {
+     "id": "input_deep",
+     "shape": [
+      6
+     ],
+     "label": "input_deep"
+    }
+   ],
+   "layers": [
+    {
+     "id": "norm_wide",
+     "type": "Normalization",
+     "from": "input_wide"
+    },
+    {
+     "id": "norm_deep",
+     "type": "Normalization",
+     "from": "input_deep"
+    },
+    {
+     "id": "hidden1",
+     "type": "Dense",
+     "units": 30,
+     "act": "relu",
+     "from": "norm_deep"
+    },
+    {
+     "id": "hidden2",
+     "type": "Dense",
+     "units": 30,
+     "act": "relu"
+    },
+    {
+     "id": "concat",
+     "type": "Concatenate",
+     "from": [
+      "norm_wide",
+      "hidden2"
+     ]
+    },
+    {
+     "id": "output",
+     "type": "Dense",
+     "units": 1,
+     "from": "concat",
+     "label": "output Dense 1"
+    },
+    {
+     "id": "aux_output",
+     "type": "Dense",
+     "units": 1,
+     "from": "hidden2",
+     "label": "aux_output Dense 1"
+    }
+   ],
+   "outputs": [
+    "output",
+    "aux_output"
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input_wide",
+      "type": "Input",
+      "out": [
+       5
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "input_deep",
+      "type": "Input",
+      "out": [
+       6
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "norm_wide",
+      "type": "Normalization",
+      "out": [
+       5
+      ],
+      "tr": 0,
+      "nt": 11
+     },
+     {
+      "id": "norm_deep",
+      "type": "Normalization",
+      "out": [
+       6
+      ],
+      "tr": 0,
+      "nt": 13
+     },
+     {
+      "id": "hidden1",
+      "type": "Dense",
+      "out": [
+       30
+      ],
+      "tr": 210,
+      "nt": 0
+     },
+     {
+      "id": "hidden2",
+      "type": "Dense",
+      "out": [
+       30
+      ],
+      "tr": 930,
+      "nt": 0
+     },
+     {
+      "id": "concat",
+      "type": "Concatenate",
+      "out": [
+       35
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "output",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 36,
+      "nt": 0
+     },
+     {
+      "id": "aux_output",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 31,
+      "nt": 0
+     }
+    ],
+    "tr": 1207,
+    "nt": 24,
+    "outputs": [
+     "output",
+     "aux_output"
+    ]
+   }
+  },
+  {
+   "id": "batchNorm",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Flatten"
+    },
+    {
+     "type": "BatchNormalization"
+    },
+    {
+     "type": "Dense",
+     "units": 300,
+     "act": "relu"
+    },
+    {
+     "type": "BatchNormalization"
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu"
+    },
+    {
+     "type": "BatchNormalization"
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Flatten",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "BatchNormalization",
+      "out": [
+       784
+      ],
+      "tr": 1568,
+      "nt": 1568
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       300
+      ],
+      "tr": 235500,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "BatchNormalization",
+      "out": [
+       300
+      ],
+      "tr": 600,
+      "nt": 600
+     },
+     {
+      "id": "l4",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 30100,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "BatchNormalization",
+      "out": [
+       100
+      ],
+      "tr": 200,
+      "nt": 200
+     },
+     {
+      "id": "l6",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 1010,
+      "nt": 0
+     }
+    ],
+    "tr": 268978,
+    "nt": 2368,
+    "outputs": [
+     "l6"
+    ]
+   }
+  },
+  {
+   "id": "dropoutMlp",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Flatten"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.2
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.2
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.2
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Flatten",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dropout",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 78500,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dropout",
+      "out": [
+       100
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 10100,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Dropout",
+      "out": [
+       100
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l6",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 1010,
+      "nt": 0
+     }
+    ],
+    "tr": 89610,
+    "nt": 0,
+    "outputs": [
+     "l6"
+    ]
+   }
+  },
+  {
+   "id": "transferBonA",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Flatten"
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "frozen": true
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "frozen": true
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "frozen": true
+    },
+    {
+     "type": "Dense",
+     "units": 1,
+     "act": "sigmoid"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Flatten",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 0,
+      "nt": 78500
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 0,
+      "nt": 10100
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 0,
+      "nt": 10100
+     },
+     {
+      "id": "l4",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 101,
+      "nt": 0
+     }
+    ],
+    "tr": 101,
+    "nt": 98700,
+    "outputs": [
+     "l4"
+    ]
+   }
+  },
+  {
+   "id": "convValid",
+   "inputs": [
+    {
+     "id": "images",
+     "shape": [
+      70,
+      120,
+      3
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Conv2D",
+     "filters": 32,
+     "kernel": 7
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "images",
+      "type": "Input",
+      "out": [
+       70,
+       120,
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Conv2D",
+      "out": [
+       64,
+       114,
+       32
+      ],
+      "tr": 4736,
+      "nt": 0
+     }
+    ],
+    "tr": 4736,
+    "nt": 0,
+    "outputs": [
+     "l0"
+    ]
+   }
+  },
+  {
+   "id": "fashionCnn",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Conv2D",
+     "filters": 64,
+     "kernel": 7,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D"
+    },
+    {
+     "type": "Conv2D",
+     "filters": 128,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "Conv2D",
+     "filters": 128,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D"
+    },
+    {
+     "type": "Conv2D",
+     "filters": 256,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "Conv2D",
+     "filters": 256,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D"
+    },
+    {
+     "type": "Flatten"
+    },
+    {
+     "type": "Dense",
+     "units": 128,
+     "act": "relu"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.5
+    },
+    {
+     "type": "Dense",
+     "units": 64,
+     "act": "relu"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.5
+    },
+    {
+     "type": "Dense",
+     "units": 10,
+     "act": "softmax"
+    }
+   ],
+   "diagram": {
+    "fold": 8
+   },
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Conv2D",
+      "out": [
+       28,
+       28,
+       64
+      ],
+      "tr": 3200,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "MaxPool2D",
+      "out": [
+       14,
+       14,
+       64
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Conv2D",
+      "out": [
+       14,
+       14,
+       128
+      ],
+      "tr": 73856,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Conv2D",
+      "out": [
+       14,
+       14,
+       128
+      ],
+      "tr": 147584,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "MaxPool2D",
+      "out": [
+       7,
+       7,
+       128
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Conv2D",
+      "out": [
+       7,
+       7,
+       256
+      ],
+      "tr": 295168,
+      "nt": 0
+     },
+     {
+      "id": "l6",
+      "type": "Conv2D",
+      "out": [
+       7,
+       7,
+       256
+      ],
+      "tr": 590080,
+      "nt": 0
+     },
+     {
+      "id": "l7",
+      "type": "MaxPool2D",
+      "out": [
+       3,
+       3,
+       256
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l8",
+      "type": "Flatten",
+      "out": [
+       2304
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l9",
+      "type": "Dense",
+      "out": [
+       128
+      ],
+      "tr": 295040,
+      "nt": 0
+     },
+     {
+      "id": "l10",
+      "type": "Dropout",
+      "out": [
+       128
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l11",
+      "type": "Dense",
+      "out": [
+       64
+      ],
+      "tr": 8256,
+      "nt": 0
+     },
+     {
+      "id": "l12",
+      "type": "Dropout",
+      "out": [
+       64
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l13",
+      "type": "Dense",
+      "out": [
+       10
+      ],
+      "tr": 650,
+      "nt": 0
+     }
+    ],
+    "tr": 1413834,
+    "nt": 0,
+    "outputs": [
+     "l13"
+    ]
+   }
+  },
+  {
+   "id": "univarModel",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "SimpleRNN",
+     "units": 32
+    },
+    {
+     "type": "Dense",
+     "units": 1
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "SimpleRNN",
+      "out": [
+       32
+      ],
+      "tr": 1088,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 33,
+      "nt": 0
+     }
+    ],
+    "tr": 1121,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "deepRnn",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "SimpleRNN",
+     "units": 32,
+     "returnSeq": true
+    },
+    {
+     "type": "SimpleRNN",
+     "units": 32,
+     "returnSeq": true
+    },
+    {
+     "type": "SimpleRNN",
+     "units": 32
+    },
+    {
+     "type": "Dense",
+     "units": 1
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "SimpleRNN",
+      "out": [
+       null,
+       32
+      ],
+      "tr": 1088,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "SimpleRNN",
+      "out": [
+       null,
+       32
+      ],
+      "tr": 2080,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "SimpleRNN",
+      "out": [
+       32
+      ],
+      "tr": 2080,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 33,
+      "nt": 0
+     }
+    ],
+    "tr": 5281,
+    "nt": 0,
+    "outputs": [
+     "l3"
+    ]
+   }
+  },
+  {
+   "id": "aheadModel",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      5
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "SimpleRNN",
+     "units": 32
+    },
+    {
+     "type": "Dense",
+     "units": 14
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       5
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "SimpleRNN",
+      "out": [
+       32
+      ],
+      "tr": 1216,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       14
+      ],
+      "tr": 462,
+      "nt": 0
+     }
+    ],
+    "tr": 1678,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "lstmModel",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "LSTM",
+     "units": 12
+    },
+    {
+     "type": "Dense",
+     "units": 1
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "LSTM",
+      "out": [
+       12
+      ],
+      "tr": 672,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 13,
+      "nt": 0
+     }
+    ],
+    "tr": 685,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "gruModel",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      null,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "GRU",
+     "units": 20
+    },
+    {
+     "type": "Dense",
+     "units": 1
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       null,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "GRU",
+      "out": [
+       20
+      ],
+      "tr": 1380,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 21,
+      "nt": 0
+     }
+    ],
+    "tr": 1401,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "conv1dGru",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      56,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Conv1D",
+     "filters": 8,
+     "kernel": 3,
+     "strides": 1,
+     "act": "relu"
+    },
+    {
+     "type": "Conv1D",
+     "filters": 16,
+     "kernel": 3,
+     "strides": 2,
+     "act": "relu"
+    },
+    {
+     "type": "GRU",
+     "units": 10
+    },
+    {
+     "type": "Dense",
+     "units": 1
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       56,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Conv1D",
+      "out": [
+       54,
+       8
+      ],
+      "tr": 32,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Conv1D",
+      "out": [
+       26,
+       16
+      ],
+      "tr": 400,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "GRU",
+      "out": [
+       10
+      ],
+      "tr": 840,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 11,
+      "nt": 0
+     }
+    ],
+    "tr": 1283,
+    "nt": 0,
+    "outputs": [
+     "l3"
+    ]
+   }
+  },
+  {
+   "id": "linearAe",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      3
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 2,
+     "group": "encoder"
+    },
+    {
+     "type": "Dense",
+     "units": 3,
+     "group": "decoder"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       3
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       2
+      ],
+      "tr": 8,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       3
+      ],
+      "tr": 9,
+      "nt": 0
+     }
+    ],
+    "tr": 17,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "stackedAe",
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Flatten",
+     "group": "encoder"
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "group": "encoder"
+    },
+    {
+     "type": "Dense",
+     "units": 30,
+     "act": "relu",
+     "group": "encoder"
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "group": "decoder"
+    },
+    {
+     "type": "Dense",
+     "units": 784,
+     "group": "decoder"
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      28,
+      28
+     ],
+     "group": "decoder"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Flatten",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 78500,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       30
+      ],
+      "tr": 3030,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 3100,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Dense",
+      "out": [
+       784
+      ],
+      "tr": 79184,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Reshape",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 163814,
+    "nt": 0,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "convDecoder",
+   "inputs": [
+    {
+     "id": "codings",
+     "shape": [
+      30
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 144
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      3,
+      3,
+      16
+     ]
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 32,
+     "kernel": 3,
+     "strides": 2,
+     "act": "relu"
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 16,
+     "kernel": 3,
+     "strides": 2,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 1,
+     "kernel": 3,
+     "strides": 2,
+     "padding": "same"
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      28,
+      28
+     ]
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "codings",
+      "type": "Input",
+      "out": [
+       30
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       144
+      ],
+      "tr": 4464,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Reshape",
+      "out": [
+       3,
+       3,
+       16
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Conv2DTranspose",
+      "out": [
+       7,
+       7,
+       32
+      ],
+      "tr": 4640,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Conv2DTranspose",
+      "out": [
+       14,
+       14,
+       16
+      ],
+      "tr": 4624,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Conv2DTranspose",
+      "out": [
+       28,
+       28,
+       1
+      ],
+      "tr": 145,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Reshape",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 13873,
+    "nt": 0,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "convAe",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "input",
+     "shape": [
+      28,
+      28
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Reshape",
+     "target": [
+      28,
+      28,
+      1
+     ]
+    },
+    {
+     "type": "Conv2D",
+     "filters": 16,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 32,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 64,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "MaxPool2D",
+     "pool": 2
+    },
+    {
+     "type": "Conv2D",
+     "filters": 30,
+     "kernel": 3,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "GlobalAvgPool2D"
+    },
+    {
+     "type": "Dense",
+     "units": 144
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      3,
+      3,
+      16
+     ]
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 32,
+     "kernel": 3,
+     "strides": 2,
+     "act": "relu"
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 16,
+     "kernel": 3,
+     "strides": 2,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 1,
+     "kernel": 3,
+     "strides": 2,
+     "padding": "same"
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      28,
+      28
+     ]
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "input",
+      "type": "Input",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Reshape",
+      "out": [
+       28,
+       28,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Conv2D",
+      "out": [
+       28,
+       28,
+       16
+      ],
+      "tr": 160,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "MaxPool2D",
+      "out": [
+       14,
+       14,
+       16
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Conv2D",
+      "out": [
+       14,
+       14,
+       32
+      ],
+      "tr": 4640,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "MaxPool2D",
+      "out": [
+       7,
+       7,
+       32
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Conv2D",
+      "out": [
+       7,
+       7,
+       64
+      ],
+      "tr": 18496,
+      "nt": 0
+     },
+     {
+      "id": "l6",
+      "type": "MaxPool2D",
+      "out": [
+       3,
+       3,
+       64
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l7",
+      "type": "Conv2D",
+      "out": [
+       3,
+       3,
+       30
+      ],
+      "tr": 17310,
+      "nt": 0
+     },
+     {
+      "id": "l8",
+      "type": "GlobalAvgPool2D",
+      "out": [
+       30
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l9",
+      "type": "Dense",
+      "out": [
+       144
+      ],
+      "tr": 4464,
+      "nt": 0
+     },
+     {
+      "id": "l10",
+      "type": "Reshape",
+      "out": [
+       3,
+       3,
+       16
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l11",
+      "type": "Conv2DTranspose",
+      "out": [
+       7,
+       7,
+       32
+      ],
+      "tr": 4640,
+      "nt": 0
+     },
+     {
+      "id": "l12",
+      "type": "Conv2DTranspose",
+      "out": [
+       14,
+       14,
+       16
+      ],
+      "tr": 4624,
+      "nt": 0
+     },
+     {
+      "id": "l13",
+      "type": "Conv2DTranspose",
+      "out": [
+       28,
+       28,
+       1
+      ],
+      "tr": 145,
+      "nt": 0
+     },
+     {
+      "id": "l14",
+      "type": "Reshape",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     }
+    ],
+    "tr": 54479,
+    "nt": 0,
+    "outputs": [
+     "l14"
+    ]
+   }
+  },
+  {
+   "id": "ganDense",
+   "inputs": [
+    {
+     "id": "noise",
+     "shape": [
+      30
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "group": "generator"
+    },
+    {
+     "type": "Dense",
+     "units": 150,
+     "act": "relu",
+     "group": "generator"
+    },
+    {
+     "type": "Dense",
+     "units": 784,
+     "act": "sigmoid",
+     "group": "generator"
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      28,
+      28
+     ],
+     "group": "generator"
+    },
+    {
+     "type": "Flatten",
+     "group": "discriminator"
+    },
+    {
+     "type": "Dense",
+     "units": 150,
+     "act": "relu",
+     "group": "discriminator"
+    },
+    {
+     "type": "Dense",
+     "units": 100,
+     "act": "relu",
+     "group": "discriminator"
+    },
+    {
+     "type": "Dense",
+     "units": 1,
+     "act": "sigmoid",
+     "group": "discriminator"
+    }
+   ],
+   "diagram": {
+    "fold": 5
+   },
+   "js": {
+    "rows": [
+     {
+      "id": "noise",
+      "type": "Input",
+      "out": [
+       30
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 3100,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       150
+      ],
+      "tr": 15150,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       784
+      ],
+      "tr": 118384,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Reshape",
+      "out": [
+       28,
+       28
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Flatten",
+      "out": [
+       784
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Dense",
+      "out": [
+       150
+      ],
+      "tr": 117750,
+      "nt": 0
+     },
+     {
+      "id": "l6",
+      "type": "Dense",
+      "out": [
+       100
+      ],
+      "tr": 15100,
+      "nt": 0
+     },
+     {
+      "id": "l7",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 101,
+      "nt": 0
+     }
+    ],
+    "tr": 269585,
+    "nt": 0,
+    "outputs": [
+     "l7"
+    ]
+   }
+  },
+  {
+   "id": "dcganGenerator",
+   "inputs": [
+    {
+     "id": "codings",
+     "shape": [
+      100
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 6272
+    },
+    {
+     "type": "Reshape",
+     "target": [
+      7,
+      7,
+      128
+     ]
+    },
+    {
+     "type": "BatchNormalization"
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 64,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "relu"
+    },
+    {
+     "type": "BatchNormalization"
+    },
+    {
+     "type": "Conv2DTranspose",
+     "filters": 1,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "tanh"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "codings",
+      "type": "Input",
+      "out": [
+       100
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       6272
+      ],
+      "tr": 633472,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Reshape",
+      "out": [
+       7,
+       7,
+       128
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "BatchNormalization",
+      "out": [
+       7,
+       7,
+       128
+      ],
+      "tr": 256,
+      "nt": 256
+     },
+     {
+      "id": "l3",
+      "type": "Conv2DTranspose",
+      "out": [
+       14,
+       14,
+       64
+      ],
+      "tr": 204864,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "BatchNormalization",
+      "out": [
+       14,
+       14,
+       64
+      ],
+      "tr": 128,
+      "nt": 128
+     },
+     {
+      "id": "l5",
+      "type": "Conv2DTranspose",
+      "out": [
+       28,
+       28,
+       1
+      ],
+      "tr": 1601,
+      "nt": 0
+     }
+    ],
+    "tr": 840321,
+    "nt": 384,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "dcganDiscriminator",
+   "verifyOnly": true,
+   "inputs": [
+    {
+     "id": "images",
+     "shape": [
+      28,
+      28,
+      1
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Conv2D",
+     "filters": 64,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "leaky_relu"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.4
+    },
+    {
+     "type": "Conv2D",
+     "filters": 128,
+     "kernel": 5,
+     "strides": 2,
+     "padding": "same",
+     "act": "leaky_relu"
+    },
+    {
+     "type": "Dropout",
+     "rate": 0.4
+    },
+    {
+     "type": "Flatten"
+    },
+    {
+     "type": "Dense",
+     "units": 1,
+     "act": "sigmoid"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "images",
+      "type": "Input",
+      "out": [
+       28,
+       28,
+       1
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Conv2D",
+      "out": [
+       14,
+       14,
+       64
+      ],
+      "tr": 1664,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dropout",
+      "out": [
+       14,
+       14,
+       64
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Conv2D",
+      "out": [
+       7,
+       7,
+       128
+      ],
+      "tr": 204928,
+      "nt": 0
+     },
+     {
+      "id": "l3",
+      "type": "Dropout",
+      "out": [
+       7,
+       7,
+       128
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l4",
+      "type": "Flatten",
+      "out": [
+       6272
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l5",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 6273,
+      "nt": 0
+     }
+    ],
+    "tr": 212865,
+    "nt": 0,
+    "outputs": [
+     "l5"
+    ]
+   }
+  },
+  {
+   "id": "policyNet",
+   "inputs": [
+    {
+     "id": "obs",
+     "shape": [
+      4
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 5,
+     "act": "relu"
+    },
+    {
+     "type": "Dense",
+     "units": 1,
+     "act": "sigmoid"
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "obs",
+      "type": "Input",
+      "out": [
+       4
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       5
+      ],
+      "tr": 25,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       1
+      ],
+      "tr": 6,
+      "nt": 0
+     }
+    ],
+    "tr": 31,
+    "nt": 0,
+    "outputs": [
+     "l1"
+    ]
+   }
+  },
+  {
+   "id": "dqnModel",
+   "inputs": [
+    {
+     "id": "state",
+     "shape": [
+      4
+     ]
+    }
+   ],
+   "layers": [
+    {
+     "type": "Dense",
+     "units": 32,
+     "act": "elu"
+    },
+    {
+     "type": "Dense",
+     "units": 32,
+     "act": "elu"
+    },
+    {
+     "type": "Dense",
+     "units": 2
+    }
+   ],
+   "js": {
+    "rows": [
+     {
+      "id": "state",
+      "type": "Input",
+      "out": [
+       4
+      ],
+      "tr": 0,
+      "nt": 0
+     },
+     {
+      "id": "l0",
+      "type": "Dense",
+      "out": [
+       32
+      ],
+      "tr": 160,
+      "nt": 0
+     },
+     {
+      "id": "l1",
+      "type": "Dense",
+      "out": [
+       32
+      ],
+      "tr": 1056,
+      "nt": 0
+     },
+     {
+      "id": "l2",
+      "type": "Dense",
+      "out": [
+       2
+      ],
+      "tr": 66,
+      "nt": 0
+     }
+    ],
+    "tr": 1282,
+    "nt": 0,
+    "outputs": [
+     "l2"
+    ]
+   }
+  }
+ ],
+ "labs": [
+  {
+   "id": "lab3-wine",
+   "code": "y = wine[\"class\"].to_numpy() - 1  # class IDs 1, 2, 3 -> 0, 1, 2\nX_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2)\nnorm_layer = tf.keras.layers.Normalization()\nnorm_layer.adapt(X_train)\nmodel1 = tf.keras.Sequential([\n    tf.keras.layers.InputLayer(shape=[13]),\n    norm_layer,\n    tf.keras.layers.Dense(5, activation=\"gelu\"),\n    tf.keras.layers.Dense(5, activation=\"gelu\"),\n    tf.keras.layers.Dense(5, activation=\"gelu\"),\n    tf.keras.layers.Dense(3, activation=\"softmax\")])\nmodel1.compile(loss=\"sparse_categorical_crossentropy\", optimizer=\"nadam\",\n               metrics=[\"accuracy\"])\nhistory = model1.fit(X_train, y_train, epochs=500, verbose=0, callbacks=[early_stopping_cb],\n                     validation_data=(X_valid, y_valid))\ny_pred = np.argmax(model1.predict(X_valid), axis=1)  # probabilities -> class IDs",
+   "spec": "lab3Wine"
+  },
+  {
+   "id": "lab4-clockwise",
+   "code": "X_train, y_train, X_val, y_val = load_data(\"noisy_squares.npy\")\n\nmodel = tf.keras.Sequential([\n    tf.keras.layers.InputLayer(shape=[None, 2]),\n    tf.keras.layers.SimpleRNN(16),\n    tf.keras.layers.Dense(1, activation=\"sigmoid\")\n])\noptimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9)\nmodel.compile(loss=\"binary_crossentropy\", optimizer=optimizer,\n              metrics=[\"accuracy\"])\nearly_stopping_cb = tf.keras.callbacks.EarlyStopping(\n    monitor=\"val_loss\", patience=10, restore_best_weights=True)\nhistory = model.fit(X_train, y_train, epochs=50,\n                    validation_data=(X_val, y_val),\n                    callbacks=[early_stopping_cb])",
+   "spec": "lab4Clockwise"
+  },
+  {
+   "id": "lab4-next-vertex",
+   "code": "X_train, y_train, X_val, y_val = load_data(\"noisy_squares.npy\")\nX3_train, y3_train = X_train[:, :3, :], X_train[:, 3, :]  # (200, 3, 2) -> (200, 2)\nX3_val, y3_val = X_val[:, :3, :], X_val[:, 3, :]\n\nmodel = tf.keras.Sequential([\n    tf.keras.layers.InputLayer(shape=[None, 2]),\n    tf.keras.layers.SimpleRNN(16),\n    tf.keras.layers.Dense(2)\n])\noptimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9)\nmodel.compile(loss=\"mse\", optimizer=optimizer)\nhistory = model.fit(X3_train, y3_train, epochs=50,\n                    validation_data=(X3_val, y3_val),\n                    callbacks=[early_stopping_cb])",
+   "spec": "lab4NextVertex"
+  }
+ ]
+}

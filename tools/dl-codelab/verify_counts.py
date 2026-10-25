@@ -66,7 +66,17 @@ def make(l):
     if t == "Dense":
         return L.Dense(l["units"], activation=act, use_bias=l.get("bias", True))
     if t == "Normalization":
+        if l.get("fixed"):
+            d = l["_in"][-1]
+            return L.Normalization(axis=-1, mean=np.zeros(d), variance=np.ones(d), invert=l.get("invert", False))
         return L.Normalization()
+    if t == "Resizing":
+        return L.Resizing(l["height"], l["width"])
+    if t == "Pretrained":
+        if l["base"] == "NASNetMobile":
+            base = tf.keras.applications.NASNetMobile(input_shape=(224, 224, 3), include_top=False, weights=None)
+            return base
+        raise ValueError(l["base"])
     if t == "BatchNormalization":
         return L.BatchNormalization()
     if t == "LayerNormalization":
@@ -92,8 +102,9 @@ def make(l):
     if t in ("Conv2D", "Conv2DTranspose"):
         cls = L.Conv2D if t == "Conv2D" else L.Conv2DTranspose
         return cls(l["filters"], l["kernel"], strides=l.get("strides", 1), padding=l.get("padding", "valid"), activation=act)
-    if t == "Conv1D":
-        return L.Conv1D(l["filters"], l["kernel"], strides=l.get("strides", 1), padding=l.get("padding", "valid"), activation=act)
+    if t in ("Conv1D", "Conv1DTranspose"):
+        cls = L.Conv1D if t == "Conv1D" else L.Conv1DTranspose
+        return cls(l["filters"], l["kernel"], strides=l.get("strides", 1), padding=l.get("padding", "valid"), activation=act)
     if t == "MaxPool2D":
         return L.MaxPool2D(l.get("pool", 2), strides=l.get("strides"), padding=l.get("padding", "valid"))
     if t == "AvgPool2D":
@@ -106,7 +117,7 @@ def make(l):
         return L.GlobalAvgPool1D()
     if t in ("SimpleRNN", "LSTM", "GRU"):
         cls = {"SimpleRNN": L.SimpleRNN, "LSTM": L.LSTM, "GRU": L.GRU}[t]
-        kw = {"return_sequences": l.get("returnSeq", False)}
+        kw = {"return_sequences": l.get("returnSeq", False), "return_state": l.get("_returnState", False)}
         if act:
             kw["activation"] = act
         return cls(l["units"], **kw)
@@ -139,19 +150,31 @@ def build(spec):
         inputs.append(x)
         rows.append({"id": inp["id"], "out": shape_of(x), "tr": 0, "nt": 0})
     prev = spec["inputs"][-1]["id"]
+    # layers whose final state starts another layer (initial_state) return it too
+    state_src = {l["state"] for l in spec["layers"] if l.get("state")}
+    states = {}
     for i, l in enumerate(spec["layers"]):
         lid = l.get("id", f"l{i}")
         frm = l.get("from", prev)
         frm = frm if isinstance(frm, list) else [frm]
-        layer = make(l)
         xs = [tensors[f] for f in frm]
+        lid_ = l.get("id", f"l{i}")
+        layer = make({**l, "_in": shape_of(xs[0]), "_returnState": lid_ in state_src})
+        if l.get("frozen"):
+            layer.trainable = False
         if l["type"] in ("Concatenate", "Add", "Sampling"):
             y = layer(xs)
         elif l["type"] == "MultiHeadAttention":
             y = layer(xs[0], xs[1] if len(xs) > 1 else xs[0])
+        elif l.get("state"):
+            y = layer(xs[0], initial_state=states[l["state"]])
         else:
             y = layer(xs[0])
+        if lid_ in state_src:
+            y, states[lid_] = y[0], y[1]
         tensors[lid] = y
+        if l.get("frozen"):
+            layer.trainable = False
         tr, nt = counts(layer)
         rows.append({"id": lid, "out": shape_of(y), "tr": tr, "nt": nt})
         prev = lid
@@ -196,11 +219,29 @@ def lab4_data(filename):
     return X_train, y_train, X_val, y_val
 
 
+def early_stopping():
+    return tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+
+
+import pandas as pd  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
+
+
+def wine_frame():
+    cols = ["class"] + [f"a{i}" for i in range(13)]
+    data = np.c_[rng.integers(1, 4, size=(178, 1)), rng.normal(size=(178, 13)) * rng.uniform(1, 1000, size=13)]
+    return pd.DataFrame(data, columns=cols)
+
+
 HARNESS = {
+    # Lab 3: wine.data isn't available locally; a random frame of the
+    # sheet's shape stands in
+    "lab3-wine": {"ns": lambda: {"wine": wine_frame(), "X": rng.normal(size=(178, 13)), "train_test_split": train_test_split,
+                                 "early_stopping_cb": early_stopping()}, "model": "model1"},
     # Lab 4: noisy_squares.npy isn't available locally; load_data returns
     # random arrays of the sheet's shapes
-    "lab4-clockwise": {"load_data": lab4_data},
-    "lab4-next-vertex": {"load_data": lab4_data},
+    "lab4-clockwise": {"ns": lambda: {"load_data": lab4_data}},
+    "lab4-next-vertex": {"ns": lambda: {"load_data": lab4_data, "early_stopping_cb": early_stopping()}},
 }
 
 _fit = tf.keras.Model.fit
@@ -217,10 +258,11 @@ tf.keras.Model.fit = one_epoch_fit
 SPEC_BY_ID = {s["id"]: s for s in DATA["specs"]}
 for lab in DATA["labs"]:
     RUN = {"fits": 0}
-    ns = {"np": np, "tf": tf, **HARNESS.get(lab["id"], {})}
+    h = HARNESS.get(lab["id"], {})
+    ns = {"np": np, "tf": tf, **(h["ns"]() if "ns" in h else {})}
     try:
         exec(compile(lab["code"], lab["id"], "exec"), ns)  # noqa: S102
-        model = ns.get("model")
+        model = ns.get(h.get("model", "model"))
         ok = RUN["fits"] > 0 and model is not None
         print(f"{'OK  ' if ok else 'FAIL'} {lab['id']}: ran, fit() called {RUN['fits']}× for 1 epoch")
         if not ok:

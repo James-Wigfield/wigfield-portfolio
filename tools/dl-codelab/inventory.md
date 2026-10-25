@@ -17,7 +17,7 @@ Built 2026-10-25 for the refactored Code Lab (`/portal/dl-code-lab`). Three inve
 
 | Tab | Cards (id → main sources) |
 |---|---|
-| 1 Labs & Projects | `lab2-lr-search` (Géron Ch 10 Ex 10) · `lab3-wine` (Lab 3 T1) · `lab3-quality` (Lab 3 T2) · `lab4-clockwise` (Lab 4 T2) · `lab4-next-vertex` (Lab 4 T3) · `p1-cnn` (P1 §2.1, §2.3) · `p1-nasnet` (P1 §3.1–3.2) · `p2-gru` (P2 §5–7) · `p2-encdec` (P2 §8) · `p2-vae` (P2 §11) |
+| 1 Labs & Projects | `lab2-lr-search` (Géron Ch 10 Ex 10) · `lab3-wine` (Lab 3 T1) · `lab4-clockwise` (Lab 4 T2) · `lab4-next-vertex` (Lab 4 T3) · `p1-cnn` (P1 §2.1, §2.3) · `p1-nasnet` (P1 §3.1–3.2) · `p2-gru` (P2 §5–7) · `p2-encdec` (P2 §8) · `p2-vae` (P2 §11) |
 | 2 Keras models | `fashion-mlp` (L1 s35–37) · `wide-deep` (L1 s44–45) |
 | 3 Training deep nets | `batch-norm` (L2 s26–28) · `dropout-l2` (L2 s60, s64) · `transfer-b-on-a` (L2 s31–32) |
 | 4 Optimizers & LR schedules | `momentum-adam` (L2 s34–44) · `lr-schedules` (L2 s53, s56, s57) |
@@ -241,7 +241,7 @@ The starting section plan had 11 tabs. Transfer learning joined Training deep ne
 | lab2-t2-optimizer-table | Lab 2 T2 + Géron Ch 11 cells 78–104 | val accuracy per optimizer, 10 epochs | useful | evidence only; SGD and momentum outputs are identical in the saved notebook | — | — |
 | lab2-t3-mnist-lr-search | Lab 2 T3 + Géron Ch 10 cells 192–206 | `ExponentialLearningRate` callback, MNIST MLP, callbacks | useful | the LR-search rule (L1 s60); the MLP is L1 s35's | explain | lab2-lr-search |
 | lab3-t1-wine-mlp | Lab 3 T1 | 13 features → 3×Dense(5, GELU) → 3 softmax, IDs 1–3 → 0–2, argmax | core | sample-Q2(a)-style shapes/loss/head; the sheet's pitfall | draw, count, shapes | lab3-wine (reconstructed) |
-| lab3-t2-winequality | Lab 3 T2 | 11 features → 8×Dense(5) → tanh + `Rescaling` to 3…9, mse/mae | useful | bounded regression head | count, explain | lab3-quality (reconstructed) |
+| lab3-t2-winequality | Lab 3 T2 | 11 features → 8×Dense(5) → tanh + `Rescaling` to 3…9, mse/mae | useful | bounded regression head; cut from the cards for the 30-page PDF budget (the largest useful card); the Lab 3 panel keeps the model and the Rescaling(scale=3, offset=6) mapping | count, explain | — (Lab 3 panel) |
 | lab4-load-data | Lab 4 p1 | `load_data` (verbatim on the sheet) | useful | its four arrays are Q2(a)i's shapes | shapes | lab4-clockwise |
 | lab4-task1-geron | Lab 4 T1 | read Géron Ch 15 | cut | a read-through; the slides carry the code | — | — |
 | lab4-task2-clockwise | Lab 4 T2 | SimpleRNN(16) → sigmoid, X (200, 4, 2), y (200,) | core | sample Q2(a) is this lab with stars | shapes, draw, count | lab4-clockwise (reconstructed) |

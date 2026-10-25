@@ -21,13 +21,25 @@
      BatchNormalization  4 × c: γ, β trainable; the moving mean and variance
                          (2 × c) non-trainable
      LayerNormalization  2 × c (γ, β)
-     Normalization       2 × c + 1 non-trainable (mean, variance, count)
+     Normalization       2 × c + 1 non-trainable (mean, variance, count);
+                         0 when the mean and variance are passed in (constants)
+     Conv1DTranspose     (k · c_in + 1) × filters
+     a frozen layer      its parameters count as non-trainable
+     a pretrained base   its count from Keras (BASES below; verify_counts.py
+                         builds it with weights=None to check)
      Embedding           input_dim × output_dim
      MultiHeadAttention  per projection (d · h · k + h · k), output
                          (h · v · d_out + d_out)
    ========================================================================== */
 
 const fmt = (n) => n.toLocaleString('en-US');
+
+// Pretrained bases at their input size: output shape and parameter count, as
+// Keras reports them (Project 1's notebook prints 4,269,716 for NASNetMobile;
+// verify_counts.py rebuilds it). Not a rule: a lookup.
+const BASES = {
+  NASNetMobile: { input: [224, 224, 3], out: [7, 7, 1056], params: 4269716 },
+};
 const prod = (a) => a.reduce((x, y) => x * y, 1);
 const pair = (v, d) => (v === undefined ? [d, d] : Array.isArray(v) ? v : [v, v]);
 
@@ -49,16 +61,23 @@ function apply(layer, ins) {
   const t = layer.type;
   switch (t) {
     case 'Flatten':
-      return { out: [prod(x)], tr: 0, nt: 0, rule: x.length > 1 ? `${x.join(' × ')} = ${fmt(prod(x))} values` : '' };
+      return { out: [prod(x)], tr: 0, nt: 0, rule: x.length > 1 ? `${x.join(' × ')} = ${fmt(prod(x))}` : '' };
     case 'Dense': {
       const bias = layer.bias !== false;
       const tr = last * layer.units + (bias ? layer.units : 0);
       return { out: [...x.slice(0, -1), layer.units], tr, nt: 0, rule: bias ? `(${fmt(last)} + 1) × ${fmt(layer.units)}` : `${fmt(last)} × ${fmt(layer.units)} (no bias)` };
     }
     case 'Normalization':
-      return { out: x, tr: 0, nt: 2 * last + 1, rule: `2 × ${last} + 1 (mean, variance, count): non-trainable` };
+      if (layer.fixed) return { out: x, tr: 0, nt: 0, rule: 'mean, variance given: no weights' };
+      return { out: x, tr: 0, nt: 2 * last + 1, rule: `2 × ${last} + 1: mean, variance, count` };
+    case 'Resizing':
+      return { out: [layer.height, layer.width, last], tr: 0, nt: 0, rule: '' };
+    case 'Pretrained': {
+      const b = BASES[layer.base];
+      return { out: b.out, tr: b.params, nt: 0, rule: 'include_top=False, from Keras' };
+    }
     case 'BatchNormalization':
-      return { out: x, tr: 2 * last, nt: 2 * last, rule: `4 × ${last}: γ, β trainable; moving μ, σ² non-trainable` };
+      return { out: x, tr: 2 * last, nt: 2 * last, rule: `4 × ${last}: γ, β; moving μ, σ²` };
     case 'LayerNormalization':
       return { out: x, tr: 2 * last, nt: 0, rule: `2 × ${last} (γ, β)` };
     case 'Dropout':
@@ -70,7 +89,7 @@ function apply(layer, ins) {
       return { out: x, tr: 0, nt: 0, rule: '' };
     case 'Concatenate': {
       const w = ins.reduce((s, sh) => s + sh[sh.length - 1], 0);
-      return { out: [...x.slice(0, -1), w], tr: 0, nt: 0, rule: `${ins.map((sh) => sh[sh.length - 1]).join(' + ')} = ${w} wide` };
+      return { out: [...x.slice(0, -1), w], tr: 0, nt: 0, rule: `${ins.map((sh) => sh[sh.length - 1]).join(' + ')} = ${w}` };
     }
     case 'Add':
       return { out: x, tr: 0, nt: 0, rule: '' };
@@ -85,11 +104,13 @@ function apply(layer, ins) {
       const out = [len(x[0], kh, sh, pad), len(x[1], kw, sw, pad), layer.filters];
       return { out, tr: (kh * kw * last + 1) * layer.filters, nt: 0, rule: `(${kh}·${kw}·${last} + 1) × ${layer.filters}` };
     }
-    case 'Conv1D': {
+    case 'Conv1D':
+    case 'Conv1DTranspose': {
       const k = layer.kernel;
       const s = layer.strides || 1;
       const pad = layer.padding || 'valid';
-      return { out: [convLen(x[0], k, s, pad), layer.filters], tr: (k * last + 1) * layer.filters, nt: 0, rule: `(${k}·${last} + 1) × ${layer.filters}` };
+      const len = t === 'Conv1D' ? convLen(x[0], k, s, pad) : deconvLen(x[0], k, s, pad);
+      return { out: [len, layer.filters], tr: (k * last + 1) * layer.filters, nt: 0, rule: `(${k}·${last} + 1) × ${layer.filters}` };
     }
     case 'MaxPool2D':
     case 'AvgPool2D': {
@@ -167,7 +188,11 @@ export function layerName(l) {
     case 'RepeatVector': return `RepeatVector ${l.n}`;
     case 'Embedding': return `Embedding ${l.vocab}→${l.dim}`;
     case 'MultiHeadAttention': return `MultiHeadAttention ${l.heads}×${l.keyDim}`;
-    case 'Rescaling': return `Rescaling ×${l.scale}${l.offset ? ` + ${l.offset}` : ''}`;
+    case 'Rescaling': return `Rescaling ×${l.scale}${l.offset ? `, ${l.offset > 0 ? '+' : '−'}${Math.abs(l.offset)}` : ''}`;
+    case 'Resizing': return `Resizing ${l.height}×${l.width}`;
+    case 'Pretrained': return `${l.base}${l.frozen ? ' (frozen)' : ''}`;
+    case 'Conv1DTranspose': return `Conv1DTranspose ${l.filters}, k=${l.kernel}${l.strides && l.strides !== 1 ? `, stride ${l.strides}` : ''}${l.padding === 'same' ? ', same' : ''}${act}`;
+    case 'BatchNormalization': return 'BatchNorm';
     case 'Reshape': return `Reshape [${l.target.join(', ')}]`;
     case 'Activation': return `Activation ${l.act}`;
     default: return `${l.type}${act}`;
@@ -194,8 +219,13 @@ export function flow(spec) {
       return shapes[f];
     });
     const r = apply(l, ins);
+    if (l.frozen) {
+      r.nt += r.tr;
+      r.rule = `${r.rule}${r.rule ? ', ' : ''}frozen`;
+      r.tr = 0;
+    }
     shapes[id] = r.out;
-    rows.push({ id, name: l.label || layerName(l), type: l.type, group: l.group, from, out: r.out, tr: r.tr, nt: r.nt, rule: r.rule, act: l.act });
+    rows.push({ id, name: l.label || layerName(l), type: l.type, group: l.group, from, state: l.state, frozen: !!l.frozen, out: r.out, tr: r.tr, nt: r.nt, rule: r.rule, act: l.act });
     prev = id;
   });
   const tr = rows.reduce((s, r) => s + r.tr, 0);
