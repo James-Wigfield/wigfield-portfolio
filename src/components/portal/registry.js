@@ -197,7 +197,7 @@ export const MODULES = [
   { id: 'dl-arcade', label: 'Gradient Arcade', icon: 'network', group: 'Deep Learning', component: DeepLearningArcade },
   {
     id: 'dl-code-lab',
-    label: 'Code Lab · Search',
+    label: 'Code Lab',
     icon: 'codebase',
     group: 'Deep Learning',
     component: DeepLearningCodeLab,

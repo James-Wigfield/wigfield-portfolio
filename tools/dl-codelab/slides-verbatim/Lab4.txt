@@ -1,0 +1,11 @@
+=== Lab4 p1 ===
+def load_data(filename):
+    with open(filename, "rb") as f:
+        xtrain = np.load(f)
+        ytrain = np.load(f)
+        xval = np.load(f)
+        yval = np.load(f)
+    return xtrain, ytrain, xval, yval
+
+=== Lab4 p1 #2 ===
+X_train, y_train, X_val, y_val = load_data("noisy_squares.npy")

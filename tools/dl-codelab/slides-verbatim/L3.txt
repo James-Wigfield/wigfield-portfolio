@@ -1,0 +1,158 @@
+=== L3 s17 ===
+from sklearn.datasets import load_sample_images
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+images = load_sample_images()["images"]
+images = tf.keras.layers.CenterCrop(height=70, width=120)(images)
+images = tf.keras.layers.Rescaling(scale=1 / 255)(images)
+
+images.shape    # output: TensorShape([2, 70, 120, 3])
+
+_, axes = plt.subplots(1,2, figsize=(10,4))
+axes[0].imshow(images[0])
+axes[1].imshow(images[1])
+
+=== L3 s18 ===
+conv_layer = tf.keras.layers.Conv2D(filters=32, kernel_size=7)
+fmaps = conv_layer(images)
+
+fmaps.shape    # output: TensorShape([2, 64, 114, 32])
+
+_, axes = plt.subplots(2,2, figsize=(15,9))
+for image_idx in (0,1):
+    for fmap_idx in (0,1):
+        axes[image_idx,fmap_idx].imshow(fmaps[image_idx, :, :, fmap_idx], cmap="gray")
+        axes[image_idx,fmap_idx].axis("off")
+
+=== L3 s19 ===
+>>> kernels, biases = conv_layer.get_weights()
+>>> kernels.shape
+(7, 7, 3, 32)
+>>> biases.shape
+(32,)
+
+=== L3 s20 ===
+conv_layer = tf.keras.layers.Conv2D(filters=32, kernel_size=7,
+                                    padding="same")
+fmaps = conv_layer(images)
+fmaps.shape               # output: TensorShape([2, 70, 120, 32])
+
+=== L3 s28 ===
+# both lines below are equivalent
+max_pool = tf.keras.layers.MaxPooling2D(pool_size=2)
+max_pool = tf.keras.layers.MaxPool2D(pool_size=2)
+
+=== L3 s28 #2 ===
+# both lines below are equivalent
+avg_pool = tf.keras.layers.AveragePooling2D(pool_size=2)
+avg_pool = tf.keras.layers.AvgPool2D(pool_size=2)
+
+=== L3 s31 ===
+...
+>>> images.shape
+TensorShape([2, 70, 120, 3])
+
+>>> global_avg_pool = tf.keras.layers.GlobalAvgPool2D()
+>>> global_avg_pool(images)
+<tf.Tensor: shape=(2, 3), dtype=float32, ...
+
+=== L3 s35 ===
+from functools import partial
+DefaultConv2D = partial(tf.keras.layers.Conv2D, kernel_size=3, padding="same",
+                        activation="relu", kernel_initializer="he_normal")
+model = tf.keras.Sequential([
+    tf.keras.layers.InputLayer(shape=[28, 28, 1]),
+    DefaultConv2D(filters=64, kernel_size=7),
+    tf.keras.layers.MaxPool2D(),
+    DefaultConv2D(filters=128),
+    DefaultConv2D(filters=128),
+    tf.keras.layers.MaxPool2D(),
+    DefaultConv2D(filters=256),
+    DefaultConv2D(filters=256),
+    tf.keras.layers.MaxPool2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(units=128, activation="relu",
+                          kernel_initializer="he_normal"),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(units=64, activation="relu",
+                          kernel_initializer="he_normal"),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(units=10, activation="softmax")
+])
+
+=== L3 s48 ===
+from sklearn.datasets import load_sample_images
+model = tf.keras.applications.ResNet50(weights="imagenet")
+images = np.array(load_sample_images()["images"], dtype=float32)
+images_resized = tf.keras.layers.Resizing(height=224, width=224,
+                                   crop_to_aspect_ratio=True)(images)
+# images are converted from RGB to BGR; each color channel is zero-centered
+inputs = tf.keras.applications.resnet50.preprocess_input(images_resized)
+
+>>> Y_proba = model.predict(inputs)
+>>> Y_proba.shape
+(2, 1000)
+
+top_K = tf.keras.applications.resnet50.decode_predictions(Y_proba, top=3)
+for image_index in range(len(images)):
+   print(f"Image #{image_index}")
+   for class_id, name, y_proba in top_K[image_index]:
+      print(f" {class_id} - {name:12s} {y_proba:.2%}")
+
+=== L3 s49 ===
+Image #0
+  n03877845 - palace       54.69%
+  n03781244 - monastery    24.72%
+  n02825657 - bell_cote    18.55%
+Image #1
+  n04522168 - vase         32.66%
+  n11939491 - daisy        17.81%
+  n03530642 - honeycomb    12.06%
+
+=== L3 s50 ===
+import tensorflow as tf
+import tensorflow_datasets as tfds
+
+(test_set_raw, valid_set_raw, train_set_raw), info = tfds.load("tf_flowers",
+            split=["train[:10%]", "train[10%:25%]", "train[25%:]"],
+            as_supervised=True, with_info=True)
+dataset_size = info.splits["train"].num_examples # 3670
+class_names = info.features["label"].names # ["dandelion", "daisy", "tulips", "sunflowers", "roses"]
+n_classes = info.features["label"].num_classes # 5
+
+batch_size = 32
+preprocess = tf.keras.Sequential([
+    tf.keras.layers.Resizing(height=224, width=224, crop_to_aspect_ratio=True),
+    # Xception requires the input pixel values in the range between -1 and 1
+    tf.keras.layers.Lambda(tf.keras.applications.xception.preprocess_input)
+])
+train_set = train_set_raw.map(lambda X, y: (preprocess(X), y))
+train_set = train_set.shuffle(1000, seed=42).batch(batch_size).prefetch(1)
+valid_set = valid_set_raw.map(lambda X, y: (preprocess(X), y)).batch(batch_size)
+test_set = test_set_raw.map(lambda X, y: (preprocess(X), y)).batch(batch_size)
+
+=== L3 s51 ===
+# load the Xception model
+base_model = tf.keras.applications.xception.Xception(weights="imagenet", include_top=False)
+
+avg = tf.keras.layers.GlobalAveragePooling2D()(base_model.output)
+output = tf.keras.layers.Dense(n_classes, activation="softmax")(avg)
+model = tf.keras.Model(inputs=base_model.input, outputs=output)
+
+# freeze the pretrained layers, compile and train for a few epochs
+for layer in base_model.layers:
+    layer.trainable = False
+
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9)
+model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+history = model.fit(train_set, validation_data=valid_set, epochs=3)
+
+# unfreeze some layers and train for a few more epochs
+for layer in base_model.layers[56:]:
+    layer.trainable = True
+
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9)
+model.compile(loss='sparse_categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+history = model.fit(train_set, validation_data=valid_set, epochs=10)
+
