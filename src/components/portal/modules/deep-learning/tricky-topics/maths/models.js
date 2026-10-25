@@ -27,6 +27,26 @@ export const MODELS = {
     note: 'The frozen-layers lab’s printed state: layer.trainable = False on Dense(300) and Dense(100) (L2 slide 31’s idea).',
     model: { input: [28, 28], layers: [{ t: 'flatten' }, { t: 'dense', units: 300, frozen: true }, { t: 'dense', units: 100, frozen: true }, { t: 'dense', units: 10 }] },
   },
+  // the three networks of the counting-from-a-diagram lab (param-count step 3)
+  'l1-fig105': {
+    name: 'Figure 10-5: 2 inputs, 3 output neurons',
+    at: 'L1 · slide 7',
+    printed: {},
+    model: { input: [2], layers: [{ t: 'dense', units: 3 }] },
+  },
+  'l1-xor': {
+    name: 'The XOR network: 2 inputs, 2 hidden, 1 output',
+    at: 'L1 · slide 17',
+    printed: {},
+    model: { input: [2], layers: [{ t: 'dense', units: 2 }, { t: 'dense', units: 1 }] },
+  },
+  'own-342': {
+    name: 'This page’s own 3 → 4 → 2 network',
+    at: 'L1 · slide 17',
+    printed: {},
+    note: 'Not a slide’s network: the diagram lab’s practice figure, drawn the way slide 17 draws one.',
+    model: { input: [3], layers: [{ t: 'dense', units: 4 }, { t: 'dense', units: 2 }] },
+  },
   'l1-widedeep': {
     name: 'Wide & Deep (California housing)',
     at: 'L1 · slide 45',

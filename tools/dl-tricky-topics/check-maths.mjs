@@ -45,7 +45,7 @@ const { MODELS } = await imp('maths/models.js');
 const { countModel } = await imp('maths/paramRules.js');
 const { prod } = await imp('maths/shapeRules.js');
 const { convOut, poolOut, convTOut } = await imp('maths/strideRules.js');
-const { softmax } = await imp('maths/softmax.js');
+const { softmax, sigmoid } = await imp('maths/softmax.js');
 const { LECTURES, parseReceipt } = await imp('lectures.js');
 const { TOKEN, RECEIPT_RE, provOf } = await imp('richToken.js');
 const { checkField, parseNumber, normText } = await imp('drillCheck.js');
@@ -137,6 +137,8 @@ let sweepBad = 0;
 ok(truth && truth.sweep.length >= 2000 && sweepBad === 0, `strideRules.js = Keras on ${truth?.sweep?.length ?? 0} sweep points (Conv1D, Conv2D, MaxPool2D, Conv2DTranspose)`, `${sweepBad} disagree`);
 (truth?.softmax ?? []).forEach((v) => ok(Math.max(...softmax(v.z).map((p, j) => Math.abs(p - v.p[j]))) < 1e-12, `softmax.js = tf.nn.softmax for ${JSON.stringify(v.z)}`));
 ok(truth && truth.shiftInvariance < 1e-12, 'softmax shift invariance (Keras)');
+ok(truth?.sigmoid?.length > 0, 'truth has sigmoid values', 'stale: re-run export-specs.mjs + verify_counts.py');
+(truth?.sigmoid ?? []).forEach((v) => ok(Math.abs(sigmoid(v.z) - v.p) < 1e-12, `softmax.js sigmoid = tf.math.sigmoid at ${v.z}`));
 
 /* ── 2. the numbers the maths modules can produce ────────────────────────── */
 const computed = new Set();
@@ -178,7 +180,7 @@ for (const t of TOPICS) {
   ok(t.id !== '_template', `${t.id}: the template is not listed`);
   ok(typeof t.load === 'function' && String(t.load).includes(`./${t.id}/index.js`), `${t.id}: load() imports ./${t.id}/index.js`);
   ok(Array.isArray(t.lectures) && t.lectures.length > 0 && t.lectures.every((l) => LECTURES[l]), `${t.id}: lectures are real decks (${t.lectures?.join(' ')})`);
-  ok(t.blurb && !/REPLACE ME/.test(t.blurb), `${t.id}: index line has a blurb`);
+  ok(t.blurb && (ALLOW_PLACEHOLDERS || !/REPLACE ME/.test(t.blurb)), `${t.id}: index line has a blurb`);
   const dir = path.join(ROOT, 'topics', t.id);
   let topic;
   try { topic = (await imp(`topics/${t.id}/topic.js`)).default; } catch (e) { ok(false, `${t.id}: topic.js imports in node`, e.message); continue; }

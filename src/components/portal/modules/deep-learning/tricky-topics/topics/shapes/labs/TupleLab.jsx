@@ -39,7 +39,7 @@ export function TupleLab() {
       maths={
         <>
           <MLine text={`\`${T.code}\` → \`(${T.shape.join(', ')})\`: ${T.words.join(' × ')}.`} />
-          <MLine text={`That is $${T.shape.join(' \\times ')} = ${prod(T.shape).toLocaleString('en-US')}$ numbers in all {own}.`} />
+          <MLine text={`That is $${T.shape.join(' \\times ')} = ${prod(T.shape).toLocaleString('en-US')}$ numbers in all: multiply out the shape.`} />
         </>
       }
     >

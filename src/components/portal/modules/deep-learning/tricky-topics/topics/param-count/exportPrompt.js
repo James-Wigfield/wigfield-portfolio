@@ -20,7 +20,7 @@ export const PROMPTS = {
     },
     {
       label: 'Part 2 of 2 · steps 8–12 · Explainer',
-      text: 'Part 2 of 2. Use only this PDF, steps 8 to 12: a CITS5017 study page on counting parameters. Teach a student who can count Dense and conv layers but finds recurrent models hard. Use the unrolled-cell picture: W_x, W_h and b are reused at every time step, so sequence length never changes a count (slides 25 to 29: 3, 1,121, 5,281). Then LSTM as four blocks (685), GRU as three plus Keras’s extra bias (1,401 against the equations’ 1,341), Bidirectional as two copies (674); tied autoencoder weights (163,814 to 82,414); frozen layers, which move to non-trainable; and one model in five forms. Say which numbers are “this page’s own” and what is “beyond the slides”. End with three self-test questions.',
+      text: 'Part 2 of 2. Use only this PDF, steps 8 to 12: a CITS5017 study page on counting parameters. Teach a student who can count Dense and conv layers but finds recurrent models hard. Use the unrolled-cell picture: W_x, W_h and b are reused at every time step, so sequence length never changes a count (slides 25 to 29 print model totals of 3, 1,121 and 5,281). Then LSTM as four blocks (model total 685), GRU as three plus Keras’s extra bias (model total 1,401; 1,341 with one bias per gate), Bidirectional as two copies (674); tied autoencoder weights (163,814 to 82,414); frozen layers, which move to non-trainable; and one model in five forms. Say which numbers are “this page’s own” and what is “beyond the slides”. End with three self-test questions.',
     },
   ],
 };

@@ -12,11 +12,13 @@
    marked "REPLACE ME". Then follow ADDING-A-TOPIC.md.
 
    --remove deletes topics/<id>/ and its line in topics/index.js (for a
-   throwaway topic). It refuses the four built-in topics and _template.
+   throwaway topic). It refuses _template, the four built-in topics and
+   any topic already committed to git.
    ========================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../src/components/portal/modules/deep-learning/tricky-topics');
@@ -34,6 +36,14 @@ if (args[0] === '--remove') {
   const id = args[1];
   if (!id || PROTECTED.includes(id)) die(`refusing to remove "${id ?? ''}"`);
   const dir = path.join(TOPICS, id);
+  // never delete a topic that is already committed: only throwaway, uncommitted ones
+  try {
+    const tracked = execFileSync('git', ['ls-files', '--', dir], { cwd: ROOT }).toString().trim();
+    if (tracked) die(`topics/${id}/ is committed to git; refusing to remove it (use git if you really mean it)`);
+  } catch (e) {
+    if (e.status === undefined) die(`couldn't ask git whether topics/${id}/ is committed (${e.message})`);
+    throw e;
+  }
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
   const src = fs.readFileSync(INDEX, 'utf8');
   const lines = src.split(/\r?\n/);

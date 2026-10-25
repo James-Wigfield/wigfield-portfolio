@@ -22,12 +22,12 @@ export default {
     { at: 'L1 · slide 45', what: 'Wide & Deep: Normalization’s **17** non-trainable; `Concatenate` widens to (None, 38).' },
     { at: 'L2 · slide 27', what: 'BatchNormalization: **271,346** = 268,978 trainable + 2,368 non-trainable.' },
     { at: 'L3 · slide 22', what: '200 filters of 5 × 5 on RGB: (5 × 5 × 3 + 1) × 200 = **15,200**, against 675 million for a dense layer.' },
-    { at: 'L4 · slides 25, 27, 29', what: 'SimpleRNN counts **3**, **1,121** and **5,281**: the 56 time steps never appear.' },
-    { at: 'L4 · slides 43, 49, 50', what: 'LSTM **685**, GRU **1401**, Conv1D + GRU **1283**, printed as code comments.' },
+    { at: 'L4 · slides 25, 27, 29', what: 'SimpleRNN models of **3**, **1,121** and **5,281** parameters (the `SimpleRNN(32)` layer alone: 1,088): the 56 time steps never appear.' },
+    { at: 'L4 · slides 43, 49, 50', what: 'Whole-model totals in code comments: LSTM model **685**, GRU model **1401**, Conv1D + GRU **1283**. The layers alone, LSTM(12) 672 and GRU(20) 1,380, are this page’s {own}.' },
     { at: 'L5 · slides 12, 21', what: 'Tied weights: **163,814** → **82,414** trainable.' },
     { at: 'L6–7 · slide 6', what: 'Conv decoder summary **13,873**; `conv_ae.count_params()` **54479**.' },
     { at: 'L8 · slide 9', what: '`Bidirectional(SimpleRNN(16))` + `Dense(2)`: **674** trainable params (a code comment).' },
-    { at: 'L9 · slides 25, 61', what: 'The policy network and the DQN: code only, so their counts (31, 1,282) are this page’s own.' },
+    { at: 'L9 · slides 25, 61', what: 'The policy network and the DQN: code only, so their counts (31, 1,282) are this page’s {own}. Figure 18-5 draws 4 hidden neurons where slide 25’s code has `Dense(5)`; 31 counts the code.' },
   ],
   examAsks: [
     { form: 'Code', what: 'Wide & Deep with Normalization + Concatenate: draw it, count every layer’s trainable parameters and the total.', part: 'Sample Q1(c)' },
@@ -35,7 +35,8 @@ export default {
     { form: 'Diagram', what: 'An unrolled memory cell: write its equations, the shapes of its weights, the count.', part: 'Practice A Q2(a)' },
     { form: 'Equation', what: 'Tied weights in an autoencoder: the tying equation and the count.', part: 'Practice A Q2(d)' },
     { form: 'Scenario', what: 'A conv layer described in words: its parameters, compute and memory.', part: 'Practice B Q1(c)' },
-    { form: 'Code', what: 'A GAN, a Conv1D + LSTM model, a DQN: draw and count.', part: 'Practice A Q3(a)' },
+    { form: 'Code', what: 'A GAN’s generator and discriminator: draw and count.', part: 'Practice A Q3(a)' },
+    { form: 'Code', what: 'A Conv1D + LSTM model, then a DQN: draw and count.', part: 'Practice B Q2(b), Q4(d)' },
   ],
   steps: [
     /* ── 1 ─────────────────────────────────────────────────────────────── */
@@ -51,7 +52,7 @@ export default {
           '**Trainable** parameters are changed by training; **non-trainable** ones are stored but not trained. `model.summary()` prints both {s|L1 · slide 45}.',
           '**The method, for any source:** (1) list the layers; (2) track the size flowing *into* each ([shapes](@shapes)); (3) apply that layer’s rule; (4) score 0 for layers with nothing to learn; (5) split trainable from non-trainable; (6) add up, and write the working: the marks are in it.',
         ] },
-        { eq: { name: 'Dense layer', tex: '(n_{\\text{in}} + 1) \\times n_{\\text{out}}', read: 'a weight from every input, plus one bias, for every neuron', prov: '{s|L1 · slide 36}' } },
+        { eq: { name: 'Dense layer', tex: '(n_{\\text{in}} + 1) \\times n_{\\text{out}}', read: 'a weight from every input, plus one bias, for every neuron', prov: '{s|L1 · slide 36} {own}' } },
       ],
       play: ['loom'],
     },
@@ -74,7 +75,7 @@ export default {
             ['Total', '', '', '**266,610** {s|L1 · slide 36}'],
           ],
         } },
-        '235,500 of the 266,610 sit in the first Dense layer (88%) {own}: a wide input makes a big layer.',
+        '235,500 of slide 36’s 266,610 sit in the first Dense layer, about 88%: a wide input makes a big layer {s|L1 · slide 36}.',
       ],
       play: ['stack'],
     },
@@ -104,7 +105,7 @@ export default {
       gist: 'Layers that only move, reshape or mix data score 0, but they change what the next layer receives.',
       read: [
         { list: [
-          'Score 0: `Flatten`, `Reshape`, `Dropout`, pooling, `GlobalAvgPool2D`, `Concatenate`, `Activation`, the VAE’s `Sampling` {s|L1 · slide 36} {s|L3 · slide 25}.',
+          'Score 0: `Flatten` {s|L1 · slide 36}, pooling {s|L3 · slide 25}, `Concatenate` {s|L1 · slide 45}, `Reshape` {s|L6–7 · slide 6}; also `Dropout`, `GlobalAvgPool2D` and `Activation` {own}.',
           '`Concatenate` puts its inputs side by side. Wide & Deep joins the 8 normalized features to 30 hidden outputs, so the last Dense sees **38** inputs: $(38 + 1) \\times 1 = 39$ {s|L1 · slide 45}.',
           'Sample Q1(c) has the same shape: $10 + 20 = 30$ inputs into `Dense(3)`, so $(30 + 1) \\times 3 = 93$ {s|Sample Q1(c)} {own}.',
           'The trap: counting the last Dense from the hidden layer alone (31 or 63) instead of the concatenated width.',
@@ -179,7 +180,7 @@ export default {
       prov: '{s|L4 · slide 9} {s|L4 · slides 25, 27, 29}',
       gist: 'A recurrent layer has three weight blocks, $\\mathbf{W}_x$, $\\mathbf{W}_h$ and $\\mathbf{b}$, reused at every time step, so the sequence length never enters the count.',
       read: [
-        { eq: { name: 'SimpleRNN', tex: '\\text{units} \\times (\\text{units} + n_{\\text{in}}) + \\text{units}', read: 'W_x is n_in × units, W_h is units × units, b has one per unit', prov: '{s|L4 · slide 9}' } },
+        { eq: { name: 'SimpleRNN', tex: '\\text{units} \\times (\\text{units} + n_{\\text{in}}) + \\text{units}', read: 'W_x is n_in × units, W_h is units × units, b has one per unit', prov: '{s|L4 · slide 9} {own}' } },
         { list: [
           'Slide 9’s shapes: $\\mathbf{W}_x$ is $n_{\\text{inputs}} \\times n_{\\text{neurons}}$, $\\mathbf{W}_h$ is $n_{\\text{neurons}} \\times n_{\\text{neurons}}$ {s|L4 · slide 9}.',
           '`SimpleRNN(1)` on one feature: $1 \\times (1 + 1) + 1 = 3$ {s|L4 · slide 25}. `SimpleRNN(32)`: 1,088 {s|L4 · slide 27}; on 32 inputs: 2,080 {s|L4 · slide 29}.',
@@ -201,16 +202,16 @@ export default {
         { table: {
           head: ['Layer', 'Count', 'The slides’ example'],
           rows: [
-            ['LSTM', '$4 \\times (u(u + n_{\\text{in}}) + u)$', 'LSTM(12) + Dense(1): 672 + 13 = **685** {s|L4 · slide 43}'],
-            ['GRU (Keras)', '$3 \\times (u(u + n_{\\text{in}}) + 2u)$', 'GRU(20) + Dense(1): 1,380 + 21 = **1,401** {s|L4 · slide 49}'],
+            ['LSTM', '$4 \\times (u(u + n_{\\text{in}}) + u)$', 'LSTM(12) + Dense(1): 672 + 13 {own} = **685** {s|L4 · slide 43}'],
+            ['GRU (Keras)', '$3 \\times (u(u + n_{\\text{in}}) + 2u)$', 'GRU(20) + Dense(1): 1,380 + 21 {own} = **1,401** {s|L4 · slide 49}'],
             ['GRU, 1 bias per gate', '$3 \\times (u(u + n_{\\text{in}}) + u)$', '1,320 + 21 = 1,341 {own}'],
-            ['Bidirectional', '2 × the wrapped layer', '2 × 304 + 66 = **674** {s|L8 · slide 9}'],
+            ['Bidirectional', '2 × the wrapped layer', '2 × 304 + 66 {own} = **674** {s|L8 · slide 9}'],
           ],
         } },
         { list: [
           'Why: an LSTM feeds $\\mathbf{h}_{(t-1)}$ and $\\mathbf{x}_{(t)}$ to four fully connected layers {s|L4 · slide 46}, a GRU to three {s|L4 · slide 48}.',
         ] },
-        { slideNote: 'Slide 49’s GRU equations show one bias per gate ($\\mathbf{b}_z$, $\\mathbf{b}_r$, $\\mathbf{b}_g$), which gives 1,341. Its printed 1401 is Keras’s default `reset_after=True`, which keeps two bias vectors per gate. Slide 50’s 1283 has the same cause: one bias per gate would give 1,253.' },
+        { slideNote: 'Slide 49’s GRU equations show one bias per gate ($\\mathbf{b}_z$, $\\mathbf{b}_r$, $\\mathbf{b}_g$), which gives 1,320 for the GRU (1,341 with the Dense head). Its printed 1401 is Keras’s default `reset_after=True`, which keeps two bias vectors per gate. Slide 50’s 1283 has the same cause: one bias per gate would give 1,253.' },
       ],
       play: ['gates'],
     },
@@ -228,7 +229,7 @@ export default {
           'Conv decoder: 4,464 + 4,640 + 4,624 + 145 = **13,873**; whole conv AE 54,479 {s|L6–7 · slide 6}; so the encoder is 40,606 {own}.',
           'GAN (codings 30): generator 136,634, discriminator 132,951. DCGAN: generator 840,321 trainable + 384 non-trainable (its two BN layers), discriminator 212,865 {own}.',
         ] },
-        { slideNote: 'Slide 18 says tying “halves the number of weights”, slide 21 “almost halved”: the biases aren’t tied, so 82,414 is a little more than half of 163,814 (81,907).' },
+        { note: 'Slide 18 says tying “halves the number of weights”, slide 21 “almost halved”. Both hold: the weights halve exactly, $2 \\times (78{,}400 + 3{,}000) = 162{,}800$ down to 81,400, but the 1,014 biases aren’t tied, so $81{,}400 + 1{,}014 = 82{,}414$, a little more than half of 163,814 {s|L5 · slides 12, 21}.', label: 'Halved, almost' },
       ],
       play: ['tied'],
     },

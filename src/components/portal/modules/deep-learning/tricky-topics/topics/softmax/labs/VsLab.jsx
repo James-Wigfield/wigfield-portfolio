@@ -62,14 +62,14 @@ export function VsLab() {
       title="Separate yes/no answers, or one share-out?"
       prov="{s|L1 · slides 29, 31} {s|L9 · slide 25}"
       tryThis="Predict which of the three output layers adds up to exactly 1, then switch between them."
-      caption="Multilabel sigmoids are separate yes/no answers, so their sum can be anything; softmax makes the classes compete for one total of 1. CartPole has two actions but one sigmoid output: left with probability $p$, right with $1 - p$ {s|L9 · slide 25}."
+      caption="Multilabel sigmoids are separate yes/no answers, so their sum can be anything; softmax makes the classes compete for one total of 1. CartPole has two actions but one sigmoid output: left with probability $p$ {s|L9 · slide 25}, right with $1 - p$ {own}."
       maths={
         <>
-          <MLine text={`Binary: $\\sigma(${z0}) = 1/(1 + e^{-${z0}}) = ${tex(bin.p[0], 3)}$; the other class gets $1 - ${tex(bin.p[0], 3)} = ${tex(bin.ghost, 3)}$ {s|L1 · slide 29}.`} />
+          <MLine text={`Binary: $\\sigma(${z0}) = 1/(1 + e^{-${z0}}) = ${tex(bin.p[0], 3)}$; one logistic output {s|L1 · slide 29}; the other class gets $1 - ${tex(bin.p[0], 3)} = ${tex(bin.ghost, 3)}$ {own}.`} />
           <MLine text={`Multilabel: $${Z.map((v) => `\\sigma(${texScore(v)})`).join(', ')} = ${ml.p.map((v) => tex(v, 3)).join(', ')}$, which add up to $${tex(sum(ml.p), 3)}$: each label is its own question {s|L1 · slide 29}.`} />
           <MLine text={`Multiclass: softmax of $(${Z.map(texScore).join(', ')})$ is $(${mc.p.map((v) => tex(v, 3)).join(', ')})$, which add up to $${tex(sum(mc.p), 3)}$ {s|L1 · slide 29}. All three train with cross-entropy {s|L1 · slide 31}.`} />
           <MLine text={`A two-class softmax over $(${z0}, 0)$ gives $${tex(softmax([Z[0], 0])[0], 3)}$, the same as $\\sigma(${z0})$: one sigmoid is enough for two classes {beyond}.`} />
-          <MLine text={'CartPole: `Dense(1, activation="sigmoid")` gives the probability of left; right gets $1 - p$ {s|L9 · slides 23, 25}.'} />
+          <MLine text={'CartPole: `Dense(1, activation="sigmoid")` gives the probability of left {s|L9 · slides 23, 25}; right gets $1 - p$ {own}.'} />
         </>
       }
     >

@@ -17,7 +17,7 @@ import './shapes.css';
 
 const CHOICES = {
   'l3-cnn': { label: 'L3 s35 CNN', prov: '{s|L3 · slide 35} {own}', seq: false },
-  'l67-convae': { label: 'L6–7 conv AE', prov: '{s|L6–7 · slides 5–6}', seq: false },
+  'l67-convae': { label: 'L6–7 conv AE', prov: '{s|L6–7 · slides 5–6} {own}', seq: false },
   'l4-cnngru': { label: 'L4 s50 Conv1D + GRU', prov: '{s|L4 · slide 50} {own}', seq: true },
   'l67-dcgan-g': { label: 'DCGAN generator', prov: '{s|L6–7 · slide 29} {own}', seq: false },
 };

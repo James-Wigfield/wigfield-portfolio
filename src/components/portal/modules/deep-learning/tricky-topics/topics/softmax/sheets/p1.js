@@ -31,7 +31,7 @@ export default {
           ],
         } },
       ],
-      margin: [{ q: 'CartPole’s two actions?', a: 'One sigmoid: P(left); right is $1 - p$ (L9 · 25).' }],
+      margin: [{ q: 'CartPole’s two actions?', a: 'One sigmoid: P(left) (L9 · 25); right is $1 - p$.' }],
     },
     {
       id: 'loss',

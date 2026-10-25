@@ -54,7 +54,7 @@ export function GatesLab() {
       prov={k === 'gru' && !twoBias ? `${opt.prov} {own}` : opt.prov}
       tryThis="Pick a layer and count its blocks before reading the total. For the GRU, flip between one and two biases per gate."
       caption={`Each block is one SimpleRNN-sized set of weights: $\\mathbf{W}_x$ (${nIn} × ${u}), $\\mathbf{W}_h$ (${u} × ${u}) and a bias (${u}). The Dense head is counted separately.`}
-      challenge={{ text: 'Find the GRU count that the slide’s own equations give (1,341).', done: C.total === 1341 }}
+      challenge={{ text: 'Find the GRU layer’s count with slide 49’s equations, one bias per gate: 1,320 (1,341 with the Dense head).', done: k === 'gru' && rec.total === 1320 }}
       maths={
         <>
           <MLine text={`One block: $${nIn} \\times ${u} + ${u} \\times ${u} + ${u} = ${block}$.`} />

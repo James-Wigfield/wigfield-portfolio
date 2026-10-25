@@ -32,7 +32,7 @@ const { TOPICS } = await imp('topics/index.js');
 const { MODELS } = await imp('maths/models.js');
 const { countModel } = await imp('maths/paramRules.js');
 const { convOut, poolOut, convTOut } = await imp('maths/strideRules.js');
-const { softmax } = await imp('maths/softmax.js');
+const { softmax, sigmoid } = await imp('maths/softmax.js');
 
 function jsAnswer(model) {
   const C = countModel(model);
@@ -82,7 +82,10 @@ const soft = LOGITS.flatMap((z) => [
   { z: z.map((v) => v + 7), p: softmax(z.map((v) => v + 7)) },
 ]);
 
-const out = { generated: new Date().toISOString(), topics: TOPICS.map((t) => t.id), models, checks, sweep, softmax: soft };
+// sigmoid (the binary output and CartPole's policy): softmax.js's sigmoid on a grid of scores
+const sig = [-6, -3, -2, -1, -0.5, 0, 0.4, 0.5, 1, 1.5, 2, 3, 6].map((z) => ({ z, p: sigmoid(z) }));
+
+const out = { generated: new Date().toISOString(), topics: TOPICS.map((t) => t.id), models, checks, sweep, softmax: soft, sigmoid: sig };
 fs.writeFileSync(path.join(HERE, 'specs.json'), JSON.stringify(out));
 console.log(`specs.json: ${models.length} models (${Object.keys(MODELS).length} named), ${checks.length} checks, ${sweep.length} sweep points, ${soft.length} softmax vectors`);
 for (const [id, m] of Object.entries(MODELS)) {

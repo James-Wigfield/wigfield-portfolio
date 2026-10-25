@@ -75,7 +75,7 @@ const SCENARIOS = [
   { s: 'Classify a Fashion MNIST image as one of 10 clothing items.', a: 'softmax', why: 'One class out of 10: softmax over 10 outputs {s|L1 · slides 29, 35}.' },
   { s: 'Decide whether an email is spam or not.', a: 'sigmoid1', why: 'Binary: “one single output neuron with a logistic activation function” {s|L1 · slide 29}.' },
   { s: 'Tag a photo with every object that appears in it (cat, dog, car, tree).', a: 'sigmoidN', why: 'Multilabel: one logistic output per label; several can be on at once {s|L1 · slide 29}.' },
-  { s: 'CartPole: choose to push the cart left or right.', a: 'sigmoid1', why: 'Two actions, one sigmoid output: the probability of left; right gets $1 - p$ {s|L9 · slide 25}.' },
+  { s: 'CartPole: choose to push the cart left or right.', a: 'sigmoid1', why: 'Two actions, one sigmoid output: the probability of left {s|L9 · slide 25}; right gets $1 - p$ {own}.' },
   { s: 'Predict tomorrow’s rail ridership.', a: 'none', why: 'Regression: “the output neurons usually do not need an activation function” {s|L1 · slide 24}.' },
   { s: 'Pick the next Spanish word from the target vocabulary.', a: 'softmax', why: '`Dense(vocab_size, activation="softmax")` {s|L8 · slide 26}.' },
   { s: 'Decide whether a sequence of four noisy vertices runs clockwise (1) or anticlockwise (0).', a: 'sigmoid1', why: 'Binary labels 1 and 0 {s|Lab Sheet 4}: one sigmoid output {s|L1 · slide 29}.' },
@@ -205,11 +205,11 @@ export const FIXED = [
   {
     id: 'u-l9s25',
     title: 'From the unit · L9 slide 25',
-    prov: '{s|L9 · slides 23, 25}',
+    prov: '{s|L9 · slides 23, 25} {own}',
     prompt: `CartPole’s policy network outputs one number through a sigmoid. If the output layer’s score is 0.4, what is the probability of pushing right?`,
     fields: [{ key: 'p', label: 'P(right)', type: 'number', answer: r2(1 - sigmoid(0.4)), tol: 0.011 }],
     working: [
-      `The one output is the probability of action 0 (left) {s|L9 · slide 23}: $\\sigma(0.4) = 1/(1 + e^{-0.4}) = ${f3(sigmoid(0.4))}$ {s|L1 · slide 20}.`,
+      `The one output is the probability of action 0 (left) {s|L9 · slide 23}, through the logistic function $\\sigma(z) = 1/(1 + e^{-z})$ {s|L1 · slide 20}: $\\sigma(0.4) = ${f3(sigmoid(0.4))}$ {own}.`,
       `Right gets the rest: $1 - ${f3(sigmoid(0.4))} = ${f3(1 - sigmoid(0.4))}$ (the slide never writes $1 - p$) {own}.`,
     ],
   },

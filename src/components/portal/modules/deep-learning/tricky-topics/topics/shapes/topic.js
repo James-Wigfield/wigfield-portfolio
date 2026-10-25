@@ -87,7 +87,7 @@ export default {
         { list: [
           '`images.shape` → `TensorShape([2, 70, 120, 3])`: two sample images cropped to 70 × 120, RGB {s|L3 · slide 17}.',
           'After `Conv2D(filters=32, kernel_size=7)`: `TensorShape([2, 64, 114, 32])`. The batch stays 2; height and width shrink by 6; the last axis is now the **32 filters** {s|L3 · slide 18}.',
-          'The total count of numbers is the product: $2 \\times 70 \\times 120 \\times 3 = 50{,}400$ {own}.',
+          'The total count of numbers is the product: $2 \\times 70 \\times 120 \\times 3 = 50{,}400$, from the shape {s|L3 · slide 17}.',
         ] },
         { slideNote: 'Slide 19 says the output feature maps are `[2, 64, 114, 3]`; slide 18 prints `TensorShape([2, 64, 114, 32])`, and slide 19’s own kernels are `(7, 7, 3, 32)`. The last axis is the number of filters, 32.' },
       ],
@@ -168,7 +168,7 @@ export default {
         { list: [
           'Slide 11: three days of 4 measurements predicting 2 numbers gives $\\mathbf{X} \\in \\mathbb{R}^{N \\times 3 \\times 4}$ and $\\mathbf{Y} \\in \\mathbb{R}^{N \\times 2}$ {s|L4 · slide 11}.',
           'Lab Sheet 4: 200 sequences of 4 noisy 2D vertices, labelled 1 or 0: `X_train` (200, 4, 2), `y_train` (200,). Task 3, three vertices in, the fourth out: (200, 3, 2) and (200, 2) {s|Lab Sheet 4}.',
-          'Sample Q2(a): 4 star corners in, the last corner out: X $(N, 4, 2)$, y $(N, 2)$ {s|Sample Q2(a)} (Exam Practice’s answer).',
+          'Sample Q2(a): 4 star corners in, the last corner out {s|Sample Q2(a)}, so X $(N, 4, 2)$, y $(N, 2)$ {own}, as Exam Practice answers it.',
         ] },
       ],
       play: ['scenario'],

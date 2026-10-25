@@ -53,7 +53,7 @@ export default {
       items: [
         'Concatenate scores 0 but {g|widens} the next layer.',
         'BN: half its $4n$ are non-trainable; Normalization: all.',
-        'Keras GRU: 1,401, not the equations’ 1,341 (two biases).',
+        'GRU(20) + Dense(1): Keras 1,401; one bias per gate 1,341.',
         'Time steps never add parameters; nor do image size or stride.',
         'Frozen ≠ removed: the count moves to non-trainable.',
         'A tied decoder layer adds only its biases.',

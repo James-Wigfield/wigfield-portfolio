@@ -204,10 +204,14 @@ function fixed(id, key, form, prompt, opts = {}) {
     fields = C.rows.map((row) => ({ key: `l${row.i}`, label: `\`${layerName(row.L)}\` · trainable`, answer: row.trainable, type: 'number' }));
     fields.push({ key: 'tr', label: '**Total trainable**', answer: C.trainable, type: 'number' });
   }
+  // the slide's alone only if it prints every answer: each layer's count, or
+  // the total of a model with a single counting layer; otherwise the split is ours
+  const counting = C.rows.filter((row) => row.total > 0).length;
+  const allPrinted = M.printed.perLayer || (M.printed.total != null && counting === 1);
   return {
     id,
     title: `From the unit · ${M.at}`,
-    prov: opts.prov ?? (Object.keys(M.printed).length ? `{s|${M.at}}` : `{s|${M.at}} {own}`),
+    prov: opts.prov ?? (allPrinted ? `{s|${M.at}}` : `{s|${M.at}} {own}`),
     prompt,
     show: { model: M.model, form, blanks: opts.blanks ? [...opts.blanks, 'total'] : undefined, listing: form === 'code' ? LISTINGS[key] : undefined },
     model: M.model,

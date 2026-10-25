@@ -78,7 +78,7 @@ export default {
           'Figure 14-4: “a 5 × 7 input layer (plus zero padding) is connected to a 3 × 4 layer, using 3 × 3 receptive fields and a stride of 2 in both directions” {s|L3 · slide 9}.',
           'Rows: $i\\,s_h$ to $i\\,s_h + f_h - 1$; columns: $j\\,s_w$ to $j\\,s_w + f_w - 1$ {s|L3 · slide 9}.',
           'The figure pads one zero all round (7 × 9 with the padding): exactly what "same" does for this input at stride 2 {own}.',
-          '`strides` can differ by direction, e.g. `strides=(1, 2)` halves only the width {beyond}.',
+          '`strides` can differ by direction: with `padding="same"`, `strides=(1, 2)` halves only the width {beyond}.',
         ] },
       ],
       play: ['grid2d'],

@@ -14,7 +14,8 @@ This file is everything a new instance needs. Read it all once, then work throug
    ```
    - `<id>` is kebab-case (`batch-norm`, `receptive-field`). It becomes the folder name and the deep link `/portal/dl-tricky-topics/<id>`.
    - The script copies `topics/_template/` to `topics/<id>/`, fills in the id and the title, and appends one line to `topics/index.js`. The tab appears straight away, with placeholder text marked `REPLACE ME`.
-   - Made a mistake? `node tools/dl-tricky-topics/new-topic.mjs --remove <id>` deletes the folder and its index line.
+   - Made a mistake? `node tools/dl-tricky-topics/new-topic.mjs --remove <id>` deletes the folder and its index line. It refuses any topic already committed to git (so it can't delete a real topic); rebuild `dist/` afterwards if you built while the topic existed.
+   - The scaffold leaves 30-odd `REPLACE ME`s. While you are drafting, `ALLOW_PLACEHOLDERS=1 node tools/dl-tricky-topics/check-maths.mjs` passes over all of them (the index blurb included); without the flag the check fails until every one is gone.
 2. **Edit the index line** in `topics/index.js`: set `lectures` (the decks the topic draws on: `'L1'` … `'L9'`, with `'L6–7'` written with an en dash) and a one-line `blurb`. Nothing else in that file changes.
 3. **Source it from the slides.** Read every deck slide you will cite as an image (see **Reading the slides**). Make a list of every slide that uses the concept, with the slide number, a verbatim quote and any number it prints. That list becomes your `showsUp` rows, your receipts and your Slide checks.
 4. **Write `topic.js`** (the schema is below): the opener, the steps, the drill's title. Keep to the budgets.
@@ -41,7 +42,8 @@ topics/<id>/
   sheets/p1.js …    one file per notebook page (plain JS)
   labs/index.js     { key: Component } for the hero, every step's lab, the drill
   labs/*.jsx        the lab components (one lab per file is easiest)
-  labs/<id>.css     the labs' own styles (prefix your classes, e.g. dltt-bn-*)
+  labs/<id>.css     (optional) the labs' own styles, imported from each lab
+                    (`import './<id>.css'`); prefix your classes, e.g. dltt-bn-*
   figs.jsx          (optional) line-art components for the notebook pages
   *.js              (optional) maths or text helpers only this topic needs
 ```
@@ -68,7 +70,7 @@ export default {
   ],
   examAsks: [                       // the stimulus types, each linked to an Exam Practice part
     { form: 'Equation', what: 'what is asked', part: 'Practice A Q1(b)' },
-  ],
+  ],                                // part = 'Sample Qn(x)' | 'Practice A Qn(x)' | 'Practice B Qn(x)'
   steps: [                          // budget: 8 steps for a new topic
     {
       id: 'idea',                   // unique; not open / drill / write / p1 …
@@ -81,10 +83,12 @@ export default {
       cards: [],                    // optional "Explain this code" cards
     },
   ],
-  drill: { lab: 'drill', title: 'Exam drill: …', short: 'Exam drill', prov: '{own}', blurb: 'One line.' },
+  drill: { lab: 'drill', title: 'Exam drill: …', short: 'Exam drill', prov: '{own}', blurb: 'One line.' },  // short: optional rail label
   endNote: '…',                     // optional: replaces the default sources line
 };
 ```
+
+**Finding Exam Practice parts.** The parts live in `deep-learning/exam-practice/papers/sample.js`, `paperA.js`, `paperB.js` (a question id like `a-q1-e` is "Practice A Q1(e)"; subparts keep the part's label). Search them with `grep -n -i <concept> src/components/portal/modules/deep-learning/exam-practice/papers/*.js`, and `tools/dl-exam-practice/coverage.md` lists every part's stimulus. The check needs at least one row: if no part tests the concept directly, link the closest part whose answer uses it and say so in `what`.
 
 **Read blocks** (rendered by `Rich.jsx`):
 
@@ -123,7 +127,7 @@ export default {
 Use exactly these three labels, the same way everywhere (Read, labs' `prov`, drills, notebook pages):
 
 - **`{s|L3 · slide 22}`** — a slide states or prints it. Ranges and lists: `{s|L4 · slides 25, 27, 29}`, `{s|L3 · slides 20–21}`. Other sources: `{s|Sample Q1(c)}`, `{s|Lab Sheet 4}`, `{s|Practice A Q1(c)}`.
-- **`{own}`** — *this page's own · checked in TF*: computed by this page (a maths module) and confirmed by `verify_counts.py`.
+- **`{own}`** — *this page's own · checked in TF*: computed by this page **with the shared maths modules** (`maths/paramRules.js`, `shapeRules.js`, `strideRules.js`, `softmax.js`), which `verify_counts.py` checks against Keras — every named model and drill model one by one, sizes over a sweep, softmax over a set of vectors. Use it only for numbers those modules produce (or a `model` / `verify` item you add). **Arithmetic that doesn't go through them** (a product of a printed shape, a percentage, a rate × a count) is not "checked in TF": write it as working next to the receipt of the slide whose numbers or rule it uses (e.g. "$2 \times 70 \times 120 \times 3 = 50{,}400$, from the shape {s|L3 · slide 17}"), or add a `verify` item / a named model so TensorFlow does check it. If unsure, say so in your summary.
 - **`{beyond}`** — *beyond the slides*: true and useful but not in the lecture notes. The exam note says textbook material outside the lecture notes isn't examined, so the student must see what is support and what is syllabus.
 
 Rules:
@@ -170,17 +174,19 @@ export const MODES = [{ value: 'a', label: '…' }];   // optional
 export const FIXED = [ /* questions from the unit, with receipts */ ];
 ```
 
-A question: `{ id, title?, prov, prompt, show?, fields: [{ key, label, answer, type: 'number' | 'text' | 'choice', options?, tol?, accept? }], working: ['…'], model?, verify? }`. Answers are marked forgivingly (`235,500` = `235500`; shapes ignore spaces and brackets). Add `model` (the `shapeRules.js` model vocabulary) when a question is about a model, and `verify` (`{ kind: 'softmax', z, p }` or `{ kind: 'size', layer: 'conv1d' | 'conv2d' | 'pool' | 'convT', n, k, s, pad, out }`) for other numbers: `verify_counts.py` checks every one in Keras. Copy `topics/_template/drill.js` for the seeded `rng`.
+A question: `{ id, title?, prov, prompt, show?, fields: [{ key, label, answer, type: 'number' | 'text' | 'choice', options?, tol?, accept? }], working: ['…'], model?, verify? }`. A `choice` field takes `options: [{ value, label }]` (plain-text labels: a `<select>` can't show maths) and its `answer` is the right option's `value`. Answers are marked forgivingly (`235,500` = `235500`; shapes ignore spaces and brackets). Add `model` (the `shapeRules.js` model vocabulary) when a question is about a model, and `verify` (`{ kind: 'softmax', z, p }` or `{ kind: 'size', layer: 'conv1d' | 'conv2d' | 'pool' | 'convT', n, k, s, pad, out }`) for other numbers: `verify_counts.py` checks every one in Keras. Copy `topics/_template/drill.js` for the seeded `rng`.
 
 ---
 
 ## Notebook pages (`sheets/pN.js`)
 
-The schema is in `topics/_template/sheets/p1.js` and `../../sheetKeys.js`: `blocks: [{ id, h, at, items, fig?, margin? }]` and a closing `skip` line ("Not on this page (see Read): …"). Items: `'bullet'`, `{ line }`, `{ steps: [...] }`, `{ formula, read?, tag? }`, `{ worked: [...] }`, `{ table: { head, rows } }`, `{ fig }`. Margin: `{ q, a }` self-tests, `{ nb }` reminders, `{ sc }` slide-check pointers. Four pens: blue headings and receipts, black body, red markers, `{g|green}` sparingly; no handwriting font. **≤ 30 ruled lines** at 760 px: prefer tables and boxed formulas, keep `tag` plain text (it isn't parsed for maths), and check the indicator above the page.
+The schema is in `topics/_template/sheets/p1.js` and `../../sheetKeys.js`: `blocks: [{ id, h, at, items, fig?, margin? }]` (a block's `at` is a short receipt like `L2 · 63–64`; the page's own `at` in `sheets/index.js` is the line written top right, e.g. `L2 · slides 62–64`) and a closing `skip` line ("Not on this page (see Read): …"). Items: `'bullet'`, `{ line }`, `{ steps: [...] }`, `{ formula, read?, tag? }`, `{ worked: [...] }`, `{ table: { head, rows } }`, `{ fig }`. Margin: `{ q, a }` self-tests, `{ nb }` reminders, `{ sc }` slide-check pointers. Four pens: blue headings and receipts, black body, red markers, `{g|green}` sparingly; no handwriting font. **≤ 30 ruled lines** at 760 px: prefer tables and boxed formulas, keep `tag` plain text (it isn't parsed for maths), and check the indicator above the page.
 
 ---
 
 ## Verifying numbers (TensorFlow)
+
+**Needed only if** you added a named model to `maths/models.js` or a drill question with `model` / `verify`. `check-maths.mjs`'s first section fails ("stale: re-run …") when the truth file is missing something; if it passes and you added neither, skip this section and say so in your summary. If `keras-truth.json` comes out unchanged, there is nothing to commit.
 
 ```
 node tools/dl-tricky-topics/export-specs.mjs
@@ -202,13 +208,18 @@ Every check iterates `topics/index.js`; none needs editing.
 
 ```
 node tools/dl-tricky-topics/check-maths.mjs
-SITE_URL=http://localhost:5184 node tools/dl-tricky-topics/page-check.mjs
-SITE_URL=http://localhost:5184 node tools/dl-tricky-topics/pdf.mjs
+node tools/dl-tricky-topics/page-check.mjs [outDir]
+node tools/dl-tricky-topics/pdf.mjs <outDir> [<id> …] [--pages=1,3,6]
 node tools/dl-tricky-topics/fits.mjs          (each page's measured rules)
-node tools/dl-tricky-topics/shot.mjs <outDir> <id> [stepIds…] [--width=390] [--theme=arcade]
+node tools/dl-tricky-topics/shot.mjs <outDir> <id> [ids… | all] [--width=1440|390] [--theme=jade|coral|arcade] [--part=all|play|read|nb|open|measure] [--full] [--reduce]
 npx eslint src/components/portal/modules/deep-learning/tricky-topics tools/dl-tricky-topics
 npm run build
 ```
+
+- The browser tools default to the dev server at http://localhost:5184 (`SITE_URL=` to change it). Start one with `npm run dev -- --port 5184` if none is running.
+- `pdf.mjs`'s first argument is the **output folder** (`pdf.mjs out my-topic`, not `pdf.mjs my-topic`). Output folders under `tools/dl-tricky-topics/out/` are gitignored; a scratch folder outside the repo is better.
+- `page-check.mjs` takes `ONLY=` with any of `render, tabs, fits, pens, focus, persist, storage, reduced, keyboard, export, nlm, shots, others` to run part of it. The shell-feature groups (pens, focus, persist, storage) run on the first topic only; everything else runs on every topic.
+- Look at your labs at 390 px while you build them (step 5), not only at the end.
 
 - `check-maths.mjs`: JS rules vs `keras-truth.json` (stale truth = re-run the two commands above), budgets, gist, one lab per step, provenance, receipts inside their decks, numbers that trace, `<Stage prov>`, topic isolation, prompts, no `REPLACE ME` left (set `ALLOW_PLACEHOLDERS=1` while drafting).
 - `page-check.mjs`: every topic via its deep link and its tab, the last topic reopening, focus mode, ticks and "got it" surviving a reload, "Resume at step N", every notebook page ≤ 30 rules (measured independently), pens and contrast, no handwriting font, broken storage, reduced motion, keyboard on every lab and the drill, ≤ 3 controls per lab, the stubbed export + afterprint, the NotebookLM dropdown, 3 themes × 1440/390 with no horizontal scroll, and every other Deep Learning module still rendering. `window.print` is stubbed before the page loads.

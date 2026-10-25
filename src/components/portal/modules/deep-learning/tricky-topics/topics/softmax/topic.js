@@ -86,17 +86,17 @@ export default {
         { table: {
           head: ['Problem', 'Outputs', 'Activation', 'Sums to 1?'],
           rows: [
-            ['Binary', '1', 'sigmoid (logistic)', 'one number $p$; the other class is $1 - p$'],
+            ['Binary', '1', 'sigmoid (logistic)', 'one number $p$; the other class is $1 - p$ {own}'],
             ['Multilabel', '1 per label', 'a sigmoid each', 'no: every label is separate'],
             ['Multiclass', '1 per class', 'softmax', 'yes {s|L1 · slide 29}'],
           ],
         } },
         { list: [
           'All three train with cross-entropy (“X-entropy”) {s|L1 · slide 31}.',
-          'CartPole has two actions but one `Dense(1, activation="sigmoid")` output: the probability of left; right gets $1 - p$ {s|L9 · slides 23, 25}.',
+          'CartPole has two actions but one `Dense(1, activation="sigmoid")` output: the probability of left {s|L9 · slides 23, 25}; right gets $1 - p$ {own}.',
           'A two-class softmax equals a sigmoid of the difference of the two scores {beyond}.',
         ] },
-        { slideNote: 'Figure 18-5 (L9 slide 23) labels the step after its single sigmoid output “Multinomial sampling”, but one output means a two-way draw: left with probability $p$, right with $1 - p$. The slide never writes the $1 - p$.' },
+        { slideNote: 'Figure 18-5 (L9 slide 23) follows its one sigmoid output with “Multinomial sampling”: with two outcomes that is a two-way draw, left with probability $p$, right with $1 - p$. The slide never writes the $1 - p$, so it is this page’s own.' },
       ],
       play: ['vs'],
     },

@@ -213,7 +213,7 @@ export const FIXED = [
   {
     id: 'u-q2a',
     title: 'From the unit · sample Q2(a)',
-    prov: '{s|Sample Q2(a)}',
+    prov: '{s|Sample Q2(a)} {own}',
     prompt: 'An RNN is given the 2D coordinates of a hand-sketched star’s first 4 corners and predicts the last corner. What are the shapes of X and y in the training set? (Write N for the number of stars.)',
     fields: [
       { key: 'x', label: 'X', type: 'text', answer: '(N, 4, 2)', width: '10rem' },

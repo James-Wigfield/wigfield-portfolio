@@ -4,22 +4,24 @@ import { Neuron, Bead, Counter } from '../../../svgParts';
 import { useWidth } from '../../../useWidth';
 import { useStudy } from '../../../context';
 import { countModel } from '../../../maths/paramRules';
+import { MODELS } from '../../../maths/models';
 import './param.css';
 
 /* Step 3 · counting from a diagram. Click each neuron that isn't an input:
    its incoming arrows (weights) and its bias light up and join the tally.
    Click an input and it says why it scores nothing. Three figures: L1
    slide 7's Figure 10-5 (2 → 3), slide 17's XOR network (2 → 2 → 1, biases
-   drawn as small circles) and this page's own 3 → 4 → 2. The target total
-   comes from paramRules (a Dense stack). One control: the figure. */
+   drawn as small circles) and this page's own 3 → 4 → 2, all three in
+   maths/models.js so TensorFlow checks their totals. One control: the figure. */
 
 const FIGS = {
-  f105: { label: 'Figure 10-5 · L1 s7', sizes: [2, 3], prov: '{s|L1 · slide 7}' },
-  xor: { label: 'XOR network · L1 s17', sizes: [2, 2, 1], prov: '{s|L1 · slide 17}' },
-  own: { label: '3 → 4 → 2 (own)', sizes: [3, 4, 2], prov: '{own}' },
+  f105: { label: 'Figure 10-5 · L1 s7', model: 'l1-fig105', prov: '{s|L1 · slide 7}' },
+  xor: { label: 'XOR network · L1 s17', model: 'l1-xor', prov: '{s|L1 · slide 17}' },
+  own: { label: '3 → 4 → 2 (own)', model: 'own-342', prov: '{own}' },
 };
 
-const asModel = (sizes) => ({ input: [sizes[0]], layers: sizes.slice(1).map((u) => ({ t: 'dense', units: u })) });
+// a Dense stack's layer sizes, inputs first: [2, 3] for Figure 10-5
+const sizesOf = (m) => [m.input[0], ...m.layers.map((L) => L.units)];
 
 export function DiagramLab() {
   const wrap = useRef(null);
@@ -29,8 +31,9 @@ export function DiagramLab() {
   const [picked, setPicked] = useState(() => new Set());
   const [flash, setFlash] = useState('');
   const fig = FIGS[figKey];
-  const sizes = fig.sizes;
-  const target = countModel(asModel(sizes)).total;
+  const { model } = MODELS[fig.model];
+  const sizes = sizesOf(model);
+  const target = countModel(model).total;
   const all = new Set();
   sizes.forEach((n, l) => { if (l > 0) for (let j = 0; j < n; j++) all.add(`${l}:${j}`); });
   const on = printing ? all : picked;

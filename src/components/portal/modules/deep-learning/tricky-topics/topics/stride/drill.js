@@ -149,12 +149,12 @@ export function make(seed) {
 }
 
 /* ── from the unit ─────────────────────────────────────────────────────── */
-function fixedSize(id, at, prompt, n, k, s, pad, extra = [], layer = 'conv1d') {
+function fixedSize(id, at, prompt, n, k, s, pad, extra = [], layer = 'conv1d', prov = null) {
   const out = convOut(n, k, s, pad);
   return {
     id,
     title: `From the unit · ${at}`,
-    prov: `{s|${at}}`,
+    prov: prov ?? `{s|${at}}`,
     prompt,
     fields: [{ key: 'o', label: 'output size', type: 'number', answer: out }],
     working: [...sizeWorking(n, k, s, pad), ...extra],
@@ -182,7 +182,7 @@ export const FIXED = [
   fixedSize('u-c1', 'L3 · slide 39', 'AlexNet C1: 227 × 227 input, 11 × 11 kernel, stride 4, "valid". What size comes out?', 227, 11, 4, 'valid', ['The table: C1 55 × 55 {s|L3 · slide 39}.']),
   fixedSize('u-s2', 'L3 · slide 39', 'AlexNet S2: max pooling 3 × 3, stride 2, "valid", on 55 × 55. What size comes out?', 55, 3, 2, 'valid', ['The table: S2 27 × 27 {s|L3 · slide 39}.'], 'pool'),
   fixedSize('u-lenet', 'L3 · slide 37', 'LeNet-5 C1: 32 × 32 input, 5 × 5 kernel, stride 1 (no padding). What size comes out?', 32, 5, 1, 'valid', ['The table: C1 28 × 28; then S2 (2 × 2, stride 2) 14 × 14 {s|L3 · slide 37}.']),
-  fixedSize('u-l50', 'L4 · slide 50', 'Slide 50’s second layer, `Conv1D(filters=16, kernel_size=3, strides=2)`, reads 54 time steps. How many come out?', 54, 3, 2, 'valid', ['The slide doesn’t print it: 56 → 54 → 26 is this page’s own working {own}.']),
+  fixedSize('u-l50', 'L4 · slide 50', 'Slide 50’s second layer, `Conv1D(filters=16, kernel_size=3, strides=2)`, reads 54 time steps. How many come out?', 54, 3, 2, 'valid', ['The slide doesn’t print it: 56 → 54 → 26 is this page’s own working {own}.'], 'conv1d', '{s|L4 · slide 50} {own}'),
   {
     id: 'u-dec',
     title: 'From the unit · L6–7 slide 5',

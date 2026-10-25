@@ -318,6 +318,16 @@ if shift > 1e-12:
     fail(f"softmax shift invariance: {shift}")
 print(f"softmax: {len(SPECS['softmax'])} vectors against tf.nn.softmax; shift invariance error {shift:.1e}")
 
+# ── sigmoid ──────────────────────────────────────────────────────────────────
+truth["sigmoid"] = []
+for v in SPECS.get("sigmoid", []):
+    p = float(tf.math.sigmoid(tf.constant(v["z"], dtype=tf.float64)).numpy())
+    err = abs(p - v["p"])
+    truth["sigmoid"].append({"z": v["z"], "p": p, "err": err})
+    if err > 1e-9:
+        fail(f"sigmoid {v['z']}: error {err}")
+print(f"sigmoid: {len(truth['sigmoid'])} scores against tf.math.sigmoid")
+
 # ── drill questions' own checks ──────────────────────────────────────────────
 for c in SPECS["checks"]:
     if c["kind"] == "softmax":

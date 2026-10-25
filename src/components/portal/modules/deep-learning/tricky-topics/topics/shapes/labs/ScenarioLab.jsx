@@ -35,7 +35,7 @@ const SC = {
   },
   q2a: {
     label: 'Sample Q2(a) i.',
-    prov: '{s|Sample Q2(a)}',
+    prov: '{s|Sample Q2(a)} {own}',
     what: 'the 2D coordinates of a hand-sketched star’s first 4 corners → its last corner',
     n: 'N', steps: 4, per: 2, y: [2], yWords: '2 numbers per example',
     steps_words: ['c0', 'c1', 'c2', 'c3'], target: 'c4',
@@ -64,7 +64,7 @@ export function ScenarioLab() {
         <>
           <MLine text={`Scenario: ${S.what}.`} />
           <MLine text={`X ${xTuple}: ${S.n} example${S.n === 1 ? '' : 's'}, ${S.steps} time steps, ${S.per} numbers per step. y ${yTuple}: ${S.yWords}.`} />
-          {k === 'q2a' && <MLine text="The sample paper gives no dataset size, so N. Part iii (3 corners in, 2 out) gives X $(N, 3, 2)$ and y $(N, 4)$: the two corners’ coordinates in one row (Exam Practice’s answer)." />}
+          {k === 'q2a' && <MLine text="The sample paper asks for these shapes but prints no answer, and gives no dataset size, so N {own}. Part iii (3 corners in, 2 out): X $(N, 3, 2)$; y $(N, 4)$, the two corners’ coordinates in one row (Exam Practice’s answer), or $(N, 2, 2)$ if the model ends with a `Reshape` {own}." />}
           {k.startsWith('ls4') && <MLine text="Lab Sheet 4 prints `(200, 4, 2)`, `(60, 4, 2)`, `(200, )`, `(60, )` for task 2, and `X_train[:, :3, :]` (200, 3, 2) → `X_train[:, 3, :]` (200, 2) for task 3 {s|Lab Sheet 4}." />}
         </>
       }
