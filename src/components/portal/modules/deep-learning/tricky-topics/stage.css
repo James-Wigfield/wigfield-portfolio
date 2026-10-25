@@ -1,0 +1,450 @@
+/* ============================================================================
+   TRICKY TOPICS — THE LABS' VISUAL LANGUAGE  (.dltt-stage*, roles, parts)
+   ----------------------------------------------------------------------------
+   Every lab, opener and drill on this page — in every topic — is drawn from
+   one small vocabulary, defined here once and themed for Jade, Coral and
+   Arcade (a copy of the Lecture 8/9 stage kit with this page's roles). The
+   topics interlock, so a role means the same colour everywhere:
+
+     parameters   --dltt-w     weights (lines, kernel bricks, weight grids)
+                  --dltt-b     biases: a distinct shade, drawn as round beads
+     data         --dltt-data  data / activations (the boxes flowing through)
+     shape axes   one fixed colour per axis, the SAME in every topic:
+                  --dltt-batch batch   --dltt-h height   --dltt-wd width
+                  --dltt-c channels    --dltt-t time steps
+                  --dltt-f features
+     probability  --dltt-p     softmax outputs, attention weights
+     window       --dltt-win   the window / kernel footprint (a thick frame)
+     stride       --dltt-jump  the stride jump (hop arcs)
+     padding      .dltt-pad    hatched zeros (a hatch of --dltt-nt)
+     frozen       --dltt-nt    non-trainable / zero parameters: greyed
+
+   Roles colour strokes, arcs, small labels and light washes — never big
+   filled boxes. Numbers are never the main view: they appear on hover /
+   focus, and in the maths drawer (which print opens).
+   ========================================================================== */
+
+.dltt {
+  --dltt-w: #2c4bb5;
+  --dltt-b: #7a6a00;
+  --dltt-data: #4a5a68;
+  --dltt-batch: #7b5137;
+  --dltt-h: #c2510a;
+  --dltt-wd: #c2185b;
+  --dltt-c: #00838f;
+  --dltt-t: #6a3fb5;
+  --dltt-f: #2e7d32;
+  --dltt-p: #a21caf;
+  --dltt-win: #14202e;
+  --dltt-jump: #c62828;
+  --dltt-nt: #7d8794;
+  --dltt-neg: #c62828;
+  --dltt-floor: color-mix(in srgb, var(--surface-hi) 45%, #ffffff);
+  --dltt-floor-line: rgba(30, 41, 59, 0.08);
+  --dltt-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 10px 26px -18px rgba(15, 23, 42, 0.35);
+}
+.portal[data-portal-theme='coral'] .dltt {
+  --dltt-floor: color-mix(in srgb, var(--surface-hi) 70%, #ffffff);
+  --dltt-floor-line: rgba(80, 30, 36, 0.08);
+}
+.portal[data-portal-theme='arcade'] .dltt {
+  --dltt-w: #8fa8ff;
+  --dltt-b: #d9cc5c;
+  --dltt-data: #b4c2cf;
+  --dltt-batch: #d2a679;
+  --dltt-h: #ff9f5a;
+  --dltt-wd: #ff74ad;
+  --dltt-c: #4fd4e3;
+  --dltt-t: #b9a1ff;
+  --dltt-f: #72dc8e;
+  --dltt-p: #e783f6;
+  --dltt-win: #eef3f8;
+  --dltt-jump: #ff7a7a;
+  --dltt-nt: #8a939e;
+  --dltt-neg: #ff7a7a;
+  --dltt-floor: #171a21;
+  --dltt-floor-line: rgba(200, 210, 228, 0.07);
+  --dltt-shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 14px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* ── the lab frame ────────────────────────────────────────────────────── */
+.dltt-stage {
+  container: stage / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.dltt-stage + .dltt-stage { margin-top: 1.6rem; }
+.dltt-stage__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.2rem 1rem; }
+.dltt-stage__title {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 500;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dltt-stage__slides { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); white-space: nowrap; }
+.dltt-stage__try { margin: 0; display: flex; gap: 0.55rem; align-items: baseline; font-size: 0.9rem; line-height: 1.5; color: var(--ink-2); max-width: 78ch; }
+.dltt-stage__tryk {
+  flex: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.dltt-stage__floor {
+  position: relative;
+  background: var(--dltt-floor);
+  background-image: radial-gradient(var(--dltt-floor-line) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  border-radius: 12px;
+  box-shadow: var(--dltt-shadow);
+  padding: clamp(0.6rem, 2.2cqi, 1.4rem);
+  min-width: 0;
+}
+.dltt-stage__cap { margin: 0; font-size: 0.82rem; line-height: 1.55; color: var(--ink-3); max-width: 76ch; }
+.dltt-stage__cap b { color: var(--ink-2); }
+.dltt-stage__foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1.2rem; }
+
+/* "this page's own" marker: a labelled dot */
+.dltt-own { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; letter-spacing: 0.03em; color: var(--ink-3); }
+.dltt-own::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--dlv-violet); margin-right: 0.4rem; vertical-align: 0; }
+.dltt-slideval::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--accent); margin-right: 0.4rem; vertical-align: 0; }
+
+/* a light challenge: one quiet line, a check when it's met */
+.dltt-chal { margin: 0; display: inline-flex; align-items: baseline; gap: 0.5rem; font-size: 0.82rem; color: var(--ink-3); }
+.dltt-chal__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.dltt-chal__ok { display: inline-flex; align-items: center; gap: 0.25rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--accent-ink); }
+.dltt-chal--done .dltt-chal__text { color: var(--ink-2); }
+
+/* ── story mode: ▶ + named beats, one sentence for the current beat ────── */
+.dltt-story { display: flex; flex-direction: column; gap: 0.45rem; }
+.dltt-story__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.4rem; }
+.dltt-story__play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-right: 0.3rem;
+  border-radius: 99px;
+  border: 1.5px solid var(--accent);
+  background: none;
+  color: var(--accent-ink);
+  cursor: pointer;
+  flex: none;
+}
+.dltt-story__play:hover { background: var(--accent-soft); }
+.dltt-story__beat {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--line-2);
+  padding: 0.3rem 0.35rem 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dltt-story__beat b { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.72rem; margin-right: 0.3rem; color: inherit; }
+.dltt-story__beat:hover { color: var(--ink); }
+.dltt-story__beat--past { color: var(--ink-2); border-bottom-color: var(--line); }
+.dltt-story__beat--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dltt-story__say { margin: 0; min-height: 1.5em; font-size: 0.88rem; line-height: 1.5; color: var(--ink-2); max-width: 76ch; }
+.dltt-story__say .katex { font-size: 1em; }
+
+/* ── "Show the maths": a ruled drawer, closed on screen, open in print ── */
+.dltt-maths { border-top: 1px solid var(--line-2); }
+.dltt-maths__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  padding: 0.5rem 0.1rem 0.4rem;
+  cursor: pointer;
+}
+.dltt-maths__btn:hover { color: var(--accent-ink); }
+.dltt-maths__chev { display: inline-block; transition: transform 0.2s; font-size: 0.75em; }
+.dltt-maths__chev--open { transform: rotate(180deg); }
+.dltt-maths__body { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.2rem 0.1rem 0.8rem; max-width: 80ch; }
+.dltt-maths__body .dlk-eq { margin: 0; }
+.dltt-mline { margin: 0; font-size: 0.86rem; line-height: 1.65; color: var(--ink-2); overflow-x: auto; }
+.dltt-mline .katex { font-size: 1.02em; }
+.dltt-mline b { color: var(--ink); }
+.dltt-mnote { margin: 0; font-size: 0.76rem; line-height: 1.5; color: var(--ink-3); }
+
+/* ── SVG vocabulary ───────────────────────────────────────────────────── */
+.dltt-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-body, system-ui, sans-serif); }
+.dltt-svg text { fill: var(--ink); }
+.dltt-t { font-size: 13px; }
+.dltt-t--s { font-size: 11px; fill: var(--ink-3) !important; }
+.dltt-t--xs { font-size: 10px; fill: var(--ink-3) !important; }
+.dltt-t--m { font-family: var(--font-mono, ui-monospace, monospace); }
+.dltt-t--b { font-weight: 700; }
+.dltt-halo { paint-order: stroke; stroke: var(--dltt-floor); stroke-width: 4px; stroke-linejoin: round; }
+
+/* tokens: labels in outlined boxes (layer names, words, code names) */
+.dltt-tok rect { fill: var(--dltt-floor); stroke: var(--ink-3); stroke-width: 1.4; transition: stroke-width 0.2s, fill 0.2s; }
+.dltt-tok text { font-size: 14px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+.dltt-tok--ghost rect { stroke-dasharray: 4 3; }
+.dltt-tok--ghost text { fill: var(--ink-3); }
+.dltt-tok--on rect { stroke-width: 2.8; }
+.dltt-tok--btn { cursor: pointer; }
+.dltt-tok--btn:hover rect { stroke-width: 2.4; }
+.dltt-tok--btn:focus-visible { outline: none; }
+/* keyboard focus is a dashed accent outline, so it never looks like a selection */
+.dltt-tok--btn:focus-visible rect { stroke: var(--accent); stroke-width: 2.6; stroke-dasharray: 5 3; }
+
+/* a hatch for impossible (−∞) cells */
+.dltt-hatch-line { stroke: var(--dltt-mask); stroke-width: 1.4; opacity: 0.55; }
+.dltt-cell--inf { fill: var(--dltt-floor) !important; }
+
+.dltt-wire { fill: none; stroke: var(--ink-3); stroke-width: 1.3; opacity: 0.55; }
+.dltt-wire--on { stroke: var(--ink); opacity: 0.9; stroke-width: 1.8; }
+.dltt-arrowhead { fill: var(--ink-3); }
+
+/* heatmap cells (fill is set inline from the value) */
+.dltt-cell { stroke: var(--dltt-floor); stroke-width: 1.5; transition: fill 0.45s ease, opacity 0.35s ease; }
+.dltt-cell--hit { stroke: var(--ink); stroke-width: 2; }
+.dltt-grid-frame { fill: none; stroke: var(--line); stroke-width: 1; }
+.dltt-rowband { fill: var(--ink); opacity: 0.07; transition: opacity 0.2s; }
+.dltt-tip { pointer-events: none; }
+.dltt-tip rect { fill: var(--ink); opacity: 0.92; }
+.dltt-tip text { fill: var(--dltt-floor) !important; font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 600; }
+
+/* draggable value knobs (softmax scores) */
+.dltt-knob { cursor: ns-resize; touch-action: none; }
+.dltt-knob__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dltt-knob__bar { fill: var(--ink-3); transition: transform 0.5s ease; }
+.dltt-knob__dot { fill: var(--dltt-floor); stroke: var(--ink); stroke-width: 2; transition: transform 0.5s ease; }
+.dltt-knob:hover .dltt-knob__dot { stroke-width: 3; }
+.dltt-knob:focus-visible .dltt-knob__dot { stroke: var(--accent); stroke-width: 3.4; stroke-dasharray: 4 2; }
+.dltt-knob:focus-visible { outline: none; }
+.dltt-knob--drag .dltt-knob__bar, .dltt-knob--drag .dltt-knob__dot { transition: none; }
+
+/* a quiet ruled switch (two or three options, underline = on) */
+.dltt-switch { display: inline-flex; flex-wrap: wrap; gap: 0.2rem; margin: 0 0 0.6rem; border-bottom: 1px solid var(--line-2); }
+.dltt-switch__opt {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+.dltt-switch__opt:hover { color: var(--ink); }
+.dltt-switch__opt--on { color: var(--ink); border-bottom-color: var(--accent); }
+.dltt-floorrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+
+/* line charts (learning curves) */
+.dltt-ax { stroke: var(--line); stroke-width: 1; }
+.dltt-grid-line { stroke: var(--line-2); stroke-width: 1; }
+.dltt-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.dltt-line--truth { stroke: var(--ink-2); }
+.dltt-line--ghost { stroke: var(--ink-3); stroke-dasharray: 5 4; opacity: 0.8; }
+.dltt-today { stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 3; }
+
+/* softmax bars (weights 0…1, grown by scaleY) */
+.dltt-sbar { fill: var(--dltt-p); transition: transform 0.4s ease; }
+
+/* a horizontal scrubber (d_keys, positions …) */
+.dltt-scrub { cursor: ew-resize; touch-action: none; }
+.dltt-scrub:focus-visible { outline: none; }
+.dltt-scrub__track { stroke: var(--line); stroke-width: 6; stroke-linecap: round; }
+.dltt-scrub__knob { transition: transform 0.25s ease; }
+.dltt-scrub--drag .dltt-scrub__knob { transition: none; }
+.dltt-scrub__knob circle { fill: var(--dltt-floor); stroke: var(--ink); stroke-width: 2.2; }
+.dltt-scrub:focus-visible .dltt-scrub__knob circle { stroke-width: 3.4; stroke: var(--accent); }
+
+/* the ⊕ node where weighted parts are summed */
+.dltt-plus__c { fill: var(--dltt-floor); stroke: var(--ink); stroke-width: 1.6; }
+.dltt-plus__x { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+
+/* a small in-stage text button (e.g. "reset scores"), top right of the floor */
+.dltt-floorbtn {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.7rem;
+  z-index: 1;
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0.1rem 0.1rem;
+  cursor: pointer;
+}
+.dltt-floorbtn:hover { color: var(--accent-ink); border-bottom-color: var(--accent); }
+
+/* things that fade between story beats */
+.dltt-fade { transition: opacity 0.45s ease; }
+.dltt-hide { opacity: 0 !important; pointer-events: none; }
+.dltt-dim { opacity: 0.28; }
+.dltt-pop { transform-box: fill-box; transform-origin: center; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.3), opacity 0.35s ease; }
+
+/* narrow stages: a simplified picture instead of a shrunken one */
+.dltt-only-narrow { display: none; }
+@container stage (max-width: 560px) {
+  .dltt-only-wide { display: none; }
+  .dltt-only-narrow { display: block; }
+  .dltt-stage__title { font-size: 1.12rem; }
+  .dltt-story__beat { font-size: 0.76rem; padding-inline: 0.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dltt-cell, .dltt-fade, .dltt-pop, .dltt-knob__bar, .dltt-knob__dot, .dltt-tok rect, .dltt-bar, .dltt-sbar, .dltt-scrub__knob { transition: none !important; }
+}
+
+/* numbers written inside heatmap cells (the Q-table) */
+.dltt-cellnum { font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px; font-weight: 700; fill: var(--ink) !important; pointer-events: none; paint-order: stroke; stroke: var(--dltt-floor); stroke-width: 3px; stroke-linejoin: round; }
+.dltt-cellnum--inf { font-weight: 600; fill: var(--ink-3) !important; }
+.dltt-cellnum--inv { fill: var(--dltt-floor) !important; stroke: none; }
+/* the slides' own values marked on a scrubber */
+.dltt-slidemark { fill: var(--accent-ink) !important; font-weight: 700; }
+
+
+
+/* ── roles: text, strokes, washes ─────────────────────────────────────── */
+.dltt-t--w { fill: var(--dltt-w) !important; }
+.dltt-t--bias { fill: var(--dltt-b) !important; }
+.dltt-t--data { fill: var(--dltt-data) !important; }
+.dltt-t--p { fill: var(--dltt-p) !important; }
+.dltt-t--win { fill: var(--dltt-win) !important; }
+.dltt-t--jump { fill: var(--dltt-jump) !important; }
+.dltt-t--nt { fill: var(--dltt-nt) !important; }
+.dltt-t--ink { fill: var(--ink) !important; }
+/* the six axis colours, as SVG text (axt), SVG strokes (ax) and HTML (axh) */
+.dltt-axt--batch { fill: var(--dltt-batch) !important; }
+.dltt-axt--h { fill: var(--dltt-h) !important; }
+.dltt-axt--wd { fill: var(--dltt-wd) !important; }
+.dltt-axt--c { fill: var(--dltt-c) !important; }
+.dltt-axt--t { fill: var(--dltt-t) !important; }
+.dltt-axt--f { fill: var(--dltt-f) !important; }
+.dltt-ax--batch { stroke: var(--dltt-batch) !important; }
+.dltt-ax--h { stroke: var(--dltt-h) !important; }
+.dltt-ax--wd { stroke: var(--dltt-wd) !important; }
+.dltt-ax--c { stroke: var(--dltt-c) !important; }
+.dltt-ax--t { stroke: var(--dltt-t) !important; }
+.dltt-ax--f { stroke: var(--dltt-f) !important; }
+.dltt-axh--batch { color: var(--dltt-batch); }
+.dltt-axh--h { color: var(--dltt-h); }
+.dltt-axh--wd { color: var(--dltt-wd); }
+.dltt-axh--c { color: var(--dltt-c); }
+.dltt-axh--t { color: var(--dltt-t); }
+.dltt-axh--f { color: var(--dltt-f); }
+.dltt-axh--w { color: var(--dltt-w); }
+.dltt-axh--bias { color: var(--dltt-b); }
+.dltt-axh--p { color: var(--dltt-p); }
+.dltt-axh--nt { color: var(--dltt-nt); }
+.dltt-axh--jump { color: var(--dltt-jump); }
+.dltt-axh--data { color: var(--dltt-data); }
+.dltt-tok--w rect { stroke: var(--dltt-w); }
+.dltt-tok--data rect { stroke: var(--dltt-data); }
+.dltt-tok--p rect { stroke: var(--dltt-p); }
+.dltt-tok--nt rect { stroke: var(--dltt-nt); stroke-dasharray: 4 3; }
+.dltt-tok--nt text { fill: var(--dltt-nt); }
+.dltt-wire--w { stroke: var(--dltt-w); opacity: 0.55; stroke-width: 1.2; }
+.dltt-wire--data { stroke: var(--dltt-data); opacity: 1; stroke-width: 1.8; }
+.dltt-wire--p { stroke: var(--dltt-p); opacity: 1; stroke-width: 2; }
+.dltt-wire--jump { stroke: var(--dltt-jump); opacity: 1; stroke-width: 2; }
+.dltt-grid-frame--w { stroke: var(--dltt-w); }
+.dltt-grid-frame--p { stroke: var(--dltt-p); }
+.dltt-grid-frame--data { stroke: var(--dltt-data); }
+.dltt-line--w { stroke: var(--dltt-w); stroke-width: 2.4; }
+.dltt-line--p { stroke: var(--dltt-p); stroke-width: 2.4; }
+.dltt-line--data { stroke: var(--dltt-data); stroke-width: 2.4; }
+.dltt-bar--w { fill: var(--dltt-w); }
+.dltt-bar--bias { fill: var(--dltt-b); }
+.dltt-bar--p { fill: var(--dltt-p); }
+.dltt-bar--data { fill: var(--dltt-data); }
+.dltt-bar--nt { fill: var(--dltt-nt); }
+
+/* ── tensors: an outlined 3D box, axis edges in their colours ──────────── */
+.dltt-box3__front, .dltt-box3__top, .dltt-box3__side { stroke: var(--dltt-data); stroke-width: 1.3; stroke-linejoin: round; transition: all 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dltt-box3__front { fill: color-mix(in srgb, var(--dltt-data) 7%, var(--dltt-floor)); }
+.dltt-box3__top { fill: color-mix(in srgb, var(--dltt-data) 14%, var(--dltt-floor)); }
+.dltt-box3__side { fill: color-mix(in srgb, var(--dltt-data) 20%, var(--dltt-floor)); }
+.dltt-box3__edge { stroke-width: 3; stroke-linecap: round; transition: all 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dltt-box3__edge--lit { stroke-width: 5.5; }
+.dltt-box3__lab--lit { font-size: 15px; }
+.dltt-box3--ghost :is(.dltt-box3__front, .dltt-box3__top, .dltt-box3__side) { fill: none; stroke-dasharray: 4 3; opacity: 0.6; }
+
+/* units and parameters */
+.dltt-neuron circle { fill: var(--dltt-floor); stroke: var(--dltt-data); stroke-width: 1.8; transition: opacity 0.3s; }
+.dltt-neuron--w circle { stroke: var(--dltt-w); }
+.dltt-neuron--off { opacity: 0.25; }
+.dltt-bead { fill: var(--dltt-b); stroke: var(--dltt-floor); stroke-width: 1.2; transition: opacity 0.35s; }
+.dltt-bead--off { opacity: 0.15; }
+.dltt-link-w { stroke: var(--dltt-w); stroke-width: 1.1; opacity: 0.5; transition: opacity 0.3s; }
+.dltt-link-w--hot { opacity: 1; stroke-width: 2; }
+.dltt-counter { font-family: var(--font-mono, ui-monospace, monospace); font-weight: 800; font-variant-numeric: tabular-nums; fill: var(--ink) !important; }
+
+/* windows, strides and padding */
+.dltt-win { fill: color-mix(in srgb, var(--dltt-win) 8%, transparent); stroke: var(--dltt-win); stroke-width: 2.6; transition: transform 0.4s cubic-bezier(0.3, 0.7, 0.3, 1), width 0.3s, height 0.3s; }
+.dltt-win--ghost { fill: none; stroke-width: 1.2; stroke-dasharray: 3 3; opacity: 0.45; }
+.dltt-hop { fill: none; stroke: var(--dltt-jump); stroke-width: 2; stroke-linecap: round; }
+.dltt-hophead { fill: var(--dltt-jump); }
+.dltt-pad-line { stroke: var(--dltt-nt); stroke-width: 1.3; opacity: 0.7; }
+.dltt-pad { stroke: var(--dltt-nt); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.dltt-incell { fill: color-mix(in srgb, var(--dltt-data) 10%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.2; transition: opacity 0.3s, fill 0.3s; }
+.dltt-incell--hit { fill: color-mix(in srgb, var(--dltt-win) 16%, var(--dltt-floor)); }
+.dltt-incell--ignored { fill: none; stroke: var(--dltt-nt); stroke-dasharray: 3 2; opacity: 0.8; }
+.dltt-outcell { fill: color-mix(in srgb, var(--dltt-data) 22%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.4; transition: opacity 0.35s; }
+.dltt-outcell--empty { fill: none; stroke-dasharray: 3 3; opacity: 0.4; }
+
+/* ── a ruled table in the Read beat (stacked cards when narrow) ─────────── */
+.dltt-tblwrap { container: dltt-tbl / inline-size; max-width: 74ch; }
+.dltt-tbl { display: flex; flex-direction: column; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+.dltt-tbl__row { display: grid; grid-template-columns: var(--cols); gap: 0 1.1rem; padding: 0.42rem 0.1rem; border-top: 1px solid var(--line-2); align-items: baseline; color: var(--ink-2); line-height: 1.5; }
+.dltt-tbl__row--head { border-top: none; padding-top: 0.45rem; }
+.dltt-tbl__th { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dltt-tbl__th :is(.katex, .dltt-m, code) { text-transform: none; letter-spacing: 0; }
+.dltt-tbl__td { min-width: 0; overflow-wrap: anywhere; }
+.dltt-tbl__td:first-child { color: var(--ink); font-weight: 600; }
+@container dltt-tbl (max-width: 560px) {
+  .dltt-tbl__row { grid-template-columns: minmax(0, 1fr) !important; gap: 0.1rem; }
+  .dltt-tbl__row--head { display: none; }
+  .dltt-tbl__td[data-k]:not(:first-child)::before { content: attr(data-k) ' · '; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+}
+
+/* ── provenance labels: outlined, quiet, never filled ───────────────────── */
+.dltt-prov {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 0.32rem;
+  white-space: nowrap;
+  vertical-align: 0.08em;
+  text-transform: none;
+}
+.dltt-prov + .dltt-prov { margin-left: 0.25rem; }
+.dltt-prov--own::before { content: ''; width: 6px; height: 6px; border-radius: 99px; background: var(--dlv-violet); flex: none; }
+.dltt-prov--beyond { border-style: dashed; }
+.dltt-stage__prov { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dltt-box3__front, .dltt-box3__top, .dltt-box3__side, .dltt-box3__edge, .dltt-neuron circle, .dltt-bead, .dltt-link-w, .dltt-win, .dltt-incell, .dltt-outcell { transition: none !important; }
+}
