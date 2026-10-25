@@ -79,8 +79,12 @@ function HeroFrame({ Hero, caption }) {
   );
 }
 
-function Opener({ topic, labs, domId, actions }) {
+const FOLD = 5;
+
+function Opener({ topic, labs, domId, actions, printing }) {
   const Hero = labs[topic.hero?.lab];
+  const [allShows, setAllShows] = useState(false);
+  const shows = allShows || printing ? topic.showsUp : topic.showsUp.slice(0, FOLD);
   return (
     <section className="dltt-sec dltt-opener" id={domId('open')} aria-labelledby={`${domId('open')}-h`}>
       <p className="dltt-opener__kicker">
@@ -96,7 +100,7 @@ function Opener({ topic, labs, domId, actions }) {
         <section className="dltt-strip" aria-label="Where it shows up">
           <h3 className="dltt-strip__k">Where it shows up</h3>
           <ol className="dltt-strip__list">
-            {topic.showsUp.map((row) => {
+            {shows.map((row) => {
               const r = parseReceipt(row.at);
               const L = r ? LECTURES[r.lec] : null;
               return (
@@ -112,6 +116,11 @@ function Opener({ topic, labs, domId, actions }) {
               );
             })}
           </ol>
+          {topic.showsUp.length > FOLD && !printing && (
+            <button type="button" className="dltt-strip__more" aria-expanded={allShows} onClick={() => setAllShows((v) => !v)}>
+              {allShows ? 'show fewer' : `show all ${topic.showsUp.length}`}
+            </button>
+          )}
         </section>
         <section className="dltt-strip" aria-label="What the exam asks">
           <h3 className="dltt-strip__k">What the exam asks</h3>
@@ -528,7 +537,7 @@ export default function TopicShell({ meta, mod, page, initialStep, onSummary, go
             )}
 
             <main className="dltt-flow">
-              <Opener topic={topic} labs={labs} domId={domId} actions={actions} />
+              <Opener topic={topic} labs={labs} domId={domId} actions={actions} printing={printing} />
 
               {steps.map((s, i) => (
                 <StepSection key={s.id} step={s} n={i + 1} labs={labs} domId={domId} done={stats.doneSet.has(s.id)} onDone={toggleDone} />

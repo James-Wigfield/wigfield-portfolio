@@ -17,6 +17,8 @@ import './param.css';
 const SIZES = { mnist: [28, 28], s18: [70, 120], s22: [150, 100], big: [224, 224] };
 const SIZE_LABEL = { mnist: '28 × 28', s18: '70 × 120', s22: '150 × 100', big: '224 × 224' };
 const fmt = (v) => Math.round(v).toLocaleString('en-US');
+// big counts the way slide 22 writes them: “675 million”
+const fmtBig = (v) => (v >= 1e6 ? `${Number((v / 1e6).toPrecision(4))} million` : fmt(v));
 const C_IN = 3;
 
 export function BrickLab() {
@@ -34,6 +36,7 @@ export function BrickLab() {
   const dense = ih * iw * (ih * iw * C_IN); // L3 slide 22's footnote: neurons × inputs, weights only
   const W = narrow ? 360 : 780;
   const H = narrow ? 300 : 250;
+
   // the image slab, scaled so 224 fills the space
   const sc = (narrow ? 90 : 120) / 224;
   const slab = { x: 24, y: narrow ? 30 : 40, w: iw * sc, h: ih * sc };
@@ -54,7 +57,7 @@ export function BrickLab() {
           <MEq tex={'(k \\times k \\times c_{\\text{in}} + 1) \\times \\text{filters}'} />
           <MLine text={`Here: $(${k} \\times ${k} \\times ${C_IN} + 1) \\times ${filters} = ${conv.toLocaleString('en-US')}$, for a ${SIZE_LABEL[sizeKey]} image or any other.`} />
           <MLine text="Slide 22: $(5 \times 5 \times 3 + 1) \times 200 = 15{,}200$; a dense layer “would have $150^2 \times 100^2 \times 3 = 675$ million” {s|L3 · slide 22}." />
-          <MLine text={`This image’s dense equivalent: $(${ih} \\times ${iw}) \\times (${ih} \\times ${iw} \\times 3) = ${fmt(dense)}$ weights (the footnote’s formula, biases left out) {own}.`} />
+          <MLine text={`This image’s dense equivalent: $(${ih} \\times ${iw}) \\times (${ih} \\times ${iw} \\times 3)$ = ${fmtBig(dense)} weights (the footnote’s formula, biases left out) {own}.`} />
         </>
       }
     >
@@ -83,7 +86,7 @@ export function BrickLab() {
           <rect x={logX(1)} y={ly - 4} width={logX(conv) - logX(1)} height={10} rx={2} className="dltt-bar dltt-bar--w" />
           <text x={logX(conv) + 6} y={ly + 5} className="dltt-t dltt-t--xs dltt-t--m">conv {fmt(conv)}</text>
           <rect x={logX(1)} y={ly + 10} width={logX(dense) - logX(1)} height={10} rx={2} className="dltt-bar dltt-bar--nt" />
-          <text x={Math.min(logX(dense) + 6, W - 150)} y={ly + 19} className="dltt-t dltt-t--xs dltt-t--m">dense {fmt(dense)}</text>
+          <text x={narrow ? logX(1) : Math.min(logX(dense) + 6, W - 150)} y={narrow ? ly + 58 : ly + 19} className="dltt-t dltt-t--xs dltt-t--m">dense {fmtBig(dense)}</text>
         </svg>
         <svg className="dltt-svg dltt-ctl" viewBox={`0 0 ${W} ${narrow ? 120 : 64}`} role="group" aria-label="Kernel size and number of filters">
           <text x={20} y={16} className="dltt-t dltt-t--s">kernel k × k</text>

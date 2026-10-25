@@ -183,7 +183,7 @@ export default {
         { list: [
           'Slide 9’s shapes: $\\mathbf{W}_x$ is $n_{\\text{inputs}} \\times n_{\\text{neurons}}$, $\\mathbf{W}_h$ is $n_{\\text{neurons}} \\times n_{\\text{neurons}}$ {s|L4 · slide 9}.',
           '`SimpleRNN(1)` on one feature: $1 \\times (1 + 1) + 1 = 3$ {s|L4 · slide 25}. `SimpleRNN(32)`: 1,088 {s|L4 · slide 27}; on 32 inputs: 2,080 {s|L4 · slide 29}.',
-          '56 time steps or 5,000: the same three blocks, the same count.',
+          '56 time steps or a hundred times as many: the same three blocks, the same count.',
           'The output `Dense(1)` is its own layer: $(32 + 1) \\times 1 = 33$ {s|L4 · slide 27}.',
         ] },
         { note: 'Slides 9–11’s memory cell also holds the output weights $\\mathbf{W}_y$ and $\\mathbf{b}_y$ {s|L4 · slide 9}, which Keras puts in the separate Dense layer. When a question draws the cell with its output, count them together: Practice A Q2(a) gets 60 + 7 = 67.', label: 'Watch out' },

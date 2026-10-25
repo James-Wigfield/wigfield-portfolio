@@ -122,3 +122,11 @@ export const AXES = {
   t: { role: 't', name: 'time steps' },
   f: { role: 'f', name: 'features' },
 };
+
+// How TensorGlyph.jsx draws a shape (one example, no batch axis): a 3-axis
+// image box, a (time, features) slab for sequences, a matrix, or a strip.
+export function glyphKind(shape, seq = false) {
+  if (shape.length === 3) return 'image';
+  if (shape.length === 2) return seq ? 'seq' : 'grid';
+  return 'vec';
+}

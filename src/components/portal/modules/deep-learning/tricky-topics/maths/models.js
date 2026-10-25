@@ -20,6 +20,13 @@ export const MODELS = {
     printed: { total: 266610, trainable: 266610, nonTrainable: 0, perLayer: [0, 235500, 30100, 1010] },
     model: { input: [28, 28], layers: [{ t: 'flatten' }, { t: 'dense', units: 300 }, { t: 'dense', units: 100 }, { t: 'dense', units: 10 }] },
   },
+  'l1-mlp-frozen': {
+    name: 'Slide 36’s MLP with its two hidden layers frozen',
+    at: 'L1 · slide 36',
+    printed: {},
+    note: 'The frozen-layers lab’s printed state: layer.trainable = False on Dense(300) and Dense(100) (L2 slide 31’s idea).',
+    model: { input: [28, 28], layers: [{ t: 'flatten' }, { t: 'dense', units: 300, frozen: true }, { t: 'dense', units: 100, frozen: true }, { t: 'dense', units: 10 }] },
+  },
   'l1-widedeep': {
     name: 'Wide & Deep (California housing)',
     at: 'L1 · slide 45',
@@ -210,6 +217,32 @@ export const MODELS = {
     model: {
       input: [30],
       layers: [
+        { t: 'dense', units: 3 * 3 * 16 },
+        { t: 'reshape', to: [3, 3, 16] },
+        { t: 'conv2dT', filters: 32, k: 3, s: 2 },
+        { t: 'conv2dT', filters: 16, k: 3, s: 2, pad: 'same' },
+        { t: 'conv2dT', filters: 1, k: 3, s: 2, pad: 'same' },
+        { t: 'reshape', to: [28, 28] },
+      ],
+    },
+  },
+  'l67-convae': {
+    name: 'Convolutional autoencoder (encoder + decoder)',
+    at: 'L6–7 · slides 5–6',
+    printed: { total: 54479 },
+    note: 'slide 6: conv_ae.count_params() → 54479; slide 5’s comments print the sizes.',
+    model: {
+      input: [28, 28],
+      layers: [
+        { t: 'reshape', to: [28, 28, 1] },
+        { t: 'conv2d', filters: 16, k: 3, pad: 'same' },
+        { t: 'maxpool2d', p: 2 },
+        { t: 'conv2d', filters: 32, k: 3, pad: 'same' },
+        { t: 'maxpool2d', p: 2 },
+        { t: 'conv2d', filters: 64, k: 3, pad: 'same' },
+        { t: 'maxpool2d', p: 2 },
+        { t: 'conv2d', filters: 30, k: 3, pad: 'same' },
+        { t: 'gap2d' },
         { t: 'dense', units: 3 * 3 * 16 },
         { t: 'reshape', to: [3, 3, 16] },
         { t: 'conv2dT', filters: 32, k: 3, s: 2 },

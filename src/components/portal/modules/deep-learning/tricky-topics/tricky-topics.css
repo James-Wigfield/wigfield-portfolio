@@ -870,3 +870,5 @@ html.dltt-pseudo-on body { overflow: hidden !important; }
 .dltt-qbtn:hover { color: var(--accent-ink); border-color: var(--accent); }
 .dltt-qbtn--on { color: var(--accent-ink); border-color: var(--accent); }
 .dltt-qbtn:disabled { opacity: 0.45; cursor: default; }
+.dltt-strip__more { margin-top: 0.35rem; font: inherit; font-size: 0.74rem; color: var(--ink-3); background: none; border: none; border-bottom: 1px dotted var(--line); padding: 0; cursor: pointer; }
+.dltt-strip__more:hover { color: var(--accent-ink); }

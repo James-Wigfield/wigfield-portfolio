@@ -18,7 +18,8 @@ import { checkField } from './drillCheck';
      mode      optional (e.g. count ↔ reverse)
      answer    one input per field (numbers, shapes, choices); Enter checks
      feedback  right / wrong per field, then the working — the rule and the
-               numbers — so a wrong answer teaches
+               numbers — so a wrong answer teaches (renderWorking(q) may add
+               a picture under it)
      score     dltt:<topic>:drill { tried, right }
      print     a short worked set (printSet seeds + the fixed questions),
                answers and working written out
@@ -62,7 +63,7 @@ function shown(f) {
   return f.type === 'number' ? Number(f.answer).toLocaleString('en-US') : f.answer;
 }
 
-function Question({ q, renderShow, live, idPrefix, onScore }) {
+function Question({ q, renderShow, renderWorking, live, idPrefix, onScore }) {
   const [vals, setVals] = useState({});
   const [checked, setChecked] = useState(false);
   const [showWork, setShowWork] = useState(false);
@@ -116,13 +117,14 @@ function Question({ q, renderShow, live, idPrefix, onScore }) {
       {(!live || checked || showWork) && (
         <div className="dltt-working">
           {q.working.map((w, i) => <p key={i} className="dltt-working__line"><Rich text={w} /></p>)}
+          {renderWorking ? renderWorking(q) : null}
         </div>
       )}
     </div>
   );
 }
 
-export default function DrillFrame({ make, fixed = [], modes, renderShow, printSet = [1, 2, 3], intro }) {
+export default function DrillFrame({ make, fixed = [], modes, renderShow, renderWorking, printSet = [1, 2, 3], intro }) {
   const { topicId, printing } = useStudy();
   const store = useMemo(() => topicStore(topicId), [topicId]);
   const [source, setSource] = useState('random');
@@ -161,7 +163,7 @@ export default function DrillFrame({ make, fixed = [], modes, renderShow, printS
           <span className="dltt-drill__score" aria-live="polite"><b>{score.right}</b>/{score.tried} right{source === 'random' ? ` · question #${seed}` : ` · ${unitIdx % Math.max(1, fixed.length) + 1} of ${fixed.length}`}</span>
         </div>
         {intro && <p className="dltt-sec__lead"><Rich text={intro} /></p>}
-        <Question key={`${source}-${mode}-${seed}-${unitIdx}`} q={q} renderShow={renderShow} live idPrefix={`dltt-${topicId}-dq`} onScore={onScore} />
+        <Question key={`${source}-${mode}-${seed}-${unitIdx}`} q={q} renderShow={renderShow} renderWorking={renderWorking} live idPrefix={`dltt-${topicId}-dq`} onScore={onScore} />
         <div className="dltt-drill__btns">
           <button type="button" className="dltt-btn" onClick={next}>
             {source === 'unit' ? 'Next unit question' : 'New question'} <Icon name="arrowRight" size={14} />
@@ -171,7 +173,7 @@ export default function DrillFrame({ make, fixed = [], modes, renderShow, printS
       {printing && (
         <div className="dltt-drill__print">
           <p className="dltt-drill__k">A worked set: generated questions (this page’s own) and questions from the unit, with answers and working.</p>
-          {printQs.map((pq, i) => <Question key={`${pq.id}-${i}`} q={pq} renderShow={renderShow} live={false} idPrefix={`dltt-${topicId}-pq${i}`} onScore={() => {}} />)}
+          {printQs.map((pq, i) => <Question key={`${pq.id}-${i}`} q={pq} renderShow={renderShow} renderWorking={renderWorking} live={false} idPrefix={`dltt-${topicId}-pq${i}`} onScore={() => {}} />)}
         </div>
       )}
     </div>

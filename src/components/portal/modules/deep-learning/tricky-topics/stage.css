@@ -399,7 +399,8 @@
 .dltt-hop { fill: none; stroke: var(--dltt-jump); stroke-width: 2; stroke-linecap: round; }
 .dltt-hophead { fill: var(--dltt-jump); }
 .dltt-pad-line { stroke: var(--dltt-nt); stroke-width: 1.3; opacity: 0.7; }
-.dltt-pad { stroke: var(--dltt-nt); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.dltt-pad { fill: none; stroke: var(--dltt-nt); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.dltt-pad--hit { fill: color-mix(in srgb, var(--dltt-win) 16%, var(--dltt-floor)) !important; }
 .dltt-incell { fill: color-mix(in srgb, var(--dltt-data) 10%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.2; transition: opacity 0.3s, fill 0.3s; }
 .dltt-incell--hit { fill: color-mix(in srgb, var(--dltt-win) 16%, var(--dltt-floor)); }
 .dltt-incell--ignored { fill: none; stroke: var(--dltt-nt); stroke-dasharray: 3 2; opacity: 0.8; }
@@ -449,3 +450,13 @@
 @media (prefers-reduced-motion: reduce) {
   .dltt-box3__front, .dltt-box3__top, .dltt-box3__side, .dltt-box3__edge, .dltt-neuron circle, .dltt-bead, .dltt-link-w, .dltt-win, .dltt-incell, .dltt-outcell { transition: none !important; }
 }
+
+/* TensorGlyph: one example's tensor */
+.dltt-glyph__slab { fill: color-mix(in srgb, var(--dltt-data) 12%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.3; transition: all 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }
+.dltt-glyph__slab--ghost, .dltt-glyph__ghost :is(.dltt-box3__front, .dltt-box3__top, .dltt-box3__side) { fill: none; stroke-dasharray: 4 3; opacity: 0.55; }
+.dltt-glyph__plain { stroke: var(--dltt-data); stroke-width: 1.3; }
+@media (prefers-reduced-motion: reduce) { .dltt-glyph__slab { transition: none !important; } }
+
+/* a layer / cell box, and a dashed "tied to" line */
+.dltt-cell { fill: var(--dltt-floor); stroke: var(--dltt-data); stroke-width: 1.6; }
+.dltt-tie { fill: none; stroke: var(--dltt-w); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: 0.7; }

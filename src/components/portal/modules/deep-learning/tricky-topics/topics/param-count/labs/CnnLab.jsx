@@ -60,14 +60,16 @@ export function CnnLab() {
         <Switch label="Before the Dense layers" value={m} onChange={setMode} options={[{ value: 'flatten', label: 'Flatten (slide 35)' }, { value: 'gap', label: 'GlobalAvgPool2D' }]} />
         <svg className="dltt-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Shapes ${spatial.map((r) => r.out.join(' by ')).join(', ')}; ${layerName(vec.L)} gives ${vec.out[0]}; total ${C.total} parameters`}>
           <text x={8} y={18} className="dltt-t dltt-t--xs">each layer’s output (height × width × channels)</text>
-          {[{ out: BASE.input, L: { t: 'input' } }, ...spatial].map((r, i) => {
+          {[{ out: BASE.input, L: { t: 'input' } }, ...spatial].map((r, i, all) => {
             const s = side(r.out[0]);
             const x = 14 + i * stepX;
+            // narrow: label only where the size changes (the input and each pool)
+            const label = !narrow || i === 0 || r.out[0] !== all[i - 1].out[0];
             return (
               <g key={i}>
                 <Box3 x={x} y={baseY - s} w={s} h={s} d={dep(r.out[2])} axes={{ d: { role: 'c' } }} />
-                <text x={x + s / 2} y={baseY + 16} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--m">{r.out[0]}×{r.out[1]}</text>
-                <text x={x + s / 2} y={baseY + 28} textAnchor="middle" className="dltt-t dltt-t--xs dltt-axt--c">×{r.out[2]}</text>
+                {label && <text x={x + s / 2} y={baseY + 16} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--m">{r.out[0]}×{r.out[1]}</text>}
+                {label && <text x={x + s / 2} y={baseY + 28} textAnchor="middle" className="dltt-t dltt-t--xs dltt-axt--c">×{r.out[2]}</text>}
               </g>
             );
           })}

@@ -18,4 +18,7 @@
 
 export const TOPICS = [
   { id: 'param-count', title: 'Parameter counts', lectures: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6–7', 'L8', 'L9'], blurb: 'One method for counting the parameters of any model, from any source, and the rule for every layer.', load: () => import('./param-count/index.js') },
+  { id: 'shapes', title: 'Shapes', lectures: ['L1', 'L3', 'L4', 'L6–7', 'L8'], blurb: 'What the numbers in a shape mean, why there is a None, and how every layer changes a shape.', load: () => import('./shapes/index.js') },
+  { id: 'softmax', title: 'Softmax', lectures: ['L1', 'L3', 'L4', 'L8', 'L9'], blurb: 'What softmax really does, why it keeps turning up, and when a sigmoid does instead.', load: () => import('./softmax/index.js') },
+  { id: 'stride', title: 'Stride', lectures: ['L3', 'L4', 'L6–7'], blurb: 'How far the window jumps, what that does to the output size with each padding, and why it never changes a parameter count.', load: () => import('./stride/index.js') },
 ];
