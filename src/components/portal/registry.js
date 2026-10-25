@@ -46,6 +46,7 @@ import DeepLearningLecture67Study from './modules/deep-learning/lecture6-7-study
 import DeepLearningLecture8Study from './modules/deep-learning/lecture8-study/Lecture8Study';
 import DeepLearningLecture9Study from './modules/deep-learning/lecture9-study/Lecture9Study';
 import DeepLearningExamPractice from './modules/deep-learning/exam-practice/ExamPractice';
+import DeepLearningTrickyTopics from './modules/deep-learning/tricky-topics/TrickyTopics';
 import DeepLearningGame from './modules/deep-learning/game/Game';
 import DeepLearningArcade from './modules/deep-learning/arcade/Arcade';
 import DeepLearningCodeLab from './modules/deep-learning/codelab/CodeLab';
@@ -187,6 +188,7 @@ export const MODULES = [
   { id: 'dl-lecture-8-study', label: 'Lecture 8 · Transformers (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture8Study },
   { id: 'dl-lecture-9-study', label: 'Lecture 9 · Reinforcement Learning (Study)', icon: 'network', group: 'Deep Learning', component: DeepLearningLecture9Study },
   { id: 'dl-exam-practice', label: 'Exam Practice', icon: 'notebook', group: 'Deep Learning', component: DeepLearningExamPractice },
+  { id: 'dl-tricky-topics', label: 'Tricky Topics', icon: 'notebook', group: 'Deep Learning', component: DeepLearningTrickyTopics },
   {
     id: 'dl-game',
     label: 'Scrolls · 3D',

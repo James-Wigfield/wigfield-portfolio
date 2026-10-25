@@ -1,0 +1,49 @@
+/* ============================================================================
+   TOPIC 2 · SHAPES — lab styles (axis colours: ../../../stage.css)
+   ========================================================================== */
+
+/* tensor builder cells */
+.dltt-bcell { fill: color-mix(in srgb, var(--dltt-data) 9%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1; transition: fill 0.2s, stroke 0.2s; }
+.dltt-bcell--on { stroke-width: 2.2; }
+.dltt-bcell--batch { fill: color-mix(in srgb, var(--dltt-batch) 40%, var(--dltt-floor)); stroke: var(--dltt-batch); }
+.dltt-bcell--h { fill: color-mix(in srgb, var(--dltt-h) 40%, var(--dltt-floor)); stroke: var(--dltt-h); }
+.dltt-bcell--wd { fill: color-mix(in srgb, var(--dltt-wd) 40%, var(--dltt-floor)); stroke: var(--dltt-wd); }
+.dltt-bcell--c { fill: color-mix(in srgb, var(--dltt-c) 40%, var(--dltt-floor)); stroke: var(--dltt-c); }
+.dltt-bcell--f { fill: color-mix(in srgb, var(--dltt-f) 40%, var(--dltt-floor)); stroke: var(--dltt-f); }
+
+/* tuple numbers you can hover / focus */
+.dltt-tnum { font-weight: 800; cursor: pointer; }
+.dltt-tnum:focus { outline: none; }
+.dltt-tnum--on { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.dltt-shero__tuple { font-weight: 800; }
+
+/* the tracer's strip: one bar per layer, as tall as the log of its output size */
+.dltt-ribbon__k { margin: 0.6rem 0 0.15rem; font-size: 0.7rem; color: var(--ink-3); }
+.dltt-ribbon { margin: 0; display: flex; align-items: flex-end; gap: 3px; min-height: 40px; flex-wrap: nowrap; }
+.dltt-ribbon--narrow { gap: 1px; }
+.dltt-ribbon--narrow .dltt-ribbon__btn { padding: 0 1px; }
+.dltt-ribbon--narrow .dltt-ribbon__bar { width: 11px; }
+.dltt-ribbon__btn { display: inline-flex; align-items: flex-end; height: 38px; padding: 0 2px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; }
+.dltt-ribbon__bar { display: block; width: 14px; border-radius: 2px 2px 0 0; background: color-mix(in srgb, var(--dltt-data) 45%, transparent); }
+.dltt-ribbon__bar--in { background: color-mix(in srgb, var(--dltt-data) 25%, transparent); margin-right: 4px; }
+.dltt-ribbon__btn:hover .dltt-ribbon__bar { background: var(--dltt-data); }
+.dltt-ribbon--on { border-bottom-color: var(--accent); }
+.dltt-ribbon--on .dltt-ribbon__bar { background: var(--accent); }
+.dltt-ribbon__now { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--ink-2); }
+.dltt-ribbon__now code { font-size: 0.82rem; background: none; padding: 0; color: var(--ink); }
+
+/* weights */
+.dltt-wbrick :is(.dltt-box3__front, .dltt-box3__top, .dltt-box3__side) { stroke: var(--dltt-w); }
+.dltt-wbrick .dltt-box3__front { fill: color-mix(in srgb, var(--dltt-w) 16%, var(--dltt-floor)); }
+.dltt-wgrid { fill: color-mix(in srgb, var(--dltt-w) 22%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1.4; }
+
+/* scenarios */
+.dltt-scn__in { fill: var(--dltt-floor); stroke: var(--dltt-t); stroke-width: 2; }
+.dltt-scn__target { fill: none; stroke: var(--ink-2); stroke-width: 1.8; stroke-dasharray: 4 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dltt-bcell { transition: none !important; }
+}
+
+/* BatchLab: the two switches side by side */
+.dltt-batch__ctl { display: flex; flex-wrap: wrap; gap: 0 1.2rem; }

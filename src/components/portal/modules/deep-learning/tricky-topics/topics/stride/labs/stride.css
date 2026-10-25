@@ -1,0 +1,33 @@
+/* ============================================================================
+   TOPIC 4 · STRIDE — lab styles (window --dltt-win, hops --dltt-jump,
+   padding = hatched --dltt-nt: ../../../stage.css)
+   ========================================================================== */
+
+.dltt-outcell--hot { fill: color-mix(in srgb, var(--dltt-win) 30%, var(--dltt-floor)); stroke: var(--dltt-win); stroke-width: 2; }
+.dltt-bracket path { fill: none; stroke: var(--dltt-win); stroke-width: 1.6; opacity: 0.75; transition: opacity 0.3s, stroke-width 0.2s; }
+.dltt-bracket .dltt-bracket__stem { stroke-width: 1.1; opacity: 0.55; }
+.dltt-bracket--on path { opacity: 1; stroke-width: 2.6; }
+.dltt-bracket__path { fill: none; stroke: var(--dltt-win); stroke-width: 1.6; }
+.dltt-ignored-x { stroke: var(--dltt-jump); stroke-width: 2; stroke-linecap: round; }
+.dltt-pool--drop { opacity: 0.35; }
+.dltt-upbox { fill: color-mix(in srgb, var(--dltt-data) 10%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.6; transition: all 0.45s ease; }
+.dltt-upbox--on { stroke-width: 2.8; stroke: var(--dltt-win); }
+.dltt-preset { display: inline-flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; max-width: 100%; }
+.dltt-preset__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dltt-preset select { font: inherit; font-size: 0.84rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.3rem 0.45rem; max-width: 100%; min-width: 0; }
+.dltt-calc__ctl { display: flex; flex-direction: column; gap: 0.2rem; }
+.dltt-drill__strips { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; margin-top: 0.4rem; }
+.dltt-drill__strip { max-width: 360px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dltt-bracket path, .dltt-upbox { transition: none !important; }
+}
+
+/* StripView brackets: numbers pair each bracket with its output; the window in focus stands out */
+.dltt-strip__num { fill: var(--ink-2); font-size: 10px; pointer-events: none; }
+.dltt-strip--hot .dltt-bracket:not(.dltt-bracket--on) path { opacity: 0.22; }
+.dltt-strip--hot .dltt-bracket:not(.dltt-bracket--on) .dltt-strip__num { opacity: 0.35; }
+
+/* UpsampleLab: stride-2 sizes as faint outlines at strides=1; a kernel stamp in the 1D row */
+.dltt-upbox--ghost { fill: none; stroke: var(--dltt-data); stroke-width: 1; opacity: 0.28; }
+.dltt-stamp { fill: color-mix(in srgb, var(--dltt-w) 70%, transparent); } /* the kernel carries the weights */
