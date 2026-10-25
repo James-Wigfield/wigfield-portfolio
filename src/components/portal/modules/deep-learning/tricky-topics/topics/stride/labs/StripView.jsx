@@ -1,3 +1,4 @@
+import { rove } from '../../../rove';
 import { windows } from '../../../maths/strideRules.js';
 
 /* ============================================================================
@@ -40,9 +41,8 @@ export default function StripView({ x = 0, y = 0, n, k, s, pad = 'valid', width 
           height={outW - 2}
           rx={3}
           className={`dltt-outcell${w.i >= reveal ? ' dltt-outcell--empty' : ''}${hot === w.i ? ' dltt-outcell--hot' : ''}`}
-          tabIndex={onHot && w.i < reveal ? 0 : undefined}
-          role={onHot ? 'button' : undefined}
-          aria-label={onHot ? `Output ${w.i + 1}` : undefined}
+          {...(onHot && w.i < reveal ? rove(`${idPrefix}o`, w.i, Math.min(W.out, reveal), Math.min(W.out, reveal), hot ?? 0) : {})}
+          aria-label={onHot ? `${mode === 'brackets' ? `"${pad}" ` : ''}output ${w.i + 1}` : undefined}
           onPointerEnter={onHot ? () => onHot(w.i) : undefined}
           onPointerLeave={onHot ? () => onHot(null) : undefined}
           onFocus={onHot ? () => onHot(w.i) : undefined}

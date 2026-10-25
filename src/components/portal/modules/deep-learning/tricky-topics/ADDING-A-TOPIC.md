@@ -154,7 +154,7 @@ The kit (`../../stage.jsx`, `../../svgParts.jsx`, `../../story.js`, `../../stage
 
 The design rules:
 - One idea per lab, visible in five seconds; open on the finished "aha" state.
-- Picture first; numbers on hover and in the maths drawer. Anything that reacts to hover must also take keyboard focus (`tabIndex={0}`, `role="button"`, an `aria-label`, `onFocus`/`onBlur` doing what `onPointerEnter`/`onPointerLeave` do), and the Try this says “hover (or tab to)”.
+- Picture first; numbers on hover and in the maths drawer. Anything that reacts to hover must also take keyboard focus, with `onFocus`/`onBlur` doing what `onPointerEnter`/`onPointerLeave` do, an `aria-label`, and a Try this that says “hover (or tab to)”. A set of hover targets (cells, segments, outputs) is **one** tab stop: spread `rove(group, i, n, cols, active)` from `rove.js` on each item, and the arrow keys move between them.
 - ≤ 3 controls; story beats for processes.
 - **Numbers come from a maths module, never typed twice.**
 - `printing` (from `useStudy()`) pins a finished state; the PDF prints labs on their last beat.

@@ -64,7 +64,7 @@ export function VsLab() {
       title="Separate yes/no answers, or one share-out?"
       prov="{s|L1 · slides 29, 31} {s|L9 · slide 25}"
       tryThis="Predict which of the three output layers adds up to exactly 1, then switch between them."
-      caption="Multilabel sigmoids are separate yes/no answers, so their sum can be anything; softmax makes the classes compete for one total of 1. CartPole has two actions but one sigmoid output: left with probability $p$ {s|L9 · slide 25}, right with $1 - p$ {own}."
+      caption="Multilabel sigmoids are separate yes/no answers, so their sum can be anything; softmax makes the classes compete for one total of 1. CartPole has two actions but one sigmoid output: left with probability $p$ {s|L9 · slides 23, 25}, right with $1 - p$ {own}."
       maths={
         <>
           <MLine text={`Binary: $\\sigma(${z0}) = 1/(1 + e^{-${z0}}) = ${tex(bin.p[0], 3)}$; one logistic output {s|L1 · slide 29}; the other class gets $1 - ${tex(bin.p[0], 3)} = ${tex(bin.ghost, 3)}$ {own}.`} />

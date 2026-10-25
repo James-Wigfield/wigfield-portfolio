@@ -96,7 +96,7 @@ export default {
           'CartPole has two actions but one `Dense(1, activation="sigmoid")` output: the probability of left {s|L9 · slides 23, 25}; right gets $1 - p$ {own}.',
           'A two-class softmax equals a sigmoid of the difference of the two scores {beyond}.',
         ] },
-        { slideNote: 'Figure 18-5 (L9 slide 23) follows its one sigmoid output with “Multinomial sampling”: with two outcomes that is a two-way draw, left with probability $p$, right with $1 - p$. The slide never writes the $1 - p$, so it is this page’s own.' },
+        { note: 'Figure 18-5 follows its one sigmoid output with “Multinomial sampling” {s|L9 · slide 23}: with two outcomes that is a two-way draw, left with probability $p$, right with $1 - p$. The slide never writes the $1 - p$; it is this page’s own.', label: 'Two outcomes' },
       ],
       play: ['vs'],
     },

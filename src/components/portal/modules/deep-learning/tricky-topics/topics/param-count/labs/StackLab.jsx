@@ -51,7 +51,7 @@ export function StackLab() {
       prov="{s|L1 · slide 36}"
       tryThis="Before each beat, say that layer’s count out loud; then play it, or hover (or tab to) the bar."
       story={<StoryBar story={story} beats={beats} />}
-      caption="Each layer’s inputs are the previous layer’s outputs. The bands between the columns are as thick as each layer’s count: 784 inputs fanning out to 300 neurons make the first Dense layer 235,500 of the 266,610."
+      caption="Each layer’s inputs are the previous layer’s outputs. The bands between the columns are as thick as each layer’s count: 784 inputs fanning out to 300 neurons make the first Dense layer most of the model."
       maths={
         <>
           {C.rows.map((r) => <MLine key={r.i} text={`\`${layerName(r.L)}\`: ${working(r.L, r.ins)}`} />)}
@@ -87,7 +87,7 @@ export function StackLab() {
               height={22}
               className={`dltt-stack__seg dltt-stack__seg--${i % 2}${i < shown ? '' : ' dltt-hide'}${hot === i ? ' dltt-stack__seg--hot' : ''}`}
               tabIndex={i < shown && r.total ? 0 : -1}
-              role="button"
+              role="img"
               aria-label={`${layerName(r.L)}: ${fmt(r.total)} parameters`}
               onPointerEnter={() => setHot(i)}
               onPointerLeave={() => setHot(null)}

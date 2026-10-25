@@ -18,7 +18,11 @@
 .dltt-shero__tuple { font-weight: 800; }
 
 /* the tracer's strip: one bar per layer, as tall as the log of its output size */
-.dltt-ribbon { margin: 0.6rem 0 0; display: flex; align-items: flex-end; gap: 3px; min-height: 40px; flex-wrap: wrap; }
+.dltt-ribbon__k { margin: 0.6rem 0 0.15rem; font-size: 0.7rem; color: var(--ink-3); }
+.dltt-ribbon { margin: 0; display: flex; align-items: flex-end; gap: 3px; min-height: 40px; flex-wrap: nowrap; }
+.dltt-ribbon--narrow { gap: 1px; }
+.dltt-ribbon--narrow .dltt-ribbon__btn { padding: 0 1px; }
+.dltt-ribbon--narrow .dltt-ribbon__bar { width: 11px; }
 .dltt-ribbon__btn { display: inline-flex; align-items: flex-end; height: 38px; padding: 0 2px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; }
 .dltt-ribbon__bar { display: block; width: 14px; border-radius: 2px 2px 0 0; background: color-mix(in srgb, var(--dltt-data) 45%, transparent); }
 .dltt-ribbon__bar--in { background: color-mix(in srgb, var(--dltt-data) 25%, transparent); margin-right: 4px; }

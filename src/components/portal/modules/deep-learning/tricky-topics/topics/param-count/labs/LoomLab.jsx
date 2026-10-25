@@ -3,6 +3,7 @@ import { Stage, MLine, MEq } from '../../../stage';
 import { Scrub, Neuron, Bead, Counter } from '../../../svgParts';
 import { useWidth } from '../../../useWidth';
 import { useStudy } from '../../../context';
+import { rove } from '../../../rove';
 import { layerCounts } from '../../../maths/paramRules';
 import './param.css';
 
@@ -66,7 +67,7 @@ export function LoomLab() {
           )}
           {Array.from({ length: a }, (_, i) => <Neuron key={`i${i}`} x={net.xi} y={yi(i)} r={11} />)}
           {Array.from({ length: b }, (_, j) => (
-            <g key={`o${j}`} tabIndex={0} role="button" aria-label={`Neuron ${j + 1} and its bias`} onPointerEnter={() => setHot({ b: j })} onPointerLeave={() => setHot(null)} onFocus={() => setHot({ b: j })} onBlur={() => setHot(null)}>
+            <g key={`o${j}`} {...rove('loomb', j, b, b, hot?.b ?? 0)} aria-label={`Neuron ${j + 1} and its bias`} onPointerEnter={() => setHot({ b: j })} onPointerLeave={() => setHot(null)} onFocus={() => setHot({ b: j })} onBlur={() => setHot(null)}>
               <Neuron x={net.xo} y={yo(j)} r={13} role="w" />
               <Bead x={net.xo + 11} y={yo(j) - 11} r={hot?.b === j ? 6.5 : 4.5} />
             </g>
@@ -86,8 +87,7 @@ export function LoomLab() {
                 height={cell - 3}
                 rx={3}
                 className={`dltt-wcell${isHot(i, j) ? ' dltt-wcell--hot' : ''}`}
-                tabIndex={0}
-                role="button"
+                {...rove('loomw', i * b + j, a * b, b, hot?.i != null ? hot.i * b + hot.j : 0)}
                 aria-label={`Weight from input ${i + 1} to neuron ${j + 1}`}
                 onPointerEnter={() => setHot({ i, j })}
                 onPointerLeave={() => setHot(null)}

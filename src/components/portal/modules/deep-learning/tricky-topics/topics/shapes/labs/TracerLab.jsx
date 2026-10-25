@@ -39,7 +39,6 @@ export function TracerLab() {
   // the strip under the stage: one bar per layer, as tall as the log of how many numbers come out
   const sizes = [MODELS[key].model.input, ...rows.map((row) => row.out)].map((s) => Math.log10(prod(s.map((v) => v ?? 1)) + 1));
   const maxSize = Math.max(...sizes);
-  const next = rows[step + 1];
   return (
     <Stage
       title="Watch a model reshape its data, layer by layer"
@@ -70,7 +69,8 @@ export function TracerLab() {
           <TensorGlyph x={narrow ? 10 : 500} y={narrow ? 182 : 22} shape={r.out} kind={kindOf(r.out)} fit={fit} />
           <Scrub x0={30} x1={W - 30} y={H - 26} value={step} min={0} max={rows.length - 1} step={1} onChange={setStep} label="Layer" show={(v) => `${v + 1}`} ticks={[0, rows.length - 1]} tickLabel={(v) => `${v + 1}`} />
         </svg>
-        <div className="dltt-ribbon" aria-label="How many numbers each layer outputs (log scale); pick a layer">
+        <p className="dltt-ribbon__k">numbers out of each layer (log scale)</p>
+        <div className={`dltt-ribbon${narrow ? ' dltt-ribbon--narrow' : ''}`} role="group" aria-label="How many numbers each layer outputs (log scale); pick a layer">
           <span className="dltt-ribbon__bar dltt-ribbon__bar--in" style={{ height: `${4 + (sizes[0] / maxSize) * 30}px` }} title={`input ${showShape(MODELS[key].model.input)}`} />
           {rows.map((row, i) => (
             <button
@@ -87,7 +87,7 @@ export function TracerLab() {
           ))}
         </div>
         <p className="dltt-ribbon__now">
-          now <code>{showShape(r.out)}</code>{next ? <> → next <code>{showShape(next.out)}</code></> : ' (the output)'}
+          layer {step + 1} gives <code>{showShape(r.out)}</code>{step + 1 < rows.length ? ': predict the next one, then step' : ' (the output)'}
         </p>
       </div>
     </Stage>

@@ -27,7 +27,7 @@ export function PoolLab() {
     { label: 'Jump 2 across', say: 'The stride defaults to the pool size, so the window jumps 2 columns: no overlap, no gaps.' },
     { label: 'Row by row', say: 'Across the row, then 2 rows down: every full window gives one output.' },
     { label: 'The 9th column', say: 'Nine columns hold only four full windows: the last column is dropped (“valid”, no padding).' },
-    { label: '3 × 4', say: `The result is ${OR} × ${OC}: height and width halved, rounded down; the depth (not drawn) is kept.` },
+    { label: 'The result', say: `The result is ${OR} × ${OC}: height and width halved, rounded down; the depth (not drawn) is kept.` },
   ];
   const story = useStory(beats.length, { start: -1 }); // opens empty: predict, then play
   const b = story.beat;
@@ -58,7 +58,7 @@ export function PoolLab() {
       }
     >
       <div ref={wrap}>
-        <svg className="dltt-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Max pooling 2 by 2, stride 2, on a ${ROWS} by ${COLS} grid: a ${OR} by ${OC} output; the last column is dropped`}>
+        <svg className="dltt-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={b >= 2 ? `Max pooling 2 by 2, stride 2, on a ${ROWS} by ${COLS} grid: a ${OR} by ${OC} output; the last column is dropped` : `Max pooling 2 by 2, stride 2, on a ${ROWS} by ${COLS} grid`}>
           {VAL.map((row, i) => row.map((v, j) => {
             const drop = j >= OC * P;
             const inWin = win && i >= 2 * win[0] && i < 2 * win[0] + 2 && j >= 2 * win[1] && j < 2 * win[1] + 2;

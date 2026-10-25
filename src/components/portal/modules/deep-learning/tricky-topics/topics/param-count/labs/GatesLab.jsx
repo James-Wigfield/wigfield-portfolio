@@ -16,9 +16,9 @@ import './param.css';
 
 const OPTS = {
   rnn: { label: 'SimpleRNN(32)', model: 'l4-rnn32', gates: ['h'], prov: '{s|L4 · slide 27}' },
-  lstm: { label: 'LSTM(12)', model: 'l4-lstm', gates: ['f', 'i', 'o', 'g'], prov: '{s|L4 · slide 43}' },
-  gru: { label: 'GRU(20)', model: 'l4-gru', gates: ['z', 'r', 'g'], prov: '{s|L4 · slide 49}' },
-  bi: { label: 'Bidirectional', model: 'l8-birnn', gates: ['h'], prov: '{s|L8 · slide 9}' },
+  lstm: { label: 'LSTM(12)', model: 'l4-lstm', gates: ['f', 'i', 'o', 'g'], prov: '{s|L4 · slide 43} {own}' }, // the slide prints the model total; the split is ours
+  gru: { label: 'GRU(20)', model: 'l4-gru', gates: ['z', 'r', 'g'], prov: '{s|L4 · slide 49} {own}' },
+  bi: { label: 'Bidirectional', model: 'l8-birnn', gates: ['h'], prov: '{s|L8 · slide 9} {own}' },
 };
 const fmt = (v) => v.toLocaleString('en-US');
 
@@ -51,7 +51,7 @@ export function GatesLab() {
   return (
     <Stage
       title="LSTM = four blocks, GRU = three, Bidirectional = two copies"
-      prov={k === 'gru' && !twoBias ? `${opt.prov} {own}` : opt.prov}
+      prov={opt.prov}
       tryThis="Pick a layer and count its blocks before reading the total. For the GRU, flip between one and two biases per gate."
       caption={`Each block is one SimpleRNN-sized set of weights: $\\mathbf{W}_x$ (${nIn} × ${u}), $\\mathbf{W}_h$ (${u} × ${u}) and a bias (${u}). The Dense head is counted separately.`}
       challenge={{ text: 'Find the GRU layer’s count with slide 49’s equations, one bias per gate: 1,320 (1,341 with the Dense head).', done: k === 'gru' && rec.total === 1320 }}

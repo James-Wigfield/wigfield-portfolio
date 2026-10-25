@@ -3,6 +3,7 @@ import { Stage, Switch, MLine } from '../../../stage';
 import { Box3 } from '../../../svgParts';
 import { useWidth } from '../../../useWidth';
 import { useStudy } from '../../../context';
+import { rove } from '../../../rove';
 import { countModel, working, layerName } from '../../../maths/paramRules';
 import { MODELS } from '../../../maths/models';
 import './param.css';
@@ -45,7 +46,7 @@ export function CnnLab() {
     <Stage
       title="Where a CNN’s parameters live, and what Flatten costs"
       prov="{s|L3 · slide 35} {own}"
-      tryThis="Guess which single layer holds the most parameters, then find the widest segment. Switch Flatten to GlobalAvgPool2D and watch the first Dense segment."
+      tryThis="Guess which single layer holds the most parameters, then find the widest segment: is it the one you expected? Switch Flatten to GlobalAvgPool2D and watch the first Dense segment."
       caption={`The image shrinks while it deepens; \`${layerName(vec.L)}\` hands ${fmt(vec.out[0])} numbers to the first Dense layer, which then holds ${fmt(dense1.total)} parameters.`}
       challenge={{ text: 'Find the version whose total is under 1.2 million.', done: C.total < 1200000 }}
       maths={
@@ -94,8 +95,7 @@ export function CnnLab() {
                 width={Math.max(1.5, w)}
                 height={24}
                 className={`dltt-stack__seg dltt-stack__seg--${r.L.t === 'dense' ? 'd' : i % 2}${hot === r.i ? ' dltt-stack__seg--hot' : ''}`}
-                tabIndex={0}
-                role="button"
+                {...rove('cnn', i, params.length, params.length, Math.max(0, params.findIndex((p) => p.i === hot)))}
                 aria-label={`${layerName(r.L)}: ${r.total.toLocaleString('en-US')} parameters`}
                 onPointerEnter={() => setHot(r.i)}
                 onPointerLeave={() => setHot(null)}
@@ -115,7 +115,7 @@ export function CnnLab() {
           <text x={W / 2} y={barY + 60} textAnchor="middle" className="dltt-t dltt-t--m dltt-t--s">
             {hot !== null ? `${layerName(C.rows[hot].L)}: ${working(C.rows[hot].L, C.rows[hot].ins)}` : `first Dense: ${working(dense1.L, dense1.ins)}`}
           </text>
-          <text x={barX} y={barY + 80} className="dltt-t dltt-t--xs"><tspan className="dltt-legend dltt-legend--c">■</tspan> conv layers  <tspan className="dltt-legend dltt-legend--d">■</tspan> dense layers</text>
+          <text x={barX} y={barY + 80} className="dltt-t dltt-t--xs"><tspan className="dltt-legend dltt-legend--c">■</tspan><tspan className="dltt-legend dltt-legend--c2">■</tspan> conv layers  <tspan className="dltt-legend dltt-legend--d">■</tspan> dense layers</text>
         </svg>
       </div>
     </Stage>

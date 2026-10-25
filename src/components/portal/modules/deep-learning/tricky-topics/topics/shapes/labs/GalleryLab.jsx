@@ -39,7 +39,8 @@ const KINDS = {
     label: 'Attention',
     prov: '{s|L8 · slides 37–38} {own}',
     tuple: 'Q [n_queries, d_keys], K [n_keys, d_keys]',
-    parts: [['scores: n_queries', null], ['n_keys', null]],
+    prefix: 'scores ',
+    parts: [['n_queries', null], ['n_keys', null]],
     eg: 'toy sizes: 3 queries, 4 keys, d_keys = 6',
     words: 'Every query meets every key: the scores are [n_queries, n_keys], one row per query.',
   },
@@ -87,7 +88,7 @@ export function GalleryLab() {
             {!(k === 'att' && !narrow) && (
               <>
                 <text x={0} y={0} className="dltt-t dltt-t--m" style={{ fontSize: 14 }}>
-                  [{K.parts.map(([w, role], i) => <tspan key={w}>{i > 0 && ', '}<tspan className={role ? `dltt-axt--${role} dltt-t--b` : 'dltt-t--b'}>{w}</tspan></tspan>)}]
+                  {K.prefix ?? ''}[{K.parts.map(([w, role], i) => <tspan key={w}>{i > 0 && ', '}<tspan className={role ? `dltt-axt--${role} dltt-t--b` : 'dltt-t--b'}>{w}</tspan></tspan>)}]
                 </text>
                 <text x={0} y={22} className="dltt-t dltt-t--s">{K.eg}</text>
               </>

@@ -3,6 +3,7 @@ import { Stage, Switch, MLine } from '../../../stage';
 import { Scrub } from '../../../svgParts';
 import { useWidth } from '../../../useWidth';
 import { useStudy } from '../../../context';
+import { rove } from '../../../rove';
 import { windows } from '../../../maths/strideRules.js';
 import './stride.css';
 
@@ -97,8 +98,8 @@ export function Grid2dLab() {
           {fr && fc && r > 0 && (() => {
             const py = gy + (rows.wins[r - 1].from + rows.padLeft) * cell + cell / 2;
             const cy = gy + (fr.from + rows.padLeft) * cell + cell / 2;
-            const x0 = gx + (fc.from + cols.padLeft) * cell - 2;
-            return <path d={`M${x0} ${py} Q ${x0 - 14} ${(py + cy) / 2} ${x0} ${cy}`} className="dltt-hop" />;
+            const x0 = gx + (fc.from + cols.padLeft + F) * cell + 2;
+            return <path d={`M${x0} ${py} Q ${x0 + 14} ${(py + cy) / 2} ${x0} ${cy}`} className="dltt-hop" />;
           })()}
           <text x={gx - 8} y={gy + (totR * cell) / 2} textAnchor="end" className="dltt-t dltt-t--xs dltt-axt--h">s<tspan dy={3} fontSize={8}>h</tspan><tspan dy={-3}>={s1}</tspan></text>
           <text x={gx + (totC * cell) / 2} y={gy + totR * cell + 16} textAnchor="middle" className="dltt-t dltt-t--xs dltt-axt--wd">s<tspan dy={3} fontSize={8}>w</tspan><tspan dy={-3}>={s2}</tspan></text>
@@ -111,8 +112,7 @@ export function Grid2dLab() {
               width={cell - 2}
               height={cell - 2}
               rx={3}
-              tabIndex={0}
-              role="button"
+              {...rove('g2d', i * cols.out + j, rows.out * cols.out, cols.out, r * cols.out + c)}
               aria-label={`Output row ${i + 1}, column ${j + 1}`}
               className={`dltt-outcell${i === r && j === c ? ' dltt-outcell--hot' : ''}`}
               onPointerEnter={() => setHot({ r: i, c: j })}

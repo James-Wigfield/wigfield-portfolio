@@ -58,7 +58,10 @@ export function UpsampleLab() {
   const cov = Array.from({ length: OUT1 }, (_, j) => Array.from({ length: N1 }, (_, i) => i).filter((i) => j >= i * m && j < i * m + K1).length);
   const mc = Math.min(narrow ? 38 : 46, (W - 40) / OUT1);
   const mx0 = (W - OUT1 * mc) / 2;
-  const MH = 132;
+  // rows: inputs, then two staggered stamp rows, then the outputs below both
+  const stampY = 24 + mc + 4;
+  const outY = stampY + 20;
+  const MH = outY + mc + 2;
   return (
     <Stage
       title="Stride 2, transposed: the image grows back"
@@ -85,7 +88,7 @@ export function UpsampleLab() {
               <g key={`in${i}`}>
                 <rect x={x + 3} y={24} width={mc - 6} height={mc - 6} rx={3} className="dltt-incell dltt-incell--hit" />
                 <text x={x + mc / 2} y={24 + (mc - 6) / 2 + 4} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--m">x{i + 1}</text>
-                <rect x={mx0 + i * m * mc + 2} y={24 + mc + 4 + (i % 2) * 7} width={K1 * mc - 4} height={6} rx={3} className="dltt-stamp" />
+                <rect x={mx0 + i * m * mc + 2} y={stampY + (i % 2) * 8} width={K1 * mc - 4} height={6} rx={3} className="dltt-stamp" />
                 {i > 0 && <path d={`M${mx0 + (i - 1) * m * mc + 4} ${24 + mc + 2} Q ${mx0 + (i - 0.5) * m * mc + 4} ${24 + mc - 12} ${mx0 + i * m * mc + 4} ${24 + mc + 2}`} className="dltt-hop" />}
               </g>
             );
@@ -93,11 +96,11 @@ export function UpsampleLab() {
           <text x={mx0 + OUT1 * mc + 6} y={24 + mc + 2} className="dltt-t dltt-t--xs dltt-t--jump">{m} apart</text>
           {cov.map((c, j) => (
             <g key={`o${j}`}>
-              <rect x={mx0 + j * mc + 2} y={MH - mc - 6} width={mc - 4} height={mc - 4} rx={3} className={`dltt-outcell${c > 1 ? ' dltt-outcell--hot' : ''}`} />
-              {c > 1 && <text x={mx0 + j * mc + mc / 2} y={MH - mc / 2 - 4} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b">+</text>}
+              <rect x={mx0 + j * mc + 2} y={outY} width={mc - 4} height={mc - 4} rx={3} className={`dltt-outcell${c > 1 ? ' dltt-outcell--hot' : ''}`} />
+              {c > 1 && <text x={mx0 + j * mc + mc / 2} y={outY + mc / 2 + 2} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--b">+</text>}
             </g>
           ))}
-          <text x={mx0 - 6} y={MH - mc / 2 - 4} textAnchor="end" className="dltt-t dltt-t--xs dltt-t--b">{OUT1}</text>
+          <text x={mx0 - 6} y={outY + mc / 2 + 2} textAnchor="end" className="dltt-t dltt-t--xs dltt-t--b">{OUT1}</text>
         </svg>
         <svg className="dltt-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Decoder sizes ${stages.map((s) => s.out[0]).join(', ')}; parameters ${tRows.map((r) => r.total).join(', ')}`}>
           {boxes.map((bx) => (

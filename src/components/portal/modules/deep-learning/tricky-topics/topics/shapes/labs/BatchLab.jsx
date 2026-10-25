@@ -25,6 +25,7 @@ const CASES = {
     summaryIn: [['None', 'batch'], ['28', 'h'], ['28', 'wd'], ['1', 'c']],
     summaryOut: [['None', 'batch'], ['10', 'f']],
     note: 'Keras adds the batch axis in front: None = any batch size.',
+    noteLines: ['Keras adds the batch axis in front:', 'None = any batch size.'],
     prov: '{s|L3 · slides 16, 35} {own}',
   },
   rnn: {
@@ -35,6 +36,7 @@ const CASES = {
     summaryIn: [['None', 'batch'], ['None', 't'], ['1', 'f']],
     summaryOut: [['None', 'batch'], ['1', 'f']],
     note: 'The None you write is the time axis (any length); Keras still adds the batch None in front.',
+    noteLines: ['The None you write is the time axis (any length);', 'Keras still adds the batch None in front.'],
     prov: '{s|L4 · slides 21, 24, 25} {own}',
   },
 };
@@ -69,7 +71,7 @@ export function BatchLab() {
   const C = countModel(M);
   const OUT = C.rows[C.rows.length - 1].out;
   const W = narrow ? 340 : 720;
-  const H = narrow ? 372 : 238;
+  const H = narrow ? 390 : 238;
   const inX = narrow ? 30 : 20;
   const modelX = narrow ? 180 : 290;
   const outX = narrow ? 30 : 470;
@@ -83,7 +85,7 @@ export function BatchLab() {
       caption="The batch axis counts the examples processed together, so a model works for any batch size; summary() prints it as None. A None you write yourself is a different axis."
       maths={
         <>
-          <MLine text={`In: $(${b}, ${M.input.join(', ')})$ → out: $(${b}, ${OUT.join(', ')})$. \`${K.code}\` → \`summary()\` prints \`(${K.summaryIn.map((p) => p[0]).join(', ')})\` → \`(${K.summaryOut.map((p) => p[0]).join(', ')})\`.`} />
+          <MLine text={`In: $(${b}, ${M.input.join(', ')})$ → out: $(${b}, ${OUT.join(', ')})$. From \`${K.code}\`, Keras sees the input as \`(${K.summaryIn.map((p) => p[0]).join(', ')})\`; \`summary()\` prints the output as \`(${K.summaryOut.map((p) => p[0]).join(', ')})\`.`} />
           {ck === 'rnn' && <MLine text="The 56 time steps drawn here are one rail sequence (slide 21 prints `xx.shape = (32, 56)`); the model takes any length {s|L4 · slide 21}." />}
           <MLine text={`Parameters: ${fmt(C.total)} for any batch size {own}: weights are shaped by the layers, not by the number of examples.`} />
         </>
@@ -113,10 +115,15 @@ export function BatchLab() {
             </text>
             {narrow && <text x={0} y={22} className="dltt-t dltt-t--m" style={{ fontSize: 15 }}>out (<tspan className="dltt-axt--batch dltt-t--b">{b}</tspan>, {OUT.join(', ')})</text>}
             <text x={0} y={narrow ? 50 : 30} className="dltt-t dltt-t--s dltt-t--m">{K.code}</text>
+            {/* what Keras makes of the input shape, and what summary() prints for the output */}
             <text x={0} y={narrow ? 72 : 52} className="dltt-t dltt-t--s">
-              summary(): <tspan className="dltt-t--m"><Tuple parts={K.summaryIn} /> → <Tuple parts={K.summaryOut} /></tspan>
+              Keras sees <tspan className="dltt-t--m"><Tuple parts={K.summaryIn} /></tspan>
+              {!narrow && <>; summary() prints the output as <tspan className="dltt-t--m"><Tuple parts={K.summaryOut} /></tspan></>}
             </text>
-            <text x={0} y={narrow ? 94 : 72} className="dltt-t dltt-t--xs">{K.note}</text>
+            {narrow && <text x={0} y={92} className="dltt-t dltt-t--s">summary() output: <tspan className="dltt-t--m"><Tuple parts={K.summaryOut} /></tspan></text>}
+            {(narrow ? K.noteLines : [K.note]).map((line, i) => (
+              <text key={line} x={0} y={(narrow ? 114 : 72) + i * 15} className="dltt-t dltt-t--xs">{line}</text>
+            ))}
           </g>
         </svg>
       </div>

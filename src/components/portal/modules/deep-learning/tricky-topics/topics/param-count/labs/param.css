@@ -23,6 +23,10 @@
 .dltt-stack__col { fill: color-mix(in srgb, var(--dltt-w) 16%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1.4; }
 .dltt-stack__in { fill: var(--dltt-floor) !important; font-weight: 700; }
 .dltt-legend--c { fill: var(--dltt-w); }
+.dltt-legend--c2 { fill: color-mix(in srgb, var(--dltt-w) 55%, var(--dltt-floor)); }
+.portal[data-portal-theme='arcade'] .dltt-legend--c2 { fill: color-mix(in srgb, var(--dltt-w) 55%, #ffffff); }
+.portal[data-portal-theme='arcade'] .dltt-stack__seg--d,
+.portal[data-portal-theme='arcade'] .dltt-legend--d { fill: color-mix(in srgb, var(--dltt-w) 40%, var(--dltt-floor)); }
 .dltt-legend--d { fill: color-mix(in srgb, var(--dltt-w) 22%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1px; }
 
 /* counting from a diagram */
