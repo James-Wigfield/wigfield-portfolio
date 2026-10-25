@@ -232,7 +232,8 @@ export default function CodeLab() {
           <p className="dlc-cover__lead">
             The CITS5017 exam gives a block of code and asks for a diagram or an explanation. This PDF holds the code most likely to be
             shown: each card has its code panel with numbered marks, a legend quoting each marked piece of code, and the exam moves
-            (draw it, count it, the shapes, what it is for). Labs and projects come first.
+            (draw it, count it, the shapes, what it is for). Labs and projects come first. Slide and notebook code is quoted exactly: a
+            trimmed card is an excerpt of its source, and # … marks each gap inside it.
           </p>
           <h2 className="dlc-cover__k">Contents</h2>
           <ol className="dlc-cover__toc">

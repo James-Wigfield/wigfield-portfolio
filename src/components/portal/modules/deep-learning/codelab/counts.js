@@ -219,6 +219,7 @@ export function flow(spec) {
       return shapes[f];
     });
     const r = apply(l, ins);
+    if (l.note) r.rule = l.note;
     if (l.frozen) {
       r.nt += r.tr;
       r.rule = `${r.rule}${r.rule ? ', ' : ''}frozen`;

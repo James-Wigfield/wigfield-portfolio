@@ -84,7 +84,7 @@ Y_pred = ahead_model.predict(X)  # shape [1, 14]`,
     id: 'lstm-gru',
     title: 'LSTM and GRU layers: the gate counts',
     rating: 'core',
-    why: 'Count an LSTM (4 gate layers) and a GRU (3, with a second bias in Keras 3), and link the GRU code to its equations.',
+    why: 'Count an LSTM (three gates + g) and a GRU (two gates + g) with Keras 3’s double bias; match the GRU to its equations.',
     sources: [{ kind: 'lecture', lec: 4, slides: '43–49' }],
     blocks: ['L4 s43', 'L4 s49'],
     provenance: 'verbatim',
@@ -104,9 +104,9 @@ gru_model = tf.keras.Sequential([
     tf.keras.layers.Dense(1)
 ])`,
     marks: [
-      { n: 1, token: { line: 4, text: 'LSTM(12)' }, say: 'Four gate layers (f, i, o, g): 4 × 12 × (1 + 12 + 1) = 672.' },
+      { n: 1, token: { line: 4, text: 'LSTM(12)' }, say: 'Three gates (f, i, o) + main layer g: 4 × 12 × (1 + 12 + 1) = 672.' },
       { n: 2, lines: [1, 1], say: '672 + the Dense layer’s (12 + 1) = 685, as printed.' },
-      { n: 3, token: { line: 11, text: 'GRU(20)' }, say: 'Three gate layers (z, r, g), one state h: 3 × 20 × (1 + 20 + 2) = 1,380.' },
+      { n: 3, token: { line: 11, text: 'GRU(20)' }, say: 'Two gates (z, r) + main layer g: 3 × 20 × (1 + 20 + 2) = 1,380.' },
       { n: 4, lines: [8, 8], say: '1,380 + 21 = 1,401: Keras 3 gives each GRU gate two bias vectors (reset_after=True).' },
     ],
     moves: {
@@ -119,7 +119,7 @@ gru_model = tf.keras.Sequential([
       }],
       forWhat: 'Sequences that need a longer memory: the gates learn what to keep and what to forget, unlike a SimpleRNN.',
     },
-    slideCheck: 'Slide 49’s equations have one bias per gate, which would give 3 × 20 × (1 + 20 + 1) + 21 = 1,341. The printed 1,401 is Keras 3’s default (reset_after=True), with a second bias per gate. Validation MAE: 30,262 (LSTM), 26,497 (GRU).',
+    slideCheck: 'Slide 49’s equations have one bias per gate, which would give 3 × 20 × (1 + 20 + 1) + 21 = 1,341. The printed 1,401 is Keras 3’s default (reset_after=True), with a second bias per gate. Slide 49’s g line, (r(t)ᵀ W_hg ⊗ h(t−1)ᵀ), is a typo: Géron (Eq 15-4) resets the state first, (r(t) ⊗ h(t−1))ᵀ W_hg; Keras’s reset_after=True resets after, r(t)ᵀ ⊗ (h(t−1)ᵀ W_hg + b). Validation MAE: 30,262 (LSTM), 26,497 (GRU).',
     xref: [{ to: 'p2-gru', text: 'Project 2’s GRU(16) on 2 inputs: 960' }],
   },
   {

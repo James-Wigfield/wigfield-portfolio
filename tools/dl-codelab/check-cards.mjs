@@ -99,11 +99,14 @@ function checkVerbatim(card, sources, label) {
     if (ELISION.test(line)) { sawElision = true; return; }
     if (isBlank(line)) return;
     // find the line at or after the current position
+    // a card's `rejoined` lines join a slide line with the next one (a wrapped comment)
+    const join = (card.rejoined || []).includes(k + 1);
     let fs2 = s;
     let fi = -1;
     for (; fs2 < sources.length; fs2 += 1) {
+      const src = sources[fs2];
       const start = fs2 === s ? i + 1 : 0;
-      fi = sources[fs2].findIndex((l, j) => j >= start && l === line);
+      fi = src.findIndex((l, j) => j >= start && (join ? `${l} ${(src[j + 1] || '').trim()}` === line : l === line));
       if (fi >= 0) break;
     }
     if (fi < 0) {
@@ -122,7 +125,7 @@ function checkVerbatim(card, sources, label) {
       ok(false, `${label}: line ${k + 1} follows dropped lines with no '# …' before it`);
     }
     s = fs2;
-    i = fi;
+    i = join ? fi + 1 : fi;
     sawElision = false;
   });
 }

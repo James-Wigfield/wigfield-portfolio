@@ -9,7 +9,8 @@
    checks both. `group` draws a bracket (encoder, decoder…); `state` draws a
    dashed state hand-over (an RNN's initial_state, no parameters);
    `diagram.fold` folds a long chain into columns; `frozen` layers count as
-   non-trainable. Specs no card draws (`verifyOnly`) check a number a card
+   non-trainable; `note` replaces the Count it rule (a shared layer).
+   Specs no card draws (`verifyOnly`) check a number a card
    states in words: sample Q1(c), a printed count, a model the card mentions.
    ========================================================================== */
 
@@ -88,8 +89,8 @@ const S = {
   p2Model3: {
     inputs: [{ id: 'encoder_input', shape: [null, 2], label: 'encoder input' }, { id: 'decoder_input', shape: [null, 2], label: 'decoder input' }],
     layers: [
-      { id: 'enc_norm', type: 'Normalization', fixed: true, from: 'encoder_input', label: 'Normalization' },
-      { id: 'dec_norm', type: 'Normalization', fixed: true, from: 'decoder_input', label: 'Normalization' },
+      { id: 'enc_norm', type: 'Normalization', fixed: true, from: 'encoder_input', label: 'Normalization (shared)' },
+      { id: 'dec_norm', type: 'Normalization', fixed: true, from: 'decoder_input', label: 'same Normalization', note: 'one layer, called twice' },
       { id: 'encoder_gru1', type: 'GRU', units: 16, act: 'tanh', returnSeq: true, from: 'enc_norm', label: 'encoder GRU 16, seq' },
       { id: 'decoder_gru1', type: 'GRU', units: 16, act: 'tanh', returnSeq: true, from: 'dec_norm', state: 'encoder_gru1', label: 'decoder GRU 16, seq' },
       { id: 'encoder_gru2', type: 'GRU', units: 16, act: 'tanh', from: 'encoder_gru1', label: 'encoder GRU 16' },

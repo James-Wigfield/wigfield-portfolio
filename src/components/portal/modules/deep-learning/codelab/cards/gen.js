@@ -156,7 +156,7 @@ discriminator = tf.keras.Sequential([
         { name: 'generator', shape: '(None, 100) → (28, 28, 1)', means: '6,272 → 7 × 7 × 128 → 14 × 14 × 64 → 28 × 28 × 1' },
         { name: 'discriminator', shape: '(28, 28, 1) → (1,)', means: '14 × 14 × 64 → 7 × 7 × 128 → 6,272 → 1' },
       ],
-      forWhat: 'Generating images with convolutional networks, which are steadier to train than dense GANs.',
+      forWhat: 'Generating images with a convolutional GAN that follows slide 28’s guidelines for building stable GANs.',
     },
     slideCheck: 'The guidelines put BN in the discriminator too (not its input layer); this code uses Dropout(0.4) there instead. codings_size = 100 is set just above the generator.',
   },

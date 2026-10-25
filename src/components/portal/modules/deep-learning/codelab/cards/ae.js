@@ -29,7 +29,7 @@ codings = encoder.predict(X_train)`,
     moves: {
       draw: 'linearAe',
       count: 'linearAe',
-      forWhat: 'Dimensionality reduction: with linear activations and MSE, the 2-D codings span the same plane as PCA’s first two components.',
+      forWhat: 'Dimensionality reduction: with linear activations and MSE, the encoder projects the data onto the same plane as PCA’s first two components; the 2-D codings are coordinates in that plane.',
     },
     slideCheck: 'The slides never give the data; slide 9’s comment fixes X_train at (60, 3). The two Sequential spellings (tf.keras.models.Sequential, tf.keras.Sequential) are the same class.',
   },
@@ -108,7 +108,7 @@ conv_decoder = tf.keras.Sequential([
       say: 'Encoder: 28 × 28 × 16 → 14 × 14 × 16 → 14 × 14 × 32 → 7 × 7 × 32 → 7 × 7 × 64 → 3 × 3 × 64 → 3 × 3 × 30 → 30. Counted: the decoder.',
       forWhat: 'Autoencoding images: convolutions keep spatial structure, with far fewer parameters (54,479 vs 163,814).',
     },
-    slideCheck: 'Slide 6 prints the decoder’s 13,873 parameters and conv_ae.count_params() = 54,479. A denoising autoencoder (slide 9) adds Dropout(0.5) or Gaussian noise on the input and still trains on the clean images.',
+    slideCheck: 'Slide 6 prints the decoder’s 13,873 parameters and conv_ae.count_params() = 54,479. A denoising autoencoder adds Gaussian noise or dropout to the input (slide 8; slide 9 codes Dropout(0.5)) and still trains on the clean images.',
     xref: [{ to: 'dcgan', text: 'DCGAN’s generator upsamples the same way' }],
   },
 ];

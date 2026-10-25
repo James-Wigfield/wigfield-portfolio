@@ -61,7 +61,7 @@ model = tf.keras.models.Sequential([
 ])`,
     marks: [
       { n: 1, token: { line: 3, text: 'tf.keras.regularizers.l2(0.01)' }, say: 'Adds 0.01 × the sum of this layer’s squared weights to the loss, so large weights cost.' },
-      { n: 2, token: { line: 8, text: 'Dropout(rate=0.2)' }, say: 'Each training step ignores a random 20% of the inputs; at test time every neuron is used.' },
+      { n: 2, token: { line: 8, text: 'Dropout(rate=0.2)' }, say: 'In training, each input is dropped with probability 0.2; at test time every neuron is used.' },
       { n: 3, lines: [10, 10], say: 'Dropout before every Dense layer, never after the output layer; it holds no parameters.' },
     ],
     moves: {
@@ -80,6 +80,7 @@ model = tf.keras.models.Sequential([
     provenance: 'trimmed',
     inv: ['l2-transfer-learning', 'l2-transfer-evaluate', 'lab2-t2-geron-model-b-on-a'],
     file: 'transfer.py',
+    rejoined: [11],
     code: `model_A = tf.keras.models.load_model("my_model_A.keras")
 model_B_on_A = tf.keras.Sequential(model_A.layers[:-1])
 model_B_on_A.add(tf.keras.layers.Dense(1, activation="sigmoid"))
@@ -107,7 +108,7 @@ history = model_B_on_A.fit(X_train_B, y_train_B, epochs=16, validation_data=(X_v
       say: 'Frozen: 101 parameters train (the new head). Unfrozen: all 98,801. Test accuracy 93.85%, against 91.85% without reuse: the error rate drops by about 25% (slide 32).',
       forWhat: 'A small task (200 labelled images) reusing a network trained on a similar, larger task.',
     },
-    slideCheck: 'Slide 31 wraps its last comment onto a second line without # (a SyntaxError as typeset), indents the loop bodies 3 spaces, and skips Géron’s clone step: without clone_model, training model_B_on_A also changes model_A. Model A’s layers come from Géron’s Ch 11 notebook; the slide doesn’t define them.',
+    slideCheck: 'Slide 31 wraps its last comment onto a second line without # (a SyntaxError as typeset; line 11 here rejoins it), indents the loop bodies 3 spaces, and skips Géron’s clone step: without clone_model, training model_B_on_A also changes model_A. Model A’s layers come from Géron’s Ch 11 notebook; the slide doesn’t define them.',
     xref: [{ to: 'p1-nasnet', text: 'Project 1 freezes a pretrained ImageNet base' }],
   },
 ];

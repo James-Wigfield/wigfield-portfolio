@@ -1090,14 +1090,15 @@
      "type": "Normalization",
      "fixed": true,
      "from": "encoder_input",
-     "label": "Normalization"
+     "label": "Normalization (shared)"
     },
     {
      "id": "dec_norm",
      "type": "Normalization",
      "fixed": true,
      "from": "decoder_input",
-     "label": "Normalization"
+     "label": "same Normalization",
+     "note": "one layer, called twice"
     },
     {
      "id": "encoder_gru1",

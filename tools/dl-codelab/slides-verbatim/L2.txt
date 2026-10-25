@@ -94,7 +94,8 @@ model_B_on_A.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=["
 # for example, train the model for 4 epochs
 history = model_B_on_A.fit(X_train_B, y_train_B, epochs=4, validation_data=(X_valid_B, y_valid_B))
 
-# unfreeze the layers and train for 16 epochs. Note that the model needs to be recompiled
+# unfreeze the layers and train for 16 epochs. Note that the model
+needs to be recompiled
 for layer in model_B_on_A.layers[:-1]:
    layer.trainable = True
 

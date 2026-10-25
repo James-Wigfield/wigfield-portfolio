@@ -71,7 +71,7 @@ def play_one_step(env, obs, model, loss_fn):
     marks: [
       { n: 1, lines: [3, 4], say: 'Backwards from the second-to-last step: each return = its reward + γ × the next step’s return.' },
       { n: 2, lines: [10, 10], say: 'Normalise over every step of every episode: the action advantage (above 0 = better than average).' },
-      { n: 3, lines: [13, 13], say: 'Scale each step’s gradient by its advantage; a negative advantage pushes the action away.' },
+      { n: 3, lines: [13, 13], say: 'Scale each step’s gradient by its advantage; a negative advantage makes that action less likely.' },
       { n: 4, lines: [15, 15], say: 'One optimizer step with the mean weighted gradient of each variable.' },
     ],
     moves: {

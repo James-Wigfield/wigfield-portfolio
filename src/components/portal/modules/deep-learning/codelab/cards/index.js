@@ -29,6 +29,7 @@ import { RL } from './rl.js';
      provenance: 'verbatim' | 'trimmed' | 'reconstructed' | 'notebook' | 'geron',
      file: 'seq2vec.py',         the editor tab's filename
      code: `…`,                  ≤ 16 lines; verbatim apart from '# …' elisions
+     rejoined: [11],             code lines that rejoin a comment the slide wraps
      marks: [{ n: 1, lines: [3, 4], say, quote? },
              { n: 2, token: { line: 6, text: 'return_sequences=True' }, say }],
                                  ≤ 4 marks, each `say` ≤ 20 words
