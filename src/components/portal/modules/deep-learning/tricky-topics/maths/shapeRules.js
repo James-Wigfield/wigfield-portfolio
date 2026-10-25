@@ -1,4 +1,4 @@
-import { convOut, poolOut, convTOut } from './strideRules';
+import { convOut, poolOut, convTOut } from './strideRules.js';
 
 /* ============================================================================
    TRICKY TOPICS — SHAPES THROUGH A MODEL (shared maths)

@@ -408,15 +408,16 @@
 
 /* ── a ruled table in the Read beat (stacked cards when narrow) ─────────── */
 .dltt-tblwrap { container: dltt-tbl / inline-size; max-width: 74ch; }
-.dltt-tbl { display: flex; flex-direction: column; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--line); font-size: 0.88rem; }
-.dltt-tbl__row { display: grid; grid-template-columns: var(--cols); gap: 0 1.1rem; padding: 0.42rem 0.1rem; border-top: 1px solid var(--line-2); align-items: baseline; color: var(--ink-2); line-height: 1.5; }
+.dltt-tbl { display: grid; grid-template-columns: var(--cols); column-gap: 1.1rem; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+.dltt-tbl__row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: 0.42rem 0.1rem; border-top: 1px solid var(--line-2); align-items: baseline; color: var(--ink-2); line-height: 1.5; }
 .dltt-tbl__row--head { border-top: none; padding-top: 0.45rem; }
 .dltt-tbl__th { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .dltt-tbl__th :is(.katex, .dltt-m, code) { text-transform: none; letter-spacing: 0; }
 .dltt-tbl__td { min-width: 0; overflow-wrap: anywhere; }
 .dltt-tbl__td:first-child { color: var(--ink); font-weight: 600; }
 @container dltt-tbl (max-width: 560px) {
-  .dltt-tbl__row { grid-template-columns: minmax(0, 1fr) !important; gap: 0.1rem; }
+  .dltt-tbl { grid-template-columns: minmax(0, 1fr) !important; }
+  .dltt-tbl__row { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
   .dltt-tbl__row--head { display: none; }
   .dltt-tbl__td[data-k]:not(:first-child)::before { content: attr(data-k) ' · '; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.62rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
 }

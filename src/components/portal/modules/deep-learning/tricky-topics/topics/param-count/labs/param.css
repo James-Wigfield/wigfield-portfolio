@@ -1,0 +1,113 @@
+/* ============================================================================
+   TOPIC 1 · PARAMETER COUNTS — lab styles (the shared vocabulary is
+   ../../../stage.css: weights --dltt-w, biases --dltt-b, frozen --dltt-nt)
+   ========================================================================== */
+
+/* the hero */
+.dltt-phero__line { opacity: 0; transition: opacity 0.35s ease; }
+.dltt-phero__line--on { opacity: 0.6; }
+
+/* weight grids (the n_in × n_out kernel) */
+.dltt-wcell { fill: color-mix(in srgb, var(--dltt-w) 30%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 0.8; transition: fill 0.2s; }
+.dltt-wcell--h { fill: color-mix(in srgb, var(--dltt-w) 18%, var(--dltt-floor)); }
+.dltt-wcell--hot { fill: var(--dltt-w); }
+.dltt-ctl { margin-top: 0.2rem; }
+
+/* stacked "where the parameters live" bars */
+.dltt-stack__track { fill: none; stroke: var(--line); stroke-width: 1; }
+.dltt-stack__seg { stroke: var(--dltt-floor); stroke-width: 1.5; transition: opacity 0.4s ease; cursor: pointer; }
+.dltt-stack__seg--0 { fill: var(--dltt-w); }
+.dltt-stack__seg--1 { fill: color-mix(in srgb, var(--dltt-w) 55%, var(--dltt-floor)); }
+.dltt-stack__seg--d { fill: color-mix(in srgb, var(--dltt-b) 75%, var(--dltt-floor)); }
+.dltt-stack__seg--hot { stroke: var(--ink); stroke-width: 2; }
+.dltt-stack__col { fill: color-mix(in srgb, var(--dltt-w) 16%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1.4; }
+.dltt-stack__in { fill: var(--dltt-floor) !important; font-weight: 700; }
+.dltt-legend--c { fill: var(--dltt-w); }
+.dltt-legend--d { fill: color-mix(in srgb, var(--dltt-b) 75%, var(--dltt-floor)); }
+
+/* counting from a diagram */
+.dltt-diag { display: flex; flex-direction: column; gap: 0.2rem; }
+.dltt-diag__n { cursor: pointer; }
+.dltt-diag__n:focus { outline: none; }
+.dltt-diag__n:focus-visible circle:first-of-type { stroke: var(--accent); stroke-dasharray: 4 2; stroke-width: 2.6; }
+.dltt-diag__ring { fill: none; stroke: var(--dltt-w); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.dltt-diag__flash { margin: 0; min-height: 1.4em; font-size: 0.82rem; color: var(--ink-2); }
+
+/* Wide & Deep */
+.dltt-wd__node rect { fill: var(--dltt-floor); stroke: var(--dltt-data); stroke-width: 1.5; }
+.dltt-wd__node--w rect { stroke: var(--dltt-w); stroke-width: 2; }
+.dltt-wd__node--nt rect { stroke: var(--dltt-nt); stroke-dasharray: 5 3; }
+.dltt-wd__node--zero rect { stroke: var(--dltt-nt); }
+.dltt-wd__node--zero text, .dltt-wd__node--nt text { fill: var(--ink-3); }
+.dltt-wd__node--in rect { stroke: var(--dltt-f); }
+.dltt-wd__skip { fill: none; stroke: var(--dltt-f); stroke-width: 2; stroke-dasharray: 6 4; }
+.dltt-wd__part--norm { fill: var(--dltt-f); }
+.dltt-wd__part--hid { fill: var(--dltt-w); }
+
+/* per-feature parameter boxes */
+.dltt-pbox { fill: color-mix(in srgb, var(--dltt-w) 22%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1.4; transition: all 0.3s; }
+.dltt-pbox--nt { fill: none; stroke: var(--dltt-nt); stroke-dasharray: 3 2; }
+
+/* filter bricks */
+.dltt-brick__box :is(.dltt-box3__front, .dltt-box3__top, .dltt-box3__side) { stroke: var(--dltt-w); }
+.dltt-brick__box .dltt-box3__front { fill: color-mix(in srgb, var(--dltt-w) 14%, var(--dltt-floor)); }
+.dltt-brick__box .dltt-box3__top { fill: color-mix(in srgb, var(--dltt-w) 24%, var(--dltt-floor)); }
+.dltt-brick__box .dltt-box3__side { fill: color-mix(in srgb, var(--dltt-w) 32%, var(--dltt-floor)); }
+
+/* the unrolled cell */
+.dltt-cell { fill: var(--dltt-floor); stroke: var(--dltt-data); stroke-width: 1.6; }
+.dltt-tie { fill: none; stroke: var(--dltt-w); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: 0.7; }
+
+/* gate blocks */
+.dltt-blk { stroke: var(--dltt-floor); stroke-width: 1.2; transition: all 0.35s ease; }
+.dltt-blk--x { fill: color-mix(in srgb, var(--dltt-w) 45%, var(--dltt-floor)); }
+.dltt-blk--h { fill: var(--dltt-w); }
+.dltt-blk--b { fill: var(--dltt-b); }
+.dltt-blk--b2 { fill: none; stroke: var(--dltt-b); stroke-width: 1.6; stroke-dasharray: 3 2; }
+
+/* the autoencoder */
+.dltt-ae__col { fill: color-mix(in srgb, var(--dltt-data) 10%, var(--dltt-floor)); stroke: var(--dltt-data); stroke-width: 1.4; }
+.dltt-ae__col--code { stroke-width: 2.4; }
+.dltt-ae__w { fill: color-mix(in srgb, var(--dltt-w) 28%, var(--dltt-floor)); stroke: var(--dltt-w); stroke-width: 1.6; transition: all 0.45s ease; }
+.dltt-ae__w--borrowed { fill: none; stroke: var(--dltt-nt); stroke-dasharray: 5 3; }
+.dltt-ae__b { fill: var(--dltt-b); }
+
+/* frozen layers */
+.dltt-freeze { display: flex; flex-direction: column; gap: 0.6rem; }
+.dltt-freeze__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line-2); }
+.dltt-freeze__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 0.3rem 0.8rem; padding: 0.4rem 0.2rem; border-bottom: 1px solid var(--line-2); font-size: 0.86rem; color: var(--ink-2); }
+.dltt-freeze__n { font-family: var(--font-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; color: var(--ink); }
+.dltt-freeze__state { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem; color: var(--ink-3); min-width: 4.6rem; text-align: right; }
+.dltt-freeze__row--on .dltt-freeze__n, .dltt-freeze__row--on code { color: var(--ink-3); }
+.dltt-lock { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-3); cursor: pointer; }
+.dltt-lock svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.dltt-lock[aria-pressed='true'] { color: var(--ink); border-color: var(--ink-3); }
+.dltt-lock:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+/* five disguises, and the drill's stimulus */
+.dltt-disguise { display: flex; flex-direction: column; gap: 0.7rem; }
+.dltt-disguise__form { min-height: 9rem; }
+.dltt-disguise__table td:nth-child(2) { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; }
+.dltt-disguise__total td { border-top: 1.5px solid var(--ink-3); color: var(--ink); }
+.dltt-sentence { margin: 0; max-width: 70ch; font-family: var(--font-display, Georgia, serif); font-size: 1.05rem; line-height: 1.55; color: var(--ink); }
+.dltt-eqs { display: flex; flex-direction: column; gap: 0.2rem; overflow-x: auto; }
+.dltt-eqs .katex-display { margin: 0.35rem 0; }
+.dltt-formfig { margin: 0; max-width: 360px; color: var(--ink-2); }
+.dltt-sketch__box { fill: none; stroke: currentColor; stroke-width: 1.3; }
+.dltt-sketch__box--in { stroke-dasharray: 4 3; }
+.dltt-sketch__wire, .dltt-sketch__skip path { fill: none; stroke: currentColor; stroke-width: 1.2; }
+.dltt-summary { border-collapse: collapse; font-size: 0.8rem; min-width: 22rem; font-variant-numeric: tabular-nums; }
+.dltt-summary th { text-align: left; font-weight: 700; border-bottom: 1.5px solid var(--ink-3); padding: 0.3rem 0.6rem; color: var(--ink); }
+.dltt-summary td { padding: 0.25rem 0.6rem; border-bottom: 1px solid var(--line-2); color: var(--ink-2); }
+.dltt-summary tfoot td { border-bottom: none; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.74rem; color: var(--ink); }
+.dltt-summary .dltt-num { text-align: right; }
+.dltt-blank { display: inline-block; min-width: 3.2rem; text-align: center; border-bottom: 1.5px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
+.dltt-drill__show { max-width: 760px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dltt-phero__line, .dltt-wcell, .dltt-stack__seg, .dltt-pbox, .dltt-blk, .dltt-ae__w, .dltt-bead { transition: none !important; }
+}
+
+.dltt-subswitch { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.7rem; }
+.dltt-subswitch__k { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dltt-freeze__row code { background: none; padding: 0; color: var(--ink); }

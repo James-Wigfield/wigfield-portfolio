@@ -140,12 +140,12 @@ function SlideCheck({ text }) {
 function Table({ t }) {
   return (
     <div className="dltt-tblwrap">
-    <div className="dltt-tbl" role="table" aria-label={t.label ?? t.head.join(', ')}>
-      <div className="dltt-tbl__row dltt-tbl__row--head" role="row" style={{ '--cols': t.cols ?? `repeat(${t.head.length}, minmax(0, auto))` }}>
+    <div className="dltt-tbl" role="table" aria-label={t.label ?? t.head.join(', ')} style={{ '--cols': t.cols ?? `repeat(${t.head.length}, minmax(min-content, auto))` }}>
+      <div className="dltt-tbl__row dltt-tbl__row--head" role="row">
         {t.head.map((h, c) => <span key={c} role="columnheader" className="dltt-tbl__th"><Rich text={h} /></span>)}
       </div>
       {t.rows.map((r, i) => (
-        <div key={i} className="dltt-tbl__row" role="row" style={{ '--cols': t.cols ?? `repeat(${t.head.length}, minmax(0, auto))` }}>
+        <div key={i} className="dltt-tbl__row" role="row">
           {r.map((cell, c) => (
             <span key={c} role="cell" className="dltt-tbl__td" data-k={t.head[c]?.replace(/[$*`{}|\\]/g, '') || undefined}>
               <Rich text={cell} />

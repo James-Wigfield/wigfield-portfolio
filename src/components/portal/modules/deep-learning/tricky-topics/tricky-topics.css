@@ -269,10 +269,10 @@ html.dltt-pseudo-on body { overflow: hidden !important; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  padding: 0.15rem 0.6rem;
-  white-space: nowrap;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
 }
 
 .dltt-beat { display: flex; flex-direction: column; gap: 0.85rem; }
@@ -762,7 +762,6 @@ html.dltt-pseudo-on body { overflow: hidden !important; }
 
 /* "Where it shows up" / "What the exam asks": ruled strips */
 .dltt-strips { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.2rem; margin-top: 0.4rem; }
-@media (min-width: 1180px) { .dltt-strips { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 2rem; } }
 .dltt-strip { min-width: 0; }
 .dltt-strip__k { margin: 0 0 0.3rem; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); padding-bottom: 0.35rem; border-bottom: 1.5px solid var(--ink); }
 .dltt-strip__list { list-style: none; margin: 0; padding: 0; }

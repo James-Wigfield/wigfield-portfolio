@@ -17,5 +17,5 @@
    ========================================================================== */
 
 export const TOPICS = [
-  { id: 'engine-proof', title: 'Engine proof (template)', lectures: ['L1'], blurb: 'The _template topic rendered as if it were real.', load: () => import('./_template/index.js') },
+  { id: 'param-count', title: 'Parameter counts', lectures: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6–7', 'L8', 'L9'], blurb: 'One method for counting the parameters of any model, from any source, and the rule for every layer.', load: () => import('./param-count/index.js') },
 ];

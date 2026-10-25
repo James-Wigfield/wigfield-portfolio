@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useStudy } from './context';
-import { prefersReducedMotion } from './hooks';
+import { useStudy } from './context.js';
+import { prefersReducedMotion } from './hooks.js';
 
 /* ============================================================================
    TRICKY TOPICS — STORY MODE

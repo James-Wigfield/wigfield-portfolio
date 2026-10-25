@@ -1,4 +1,4 @@
-import { traceShapes, prod } from './shapeRules';
+import { traceShapes, prod } from './shapeRules.js';
 
 /* ============================================================================
    TRICKY TOPICS — COUNTING PARAMETERS (shared maths)
