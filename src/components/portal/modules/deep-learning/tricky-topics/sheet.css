@@ -247,6 +247,7 @@ button.dltt-sh__tr { font: inherit; line-height: var(--sh-step); color: inherit;
 .dltt-sh__tr--head { background: linear-gradient(var(--pen-black), var(--pen-black)) no-repeat calc(var(--sh-gut) + 0px) calc(100% - 2px) / calc(100% - var(--sh-gut)) 1.4px; }
 .dltt-sh__th { color: var(--pen-blue); font-family: var(--sh-head); font-weight: 500; padding-right: 0.8rem; }
 .dltt-sh__td { padding-right: 0.8rem; min-width: 0; overflow-wrap: break-word; }
+.dltt-sh__nobr { white-space: nowrap; }
 .dltt-sh__th:nth-child(2), .dltt-sh__td:nth-child(2) { border-right: 1.2px solid var(--pen-black); }
 .dltt-sh__th:nth-child(n + 3), .dltt-sh__td:nth-child(n + 3) { padding-left: 0.8rem; }
 
@@ -371,6 +372,9 @@ button.dltt-sh__tr { font: inherit; line-height: var(--sh-step); color: inherit;
   .dltt-sh__figscroll .dltt-fig[data-wide] { min-width: 30rem; }
   .dltt-sh__fbox .katex { font-size: 0.92em; }
   .dltt-sh__date { align-items: flex-start; }
+  /* a phone can't hold a table's fixed columns or a list cell's entries whole */
+  .dltt-sh__table { grid-template-columns: var(--sh-gut) var(--sh-cols-narrow); }
+  .dltt-sh__nobr { white-space: normal; }
 }
 /* more to the right: the frame's edge fades out */
 .dltt-sh__scrollx[data-more] {

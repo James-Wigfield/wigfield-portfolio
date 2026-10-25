@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Fragment, createContext, useContext, useEffect, useRef, useState } from 'react';
 import Icon from '../../../icons';
 import { Tex } from '../kit';
 import { Rich } from './Rich';
@@ -108,13 +108,23 @@ function Formula({ item }) {
   );
 }
 
+// a cell given as a list (['$n$ features,', '$f$ filters']) keeps each entry
+// on one line and wraps only between entries, so a symbol never loses its name
+function Cell({ cell }) {
+  if (!Array.isArray(cell)) return <Rich text={cell} />;
+  return cell.map((part, i) => (
+    <Fragment key={i}>{i > 0 && ' '}<span className="dltt-sh__nobr"><Rich text={part} /></span></Fragment>
+  ));
+}
+
 function Table({ item, keys }) {
   const { done, toggle } = useContext(TickCtx);
   const { head, rows, cols } = item.table;
   // every column sized to its content, wrapping between words but never inside one
-  const tracks = cols || `repeat(${head.length}, minmax(min-content, max-content))`;
+  // (a table's own `cols` apply on wide pages only; narrow pages always use this)
+  const auto = `repeat(${head.length}, minmax(min-content, max-content))`;
   return (
-    <div className="dltt-sh__table dltt-sh__snap" role="group" aria-label={`Table: ${head.join(', ')}`} style={{ '--sh-cols': tracks }}>
+    <div className="dltt-sh__table dltt-sh__snap" role="group" aria-label={`Table: ${head.join(', ')}`} style={{ '--sh-cols': cols || auto, '--sh-cols-narrow': auto }}>
       <div className="dltt-sh__tr dltt-sh__tr--head" aria-hidden="true">
         <span />
         {head.map((h, c) => <span key={c} className="dltt-sh__th"><Rich text={h} /></span>)}
@@ -125,7 +135,7 @@ function Table({ item, keys }) {
         return (
           <button key={k} type="button" className={`dltt-sh__tr${on ? ' dltt-sh__u--on' : ''}`} aria-pressed={on} onClick={() => toggle(k)}>
             <Box on={on} />
-            {r.map((cell, c) => <span key={c} className="dltt-sh__td"><Rich text={cell} /></span>)}
+            {r.map((cell, c) => <span key={c} className="dltt-sh__td"><Cell cell={cell} /></span>)}
           </button>
         );
       })}
