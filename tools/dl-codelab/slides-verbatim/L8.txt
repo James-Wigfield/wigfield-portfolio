@@ -1,0 +1,176 @@
+%% CITS5017 Lecture 8 (Transformers) -- every code block, verbatim, one per header.
+%% Source: cits5017-lect08-Transformers.pdf. Text and columns rebuilt from the PDF text layer
+%% (fixed-pitch x positions), checked line by line against 200-dpi renders and against
+%% Documents/cits5017/markdown-lecs/lecture-8.md (all 15 blocks identical across the three).
+%% Indentation = spaces. Blank lines inside a block are on the slide. The typewriter font draws
+%% ' as a curly glyph; it is written as a straight ' here. No line visibly wraps; lines that run
+%% past the grey box are kept whole (see inventory-3.md "quirks").
+%% Lines starting with %% are not slide content.
+
+=== L8 s8 ===
+encoder = tf.keras.layers.Bidirectional(
+    tf.keras.layers.LSTM(256, return_state=True))
+
+=== L8 s8 #2 ===
+encoder_outputs, *encoder_state = encoder(encoder_embeddings)
+encoder_state = [
+  tf.keras.layers.Concatenate(axis=-1)(encoder_state[::2]),  #short-term (0&2)
+  tf.keras.layers.Concatenate(axis=-1)(encoder_state[1::2])  #long-term  (1&3)
+]
+
+=== L8 s9 ===
+simple_biRNN = tf.keras.Sequential([
+    tf.keras.layers.InputLayer(input_shape=[None, 2]),
+    tf.keras.layers.Bidirectional(
+        tf.keras.layers.SimpleRNN(16)),
+    tf.keras.layers.Dense(2)
+])                                        # 674 trainable params
+early_stopping_cb = tf.keras.callbacks.EarlyStopping(
+    monitor="val_loss", patience=50, restore_best_weights=True)
+
+# PrintEpochLossCallback -- A customized Callback class to help reduce
+# the verbose printing of training loss, MAE, etc.
+logging_cb = PrintEpochLossCallback(20, Nepochs)
+opt = tf.keras.optimizers.SGD(learning_rate=0.02, momentum=0.9)
+simple_biRNN.compile(loss="mse", optimizer=opt, metrics=["mae"])
+
+# X_train.shape = (1027,56,2), y_train_1.shape = (1027,2)
+history = simple_biRNN.fit(X_train, y_train, epochs=500,
+                 validation_data=(X_valid, y_valid_1),
+                 verbose = 0, callbacks=[logging_cb, early_stopping_cb])
+
+=== L8 s10 ===
+Epoch   0: loss: 0.0932, mae: 0.2250; val_loss: 0.0221, val_mae: 0.1136
+...
+Epoch 160: loss: 0.0046, mae: 0.0404; val_loss: 0.0015, val_mae: 0.0279
+Epoch 180: loss: 0.0046, mae: 0.0406; val_loss: 0.0017, val_mae: 0.0288
+
+=== L8 s10 #2 ===
+>>> yvalid_pred = simple_biRNN.predict(X_valid, verbose=0)
+>>> print(np.mean(np.abs(yvalid_pred - y_valid)) * 1e6)
+27936.60823591162
+
+=== L8 s14 ===
+inputs_dim = 2   # bus and rail
+# the encoder takes in (bus,rail) sequences (55 days)
+encoder_inputs = tf.keras.Input(shape=[None, inputs_dim])
+encoder = tf.keras.layers.Bidirectional(
+    tf.keras.layers.SimpleRNN(16, return_state=True))
+encoder_outputs, *encoder_state = encoder(encoder_inputs)
+
+# encoder_state is a list containing 2 elements: the forward
+# state and the backward state. We need to pass them to the decoder.
+encoder_state = tf.keras.layers.Concatenate(axis=-1)(encoder_state)
+# encoder_state is now a Keras tensor of shape (None,32)
+
+# the decoder learns to predict (bus,rail) sequences (14 days
+# after the input 56 days)
+decoder_inputs = tf.keras.layers.Input(shape=[None, 2])
+
+# Note: the #neurons for the decoder must match the shape of encoder_state
+decoder = tf.keras.layers.SimpleRNN(32, return_sequences=True)
+decoder_outputs = decoder(decoder_inputs, initial_state=encoder_state)
+
+outputs = tf.keras.layers.Dense(2)(decoder_outputs)
+
+rnn_ed = tf.keras.Model(inputs=[encoder_inputs, decoder_inputs],
+                        outputs=outputs)
+
+=== L8 s15 ===
+early_stopping_cb = tf.keras.callbacks.EarlyStopping(
+    monitor='val_loss', patience=50, restore_best_weights=True)
+
+logging_cb = PrintEpochLossCallback(20, Nepochs)
+
+rnn_ed.compile(loss="mse", optimizer="nadam", metrics=["mae"])
+history = rnn_ed.fit((X_train, X_train_decode), y_train, epochs=500,
+               validation_data=((X_valid, X_valid_decode), y_valid),
+               verbose=0, callbacks=[logging_cb, early_stopping_cb])
+
+Epoch   0: loss: 0.0956, mae: 0.2332; val_loss: 0.0316, val_mae: 0.1468
+...
+Epoch 220: loss: 0.0042, mae: 0.0364; val_loss: 0.0024, val_mae: 0.0307
+Epoch 240: loss: 0.0041, mae: 0.0361; val_loss: 0.0024, val_mae: 0.0314
+Epoch 260: loss: 0.0040, mae: 0.0358; val_loss: 0.0025, val_mae: 0.0322
+
+=== L8 s16 ===
+hist = history.history
+N_training_epochs = len(hist['loss'])
+pd.DataFrame(hist).plot(
+    figsize=(4,3), xlim=[0, N_training_epochs-1], ylim=[0, 0.2],
+    grid=True, xlabel="Epoch", style=["r--", "r-.", "b--", "b-."])
+plt.legend(loc="best")
+plt.title('Learning curves')
+plt.show()
+
+=== L8 s17 ===
+def predict(model, encoder_inputs, decoder_input, outseq_len, **kwargs):
+    # encoder_inputs could be X_val or X_test over 55 days (0 to 54).
+    # decoder_input is X_val for 1 day only (day 55).
+    # outseq_len is the required length of the output sequences (14 here).
+    batch_size = encoder_inputs.shape[0]
+    out_dim = decoder_input.shape[-1]
+
+    # the output sequence to be predicted
+    outseq = np.zeros((batch_size, outseq_len, out_dim))
+    # construct the inputs for the decoder
+    decoder_ins = np.zeros((batch_size, outseq_len, out_dim))
+    decoder_ins[:, 0, :] = decoder_input
+    for t in range(outseq_len):
+        # call model.predict(...) and update decoder_ins and outseq
+    return outseq
+>>> yvalid_pred = predict(model, X_valid, X_valid_decode[:,0],
+                          out_seq_length, verbose=0)
+>>> print(r'Validation set MAE = {:11,.4f}'.format(
+                   np.mean(np.abs(yvalid_pred-y_valid))*1e6))
+Validation set MAE =  34,863.8857
+
+=== L8 s26 ===
+encoder = tf.keras.layers.Bidirectional(
+tf.keras.layers.LSTM(256, return_sequences=True, return_state=True))
+
+=== L8 s26 #2 ===
+attention_layer = tf.keras.layers.Attention()  # default: score_mode="dot"
+attention_outputs = attention_layer([decoder_outputs, encoder_outputs])
+output_layer = tf.keras.layers.Dense(vocab_size, activation="softmax")
+Y_proba = output_layer(attention_outputs)
+
+=== L8 s28 ===
+attention_outputs = attention_layer([decoder_outputs, encoder_outputs])
+
+=== L8 s35 ===
+class PositionalEncoding(tf.keras.layers.Layer):
+    def __init__(self, max_length, embed_size, dtype=tf.float32, **kwargs):
+        super().__init__(dtype=dtype, **kwargs)
+        assert embed_size % 2 == 0, "embed_size must be even"
+        p, i = np.meshgrid(np.arange(max_length),
+                           2 * np.arange(embed_size // 2))
+        pos_emb = np.empty((1, max_length, embed_size))
+        pos_emb[0, :, ::2] = np.sin(p / 10_000 ** (i / embed_size)).T
+        pos_emb[0, :, 1::2] = np.cos(p / 10_000 ** (i / embed_size)).T
+        self.pos_encodings = tf.constant(pos_emb.astype(self.dtype))
+        self.supports_masking = True
+
+    def call(self, inputs):
+        batch_max_length = tf.shape(inputs)[1]
+        return inputs + self.pos_encodings[:, :batch_max_length]
+
+=== L8 s36 ===
+pos_embed_layer = PositionalEncoding(max_length, embed_size)
+encoder_in = pos_embed_layer(encoder_embeddings)
+decoder_in = pos_embed_layer(decoder_embeddings)
+
+=== L8 s43 ===
+N = 2          # instead of 6
+num_heads = 8
+dropout_rate = 0.1
+n_units = 128  # for the first Dense layer in each Feed Forward block
+encoder_pad_mask = tf.math.not_equal(encoder_input_ids, 0)[:, tf.newaxis]
+Z = encoder_in
+for _ in range(N):
+    skip = Z
+    attn_layer = tf.keras.layers.MultiHeadAttention(
+        num_heads=num_heads, key_dim=embed_size, dropout=dropout_rate)
+    Z = attn_layer(Z, value=Z, attention_mask=encoder_pad_mask)
+
+    # ... add in other layers as shown in Figure 16-8
