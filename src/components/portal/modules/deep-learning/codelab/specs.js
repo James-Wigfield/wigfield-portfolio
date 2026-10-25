@@ -8,10 +8,12 @@
    tools/dl-codelab/verify_counts.py builds the same spec in TensorFlow and
    checks both. `group` draws a bracket (encoder, decoder…); `state` draws a
    dashed state hand-over (an RNN's initial_state, no parameters);
-   `diagram.fold` folds a long chain into columns; `frozen` layers count as
-   non-trainable; `note` replaces the Count it rule (a shared layer).
-   Specs no card draws (`verifyOnly`) check a number a card
-   states in words: sample Q1(c), a printed count, a model the card mentions.
+   `diagram.fold` folds a long chain into columns; `diagram.lane` names a
+   shortcut in the print diagram; `frozen` layers count as non-trainable;
+   `note` replaces a layer's Count it rule (a shared layer); `name` heads a
+   count when a card has two. Specs no card draws (`verifyOnly`) check a
+   number a card states in words: sample Q1(c), a printed count, a model the
+   card mentions.
    ========================================================================== */
 
 const D = (units, act, extra = {}) => ({ type: 'Dense', units, act, ...extra });
@@ -129,6 +131,7 @@ const S = {
   },
   // L1 s44: Wide & Deep on California housing (8 features)
   wideDeep: {
+    diagram: { lane: 'wide path' },
     inputs: [{ id: 'input_', shape: [8] }],
     layers: [
       { id: 'normalized', type: 'Normalization' },
@@ -150,6 +153,7 @@ const S = {
     ],
   },
   wideDeepTwo: {
+    diagram: { lane: 'wide path' },
     inputs: [{ id: 'input_wide', shape: [5], label: 'input_wide' }, { id: 'input_deep', shape: [6], label: 'input_deep' }],
     layers: [
       { id: 'norm_wide', type: 'Normalization', from: 'input_wide' },
@@ -228,10 +232,12 @@ const S = {
     layers: [{ type: 'SimpleRNN', units: 32 }, D(14)],
   },
   lstmModel: {
+    name: 'lstm_model',
     inputs: [{ id: 'input', shape: [null, 1] }],
     layers: [{ type: 'LSTM', units: 12 }, D(1)],
   },
   gruModel: {
+    name: 'gru_model',
     inputs: [{ id: 'input', shape: [null, 1] }],
     layers: [{ type: 'GRU', units: 20 }, D(1)],
   },

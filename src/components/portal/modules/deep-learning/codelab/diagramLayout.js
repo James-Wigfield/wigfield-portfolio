@@ -111,7 +111,7 @@ export function layoutDiagram(spec, G = SCREEN) {
 
 // ── print: across the page ──────────────────────────────────────────────────
 export const ACROSS_W = 718; // the A4 content width in CSS px (190 mm)
-const A = { BH: 42, HG: 16, VG: 12, PAD: 3, LANE: 10, MAXBW: 150, PER_ROW: 8, GROUP_TOP: 12 };
+const A = { BH: 42, HG: 16, VG: 12, PAD: 3, LANE: 10, LANE_TOP: 7, MAXBW: 150, PER_ROW: 8, GROUP_TOP: 12 };
 
 export function layoutAcross(spec) {
   const f = flow(spec);
@@ -148,7 +148,8 @@ export function layoutAcross(spec) {
   const tallest = Math.max(...cols.map((c) => c.length));
   const BW = Math.min(A.MAXBW, Math.floor((ACROSS_W - 2 * A.PAD - maxD * A.HG) / (maxD + 1)));
   const skips = f.rows.reduce((k, r) => k + r.from.filter((s) => depth[r.id] - depth[s] > 1).length, 0);
-  const top = A.PAD + skips * A.LANE;
+  // headroom over the top lane, so it doesn't read as part of the heading's rule
+  const top = A.PAD + skips * A.LANE + (skips ? A.LANE_TOP : 0);
   const inner = tallest * A.BH + (tallest - 1) * A.VG;
   cols.forEach((c, d) => {
     const colH = c.length * A.BH + (c.length - 1) * A.VG;
@@ -171,5 +172,5 @@ export function layoutAcross(spec) {
   });
   const width = A.PAD * 2 + (maxD + 1) * BW + maxD * A.HG;
   const height = top + inner + A.PAD;
-  return { nodes, edges, groups: [], width, height, BW, BH: A.BH, VG: A.VG };
+  return { nodes, edges, groups: [], width, height, BW, BH: A.BH, VG: A.VG, lane: spec.diagram?.lane };
 }

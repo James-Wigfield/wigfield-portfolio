@@ -1,4 +1,4 @@
-import { CARD_BY_ID, fullLabel } from './cards/index.js';
+import { CARDS, CARD_BY_ID, fullLabel } from './cards/index.js';
 
 /* ============================================================================
    CODE LAB — THE NOTEBOOKLM VIDEO PROMPTS
@@ -29,6 +29,10 @@ import { CARD_BY_ID, fullLabel } from './cards/index.js';
    five labs/projects and several cards; Short covers one idea; Cinematic
    dramatises rather than teaches.
 
+   Each prompt (and each part) ends with the brief's recipe: draw it, count
+   it, say what it's for; Part 1 first recaps what the exam asks of any lab
+   (the shapes of X and y, the loss, the output layer).
+
    The concept cards, in the order the video takes them (labels come from
    the card ids, so they always match the PDF; check-cards.mjs and pdf.mjs
    check them). The one-video prompt names the first seven, the two-part
@@ -49,17 +53,21 @@ export const NLM_FORMAT = 'Explainer';
 
 export const NLM_PICKS = ['wide-deep', 'conv-shapes', 'lstm-gru', 'vae-sampling', 'gan-build', 'positional-encoding', 'q-iteration', 'dqn-step'];
 
+// cards the one-video prompt walks: every lab and project card + seven picks
+const ONE_VIDEO_CARDS = CARDS.filter((c) => c.section === 'labs').length + NLM_PICKS.length - 1;
+
 const named = (ids) => ids.map((id) => fullLabel(CARD_BY_ID[id])).join('; ');
 
 const OPEN = 'Use only this PDF: a lecturer walks through code on screen, brisk revision.';
 
-const LABS = 'First the labs and projects: Lab 2, Lab 3, Lab 4, Project 1, Project 2. For each, say its goal as printed, show its code panels, and walk through each panel’s marks ① ② ③ in order, highlighting or underlining exactly the marked code as you explain it.';
+const LABS = 'First the labs and projects: Lab 2, Lab 3, Lab 4, Project 1, Project 2. For each, say its goal as printed, show its code panels, and walk through each panel’s marks ① ② ③ in order, underlining exactly the marked code as you explain it.';
 
 const CONCEPTS = (ids) => `Then only these cards: ${named(ids)}. For each, show the panel, highlight each mark’s code as you explain it, and show its Draw it, Count it or equation.`;
 
 const RULES = 'Quote code exactly as printed, never invent code, use the PDF’s numbers; skip all other cards.';
 
-const RECIPE = 'End with a three-step recipe for “given this code” questions: draw it, count it, say what it’s for.';
+const RECIPE_TEXT = 'a three-step recipe for “given this code” questions: draw it, count it, say what it’s for.';
+const RECIPE = `End with ${RECIPE_TEXT}`;
 
 // the one-video prompt names seven of them (dqn-step goes, to stay near
 // 1,000 characters); the two-part variant's part 2 has room for all eight
@@ -68,7 +76,7 @@ export const NLM_PROMPT = `${OPEN} ${LABS} ${CONCEPTS(NLM_PICKS.filter((id) => i
 export const NLM_PARTS = [
   {
     label: 'Part 1 of 2 · Labs & projects',
-    text: `Part 1 of 2. ${OPEN} Cover only the Labs & Projects section, in order: Lab 2, Lab 3, Lab 4, Project 1, Project 2. For each, say its goal as printed, give its data shapes and its result or target, then show its code panels and walk through each panel’s marks ① ② ③ in order, highlighting or underlining exactly the marked code as you explain it. Quote code exactly as printed, never invent code, use the PDF’s numbers. End with the three things the exam asks of any lab: the shapes of X and y, the loss, the output layer.`,
+    text: `Part 1 of 2. ${OPEN} Cover only the Labs & Projects section, in order: Lab 2, Lab 3, Lab 4, Project 1, Project 2. For each, say its goal as printed, give its data shapes and its result or target, then show its code panels and walk through each panel’s marks ① ② ③ in order, highlighting or underlining exactly the marked code as you explain it. Quote code exactly as printed, never invent code, use the PDF’s numbers. End with what the exam asks of any lab (the shapes of X and y, the loss, the output layer), then ${RECIPE_TEXT}`,
   },
   {
     label: 'Part 2 of 2 · Key concept code',
@@ -79,7 +87,7 @@ export const NLM_PARTS = [
 export const NLM_STEPS = [
   'Export the PDF with the button above (in the print dialog, choose “Save as PDF”).',
   'In NotebookLM, add the PDF as the only source in a new notebook.',
-  'Studio → Video Overview → customise: choose the Explainer format, paste one prompt as the steering prompt, then generate (for the two-part variant, generate twice, once per part).',
+  `Studio → Video Overview → customise: choose the Explainer format, paste the prompt as the steering prompt, then generate. If one video feels rushed (it walks ${ONE_VIDEO_CARDS} cards), use Two parts and generate once per part.`,
 ];
 
 export const NLM_NOTE = 'NotebookLM’s help page lists the Cinematic, Explainer and Short formats and publishes no length limit for the steering prompt (checked October 2026), and nothing says a video can highlight part of a PDF, so the PDF carries the highlights: every code panel is one image with its marks drawn in and its card label in the title bar.';

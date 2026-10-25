@@ -41,7 +41,7 @@ def play_one_step(env, obs, model, loss_fn):
       say: 'REINFORCE step 1: play, and keep the gradients that would make the chosen action more likely, without applying them yet.',
       forWhat: 'A stochastic policy for CartPole: from the 4 observations to the probability of pushing left.',
     },
-    slideCheck: 'Figure 18-5 draws 4 hidden neurons; the code has 5. env.step returns five values: the new observation, the reward (+1 per step survived), done, truncated, info. env.step(int(action)) raises a TypeError in the unit’s environment (NumPy 2.5.2), since action is a 1 × 1 tensor; int(action[0, 0]) works. Slide 17’s gym.make(…, reader_mode=…) should be render_mode.',
+    slideCheck: 'Figure 18-5 draws 4 hidden neurons; the code has 5. env.step returns five values: observation, reward (+1 per step), done, truncated, info. In the unit’s environment (NumPy 2.5.2) env.step(int(action)) raises a TypeError (action is 1 × 1); int(action[0, 0]) works. Slide 17’s reader_mode should be render_mode.',
   },
   {
     id: 'discount-rewards',
@@ -115,8 +115,8 @@ array([0, 0, 1])`,
     ],
     moves: {
       eq: [
-        { name: 'Q-value iteration (slide 46)', tex: String.raw`Q_{k+1}(s, a) \leftarrow \sum_{s'} T(s, a, s') \left[R(s, a, s') + \gamma \max_{a'} Q_k(s', a')\right] \quad \text{for all } (s, a)`, line: 12 },
-        { name: 'Value iteration (slide 44, sample Q2(e))', tex: String.raw`V_{k+1}(s) \leftarrow \max_{a} \sum_{s'} T(s, a, s') \left[R(s, a, s') + \gamma V_k(s')\right] \quad \text{for all } s` },
+        { name: 'Q-value iteration (slide 46)', tex: String.raw`\begin{aligned} Q_{k+1}(s, a) &\leftarrow \sum_{s'} T(s, a, s') \left[R(s, a, s') + \gamma \max_{a'} Q_k(s', a')\right] \\ &\text{for all } (s, a) \end{aligned}`, line: 12 },
+        { name: 'Value iteration (slide 44, sample Q2(e))', tex: String.raw`\begin{aligned} V_{k+1}(s) &\leftarrow \max_{a} \sum_{s'} T(s, a, s') \left[R(s, a, s') + \gamma V_k(s')\right] \\ &\text{for all } s \end{aligned}` },
       ],
       shapes: [
         { name: 'transition_probabilities', shape: '[s][a][s′]', means: '3 × 3 × 3, None where an action isn’t available (slide 47)' },

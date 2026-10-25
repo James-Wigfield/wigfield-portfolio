@@ -74,7 +74,7 @@ export const PRINT_CSS = `
 
   /* left out */
   ${P} .dlc-bar, ${P} .dlc-hero__actions, ${P} .dlc-hero__stats, ${P} .dlc-copy, ${P} .dlc-card__tools,
-  ${P} .dlc-export, ${P} .dlc-nlm, ${P} .dlc-card__tab, ${P} .dlc-results, ${P} .dlc-empty { display: none !important; }
+  ${P} .dlc-export, ${P} .dlc-nlm, ${P} .dlc-card__tab, ${P} .dlc-results, ${P} .dlc-empty, ${P} .dlc-index, ${P} .dlc-fold > summary { display: none !important; }
 
   /* hero + cover = page 1 */
   ${P} .dlc-hero { display: block; padding: 0 0 3mm; border-bottom: 2px solid var(--ink); animation: none; }
@@ -113,7 +113,8 @@ export const PRINT_CSS = `
   ${P} .dlc-card__colA, ${P} .dlc-card__colB { gap: 1.3mm; }
   ${P} .dlc-card__side { gap: 1mm; margin: 0; }
   ${P} .dlc-move { gap: 0.5mm; }
-  ${P} .dlc-move__k { font-size: 0.5rem; padding-bottom: 0.2mm; line-height: 1.1; }
+  /* "Draw it", "Count it" as the prompts name them (no capitals on paper) */
+  ${P} .dlc-move__k { font-size: 0.6rem; padding-bottom: 0.2mm; line-height: 1.1; text-transform: none; }
   ${P} .dlc-legend { gap: 0.5mm; }
   ${P} .dlc-legend li, ${P} .dlc-card__for, ${P} .dlc-card__move { font-size: 0.64rem; line-height: 1.3; }
   ${P} .dlc-legend li { padding-left: 1.2rem; text-indent: -1.2rem; }
@@ -122,11 +123,11 @@ export const PRINT_CSS = `
   ${P} .dlc-legend__where { font-size: 0.56rem; }
   ${P} .dlc-shapes { font-size: 0.6rem; line-height: 1.25; }
   ${P} .dlc-shapes th, ${P} .dlc-shapes td { padding: 0.2mm 2mm 0.2mm 0; }
-  ${P} .dlc-count { font-size: 0.56rem; line-height: 1.12; max-width: none; }
+  ${P} .dlc-count { font-size: 0.6rem; line-height: 1.12; max-width: none; }
   ${P} .dlc-count th, ${P} .dlc-count td { padding: 0.1mm 1.8mm 0.1mm 0; }
-  ${P} .dlc-count th { font-size: 0.5rem; }
-  ${P} .dlc-count__rule { font-size: 0.54rem; }
-  ${P} .dlc-count td.dlc-mono { font-size: 0.54rem; }
+  ${P} .dlc-count th { font-size: 0.56rem; }
+  ${P} .dlc-count__rule { font-size: 0.58rem; }
+  ${P} .dlc-count td.dlc-mono { font-size: 0.58rem; }
   ${P} .dlc-count + .dlc-count { margin-top: 1.5mm; }
   ${P} .dlc-eqs { gap: 1mm; }
   ${P} .dlc-eq { padding-left: 2mm; }
@@ -142,15 +143,19 @@ export const PRINT_CSS = `
   ${P} .dlc-lp__head { break-after: avoid; }
   ${P} .dlc-lp { display: block; margin: 0; padding: 2.5mm 0 0; }
   ${P} .dlc-lp__title { font-size: 1rem; }
-  ${P} .dlc-lp__facts { margin: 1mm 0 0; gap: 0.3mm 2.5mm; font-size: 0.64rem; line-height: 1.3; grid-template-columns: 12mm minmax(0, 1fr) 12mm minmax(0, 1fr); }
-  ${P} .dlc-lp__facts dt { font-size: 0.56rem; padding-top: 0.6mm; }
-  /* the goal reads on its own row, so its text stays in one piece */
-  ${P} .dlc-lp__facts dd:first-of-type { grid-column: 2 / -1; }
-  ${P} .dlc-lp__q { font-size: 0.62rem; }
+  /* the facts as label-led paragraphs (Card.jsx PrintFacts): each label
+     starts the line of its own text and no labels line up in a column, so
+     the PDF's text reads label, text, label, text; never split */
+  ${P} .dlc-lp__pfacts { margin: 1mm 0 0; break-inside: avoid; }
+  ${P} .dlc-lp__pf { margin: 0 0 0.7mm; font-size: 0.64rem; line-height: 1.3; color: var(--ink-2); }
+  ${P} .dlc-lp__pk { margin-right: 1.8mm; font-family: ui-monospace, monospace; font-size: 0.56rem; font-weight: 700; text-transform: uppercase; color: var(--ink); }
+  ${P} .dlc-lp__pf .dlc-lp__line { display: inline; border: none; padding: 0; margin: 0; }
+  ${P} .dlc .dlc-lp__pf .dlc-lp__q { display: inline; font-size: 0.62rem; }
 
   /* the code panel: the image, with the code as real text under it */
   ${P} .dlc-codewrap--img .dlc-code { display: none !important; }
-  ${P} .dlc-pimg { display: block !important; position: relative; margin: 0; break-inside: avoid; container-type: inline-size; }
+  /* overflow: the text layer stays inside the panel (it still extracts) */
+  ${P} .dlc-pimg { display: block !important; position: relative; margin: 0; break-inside: avoid; container-type: inline-size; overflow: hidden; }
   ${P} .dlc-pimg__img { position: relative; z-index: 1; display: block; width: 100%; height: auto; border-radius: 6px; }
   ${P} .dlc-pimg__text { position: absolute; z-index: 0; right: 0; margin: 0; color: #000; font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre; }
   /* a panel without an image prints as the vector editor */

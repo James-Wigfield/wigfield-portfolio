@@ -17,7 +17,7 @@
 const SYMBOLS = {
   ell: 'ℓ', top: 'ᵀ', cdots: '…', ldots: '…', dots: '…', times: '×', cdot: '·', to: '→', rightarrow: '→', approx: '≈',
   le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', in: '∈', mid: '|', infty: '∞', minus: '−', pm: '±', quad: ' ', qquad: '  ',
-  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', theta: 'θ', tau: 'τ', leftarrow: '←', gets: '←', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
+  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', theta: 'θ', tau: 'τ', eta: 'η', nabla: '∇', otimes: '⊗', odot: '⊙', partial: '∂', rho: 'ρ', omega: 'ω', leftarrow: '←', gets: '←', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
   langle: '⟨', rangle: '⟩', div: '÷', pi: 'π', exp: 'exp', tanh: 'tanh', sin: 'sin', cos: 'cos', log: 'log', max: 'max',
   limits: '', nolimits: '', displaystyle: '', ',': ' ', ';': ' ', ':': ' ', '!': '', '{': '{', '}': '}', '%': '%', '#': '#', '_': '_',
 };

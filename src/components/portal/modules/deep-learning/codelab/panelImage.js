@@ -14,8 +14,10 @@ import { DARK } from './tokens.js';
 
    Long lines: the font is the largest from 10.5 px (7.9 pt) down to 10 px
    (7.5 pt) at which the panel's longest line fits; a line that still won't
-   fit wraps with a hanging indent and no new line number, so the numbers
-   match the screen.
+   fit wraps with a hanging indent, a ↪ and no new line number, so the
+   numbers match the screen. It wraps after a space, comma or bracket or
+   before a dot or '=', never mid-word (wrapRow), so the text layer under the
+   image reads as code too.
    ========================================================================== */
 
 export const PRINT_PANEL_PX = 453; // the panel's width on A4: 190 mm − the 66 mm legend column − the gap
@@ -35,6 +37,70 @@ function rowCells(row) {
   return row.segs.reduce((s, seg) => s + seg.t.length + (seg.badge ? BADGE_CH : 0), 0);
 }
 
+// Where a long line may wrap: after a space, a comma or an opening bracket,
+// or before a dot or '=' (not inside a number or an operator like '==').
+const BREAK_AFTER = new Set([' ', ',', '(', '[', '{']);
+function canBreak(chars, i) {
+  const a = chars[i - 1].ch;
+  const b = chars[i].ch;
+  if (BREAK_AFTER.has(a)) return true;
+  if (b === '.') return !/[0-9]/.test(a) && a !== '.';
+  if (b === '=') return !/[=<>!+\-*/]/.test(a) && chars[i + 1]?.ch !== '=';
+  return false;
+}
+
+// Split one row into visual lines of at most maxCells; continuation lines
+// are indented by `indent` cells. A break goes at the last allowed point in
+// the line's final 40%, outside a marked token when it can; only a line with
+// no such point is cut mid-word.
+function wrapRow(row, maxCells, indent) {
+  const chars = [];
+  row.segs.forEach((seg, si) => {
+    for (let k = 0; k < seg.t.length; k += 1) {
+      chars.push({ ch: seg.t[k], si, w: 1 + (seg.badge && k === seg.t.length - 1 ? BADGE_CH : 0) });
+    }
+  });
+  const marked = (i) => !!(row.segs[chars[i - 1].si].u && row.segs[chars[i].si].u);
+  const segsOf = (a, b) => {
+    const out = [];
+    for (let i = a; i < b; i += 1) {
+      const c = chars[i];
+      const seg = row.segs[c.si];
+      const last = out[out.length - 1];
+      if (last && last.si === c.si) last.t += c.ch;
+      else out.push({ ...seg, si: c.si, t: c.ch, badge: null });
+      if (c.w > 1) out[out.length - 1].badge = seg.badge;
+    }
+    return out;
+  };
+  const visual = [];
+  let p = 0;
+  while (p < chars.length) {
+    const first = visual.length === 0;
+    const room = maxCells - (first ? 0 : indent);
+    let used = 0;
+    let e = p;
+    while (e < chars.length && used + chars[e].w <= room) {
+      used += chars[e].w;
+      e += 1;
+    }
+    if (e === p) e = p + 1;
+    let b = e;
+    if (e < chars.length) {
+      const min = p + Math.ceil((e - p) * 0.6);
+      let cand = -1;
+      for (let i = e; i >= min && cand < 0; i -= 1) if (canBreak(chars, i) && !marked(i)) cand = i;
+      for (let i = e; i >= min && cand < 0; i -= 1) if (canBreak(chars, i)) cand = i;
+      if (cand > p) b = cand;
+    }
+    visual.push({ row, segs: segsOf(p, b), cont: !first, indent: first ? 0 : indent });
+    p = b;
+    // a continuation starts at its first character, not at a run of spaces
+    while (p < chars.length && chars[p].ch === ' ' && chars[p].w === 1) p += 1;
+  }
+  return visual;
+}
+
 // pick the font size and split rows that still don't fit into visual lines
 export function layoutPanel(code, marks, cw1, width = PRINT_PANEL_PX) {
   const rows = panelRows(code, marks);
@@ -51,32 +117,7 @@ export function layoutPanel(code, marks, cw1, width = PRINT_PANEL_PX) {
     }
     // wrap: hanging indent = the line's own indentation + 4
     const indent = Math.min(12, (/^\s*/.exec(row.text)[0].length) + 4);
-    let line = [];
-    let used = 0;
-    let first = true;
-    const flush = () => {
-      visual.push({ row, segs: line, cont: !first, indent: first ? 0 : indent });
-      first = false;
-      line = [];
-      used = indent;
-    };
-    row.segs.forEach((seg) => {
-      let rest = seg.t;
-      while (rest.length) {
-        const room = maxCells - used - (seg.badge && rest.length <= maxCells - used ? BADGE_CH : 0);
-        if (rest.length <= room) {
-          line.push({ ...seg, t: rest });
-          used += rest.length + (seg.badge ? BADGE_CH : 0);
-          rest = '';
-        } else {
-          const take = Math.max(1, Math.floor(room));
-          line.push({ ...seg, t: rest.slice(0, take), badge: null });
-          rest = rest.slice(take);
-          flush();
-        }
-      }
-    });
-    if (line.length) visual.push({ row, segs: line, cont: !first, indent: first ? 0 : indent });
+    visual.push(...wrapRow(row, maxCells, indent));
   });
   return { font, cw, visual, wrapped: visual.length > rows.length };
 }

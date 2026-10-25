@@ -8,8 +8,11 @@
        sources, spec / cross-link / panel references
      · every budget: 10–12 tabs, ≤ 5 cards a tab (Labs & Projects ≤ 10),
        ≤ 40 cards, ≤ 16 lines a panel, why ≤ 25 words, ≤ 4 marks of ≤ 20
-       words, exam move + what's it for ≤ 60 words, panel goals ≤ 30 words
+       words, exam move + what's it for ≤ 60 words, panel goals ≤ 30 words,
+       check lines ≤ 50 words
      · marks: line ranges exist, tokens occur on their lines, numbered 1…n
+       in line order
+     · the print image never wraps a code line mid-word (panelImage.js)
      · slide receipts within each deck's slide count
      · verbatim: lecture cards against tools/dl-codelab/slides-verbatim (each
        kept line exact and in order, a '# …' line at every gap where non-blank
@@ -37,6 +40,7 @@ const { SPECS } = await imp('specs.js');
 const { flow } = await imp('counts.js');
 const { codeLines, tokenSpan } = await imp('panelModel.js');
 const { LAB_PANELS } = await imp('labsProjects.js');
+const { layoutPanel } = await imp('panelImage.js');
 const { NLM_PROMPT, NLM_PARTS, NLM_PICKS } = await imp('exportPrompt.js');
 
 const UNI = 'C:/Users/james/Documents/university/cits5017';
@@ -164,6 +168,19 @@ CARDS.forEach((c) => {
     } else {
       ok(!!m.token && m.token.line >= 1 && m.token.line <= lines.length && !!tokenSpan(lines[m.token.line - 1], m.token), `${L} mark ${m.n}: token ${JSON.stringify(m.token?.text)} occurs on line ${m.token?.line}`);
     }
+  });
+  // ① ② ③ read down the code, so a video walking the marks in order never jumps back
+  const at = c.marks.map((m) => (m.lines ? m.lines[0] : m.token.line));
+  ok(at.every((x, k) => k === 0 || x >= at[k - 1]), `${L}: marks are numbered in line order (${at.join(', ')})`);
+  if (c.slideCheck) ok(words(c.slideCheck) <= 50, `${L}: check line ${words(c.slideCheck)} words ≤ 50`);
+  // the print image wraps long lines at a space, comma, bracket, dot or '=', never mid-word
+  // (Consolas: a character is 0.5498 em)
+  const { visual } = layoutPanel(c.code, c.marks, 0.5498);
+  visual.forEach((v, k) => {
+    if (!v.cont) return;
+    const a = visual[k - 1].segs.map((g) => g.t).join('').slice(-1);
+    const b = v.segs.map((g) => g.t).join('')[0];
+    ok(!(/\w/.test(a) && /\w/.test(b)),`${L}: print wrap of line ${v.row.no} doesn't split a word (${a}|${b})`);
   });
   const mv = c.moves || {};
   const moveWords = words(mv.say) + words(mv.forWhat);

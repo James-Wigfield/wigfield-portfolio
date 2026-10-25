@@ -17,8 +17,9 @@ import { texText } from './texText';
    the rating as a labelled dot, outlined source labels), why it's here, the
    code panel with its marks, the marks legend (each entry quotes the marked
    code), then the exam moves: Draw it (diagram from the spec), Count it (the
-   table counts.js computes), Shapes, Equation ↔ code, What's it for. A Slide
-   check and a cross-link close it when it has them.
+   table counts.js computes, folded under its total on screen), Shapes,
+   Equation ↔ code, What's it for. A Slide check and a cross-link close it
+   when it has them.
    ========================================================================== */
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -94,6 +95,22 @@ function CountTable({ spec }) {
   );
 }
 
+// On screen the table folds under its total (the working is a click away);
+// on paper it is always open.
+function CountFold({ spec, named, printing }) {
+  const f = flow(spec);
+  return (
+    <details className="dlc-fold" open={printing || undefined}>
+      <summary>
+        {named && spec.name && <span className="dlc-fold__name">{spec.name}</span>}
+        <span className="dlc-fold__total">{fmt(f.tr)} trainable{f.nt ? ` · ${fmt(f.nt)} non-trainable` : ''}</span>
+        <span className="dlc-fold__hint">layer by layer</span>
+      </summary>
+      <CountTable spec={spec} />
+    </details>
+  );
+}
+
 function Shapes({ shapes, terms }) {
   return (
     <table className="dlc-shapes">
@@ -157,7 +174,7 @@ function stackEstimate(card, countSpecs) {
   return { a, b, shapes };
 }
 
-export function Card({ card, terms, image, onJump, tabName }) {
+export function Card({ card, terms, image, onJump, tabName, printing = false }) {
   const m = card.moves || {};
   const drawSpec = m.draw ? SPECS[m.draw] : null;
   const countSpecs = (Array.isArray(m.count) ? m.count : m.count ? [m.count] : []).map((id) => SPECS[id]);
@@ -197,7 +214,7 @@ export function Card({ card, terms, image, onJump, tabName }) {
           {m.eq && <Move k="Equation ↔ code" kind="eq"><EqCode eq={m.eq} code={card.code} /></Move>}
           {countSpecs.length > 0 && (
             <Move k="Count it" kind="count">
-              {countSpecs.map((sp) => <CountTable key={sp.id} spec={sp} />)}
+              {countSpecs.map((sp) => <CountFold key={sp.id} spec={sp} named={countSpecs.length > 1} printing={printing} />)}
             </Move>
           )}
           {wide && draw}
@@ -250,14 +267,39 @@ function Fact({ d, terms }) {
   );
 }
 
+// On paper the facts are hanging-label paragraphs ("DATA  train X…"), so a
+// PDF's text reads each label with its own text, in order.
+function PrintFacts({ lp, terms }) {
+  const rows = [
+    ['Goal', [lp.goal]],
+    lp.spec && ['Spec', [lp.spec]],
+    ['Data', lp.data],
+    [lp.models.length > 1 ? 'Models' : 'Model', lp.models],
+    [lp.resultKind === 'target' ? 'Target' : 'Result', lp.result],
+    lp.note && ['Note', [lp.note]],
+    ...(lp.see || []).filter((x) => CARD_BY_ID[x.to]).map((x) => ['Code', [`${x.text} → ${fullLabel(CARD_BY_ID[x.to])}`]]),
+  ].filter(Boolean);
+  return (
+    <div className="dlc-lp__pfacts">
+      {rows.map(([k, items], r) => (
+        <p className="dlc-lp__pf" key={r}>
+          <span className="dlc-lp__pk">{k}</span>
+          {items.map((d, i) => <Fragment key={i}>{i > 0 && <br />}<Fact d={d} terms={terms} /></Fragment>)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 // One Labs & Projects panel: goal, data, models, result, then its cards.
-export function LabPanel({ lp, cards, terms, images, onJump }) {
+export function LabPanel({ lp, cards, terms, images, onJump, printing = false }) {
   return (
     <section className="dlc-lp" id={`dlc-${lp.id}`} data-lp={lp.id}>
       <header className="dlc-lp__head">
         <h3 className="dlc-lp__title">{lp.title}</h3>
         <span className="dlc-card__src">{lp.sources.map((s) => <span className="dlc-src" key={s}>{s}</span>)}</span>
       </header>
+      {printing ? <PrintFacts lp={lp} terms={terms} /> : (
       <dl className="dlc-lp__facts">
         <dt>Goal</dt><dd><Inline text={lp.goal} terms={terms} /></dd>
         {lp.spec && <><dt>Spec</dt><dd><Inline text={lp.spec} terms={terms} /></dd></>}
@@ -272,8 +314,9 @@ export function LabPanel({ lp, cards, terms, images, onJump }) {
           ) : null;
         })}
       </dl>
+      )}
       <div className="dlc-list">
-        {cards.map((c) => <Card key={c.id} card={c} terms={terms} image={images?.[c.id]} onJump={onJump} />)}
+        {cards.map((c) => <Card key={c.id} card={c} terms={terms} image={images?.[c.id]} onJump={onJump} printing={printing} />)}
       </div>
     </section>
   );

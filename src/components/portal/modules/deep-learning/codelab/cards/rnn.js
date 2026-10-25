@@ -84,7 +84,7 @@ Y_pred = ahead_model.predict(X)  # shape [1, 14]`,
     id: 'lstm-gru',
     title: 'LSTM and GRU layers: the gate counts',
     rating: 'core',
-    why: 'Count an LSTM (three gates + g) and a GRU (two gates + g) with Keras 3’s double bias; match the GRU to its equations.',
+    why: 'Count an LSTM (three gates + g) and a GRU (two gates + g, each with two biases); match the GRU to its equations.',
     sources: [{ kind: 'lecture', lec: 4, slides: '43–49' }],
     blocks: ['L4 s43', 'L4 s49'],
     provenance: 'verbatim',
@@ -104,10 +104,10 @@ gru_model = tf.keras.Sequential([
     tf.keras.layers.Dense(1)
 ])`,
     marks: [
-      { n: 1, token: { line: 4, text: 'LSTM(12)' }, say: 'Three gates (f, i, o) + main layer g: 4 × 12 × (1 + 12 + 1) = 672.' },
-      { n: 2, lines: [1, 1], say: '672 + the Dense layer’s (12 + 1) = 685, as printed.' },
-      { n: 3, token: { line: 11, text: 'GRU(20)' }, say: 'Two gates (z, r) + main layer g: 3 × 20 × (1 + 20 + 2) = 1,380.' },
-      { n: 4, lines: [8, 8], say: '1,380 + 21 = 1,401: Keras 3 gives each GRU gate two bias vectors (reset_after=True).' },
+      { n: 1, lines: [1, 1], say: 'The printed total: the LSTM’s 672 (②) + the Dense layer’s 12 + 1 = 685.' },
+      { n: 2, token: { line: 4, text: 'LSTM(12)' }, say: 'Three gates (f, i, o) + main layer g: 4 × 12 × (1 + 12 + 1) = 672.' },
+      { n: 3, lines: [8, 8], say: 'The GRU’s 1,380 (④) + 21 = 1,401: Keras 3 gives z, r and g two biases each (reset_after=True).' },
+      { n: 4, token: { line: 11, text: 'GRU(20)' }, say: 'Two gates (z, r) + main layer g: 3 × 20 × (1 + 20 + 2) = 1,380.' },
     ],
     moves: {
       count: ['lstmModel', 'gruModel'],
@@ -119,7 +119,7 @@ gru_model = tf.keras.Sequential([
       }],
       forWhat: 'Sequences that need a longer memory: the gates learn what to keep and what to forget, unlike a SimpleRNN.',
     },
-    slideCheck: 'Slide 49’s equations have one bias per gate, which would give 3 × 20 × (1 + 20 + 1) + 21 = 1,341. The printed 1,401 is Keras 3’s default (reset_after=True), with a second bias per gate. Slide 49’s g line, (r(t)ᵀ W_hg ⊗ h(t−1)ᵀ), is a typo: Géron (Eq 15-4) resets the state first, (r(t) ⊗ h(t−1))ᵀ W_hg; Keras’s reset_after=True resets after, r(t)ᵀ ⊗ (h(t−1)ᵀ W_hg + b). Validation MAE: 30,262 (LSTM), 26,497 (GRU).',
+    slideCheck: 'Slide 49 has one bias per layer: 3 × 20 × (1 + 20 + 1) + 21 = 1,341; Keras 3 (reset_after=True) adds a second: 1,401. Its g line (r(t)ᵀ W_hg ⊗ h(t−1)ᵀ) is a typo for (r(t) ⊗ h(t−1))ᵀ W_hg. MAE: LSTM 30,262, GRU 26,497.',
     xref: [{ to: 'p2-gru', text: 'Project 2’s GRU(16) on 2 inputs: 960' }],
   },
   {
@@ -141,10 +141,10 @@ cnn_gru_model = tf.keras.Sequential([
     tf.keras.layers.Dense(1)
 ])`,
     marks: [
-      { n: 1, token: { line: 4, text: 'kernel_size=3, strides=1' }, say: 'Eight width-3 kernels along time: (3 × 1 + 1) × 8 = 32; 56 → 54 steps.' },
-      { n: 2, token: { line: 5, text: 'strides=2' }, say: 'Stride 2 roughly halves the sequence: ⌊(54 − 3) / 2⌋ + 1 = 26 steps of 16 channels.' },
-      { n: 3, token: { line: 6, text: 'GRU(10)' }, say: 'Reads 16 channels per step: 3 × 10 × (16 + 10 + 2) = 840.' },
-      { n: 4, lines: [1, 1], say: '32 + 400 + 840 + 11 = 1,283, as printed.' },
+      { n: 1, lines: [1, 1], say: 'The printed total: 32 (②) + 400 (③) + 840 (④) + the Dense layer’s 11 = 1,283.' },
+      { n: 2, token: { line: 4, text: 'kernel_size=3, strides=1' }, say: 'Eight width-3 kernels along time: (3 × 1 + 1) × 8 = 32; 56 → 54 steps.' },
+      { n: 3, token: { line: 5, text: 'strides=2' }, say: 'Stride 2 roughly halves the sequence: ⌊(54 − 3) / 2⌋ + 1 = 26 steps of 16 channels.' },
+      { n: 4, token: { line: 6, text: 'GRU(10)' }, say: 'Reads 16 channels per step: 3 × 10 × (16 + 10 + 2) = 840.' },
     ],
     moves: {
       draw: 'conv1dGru',

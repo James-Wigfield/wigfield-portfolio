@@ -78,6 +78,14 @@ try {
   delete state.pieces;
   console.log(`print() called · ${JSON.stringify(state)}`);
   await page.emulateMediaType('print');
+  // every equation fits its column at the paper's width (190 mm = 718 px)
+  await page.setViewport({ width: 718, height: 1000, deviceScaleFactor: 1 });
+  await new Promise((r) => setTimeout(r, 400));
+  const eqOver = await page.evaluate(() => [...document.querySelectorAll('.dlc-eq .katex-display')]
+    .map((d) => ({ id: d.closest('.dlc-card')?.dataset.card, over: d.scrollWidth - d.clientWidth }))
+    .filter((x) => x.over > 1));
+  ok(!eqOver.length, 'every equation fits its column on paper', eqOver.map((x) => `${x.id} +${x.over}px`).join(', ') || 'all fit');
+  await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await new Promise((r) => setTimeout(r, 600));
   file = path.join(OUT, 'codelab.pdf');
   await page.pdf({ path: file, format: 'A4', printBackground: !!flags.background, preferCSSPageSize: true, displayHeaderFooter: false });

@@ -32,7 +32,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.001,
     moves: {
       eq: [
         { name: 'Momentum (slide 34)', tex: String.raw`\mathbf{m} \leftarrow \beta \mathbf{m} - \eta \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}), \quad \boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \mathbf{m}`, line: 5 },
-        { name: 'Adam steps 1–2 (slide 43)', tex: String.raw`\mathbf{m} \leftarrow \beta_1 \mathbf{m} + (1 - \beta_1) \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}), \quad \mathbf{s} \leftarrow \beta_2 \mathbf{s} + (1 - \beta_2) \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \otimes \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta})`, line: 13 },
+        { name: 'Adam steps 1–2 (slide 43)', tex: String.raw`\begin{aligned} \mathbf{m} &\leftarrow \beta_1 \mathbf{m} + (1 - \beta_1) \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \\ \mathbf{s} &\leftarrow \beta_2 \mathbf{s} + (1 - \beta_2) \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \otimes \nabla_{\boldsymbol{\theta}} J(\boldsymbol{\theta}) \end{aligned}`, line: 13 },
       ],
       forWhat: 'Faster, steadier training than plain gradient descent; Adam needs little tuning of η (the default 0.001 often works).',
     },

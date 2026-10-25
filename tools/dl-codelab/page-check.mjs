@@ -23,6 +23,9 @@
      nlm        the NotebookLM dropdown opens directly under Export PDF, its
                 two variants switch, Copy copies and shows the character count
      xref       a cross-link jumps to the other card's tab
+     layout     at 1440 and 390: the print-only diagram band stays hidden,
+                every mark is inside its panel's visible width; the tab's
+                card index scrolls to a card; Count it folds under its total
      others     every other Deep Learning module in the registry still renders
      shots      3 themes × 1440 / 390, with no page-level horizontal scroll
    Exits 1 on any failure; zero console errors or warnings are required.
@@ -256,6 +259,8 @@ try {
       cover: document.querySelectorAll('.dlc-cover__cards span').length,
       title: document.title,
     }));
+    const folds = await page.evaluate(() => [...document.querySelectorAll('.dlc-fold')].every((d) => d.open));
+    ok(folds, 'in print every Count it table is open');
     ok(st.cls && st.secs.join() === SECTIONS.map((s) => s.id).join() && st.cards === CARDS.length && st.imgs === CARDS.length && st.cover === CARDS.length,
       'Export PDF prints every tab and card, a ≥ 2× image per code panel and the cover’s contents', `${st.secs.length} tabs, ${st.cards} cards, ${st.imgs} images, ${st.cover} contents lines`);
     await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
@@ -314,6 +319,70 @@ try {
       const errs = consoleMsgs.slice(before).filter((m) => /pageerror/.test(m));
       ok(n > 50 && errs.length === 0, `/portal/${id} still renders`, `${n} chars${errs.length ? ` · ${errs[0]}` : ''}`);
     }
+  }
+
+  // ── layout: what the design audit caught ───────────────────────────────────
+  if (want('layout')) {
+    for (const width of [1440, 390]) {
+      const page = await open({ tag: `layout-${width}`, width, route: `${ROUTE}/labs` });
+      let pdrawShown = 0;
+      let offMarks = 0;
+      for (const s of SECTIONS) {
+        await page.evaluate((id) => {
+          const tab = document.querySelector(`[data-dlc-tab="${id}"]`);
+          if (getComputedStyle(tab).display !== 'none' && tab.offsetParent) tab.click();
+          else {
+            const sel = document.querySelector('.dlc-tabsel select');
+            sel.value = id;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }, s.id);
+        await sleep(250);
+        const st = await page.evaluate(() => {
+          // the print-only diagram band takes no room on screen
+          const pdraw = [...document.querySelectorAll('.dlc-move--pdraw')].filter((e) => e.getBoundingClientRect().height > 0).length;
+          // every mark (gutter circle or badge) sits inside its panel's visible width
+          let off = 0;
+          document.querySelectorAll('.dlc-code').forEach((fig) => {
+            const box = fig.querySelector('.dlc-code__pre').getBoundingClientRect();
+            fig.querySelectorAll('.dlc-num-o').forEach((m) => {
+              const r = m.getBoundingClientRect();
+              if (r.right > box.right + 1 || r.left < box.left - 1) off += 1;
+            });
+          });
+          return { pdraw, off };
+        });
+        pdrawShown += st.pdraw;
+        offMarks += st.off;
+      }
+      ok(pdrawShown === 0, `@${width}: the print-only Draw it band is hidden on screen on every tab`, `${pdrawShown} shown`);
+      ok(offMarks === 0, `@${width}: every mark is inside its panel’s visible width (long lines wrap)`, `${offMarks} off the edge`);
+      await page.close();
+    }
+    // the tab's card index: two clicks to any card
+    const page = await open({ tag: 'index', route: `${ROUTE}/labs`, reduced: true });
+    const labsCards = CARDS.filter((c) => c.section === 'labs');
+    const idx = await page.$$eval('.dlc-index__a', (els) => els.map((e) => e.textContent));
+    ok(idx.length === labsCards.length && labsCards.every((c, i) => idx[i].includes(c.no) && idx[i].includes(c.title)), 'each tab opens on an index of its cards', `${idx.length} entries`);
+    const last = labsCards[labsCards.length - 1];
+    await page.click(`.dlc-index li:last-child .dlc-index__a`);
+    await sleep(900);
+    const pos = await page.evaluate((id) => {
+      const r = document.getElementById(`dlc-${id}`).getBoundingClientRect();
+      const bar = document.querySelector('.dlc-bar').getBoundingClientRect();
+      return { top: Math.round(r.top), bar: Math.round(bar.bottom), vh: window.innerHeight };
+    }, last.id);
+    ok(pos.top >= pos.bar - 2 && pos.top < pos.vh / 2, `an index entry scrolls its card (${last.no}) to just under the sticky bar`, JSON.stringify(pos));
+    // Count it folds under its total on screen
+    const fold = await page.evaluate(() => {
+      const d = document.querySelector('.dlc-fold');
+      return d ? { open: d.open, sum: d.querySelector('summary').textContent, shown: d.querySelector('table').checkVisibility() } : null;
+    });
+    ok(!!fold && !fold.open && /trainable/.test(fold.sum) && !fold.shown, 'Count it is folded under its total on screen', fold ? fold.sum : 'none');
+    await page.click('.dlc-fold > summary');
+    await sleep(150);
+    ok(await page.evaluate(() => document.querySelector('.dlc-fold table').checkVisibility()), 'clicking the total opens the layer-by-layer table');
+    await page.close();
   }
 
   // ── screenshots: 3 themes × 2 widths ───────────────────────────────────────

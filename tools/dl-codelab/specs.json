@@ -1608,6 +1608,9 @@
   },
   {
    "id": "wideDeep",
+   "diagram": {
+    "lane": "wide path"
+   },
    "inputs": [
     {
      "id": "input_",
@@ -1805,6 +1808,9 @@
   },
   {
    "id": "wideDeepTwo",
+   "diagram": {
+    "lane": "wide path"
+   },
    "inputs": [
     {
      "id": "input_wide",
@@ -2828,6 +2834,7 @@
   },
   {
    "id": "lstmModel",
+   "name": "lstm_model",
    "inputs": [
     {
      "id": "input",
@@ -2887,6 +2894,7 @@
   },
   {
    "id": "gruModel",
+   "name": "gru_model",
    "inputs": [
     {
      "id": "input",

@@ -288,7 +288,7 @@ nasnet_model = keras.Model(inputs, outputs, name="nasnet_transfer")`,
       say: 'Test MAE over 12 months: model 1 1.250 °C; model 2 rolled out 1.407 °C, because its errors feed back in.',
       forWhat: 'Multi-step time-series forecasting: the next 12 months of minimum and maximum temperature from the last 72.',
     },
-    slideCheck: 'L4 s34’s loop grows its input (the model sees 56, then 57, … up to 69 steps); this one slides a fixed 72-month window, so the model only sees inputs as long as those it trained on. The scaling layers are Normalization layers given the training mean and variance, so they hold 0 parameters.',
+    slideCheck: 'L4 s34’s loop grows its input (the model sees 56, 57, … 69 steps); this one slides a fixed 72-month window, the length it trained on. The scaling layers are Normalization layers given the training mean and variance: 0 parameters.',
     xref: [{ to: 'forecast-ahead', text: 'The lecture’s two ways to forecast 14 days' }],
   },
   {

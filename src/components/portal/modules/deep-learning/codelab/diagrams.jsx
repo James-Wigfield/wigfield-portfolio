@@ -37,11 +37,15 @@ function Box({ n, G }) {
   const p = params(n);
   // a name too long for its box is squeezed to fit rather than overflowing
   const squeeze = n.name.length > G.CHARS ? { textLength: G.BW - 16, lengthAdjust: 'spacingAndGlyphs' } : {};
+  // so is a shape that would run into the parameter count on its line
+  const shape = shapeStr(n.out);
+  const room = G.BW - 15 - (p ? p.length * G.SHAPE * 0.6 + 8 : 0);
+  const squeezeShape = shape.length * G.SHAPE * 0.6 > room ? { textLength: room, lengthAdjust: 'spacingAndGlyphs' } : {};
   return (
     <g className={boxCls(n)} data-layer={n.id}>
       <rect x={n.x} y={n.y} width={G.BW} height={G.BH} rx="3" />
       <text className="dlc-dg__name" x={n.x + 8} y={n.y + G.NAME_Y} style={{ fontSize: G.NAME }} {...squeeze}>{n.name}</text>
-      <text className="dlc-dg__shape" x={n.x + 8} y={n.y + G.SHAPE_Y} style={{ fontSize: G.SHAPE }}>{shapeStr(n.out)}</text>
+      <text className="dlc-dg__shape" x={n.x + 8} y={n.y + G.SHAPE_Y} style={{ fontSize: G.SHAPE }} {...squeezeShape}>{shape}</text>
       {p && <text className="dlc-dg__p" x={n.x + G.BW - 7} y={n.y + G.SHAPE_Y} textAnchor="end" style={{ fontSize: G.SHAPE }}>{p}</text>}
     </g>
   );
@@ -143,7 +147,7 @@ function BoxAcross({ n, BW, BH }) {
   );
 }
 
-function EdgeAcross({ e, arrow, BW, BH, VG }) {
+function EdgeAcross({ e, arrow, BW, BH, VG, lane }) {
   const { a, b } = e;
   if (e.kind === 'right') {
     const x1 = a.x + BW;
@@ -162,10 +166,15 @@ function EdgeAcross({ e, arrow, BW, BH, VG }) {
     return <path className="dlc-dg__edge" d={`M${x1},${y1} V${ym} H${x2} V${b.y - 2}`} markerEnd={`url(#${arrow})`} />;
   }
   if (e.kind === 'over') {
-    // a shortcut along a lane above the row
+    // a shortcut along a lane above the row, named when the spec names it
     const x1 = a.x + BW / 2;
     const x2 = b.x + BW / 2;
-    return <path className="dlc-dg__edge" d={`M${x1},${a.y} V${e.laneY} H${x2} V${b.y - 2}`} markerEnd={`url(#${arrow})`} />;
+    return (
+      <g className="dlc-dg__state">
+        <path className="dlc-dg__edge" d={`M${x1},${a.y} V${e.laneY} H${x2} V${b.y - 2}`} markerEnd={`url(#${arrow})`} />
+        {lane && <text x={(x1 + x2) / 2} y={e.laneY - 2.5} textAnchor="middle">{lane}</text>}
+      </g>
+    );
   }
   // 'drop': an RNN state handed down to the stacked box below
   const x = a.x + BW / 2;
@@ -187,10 +196,11 @@ export function DiagramAcross({ spec }) {
         {L.groups.map((g, i) => (
           <g key={i} className="dlc-dg__group">
             <rect x={g.x0 - 3} y={g.y0 - 11} width={g.x1 - g.x0 + 6} height={g.y1 - g.y0 + 14} rx="4" />
-            <text x={g.x0} y={g.y0 - 3}>{g.label}</text>
+            {/* right-aligned: a row-wrap arrow comes down at the left */}
+            <text x={g.x1} y={g.y0 - 3} textAnchor="end">{g.label}</text>
           </g>
         ))}
-        {L.edges.map((e, i) => <EdgeAcross key={i} e={e} arrow={arrow} BW={L.BW} BH={L.BH} VG={L.VG} />)}
+        {L.edges.map((e, i) => <EdgeAcross key={i} e={e} arrow={arrow} BW={L.BW} BH={L.BH} VG={L.VG} lane={L.lane} />)}
         {L.nodes.map((nd) => <BoxAcross key={nd.id} n={nd} BW={L.BW} BH={L.BH} />)}
       </svg>
     </figure>

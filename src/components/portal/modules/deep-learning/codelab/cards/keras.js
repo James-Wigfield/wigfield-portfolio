@@ -69,10 +69,10 @@ output = output_layer(concat)
 
 model = tf.keras.Model(inputs=[input_], outputs=[output])`,
     marks: [
-      { n: 1, token: { line: 7, text: 'shape=X_train.shape[1:]' }, say: 'One input of 8 features (California housing); the batch axis is left out.' },
-      { n: 2, lines: [8, 10], say: 'The deep path: normalise, then two Dense(30, ReLU) layers, each layer called on a tensor like a function.' },
-      { n: 3, token: { line: 11, text: '[normalized, hidden2]' }, say: 'The wide path skips the hidden layers: 8 + 30 = 38 values reach the output.' },
-      { n: 4, token: { line: 5, text: 'Dense(1)' }, say: 'One linear unit, no activation: a regression output.' },
+      { n: 1, token: { line: 5, text: 'Dense(1)' }, say: 'One linear unit, no activation: a regression output.' },
+      { n: 2, token: { line: 7, text: 'shape=X_train.shape[1:]' }, say: 'One input of 8 features (California housing); the batch axis is left out.' },
+      { n: 3, lines: [8, 10], say: 'The deep path: normalise, then two Dense(30, ReLU) layers, each layer called on a tensor like a function.' },
+      { n: 4, token: { line: 11, text: '[normalized, hidden2]' }, say: 'The wide path skips the hidden layers: 8 + 30 = 38 values reach the output.' },
     ],
     moves: {
       draw: 'wideDeep',

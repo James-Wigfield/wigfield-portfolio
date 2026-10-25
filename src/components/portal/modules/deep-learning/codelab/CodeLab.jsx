@@ -20,7 +20,8 @@ import './codelab.css';
    what each key line does and what the model is for.
 
      tabs        sticky under the portal topbar; /portal/dl-code-lab/<tab>
-                 deep links; a select at phone width
+                 deep links; a select at phone width; each tab opens on a
+                 ruled index of its cards
      search      "/" focuses it from anywhere, Esc clears, every term must
                  match; results come from every tab, each showing its tab
      core only   hides the `useful` cards for a fast pass
@@ -36,16 +37,21 @@ import './codelab.css';
 const norm = (s) => String(s || '').toLowerCase();
 
 // Every term must hit somewhere; the strongest field it hits sets its score.
+// A whole name in the code (a layer, an argument: "concatenate",
+// "return_sequences") outranks the same word in another card's prose.
 function scoreCard(c, terms) {
+  const has = (text) => (t) => text.includes(t);
+  const names = new Set(norm(c.code).match(/[a-z_][a-z0-9_]*/g));
   const fields = [
-    [4, `${c.label} ${c.title}`],
-    [3, `${c.why} ${c.marks.map((m) => m.say).join(' ')} ${c.sources.map(sourceText).join(' ')} ${SECTION_BY_ID[c.section].title}`],
-    [2, `${c.moves?.forWhat || ''} ${c.moves?.say || ''} ${c.slideCheck || ''}`],
-    [1, c.code],
-  ].map(([w, t]) => [w, norm(t)]);
+    [4, has(norm(`${c.label} ${c.title}`))],
+    [3.5, (t) => names.has(t)],
+    [3, has(norm(`${c.why} ${c.marks.map((m) => m.say).join(' ')} ${c.sources.map(sourceText).join(' ')} ${SECTION_BY_ID[c.section].title}`))],
+    [2, has(norm(`${c.moves?.forWhat || ''} ${c.moves?.say || ''} ${c.slideCheck || ''}`))],
+    [1, has(norm(c.code))],
+  ];
   let score = 0;
   for (const t of terms) {
-    const hit = fields.find(([, text]) => text.includes(t));
+    const hit = fields.find(([, test]) => test(t));
     if (!hit) return 0;
     score += hit[0];
   }
@@ -67,7 +73,9 @@ export default function CodeLab() {
   const [busy, setBusy] = useState(false);
   const [images, setImages] = useState(null);
   const [stick, setStick] = useState(0);
+  const [barH, setBarH] = useState(0);
   const rootRef = useRef(null);
+  const barRef = useRef(null);
   const inputRef = useRef(null);
   const tabRefs = useRef({});
 
@@ -100,12 +108,17 @@ export default function CodeLab() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // the sticky bar sits just under the portal's own sticky topbar
+  // the sticky bar sits just under the portal's own sticky topbar; a card
+  // scrolled to (index, cross-link) stops just under both
   useEffect(() => {
     const topbar = rootRef.current?.closest('.portal')?.querySelector('.portal__topbar');
-    if (!topbar || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(() => setStick(topbar.offsetHeight));
-    ro.observe(topbar);
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => {
+      if (topbar) setStick(topbar.offsetHeight);
+      if (barRef.current) setBarH(barRef.current.offsetHeight);
+    });
+    if (topbar) ro.observe(topbar);
+    if (barRef.current) ro.observe(barRef.current);
     return () => ro.disconnect();
   }, []);
 
@@ -131,7 +144,8 @@ export default function CodeLab() {
     goTab(c.section);
     window.setTimeout(() => {
       const el = document.getElementById(`dlc-${id}`);
-      el?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      // 'instant', not 'auto': the portal's CSS scroll-behavior would smooth 'auto'
+      el?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
     }, 60);
   }, [goTab]);
 
@@ -190,13 +204,26 @@ export default function CodeLab() {
           <span className="dlc-sec__tags">{s.tags.map((t) => <span key={t} className="dlc-src">{t}</span>)}</span>
           <span className="dlc-sec__count">{cards.length} {cards.length === 1 ? 'card' : 'cards'}</span>
         </header>
+        {/* the tab's cards as a ruled index: any card is two clicks away */}
+        {!printing && cards.length > 0 && (
+          <ol className="dlc-index" aria-label={`Cards in ${s.title}`}>
+            {cards.map((c) => (
+              <li key={c.id}>
+                <button type="button" className="dlc-index__a" onClick={() => jumpTo(c.id)}>
+                  <span className="dlc-index__no">{c.no}</span>
+                  <span className="dlc-index__t">{c.title}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
         {s.id === 'labs' ? (
           LAB_PANELS.map((lp) => (
-            <LabPanel key={lp.id} lp={lp} cards={lp.cards.map((id) => cards.find((c) => c.id === id)).filter(Boolean)} images={images} onJump={jumpTo} />
+            <LabPanel key={lp.id} lp={lp} cards={lp.cards.map((id) => cards.find((c) => c.id === id)).filter(Boolean)} images={images} onJump={jumpTo} printing={printing} />
           ))
         ) : (
           <div className="dlc-list">
-            {cards.map((c) => <Card key={c.id} card={c} image={images?.[c.id]} onJump={jumpTo} />)}
+            {cards.map((c) => <Card key={c.id} card={c} image={images?.[c.id]} onJump={jumpTo} printing={printing} />)}
             {!cards.length && <p className="dlc-empty">Every card in this tab is rated useful: switch Core only off to see them.</p>}
           </div>
         )}
@@ -205,7 +232,7 @@ export default function CodeLab() {
   };
 
   return (
-    <div ref={rootRef} className={`pt-module dl dlc${printing ? ' dlc--printing' : ''}`} style={{ '--dlc-stick': `${stick}px` }}>
+    <div ref={rootRef} className={`pt-module dl dlc${printing ? ' dlc--printing' : ''}`} style={{ '--dlc-stick': `${stick}px`, '--dlc-bar': `${barH}px` }}>
       <style>{PRINT_CSS}</style>
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
@@ -232,7 +259,7 @@ export default function CodeLab() {
           <p className="dlc-cover__lead">
             The CITS5017 exam gives a block of code and asks for a diagram or an explanation. This PDF holds the code most likely to be
             shown: each card has its code panel with numbered marks, a legend quoting each marked piece of code, and the exam moves
-            (draw it, count it, the shapes, what it is for). Labs and projects come first. Slide and notebook code is quoted exactly: a
+            (draw it, count it, the shapes, what it is for). Labs and projects come first. Slide and notebook code is quoted exactly (blank lines aside): a
             trimmed card is an excerpt of its source, and # … marks each gap inside it.
           </p>
           <h2 className="dlc-cover__k">Contents</h2>
@@ -248,7 +275,7 @@ export default function CodeLab() {
       )}
 
       {/* ── Sticky tabs + controls ────────────────────────────────────── */}
-      <nav className="dlc-bar" aria-label="Code Lab tabs">
+      <nav ref={barRef} className="dlc-bar" aria-label="Code Lab tabs">
         <div className="dlc-tabs" role="tablist" aria-label="Sections">
           {SECTIONS.map((s, i) => {
             const on = !searching && s.id === tab;
