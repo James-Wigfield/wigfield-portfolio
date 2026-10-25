@@ -42,7 +42,7 @@ export const TRAINING = [
     why: 'Explain what each regulariser does in training and at test time, and that dropout adds no parameters.',
     sources: [{ kind: 'lecture', lec: 2, slides: '60' }, { kind: 'lecture', lec: 2, slides: '64' }],
     blocks: ['L2 s60', 'L2 s64'],
-    provenance: 'verbatim',
+    provenance: 'trimmed',
     inv: ['l2-l2-regularizer', 'l2-dropout-mlp', 'l2-he-init'],
     file: 'regularisation.py',
     code: `layer = tf.keras.layers.Dense(100, activation="elu",

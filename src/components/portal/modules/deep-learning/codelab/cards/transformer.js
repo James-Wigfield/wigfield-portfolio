@@ -46,7 +46,7 @@ for _ in range(N):
   },
   {
     id: 'positional-encoding',
-    title: 'Positional encoding: the formula as a Keras layer',
+    title: 'Positional encoding as a Keras layer',
     rating: 'core',
     why: 'Sample Q2(c)’s other key component: match the sine and cosine lines to the formula, and say how the encoding meets the embeddings.',
     sources: [{ kind: 'lecture', lec: 8, slides: '32–36' }],

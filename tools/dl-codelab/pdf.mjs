@@ -111,7 +111,8 @@ if (file && fs.existsSync(file)) {
 
   const { CARDS, fullLabel } = await imp('cards/index.js');
   const { LAB_PANELS } = await imp('labsProjects.js');
-  const { NLM_PROMPT, NLM_PARTS } = await imp('exportPrompt.js');
+  const { NLM_PROMPT, NLM_PARTS, NLM_PICKS } = await imp('exportPrompt.js');
+  const { CARD_BY_ID } = await imp('cards/index.js');
   const norm = (s) => s.replace(/\s+/g, ' ').trim();
 
   // every card label + title, in order (after the cover's contents list)
@@ -131,7 +132,10 @@ if (file && fs.existsSync(file)) {
   const flat = squash(text);
   const goals = LAB_PANELS.filter((lp) => !flat.includes(squash(lp.goal.replace(/`/g, ''))));
   ok(!goals.length, 'every lab and project goal is printed', goals.map((g) => g.id).join(', '));
-  const named = [...new Set([NLM_PROMPT, ...NLM_PARTS.map((p) => p.text)].flatMap((p) => [...p.matchAll(/Card \d+\.\d+ · [^;.:]+?(?=[;.:])/g)].map((m) => m[0])))];
+  // the labels the prompts name: each pick's printed label, and it must be in a prompt
+  const prompts = [NLM_PROMPT, ...NLM_PARTS.map((p) => p.text)].join(' ');
+  const named = NLM_PICKS.map((id) => fullLabel(CARD_BY_ID[id]));
+  ok(named.every((n) => prompts.includes(n)), 'every pick is named in a prompt', named.length);
   const notIn = named.filter((n) => !text.includes(norm(n)));
   ok(!notIn.length, 'every card the NotebookLM prompts name is in the PDF verbatim', notIn.length ? notIn.join(' | ') : `${named.length} names`);
   // every code line is in the text layer: each panel's text layer holds the

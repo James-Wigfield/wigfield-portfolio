@@ -3,7 +3,7 @@
 export const CNN = [
   {
     id: 'conv-shapes',
-    title: 'A convolutional layer: output shapes, kernels and padding',
+    title: 'Conv2D: output shapes, kernels and padding',
     rating: 'core',
     why: 'Sample Q1(a) asks what defines a conv layer: read off the filters, kernel size and padding, the output shape and the weight shapes.',
     sources: [{ kind: 'lecture', lec: 3, slides: '16–20' }],
@@ -28,7 +28,7 @@ fmaps = conv_layer(images)
 fmaps.shape               # output: TensorShape([2, 70, 120, 32])`,
     marks: [
       { n: 1, token: { line: 3, text: 'Conv2D(filters=32, kernel_size=7)' }, say: '32 filters of 7 × 7; the defaults are stride 1 and padding "valid", which means no padding.' },
-      { n: 2, token: { line: 5, text: '[2, 64, 114, 32]' }, say: 'Valid: 70 − 7 + 1 = 64 and 120 − 7 + 1 = 114; one output channel per filter.' },
+      { n: 2, token: { line: 5, text: '[2, 64, 114, 32]' }, say: 'Valid: 70 − 7 + 1 = 64, 120 − 7 + 1 = 114; one channel per filter.' },
       { n: 3, lines: [9, 9], say: '[kernel height, kernel width, input channels, filters]: (7 × 7 × 3 + 1) × 32 = 4,736 parameters.' },
       { n: 4, token: { line: 13, text: 'padding="same"' }, say: 'Zero-pads so the output keeps 70 × 120; padding adds no parameters.' },
     ],
@@ -72,7 +72,7 @@ model = tf.keras.Sequential([
     marks: [
       { n: 1, lines: [1, 2], say: 'Every conv defaults to 3 × 3, same padding, ReLU and He initialisation unless overridden.' },
       { n: 2, token: { line: 5, text: 'kernel_size=7' }, say: 'The first layer overrides with a large 7 × 7 kernel on the 1-channel 28 × 28 input.' },
-      { n: 3, token: { line: 6, text: 'MaxPool2D()' }, say: '2 × 2 pooling halves height and width: 28 → 14 → 7 → 3 (rounding down); filters double after each pool.' },
+      { n: 3, token: { line: 6, text: 'MaxPool2D()' }, say: '2 × 2 pooling halves height and width, 28 → 14 → 7 → 3 (rounding down); filters then double.' },
       { n: 4, lines: [13, 14], say: '3 × 3 × 256 = 2,304 values feed a head of Dense 128, Dropout 0.5, Dense 64, Dropout 0.5.' },
     ],
     moves: {

@@ -362,7 +362,7 @@ nasnet_model = keras.Model(inputs, outputs, name="nasnet_transfer")`,
     z_log_var = keras.layers.Dense(codings_size, name="z_log_var")(x)
     z = Sampling(kl_weight, name="sampling")([z_mean, z_log_var])`,
     marks: [
-      { n: 1, lines: [6, 6], say: 'The KL term, −½ Σ (1 + log σ² − σ² − μ²), summed over the 4 codings (as L6–7 s14).' },
+      { n: 1, lines: [6, 6], say: 'The KL term, −½ Σ (1 + log σ² − σ² − μ²), summed over the 4 codings (L6–7 s14).' },
       { n: 2, token: { line: 7, text: 'self.kl_weight *' }, say: 'Weighted 0.5 / 84 and added to the reconstruction MSE: the VAE’s two-part loss.' },
       { n: 3, lines: [8, 8], say: 'The reparameterisation trick: z = μ + σ·ε with σ = exp(½ log σ²), so gradients reach μ and σ.' },
       { n: 4, lines: [14, 15], say: 'Two Dense heads on the same 672 features: the codings’ mean and log-variance, 4 each.' },

@@ -13,12 +13,12 @@ Built 2026-10-25 for the refactored Code Lab (`/portal/dl-code-lab`). Three inve
 
 **Card** = the Code Lab card the candidate feeds (its id), or `—` when it is not on the page. A `useful` item with `—` was left out for the budget (≤ 40 cards; the PDF ≤ 30 pages), with the reason given. No `cut` item is on the page (checked).
 
-## The cards on the page (38, in 10 tabs)
+## The cards on the page (37, in 10 tabs)
 
 | Tab | Cards (id → main sources) |
 |---|---|
 | 1 Labs & Projects | `lab2-lr-search` (Géron Ch 10 Ex 10) · `lab3-wine` (Lab 3 T1) · `lab4-clockwise` (Lab 4 T2) · `lab4-next-vertex` (Lab 4 T3) · `p1-cnn` (P1 §2.1, §2.3) · `p1-nasnet` (P1 §3.1–3.2) · `p2-gru` (P2 §5–7) · `p2-encdec` (P2 §8) · `p2-vae` (P2 §11) |
-| 2 Keras models | `fashion-mlp` (L1 s35–37) · `wide-deep` (L1 s44–45) |
+| 2 Keras models | `fashion-mlp` (L1 s35–40) · `wide-deep` (L1 s44–45) · `wide-deep-two` (L1 s46–47) |
 | 3 Training deep nets | `batch-norm` (L2 s26–28) · `dropout-l2` (L2 s60, s64) · `transfer-b-on-a` (L2 s31–32) |
 | 4 Optimizers & LR schedules | `momentum-adam` (L2 s34–44) · `lr-schedules` (L2 s53, s56, s57) |
 | 5 CNNs | `conv-shapes` (L3 s18–20) · `fashion-cnn` (L3 s35) |
@@ -26,9 +26,11 @@ Built 2026-10-25 for the refactored Code Lab (`/portal/dl-code-lab`). Three inve
 | 7 Autoencoders | `linear-ae` (L5 s8–9) · `stacked-ae` (L5 s12, s21) · `conv-ae` (L6–7 s5–6) |
 | 8 VAEs & GANs | `vae-sampling` (L6–7 s14–15) · `gan-build` (L6–7 s23–24) · `gan-train` (L6–7 s25) · `dcgan` (L6–7 s29) |
 | 9 Attention & transformers | `attention` (L8 s26, s43) · `positional-encoding` (L8 s32, s35–36) |
-| 10 Reinforcement learning | `gym-loop` (L9 s17–22) · `policy-net` (L9 s25, s32) · `discount-rewards` (L9 s34) · `q-iteration` (L9 s46–49) · `dqn-model` (L9 s61) · `dqn-step` (L9 s60, s63) |
+| 10 Reinforcement learning | `policy-net` (L9 s25, s32) · `discount-rewards` (L9 s34) · `q-iteration` (L9 s46–49) · `dqn-model` (L9 s61) · `dqn-step` (L9 s60, s63) |
 
-The starting section plan had 11 tabs. Transfer learning joined Training deep nets (L2's own deck covers it, and the L3 pretrained-model pattern is Project 1's NASNetMobile card), and the RL tab keeps all six L9 cards, so 10 tabs.
+The starting section plan had 11 tabs. Transfer learning joined Training deep nets (L2's own deck covers it, and the L3 pretrained-model pattern is Project 1's NASNetMobile card), so 10 tabs.
+
+**Budget cuts after the first build.** The first card list had 39 cards and printed to 59 A4 pages. After a denser print layout it was 31 pages, so two `useful` cards were cut, as the brief says (useful before core): `lab3-quality` (Lab 3 Task 2, the largest useful card; the Lab 3 panel keeps its model and the Rescaling(scale=3, offset=6) mapping) and `gym-loop` (L9 s17–22; the RL tab was also over its 5-card limit; Card 10.1's check line keeps env.step's five values and the `reader_mode` quirk).
 
 ## Lecture 1 · Intro to ANNs (29 blocks)
 
@@ -52,8 +54,8 @@ The starting section plan had 11 tabs. Transfer learning joined Training deep ne
 | l1-wide-deep-functional | L1 s44 | Wide & Deep with the Functional API | non-sequential model | core | sample Q1(c) is this code with the sizes changed | draw, count, explain | wide-deep |
 | l1-summary-prompt-func | L1 s45 | `>>> model.summary()` | — | cut | prompt only | — | — |
 | l1-wide-deep-summary | L1 s45 #2 | summary: 17 non-trainable, 270, 930, 0, 39 | counting | core | answer key for Q1(c)-style counts | count | wide-deep (Slide check) |
-| l1-wide-deep-multi-input | L1 s46 | two inputs, wide 0–4 / deep 2–7 | multi-input model | useful | a two-input draw is plausible; budget | draw, count | — (budget) |
-| l1-wide-deep-aux-output | L1 s47 | auxiliary output, `loss_weights=(0.9, 0.1)` | multi-output | useful | short answer: aux output regularises | explain | — (budget) |
+| l1-wide-deep-multi-input | L1 s46 | two inputs, wide 0–4 / deep 2–7 | multi-input model | core | the next variation of sample Q1(c) (blind review's #9): draw two inputs, count | draw, count | wide-deep-two |
+| l1-wide-deep-aux-output | L1 s47 | auxiliary output, `loss_weights=(0.9, 0.1)` | multi-output | core | two outputs and loss_weights; with s46 on one card | draw, explain | wide-deep-two |
 | l1-subclassing-wide-deep | L1 s48 | Wide & Deep as a `tf.keras.Model` subclass | subclassing API | useful | s63 mentions subclassing; `self.output` fails in Keras 3 | explain | — (budget) |
 | l1-save-model | L1 s50 | `model.save("…keras")` | saving | cut | one line, no exam angle | — | — |
 | l1-load-model | L1 s50 #2 | `load_model` | loading | cut | one line | — | — |
@@ -167,7 +169,7 @@ The starting section plan had 11 tabs. Transfer learning joined Training deep ne
 
 | id | source | what | concept | rating | reason | angle | card |
 |---|---|---|---|---|---|---|---|
-| l67-conv-ae | L6–7 s5 | conv encoder (Conv2D + MaxPool) and transposed-conv decoder | conv AE | useful | shape arithmetic; B Q3(c) is prose | shapes, count | conv-ae |
+| l67-conv-ae | L6–7 s5 | conv encoder (Conv2D + MaxPool) and transposed-conv decoder | conv AE | core | shape arithmetic (pool floors, transposed conv 3 → 7); B Q3(c); raised from useful after the blind review | shapes, count | conv-ae |
 | l67-conv-decoder-summary | L6–7 s6 | decoder summary 13,873; `count_params()` 54,479 | counting | useful | answer key | count | conv-ae (Slide check) |
 | l67-dropout-dae | L6–7 s9 | denoising AE with `Dropout(0.5)` on the input | denoising AE | useful | A Q2(e) prose; budget | explain | — (budget; conv-ae notes it) |
 | l67-vae-sampling | L6–7 s14 | `Sampling` layer with the KL loss; encoder [μ, γ, z] | VAE | core | sample Q2(b); B Q3(a) Sampling code | eq, explain | vae-sampling |
@@ -207,12 +209,12 @@ The starting section plan had 11 tabs. Transfer learning joined Training deep ne
 |---|---|---|---|---|---|---|---|
 | l9-install-gymnasium | L9 s16 | `%pip install gymnasium` | setup | cut | boilerplate | — | — |
 | l9-install-gymnasium-local | L9 s16 #2 | `pip install gymnasium` | setup | cut | boilerplate | — | — |
-| l9-gym-make-reset | L9 s17 | `gym.make`, `env.reset(seed=42)` | Gym API | useful | s68 Gym outcome; `reader_mode` quirk | explain | gym-loop |
+| l9-gym-make-reset | L9 s17 | `gym.make`, `env.reset(seed=42)` | Gym API | useful | s68 Gym outcome; `reader_mode` quirk | explain | — (cut for the budget; the quirk is on policy-net's check line) |
 | l9-gym-render | L9 s18 | `env.render()` | rendering | cut | rendering | — | — |
-| l9-action-space | L9 s19 | `Discrete(2)` | actions | useful | 0 = left, 1 = right | explain | gym-loop (legend) |
-| l9-gym-step | L9 s20 | `env.step(1)`, five return values | Gym API | useful | the 5-tuple used everywhere | explain | gym-loop |
-| l9-basic-policy | L9 s21 | hard-coded policy from the pole angle | policy | useful | needed for s22 | explain | gym-loop |
-| l9-gym-episode-loop | L9 s22 | 500 episodes, totals statistics | episode loop | useful | the loop shape every RL card reuses; s68 outcome | explain | gym-loop |
+| l9-action-space | L9 s19 | `Discrete(2)` | actions | useful | 0 = left, 1 = right | explain | — (budget; policy-net's marks say it) |
+| l9-gym-step | L9 s20 | `env.step(1)`, five return values | Gym API | useful | the 5-tuple used everywhere | explain | — (budget; on policy-net's code line 15 and check line) |
+| l9-basic-policy | L9 s21 | hard-coded policy from the pole angle | policy | useful | needed for s22 | explain | — (budget) |
+| l9-gym-episode-loop | L9 s22 | 500 episodes, totals statistics | episode loop | useful | the loop shape every RL card reuses; s68 outcome | explain | — (cut for the budget: the RL tab's 5-card limit and the 30-page PDF) |
 | l9-policy-net | L9 s25 | 4 → Dense(5, relu) → Dense(1, sigmoid) | policy network | core | A Q4(e) is this code (draw, why one sigmoid) | draw, count | policy-net |
 | l9-pg-play-one-step | L9 s32 | sample the action, `y_target = 1 − action`, gradients | REINFORCE step 1 | core | B Q4(e) REINFORCE steps (likelihood high) | explain, shapes | policy-net |
 | l9-y-target-line | L9 s32 #2 | the `y_target` line again | — | cut | duplicate | — | — |
@@ -289,5 +291,16 @@ The starting section plan had 11 tabs. Transfer learning joined Training deep ne
 ## Slide and version quirks seen on candidates that are not on the page
 
 - **L1 s13** `astype(np.int)` raises AttributeError on NumPy ≥ 1.24 (use `int`). Not carded: the perceptron code is sklearn.
-- **L9 s17** prints `gym.make("CartPole-v1", reader_mode="rgb_array")`; Gymnasium 1.3.0 raises TypeError; the argument is `render_mode`. On the page as the gym-loop card's Slide check.
+- **L9 s17** prints `gym.make("CartPole-v1", reader_mode="rgb_array")`; Gymnasium 1.3.0 raises TypeError; the argument is `render_mode`. On the page in Card 10.1's check line.
 - **L1 s48** `self.output = ...` fails in Keras 3 (read-only property). **L2 s31** omits Géron's clone step and wraps a comment without `#`. **L3 s51** typesets `base_model =` alone on a line. **L4 s41** puts a `SimpleRNNCell` straight into `Sequential`. **L8 s17** has a `for` loop whose body is only a comment. **L9 s63** `tf.keras.losses.mean_squared_error` doesn't exist in Keras 3.15.1 (use `mse`).
+
+## Reconciliation with the blind likelihood review
+
+A fresh reviewer rated every candidate without seeing these ratings (64 core, 82 useful, 53 cut) and ranked its top 40. Its top 15 are all on the page, alone or merged. Disagreements and what was done:
+
+- **L1 s46–47 (two inputs, auxiliary output):** reviewer core (#9), first list useful. Added as `wide-deep-two`.
+- **L6–7 s5 (convolutional AE):** reviewer core, first list useful. Raised to core.
+- **L3 s51 (Xception transfer):** reviewer core, merged with Project 1's NASNetMobile (#26). Kept merged: `p1-nasnet`'s check line covers the unfreeze-at-a-lower-rate step.
+- **L4 s19 (windowing toy), L4 s24 (SimpleRNN(1)), L5 s20–21 (tied weights), L8 s9 (bidirectional RNN), L8 s14 (RNN encoder–decoder):** reviewer core. Not carded for the budget; s24 and s20–21 are stated in the check lines of `deep-rnn` and `stacked-ae`, and P2's encoder–decoder card shows the s14 mechanism in GRUs.
+- **L9 s36 (REINFORCE training loop):** reviewer core. Its key lines are on `discount-rewards`.
+- **Projects:** the reviewer warned the exam can only ask about the briefs; each project panel opens with the spec's goal and models, and the cards are labelled as my notebook's code.

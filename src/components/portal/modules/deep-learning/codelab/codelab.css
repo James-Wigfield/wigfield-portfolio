@@ -43,6 +43,8 @@
 .dlc-hero__stats { display: flex; flex-wrap: wrap; gap: 0.3rem 1.3rem; margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--ink-3); }
 .dlc-hero__stats b { font-size: 1rem; font-weight: 800; color: var(--ink); margin-right: 0.25rem; font-variant-numeric: tabular-nums; }
 .dlc-hero__actions { padding-top: 1.2rem; }
+/* while the NotebookLM dropdown is open it must sit above the sticky tab bar */
+.dlc-hero:has(.dlc-nlm) { position: relative; z-index: 8; }
 
 .dlc-btn {
   display: inline-flex;

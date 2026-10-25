@@ -105,8 +105,8 @@ conv_decoder = tf.keras.Sequential([
     ],
     moves: {
       count: 'convDecoder',
-      say: 'Encoder: 28 × 28 × 16 → pool 14 × 14 × 16 → 14 × 14 × 32 → 7 × 7 × 32 → 7 × 7 × 64 → 3 × 3 × 64 → 3 × 3 × 30 → 30. The table counts the decoder.',
-      forWhat: 'Autoencoding images: convolutions keep the spatial structure, with far fewer parameters than the dense version (54,479 vs 163,814).',
+      say: 'Encoder: 28 × 28 × 16 → 14 × 14 × 16 → 14 × 14 × 32 → 7 × 7 × 32 → 7 × 7 × 64 → 3 × 3 × 64 → 3 × 3 × 30 → 30. Counted: the decoder.',
+      forWhat: 'Autoencoding images: convolutions keep spatial structure, with far fewer parameters (54,479 vs 163,814).',
     },
     slideCheck: 'Slide 6 prints the decoder’s 13,873 parameters and conv_ae.count_params() = 54,479. A denoising autoencoder (slide 9) adds Dropout(0.5) or Gaussian noise on the input and still trains on the clean images.',
     xref: [{ to: 'dcgan', text: 'DCGAN’s generator upsamples the same way' }],

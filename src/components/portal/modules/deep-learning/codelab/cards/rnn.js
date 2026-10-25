@@ -104,9 +104,9 @@ gru_model = tf.keras.Sequential([
     tf.keras.layers.Dense(1)
 ])`,
     marks: [
-      { n: 1, token: { line: 4, text: 'LSTM(12)' }, say: 'Four gate layers (f, i, o, g), each with W_x, W_h and b: 4 × 12 × (1 + 12 + 1) = 672.' },
+      { n: 1, token: { line: 4, text: 'LSTM(12)' }, say: 'Four gate layers (f, i, o, g): 4 × 12 × (1 + 12 + 1) = 672.' },
       { n: 2, lines: [1, 1], say: '672 + the Dense layer’s (12 + 1) = 685, as printed.' },
-      { n: 3, token: { line: 11, text: 'GRU(20)' }, say: 'Three gate layers (z, r, g) and one state h: 3 × 20 × (1 + 20 + 2) = 1,380.' },
+      { n: 3, token: { line: 11, text: 'GRU(20)' }, say: 'Three gate layers (z, r, g), one state h: 3 × 20 × (1 + 20 + 2) = 1,380.' },
       { n: 4, lines: [8, 8], say: '1,380 + 21 = 1,401: Keras 3 gives each GRU gate two bias vectors (reset_after=True).' },
     ],
     moves: {
@@ -141,7 +141,7 @@ cnn_gru_model = tf.keras.Sequential([
     tf.keras.layers.Dense(1)
 ])`,
     marks: [
-      { n: 1, token: { line: 4, text: 'kernel_size=3, strides=1' }, say: '8 kernels of width 3 slide along time: (3 × 1 + 1) × 8 = 32; 56 steps → 54 (valid).' },
+      { n: 1, token: { line: 4, text: 'kernel_size=3, strides=1' }, say: 'Eight width-3 kernels along time: (3 × 1 + 1) × 8 = 32; 56 → 54 steps.' },
       { n: 2, token: { line: 5, text: 'strides=2' }, say: 'Stride 2 roughly halves the sequence: ⌊(54 − 3) / 2⌋ + 1 = 26 steps of 16 channels.' },
       { n: 3, token: { line: 6, text: 'GRU(10)' }, say: 'Reads 16 channels per step: 3 × 10 × (16 + 10 + 2) = 840.' },
       { n: 4, lines: [1, 1], say: '32 + 400 + 840 + 11 = 1,283, as printed.' },

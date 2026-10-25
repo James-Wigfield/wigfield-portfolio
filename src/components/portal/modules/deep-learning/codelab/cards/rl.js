@@ -1,49 +1,8 @@
 // Code Lab cards: tab 10 · Reinforcement learning (L9). The slides have no
 // code for value iteration, TD learning or tabular Q-learning (only their
-// equations); Q-value iteration and deep Q-learning are carded.
+// equations); Q-value iteration and deep Q-learning are carded. The Gym loop
+// (s17–22) was cut for the budget: env.step's five values are on Card 10.1.
 export const RL = [
-  {
-    id: 'gym-loop',
-    title: 'The Gym loop: reset, step, done',
-    rating: 'useful',
-    why: 'Read an episode loop: what env.step returns, when an episode ends, and what the totals measure.',
-    sources: [{ kind: 'lecture', lec: 9, slides: '17–22' }],
-    blocks: ['L9 s17', 'L9 s21', 'L9 s22'],
-    provenance: 'trimmed',
-    inv: ['l9-gym-make-reset', 'l9-action-space', 'l9-gym-step', 'l9-basic-policy', 'l9-gym-episode-loop'],
-    file: 'cartpole_loop.py',
-    code: `>>> env = gym.make("CartPole-v1", reader_mode="rgb_array")
-# …
-def basic_policy(obs):
-    angle = obs[2]
-    return 0 if angle < 0 else 1
-totals = []
-for episode in range(500):
-    episode_rewards = 0
-    obs, info = env.reset(seed=episode)
-    for step in range(200):
-        action = basic_policy(obs)
-        obs, reward, done, truncated, info = env.step(action)
-        episode_rewards += reward
-        if done or truncated:
-            break
-    totals.append(episode_rewards)`,
-    marks: [
-      { n: 1, token: { line: 4, text: 'obs[2]' }, say: 'The observation is 4 numbers; index 2 is the pole’s angle.' },
-      { n: 2, lines: [5, 5], say: 'Push left (0) if the pole leans left, else right (1): a hard-coded policy.' },
-      { n: 3, lines: [12, 12], say: 'One step returns the new observation, the reward (+1 per step survived), done, truncated and info.' },
-      { n: 4, lines: [14, 15], say: 'Stop when the pole falls or the cart leaves (done), or at the time limit (truncated).' },
-    ],
-    moves: {
-      shapes: [
-        { name: 'obs', shape: '(4,)', means: 'cart position, cart velocity, pole angle, pole angular velocity' },
-        { name: 'action', shape: 'Discrete(2)', means: '0 = accelerate left, 1 = accelerate right' },
-      ],
-      say: 'The 500 totals average 41.698 steps (std 8.39, min 24, max 63): this policy never keeps the pole up beyond 63 steps.',
-      forWhat: 'Running and scoring a policy on an environment: the loop every RL method here reuses.',
-    },
-    slideCheck: 'gym.make("CartPole-v1", reader_mode="rgb_array") raises a TypeError in Gymnasium 1.3.0: the argument is render_mode. range(200) caps each episode below CartPole-v1’s own 500-step limit.',
-  },
   {
     id: 'policy-net',
     title: 'A neural network policy and one REINFORCE step',
@@ -73,7 +32,7 @@ def play_one_step(env, obs, model, loss_fn):
     marks: [
       { n: 1, token: { line: 4, text: 'Dense(5, activation="relu", input_shape=[n_inputs])' }, say: '4 observation values in, 5 hidden ReLU units: (4 + 1) × 5 = 25.' },
       { n: 2, token: { line: 5, text: 'Dense(1, activation="sigmoid")' }, say: 'One probability p of action 0 (left); right is 1 − p, so one output suffices.' },
-      { n: 3, lines: [11, 11], say: 'Samples the action: right (1) with probability 1 − p. Sampling, not argmax, keeps it exploring.' },
+      { n: 3, lines: [11, 11], say: 'Samples the action: right (1) with probability 1 − p. Sampling, not argmax, keeps exploring.' },
       { n: 4, lines: [12, 12], say: 'Target 1.0 if it went left, 0.0 if right: act as if the chosen action was the best one.' },
     ],
     moves: {
@@ -82,7 +41,7 @@ def play_one_step(env, obs, model, loss_fn):
       say: 'REINFORCE step 1: play, and keep the gradients that would make the chosen action more likely, without applying them yet.',
       forWhat: 'A stochastic policy for CartPole: from the 4 observations to the probability of pushing left.',
     },
-    slideCheck: 'Figure 18-5 draws 4 hidden neurons; the code has 5. env.step(int(action)) raises a TypeError in the unit’s environment (NumPy 2.5.2), since action is a 1 × 1 tensor; int(action[0, 0]) works. input_shape= still runs in Keras 3, with a warning.',
+    slideCheck: 'Figure 18-5 draws 4 hidden neurons; the code has 5. env.step returns five values: the new observation, the reward (+1 per step survived), done, truncated, info. env.step(int(action)) raises a TypeError in the unit’s environment (NumPy 2.5.2), since action is a 1 × 1 tensor; int(action[0, 0]) works. Slide 17’s gym.make(…, reader_mode=…) should be render_mode.',
   },
   {
     id: 'discount-rewards',
