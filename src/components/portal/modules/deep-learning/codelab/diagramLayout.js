@@ -110,7 +110,7 @@ export function layoutDiagram(spec, G = SCREEN) {
 }
 
 // ── print: across the page ──────────────────────────────────────────────────
-export const ACROSS_W = 703; // the A4 content width in CSS px
+export const ACROSS_W = 718; // the A4 content width in CSS px (190 mm)
 const A = { BH: 42, HG: 16, VG: 12, PAD: 3, LANE: 10, MAXBW: 150, PER_ROW: 8, GROUP_TOP: 12 };
 
 export function layoutAcross(spec) {

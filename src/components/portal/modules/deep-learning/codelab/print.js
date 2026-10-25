@@ -53,7 +53,7 @@ const P = 'html.dlc-printing';
 export const PRINT_CSS = `
 @media print {
   @page {
-    size: A4 portrait; margin: 12mm 12mm 14mm;
+    size: A4 portrait; margin: 9mm 10mm 12mm;
     @bottom-right { content: counter(page); font: 7.5pt ui-monospace, monospace; color: #4f6f80; }
     @bottom-left { content: 'CITS5017 Code Lab · the exam’s code'; font: 7.5pt ui-monospace, monospace; color: #4f6f80; }
   }
@@ -112,8 +112,8 @@ export const PRINT_CSS = `
   ${P} .dlc-card__colB .dlc-shapes td:last-child { display: block; padding: 0; }
   ${P} .dlc-card__colA, ${P} .dlc-card__colB { gap: 1.3mm; }
   ${P} .dlc-card__side { gap: 1mm; margin: 0; }
-  ${P} .dlc-move { gap: 0.8mm; }
-  ${P} .dlc-move__k { font-size: 0.52rem; padding-bottom: 0.3mm; }
+  ${P} .dlc-move { gap: 0.5mm; }
+  ${P} .dlc-move__k { font-size: 0.5rem; padding-bottom: 0.2mm; line-height: 1.1; }
   ${P} .dlc-legend { gap: 0.5mm; }
   ${P} .dlc-legend li, ${P} .dlc-card__for, ${P} .dlc-card__move { font-size: 0.64rem; line-height: 1.3; }
   ${P} .dlc-legend li { padding-left: 1.2rem; text-indent: -1.2rem; }
@@ -144,6 +144,8 @@ export const PRINT_CSS = `
   ${P} .dlc-lp__title { font-size: 1rem; }
   ${P} .dlc-lp__facts { margin: 1mm 0 0; gap: 0.3mm 2.5mm; font-size: 0.64rem; line-height: 1.3; grid-template-columns: 12mm minmax(0, 1fr) 12mm minmax(0, 1fr); }
   ${P} .dlc-lp__facts dt { font-size: 0.56rem; padding-top: 0.6mm; }
+  /* the goal reads on its own row, so its text stays in one piece */
+  ${P} .dlc-lp__facts dd:first-of-type { grid-column: 2 / -1; }
   ${P} .dlc-lp__q { font-size: 0.62rem; }
 
   /* the code panel: the image, with the code as real text under it */

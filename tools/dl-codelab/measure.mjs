@@ -5,7 +5,7 @@
 
    Puts the page in print mode (window.print stubbed), emulates print media
    at A4 width and prints each section's cards with their height as a share
-   of one A4 page's content area (271 mm = 1,024 CSS px), plus a greedy
+   of one A4 page's content area (276 mm = 1,043 CSS px), plus a greedy
    estimate of the pages each section needs (cards never split, every
    section starts a page). Dev server on 5182 (SITE_URL to override).
    ========================================================================== */
@@ -13,13 +13,13 @@ import puppeteer from 'puppeteer-core';
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const BASE = process.env.SITE_URL || 'http://localhost:5182';
-const PAGE_PX = (271 / 25.4) * 96;
+const PAGE_PX = (276 / 25.4) * 96;
 
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: 'new' });
 try {
   const page = await browser.newPage();
-  // A4 width less the 12 mm margins, so print layout matches the PDF's
-  await page.setViewport({ width: Math.round((186 / 25.4) * 96), height: 1100, deviceScaleFactor: 1 });
+  // A4 width less the 10 mm side margins, so print layout matches the PDF's
+  await page.setViewport({ width: Math.round((190 / 25.4) * 96), height: 1100, deviceScaleFactor: 1 });
   await page.evaluateOnNewDocument(() => {
     sessionStorage.setItem('portal_auth', JSON.stringify({ token: 'mock-session-token', key: 'wiggy1', issued_at: new Date().toISOString() }));
     window.print = () => { window.__printCalls = (window.__printCalls || 0) + 1; };

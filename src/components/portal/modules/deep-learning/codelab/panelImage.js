@@ -18,7 +18,7 @@ import { DARK } from './tokens.js';
    match the screen.
    ========================================================================== */
 
-export const PRINT_PANEL_PX = 438; // the panel's width on A4: 186 mm − the 66 mm legend column − the gap
+export const PRINT_PANEL_PX = 453; // the panel's width on A4: 190 mm − the 66 mm legend column − the gap
 const SCALE = 3;
 const MAX_FONT = 10.5;
 const MIN_FONT = 10;
@@ -102,7 +102,7 @@ export function panelImage({ code, marks, file, meta, family }) {
   probe.font = `100px ${family}`;
   const cw1 = probe.measureText('0').width / 100;
   const { font, cw, visual, wrapped } = layoutPanel(code, marks, cw1);
-  const lh = Math.round(font * 1.3 * 10) / 10;
+  const lh = Math.round(font * 1.26 * 10) / 10;
   const bar = 21;
   const padY = 5;
   const W = PRINT_PANEL_PX;
