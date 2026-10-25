@@ -306,7 +306,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dltt-cell, .dltt-fade, .dltt-pop, .dltt-knob__bar, .dltt-knob__dot, .dltt-tok rect, .dltt-bar, .dltt-sbar, .dltt-scrub__knob { transition: none !important; }
+  .dltt-cell, .dltt-fade, .dltt-pop, .dltt-knob__bar, .dltt-knob__dot, .dltt-tok rect, .dltt-vbar, .dltt-sbar, .dltt-scrub__knob { transition: none !important; }
 }
 
 /* numbers written inside heatmap cells (the Q-table) */
@@ -367,11 +367,11 @@
 .dltt-line--w { stroke: var(--dltt-w); stroke-width: 2.4; }
 .dltt-line--p { stroke: var(--dltt-p); stroke-width: 2.4; }
 .dltt-line--data { stroke: var(--dltt-data); stroke-width: 2.4; }
-.dltt-bar--w { fill: var(--dltt-w); }
-.dltt-bar--bias { fill: var(--dltt-b); }
-.dltt-bar--p { fill: var(--dltt-p); }
-.dltt-bar--data { fill: var(--dltt-data); }
-.dltt-bar--nt { fill: var(--dltt-nt); }
+.dltt-vbar--w { fill: var(--dltt-w); }
+.dltt-vbar--bias { fill: var(--dltt-b); }
+.dltt-vbar--p { fill: var(--dltt-p); }
+.dltt-vbar--data { fill: var(--dltt-data); }
+.dltt-vbar--nt { fill: var(--dltt-nt); }
 
 /* ── tensors: an outlined 3D box, axis edges in their colours ──────────── */
 .dltt-box3__front, .dltt-box3__top, .dltt-box3__side { stroke: var(--dltt-data); stroke-width: 1.3; stroke-linejoin: round; transition: all 0.45s cubic-bezier(0.3, 0.7, 0.3, 1); }

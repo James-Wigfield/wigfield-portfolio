@@ -117,7 +117,7 @@ try {
     const leaks = ['not on this page', 'tick every line', 'copied', 'fits one page'].filter((w) => flat.includes(w));
     SHEETS.forEach(({ sheet }) => { if (sheet.skip && flat.includes(norm(sheet.skip).slice(0, 40))) leaks.push(`skip: ${sheet.skip.slice(0, 30)}`); });
     ok(leaks.length === 0, `${t.id}: no notebook-page text in the PDF`, leaks.join(', '));
-    ok(!/\\(frac|text|mathbf|times|sqrt)/.test(text), `${t.id}: no raw TeX in the PDF text`);
+    ok(!/\\(frac|text|mathbf|times|sqrt)/.test(text) && !/\b(lceil|rceil|lfloor|rfloor|dfrac|tfrac|mathbf|boldsymbol|mathbb|widetilde)\b/.test(text), `${t.id}: no raw TeX in the PDF text`);
     const want = String(flags.pages || '1,3,6').split(',').map(Number).filter((n) => n >= 1 && n <= pages);
     want.forEach((n) => execFileSync('pdftoppm', ['-png', '-r', '60', '-f', String(n), '-l', String(n), file, path.join(OUT, `${t.id}-page`)]));
   }

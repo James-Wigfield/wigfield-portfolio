@@ -83,9 +83,9 @@ export function BrickLab() {
           {[0, 3, 6, 9, 12].map((e) => (
             <text key={e} x={logX(10 ** e)} y={ly + 42} textAnchor="middle" className="dltt-t dltt-t--xs dltt-t--m">{e === 0 ? '1' : `10${['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '¹⁰', '¹¹', '¹²'][e]}`}</text>
           ))}
-          <rect x={logX(1)} y={ly - 4} width={logX(conv) - logX(1)} height={10} rx={2} className="dltt-bar dltt-bar--w" />
+          <rect x={logX(1)} y={ly - 4} width={logX(conv) - logX(1)} height={10} rx={2} className="dltt-vbar dltt-vbar--w" />
           <text x={logX(conv) + 6} y={ly + 5} className="dltt-t dltt-t--xs dltt-t--m">conv {fmt(conv)}</text>
-          <rect x={logX(1)} y={ly + 10} width={logX(dense) - logX(1)} height={10} rx={2} className="dltt-bar dltt-bar--nt" />
+          <rect x={logX(1)} y={ly + 10} width={logX(dense) - logX(1)} height={10} rx={2} className="dltt-vbar dltt-vbar--nt" />
           <text x={narrow ? logX(1) : Math.min(logX(dense) + 6, W - 150)} y={narrow ? ly + 58 : ly + 19} className="dltt-t dltt-t--xs dltt-t--m">dense {fmtBig(dense)}</text>
         </svg>
         <svg className="dltt-svg dltt-ctl" viewBox={`0 0 ${W} ${narrow ? 120 : 64}`} role="group" aria-label="Kernel size and number of filters">

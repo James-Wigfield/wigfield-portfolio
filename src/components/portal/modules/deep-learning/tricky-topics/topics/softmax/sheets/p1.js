@@ -15,7 +15,7 @@ export default {
       id: 'worked',
       h: 'By hand: z = (2, 1, 0.1)',
       at: 'this page’s own',
-      items: [{ worked: ['$e^{z} = (7.389,\\ 2.718,\\ 1.105)$, total $11.212$', '$\\hat{p} = $ {g|(0.659, 0.242, 0.099)}'] }],
+      items: [{ worked: ['$e^{z} = (7.389,\\ 2.718,\\ 1.105)$, total $11.213$', '$\\hat{p} = $ {g|(0.659, 0.242, 0.099)}'] }],
     },
     {
       id: 'vs',

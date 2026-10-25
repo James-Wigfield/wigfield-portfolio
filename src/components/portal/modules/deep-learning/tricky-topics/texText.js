@@ -19,6 +19,7 @@ const SYMBOLS = {
   le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', in: '∈', mid: '|', infty: '∞', minus: '−', pm: '±', quad: ' ', qquad: '  ',
   alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', theta: 'θ', tau: 'τ', leftarrow: '←', gets: '←', sigma: 'σ', phi: 'φ', varphi: 'φ', mu: 'μ', lambda: 'λ', Sigma: 'Σ', sum: 'Σ',
   langle: '⟨', rangle: '⟩', div: '÷', pi: 'π', exp: 'exp', tanh: 'tanh', sin: 'sin', cos: 'cos', log: 'log', max: 'max',
+  lceil: '⌈', rceil: '⌉', lfloor: '⌊', rfloor: '⌋', ne: '≠', partial: '∂', textstyle: '', vdots: '⋮', otimes: '⊗', odot: '⊙',
   limits: '', nolimits: '', displaystyle: '', ',': ' ', ';': ' ', ':': ' ', '!': '', '{': '{', '}': '}', '%': '%', '#': '#', '_': '_',
 };
 const STYLE = new Set(['mathbf', 'mathrm', 'mathit', 'boldsymbol', 'text', 'textbf', 'textit', 'texttt', 'textsf', 'operatorname', 'mathsf', 'bm']);

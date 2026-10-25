@@ -59,10 +59,10 @@ export function FreezeLab() {
         </ul>
         <svg className="dltt-svg" viewBox={`0 0 ${W} 96`} role="img" aria-label={`${C.trainable} trainable and ${C.nonTrainable} non-trainable parameters`}>
           <text x={20} y={16} className="dltt-t dltt-t--xs">trainable</text>
-          <rect x={20} y={22} width={Math.max(2, bar(C.trainable))} height={16} rx={3} className="dltt-bar dltt-bar--w" />
+          <rect x={20} y={22} width={Math.max(2, bar(C.trainable))} height={16} rx={3} className="dltt-vbar dltt-vbar--w" />
           <text x={24 + bar(C.trainable)} y={35} className="dltt-t dltt-t--xs dltt-t--m">{fmt(C.trainable)}</text>
           <text x={20} y={60} className="dltt-t dltt-t--xs">non-trainable</text>
-          <rect x={20} y={66} width={Math.max(2, bar(C.nonTrainable))} height={16} rx={3} className="dltt-bar dltt-bar--nt" />
+          <rect x={20} y={66} width={Math.max(2, bar(C.nonTrainable))} height={16} rx={3} className="dltt-vbar dltt-vbar--nt" />
           <text x={Math.min(24 + bar(C.nonTrainable), W - 70)} y={79} className="dltt-t dltt-t--xs dltt-t--m">{fmt(C.nonTrainable)}</text>
         </svg>
       </div>

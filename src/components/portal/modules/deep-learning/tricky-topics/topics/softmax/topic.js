@@ -68,7 +68,7 @@ export default {
           prov: 'Printed for attention weights, $\\alpha_{(t,i)} = \\exp(e_{(t,i)}) / \\sum_{i\'} \\exp(e_{(t,i\')})$ {s|L8 · slide 25}; as an output layer’s formula {beyond}',
         } },
         { list: [
-          'By hand (the exam allows a calculator): $z = (2, 1, 0.1)$ gives $e^{z} = (7.389, 2.718, 1.105)$, total $11.212$, so $\\hat{p} = (0.659, 0.242, 0.099)$ {own}.',
+          'By hand (the exam allows a calculator): $z = (2, 1, 0.1)$ gives $e^{z} = (7.389, 2.718, 1.105)$, total $11.213$, so $\\hat{p} = (0.659, 0.242, 0.099)$ {own}.',
           'Add the same number to every score and nothing changes: the extra factor $e^{c}$ cancels top and bottom {beyond}.',
           'Lecture 1 says what softmax does but never prints this formula {s|L1 · slide 29}.',
         ] },

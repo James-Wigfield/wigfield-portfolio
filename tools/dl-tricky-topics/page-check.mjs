@@ -89,6 +89,7 @@ const SEED = () => {
       drawers: document.querySelectorAll('.dltt-maths').length,
       openDrawers: document.querySelectorAll('.dltt-maths__body').length,
       drillPrint: !!document.querySelector('.dltt-drill__print'),
+      hero: document.querySelector('.dltt-hero-anim svg')?.outerHTML ?? '',
       stories: [...document.querySelectorAll('.dltt-story')].every((s) => {
         const b = s.querySelectorAll('.dltt-story__beat');
         return b.length === 0 || b[b.length - 1].classList.contains('dltt-story__beat--on');
@@ -342,11 +343,15 @@ try {
       const page = await open({ route: topicUrl(t.id), reduced: true, tag: `reduced ${t.id}` });
       const r = await page.evaluate(() => ({
         stories: [...document.querySelectorAll('.dltt-story')].map((s) => { const b = s.querySelectorAll('.dltt-story__beat'); return b[b.length - 1]?.classList.contains('dltt-story__beat--on'); }),
-        heroHidden: document.querySelectorAll('.dltt-hero-anim .dltt-hide').length,
-        transition: getComputedStyle(document.querySelector('.dltt-box3__front, .dltt-bead, .dltt-incell, .dltt-bar') ?? document.body).transitionDuration,
+        hero: document.querySelector('.dltt-hero-anim svg')?.outerHTML ?? '',
       }));
       ok(r.stories.every(Boolean), `${t.id}: reduced motion — every story lab opens on its last beat`, `${r.stories.length} stories`);
-      ok(r.heroHidden === 0, `${t.id}: reduced motion — the hero shows its end state`, `${r.heroHidden} hidden parts`);
+      // the hero's end state is what print shows: compare the two
+      await page.click('.dltt-export > .dltt-btn');
+      await page.waitForFunction(() => window.__printCalls === 1, { timeout: 15000 }).catch(() => {});
+      const printed = await page.evaluate(() => window.__printState?.hero ?? '');
+      await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+      ok(r.hero && r.hero === printed, `${t.id}: reduced motion — the hero sits on its end state (the same picture print shows)`);
       await page.close();
     }
   }

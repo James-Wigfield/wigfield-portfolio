@@ -36,7 +36,7 @@ export function IdeaLab() {
       <div ref={wrap}>
         <svg className="dltt-svg" viewBox={`0 0 ${W} 150`} role="img" aria-label={`${n} inputs, ${count} parameters`}>
           {Array.from({ length: n }, (_, i) => (
-            <rect key={i} x={30 + i * 22} y={40} width={16} height={50} rx={3} className="dltt-bar dltt-bar--w" />
+            <rect key={i} x={30 + i * 22} y={40} width={16} height={50} rx={3} className="dltt-vbar dltt-vbar--w" />
           ))}
           <Counter x={W - 70} y={80} value={count} label={`${count} parameters`} />
           <Scrub x0={30} x1={W - 160} y={122} value={n} min={1} max={12} step={1} onChange={setNIn} label="Number of inputs" />

@@ -78,8 +78,10 @@ export const printCss = (title) => `
   ${P} .dltt-top, ${P} .dltt-tabs, ${P} .dltt-bar, ${P} .dltt-rail, ${P} .dltt-drop, ${P} .dltt-opener__actions,
   ${P} .dltt-sec--write, ${P} .dltt-done, ${P} .dltt-noprint, ${P} .dltt-export, ${P} .dltt-nlm, ${P} .dltt-measure,
   ${P} .dltt-end, ${P} .dltt-screenonly, ${P} .dltt-replay, ${P} .dltt-drill__live { display: none !important; }
-  ${P} .dltt-printonly { display: block !important; }
+  ${P} .dltt-printonly, ${P} .dltt-opener__printlead { display: block !important; }
   ${P} .dltt-drill__print { display: block !important; }
+  /* controls mean nothing on paper: the picture prints its current state */
+  ${P} .dltt-ctl, ${P} .dltt-qbtn, ${P} .dltt-preset, ${P} .dltt-strip__more { display: none !important; }
 
   /* blocks, not grids that page badly */
   ${P} .dltt, ${P} .dltt-topic, ${P} .dltt-layout, ${P} .dltt-layout--rail, ${P} .dltt-flow { display: block !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; position: static !important; }
