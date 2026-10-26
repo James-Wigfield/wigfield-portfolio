@@ -556,6 +556,47 @@ function SWideDeep() {
   );
 }
 
+// Practice C Q1(c): the two-input Wide & Deep with an auxiliary output, every
+// arrow labelled with the shape of the data on it.
+function CWideAux() {
+  return (
+    <Pen viewBox="0 0 400 356" width="400px" label="Hand-drawn Wide and Deep network with two inputs and two outputs: Input [5] to Normalization (None, 5), straight into Concat; Input [6] to Normalization (None, 6) to Dense 20 ReLU (None, 20) to Dense 10 ReLU (None, 10), which goes into Concat (5 + 10 = 15) and into the auxiliary Dense 1; Concat to Dense 1, the main output (None, 1); the auxiliary Dense 1 gives aux_output (None, 1).">
+      {({ arrow }) => (
+        <>
+          <PBox x={20} y={318} w={130} h={28} label="Input [5]" size={13} />
+          <PBox x={20} y={262} w={130} h={28} label="Normalization" size={13} />
+          <PBox x={230} y={318} w={130} h={28} label="Input [6]" size={13} />
+          <PBox x={230} y={262} w={130} h={28} label="Normalization" size={13} />
+          <PBox x={230} y={206} w={130} h={28} label="Dense 20, ReLU" size={13} />
+          <PBox x={230} y={150} w={130} h={28} label="Dense 10, ReLU" size={13} />
+          <PBox x={20} y={94} w={130} h={28} label="Concat" size={13} />
+          <PBox x={20} y={38} w={130} h={28} label="Dense 1" size={13} />
+          <PBox x={230} y={94} w={130} h={28} label="Dense 1 (aux)" size={13} />
+          <line x1={85} y1={318} x2={85} y2={292} markerEnd={arrow} />
+          <line x1={85} y1={262} x2={85} y2={124} markerEnd={arrow} />
+          <PText x={92} y={200} size={12} color={GREY}>(None, 5)</PText>
+          <PText x={92} y={146} size={12} color={GREY}>5 + 10 = 15</PText>
+          <line x1={295} y1={318} x2={295} y2={292} markerEnd={arrow} />
+          <line x1={295} y1={262} x2={295} y2={236} markerEnd={arrow} />
+          <PText x={301} y={254} size={12} color={GREY}>(None, 6)</PText>
+          <line x1={295} y1={206} x2={295} y2={180} markerEnd={arrow} />
+          <PText x={301} y={198} size={12} color={GREY}>(None, 20)</PText>
+          <line x1={295} y1={150} x2={295} y2={124} markerEnd={arrow} />
+          <PText x={301} y={142} size={12} color={GREY}>(None, 10)</PText>
+          <path d="M230 164 L186 164 L186 108 L152 108" markerEnd={arrow} />
+          <line x1={85} y1={94} x2={85} y2={68} markerEnd={arrow} />
+          <line x1={85} y1={38} x2={85} y2={14} markerEnd={arrow} />
+          <PText x={92} y={18} size={13}>output (None, 1)</PText>
+          <line x1={295} y1={94} x2={295} y2={70} markerEnd={arrow} />
+          <PText x={252} y={62} size={13}>aux_output (None, 1)</PText>
+          <PText x={22} y={236} size={15} color={BLUE}>Wide</PText>
+          <PText x={366} y={236} size={15} color={BLUE}>Deep</PText>
+        </>
+      )}
+    </Pen>
+  );
+}
+
 // Practice A Q3(a): the GAN of the question, every arrow labelled with the
 // shape of the data on it (batch dimension written "b").
 function AGan() {
@@ -658,6 +699,7 @@ const FIGS = {
   aGan: AGan,
   aPolicy: APolicy,
   bConvLstm: BConvLstm,
+  cWideAux: CWideAux,
 };
 
 export function Figure({ name }) {

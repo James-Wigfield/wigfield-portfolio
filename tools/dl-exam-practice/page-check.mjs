@@ -10,7 +10,7 @@
    dialog can never hang an unattended check.
 
    Checks
-     render     three tabs; each paper opens on its cover; the stepper has
+     render     one tab per paper; each paper opens on its cover; the stepper has
                 Cover + one step per question; every question's sheets render
                 with the running head, "Page N of M" and its topic line, and
                 every margin label stays on its sheet
@@ -128,7 +128,7 @@ try {
   // ── render ────────────────────────────────────────────────────────────────
   if (want('render')) {
     const tabs = await page.$$eval('.dlxp-tab', (els) => els.map((e) => e.querySelector('.dlxp-tab__name').textContent));
-    ok(tabs.join('|') === PAPERS.map((p) => p.tab).join('|'), 'three tabs, one per paper', tabs.join(' · '));
+    ok(tabs.join('|') === PAPERS.map((p) => p.tab).join('|'), 'one tab per paper', tabs.join(' · '));
     const offSheet = [];
     for (const paper of PAPERS) {
       await goPaper(page, paper.id);

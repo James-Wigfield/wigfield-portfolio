@@ -2,7 +2,7 @@
    EXAM PRACTICE — THE NOTEBOOKLM VIDEO PROMPT
    ----------------------------------------------------------------------------
    Pasted into NotebookLM's Video Overview steering prompt, with the exported
-   PDF (three papers, each followed by its model answers) as the only
+   PDF (four papers, each followed by its model answers) as the only
    source. The video should feel like the lecturer working through a few
    sample questions at the whiteboard in a revision session, not a tour of
    every question.
@@ -19,7 +19,8 @@
 
    The picks, in the order the video takes them. Difficulty is the question
    validators' 1–5 rating; four of the five are the only parts rated 4 across
-   all three papers (the top band); together they span L1, L4, L8 and L9,
+   the sample, A and B (the top band; Paper C, added 2026-10-26, has its own
+   difficulty-4 parts but the prompt was kept as it was); together they span L1, L4, L8 and L9,
    include given code → draw/count (Sample Q1(c), B Q2(b)) and calculations
    (Sample Q1(c), B Q2(b), A Q4(a) ii., B Q4(b)):
      1. Sample Paper · Question 1 (c)       difficulty 4  L1  draw a two-path

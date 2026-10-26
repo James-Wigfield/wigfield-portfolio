@@ -2,7 +2,7 @@
 DL EXAM PRACTICE — verify every parameter count and output shape the papers state
 ---------------------------------------------------------------------------------
 Builds (never trains) each Keras model that appears in a question or a model
-answer of the sample paper and practice papers A and B, and asserts the
+answer of the sample paper and practice papers A, B and C, and asserts the
 trainable / non-trainable parameter counts and output shapes the answers give.
 
 Run it in the unit's read-only TensorFlow environment (WSL distro Ubuntu, conda
@@ -242,6 +242,156 @@ dqn = tf.keras.Sequential([
 check("B Q4(d) DQN layer params", [counts(l)[0] for l in dqn.layers], [160, 1056, 66])
 check("B Q4(d) DQN total", counts(dqn)[0], 1282)
 check("B Q4(d) target 1 + 0.95 * max(3.0, 5.0)", round(1 + 0.95 * max(3.0, 5.0), 4), 5.75)
+
+# ── Practice C Q1(a): one Perceptron update (L1 slide 10) ────────────────────
+w, b, x, y, eta = np.array([0.5, -0.4]), -0.1, np.array([1.0, 2.0]), 1, 0.5
+z = float(w @ x + b)
+y_hat = int(z >= 0)
+check("C Q1(a)i z and output", (round(z, 4), y_hat), (-0.4, 0))
+w2, b2 = w + eta * (y - y_hat) * x, b + eta * (y - y_hat)
+check("C Q1(a)ii new w1, w2, b", (round(w2[0], 4), round(w2[1], 4), round(b2, 4)), (1.0, 0.6, 0.4))
+check("C Q1(a)ii new z", round(float(w2 @ x + b2), 4), 2.6)
+
+# ── Practice C Q1(b): Glorot and He (L2 slides 7–8), 200 inputs, 100 neurons ─
+fan_in, fan_out = 200, 100
+fan_avg = (fan_in + fan_out) / 2
+check("C Q1(b)i Glorot variance 1/fan_avg", round(1 / fan_avg, 5), 0.00667)
+check("C Q1(b)i Glorot uniform r = sqrt(3/fan_avg)", round(float(np.sqrt(3 / fan_avg)), 4), 0.1414)
+check("C Q1(b)ii He variance 2/fan_in and sigma", (2 / fan_in, round(float(np.sqrt(2 / fan_in)), 4)), (0.01, 0.1))
+he = tf.keras.initializers.VarianceScaling(scale=2.0, mode="fan_in", distribution="untruncated_normal", seed=0)
+check("C Q1(b)ii he_normal-style sample std ≈ 0.1", round(float(np.std(he((200, 100)))), 2), 0.1)
+
+# ── Practice C Q1(c): multi-input, multi-output Wide & Deep (L1 slides 46–47) ─
+input_wide = tf.keras.layers.Input(shape=[5])
+input_deep = tf.keras.layers.Input(shape=[6])
+nw, nd = tf.keras.layers.Normalization(), tf.keras.layers.Normalization()
+norm_wide, norm_deep = nw(input_wide), nd(input_deep)
+h1 = tf.keras.layers.Dense(20, activation="relu")
+h2 = tf.keras.layers.Dense(10, activation="relu")
+hidden1 = h1(norm_deep)
+hidden2 = h2(hidden1)
+concat = tf.keras.layers.concatenate([norm_wide, hidden2])
+o_main, o_aux = tf.keras.layers.Dense(1), tf.keras.layers.Dense(1)
+output, aux_output = o_main(concat), o_aux(hidden2)
+wd = tf.keras.Model(inputs=[input_wide, input_deep], outputs=[output, aux_output])
+check("C Q1(c) Normalization wide / deep (trainable, non-trainable)", (counts(nw), counts(nd)), ((0, 11), (0, 13)))
+check("C Q1(c) Dense(20), Dense(10), output, aux_output", [counts(l)[0] for l in (h1, h2, o_main, o_aux)], [140, 210, 16, 11])
+check("C Q1(c) concat shape", shape(concat), (None, 15))
+check("C Q1(c) total trainable / non-trainable", counts(wd), (377, 24))
+
+# ── Practice C Q1(d): learning-rate schedules (L2 slides 50–53) ──────────────
+power = tf.keras.optimizers.schedules.InverseTimeDecay(initial_learning_rate=0.01, decay_steps=10_000, decay_rate=1.0)
+expo = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.01, decay_steps=20_000, decay_rate=0.1)
+check("C Q1(d) power scheduling at t = 30,000", round(float(power(30_000)), 6), 0.0025)
+check("C Q1(d) exponential scheduling at t = 40,000", round(float(expo(40_000)), 6), 0.0001)
+check("C Q1(d) exponential scheduling at t = 10,000", round(float(expo(10_000)), 6), 0.003162)
+
+# ── Practice C Q1(e) i.: one 5x5 vs two 3x3 conv layers, 64 -> 64 maps ───────
+c5 = tf.keras.Sequential([tf.keras.Input(shape=[32, 32, 64]), tf.keras.layers.Conv2D(64, 5, padding="same")])
+c33 = tf.keras.Sequential([tf.keras.Input(shape=[32, 32, 64]), tf.keras.layers.Conv2D(64, 3, padding="same"), tf.keras.layers.Conv2D(64, 3, padding="same")])
+check("C Q1(e)i one 5x5 layer params", counts(c5)[0], 102464)
+check("C Q1(e)i two 3x3 layers params", counts(c33)[0], 73856)
+check("C Q1(e)i output shapes equal", (out_shape(c5, [32, 32, 64]), out_shape(c33, [32, 32, 64])), ((None, 32, 32, 64), (None, 32, 32, 64)))
+
+# ── Practice C Q2(b): ahead_model, 56 days x 5 features -> 14 days (L4 slide 38) ─
+ahead = tf.keras.Sequential([tf.keras.layers.InputLayer(shape=[None, 5]), tf.keras.layers.SimpleRNN(32), tf.keras.layers.Dense(14)])
+check("C Q2(b) SimpleRNN(32), Dense(14) params", [counts(l)[0] for l in ahead.layers], [1216, 462])
+check("C Q2(b) total", counts(ahead)[0], 1678)
+check("C Q2(b) output for a (32, 56, 5) batch", tuple(ahead(np.zeros((32, 56, 5), "float32")).shape), (32, 14))
+
+# ── Practice C Q2(c): inception module on 32x32x192 ──────────────────────────
+inc_in = tf.keras.Input(shape=[32, 32, 192])
+C = lambda f, k: tf.keras.layers.Conv2D(f, k, padding="same", activation="relu")
+br1 = C(64, 1)(inc_in)
+br2 = C(128, 3)(C(96, 1)(inc_in))
+br3 = C(32, 5)(C(16, 1)(inc_in))
+br4 = C(32, 1)(tf.keras.layers.MaxPool2D(3, strides=1, padding="same")(inc_in))
+inc_out = tf.keras.layers.Concatenate(axis=3)([br1, br2, br3, br4])
+check("C Q2(c) inception output shape", shape(inc_out), (None, 32, 32, 256))
+
+# ── Practice C Q2(d): deep RNN (L4 slide 29), 2 features, batch of 32 × 56 days ─
+deep = tf.keras.Sequential([
+    tf.keras.layers.InputLayer(shape=[None, 2]),
+    tf.keras.layers.SimpleRNN(32, return_sequences=True),
+    tf.keras.layers.SimpleRNN(32, return_sequences=True),
+    tf.keras.layers.SimpleRNN(32),
+    tf.keras.layers.Dense(1),
+])
+x = tf.zeros([32, 56, 2])
+shapes = []
+for layer in deep.layers:
+    x = layer(x)
+    shapes.append(tuple(x.shape))
+check("C Q2(d) deep RNN layer outputs", shapes, [(32, 56, 32), (32, 56, 32), (32, 32), (32, 1)])
+
+# ── Practice C Q3(a): one autoencoder at a time (L5 slide 24) ────────────────
+enc2 = tf.keras.layers.Dense(30, activation="relu")
+dec2 = tf.keras.layers.Dense(100, activation="relu")
+ae2 = tf.keras.Sequential([tf.keras.Input(shape=[100]), enc2, dec2])
+check("C Q3(a) enc2 / dec2 params", (counts(enc2)[0], counts(dec2)[0]), (3030, 3100))
+enc1 = tf.keras.layers.Dense(100, activation="relu")
+dec1 = tf.keras.layers.Dense(784)
+stacked_ae = tf.keras.Sequential([tf.keras.layers.Flatten(), enc1, enc2, dec2, dec1, tf.keras.layers.Reshape([28, 28])])
+check("C Q3(a) stacked_ae input -> output for 32 images", tuple(stacked_ae(tf.zeros([32, 28, 28])).shape), (32, 28, 28))
+
+# ── Practice C Q3(b): GAN phase-1 batch (L6–7 slide 25) ──────────────────────
+batch_size = 32
+gen_imgs, X_batch = tf.zeros([batch_size, 28, 28]), tf.ones([batch_size, 28, 28])
+X_fake_and_real = tf.concat([gen_imgs, X_batch], axis=0)
+y1 = tf.constant([[0.]] * batch_size + [[1.]] * batch_size)
+check("C Q3(b) X_fake_and_real and y1 shapes", (tuple(X_fake_and_real.shape), tuple(y1.shape)), ((64, 28, 28), (64, 1)))
+check("C Q3(b) y1 = 32 zeros then 32 ones", (float(tf.reduce_sum(y1[:32])), float(tf.reduce_sum(y1[32:]))), (0.0, 32.0))
+
+# ── Practice C Q3(e): sine/cosine positional encodings, d = 4, p = 1 ─────────
+# the question uses slide 32's base, 1000; the slip quotes slide 35's 10 000
+d, p = 4, 1
+P = [np.sin(p / 1000 ** (i / d)) if i % 2 == 0 else np.cos(p / 1000 ** ((i - 1) / d)) for i in range(d)]
+check("C Q3(e)ii P[1, 0..3] with base 1000", [round(float(v), 4) for v in P], [0.8415, 0.5403, 0.0316, 0.9995])
+P10k = [np.sin(p / 10_000 ** (i / d)) if i % 2 == 0 else np.cos(p / 10_000 ** ((i - 1) / d)) for i in range(d)]
+check("C Q3(e)ii slip: P[1, 2..3] with base 10 000", [round(float(v), 4) for v in P10k[2:]], [0.01, 1.0])
+emb = tf.zeros([32, 10, 512])
+pos = tf.zeros([1, 10, 512])
+check("C Q3(e)i embeddings + positional encodings shape", tuple((emb + pos).shape), (32, 10, 512))
+check("C Q4(b) 512 columns over 8 heads; concatenated", (512 // 8, 8 * (512 // 8)), (64, 512))
+P0 = [np.sin(0) if i % 2 == 0 else np.cos(0) for i in range(d)]
+check("C Q3(e) P[0, 0..3]", [float(v) for v in P0], [0.0, 1.0, 0.0, 1.0])
+
+# ── Practice C Q4(a): bus/rail encoder–decoder (L8 slide 14) ─────────────────
+encoder_inputs = tf.keras.Input(shape=[None, 2])
+bi = tf.keras.layers.Bidirectional(tf.keras.layers.SimpleRNN(16, return_state=True))
+encoder_outputs, *encoder_state = bi(encoder_inputs)
+encoder_state = tf.keras.layers.Concatenate(axis=-1)(encoder_state)
+decoder_inputs = tf.keras.Input(shape=[None, 2])
+dec = tf.keras.layers.SimpleRNN(32, return_sequences=True)
+decoder_outputs = dec(decoder_inputs, initial_state=encoder_state)
+dense2 = tf.keras.layers.Dense(2)
+outputs = dense2(decoder_outputs)
+rnn_ed = tf.keras.Model(inputs=[encoder_inputs, decoder_inputs], outputs=outputs)
+check("C Q4(a) encoder_state shape", shape(encoder_state), (None, 32))
+check("C Q4(a) Bidirectional(SimpleRNN(16)), SimpleRNN(32), Dense(2) params", [counts(bi)[0], counts(dec)[0], counts(dense2)[0]], [608, 1120, 66])
+check("C Q4(a) total", counts(rnn_ed)[0], 1794)
+check("C Q4(a) output shape for 14 decoder steps", tuple(rnn_ed([np.zeros((3, 55, 2), "float32"), np.zeros((3, 14, 2), "float32")]).shape), (3, 14, 2))
+
+# ── Practice C Q4(d): one TD-learning update (L9 slide 51) ───────────────────
+alpha, gamma, r, V_s, V_next = 0.1, 0.9, 2, 4, 10
+target = r + gamma * V_next
+check("C Q4(d) TD target, TD error, new V(s)", (round(target, 4), round(target - V_s, 4), round(V_s + alpha * (target - V_s), 4)), (11.0, 7.0, 4.7))
+check("C Q4(d) the (1 − α) form agrees", round((1 - alpha) * V_s + alpha * target, 4), 4.7)
+
+# ── Practice C Q4(e): Q-value iteration, two iterations (L9 slides 46–48) ────
+T = [[[0.5, 0.5], [1.0, 0.0]], [[0.0, 1.0], [0.6, 0.4]]]
+R = [[[0, 10], [2, 0]], [[0, 0], [20, -10]]]
+Q = np.zeros((2, 2))
+hist = []
+for _ in range(2):
+    Qp = Q.copy()
+    for s in range(2):
+        for a in range(2):
+            Q[s, a] = sum(T[s][a][sp] * (R[s][a][sp] + 0.9 * Qp[sp].max()) for sp in range(2))
+    hist.append(Q.copy())
+check("C Q4(e)i Q1", np.round(hist[0], 4).tolist(), [[5.0, 2.0], [0.0, 8.0]])
+check("C Q4(e)ii Q2", np.round(hist[1], 4).tolist(), [[10.85, 6.5], [7.2, 13.58]])
+check("C Q4(e)ii greedy actions after 2 iterations", np.argmax(hist[1], axis=1).tolist(), [0, 1])
 
 print()
 print(f"{'ALL OK' if not FAILS else f'{len(FAILS)} FAILED'}")

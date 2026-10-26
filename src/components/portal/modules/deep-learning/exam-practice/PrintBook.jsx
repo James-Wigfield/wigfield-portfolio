@@ -84,7 +84,7 @@ export default function PrintBook() {
         <p className="dlxp-book__kicker">CITS5017 Deep Learning · Semester Two 2026</p>
         <h2 className="dlxp-book__h">Exam Practice</h2>
         <p className="dlxp-book__lead">
-          This PDF holds three papers in the final exam&rsquo;s format, each followed by its model answers:
+          This PDF holds four papers in the final exam&rsquo;s format, each followed by its model answers:
         </p>
         <ul className="dlxp-book__toc">
           {PAPERS.map((p) => (

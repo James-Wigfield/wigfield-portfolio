@@ -8,7 +8,7 @@
 
      dlxp:reveal   { [leafId]: true }        answers written onto the paper
      dlxp:marks    { [leafId]: number }      your self-marks
-     dlxp:paper    'sample' | 'A' | 'B'      the open tab
+     dlxp:paper    'sample' | 'A' | 'B' | 'C'   the open tab
      dlxp:at       { [paperId]: number }     the open page (0 = cover, n = Qn)
      dlxp:filter   'all' | 'L1' … 'L9'       the lecture filter
      dlxp:timer    { [paperId]: startMs }    a timed sitting in progress

@@ -1,10 +1,10 @@
 /* ============================================================================
-   DL EXAM PRACTICE — data integrity of the three papers
+   DL EXAM PRACTICE — data integrity of the four papers
    ----------------------------------------------------------------------------
      node tools/dl-exam-practice/check-papers.mjs
 
    Reads the page's own data (src/…/exam-practice/papers) and checks:
-     structure   the sample has 2 questions, A and B have 4; part labels run
+     structure   the sample has 2 questions, A, B and C have 4; part labels run
                  (a), (b), … and subparts i., ii., …; ids are unique and follow
                  <paper>-q<n>-<letter>[-<roman>]; pages climb and fit the paper
      marks       every question's parts sum to 20; every leaf's red ticks sum
@@ -145,7 +145,7 @@ ok(rows.length === 8, `coverage.md matrix has ${rows.length} lecture rows (want 
 for (const row of rows) {
   const cells = row.split('|').slice(1, -1).map((c) => c.trim());
   const code = codeOf[cells[0]];
-  ['sample', 'A', 'B'].forEach((pid, k) => {
+  ['sample', 'A', 'B', 'C'].forEach((pid, k) => {
     const listed = new Set(cells[k + 1] === '—' ? [] : cells[k + 1].split(/,\s*/).map((s) => s.trim()).filter(Boolean));
     const have = derived[pid][code];
     const missing = [...have].filter((x) => !listed.has(x));
