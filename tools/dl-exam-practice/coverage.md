@@ -17,16 +17,16 @@ Planned 2026-10-24, before the practice questions were written, from the three s
 
 Each cell lists the parts that draw on that lecture (S = sample paper, A, B = practice papers). Subparts are listed one by one.
 
-| Lecture | Sample paper | Practice paper A | Practice paper B |
-|---|---|---|---|
-| L1 | Q1(c), Q1(d), Q1(e) i., Q1(e) ii., Q2(a) ii. | Q1(a), Q1(c), Q3(a), Q4(e) | Q1(a) i., Q1(a) ii., Q1(d), Q1(e), Q2(d), Q4(d) i. |
-| L2 | Q1(d) | Q1(b), Q1(d), Q1(e), Q3(d) | Q1(b) i., Q1(b) ii., Q1(b) iii., Q1(d) |
-| L3 | Q1(a), Q1(b) | Q1(c) | Q1(c) i., Q1(c) ii., Q1(c) iii., Q2(b), Q3(c) |
-| L4 | Q1(e) i., Q1(e) ii., Q2(a) i., Q2(a) iii. | Q2(a) i., Q2(a) ii., Q2(b), Q2(c) | Q2(a) i., Q2(a) ii., Q2(b), Q2(c), Q2(d) |
-| L5 | — | Q2(d), Q2(e), Q3(d) | Q3(d) i., Q3(d) ii. |
-| L6–7 | Q2(b) | Q2(e), Q3(a), Q3(b), Q3(c) | Q3(a) i., Q3(a) ii., Q3(a) iii., Q3(b), Q3(c) |
-| L8 | Q2(c) | Q3(e) i., Q3(e) ii., Q4(a) i., Q4(a) ii., Q4(a) iii. | Q2(e), Q3(e), Q4(a) i., Q4(a) ii. |
-| L9 | Q2(d), Q2(e) | Q4(b), Q4(c) i., Q4(c) ii., Q4(d), Q4(e) | Q4(b), Q4(c) i., Q4(c) ii., Q4(d) i., Q4(d) ii., Q4(d) iii., Q4(e) |
+| Lecture | Sample paper | Practice paper A | Practice paper B | Practice paper C |
+|---|---|---|---|---|
+| L1 | Q1(c), Q1(d), Q1(e) i., Q1(e) ii., Q2(a) ii. | Q1(a), Q1(c), Q3(a), Q4(e) | Q1(a) i., Q1(a) ii., Q1(d), Q1(e), Q2(d), Q4(d) i. | Q1(a) i., Q1(a) ii., Q1(a) iii., Q1(c) |
+| L2 | Q1(d) | Q1(b), Q1(d), Q1(e), Q3(d) | Q1(b) i., Q1(b) ii., Q1(b) iii., Q1(d) | Q1(b) i., Q1(b) ii., Q1(d), Q2(e) |
+| L3 | Q1(a), Q1(b) | Q1(c) | Q1(c) i., Q1(c) ii., Q1(c) iii., Q2(b), Q3(c) | Q1(e), Q2(c), Q3(d) |
+| L4 | Q1(e) i., Q1(e) ii., Q2(a) i., Q2(a) iii. | Q2(a) i., Q2(a) ii., Q2(b), Q2(c) | Q2(a) i., Q2(a) ii., Q2(b), Q2(c), Q2(d) | Q2(a) i., Q2(a) ii., Q2(b) i., Q2(b) ii., Q2(b) iii., Q2(d), Q4(a) ii. |
+| L5 | — | Q2(d), Q2(e), Q3(d) | Q3(d) i., Q3(d) ii. | Q3(a) i., Q3(a) ii. |
+| L6–7 | Q2(b) | Q2(e), Q3(a), Q3(b), Q3(c) | Q3(a) i., Q3(a) ii., Q3(a) iii., Q3(b), Q3(c) | Q3(b) i., Q3(b) ii., Q3(b) iii., Q3(c) |
+| L8 | Q2(c) | Q3(e) i., Q3(e) ii., Q4(a) i., Q4(a) ii., Q4(a) iii. | Q2(e), Q3(e), Q4(a) i., Q4(a) ii. | Q3(e) i., Q3(e) ii., Q4(a) i., Q4(a) ii., Q4(a) iii., Q4(b) |
+| L9 | Q2(d), Q2(e) | Q4(b), Q4(c) i., Q4(c) ii., Q4(d), Q4(e) | Q4(b), Q4(c) i., Q4(c) ii., Q4(d) i., Q4(d) ii., Q4(d) iii., Q4(e) | Q4(c) i., Q4(c) ii., Q4(d) i., Q4(d) ii., Q4(e) i., Q4(e) ii. |
 
 ## The papers, question by question
 
@@ -40,6 +40,10 @@ Each cell lists the parts that draw on that lecture (S = sample paper, A, B = pr
 | B Q2 | L4, L3, L1, L8 | (a) LSTM diagram → equations; gate roles (2 + 2) · (b) Conv1D + LSTM code → draw, shapes, count (6) · (c) unstable gradients, layer norm (3) · (d) scenario: noisy-square sequences → X, y shapes, output layer, loss (3) · (e) causal vs bidirectional RNNs (4) |
 | B Q3 | L6–7, L3, L5, L8 | (a) VAE Sampling-layer code → latent loss; why logvar; sampling (2 + 1 + 2) · (b) DCGAN generator code → shapes, three guidelines (5) · (c) convolutional autoencoders (3) · (d) linear autoencoder code = PCA (2 + 2) · (e) ViT patches (3) |
 | B Q4 | L8, L9, L1 | (a) transformer inference; masked vs cross attention (2 + 2) · (b) MDP diagram → two value-iteration steps (5) · (c) Q-values → optimal policy (1 + 2) · (d) DQN code → count, target + `runs`, two targets (1 + 2 + 1) · (e) the REINFORCE steps (4) |
+| C Q1 | L1, L2, L3 | (a) one Perceptron update by hand: output; new weights; convergence (1 + 2 + 1) · (b) Glorot σ² and r; He σ² (2 + 1) · (c) two-input, two-output Wide & Deep code → draw, count, aux output and loss weights (6) · (d) power and exponential LR schedules computed (3) · (e) one 5 × 5 vs two 3 × 3 kernels counted; the first-layer exception (4) |
+| C Q2 | L4, L3, L2 | (a) GRU equations → role of z; r and two simplifications of the LSTM (2 + 2) · (b) `ahead_model` code → batch shapes; count; vs one step at a time (1 + 2 + 2) · (c) inception module → output depth, “same” padding, kernel sizes (3) · (d) deep-RNN code → layer shapes, return_sequences, why a worse MAE (4) · (e) dying ReLUs, leaky ReLU, ELU, why ELU with α = 1 (4) |
+| C Q3 | L5, L6–7, L3, L8 | (a) one-autoencoder-at-a-time code → phases and shapes; shapes, counts, ReLU output (2 + 2) · (b) GAN training-loop code → shapes and labels; what y2 = 0 without freezing would train; why no fit() (2 + 2 + 1) · (c) VAE generation and semantic interpolation (3) · (d) AlexNet's regularization and ResNet skip connections (4) · (e) positional-encoding equation → shapes and why unique; compute P for p = 1 (2 + 2) |
+| C Q4 | L8, L4, L9 | (a) bus/rail encoder–decoder code → state shape; count; decoder inputs in training vs testing (1 + 2 + 2) · (b) multi-head attention: why split; 512 columns, H = 8 (3) · (c) vacuum-robot policy → parameters, stochastic, brute force; genetic algorithms and policy gradients (2 + 2) · (d) TD-learning equation → terms and why; one update (2 + 2) · (e) MDP code → two Q-value-iteration steps by hand (2 + 2) |
 
 ## Parts per lecture (markable units; some parts cite two lectures)
 
@@ -48,6 +52,11 @@ Each cell lists the parts that draw on that lecture (S = sample paper, A, B = pr
 | Sample | 5 | 1 | 2 | 4 | 0 | 1 | 1 | 2 |
 | A | 4 | 4 | 1 | 4 | 3 | 4 | 5 | 5 |
 | B | 6 | 4 | 5 | 5 | 2 | 5 | 4 | 7 |
+| C | 4 | 4 | 3 | 7 | 2 | 4 | 6 | 6 |
+
+## Paper C (added 2026-10-26)
+
+Written as the harder paper: 35 markable parts rated difficulty 1 ×1, 2 ×11, 3 ×19, 4 ×4 (A and B were mostly 2). A question validator and a blind answer checker reviewed it (validator: 12 keep, 11 revise, 1 replace; checker: 31/37 agreed, 0 wrong numbers); all their fixes were applied except one: the GRU part gives the slide-49 equations rather than the slide-48 diagram, so Paper C has no “given diagram → write the equations” part. It targets what A and B leave out (CNN architectures, initialization, learning-rate schedules, activation functions, GRU, policy search, TD learning, Q-value iteration, positional encodings, multi-head attention) and the calculation asks the slides make easy to set (a Perceptron update, Glorot/He, schedules, kernel-size counts, inception depth, RNN counts, positional-encoding values, a TD update, two Q-value-iteration steps, deep-RNN shapes). Every number is checked in `verify_counts.py` ("C Q…" lines). Still not in any paper: ℓ1/ℓ2 regularization, Huber loss, visual attention.
 
 ## What changed after validation
 

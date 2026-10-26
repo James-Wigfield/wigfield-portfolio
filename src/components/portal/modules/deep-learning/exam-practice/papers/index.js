@@ -1,17 +1,18 @@
 import { SAMPLE } from './sample.js';
 import { PAPER_A } from './paperA.js';
 import { PAPER_B } from './paperB.js';
+import { PAPER_C } from './paperC.js';
 import { LEC, receiptText } from './lectures.js';
 
 /* ============================================================================
    EXAM PRACTICE — THE PAPERS (schema, builders, derived facts)
    ----------------------------------------------------------------------------
-   Content is data. One file per paper (sample.js, paperA.js, paperB.js); the
+   Content is data. One file per paper (sample.js, paperA.js, paperB.js, paperC.js); the
    page, the PDF and the checks (tools/dl-exam-practice/check-papers.mjs) all
    read it from here.
 
    Paper
-     id         'sample' | 'A' | 'B'          (storage keys use it)
+     id         'sample' | 'A' | 'B' | 'C'    (storage keys use it)
      name       'Sample Paper'                (prefix of every printed label)
      tab        'Sample paper'                (the top tab)
      head       'Sample Exam Paper 2026'      (the small-caps running head)
@@ -49,7 +50,7 @@ import { LEC, receiptText } from './lectures.js';
 
 export { w, h, eq, ul, tbl, fig, slip } from './ink.js';
 
-export const PAPERS = [SAMPLE, PAPER_A, PAPER_B];
+export const PAPERS = [SAMPLE, PAPER_A, PAPER_B, PAPER_C];
 export const PAPER = Object.fromEntries(PAPERS.map((p) => [p.id, p]));
 
 // the markable units of a question, in order (a part, or each of its subs)

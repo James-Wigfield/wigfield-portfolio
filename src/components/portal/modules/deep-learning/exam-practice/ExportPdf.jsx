@@ -72,7 +72,7 @@ export default function ExportPdf({ onExport }) {
 
   return (
     <span className="dlxp-export" ref={boxRef}>
-      <button type="button" className="dlxp-btn dlxp-btn--big" onClick={onExport} title="Print all three papers, each followed by its model answers, to an A4 PDF (choose Save as PDF)">
+      <button type="button" className="dlxp-btn dlxp-btn--big" onClick={onExport} title="Print all four papers, each followed by its model answers, to an A4 PDF (choose Save as PDF)">
         <Icon name="printer" size={16} /> Export PDF
       </button>
       <button type="button" className="dlxp-export__toggle" aria-expanded={open} aria-controls="dlxp-nlm" onClick={() => setOpen((o) => !o)}>

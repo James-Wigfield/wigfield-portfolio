@@ -12,13 +12,13 @@ import '../common.css';
 import './exam-practice.css';
 
 /* ============================================================================
-   CITS5017 · EXAM PRACTICE — the sample paper + two practice papers
+   CITS5017 · EXAM PRACTICE — the sample paper + three practice papers
    ----------------------------------------------------------------------------
    Built for one loop: read a part → write your answer in your own notebook →
    reveal the tutor's answer, written onto the paper in that part's ruled
    space → compare → mark yourself.
 
-     tabs         Sample paper · Practice paper A · Practice paper B
+     tabs         Sample paper · Practice paper A · B · C
      stepper      Cover, Q1 … Q4, one at a time, each with its status
                   (not started / revealed / marked); previous / next turn the
                   page; ← → move along the stepper
