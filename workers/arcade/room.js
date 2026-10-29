@@ -119,6 +119,15 @@ export class ArcadeRoom {
     this.ctx.storage.sql.exec(
       'CREATE TABLE IF NOT EXISTS state (key TEXT PRIMARY KEY, value TEXT)',
     );
+    // In-memory mirrors of hot rows. A real-time game (Summit Fever) dispatches
+    // dozens of times a second, and writing every one of them to SQLite is
+    // both slow and billed per row. These caches are rebuilt from SQL whenever
+    // the object is constructed (cold start, eviction, wake from hibernation).
+    this._game = null; //       JSON string of the game state
+    this._persistedAt = 0;
+    this._dirty = false; //     _game is newer than the 'game' row
+    this._lastSeen = null;
+    this._alarmAt = null; //    the alarm we last set and has not fired yet
   }
 
   // ── HTTP (from the Worker only) ───────────────────────────────────────────
@@ -211,6 +220,7 @@ export class ArcadeRoom {
 
   async webSocketClose(ws) {
     this.rehost(ws);
+    this.flush();
     this.broadcast();
   }
 
@@ -221,8 +231,13 @@ export class ArcadeRoom {
 
   // ── Alarm tick ────────────────────────────────────────────────────────────
   async alarm() {
+    this._alarmAt = null;
+    this.flush();
     if (this.isExpired()) {
       this.ctx.storage.sql.exec('DELETE FROM state');
+      this._game = null;
+      this._dirty = false;
+      this._lastSeen = null;
       for (const ws of this.ctx.getWebSockets()) {
         try {
           ws.close(1000, 'room expired');
@@ -233,6 +248,12 @@ export class ArcadeRoom {
       return;
     }
     this.dispatch('tick', null, null);
+    // A tick that changed nothing does not reschedule; re-arm whatever the
+    // rules still want (or the expiry) so a room can never go alarm-less.
+    if (this._alarmAt == null) {
+      const rules = this.rules();
+      this.schedule(rules?.nextTickAt ? rules.nextTickAt(this.gameState()) : null);
+    }
   }
 
   // ── Rules dispatch ────────────────────────────────────────────────────────
@@ -270,14 +291,19 @@ export class ArcadeRoom {
       return;
     }
 
-    this.setGameState(next);
+    this.setGameState(next, { defer: true });
     this.schedule(rules.nextTickAt ? rules.nextTickAt(next) : null);
     this.broadcast();
   }
 
   schedule(at) {
+    const now = Date.now();
     const expiry = this.lastSeen() + ROOM_TTL_MS;
-    const when = at && at > Date.now() ? Math.min(at, expiry) : expiry;
+    let when = at && at > now ? Math.min(at, expiry) : expiry;
+    // A deferred write must land soon even if the game then goes quiet.
+    if (this._dirty) when = Math.max(now + 1, Math.min(when, this._persistedAt + this.persistMs()));
+    if (when === this._alarmAt) return; // already set — no need to write it again
+    this._alarmAt = when;
     this.ctx.storage.setAlarm(when);
   }
 
@@ -330,19 +356,34 @@ export class ArcadeRoom {
   // ── Seats & presence ──────────────────────────────────────────────────────
   reset(slug, code) {
     this.ctx.storage.sql.exec('DELETE FROM state');
+    this._game = null;
+    this._dirty = false;
+    this._lastSeen = null;
     this.set('slug', slug);
     this.set('code', code);
     this.setSeats([]);
     const rules = GAMES[slug];
     this.setGameState(rules ? rules.init() : {});
-    this.touch();
+    this.touch(true);
   }
 
   claimSeat(name) {
     const rules = this.rules();
     const max = rules?.seats ?? 2;
     const seats = this.seats();
-    if (seats.length >= max) return null;
+    if (seats.length >= max) {
+      // Full — but a seat nobody is connected to can be taken over. The usual
+      // cause is the same person opening the link in a different browser (a
+      // chat app's in-app browser, then Safari), which would otherwise leave a
+      // ghost seat holding the room full for its whole six-hour life.
+      const present = new Set(this.presentSeats());
+      const idle = seats.find((s) => !present.has(s.seat));
+      if (!idle) return null;
+      idle.name = name || idle.name;
+      idle.token = crypto.randomUUID();
+      this.setSeats(seats);
+      return idle;
+    }
 
     const taken = new Set(seats.map((s) => s.seat));
     let n = 0;
@@ -395,24 +436,53 @@ export class ArcadeRoom {
     this.set('seats', JSON.stringify(seats));
   }
 
+  // Always a fresh object (parsed from the cached JSON), so a rules module that
+  // mutates the state and then returns null leaves no trace — same semantics as
+  // reading the row every time.
   gameState() {
-    return JSON.parse(this.get('game') || '{}');
+    if (this._game == null) this._game = this.get('game') || '{}';
+    return JSON.parse(this._game);
   }
 
-  setGameState(state) {
-    this.set('game', JSON.stringify(state));
+  // A rules module may set `persistMs`: dispatches then write the game row at
+  // most that often, with an alarm guaranteeing the last change lands. Games
+  // without it (Southern Lights) write through on every change, as before.
+  setGameState(state, { defer = false } = {}) {
+    this._game = JSON.stringify(state);
+    if (defer && this.persistMs() && Date.now() - this._persistedAt < this.persistMs()) {
+      this._dirty = true;
+      return;
+    }
+    this.flush(true);
+  }
+
+  flush(force = false) {
+    if ((!force && !this._dirty) || this._game == null) return;
+    this.set('game', this._game);
+    this._persistedAt = Date.now();
+    this._dirty = false;
+  }
+
+  persistMs() {
+    return this.rules()?.persistMs || 0;
   }
 
   lastSeen() {
-    return parseInt(this.get('last_seen') || '0', 10);
+    if (this._lastSeen == null) this._lastSeen = parseInt(this.get('last_seen') || '0', 10);
+    return this._lastSeen;
   }
 
   isExpired() {
     return Date.now() - this.lastSeen() > ROOM_TTL_MS;
   }
 
-  touch() {
-    this.set('last_seen', String(Date.now()));
+  // last_seen only drives a six-hour expiry, so it is written at most every
+  // ten seconds rather than on every message.
+  touch(force = false) {
+    const now = Date.now();
+    if (!force && this._lastSeen != null && now - this._lastSeen < 10000) return;
+    this._lastSeen = now;
+    this.set('last_seen', String(now));
   }
 
   get(key) {

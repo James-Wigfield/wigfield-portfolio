@@ -86,6 +86,8 @@ export function shareLink(slug, code) {
  * @param {string} opts.title       shown on the landing screen
  * @param {string} opts.tagline     one line under the title
  * @param {string} [opts.soloNote]  explains what playing alone does
+ * @param {string} [opts.createLabel]      the create-room button (default "Start a night")
+ * @param {string} [opts.namePlaceholder]  the name field's placeholder
  * @param {HTMLElement} opts.gateEl container for the landing screen
  * @param {(msg:object)=>void} opts.onState  every server state broadcast
  * @param {()=>void} [opts.onJoined]         fired once, when the room is live
@@ -224,10 +226,10 @@ export function mountArcade(opts) {
           <div class="ar-field">
             <label class="ar-label" for="ar-name">Your name</label>
             <input class="ar-input" id="ar-name" maxlength="18" autocomplete="nickname"
-                   placeholder="Who's on the rock?" value="${escapeHtml(getName())}" />
+                   placeholder="${escapeHtml(opts.namePlaceholder || "Who's on the rock?")}" value="${escapeHtml(getName())}" />
           </div>
 
-          <button class="ar-btn" id="ar-create">Start a night</button>
+          <button class="ar-btn" id="ar-create">${escapeHtml(opts.createLabel || 'Start a night')}</button>
 
           <div class="ar-or">or join a friend</div>
 
