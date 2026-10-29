@@ -2,6 +2,21 @@
   "_comment": "The single arcade registry. The cabinet grid at /arcade reads this; the slug must match public/arcade/<slug>/ and the key in workers/arcade/games/index.js.",
   "games": [
     {
+      "slug": "summit-fever",
+      "title": "Summit Fever",
+      "tagline": "Three friends, one mountain, every kind of weather. Carry a cookie.",
+      "blurb": "Five stages from the pines to a 4,012 m summit while the sky throws everything at you: rain, lightning, fog, gales, blizzards and a whiteout. Warmth is your lifeline, wet clothes freeze, and a cookie in your pocket is the only thing between you and hypothermia. The party only moves on when everyone reaches camp, so somebody is always going back down for a friend.",
+      "art": "summit-fever/art/cabinet.png",
+      "players": "3–4",
+      "length": "~5 min",
+      "tags": [
+        "co-op",
+        "platformer",
+        "weather"
+      ],
+      "status": "live"
+    },
+    {
       "slug": "southern-lights",
       "title": "Southern Lights",
       "tagline": "Two friends, one headland, and something over the water.",
@@ -9,7 +24,11 @@
       "art": "southern-lights/art/cabinet.png",
       "players": "1–2",
       "length": "~12 min",
-      "tags": ["co-op", "asymmetric", "mystery"],
+      "tags": [
+        "co-op",
+        "asymmetric",
+        "mystery"
+      ],
       "status": "live"
     }
   ]

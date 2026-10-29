@@ -1,0 +1,13 @@
+{
+  "order": [
+    "cookie",
+    "cocoa",
+    "axe",
+    "brolly",
+    "bar",
+    "down",
+    "lamp"
+  ],
+  "big": 32,
+  "small": 16
+}

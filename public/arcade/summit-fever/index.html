@@ -1,0 +1,2427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Summit Fever — Wigfield Arcade</title>
+  <meta name="description" content="Three or four friends race and rescue each other up a five-stage mountain through rain, lightning, fog, gales and blizzards. Carry a cookie. A multiplayer pixel-art climbing game." />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/arcade/shared/arcade.css" />
+  <style>
+    :root {
+      --sf-warm: #ffb648;
+      --sf-cold: #7fd3ff;
+      --sf-ice: #bfefff;
+      --sf-snow: #eef4fb;
+    }
+    html, body { height: 100%; }
+    body { background: #0b1020; }
+    #game[hidden] { display: none; }
+
+    .sf {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 560px;
+      margin: 0 auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    .sf-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ar-faint);
+      border-bottom: 1px solid var(--ar-line-soft);
+      background: #0b1020;
+    }
+    .sf-head a { color: var(--ar-faint); text-decoration: none; }
+    .sf-head .sf-spacer { flex: 1; }
+    .sf-hbtn {
+      appearance: none;
+      background: none;
+      border: 0;
+      padding: 4px 2px;
+      color: var(--ar-dim);
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      cursor: pointer;
+    }
+    .sf-code {
+      font-family: var(--ar-display);
+      font-size: 10px;
+      color: var(--ar-amber);
+    }
+
+    /* ── Stage (canvas + HUD) ──────────────────────────────────────────────── */
+    .sf-stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: #000;
+      touch-action: none;
+    }
+    #view {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    .sf-hud {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      padding: 8px 8px 12px;
+      background: linear-gradient(180deg, rgba(6, 9, 20, 0.74) 0%, rgba(6, 9, 20, 0.5) 72%, rgba(6, 9, 20, 0) 100%);
+      pointer-events: none;
+      font-family: var(--ar-display);
+      font-size: 8px;
+      line-height: 1.5;
+      color: #fff;
+      text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.7);
+    }
+    .sf-hud[hidden] { display: none; }
+    .sf-row { display: flex; align-items: center; gap: 8px; }
+    .sf-row + .sf-row { margin-top: 6px; }
+
+    .sf-meter { flex: 1; min-width: 0; }
+    .sf-meter__top { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 7px; }
+    .sf-meter__bar {
+      height: 7px;
+      background: rgba(5, 8, 18, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      overflow: hidden;
+    }
+    .sf-meter__fill { height: 100%; width: 100%; background: var(--sf-warm); transition: width 0.25s linear, background 0.4s; }
+    .sf-meter--wet .sf-meter__fill { background: #4aa8ff; }
+    .sf-meter--wet { flex: 0 0 64px; }
+    .sf-meter[data-low="1"] .sf-meter__fill { animation: sf-blink 0.6s steps(2) infinite; }
+    @keyframes sf-blink { 50% { opacity: 0.35; } }
+
+    .sf-clock { flex: 0 0 auto; text-align: right; min-width: 48px; }
+    .sf-clock b { font-size: 11px; font-weight: 400; }
+    .sf-clock[data-urgent="1"] b { color: #ff7a6b; }
+
+    .sf-pack { display: flex; gap: 6px; align-items: center; min-height: 24px; }
+    .sf-ico {
+      width: 24px;
+      height: 24px;
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+      position: relative;
+      flex: 0 0 auto;
+    }
+    .sf-ico i {
+      position: absolute;
+      right: -3px;
+      bottom: -3px;
+      font-style: normal;
+      font-size: 7px;
+      color: #fff;
+    }
+    .sf-ico[data-buff="1"]::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      height: 2px;
+      width: var(--left, 100%);
+      background: var(--sf-cold);
+    }
+
+    .sf-wx { display: flex; align-items: center; gap: 6px; margin-left: auto; text-align: right; }
+    .sf-dot { display: inline-block; width: 7px; height: 7px; background: #fff; flex: 0 0 auto; }
+    .sf-wx small { display: block; color: rgba(255, 255, 255, 0.72); font-size: 7px; }
+
+    .sf-state { color: var(--sf-cold); }
+
+    /* Party strip, under the meters */
+    .sf-party {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 7px;
+      line-height: 1.3;
+    }
+    .sf-hud[data-summit="1"] { opacity: 0; transition: opacity 0.6s; }
+    .sf-party[hidden] { display: none; }
+    .sf-mate { flex: 1 1 0; min-width: 0; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.22); }
+    .sf-mate__name { display: flex; gap: 4px; align-items: center; white-space: nowrap; overflow: hidden; }
+    .sf-mate__name span:last-child { overflow: hidden; text-overflow: ellipsis; }
+    .sf-mate__name .sf-dot { width: 6px; height: 6px; }
+    .sf-mate__meta { display: none; }
+    .sf-mate__bar { height: 3px; margin-top: 3px; background: rgba(0, 0, 0, 0.55); }
+    .sf-mate__bar b { display: block; height: 100%; background: var(--sf-warm); }
+    .sf-mate__tag { color: var(--sf-cold); }
+    .sf-mate[data-off="1"] { opacity: 0.45; }
+
+    /* Toasts and banners */
+    .sf-toasts {
+      position: absolute;
+      left: 22px;
+      right: 8px;
+      bottom: 44px;
+      display: flex;
+      flex-direction: column-reverse;
+      pointer-events: none;
+      font-family: var(--ar-mono);
+      font-size: 11px;
+      line-height: 1.45;
+      color: #fff;
+      text-shadow: 0 1px 0 #000, 0 0 5px #000;
+    }
+    .sf-toast { margin-top: 4px; transition: opacity 0.6s; display: flex; gap: 6px; align-items: baseline; }
+    .sf-toast .sf-dot { width: 6px; height: 6px; transform: translateY(-1px); }
+    .sf-toast[data-fade="1"] { opacity: 0; }
+
+    .sf-banner {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      top: 26%;
+      transform: translateY(-50%);
+      text-align: center;
+      pointer-events: none;
+      font-family: var(--ar-display);
+      color: #fff;
+      text-shadow: 0 2px 0 #000, 0 0 14px rgba(0, 0, 0, 0.85);
+      transition: opacity 0.5s;
+    }
+    .sf-banner[data-show="0"] { opacity: 0; }
+    .sf-banner h2 { margin: 0; font-size: clamp(14px, 5.4vw, 22px); line-height: 1.5; font-weight: 400; }
+    .sf-banner p { margin: 10px auto 0; max-width: 36ch; font-family: var(--ar-mono); font-size: 12px; line-height: 1.6; white-space: pre-line; }
+
+    .sf-tip {
+      position: absolute;
+      left: 26px;
+      right: 12px;
+      bottom: 10px;
+      pointer-events: none;
+      font-family: var(--ar-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      color: #fff;
+      text-shadow: 0 1px 0 #000, 0 0 6px #000;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      transition: opacity 0.5s;
+    }
+    .sf-tip b { font-family: var(--ar-display); font-size: 8px; font-weight: 400; color: var(--ar-amber); white-space: nowrap; }
+    .sf-tip[data-show="0"] { opacity: 0; }
+    .sf-frozen {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 14px;
+      padding: 12px 10px 14px;
+      text-align: center;
+      pointer-events: none;
+      font-family: var(--ar-display);
+      font-size: 9px;
+      line-height: 1.9;
+      color: var(--sf-ice);
+      background: rgba(6, 9, 20, 0.82);
+      border-top: 1px solid var(--sf-ice);
+      text-shadow: 0 2px 0 #000;
+    }
+    .sf-frozen[hidden] { display: none; }
+    .sf-frozen #frozen-sub { color: var(--ar-amber); }
+    .sf-frozen__bar { width: min(240px, 80%); height: 10px; margin: 8px auto 0; border: 1px solid var(--sf-ice); }
+    .sf-frozen__bar b { display: block; height: 100%; background: var(--sf-ice); width: 0; }
+
+    /* Overlays: lobby, camp, ending */
+    .sf-over {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      padding: 18px 16px 24px;
+      background: rgba(6, 9, 20, 0.82);
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+      touch-action: pan-y;
+    }
+    .sf-over[hidden] { display: none; }
+    .sf-over[data-soft="1"] { background: linear-gradient(180deg, rgba(6, 9, 20, 0.88) 0%, rgba(6, 9, 20, 0.7) 70%, rgba(6, 9, 20, 0.15) 100%); }
+    .sf-over h1, .sf-over h2 {
+      font-family: var(--ar-display);
+      font-weight: 400;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .sf-over h1 { font-size: clamp(16px, 5.6vw, 22px); }
+    .sf-over h2 { font-size: 11px; margin-top: 22px; color: var(--ar-dim); }
+    .sf-eyebrow { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ar-faint); margin: 0 0 8px; }
+    .sf-lede { color: var(--ar-dim); font-size: 12px; line-height: 1.7; margin: 10px 0 0; max-width: 48ch; }
+    .sf-lede b { color: var(--ar-ink); font-weight: 600; }
+
+    .sf-codebig {
+      font-family: var(--ar-display);
+      font-size: clamp(22px, 9vw, 32px);
+      letter-spacing: 0.12em;
+      color: var(--ar-amber);
+      margin: 14px 0 4px;
+    }
+    .sf-list { list-style: none; margin: 10px 0 0; padding: 0; border-top: 1px solid var(--ar-line); }
+    .sf-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--ar-line);
+      font-size: 12px;
+    }
+    .sf-list li .sf-grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sf-list li small { color: var(--ar-faint); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .sf-list li .sf-pts { font-family: var(--ar-display); font-size: 9px; color: var(--ar-amber); }
+    .sf-list li .sf-pts[data-neg="1"] { color: var(--ar-red); }
+    .sf-swatch { width: 10px; height: 10px; flex: 0 0 auto; }
+
+    .sf-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .sf-actions .ar-btn { flex: 1 1 auto; width: auto; }
+
+    .sf-legend { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; margin-top: 12px; font-size: 11px; color: var(--ar-dim); line-height: 1.5; }
+    .sf-legend span:nth-child(odd) { font-family: var(--ar-display); font-size: 8px; color: var(--ar-ink); padding-top: 2px; white-space: nowrap; }
+
+    .sf-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px 14px; margin-top: 12px; }
+    .sf-item { display: flex; gap: 8px; align-items: flex-start; font-size: 11px; color: var(--ar-dim); line-height: 1.45; }
+    .sf-item b { display: block; color: var(--ar-ink); font-weight: 600; }
+
+    .sf-forecast { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 11px; color: var(--ar-dim); }
+    .sf-forecast span { display: inline-flex; align-items: center; gap: 6px; }
+
+    .sf-bar { height: 3px; background: var(--ar-line); margin-top: 16px; overflow: hidden; }
+    .sf-bar b { display: block; height: 100%; background: var(--ar-amber); width: 100%; }
+
+    .sf-awards { display: grid; gap: 0; margin-top: 10px; border-top: 1px solid var(--ar-line); }
+    .sf-award { padding: 10px 0; border-bottom: 1px solid var(--ar-line); }
+    .sf-award b { font-family: var(--ar-display); font-size: 9px; font-weight: 400; color: var(--ar-amber); }
+    .sf-award p { margin: 4px 0 0; font-size: 12px; color: var(--ar-dim); }
+    .sf-award p em { font-style: normal; color: var(--ar-ink); }
+    .sf-body { color: var(--ar-dim); font-size: 13px; line-height: 1.75; margin: 12px 0 0; max-width: 56ch; }
+
+    /* ── Touch pad ─────────────────────────────────────────────────────────── */
+    .sf-pad {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: #0b1020;
+      border-top: 1px solid var(--ar-line-soft);
+      touch-action: none;
+    }
+    .sf-pad__side { display: flex; gap: 10px; }
+    .sf-key {
+      appearance: none;
+      width: 68px;
+      height: 64px;
+      border: 1px solid var(--ar-line);
+      border-bottom-width: 4px;
+      border-radius: var(--ar-radius);
+      background: var(--ar-panel);
+      color: var(--ar-ink);
+      font-family: var(--ar-display);
+      font-size: 11px;
+      touch-action: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sf-key[data-down="1"] { background: #1a2742; border-bottom-width: 1px; transform: translateY(3px); }
+    .sf-key--jump { width: 84px; color: var(--ar-amber); }
+    .sf-key--use { color: var(--sf-cold); }
+    .sf-key:disabled { opacity: 0.35; }
+    .sf[data-phase="lobby"] .sf-pad, .sf[data-phase="ending"] .sf-pad { display: none; }
+    .sf-keys-hint { display: none; }
+
+    @media (pointer: fine) and (hover: hover) {
+      .sf-pad { display: none; }
+      .sf-keys-hint {
+        display: block;
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ar-faint);
+        border-top: 1px solid var(--ar-line-soft);
+        text-align: center;
+      }
+      .sf-keys-hint b { color: var(--ar-dim); font-weight: 600; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gate"></div>
+
+  <div id="game" hidden>
+    <div class="sf">
+      <header class="sf-head">
+        <a href="/arcade/">← Arcade</a>
+        <button class="sf-hbtn sf-code" id="code" title="Share this room">—</button>
+        <span class="sf-spacer"></span>
+        <span id="stage-label"></span>
+        <button class="sf-hbtn" id="mute">Sound on</button>
+      </header>
+
+      <div class="sf-stage" id="stage">
+        <canvas id="view"></canvas>
+
+        <div class="sf-hud" id="hud" hidden>
+          <div class="sf-row">
+            <div class="sf-meter" id="warm-meter">
+              <div class="sf-meter__top"><span>Warmth</span><span id="warm-num">100</span></div>
+              <div class="sf-meter__bar"><div class="sf-meter__fill" id="warm-fill"></div></div>
+            </div>
+            <div class="sf-meter sf-meter--wet">
+              <div class="sf-meter__top"><span>Wet</span><span id="wet-num">0</span></div>
+              <div class="sf-meter__bar"><div class="sf-meter__fill" id="wet-fill"></div></div>
+            </div>
+            <div class="sf-clock" id="clock"><span id="clock-label">Stage</span><br /><b id="clock-num">0:00</b></div>
+          </div>
+          <div class="sf-row">
+            <div class="sf-pack" id="pack"></div>
+            <div class="sf-wx" id="wx"></div>
+          </div>
+          <div class="sf-party" id="party"></div>
+          <div class="sf-row"><span class="sf-state" id="me-state"></span></div>
+        </div>
+
+        <div class="sf-toasts" id="toasts"></div>
+        <div class="sf-banner" id="banner" data-show="0"><h2 id="banner-h"></h2><p id="banner-p"></p></div>
+        <div class="sf-tip" id="tip" data-show="0"><b>TIP</b><span id="tip-text"></span></div>
+        <div class="sf-frozen" id="frozen" hidden>
+          FROZEN SOLID<br />Mash JUMP to shiver free<br /><span id="frozen-sub">A friend standing next to you thaws you fast</span>
+          <div class="sf-frozen__bar"><b id="frozen-fill"></b></div>
+        </div>
+        <div class="sf-over" id="over" hidden></div>
+      </div>
+
+      <div class="sf-pad" id="pad">
+        <div class="sf-pad__side">
+          <button class="sf-key" data-k="left" aria-label="Left">&lt;</button>
+          <button class="sf-key" data-k="right" aria-label="Right">&gt;</button>
+        </div>
+        <div class="sf-pad__side">
+          <button class="sf-key sf-key--use" data-k="use">USE</button>
+          <button class="sf-key sf-key--jump" data-k="jump">JUMP</button>
+        </div>
+      </div>
+      <div class="sf-keys-hint"><b>← →</b> move · <b>Space / ↑</b> jump (hold to climb ropes) · <b>E</b> use · <b>M</b> mute</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { mountArcade, shareRoom, escapeHtml } from '/arcade/shared/room.js';
+    import {
+      buildWorld, stepBody, makeBody, makeBot, stepBot, windAt, inBivvy, byFire, tileAt,
+      STAGES, WEATHER, ITEMS, ITEM_KINDS, TILE, COLS, WORLD_W, PHYS,
+      ROCK, LEDGE, ICE, ROPE, GROUND, mulberry32,
+    } from '/arcade/summit-fever/world.js';
+
+    const SLUG = 'summit-fever';
+    const ART = '/arcade/summit-fever/art/';
+    const VW = WORLD_W; // 320 world pixels across, always
+
+    // Jacket hues per climber colour. Red is the source sprite.
+    const COLOURS = {
+      red: { css: '#ef4b3f', hue: null },
+      blue: { css: '#4a90f0', hue: 214 },
+      yellow: { css: '#f2c53d', hue: 47, lift: 0.14 },
+      green: { css: '#4cc26a', hue: 128 },
+      purple: { css: '#b07cf5', hue: 280 },
+      orange: { css: '#f58a3c', hue: 25, lift: 0.04 },
+    };
+
+    const WX_DOT = {
+      clear: '#ffd25a', drizzle: '#8fc8ff', downpour: '#4a8fe6', thunder: '#c9a2ff',
+      fog: '#b9c2cc', gale: '#9fe3d0', snow: '#e8f2ff', blizzard: '#ffffff', whiteout: '#f4f7fa',
+    };
+    const WX_TIP = {
+      clear: 'Sun is out. Warm up and dry off while it lasts.',
+      drizzle: 'Light rain. Wet clothes make the cold bite harder.',
+      downpour: 'Soaked to the skin. Keep moving or find a bivvy tent.',
+      thunder: 'Lightning lands where it crackles. Do NOT hold an umbrella.',
+      fog: 'You cannot see a thing. Stay close to each other.',
+      gale: 'Gusts will shove you off ledges. Time your jumps.',
+      snow: 'Snow now. Anyone still wet is going to freeze fast.',
+      blizzard: 'Blizzard. Huddle together or freeze solid.',
+      whiteout: 'Whiteout. Follow the jacket in front of you.',
+    };
+    const GEM_LABEL = { berry: 'berries', crystal: 'a crystal', flower: 'an edelweiss' };
+
+    // ── DOM ───────────────────────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+    const gateEl = $('gate');
+    const gameEl = $('game');
+    const stageEl = $('stage');
+    const canvas = $('view');
+    const dctx = canvas.getContext('2d');
+    const overEl = $('over');
+
+    // World buffer: everything pixel-art is drawn here at 1 world px = 1 px,
+    // then scaled up once. Text is drawn afterwards at device resolution.
+    const wc = document.createElement('canvas');
+    const w = wc.getContext('2d');
+    const up = document.createElement('canvas');
+    const upx = up.getContext('2d');
+    let VH = 480;
+    let dpr = 1;
+    let scale = 1; // device px per world px
+
+    function resize() {
+      const r = stageEl.getBoundingClientRect();
+      dpr = Math.min(3, window.devicePixelRatio || 1);
+      canvas.width = Math.max(1, Math.round(r.width * dpr));
+      canvas.height = Math.max(1, Math.round(r.height * dpr));
+      scale = canvas.width / VW;
+      VH = Math.max(240, Math.round(canvas.height / scale));
+      wc.width = VW;
+      wc.height = VH;
+      w.imageSmoothingEnabled = false;
+    }
+    new ResizeObserver(resize).observe(stageEl);
+
+    // ── Art ───────────────────────────────────────────────────────────────
+    const art = { ok: {} };
+    function loadImg(name) {
+      return new Promise((res) => {
+        const img = new Image();
+        img.onload = () => { art.ok[name] = true; res(img); };
+        img.onerror = () => res(null);
+        img.src = ART + name;
+      });
+    }
+    async function loadJson(name) {
+      try {
+        const r = await fetch(ART + name);
+        return r.ok ? await r.json() : null;
+      } catch { return null; }
+    }
+    const artReady = (async () => {
+      const [hiker, hikerJ, items16, items32, itemsJ, tiles, tilesJ, hut, fire, chopper, ...bgs] = await Promise.all([
+        loadImg('hiker.png'), loadJson('hiker.json'), loadImg('items16.png'), loadImg('items32.png'), loadJson('items.json'),
+        loadImg('tiles.png'), loadJson('tiles.json'), loadImg('hut.png'), loadImg('fire.png'), loadImg('chopper.png'),
+        loadImg('bg-forest.png'), loadImg('bg-alpine.png'), loadImg('bg-glacier.png'), loadImg('bg-summit.png'),
+      ]);
+      Object.assign(art, { hiker, hikerJ, items16, items32, itemsJ, tiles, tilesJ, hut, fire, chopper });
+      art.bg = { forest: bgs[0], alpine: bgs[1], glacier: bgs[2], summit: bgs[3] };
+      art.skyTop = {};
+      for (const [k, img] of Object.entries(art.bg)) if (img) art.skyTop[k] = sampleTop(img);
+      if (hiker && hikerJ) art.hikers = buildHikerSheets(hiker, hikerJ);
+      if (itemsJ?.order) art.itemIndex = Object.fromEntries(itemsJ.order.map((k, i) => [k, i]));
+      else art.itemIndex = Object.fromEntries(ITEM_KINDS.map((k, i) => [k, i]));
+      if (tilesJ) {
+        art.tileTheme = Object.fromEntries(tilesJ.themes.map((k, i) => [k, i]));
+        art.tileCol = Object.fromEntries(tilesJ.cols.map((k, i) => [k, i]));
+        art.tileSize = tilesJ.size || 16;
+      }
+      buildPackIcons();
+    })();
+
+    function sampleTop(img) {
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = 4;
+      const x = c.getContext('2d');
+      x.drawImage(img, 0, 0);
+      const d = x.getImageData(0, 0, img.width, 1).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      return n ? `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(b / n)})` : null;
+    }
+
+    // Palette-swap the red jacket into every party colour, once, at load.
+    function buildHikerSheets(img, j) {
+      const out = {};
+      const base = document.createElement('canvas');
+      base.width = img.width; base.height = img.height;
+      const bx = base.getContext('2d');
+      bx.drawImage(img, 0, 0);
+      const src = bx.getImageData(0, 0, img.width, img.height);
+      const ramp = (j.jacketRamp || []).map(hexToRgb);
+      for (const [name, spec] of Object.entries(COLOURS)) {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const cx = c.getContext('2d');
+        if (spec.hue == null || !ramp.length) {
+          cx.drawImage(img, 0, 0);
+        } else {
+          const data = new ImageData(new Uint8ClampedArray(src.data), img.width, img.height);
+          const d = data.data;
+          const map = new Map(ramp.map((rgb) => {
+            const [, s, l] = rgbToHsl(...rgb);
+            const to = hslToRgb(spec.hue / 360, Math.min(1, s * (name === 'yellow' ? 1.0 : 0.95)), Math.min(0.92, l + (spec.lift || 0)));
+            return [rgb.join(','), to];
+          }));
+          for (let i = 0; i < d.length; i += 4) {
+            const to = map.get(`${d[i]},${d[i + 1]},${d[i + 2]}`);
+            if (to) { d[i] = to[0]; d[i + 1] = to[1]; d[i + 2] = to[2]; }
+          }
+          cx.putImageData(data, 0, 0);
+        }
+        out[name] = c;
+      }
+      return out;
+    }
+    function hexToRgb(h) { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      let h = 0, s = 0; const l = (mx + mn) / 2;
+      if (mx !== mn) {
+        const d = mx - mn;
+        s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+        h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        h /= 6;
+      }
+      return [h, s, l];
+    }
+    function hslToRgb(h, s, l) {
+      const f = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
+      if (!s) return [l * 255, l * 255, l * 255].map(Math.round);
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s; const p = 2 * l - q;
+      return [f(p, q, h + 1 / 3), f(p, q, h), f(p, q, h - 1 / 3)].map((v) => Math.round(v * 255));
+    }
+
+    // Tiny hand-drawn sprites: gems, tent, cairn. One character per pixel.
+    function pix(rows, pal) {
+      const c = document.createElement('canvas');
+      c.width = rows[0].length; c.height = rows.length;
+      const x = c.getContext('2d');
+      rows.forEach((row, y) => [...row].forEach((ch, i) => { if (pal[ch]) { x.fillStyle = pal[ch]; x.fillRect(i, y, 1, 1); } }));
+      return c;
+    }
+    const GEMS = {
+      berry: pix(['...gg...', '..gG....', '.rr.rr..', 'rRrrRrr.', 'rrrrrrr.', '.rr.rr..', '........', '........'],
+        { g: '#2f7a3a', G: '#5cbf5a', r: '#c2263a', R: '#ff7d8c' }),
+      crystal: pix(['...w....', '..wcc...', '.wccCc..', 'wccCCcc.', '.cCCcc..', '..cCc...', '...c....', '........'],
+        { w: '#ffffff', c: '#4fd6ff', C: '#1d8fc2' }),
+      flower: pix(['...w....', '.w.w.w..', '..wWw...', 'wwWyWww.', '..wWw...', '.w.w.w..', '...w....', '...g....'],
+        { w: '#f4f7ff', W: '#cfd8e6', y: '#ffd23a', g: '#5c9a52' }),
+    };
+    const TENT = pix([
+      '..............o..............',
+      '.............ooO.............',
+      '............ooOOO............',
+      '...........ooOOOOO...........',
+      '..........ooOOOOOOO..........',
+      '.........ooOOOOOOOOO.........',
+      '........ooOOOOdOOOOOO........',
+      '.......ooOOOOddOOOOOOO.......',
+      '......ooOOOOdddOOOOOOOO......',
+      '.....ooOOOOddddOOOOOOOOO.....',
+      '....ooOOOOdddddOOOOOOOOOO....',
+      '...ooOOOOddddddOOOOOOOOOOO...',
+      '..ooOOOOdddddddOOOOOOOOOOOO..',
+      '.kooOOOddddddddOOOOOOOOOOOOk.',
+    ], { o: '#ff9b3d', O: '#e0611f', d: '#3a1a10', k: '#5b4632' });
+
+    // ── Sound: a tiny synth, nothing to download ──────────────────────────
+    const audio = { ctx: null, on: true, master: null, noise: null, wind: null, rain: null };
+    try { audio.on = localStorage.getItem('arcade:mute') !== '1'; } catch { /* private mode */ }
+    function ensureAudio() {
+      if (audio.ctx || !audio.on) return;
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        audio.ctx = ac;
+        audio.master = ac.createGain();
+        audio.master.gain.value = 0.5;
+        audio.master.connect(ac.destination);
+        const len = ac.sampleRate * 2;
+        const buf = ac.createBuffer(1, len, ac.sampleRate);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+        audio.noise = buf;
+        const loop = (type, freq, q) => {
+          const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+          const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+          const g = ac.createGain(); g.gain.value = 0;
+          src.connect(f); f.connect(g); g.connect(audio.master); src.start();
+          return { g, f };
+        };
+        audio.wind = loop('bandpass', 420, 0.7);
+        audio.rain = loop('highpass', 2600, 0.3);
+      } catch { audio.ctx = null; }
+    }
+    function tone(freq, dur, type = 'square', vol = 0.12, slide = 0, delay = 0) {
+      const ac = audio.ctx; if (!ac || !audio.on) return;
+      const t = ac.currentTime + delay;
+      const o = ac.createOscillator(); const g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+      o.connect(g); g.connect(audio.master); o.start(t); o.stop(t + dur + 0.02);
+    }
+    function burst(dur, freq, vol = 0.3, type = 'lowpass', delay = 0) {
+      const ac = audio.ctx; if (!ac || !audio.on) return;
+      const t = ac.currentTime + delay;
+      const s = ac.createBufferSource(); s.buffer = audio.noise;
+      const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+      const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      s.connect(f); f.connect(g); g.connect(audio.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+    }
+    const SFX = {
+      jump: () => tone(330, 0.09, 'square', 0.05, 260),
+      grab: () => { tone(660, 0.08, 'square', 0.07); tone(990, 0.12, 'square', 0.07, 0, 0.07); },
+      gem: () => tone(1320, 0.09, 'triangle', 0.08, 300),
+      cookie: () => { burst(0.12, 1800, 0.25, 'bandpass'); tone(523, 0.1, 'square', 0.08, 0, 0.1); tone(784, 0.18, 'square', 0.08, 0, 0.2); tone(1046, 0.25, 'square', 0.08, 0, 0.3); },
+      frozen: () => { tone(1800, 0.5, 'triangle', 0.08, -1500); burst(0.4, 5000, 0.12, 'highpass'); },
+      thaw: () => { tone(400, 0.25, 'triangle', 0.08, 500); tone(800, 0.3, 'triangle', 0.06, 600, 0.15); },
+      zap: () => { burst(0.18, 6000, 0.5, 'highpass'); burst(1.6, 160, 0.6, 'lowpass', 0.08); },
+      thunder: () => burst(2.2, 120, 0.45, 'lowpass'),
+      bonk: () => { tone(120, 0.18, 'square', 0.15, -60); burst(0.15, 600, 0.2); },
+      arrive: () => { [523, 659, 784].forEach((f, i) => tone(f, 0.16, 'square', 0.07, 0, i * 0.11)); },
+      summit: () => { [523, 659, 784, 1046, 784, 1046].forEach((f, i) => tone(f, 0.22, 'square', 0.08, 0, i * 0.13)); },
+      chopper: () => { for (let i = 0; i < 10; i++) burst(0.06, 300, 0.25, 'lowpass', i * 0.09); },
+      warn: () => { tone(880, 0.12, 'square', 0.06); tone(660, 0.16, 'square', 0.06, 0, 0.14); },
+      avalanche: () => burst(3, 90, 0.7, 'lowpass'),
+      cocoa: () => { tone(392, 0.2, 'triangle', 0.08, 80); tone(523, 0.25, 'triangle', 0.08, 80, 0.15); },
+      shiver: () => tone(2000 + Math.random() * 600, 0.04, 'triangle', 0.03),
+    };
+    function sfx(name) { if (audio.ctx && audio.on) try { SFX[name]?.(); } catch { /* audio is best-effort */ } }
+    function setMute(off) {
+      audio.on = !off;
+      try { localStorage.setItem('arcade:mute', off ? '1' : '0'); } catch { /* private mode */ }
+      $('mute').textContent = audio.on ? 'Sound on' : 'Muted';
+      if (audio.master) audio.master.gain.value = audio.on ? 0.5 : 0;
+      if (audio.on) ensureAudio();
+    }
+    $('mute').addEventListener('click', () => setMute(audio.on));
+    $('mute').textContent = audio.on ? 'Sound on' : 'Muted';
+
+    // ── Game state ────────────────────────────────────────────────────────
+    let G = null; // latest view from the server
+    let players = [];
+    let isHost = false;
+    let world = null;
+    let worldSeed = null;
+    let lobbyWorld = null;
+    const body = makeBody(160, 0);
+    let myTp = -1;
+    const remote = new Map(); // id -> { snaps:[{t,x,y}], tp, a, f, vx }
+    const bots = new Map(); // id -> kinematic bot (host only)
+    let lastEv = null;
+    let offsets = [];
+    let offset = 0;
+    const cam = { y: 0, shake: 0, init: false };
+    const sentGrab = new Map();
+    let lastSend = 0;
+    let lastBotSend = 0;
+    let sentSig = '';
+    let visSmooth = 1;
+    let washSmooth = 1;
+    let darkSmooth = 0;
+    let flash = 0;
+    let lastShiver = 0;
+    const chopperFx = [];
+    const popups = []; // floating score text, drawn crisp in the text pass
+    const fx = []; // world-space particles
+    const weatherP = []; // screen-space particles
+    let stepAnim = 0;
+
+    const serverNow = () => Date.now() + offset;
+    const byId = (id) => G?.climbers?.find((c) => c.id === id) || null;
+    const meC = () => (G?.me ? byId(G.me) : null);
+    const nameOf = (id) => (id === G?.me ? 'You' : byId(id)?.n || 'Someone');
+    const colourOf = (id) => COLOURS[byId(id)?.c]?.css || '#fff';
+
+    function currentFront(t) {
+      const f = G?.fronts;
+      if (!f || !f.length) return null;
+      return f.find((x) => t >= x.from && t < x.to) || f[f.length - 1];
+    }
+    function nextFront(t) {
+      return G?.fronts?.find((x) => x.from > t) || null;
+    }
+    function buffsOf(c, t) {
+      const out = {};
+      for (const [k, until] of Object.entries(c?.bf || {})) if (until > t) out[k] = until;
+      return out;
+    }
+
+    // ── Room ──────────────────────────────────────────────────────────────
+    const room = mountArcade({
+      slug: SLUG,
+      title: 'Summit Fever',
+      tagline: 'Three friends, one mountain, every kind of weather. Carry a cookie.',
+      createLabel: 'Start an expedition',
+      namePlaceholder: 'Who is roping up?',
+      soloNote: 'Built for 3–4 phones. Fewer than three of you? Bot guides fill the party so the climb still runs.',
+      gateEl,
+      onJoined: () => {
+        gameEl.hidden = false;
+        resize();
+      },
+      onState,
+    });
+
+    function onState(msg) {
+      players = msg.players || [];
+      isHost = !!msg.host;
+      $('code').textContent = msg.code || '—';
+
+      const sample = msg.serverNow - Date.now();
+      offsets.push(sample);
+      if (offsets.length > 24) offsets.shift();
+      offset = Math.max(...offsets);
+
+      const prevPhase = G?.phase;
+      G = msg.game;
+
+      if (G.seed && G.seed !== worldSeed) {
+        world = buildWorld(G.seed);
+        worldSeed = G.seed;
+        remote.clear();
+        bots.clear();
+        myTp = -1;
+        cam.init = false;
+        // Watched it start (from the lobby or the ending): play every event of
+        // the new climb — event ids restart from 1. Arrived mid-climb: skip
+        // the backlog.
+        lastEv = prevPhase === 'lobby' || prevPhase === 'ending' ? 0 : null;
+      }
+
+      // My body: the server only moves it by teleport (chopper, new climb).
+      const me = meC();
+      if (me && me.tp !== myTp) {
+        body.x = me.x; body.y = me.y; body.vx = 0; body.vy = 0;
+        body.climbing = false; body.ground = false;
+        myTp = me.tp;
+        if (Math.abs(cam.y - (me.y - VH * 0.62)) > VH) cam.init = false;
+      }
+
+      const t = performance.now();
+      for (const c of G.climbers || []) {
+        if (c.id === G.me) continue;
+        let r = remote.get(c.id);
+        if (!r || r.tp !== c.tp) {
+          r = { snaps: [], tp: c.tp };
+          remote.set(c.id, r);
+        }
+        const last = r.snaps[r.snaps.length - 1];
+        if (!last || last.x !== c.x || last.y !== c.y) r.snaps.push({ t, x: c.x, y: c.y });
+        if (r.snaps.length > 12) r.snaps.shift();
+        r.a = c.a; r.f = c.f; r.vx = c.vx;
+
+        if (c.bot && isHost) {
+          let b = bots.get(c.id);
+          if (!b || b.tp !== c.tp) {
+            b = makeBot(c.x, c.y);
+            b.tp = c.tp;
+            b.stage = G.stage;
+            b.i = -1;
+            if (G.phase === 'climb' && world) b.i = nearestRouteIndex(c.y);
+            bots.set(c.id, b);
+          }
+        }
+      }
+      if (!isHost) bots.clear();
+
+      handleEvents(G.ev || []);
+      if (prevPhase !== G.phase) onPhase(prevPhase, G.phase);
+      renderDom();
+    }
+
+    function nearestRouteIndex(y) {
+      const st = world.stages[G.stage];
+      let best = -1;
+      st.route.forEach((l, i) => { if (l.row * TILE >= y - 2) best = i; });
+      return best;
+    }
+
+    // ── Events → effects, toasts, banners ─────────────────────────────────
+    function handleEvents(list) {
+      if (lastEv === null) {
+        lastEv = list.reduce((m, e) => Math.max(m, e.id), 0);
+        return;
+      }
+      for (const e of list) {
+        if (e.id <= lastEv) continue;
+        lastEv = e.id;
+        onEvent(e);
+      }
+    }
+
+    function onEvent(e) {
+      const mine = e.who && e.who === G.me;
+      const who = e.who ? nameOf(e.who) : '';
+      const col = e.who ? colourOf(e.who) : '#fff';
+      switch (e.k) {
+        case 'intro':
+          banner('SUMMIT FEVER', 'Climb to camp. The stage ends when EVERYONE is in.\nStorms drain warmth, and wet clothes freeze faster.\nA pocketed cookie saves you once.\nStand next to a frozen friend to thaw them.', 6600);
+          break;
+        case 'stage': {
+          const s = STAGES[e.stage];
+          banner(`STAGE ${e.stage + 1} · ${s.name.toUpperCase()}`, s.blurb, 3800);
+          sfx('warn');
+          break;
+        }
+        case 'front': {
+          const label = (WEATHER[e.kind]?.label || e.kind).toUpperCase();
+          if (G.stage === STAGES.length - 1 && e.kind === 'clear') {
+            banner('THE CLOUDS PART', 'Sunrise on the summit. Go, go, go!', 3400);
+            sfx('summit');
+          } else if (G.stageStarted && serverNow() - G.stageStarted > 2500) {
+            banner(label, WX_TIP[e.kind], 1900);
+            if (['thunder', 'blizzard', 'whiteout', 'gale'].includes(e.kind)) sfx('warn');
+            if (e.kind === 'thunder') setTimeout(() => sfx('thunder'), 300);
+          }
+          break;
+        }
+        case 'grab':
+          if (mine) { sfx('grab'); sparkle(body.x, body.y - 12, '#fff'); }
+          toast(`${who} grabbed ${itemName(e.kind)}${e.rod ? ' — in a thunderstorm. Bold.' : ''}`, col);
+          if (mine && e.kind === 'cookie') banner('COOKIE', 'Carry it. It saves you the moment you would freeze.', 2400);
+          if (mine && e.rod) banner('UMBRELLA IN A STORM', 'Lightning loves an umbrella. Good luck.', 2600);
+          break;
+        case 'gem':
+          if (mine) { sfx('gem'); sparkle(e.x, e.y, '#9ff'); }
+          popups.push({ x: e.x, y: e.y - 4, text: '+10', col: colourOf(e.who), t: 0 });
+          break;
+        case 'cookie':
+          crumbs(e.who);
+          if (mine) { sfx('cookie'); banner('COOKIE SAVE!', 'You were about to freeze solid. That cookie just saved you.', 2800); }
+          else toast(`${who}'s cookie saved them from hypothermia`, col);
+          break;
+        case 'eat':
+          crumbs(e.who);
+          if (mine) sfx('cocoa');
+          toast(`${who} ate a cookie`, col);
+          break;
+        case 'feed':
+          crumbs(e.to);
+          sfx('thaw');
+          toast(`${who} fed ${nameOf(e.to)} a cookie — thawed out`, col);
+          if (e.to === G.me) banner('THAWED', `${who} fed you a cookie.`, 2200);
+          break;
+        case 'frozen':
+          sfx('frozen');
+          if (!mine) toast(`${who} froze solid! Stand next to them to thaw them`, col);
+          break;
+        case 'thaw':
+          sfx('thaw');
+          toast(`${who} ${e.who === G.me ? 'were' : 'was'} thawed out by ${e.by.map(nameOf).join(' & ')}`, col);
+          break;
+        case 'shiver':
+          sfx('thaw');
+          toast(`${who} shivered free`, col);
+          break;
+        case 'cocoa':
+          sfx('cocoa');
+          steam(e.who);
+          toast(`${who} poured cocoa${e.n ? ` for ${e.n} other${e.n > 1 ? 's' : ''}` : ''}`, col);
+          break;
+        case 'zap':
+          flash = 1;
+          cam.shake = Math.max(cam.shake, 5);
+          sfx('zap');
+          if (mine) knock(e.x, 190, 230);
+          toast(`${who} got struck by lightning${e.fried ? ' — umbrella fried' : ''}`, col);
+          break;
+        case 'bonk':
+          cam.shake = Math.max(cam.shake, 3);
+          sfx('bonk');
+          if (mine) knock(e.x, 140, 160);
+          toast(`${e.kind === 'rock' ? 'Falling rock' : e.kind === 'ice' ? 'Falling ice' : 'Snow slough'} hit ${who === 'You' ? 'you' : who}`, col);
+          break;
+        case 'arrive':
+          if (mine) sfx(e.summit ? 'summit' : 'arrive');
+          { const p = posOf(e.who); popups.push({ x: p.x, y: p.y - 30, text: `+${e.pts}`, col: colourOf(e.who), t: 0, big: true }); }
+          toast(e.summit && e.idx === 0
+            ? `${who} reached the SUMMIT first (+${e.pts})`
+            : `${who} reached ${e.summit ? 'the summit' : 'camp'} — ${ordinal(e.idx + 1)} (+${e.pts})`, col);
+          break;
+        case 'chopper':
+          sfx('chopper');
+          chopperFx.push({ t: 0, fx: e.fx, fy: e.fy, tx: e.tx, ty: e.ty, who: e.who });
+          toast(e.hero
+            ? `${who} ${e.who === G.me ? 'were' : 'was'} flown back up to camp — free ride for a rescuer`
+            : `${who} ${e.who === G.me ? 'were' : 'was'} airlifted to camp (−60)${e.why === 'frozen' ? ' — found frozen' : e.why === 'timeout' ? ' — out of time' : ''}`, col);
+          if (mine) banner('AIRLIFTED', e.why === 'frozen' ? 'The rescue crew found you frozen to the mountain.' : 'Out of time. The rescue chopper scoops you up.', 2600);
+          break;
+        case 'takeover':
+          toast(`${who} ${e.who === G.me ? 'take' : 'takes'} over from ${e.bot}`, col);
+          break;
+        case 'wipe':
+          banner('PARTY WIPE', 'Everyone froze. The chopper takes you all to camp.', 3000);
+          break;
+        case 'avalanche':
+          cam.shake = 8;
+          sfx('avalanche');
+          banner('AVALANCHE!', 'Snow is coming down the face. Keep moving!', 2800);
+          break;
+        case 'drop':
+          sfx('warn');
+          toast('Supply drop! A crate is floating down above you', '#ffd25a');
+          break;
+        case 'summit':
+          sfx('summit');
+          banner('SUMMIT!', 'The whole party is on top of the world.', 5000);
+          break;
+        default:
+          break;
+      }
+    }
+
+    function knock(fromX, vx, vy) {
+      const d = body.x >= fromX ? 1 : -1;
+      body.vx = d * vx;
+      body.vy = -vy;
+      body.climbing = false;
+      body.ground = false;
+    }
+
+    function onPhase(prev, next) {
+      if (next === 'climb' && prev === 'intro') cam.init = false;
+      if (next === 'ending') sfx('summit');
+      if (next === 'camp' || next === 'ending') {
+        $('banner').dataset.show = '0';
+        $('tip').dataset.show = '0';
+      }
+    }
+
+    function itemName(k) {
+      return { cookie: 'a cookie', cocoa: 'a thermos of cocoa', axe: 'the ice axe', brolly: 'an umbrella', bar: 'an energy bar', down: 'a down jacket', lamp: 'a headlamp' }[k] || k;
+    }
+    function ordinal(n) { return n + (['th', 'st', 'nd', 'rd'][(n % 100 >> 3) ^ 1 && n % 10] || 'th'); }
+
+    let bannerTimer = null;
+    function banner(h, p, ms = 2600) {
+      $('banner-h').textContent = h;
+      $('banner-p').textContent = p || '';
+      $('banner').dataset.show = '1';
+      clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(() => ($('banner').dataset.show = '0'), ms);
+    }
+    function toast(text, col = '#fff') {
+      const box = $('toasts');
+      const el = document.createElement('div');
+      el.className = 'sf-toast';
+      el.innerHTML = `<span class="sf-dot" style="background:${col}"></span><span>${escapeHtml(text)}</span>`;
+      box.prepend(el);
+      while (box.children.length > 4) box.lastChild.remove();
+      setTimeout(() => (el.dataset.fade = '1'), 3600);
+      setTimeout(() => el.remove(), 4300);
+    }
+
+    // One-time tips, triggered by what is actually on screen.
+    const tipsShown = new Set();
+    let tipTimer = null;
+    function tip(key, text) {
+      if (tipsShown.has(key) || $('frozen').hidden === false) return;
+      tipsShown.add(key);
+      $('tip-text').textContent = text;
+      $('tip').dataset.show = '1';
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => ($('tip').dataset.show = '0'), 5200);
+    }
+    let lastTipCheck = 0;
+    function checkTips(t) {
+      if (t - lastTipCheck < 400 || !G || G.phase !== 'climb' || !world) return;
+      lastTipCheck = t;
+      if ($('tip').dataset.show === '1') return;
+      const me = meC();
+      if (!me) return;
+      const st = serverNow();
+      const near = (x, y, r) => Math.abs(x - body.x) < r && Math.abs(y - body.y) < r;
+      if (world.ropes.some((rp) => rp.stage === G.stage && near((rp.col + 0.5) * TILE, (rp.bottom + 1) * TILE, 40))) return tip('rope', 'Fixed rope. Stand under it and hold JUMP to climb. Press left or right to let go.');
+      if (world.bivvies.some((b) => b.stage === G.stage && near(b.x, b.y, 60))) return tip('bivvy', 'Bivvy tent. Stand inside it to dodge the rain, the lightning and most of the cold.');
+      if ((G.strikes || []).some((k) => !k.done && k.at > st && near(k.x, k.y, 50))) return tip('strike', 'Crackling ground means a strike is coming. Get out of the circle!');
+      if ((G.climbers || []).some((o) => o.id !== me.id && o.fz)) return tip('frozen', 'A friend froze solid. Stand right next to them to thaw them (+50), or USE a cookie on them.');
+      if (me.w < 45) return tip('cold', 'Getting cold. Huddle beside a friend, duck into a bivvy, or get to camp.');
+      if (me.wet > 55) return tip('wet', 'Soaked. Wet clothes freeze much faster once the snow comes.');
+      if (world.ledges.some((l) => l.cache && l.stage === G.stage && near((l.c0 + 1) * TILE, l.row * TILE, 90))) return tip('cache', "That high ledge is a cache. Stand on a friend's head to reach it.");
+      if (me.arr >= 0) return tip('camp', 'Made it. The gate opens when the whole party is in. You can drop back through the gap to help.');
+      if (st - G.stageStarted > 4000 && G.stage === 0) return tip('jump', 'Hold JUMP longer to jump higher. You can jump up through ledges from below.');
+    }
+
+    // ── Input ─────────────────────────────────────────────────────────────
+    const keys = { left: false, right: false, jump: false };
+    let jumpEdge = false;
+    function press(k, down) {
+      ensureAudio();
+      if (k === 'use') { if (down) doUse(); return; }
+      if (k === 'jump' && down && !keys.jump) {
+        jumpEdge = true;
+        const me = meC();
+        if (me?.fz) shiverNow();
+      }
+      keys[k] = down;
+    }
+    function doUse() {
+      if (G?.phase === 'climb') room.send({ t: 'use' });
+    }
+    function shiverNow() {
+      const t = performance.now();
+      if (t - lastShiver < 120) return;
+      lastShiver = t;
+      room.send({ t: 'shiver' });
+      sfx('shiver');
+      fx.push({ k: 'spark', x: body.x + (Math.random() - 0.5) * 12, y: body.y - 10 - Math.random() * 12, vx: (Math.random() - 0.5) * 30, vy: -30, life: 0.4, col: '#dff' });
+    }
+    const KEYMAP = {
+      ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+      ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyE: 'use', ShiftLeft: 'use', ShiftRight: 'use',
+    };
+    window.addEventListener('keydown', (e) => {
+      if (gameEl.hidden) return;
+      if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      if (e.code === 'KeyM') { setMute(audio.on); return; }
+      const k = KEYMAP[e.code];
+      if (!k) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      press(k, true);
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = KEYMAP[e.code];
+      if (k && k !== 'use') keys[k] = false;
+    });
+    window.addEventListener('blur', () => { keys.left = keys.right = keys.jump = false; });
+    for (const btn of document.querySelectorAll('.sf-key')) {
+      const k = btn.dataset.k;
+      const down = (e) => { e.preventDefault(); btn.setPointerCapture?.(e.pointerId); btn.dataset.down = '1'; press(k, true); };
+      const up = (e) => { e.preventDefault(); btn.dataset.down = '0'; if (k !== 'use') keys[k] = false; };
+      btn.addEventListener('pointerdown', down);
+      btn.addEventListener('pointerup', up);
+      btn.addEventListener('pointercancel', up);
+      btn.addEventListener('lostpointercapture', up);
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+    $('code').addEventListener('click', async () => {
+      const code = room.code();
+      if (!code) return;
+      const r = await shareRoom(SLUG, code, 'Summit Fever');
+      if (r === 'copied') toast('Invite link copied', '#ffb648');
+    });
+
+    // ── Simulation (local) ────────────────────────────────────────────────
+    function myLocked(me, t) {
+      if (!G) return true;
+      if (G.phase === 'intro' || G.phase === 'ending' || G.phase === 'lobby' || G.phase === 'summit') return true;
+      return !!(me?.fz || (me?.st && me.st > t));
+    }
+
+    function physicsStep(h) {
+      const me = meC();
+      if (!me || !world) return;
+      const t = serverNow();
+      const front = G.phase === 'climb' ? currentFront(t) : null;
+      const env = {
+        gatesFrom: G.stage,
+        wind: front && !me.fz ? windAt(front, t) : 0,
+        buffs: buffsOf(me, t),
+        locked: myLocked(me, t),
+        others: otherBodies(),
+      };
+      // An ice block doesn't skate: the server pins a frozen climber's x, so
+      // the local body must not drift either or the two screens disagree.
+      if (me.fz) { body.vx = 0; body.climbing = false; }
+      stepBody(world, body, { left: keys.left, right: keys.right, jump: keys.jump, jumpPressed: jumpEdge }, h, env);
+      jumpEdge = false;
+      if (body.jumped) sfx('jump');
+      if (body.ground && Math.abs(body.vx) > 5) stepAnim += Math.abs(body.vx) * h;
+      if (body.climbing && keys.jump) stepAnim += PHYS.CLIMB * h;
+    }
+
+    function otherBodies() {
+      const out = [];
+      const t = performance.now();
+      for (const c of G?.climbers || []) {
+        if (c.id === G.me || !c.on) continue;
+        const p = displayPos(c, t);
+        out.push({ id: c.id, x: p.x, y: p.y });
+      }
+      return out;
+    }
+
+    function displayPos(c, t) {
+      if (c.id === G?.me) return { x: body.x, y: body.y };
+      const b = bots.get(c.id);
+      if (b) return { x: b.x, y: b.y };
+      const r = remote.get(c.id);
+      if (!r || !r.snaps.length) return { x: c.x, y: c.y };
+      const rt = t - 120;
+      const s = r.snaps;
+      if (rt <= s[0].t) return { x: s[0].x, y: s[0].y };
+      for (let i = s.length - 1; i >= 0; i--) {
+        if (s[i].t <= rt) {
+          const a = s[i];
+          const n = s[i + 1];
+          if (!n) return { x: a.x, y: a.y };
+          const u = (rt - a.t) / Math.max(1, n.t - a.t);
+          return { x: a.x + (n.x - a.x) * u, y: a.y + (n.y - a.y) * u };
+        }
+      }
+      return { x: c.x, y: c.y };
+    }
+
+    function animOf(b) {
+      if (b.climbing) return 'climb';
+      if (!b.ground) return b.vy < 0 ? 'jump' : 'fall';
+      if (Math.abs(b.vx) > 8) return 'walk';
+      return 'idle';
+    }
+
+    function pickupCheck(x, y, who) {
+      if (!world || G.phase !== 'climb') return;
+      const taken = new Set(G.taken);
+      const t = performance.now();
+      const cx = x;
+      const cy = y - PHYS.H / 2;
+      const holder = who ? byId(who) : meC();
+      const consider = (p) => {
+        if (taken.has(p.id) || p.stage !== G.stage && p.stage != null) return;
+        // One cookie per pocket — the server refuses a second, so don't ask.
+        if (p.kind === 'cookie' && holder?.ck >= 1) {
+          if (!who && Math.abs(p.x - x) < 16 && Math.abs(p.y - (y - PHYS.H / 2)) < 18) tip('fullpocket', "Your pocket already has a cookie. Leave this one for someone who needs it.");
+          return;
+        }
+        if (Math.abs(p.x - cx) > 13 || Math.abs(p.y - cy) > 16) return;
+        const key = `${who || 'me'}:${p.id}`;
+        if (t - (sentGrab.get(key) || 0) < 500) return;
+        sentGrab.set(key, t);
+        room.send(who ? { t: 'grab', id: p.id, who } : { t: 'grab', id: p.id });
+      };
+      for (const p of world.items) if (p.stage === G.stage) consider(p);
+      for (const p of world.gems) if (p.stage === G.stage) consider(p);
+      for (const d of G.drops || []) {
+        const fall = dropFall(d);
+        if (fall >= 1) consider({ ...d, stage: G.stage });
+      }
+    }
+    function dropFall(d) { return Math.min(1, (serverNow() - d.at) / 3200); }
+
+    function netSend(t) {
+      const me = meC();
+      if (!me || !G || G.phase === 'lobby' || G.phase === 'ending') return;
+      const a = animOf(body);
+      const sig = `${Math.round(body.x)},${Math.round(body.y)},${a},${body.face}`;
+      if ((sig !== sentSig && t - lastSend > 90) || t - lastSend > 600) {
+        room.send({ t: 'pos', x: Math.round(body.x * 10) / 10, y: Math.round(body.y * 10) / 10, vx: Math.round(body.vx), f: body.face, a, tp: myTp });
+        lastSend = t;
+        sentSig = sig;
+      }
+      pickupCheck(body.x, body.y, null);
+    }
+
+    function botsStep(dt, t) {
+      if (!isHost || !world || !G || G.phase !== 'climb') return;
+      const st = serverNow();
+      const front = currentFront(st);
+      const vis = WEATHER[front?.kind]?.vis ?? 1;
+      const S = world.stages[G.stage];
+      const humansIn = (G.climbers || []).filter((c) => !c.bot && c.on).every((c) => c.arr >= 0 && c.y <= S.campY + 1);
+      for (const [id, b] of bots) {
+        const c = byId(id);
+        if (!c) continue;
+        const others = (G.climbers || []).filter((o) => o.id !== id).map((o) => ({ ...displayPos(o, t), frozen: o.fz }));
+        stepBot(world, b, dt, {
+          stage: G.stage,
+          frozen: c.fz,
+          stunned: c.st && c.st > st,
+          others,
+          // Once every person is at camp, nobody wants to watch a bot dawdle.
+          pace: humansIn ? 2.2 : vis < 0.5 ? 0.75 : 0.9,
+        });
+      }
+      if (t - lastBotSend > 120) {
+        lastBotSend = t;
+        for (const [id, b] of bots) {
+          const sig = `${Math.round(b.x)},${Math.round(b.y)},${b.anim},${b.face}`;
+          if (sig === b.sentSig && t - (b.sentAt || 0) < 900) continue;
+          b.sentSig = sig;
+          b.sentAt = t;
+          room.send({ t: 'pos', who: id, x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10, vx: b.mode === 'walk' ? b.face * 60 : 0, f: b.face, a: b.anim, tp: b.tp });
+          pickupCheck(b.x, b.y, id);
+        }
+      }
+    }
+
+    // ── Effects ───────────────────────────────────────────────────────────
+    function posOf(id) {
+      const c = byId(id);
+      return c ? displayPos(c, performance.now()) : { x: body.x, y: body.y };
+    }
+    function sparkle(x, y, col) {
+      for (let i = 0; i < 10; i++) fx.push({ k: 'spark', x, y, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 90, life: 0.5 + Math.random() * 0.3, col });
+    }
+    function crumbs(id) {
+      const p = posOf(id);
+      for (let i = 0; i < 14; i++) fx.push({ k: 'spark', x: p.x, y: p.y - 14, vx: (Math.random() - 0.5) * 110, vy: -40 - Math.random() * 80, life: 0.7, col: i % 3 ? '#c98a4b' : '#5a321a', g: 1 });
+    }
+    function steam(id) {
+      const p = posOf(id);
+      for (let i = 0; i < 12; i++) fx.push({ k: 'steam', x: p.x + (Math.random() - 0.5) * 16, y: p.y - 20, vx: (Math.random() - 0.5) * 10, vy: -18 - Math.random() * 14, life: 1.2 + Math.random() * 0.6, col: '#fff' });
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────
+    let lastT = performance.now();
+    let accum = 0;
+    function frame(t) {
+      const dt = Math.min(0.05, (t - lastT) / 1000);
+      lastT = t;
+      if (world && G && G.phase !== 'lobby') {
+        accum += dt;
+        let n = 0;
+        while (accum >= 1 / 120 && n++ < 12) {
+          physicsStep(1 / 120);
+          accum -= 1 / 120;
+        }
+        botsStep(dt, t);
+        netSend(t);
+        checkTips(t);
+      }
+      if (!gameEl.hidden) {
+        try { draw(dt, t); } catch (err) { console.error(err); }
+        updateHudLive();
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    function themeAt(y) {
+      if (!world) return 'forest';
+      if (y >= world.floorY) return 'forest';
+      for (const s of world.stages) if (y > s.campY) return STAGES[s.index].theme;
+      return STAGES[STAGES.length - 1].theme;
+    }
+    function stageIndexAt(y) {
+      if (!world) return 0;
+      for (const s of world.stages) if (y > s.campY - 3 * TILE) return s.index;
+      return STAGES.length - 1;
+    }
+
+    const THEME_FALLBACK = {
+      forest: { top: '#5fae4a', body: '#6b4a2f', wall: '#4a3b30' },
+      rock: { top: '#a4a09a', body: '#6d6a66', wall: '#4b4946' },
+      ice: { top: '#eef6ff', body: '#7cc4e8', wall: '#5a8fb0' },
+      snowrock: { top: '#f4f8ff', body: '#5e6670', wall: '#3f454d' },
+    };
+
+    function drawTile(theme, col, dx, dy) {
+      if (art.tiles && art.tileTheme && art.tileTheme[theme] != null && art.tileCol[col] != null) {
+        const s = art.tileSize;
+        w.drawImage(art.tiles, art.tileCol[col] * s, art.tileTheme[theme] * s, s, s, dx, dy, TILE, TILE);
+        return;
+      }
+      const f = THEME_FALLBACK[theme] || THEME_FALLBACK.rock;
+      if (col.startsWith('ledge')) {
+        w.fillStyle = f.body; w.fillRect(dx, dy + 3, TILE, 9);
+        w.fillStyle = f.top; w.fillRect(dx, dy, TILE, 4);
+      } else {
+        w.fillStyle = f.wall; w.fillRect(dx, dy, TILE, TILE);
+        w.fillStyle = 'rgba(0,0,0,0.18)';
+        if (col === 'wallFaceR') w.fillRect(dx + TILE - 3, dy, 3, TILE);
+        if (col === 'wallFaceL') w.fillRect(dx, dy, 3, TILE);
+      }
+    }
+
+    function skyColours(stageIdx, kind, t) {
+      const base = [
+        ['#5fa8e6', '#bfe3f7'],
+        ['#6d8fae', '#c3d3df'],
+        ['#9db8cc', '#e0eaf1'],
+        ['#55657a', '#b5c2cf'],
+        ['#3b3f73', '#f2a98a'],
+      ][stageIdx] || ['#5fa8e6', '#bfe3f7'];
+      if (stageIdx === 4 && kind === 'clear') return ['#5b6fb8', '#ffd18a'];
+      return base;
+    }
+
+    function draw(dt, t) {
+      const W2 = wc.width;
+      if (!canvas.width) return;
+      const lobby = !G || G.phase === 'lobby';
+      const wd = lobby ? (lobbyWorld ||= buildWorld(7)) : world;
+      if (!wd) return;
+      const st = serverNow();
+      const me = meC();
+      const front = G?.phase === 'climb' ? currentFront(st) : null;
+      const kind = front?.kind || 'clear';
+      const WX = WEATHER[kind];
+
+      // Camera
+      const focusY = lobby ? wd.floorY : body.y;
+      const target = Math.max(-Math.round(VH * 0.3), Math.min(wd.height - VH, focusY - VH * 0.64));
+      if (!cam.init) { cam.y = target; cam.init = true; }
+      cam.y += (target - cam.y) * Math.min(1, dt * 7);
+      cam.shake = Math.max(0, cam.shake - dt * 12);
+      const shakeY = cam.shake ? (Math.random() - 0.5) * cam.shake : 0;
+      const shakeX = cam.shake ? (Math.random() - 0.5) * cam.shake : 0;
+      const camY = Math.round(cam.y + shakeY);
+      const sIdx = lobby ? 0 : stageIndexAt(cam.y + VH / 2);
+      const sDef = STAGES[sIdx];
+
+      // Visibility and darkness ease toward the weather.
+      const lamp = me && buffsOf(me, st).lamp;
+      const wantVis = lobby ? 1 : lamp ? Math.max(WX.vis, 0.8) : WX.vis;
+      visSmooth += (wantVis - visSmooth) * Math.min(1, dt * 1.2);
+      const wantDark = ['thunder', 'downpour'].includes(kind) ? 0.38 : kind === 'blizzard' ? 0.2 : kind === 'drizzle' ? 0.15 : kind === 'snow' ? 0.1 : 0;
+      darkSmooth += (wantDark - darkSmooth) * Math.min(1, dt * 1.2);
+
+      w.setTransform(1, 0, 0, 1, Math.round(shakeX), 0);
+      w.imageSmoothingEnabled = false;
+
+      // ── Sky + background ───────────────────────────────────────────────
+      const [skyA, skyB] = skyColours(sIdx, kind, st);
+      const bg = art.bg?.[sDef.bg];
+      let by = VH;
+      if (bg) {
+        const s = wd.stages[sIdx];
+        const p = s ? Math.max(0, Math.min(1, (s.startY - (cam.y + VH / 2)) / (s.startY - s.campY))) : 0;
+        by = Math.round(VH - bg.height + 30 + p * 50);
+      }
+      // The gradient ends on the background's own top-row colour, exactly where
+      // the background starts, so there is no seam between them.
+      const g = w.createLinearGradient(0, 0, 0, Math.max(1, by));
+      g.addColorStop(0, skyA);
+      g.addColorStop(1, (bg && art.skyTop?.[sDef.bg]) || skyB);
+      w.fillStyle = g;
+      w.fillRect(-8, 0, W2 + 16, Math.max(by, 1) + 1);
+      if (!bg) { w.fillStyle = skyB; w.fillRect(-8, by, W2 + 16, VH - by); }
+      if (bg) w.drawImage(bg, 0, by);
+      // The summit backdrop is a sunrise; until the sky actually breaks it sits
+      // behind a whiteout wash, then the wash burns off over a couple of seconds.
+      const wantWash = sIdx === 4 && !(G?.phase === 'climb' && kind === 'clear') && G?.phase !== 'summit' && G?.phase !== 'ending' ? 1 : 0;
+      washSmooth += (wantWash - washSmooth) * Math.min(1, dt * (wantWash ? 4 : 0.6));
+      if (washSmooth > 0.01) { w.fillStyle = `rgba(225,232,240,${0.82 * washSmooth})`; w.fillRect(-8, 0, W2 + 16, VH); }
+      if (rainbowOn(st, kind)) drawRainbow();
+      if (darkSmooth > 0.01) { w.fillStyle = `rgba(20,26,44,${darkSmooth})`; w.fillRect(-8, 0, W2 + 16, VH); }
+
+      // ── Tiles ──────────────────────────────────────────────────────────
+      const r0 = Math.floor(camY / TILE) - 1;
+      const r1 = Math.floor((camY + VH) / TILE) + 1;
+      for (let r = r0; r <= r1; r++) {
+        if (r < 0 || r >= wd.rows) continue;
+        const theme = themeAt(r * TILE + 1);
+        const dy = r * TILE - camY;
+        for (let c = 0; c < COLS; c++) {
+          const tt = tileAt(wd, c, r);
+          if (!tt) continue;
+          const dx = c * TILE;
+          if (tt === ROCK || tt === GROUND) {
+            const solidL = c > 0 && [ROCK, GROUND].includes(tileAt(wd, c - 1, r));
+            const solidR = c < COLS - 1 && [ROCK, GROUND].includes(tileAt(wd, c + 1, r));
+            let col = ((c * 7 + r * 13) % 5 === 0) ? 'wallAlt' : 'wall';
+            if (!solidR && c < COLS - 1) col = 'wallFaceR';
+            else if (!solidL && c > 0) col = 'wallFaceL';
+            drawTile(tt === GROUND ? 'forest' : theme, col, dx, dy);
+            if (tt === GROUND && r === wd.floorRow) drawTile('forest', 'ledgeM', dx, dy);
+          } else if (tt === LEDGE || tt === ICE) {
+            const same = (cc) => [LEDGE, ICE].includes(tileAt(wd, cc, r));
+            const L = c > 0 && same(c - 1);
+            const R = c < COLS - 1 && same(c + 1);
+            const col = L && R ? 'ledgeM' : R ? 'ledgeL' : L ? 'ledgeR' : 'ledgeSolo';
+            drawTile(tt === ICE ? 'ice' : theme, col, dx, dy);
+            if (tt === ICE && !art.tiles) { w.fillStyle = 'rgba(255,255,255,0.6)'; w.fillRect(dx + 3, dy + 1, 4, 1); }
+          } else if (tt === ROPE) {
+            w.fillStyle = '#7a5a34';
+            w.fillRect(dx + 7, dy, 2, TILE);
+            w.fillStyle = '#c9a36a';
+            w.fillRect(dx + 7, dy + ((r * 5) % TILE), 2, 2);
+            w.fillRect(dx + 8, dy + ((r * 5 + 8) % TILE), 1, 2);
+          }
+        }
+      }
+
+      if (!lobby) drawSetDressing(wd, camY, st, t);
+      else drawLobbyDressing(wd, camY, t);
+
+      // ── Pickups ────────────────────────────────────────────────────────
+      if (!lobby && G.phase === 'climb') {
+        const taken = new Set(G.taken);
+        const bob = Math.sin(t / 300) * 1.5;
+        for (const p of wd.items) {
+          if (p.stage !== G.stage || taken.has(p.id)) continue;
+          const y = p.y - camY;
+          if (y < -20 || y > VH + 20) continue;
+          drawItem(p.kind, p.x, y + bob, t);
+        }
+        for (const p of wd.gems) {
+          if (p.stage !== G.stage || taken.has(p.id)) continue;
+          const y = p.y - camY;
+          if (y < -20 || y > VH + 20) continue;
+          const img = GEMS[p.kind];
+          w.drawImage(img, Math.round(p.x - 4), Math.round(y - 4 + bob * 0.6));
+          if ((t / 700 + p.id) % 3 < 0.15) { w.fillStyle = '#fff'; w.fillRect(Math.round(p.x + 2), Math.round(y - 5), 1, 1); }
+        }
+        for (const d of G.drops || []) {
+          if (taken.has(d.id)) continue;
+          const u = dropFall(d);
+          const y = d.y - (1 - u) * 140 - camY;
+          if (u < 1) {
+            w.fillStyle = '#f2f2f2';
+            w.beginPath(); w.ellipse(d.x, y - 22, 14, 7, 0, Math.PI, 0); w.fill();
+            w.fillStyle = '#e14b3b'; w.fillRect(d.x - 14, y - 22, 28, 1);
+            w.strokeStyle = 'rgba(255,255,255,0.7)';
+            w.beginPath(); w.moveTo(d.x - 13, y - 22); w.lineTo(d.x - 4, y - 6); w.moveTo(d.x + 13, y - 22); w.lineTo(d.x + 4, y - 6); w.stroke();
+          }
+          w.fillStyle = '#8a5a2b'; w.fillRect(d.x - 6, y - 6, 12, 10);
+          w.fillStyle = '#c98a4b'; w.fillRect(d.x - 6, y - 6, 12, 2); w.fillRect(d.x - 1, y - 6, 2, 10);
+          if (u >= 1) drawItem(d.kind, d.x, y - 14 + Math.sin(t / 250) * 1.5, t);
+        }
+      }
+
+      // ── Strikes (telegraphs and impacts) ───────────────────────────────
+      if (!lobby) drawStrikes(st, camY, t);
+
+      // ── Climbers ───────────────────────────────────────────────────────
+      const list = lobby ? lobbyClimbers() : (G.climbers || []);
+      const order = [...list].sort((a, b) => (a.id === G?.me) - (b.id === G?.me));
+      const tags = [];
+      for (const c of order) {
+        if (!lobby && !c.on && c.id !== G.me) continue;
+        const isMe = c.id === G?.me;
+        const p = lobby ? { x: c.x, y: c.y } : displayPos(c, t);
+        const y = p.y - camY;
+        if (y < -40 || y > VH + 40) { if (!lobby) tags.push({ c, x: p.x, y, off: true }); continue; }
+        let anim, face, step;
+        if (isMe) { anim = animOf(body); face = body.face; step = stepAnim; }
+        else if (bots.has(c.id)) { const b = bots.get(c.id); anim = b.anim; face = b.face; step = (t / 1000) * 70; }
+        else { const r = remote.get(c.id); anim = r?.a || c.a || 'idle'; face = r?.f || c.f || 1; step = (t / 1000) * 70; }
+        if (lobby || G.phase === 'summit' || G.phase === 'camp' && c.arr >= 0 && Math.abs(c.vx) < 5 && anim === 'idle') anim = lobby ? 'idle' : 'front';
+        const cold = !lobby && c.w < 30 && !c.fz;
+        const jitter = cold && Math.floor(t / 60) % 2 ? 1 : 0;
+        drawHiker(c.c, anim, face, step, Math.round(p.x) + jitter, Math.round(y), t);
+        const buffs = buffsOf(c, st);
+        if (buffs.brolly) drawItem('brolly', p.x + face * 3, y - 30, t, true);
+        if (buffs.lamp && visSmooth < 0.95) {
+          const grd = w.createRadialGradient(p.x + face * 8, y - 18, 2, p.x + face * 40, y - 18, 46);
+          grd.addColorStop(0, 'rgba(255,248,200,0.45)'); grd.addColorStop(1, 'rgba(255,248,200,0)');
+          w.fillStyle = grd; w.fillRect(p.x - 60, y - 70, 120, 100);
+        }
+        if (c.fz) drawIce(p.x, y, c.th, t);
+        if (c.st && c.st > st && !c.fz) drawStars(p.x, y - PHYS.H - 4, t);
+        if (!lobby && c.wet > 40 && !c.fz && Math.random() < dt * 6) fx.push({ k: 'drip', x: p.x + (Math.random() - 0.5) * 8, y: p.y - 4, vx: 0, vy: 30, life: 0.4, col: '#7cc4ff', g: 1 });
+        tags.push({ c, x: p.x, y, off: false, isMe });
+      }
+
+      // ── Chopper rescues ────────────────────────────────────────────────
+      for (let i = chopperFx.length - 1; i >= 0; i--) {
+        const cf = chopperFx[i];
+        cf.t += dt;
+        const u = Math.min(1, cf.t / 2.4);
+        const x = -60 + u * (VW + 120);
+        const y = Math.min(cf.fy, cf.ty) - camY - 70 + Math.sin(cf.t * 3) * 4;
+        if (art.chopper) {
+          w.drawImage(art.chopper, Math.round(x - art.chopper.width / 2), Math.round(y - art.chopper.height / 2));
+        } else {
+          w.fillStyle = '#e8473f'; w.fillRect(x - 18, y - 6, 30, 12);
+          w.fillStyle = '#fff'; w.fillRect(x - 6, y - 4, 10, 6);
+          w.fillStyle = '#333'; w.fillRect(x - 30 + ((t / 30) % 20), y - 10, 40, 2);
+        }
+        if (cf.t > 2.4) chopperFx.splice(i, 1);
+      }
+
+      // ── Particles ──────────────────────────────────────────────────────
+      for (let i = fx.length - 1; i >= 0; i--) {
+        const p = fx[i];
+        p.life -= dt;
+        if (p.life <= 0) { fx.splice(i, 1); continue; }
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        if (p.g) p.vy += 300 * dt;
+        w.globalAlpha = Math.min(1, p.life * 2);
+        w.fillStyle = p.col;
+        const s = p.k === 'steam' ? 2 : 1;
+        w.fillRect(Math.round(p.x), Math.round(p.y - camY), s, s);
+      }
+      w.globalAlpha = 1;
+      if (fx.length > 400) fx.splice(0, fx.length - 400);
+
+      // ── Weather (screen space) ─────────────────────────────────────────
+      drawWeather(dt, kind, front, st, camY);
+
+      // ── Visibility ─────────────────────────────────────────────────────
+      if (!lobby && visSmooth < 0.98) {
+        const col = kind === 'fog' ? '190,198,206' : kind === 'thunder' || kind === 'downpour' ? '40,46,62' : '238,243,249';
+        const cx = body.x;
+        const cy = body.y - camY - 10;
+        const r = 30 + visSmooth * VH * 0.7;
+        const grd = w.createRadialGradient(cx, cy, r * 0.35, cx, cy, r);
+        const a = Math.min(0.97, (1 - visSmooth) * 1.15);
+        grd.addColorStop(0, `rgba(${col},0)`);
+        grd.addColorStop(1, `rgba(${col},${a})`);
+        w.fillStyle = grd;
+        w.fillRect(-8, 0, W2 + 16, VH);
+      }
+
+      if (flash > 0) {
+        w.fillStyle = `rgba(255,255,255,${flash * 0.7})`;
+        w.fillRect(-8, 0, W2 + 16, VH);
+        flash = Math.max(0, flash - dt * 4);
+      }
+
+      // ── Present, then crisp text on top ────────────────────────────────
+      // A phone is rarely an integer multiple of 320 px wide, and nearest-
+      // neighbour at ×3.66 makes some pixels 3 wide and some 4, which shimmers
+      // as the camera scrolls. So: blow up ×N (integer, nearest) first, then
+      // take one smooth step down to the screen.
+      dctx.setTransform(1, 0, 0, 1, 0, 0);
+      const n = Math.ceil(scale - 0.01);
+      if (Math.abs(scale - Math.round(scale)) < 0.02 || n < 2) {
+        dctx.imageSmoothingEnabled = false;
+        dctx.drawImage(wc, 0, 0, VW, VH, 0, 0, VW * scale, VH * scale);
+      } else {
+        if (up.width !== VW * n || up.height !== VH * n) {
+          up.width = VW * n;
+          up.height = VH * n;
+        }
+        upx.imageSmoothingEnabled = false;
+        upx.drawImage(wc, 0, 0, VW * n, VH * n);
+        dctx.imageSmoothingEnabled = true;
+        dctx.imageSmoothingQuality = 'high';
+        dctx.drawImage(up, 0, 0, VW * n, VH * n, 0, 0, VW * scale, VH * scale);
+      }
+
+      // Frost creeps in from the edges as you get cold.
+      if (me && !lobby && G.phase === 'climb') {
+        const fr = Math.max(0, (35 - me.w) / 35);
+        if (fr > 0) {
+          const W = canvas.width, H = canvas.height;
+          const grd = dctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.55 - fr * 0.25), W / 2, H / 2, Math.max(W, H) * 0.75);
+          grd.addColorStop(0, 'rgba(190,235,255,0)');
+          grd.addColorStop(1, `rgba(200,240,255,${0.15 + fr * 0.6})`);
+          dctx.fillStyle = grd;
+          dctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      drawTags(tags, camY, lobby, wd, st);
+    }
+
+    function lobbyClimbers() {
+      const n = players.length;
+      return players.map((p, i) => ({
+        id: `s${p.seat}`, n: p.name, c: ['red', 'blue', 'yellow', 'green'][p.seat % 4],
+        x: VW / 2 + (i - (n - 1) / 2) * 46, y: (lobbyWorld || world).floorY, w: 100, on: true,
+      }));
+    }
+
+    function drawItem(kind, x, y, t, small = false) {
+      const i = art.itemIndex?.[kind];
+      if (art.items16 && i != null) {
+        w.drawImage(art.items16, i * 16, 0, 16, 16, Math.round(x - 8), Math.round(y - 8), 16, 16);
+      } else {
+        const col = { cookie: '#c98a4b', cocoa: '#e0473b', axe: '#9aa7b5', brolly: '#ffd23a', bar: '#ff8c3a', down: '#ff9b3d', lamp: '#fff3a0' }[kind] || '#fff';
+        w.fillStyle = '#000'; w.fillRect(Math.round(x - 6), Math.round(y - 6), 12, 12);
+        w.fillStyle = col; w.fillRect(Math.round(x - 5), Math.round(y - 5), 10, 10);
+      }
+      if (!small && Math.floor(t / 400) % 3 === 0) { w.fillStyle = 'rgba(255,255,255,0.9)'; w.fillRect(Math.round(x + 5), Math.round(y - 8), 1, 1); }
+    }
+
+    function drawHiker(colour, anim, face, step, x, y, t) {
+      const sheet = art.hikers?.[colour] || art.hikers?.red;
+      const j = art.hikerJ;
+      if (sheet && j) {
+        const frames = j.frames[anim] || j.frames.idle;
+        let idx = frames[0];
+        if (anim === 'walk') idx = frames[Math.floor(step / 7) % frames.length];
+        else if (anim === 'climb') idx = frames[Math.floor(step / 10) % frames.length];
+        else if (anim === 'jump') idx = frames[0];
+        const [cw, ch] = j.cell;
+        const [ax, ay] = j.anchor;
+        const flip = anim === 'climb' ? Math.floor(step / 10) % 2 === 1 : face < 0;
+        if (flip) {
+          w.save();
+          w.translate(x, 0);
+          w.scale(-1, 1);
+          w.drawImage(sheet, idx * cw, 0, cw, ch, -ax, y - ay, cw, ch);
+          w.restore();
+        } else {
+          w.drawImage(sheet, idx * cw, 0, cw, ch, x - ax, y - ay, cw, ch);
+        }
+        return;
+      }
+      // Fallback climber: a little block person.
+      const col = COLOURS[colour]?.css || '#ef4b3f';
+      const bob = anim === 'walk' ? Math.floor(step / 6) % 2 : 0;
+      w.fillStyle = '#3a2a20'; w.fillRect(x - 4, y - 4, 3, 4); w.fillRect(x + 1, y - 4 + bob, 3, 4 - bob);
+      w.fillStyle = '#555c66'; w.fillRect(x - 4, y - 9, 8, 5);
+      w.fillStyle = col; w.fillRect(x - 5, y - 17, 10, 9);
+      w.fillStyle = '#6b4a2f'; w.fillRect(x - 5 - face * 4, y - 18, 4, 9);
+      w.fillStyle = '#f2c9a0'; w.fillRect(x - 3, y - 22, 6, 5);
+      w.fillStyle = '#26324a'; w.fillRect(x - 3, y - 24, 6, 3);
+      w.fillStyle = '#000'; w.fillRect(x + face * 1 + (face > 0 ? 0 : -1), y - 21, 1, 1);
+    }
+
+    function drawIce(x, y, thaw, t) {
+      const h = PHYS.H + 6;
+      w.fillStyle = 'rgba(170,230,255,0.55)';
+      w.fillRect(Math.round(x - 9), Math.round(y - h), 18, h);
+      w.fillStyle = 'rgba(255,255,255,0.85)';
+      w.fillRect(Math.round(x - 9), Math.round(y - h), 18, 1);
+      w.fillRect(Math.round(x - 7), Math.round(y - h + 3), 1, 8);
+      w.fillRect(Math.round(x - 5), Math.round(y - h + 3), 1, 3);
+      w.strokeStyle = 'rgba(80,170,220,0.9)';
+      w.strokeRect(Math.round(x - 9) + 0.5, Math.round(y - h) + 0.5, 17, h - 1);
+      if (thaw > 0) {
+        w.fillStyle = 'rgba(80,170,255,0.9)';
+        w.fillRect(Math.round(x - 9), Math.round(y + 2), Math.round(18 * thaw), 2);
+      }
+    }
+    function drawStars(x, y, t) {
+      for (let i = 0; i < 3; i++) {
+        const a = t / 200 + i * 2.1;
+        w.fillStyle = i % 2 ? '#fff36a' : '#fff';
+        w.fillRect(Math.round(x + Math.cos(a) * 7), Math.round(y + Math.sin(a) * 2), 2, 2);
+      }
+    }
+
+    function drawSetDressing(wd, camY, st, t) {
+      // Trees along the trailhead floor.
+      if (camY + VH > wd.floorY - 120) {
+        const rng = mulberry32(wd.seed ^ 0x51);
+        for (let i = 0; i < 9; i++) {
+          const x = 10 + rng() * 300;
+          const h = 26 + rng() * 26;
+          const y = wd.floorY - camY;
+          w.fillStyle = '#4a3423'; w.fillRect(Math.round(x - 1), Math.round(y - 8), 3, 8);
+          for (let k = 0; k < 3; k++) {
+            w.fillStyle = k % 2 ? '#2f6b3f' : '#245a34';
+            w.beginPath();
+            w.moveTo(x - 10 + k * 2, y - 6 - k * (h / 3.2));
+            w.lineTo(x + 10 - k * 2 + 1, y - 6 - k * (h / 3.2));
+            w.lineTo(x + 0.5, y - 6 - (k + 1) * (h / 3.2) - 6);
+            w.closePath(); w.fill();
+          }
+        }
+        // Trailhead sign
+        const y = wd.floorY - camY;
+        w.fillStyle = '#6b4a2f'; w.fillRect(298, y - 22, 2, 22);
+        w.fillStyle = '#c98a4b'; w.fillRect(284, y - 26, 28, 9);
+      }
+
+      // Bivvy tents
+      for (const b of wd.bivvies) {
+        if (b.stage !== G.stage && Math.abs(b.y - camY - VH / 2) > VH) continue;
+        const y = b.y - camY;
+        if (y < -40 || y > VH + 30) continue;
+        w.drawImage(TENT, Math.round(b.x - TENT.width / 2), Math.round(y - TENT.height));
+      }
+
+      // Camps, gates, summit
+      for (const s of wd.stages) {
+        const y = s.campY - camY;
+        if (y > -90 && y < VH + 40) {
+          const hx = s.hutX;
+          if (s.index < STAGES.length - 1) {
+            if (art.hut) w.drawImage(art.hut, Math.round(hx - art.hut.width / 2), Math.round(y - art.hut.height + 2));
+            else {
+              w.fillStyle = '#7a5232'; w.fillRect(hx - 18, y - 22, 36, 22);
+              w.fillStyle = '#4a2f1d'; w.beginPath(); w.moveTo(hx - 24, y - 21); w.lineTo(hx, y - 38); w.lineTo(hx + 24, y - 21); w.fill();
+              w.fillStyle = '#ffd36b'; w.fillRect(hx - 4, y - 16, 8, 6);
+            }
+            drawFire(s.fireX, y, t);
+          } else {
+            drawSummit(wd, y, t);
+          }
+        }
+        if (s.gateY != null) {
+          const gy = s.gateY - camY;
+          const closed = s.index >= G.stage;
+          if (gy > -20 && gy < VH + 20 && closed) {
+            for (let x = TILE; x < VW - TILE; x += 8) {
+              w.fillStyle = (x / 8) % 2 ? '#e8473f' : '#f4f4f4';
+              w.fillRect(x, gy + 6, 8, 3);
+            }
+            w.fillStyle = '#6b4a2f';
+            w.fillRect(TILE, gy + 2, 3, 12); w.fillRect(VW - TILE - 3, gy + 2, 3, 12);
+            w.fillStyle = '#ffd23a'; w.fillRect(VW / 2 - 30, gy - 2, 60, 14);
+            w.fillStyle = '#3a2a10'; w.fillRect(VW / 2 - 30, gy + 11, 60, 1);
+          }
+        }
+      }
+    }
+
+    function drawLobbyDressing(wd, camY, t) {
+      const rng = mulberry32(99);
+      const y = wd.floorY - camY;
+      for (let i = 0; i < 8; i++) {
+        const x = 10 + rng() * 300;
+        const h = 30 + rng() * 24;
+        w.fillStyle = '#4a3423'; w.fillRect(Math.round(x - 1), Math.round(y - 8), 3, 8);
+        for (let k = 0; k < 3; k++) {
+          w.fillStyle = k % 2 ? '#2f6b3f' : '#245a34';
+          w.beginPath();
+          w.moveTo(x - 10 + k * 2, y - 6 - k * (h / 3.2));
+          w.lineTo(x + 11 - k * 2, y - 6 - k * (h / 3.2));
+          w.lineTo(x + 0.5, y - 6 - (k + 1) * (h / 3.2) - 6);
+          w.closePath(); w.fill();
+        }
+      }
+      drawFire(VW / 2, y, t);
+    }
+
+    function drawFire(x, y, t) {
+      const f = Math.floor(t / 120);
+      if (art.fire) {
+        const n = Math.max(1, Math.floor(art.fire.width / 16));
+        w.drawImage(art.fire, (f % n) * 16, 0, 16, 16, Math.round(x - 8), Math.round(y - 16), 16, 16);
+      } else {
+        w.fillStyle = '#5a3a20'; w.fillRect(x - 6, y - 2, 12, 2);
+        w.fillStyle = '#ff7a2a'; w.fillRect(x - 4, y - 7 - (f % 2), 8, 5 + (f % 2));
+        w.fillStyle = '#ffd23a'; w.fillRect(x - 2, y - 9 - (f % 3), 4, 4);
+      }
+      const glow = w.createRadialGradient(x, y - 6, 2, x, y - 6, 30);
+      glow.addColorStop(0, 'rgba(255,170,80,0.35)'); glow.addColorStop(1, 'rgba(255,170,80,0)');
+      w.fillStyle = glow; w.fillRect(x - 30, y - 36, 60, 40);
+      if (Math.random() < 0.15) fx.push({ k: 'spark', x: x + (Math.random() - 0.5) * 6, y: y - 10 + camOffsetFix(), vx: (Math.random() - 0.5) * 10, vy: -30 - Math.random() * 20, life: 0.8, col: '#ffb648' });
+    }
+    // Fire sparks are spawned in world space; this is the world y of the fire
+    // minus its screen y, i.e. the camera — kept as a function so drawFire can
+    // be called from the lobby too.
+    function camOffsetFix() { return Math.round(cam.y); }
+
+    function drawSummit(wd, y, t) {
+      const x = wd.flagX;
+      // Cairn
+      w.fillStyle = '#7d8590'; w.fillRect(x - 10, y - 6, 20, 6);
+      w.fillStyle = '#9aa3ad'; w.fillRect(x - 7, y - 11, 14, 5);
+      w.fillStyle = '#b8c0c8'; w.fillRect(x - 4, y - 15, 8, 4);
+      // Pole and flag
+      w.fillStyle = '#d8d8d8'; w.fillRect(x, y - 52, 2, 38);
+      const wave = Math.floor(t / 150) % 2;
+      w.fillStyle = '#e8473f'; w.fillRect(x + 2, y - 52 + wave, 16, 10);
+      w.fillStyle = '#ffd23a'; w.fillRect(x + 6, y - 49 + wave, 6, 4);
+      // Prayer flags to the edges
+      const cols = ['#3f7de8', '#f4f4f4', '#e8473f', '#4cc26a', '#ffd23a'];
+      for (const side of [-1, 1]) {
+        for (let i = 1; i < 14; i++) {
+          const px = x + 1 + side * i * 10;
+          const py = y - 48 + i * 2.6 + Math.sin(t / 300 + i) * 1;
+          if (px < 4 || px > VW - 6) continue;
+          w.fillStyle = cols[i % cols.length];
+          w.fillRect(Math.round(px), Math.round(py), 4, 5);
+        }
+      }
+    }
+
+    function drawStrikes(st, camY, t) {
+      for (const k of G.strikes || []) {
+        const y = k.y - camY;
+        if (y < -60 || y > VH + 60) continue;
+        const left = k.at - st;
+        if (!k.done && left > 0) {
+          const u = 1 - left / 1500;
+          if (k.k === 'bolt') {
+            // Filled at exactly the hit radius (15 px), with the umbrella
+            // radius (30 px) as a faint outer ring.
+            const pulse = Math.floor(t / (left < 400 ? 50 : 110)) % 2;
+            w.fillStyle = pulse ? 'rgba(255,240,140,0.55)' : 'rgba(200,160,255,0.45)';
+            w.beginPath(); w.ellipse(k.x, y - 1, 15, 4, 0, 0, Math.PI * 2); w.fill();
+            w.strokeStyle = 'rgba(255,240,140,0.35)';
+            w.beginPath(); w.ellipse(k.x, y - 1, 30, 6, 0, 0, Math.PI * 2); w.stroke();
+            if (left < 500) {
+              w.fillStyle = `rgba(255,250,210,${0.12 + (1 - left / 500) * 0.25})`;
+              w.fillRect(Math.round(k.x - 4), 0, 8, Math.round(y));
+            }
+            for (let i = 0; i < 3; i++) {
+              w.fillStyle = '#fff7a0';
+              w.fillRect(Math.round(k.x + (Math.random() - 0.5) * 24), Math.round(y - Math.random() * 16), 1, 2);
+            }
+          } else {
+            w.fillStyle = `rgba(0,0,0,${0.15 + u * 0.35})`;
+            w.beginPath(); w.ellipse(k.x, y, 6 + u * 9, 2 + u * 2, 0, 0, Math.PI * 2); w.fill();
+            if (Math.random() < 0.4) fx.push({ k: 'spark', x: k.x + (Math.random() - 0.5) * 10, y: camY - 4, vx: 0, vy: 260, life: (y + 4) / 260, col: k.k === 'rock' ? '#8a8580' : '#dff4ff' });
+            if (left < 320) {
+              const fy = y - (left / 320) * (y + 20);
+              drawRock(k.k, k.x, fy);
+            }
+          }
+        } else if (k.done && st - k.at < 300) {
+          if (k.k === 'bolt') {
+            w.strokeStyle = '#fffbe0';
+            w.lineWidth = 2;
+            w.beginPath();
+            let bx = k.x + (Math.random() - 0.5) * 30;
+            w.moveTo(bx, 0);
+            const seg = 8;
+            for (let i = 1; i <= seg; i++) {
+              bx = i === seg ? k.x : k.x + (Math.random() - 0.5) * 26 * (1 - i / seg);
+              w.lineTo(bx, (y * i) / seg);
+            }
+            w.stroke();
+            w.lineWidth = 1;
+          } else {
+            drawRock(k.k, k.x, y - 4);
+            if (Math.random() < 0.5) fx.push({ k: 'spark', x: k.x + (Math.random() - 0.5) * 14, y: k.y - 2, vx: (Math.random() - 0.5) * 60, vy: -40, life: 0.4, col: k.k === 'rock' ? '#a59c90' : '#f0f8ff', g: 1 });
+          }
+        }
+      }
+    }
+    function drawRock(kind, x, y) {
+      if (kind === 'rock') {
+        w.fillStyle = '#5d5853'; w.fillRect(Math.round(x - 5), Math.round(y - 8), 10, 8);
+        w.fillStyle = '#8a8580'; w.fillRect(Math.round(x - 4), Math.round(y - 8), 6, 3);
+      } else if (kind === 'ice') {
+        w.fillStyle = '#bfefff'; w.fillRect(Math.round(x - 2), Math.round(y - 12), 4, 12);
+        w.fillStyle = '#fff'; w.fillRect(Math.round(x - 1), Math.round(y - 12), 1, 9);
+      } else {
+        w.fillStyle = '#eef6ff'; w.beginPath(); w.arc(x, y - 6, 7, 0, Math.PI * 2); w.fill();
+        w.fillStyle = '#c9dcef'; w.fillRect(Math.round(x - 4), Math.round(y - 3), 8, 2);
+      }
+    }
+
+    function rainbowOn(st, kind) {
+      if (kind !== 'clear' || !G?.fronts) return false;
+      const i = G.fronts.findIndex((f) => st >= f.from && st < f.to);
+      if (i <= 0) return false;
+      const prev = G.fronts[i - 1].kind;
+      return ['drizzle', 'downpour', 'thunder'].includes(prev) && st - G.fronts[i].from < 14000;
+    }
+    function drawRainbow() {
+      const cols = ['rgba(255,80,80,0.28)', 'rgba(255,170,60,0.28)', 'rgba(255,240,90,0.28)', 'rgba(90,220,110,0.28)', 'rgba(80,150,255,0.28)', 'rgba(150,90,230,0.28)'];
+      cols.forEach((c, i) => {
+        w.strokeStyle = c; w.lineWidth = 3;
+        w.beginPath(); w.arc(VW / 2, VH * 0.75, 150 - i * 3, Math.PI, 0); w.stroke();
+      });
+      w.lineWidth = 1;
+    }
+
+    let lastCamY = 0;
+    function drawWeather(dt, kind, front, st, camY) {
+      const W2 = wc.width;
+      const dy = camY - lastCamY;
+      lastCamY = camY;
+      const wind = front ? windAt(front, st) : 0;
+      const spec = {
+        drizzle: { n: 50, rain: 1, speed: 260 },
+        downpour: { n: 150, rain: 1, speed: 400 },
+        thunder: { n: 170, rain: 1, speed: 430 },
+        snow: { n: 80, snow: 1, speed: 40 },
+        blizzard: { n: 240, snow: 1, speed: 90 },
+        whiteout: { n: 140, snow: 1, speed: 60 },
+        gale: { n: 70, streak: 1, speed: 0 },
+        fog: { n: 0 },
+        clear: { n: 0 },
+      }[kind] || { n: 0 };
+      const target = G?.phase === 'climb' ? spec.n : 0;
+      while (weatherP.length < target) weatherP.push({ x: Math.random() * (W2 + 80) - 40, y: Math.random() * VH, s: Math.random() });
+      if (weatherP.length > target) weatherP.length = Math.max(0, weatherP.length - 6);
+
+      const sx = wind * 0.32;
+      for (const p of weatherP) {
+        p.y -= dy;
+        if (spec.rain) {
+          p.y += (spec.speed + p.s * 120) * dt;
+          p.x += (sx * 0.5) * dt;
+          w.fillStyle = `rgba(190,215,255,${0.35 + p.s * 0.35})`;
+          const len = 5 + p.s * 4;
+          const lean = Math.max(-4, Math.min(4, sx / 60));
+          w.fillRect(Math.round(p.x), Math.round(p.y), 1, len);
+          if (Math.abs(lean) > 1) w.fillRect(Math.round(p.x - lean), Math.round(p.y - len), 1, len);
+        } else if (spec.snow) {
+          p.y += (spec.speed * (0.5 + p.s)) * dt;
+          p.x += (sx * (0.6 + p.s) + Math.sin(st / 600 + p.s * 10) * 12) * dt;
+          w.fillStyle = `rgba(255,255,255,${0.55 + p.s * 0.45})`;
+          if (Math.abs(wind) > 220 && p.s < 0.5) {
+            // In a real blow, half the snow is going sideways.
+            w.fillRect(Math.round(p.x), Math.round(p.y), Math.round(3 + p.s * 6), 1);
+          } else {
+            const s = p.s > 0.7 ? 2 : 1;
+            w.fillRect(Math.round(p.x), Math.round(p.y), s, s);
+          }
+        } else if (spec.streak) {
+          // Dark streaks, so they show on ice and snow; density and speed
+          // follow the gusts.
+          const gust = Math.min(1, Math.abs(wind) / 450);
+          p.x += (wind * 0.6 + Math.sign(wind || 1) * 70) * dt;
+          if (p.s < 0.25 + gust * 0.75) {
+            w.fillStyle = `rgba(52,64,92,${(0.3 + p.s * 0.3) * (0.35 + gust * 0.65)})`;
+            w.fillRect(Math.round(p.x), Math.round(p.y), Math.round(12 + p.s * 18), 1);
+          }
+        }
+        if (p.y > VH + 10) { p.y = -10; p.x = Math.random() * (W2 + 80) - 40; }
+        if (p.y < -12) { p.y = VH + 8; p.x = Math.random() * (W2 + 80) - 40; }
+        if (p.x > W2 + 40) p.x = -40;
+        if (p.x < -40) p.x = W2 + 40;
+      }
+
+      // Gust warning: chevrons on the upwind edge just before a gust peaks.
+      if (front && WEATHER[kind]?.gusty && G?.phase === 'climb') {
+        const peak = WEATHER[kind].wind;
+        const ahead = Math.abs(windAt(front, st + 800)) / peak;
+        if (ahead > 0.55) {
+          const dir = Math.sign(windAt(front, st + 800));
+          const a = Math.min(0.85, (ahead - 0.55) * 2.2);
+          const x0 = dir > 0 ? 22 : W2 - 22;
+          w.fillStyle = `rgba(255,255,255,${a})`;
+          for (let k = 0; k < 3; k++) {
+            const cx = x0 + dir * k * 7;
+            const cy = VH * 0.5;
+            for (let i = 0; i < 5; i++) {
+              w.fillRect(Math.round(cx + dir * (i < 3 ? i : 4 - i)), Math.round(cy - 4 + i * 2), 2, 2);
+            }
+          }
+        }
+      }
+
+      // Ambience follows the weather.
+      if (audio.ctx && audio.wind) {
+        const ac = audio.ctx.currentTime;
+        const windVol = G?.phase === 'climb' ? Math.min(0.5, Math.abs(wind) / 900 + (kind === 'blizzard' || kind === 'whiteout' ? 0.12 : 0)) : 0;
+        const rainVol = G?.phase === 'climb' && spec.rain ? spec.n / 700 : 0;
+        audio.wind.g.gain.setTargetAtTime(windVol, ac, 0.4);
+        audio.wind.f.frequency.setTargetAtTime(300 + Math.abs(wind) * 0.6, ac, 0.5);
+        audio.rain.g.gain.setTargetAtTime(rainVol, ac, 0.4);
+      }
+    }
+
+    // Name tags, off-screen arrows, camp/gate signs: drawn at device
+    // resolution so the type stays crisp.
+    function drawTags(tags, camY, lobby, wd, st) {
+      const k = scale;
+      const fs = Math.round(8 * dpr);
+      dctx.font = `${fs}px "Press Start 2P", monospace`;
+      dctx.textAlign = 'center';
+      dctx.textBaseline = 'bottom';
+      // Nudge tags that would overlap up a line, measuring the real text.
+      const placed = [];
+      const labelOf = (tg) => (tg.isMe ? 'YOU' : (tg.c.n || '').slice(0, 10));
+      for (const tg of tags.filter((x) => !x.off).sort((a, b) => a.x - b.x)) {
+        const half = dctx.measureText(labelOf(tg)).width / 2 / k + 2;
+        let y = tg.y;
+        for (const p of placed) if (Math.abs(p.x - tg.x) < p.half + half && Math.abs(p.y - y) < 9) y = p.y - 9;
+        tg.tagY = y;
+        placed.push({ x: tg.x, y, half });
+      }
+      // Several people off the same edge become one marker.
+      const offs = { above: [], below: [] };
+      for (const tg of tags) if (tg.off) offs[tg.y < 0 ? 'above' : 'below'].push(tg);
+      for (const [side, list] of Object.entries(offs)) {
+        if (list.length < 2) continue;
+        const near = list.reduce((a, b) => (Math.abs(a.y) < Math.abs(b.y) ? a : b));
+        for (const tg of list) if (tg !== near) tg.skip = true;
+        near.count = list.length;
+        near.side = side;
+      }
+      // Who is standing in a strike circle right now?
+      const danger = new Set();
+      for (const s2 of G?.strikes || []) {
+        if (s2.done || s2.at <= st) continue;
+        for (const tg of tags) if (!tg.off && Math.abs(tg.x - s2.x) <= 16 && Math.abs(tg.y - (s2.y - camY)) <= 26) danger.add(tg);
+      }
+      for (const tg of tags) {
+        if (tg.skip) continue;
+        const c = tg.c;
+        const col = COLOURS[c.c]?.css || '#fff';
+        const label = tg.isMe ? 'YOU' : (c.n || '').slice(0, 10);
+        if (tg.off) {
+          const above = tg.y < 0;
+          const sx = Math.max(20 * dpr, Math.min(canvas.width - 20 * dpr, tg.x * k));
+          const sy = above ? fs * 3.2 + 112 * dpr : canvas.height - 10 * dpr;
+          const dist = Math.round(Math.abs(tg.y < 0 ? tg.y : tg.y - VH) / TILE);
+          dctx.fillStyle = col;
+          dctx.beginPath();
+          if (above) { dctx.moveTo(sx, sy - fs * 2.4); dctx.lineTo(sx - 5 * dpr, sy - fs * 1.4); dctx.lineTo(sx + 5 * dpr, sy - fs * 1.4); }
+          else { dctx.moveTo(sx, sy); dctx.lineTo(sx - 5 * dpr, sy - fs); dctx.lineTo(sx + 5 * dpr, sy - fs); }
+          dctx.fill();
+          const txt = tg.count ? `${tg.count} ${tg.side === 'above' ? 'AHEAD' : 'BEHIND'} ${dist}m` : `${label}${c.fz ? ' ICE' : ''} ${dist}m`;
+          dctx.fillStyle = '#000';
+          dctx.fillText(txt, sx + dpr, (above ? sy : sy - fs * 1.4) + dpr);
+          dctx.fillStyle = col;
+          dctx.fillText(txt, sx, above ? sy : sy - fs * 1.4);
+          continue;
+        }
+        const x = tg.x * k;
+        const y = ((tg.tagY ?? tg.y) - PHYS.H - 7) * k;
+        dctx.fillStyle = 'rgba(0,0,0,0.85)';
+        dctx.fillText(label, x + dpr, y + dpr);
+        dctx.fillStyle = tg.isMe ? '#fff' : col;
+        dctx.fillText(label, x, y);
+        if (!lobby && c.fz) {
+          dctx.fillStyle = '#bfefff';
+          dctx.fillText(tg.isMe ? 'MASH JUMP' : 'THAW ME', x, y - fs * 1.4);
+        }
+        if (danger.has(tg) && Math.floor(performance.now() / 120) % 2) {
+          dctx.fillStyle = '#ffdf3a';
+          dctx.font = `${Math.round(12 * dpr)}px "Press Start 2P", monospace`;
+          dctx.fillText('!', x, y - fs * 1.4);
+          dctx.font = `${fs}px "Press Start 2P", monospace`;
+        }
+      }
+
+      // Floating score.
+      for (let i = popups.length - 1; i >= 0; i--) {
+        const p = popups[i];
+        p.t += 1 / 60;
+        if (p.t > 1.2) { popups.splice(i, 1); continue; }
+        const py = (p.y - camY - p.t * 18) * k;
+        dctx.globalAlpha = Math.min(1, (1.2 - p.t) * 2.5);
+        dctx.font = `${Math.round((p.big ? 10 : 7) * dpr)}px "Press Start 2P", monospace`;
+        dctx.fillStyle = '#000';
+        dctx.fillText(p.text, p.x * k + dpr, py + dpr);
+        dctx.fillStyle = p.col;
+        dctx.fillText(p.text, p.x * k, py);
+      }
+      dctx.globalAlpha = 1;
+      dctx.font = `${fs}px "Press Start 2P", monospace`;
+
+      if (lobby || !wd) return;
+      drawRail(wd, st);
+      const sy = (wd.floorY - camY - 23) * k;
+      if (sy > 0 && sy < canvas.height) {
+        dctx.font = `${Math.round(4.5 * dpr)}px "Press Start 2P", monospace`;
+        dctx.fillStyle = '#3a2410';
+        dctx.textBaseline = 'middle';
+        dctx.fillText('SUMMIT ^', 298 * k, sy);
+        dctx.textBaseline = 'bottom';
+      }
+      // Signs on gates and camps.
+      for (const s of wd.stages) {
+        if (s.gateY != null && s.index >= G.stage) {
+          const gy = (s.gateY - camY + 9) * k;
+          if (gy > -20 && gy < canvas.height + 20) {
+            dctx.font = `${Math.round(5 * dpr)}px "Press Start 2P", monospace`;
+            dctx.fillStyle = '#2a1a05';
+            dctx.textBaseline = 'middle';
+            dctx.fillText('WEATHER HOLD', (VW / 2) * k, gy - 2 * k);
+            dctx.textBaseline = 'bottom';
+          }
+        }
+        const cy = (s.campY - camY + 14) * k;
+        if (cy > 0 && cy < canvas.height + 30) {
+          dctx.font = `${Math.round(5 * dpr)}px "Press Start 2P", monospace`;
+          dctx.fillStyle = 'rgba(255,255,255,0.75)';
+          dctx.textBaseline = 'top';
+          const label = s.index === STAGES.length - 1 ? 'SUMMIT 4,012 m' : `CAMP ${s.index + 1} · ${altitude(s.campY)} m`;
+          dctx.fillText(label, (VW / 2) * k, cy);
+          dctx.textBaseline = 'bottom';
+        }
+      }
+    }
+
+    // Stage progress rail down the left cliff: where everyone is on this stage.
+    function drawRail(wd, st) {
+      if (G.phase !== 'climb') return;
+      const S = wd.stages[G.stage];
+      const top = 132 * dpr;
+      const bot = canvas.height - 34 * dpr;
+      if (bot - top < 80) return;
+      const x = 7 * dpr;
+      dctx.fillStyle = 'rgba(0,0,0,0.45)';
+      dctx.fillRect(x - 2 * dpr, top, 4 * dpr, bot - top);
+      dctx.fillStyle = 'rgba(255,255,255,0.35)';
+      dctx.fillRect(x - 0.5 * dpr, top, 1 * dpr, bot - top);
+      dctx.fillStyle = '#ffb648';
+      dctx.fillRect(x - 4 * dpr, top - 3 * dpr, 8 * dpr, 3 * dpr);
+      const tnow = performance.now();
+      for (const c of G.climbers || []) {
+        if (!c.on && c.id !== G.me) continue;
+        const p = displayPos(c, tnow);
+        const u = Math.max(0, Math.min(1, (S.startY - p.y) / (S.startY - S.campY)));
+        const y = bot - u * (bot - top);
+        const sz = (c.id === G.me ? 5 : 4) * dpr;
+        dctx.fillStyle = '#000';
+        dctx.fillRect(x - sz / 2 - dpr, y - sz / 2 - dpr, sz + 2 * dpr, sz + 2 * dpr);
+        dctx.fillStyle = c.fz ? '#bfefff' : COLOURS[c.c]?.css || '#fff';
+        dctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+      }
+    }
+
+    function altitude(y) {
+      if (!world) return 0;
+      const frac = (world.floorY - y) / (world.floorY - world.summitY);
+      return Math.round(1180 + frac * (4012 - 1180)).toLocaleString('en-AU');
+    }
+
+    // ── DOM: HUD, party list, overlays ─────────────────────────────────────
+    // The HUD updates every frame; only touch the DOM when a value changes.
+    const domCache = new Map();
+    function setHtml(el, html) {
+      if (domCache.get(el) === html) return;
+      domCache.set(el, html);
+      el.innerHTML = html;
+    }
+    function setText(el, text) {
+      if (domCache.get(el) === text) return;
+      domCache.set(el, text);
+      el.textContent = text;
+    }
+    function buildPackIcons() { /* icons are created on demand in renderPack */ }
+    function iconStyle(kind) {
+      const i = art.itemIndex?.[kind] ?? ITEM_KINDS.indexOf(kind);
+      if (art.items32) return `background-image:url(${ART}items32.png);background-size:${(art.itemsJ?.order?.length || 7) * 24}px 24px;background-position:${-i * 24}px 0`;
+      return 'background:#c98a4b';
+    }
+
+    function renderDom() {
+      const phase = G?.phase || 'lobby';
+      const inPlay = ['intro', 'climb', 'camp', 'summit'].includes(phase);
+      document.querySelector('.sf').dataset.phase = phase;
+      $('hud').hidden = !inPlay;
+      $('hud').dataset.summit = phase === 'summit' ? '1' : '0';
+      $('toasts').hidden = phase === 'summit';
+      $('stage-label').textContent = inPlay || phase === 'ending' ? `Stage ${Math.min(5, (G.stage || 0) + 1)}/5` : 'Basecamp';
+      renderParty();
+      renderOverlay();
+    }
+
+    function renderParty() {
+      if (!G?.climbers) return;
+      const html = G.climbers
+        .slice()
+        .sort((a, b) => (b.sc || 0) - (a.sc || 0))
+        .map((c) => {
+          const col = COLOURS[c.c]?.css || '#fff';
+          const tag = c.fz ? 'ICE' : c.arr >= 0 && G.phase === 'climb' ? 'CAMP' : c.bot ? 'BOT' : c.on ? '' : 'AWAY';
+          const wv = Math.max(0, Math.min(100, c.w));
+          const barCol = wv < 30 ? '#7fd3ff' : wv < 60 ? '#ffe06a' : '#ffb648';
+          return `<div class="sf-mate" data-off="${c.on ? 0 : 1}">
+            <div class="sf-mate__name"><span class="sf-dot" style="background:${col}"></span><span>${escapeHtml(c.id === G.me ? 'You' : c.n)}</span></div>
+            <div class="sf-mate__meta"><span>${c.sc}</span><span class="sf-mate__tag">${tag}</span></div>
+            <div class="sf-mate__bar"><b style="width:${wv}%;background:${barCol}"></b></div>
+          </div>`;
+        })
+        .join('');
+      setHtml($('party'), html);
+    }
+
+    function updateHudLive() {
+      if (!G || $('hud').hidden) return;
+      const me = meC();
+      const st = serverNow();
+      if (me) {
+        const wv = Math.max(0, Math.min(100, me.w));
+        setText($('warm-num'), String(Math.round(wv)));
+        $('warm-fill').style.width = `${wv}%`;
+        $('warm-fill').style.background = wv < 30 ? 'var(--sf-cold)' : wv < 60 ? '#ffe06a' : 'var(--sf-warm)';
+        $('warm-meter').dataset.low = wv < 25 ? '1' : '0';
+        setText($('wet-num'), String(Math.round(me.wet)));
+        $('wet-fill').style.width = `${me.wet}%`;
+        renderPack(me, st);
+
+        const near = (G.climbers || []).some((o) => o.id !== me.id && !o.fz && o.on && Math.abs(o.x - body.x) <= 34 && Math.abs(o.y - body.y) <= 30);
+        const sheltered = world && inBivvy(world, body.x, body.y);
+        const frozenNear = (G.climbers || []).some((o) => o.id !== me.id && o.fz && Math.hypot(o.x - body.x, o.y - body.y) < 44);
+        const bits = [];
+        const S = world?.stages[G.stage];
+        const atCamp = S && body.y <= S.campY + 1;
+        if (!me.fz && G.phase === 'climb') {
+          if (me.gl && me.gl > st) bits.push('WARM GLOW — COLD CANNOT TOUCH YOU');
+          if (atCamp) bits.push('AT CAMP — WARMING UP');
+          else if (world && byFire(world, body.x, body.y)) bits.push('BY THE FIRE — WARMING UP');
+          else if (sheltered) bits.push('SHELTERED IN BIVVY');
+          else if (near) bits.push('HUDDLING — COLD SLOWED');
+          if (frozenNear && me.ck > 0) bits.push('PRESS USE: FEED COOKIE');
+          else if (frozenNear) bits.push('STAY CLOSE TO THAW THEM');
+        }
+        setText($('me-state'), bits.join(' · '));
+
+        const fz = $('frozen');
+        fz.hidden = !me.fz;
+        if (me.fz) {
+          $('frozen-fill').style.width = `${Math.round((me.th || 0) * 100)}%`;
+          const left = me.fzAt ? Math.max(0, Math.ceil((me.fzAt + 22000 - st) / 1000)) : null;
+          setText($('frozen-sub'), left != null ? `Rescue chopper in ${left}s · a friend nearby thaws you fast` : 'A friend standing next to you thaws you fast');
+        }
+      }
+
+      // Clock
+      let ms = null;
+      let label = 'Stage';
+      if (G.phase === 'climb') { ms = G.stageEnds - st; label = 'Camp in'; }
+      else if (G.phase === 'intro') { ms = G.phaseEnds - st; label = 'Start'; }
+      else if (G.phase === 'camp') { ms = G.phaseEnds - st; label = 'Rest'; }
+      else if (G.phase === 'summit') { ms = G.phaseEnds - st; label = 'Summit'; }
+      if (ms != null) {
+        const s = Math.max(0, Math.ceil(ms / 1000));
+        setText($('clock-label'), label);
+        setText($('clock-num'), `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
+        $('clock').dataset.urgent = G.phase === 'climb' && s <= 15 ? '1' : '0';
+      }
+
+      // Weather and forecast
+      if (G.phase === 'climb') {
+        const f = currentFront(st);
+        const n = nextFront(st);
+        const wx = WEATHER[f?.kind] || WEATHER.clear;
+        let sub = '';
+        if (n) {
+          const secs = Math.ceil((n.from - st) / 1000);
+          sub = secs <= 60 ? `Next: ${WEATHER[n.kind].label} in ${secs}s` : '';
+        }
+        const wind = f ? windAt(f, st) : 0;
+        const windTxt = Math.abs(wind) > 120 ? ` · wind ${wind > 0 ? '→' : '←'}` : '';
+        setHtml($('wx'), `<span class="sf-dot" style="background:${WX_DOT[f?.kind] || '#fff'}"></span><span>${escapeHtml(wx.label)}${windTxt}<small>${escapeHtml(sub)}</small></span>`);
+      } else {
+        setHtml($('wx'), G.phase === 'intro' ? '<span>Trailhead · 1,180 m</span>' : G.phase === 'summit' ? '<span>Summit · 4,012 m</span>' : '<span>Sheltered at camp</span>');
+      }
+    }
+
+    let lastPackSig = '';
+    function renderPack(me, st) {
+      const buffs = buffsOf(me, st);
+      const parts = [];
+      for (let i = 0; i < me.ck; i++) parts.push({ kind: 'cookie' });
+      if (me.co) parts.push({ kind: 'cocoa', n: me.co });
+      for (const [k, until] of Object.entries(buffs)) parts.push({ kind: k, left: (until - st) / (ITEMS[k]?.dur || 20000) });
+      const sig = parts.map((p) => `${p.kind}${p.n || ''}${p.left ? Math.round(p.left * 20) : ''}`).join('|');
+      if (sig === lastPackSig) return;
+      lastPackSig = sig;
+      $('pack').innerHTML = parts.length
+        ? parts.map((p) => `<span class="sf-ico" style="${iconStyle(p.kind)}${p.left != null ? `;--left:${Math.round(p.left * 100)}%` : ''}" data-buff="${p.left != null ? 1 : 0}" title="${escapeHtml(ITEMS[p.kind]?.label || p.kind)}">${p.n > 1 ? `<i>×${p.n}</i>` : ''}</span>`).join('')
+        : '<span style="opacity:.6">Pack empty</span>';
+    }
+
+    function campLine(res, secs) {
+      if (!res) return '';
+      const flew = res.order.filter((o) => o.flew).length;
+      if (res.reason === 'wipe') return 'Party wipe. Everyone froze, and the chopper brought the lot of you up.';
+      if (res.reason === 'clear' && !flew) return `Whole party in on foot, in ${secs}s.`;
+      if (res.reason === 'clear') return `Everyone's in after ${secs}s — ${flew} of you by helicopter.`;
+      return `The clock ran out. ${flew ? `${flew} straggler${flew > 1 ? 's' : ''} came up by helicopter.` : 'Everyone made it just in time.'}`;
+    }
+
+    let overSig = '';
+    let campTimer = null;
+    function renderOverlay() {
+      const phase = G?.phase || 'lobby';
+      const sig = `${phase}|${G?.stage}|${players.map((p) => `${p.seat}${p.name}${p.online}${p.host}`).join(',')}|${isHost}|${G?.results?.length}|${G?.ending?.key}`;
+      if (sig === overSig) return;
+      overSig = sig;
+      clearInterval(campTimer);
+      overEl.dataset.soft = '0';
+
+      if (phase === 'lobby') {
+        overEl.hidden = false;
+        const host = players.find((p) => p.host);
+        const n = players.filter((p) => p.online).length;
+        const bots = Math.max(0, 3 - n);
+        overEl.innerHTML = `
+          <p class="sf-eyebrow">Basecamp · ${n} of 4 roped in</p>
+          <h1>Summit Fever</h1>
+          <p class="sf-lede">Five stages from the pines to the summit. Every stage throws weather at you — rain, lightning, fog, gales, blizzards — and the <b>party only moves on when everyone reaches camp</b>. Freeze solid and a friend has to come back for you.</p>
+          <div class="sf-codebig">${escapeHtml(room.code() || '')}</div>
+          <p class="sf-lede">Read the code out, or share the link. Best with 3–4 phones.</p>
+          <ul class="sf-list">
+            ${players.map((p) => `<li><span class="sf-swatch" style="background:${COLOURS[['red', 'blue', 'yellow', 'green'][p.seat % 4]].css}"></span><span class="sf-grow">${escapeHtml(p.name)}${p.seat === room.seat() ? ' (you)' : ''}</span><small>${p.host ? 'leader' : p.online ? 'ready' : 'away'}</small></li>`).join('')}
+            ${Array.from({ length: bots }, (_, i) => `<li><span class="sf-swatch" style="background:${i ? '#f58a3c' : '#b07cf5'}"></span><span class="sf-grow" style="color:var(--ar-faint)">${i ? 'Old Bram' : 'Ranger Rae'}</span><small>bot guide, if you start now</small></li>`).join('')}
+          </ul>
+          <div class="sf-actions">
+            ${isHost ? `<button class="ar-btn" id="go">Start the climb</button>` : `<p class="sf-lede">Waiting for ${escapeHtml(host?.name || 'the leader')} to start the climb…</p>`}
+            <button class="ar-btn ar-btn--ghost" id="share">Share invite</button>
+          </div>
+          <h2>How it works</h2>
+          <div class="sf-legend">
+            <span>WARMTH</span><span>Drains in bad weather, faster when you are wet. At zero you freeze solid.</span>
+            <span>COOKIE</span><span>Carry one and it saves you the instant you would freeze. Or feed it to a frozen friend.</span>
+            <span>HUDDLE</span><span>Standing close to a friend slows the cold. Bivvy tents keep off rain and lightning.</span>
+            <span>THAW</span><span>Stand next to a frozen friend to thaw them. Frozen yourself? Mash JUMP to shiver.</span>
+            <span>BOOST</span><span>You can stand on each other's heads to reach the high caches.</span>
+            <span>CAMP</span><span>Each stage ends when everyone reaches camp. First in scores 100, then 70, 50, 40. Out of time means a chopper ride and −60.</span>
+            <span>GEMS</span><span>Berries, crystals and edelweiss are +10 each, and a stage has a dozen or more. Race for camp, or collect?</span>
+            <span>HELP</span><span>Thawing a friend +50, feeding them your cookie +70, sharing cocoa +15 each.</span>
+          </div>
+          <h2>Up the mountain</h2>
+          <div class="sf-items">
+            ${ITEM_KINDS.map((k) => `<div class="sf-item"><span class="sf-ico" style="${iconStyle(k)}"></span><span><b>${escapeHtml(ITEMS[k].label)}</b>${escapeHtml(ITEMS[k].desc)}</span></div>`).join('')}
+          </div>`;
+        $('go')?.addEventListener('click', () => { ensureAudio(); room.send({ t: 'start' }); });
+        $('share')?.addEventListener('click', async () => {
+          const r = await shareRoom(SLUG, room.code(), 'Summit Fever');
+          if (r === 'copied') $('share').textContent = 'Link copied';
+        });
+        return;
+      }
+
+      if (phase === 'camp') {
+        overEl.hidden = false;
+        overEl.dataset.soft = '1';
+        const res = G.results[G.results.length - 1];
+        const next = STAGES[G.stage + 1];
+        const secs = res ? Math.round(res.ms / 1000) : 0;
+        const kinds = [...new Set(next.weather.map((x) => x[0]))];
+        overEl.innerHTML = `
+          <p class="sf-eyebrow">Camp ${G.stage + 1} · ${altitude(world.stages[G.stage].campY)} m</p>
+          <h1>${escapeHtml(STAGES[G.stage].name)} — done</h1>
+          <p class="sf-lede">${campLine(res, secs)}</p>
+          <ul class="sf-list">
+            ${(res?.order || []).map((o, i) => {
+              const c = byId(o.id);
+              const note = o.away ? 'away' : o.flew ? 'by chopper' : `+${o.gained ?? 0} this stage`;
+              return `<li><span class="sf-swatch" style="background:${COLOURS[c?.c]?.css || '#fff'}"></span><span class="sf-grow">${o.away ? '—' : ordinal(i + 1)} · ${escapeHtml(c ? (c.id === G.me ? 'You' : c.n) : '?')}</span><span class="sf-pts" data-neg="${o.pts < 0 ? 1 : 0}">${o.away ? '' : `${o.pts > 0 ? '+' : ''}${o.pts}`}</span><small>${note}</small></li>`;
+            }).join('')}
+          </ul>
+          <h2>Next · Stage ${G.stage + 2} · ${escapeHtml(next.name)}</h2>
+          <p class="sf-lede">${escapeHtml(next.blurb)}</p>
+          <div class="sf-forecast">${kinds.map((k) => `<span><span class="sf-dot" style="background:${WX_DOT[k]}"></span>${escapeHtml(WEATHER[k].label)}</span>`).join('')}${next.hazard ? `<span><span class="sf-dot" style="background:#a59c90"></span>${next.hazard === 'rock' ? 'Rockfall' : 'Icefall'}</span>` : ''}${next.avalanche ? '<span><span class="sf-dot" style="background:#fff"></span>Avalanche risk</span>' : ''}</div>
+          <div class="sf-bar"><b id="camp-bar"></b></div>`;
+        const tick = () => {
+          const left = Math.max(0, G.phaseEnds - serverNow());
+          const b = $('camp-bar');
+          if (b) b.style.width = `${(left / 9000) * 100}%`;
+        };
+        tick();
+        campTimer = setInterval(tick, 100);
+        return;
+      }
+
+      if (phase === 'ending') {
+        overEl.hidden = false;
+        const ranked = (G.climbers || []).slice().sort((a, b) => b.sc - a.sc);
+        const total = ranked.reduce((n, c) => n + c.sc, 0);
+        const mins = G.finalMs ? `${Math.floor(G.finalMs / 60000)}:${String(Math.round((G.finalMs % 60000) / 1000)).padStart(2, '0')}` : '';
+        overEl.innerHTML = `
+          <p class="sf-eyebrow">Summit · 4,012 m${mins ? ` · ${mins} on the mountain` : ''}</p>
+          <h1>${escapeHtml(G.ending?.title || 'Summit')}</h1>
+          <p class="sf-lede"><b>${escapeHtml(G.ending?.line || '')}</b></p>
+          <p class="sf-body">${escapeHtml(G.ending?.body || '')}</p>
+          <h2>Standings · party total ${total}</h2>
+          <ul class="sf-list">
+            ${ranked.map((c, i) => `<li><span class="sf-swatch" style="background:${COLOURS[c.c]?.css}"></span><span class="sf-grow">${ordinal(i + 1)} · ${escapeHtml(c.id === G.me ? 'You' : c.n)}${c.bot ? ' <small>guide</small>' : ''}</span><span class="sf-pts">${c.sc}</span></li>`).join('')}
+          </ul>
+          ${G.awards?.length ? `<h2>Awards</h2><div class="sf-awards">${G.awards.map((a) => `<div class="sf-award"><b>${escapeHtml(a.title)}</b><p><em>${a.who.map((id) => escapeHtml(nameOf(id))).join(' & ')}</em> — ${escapeHtml(a.line)} (${a.value})</p></div>`).join('')}</div>` : ''}
+          <div class="sf-actions">
+            ${isHost ? '<button class="ar-btn" id="again">Climb again</button>' : '<p class="sf-lede">The leader can start another climb.</p>'}
+            <a class="ar-btn ar-btn--ghost" href="/arcade/" style="text-align:center;text-decoration:none">Back to the arcade</a>
+          </div>`;
+        $('again')?.addEventListener('click', () => room.send({ t: 'rematch' }));
+        return;
+      }
+
+      overEl.hidden = true;
+      overEl.innerHTML = '';
+    }
+
+    // ── Pause-safe: drop held keys when the phone sleeps ─────────────────
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') { keys.left = keys.right = keys.jump = false; }
+      lastT = performance.now();
+    });
+
+    resize();
+    artReady.then(() => { lastPackSig = ''; overSig = ''; renderDom(); });
+
+    // Test hook (tools/summit-fever-check.mjs).
+    window.__sf = {
+      room,
+      state: () => G,
+      players: () => players,
+      body,
+      keys,
+      world: () => world,
+      serverNow,
+      bots: () => bots,
+      art: () => art,
+    };
+  </script>
+</body>
+</html>

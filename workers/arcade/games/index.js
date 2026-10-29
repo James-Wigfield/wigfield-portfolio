@@ -28,7 +28,9 @@
    ========================================================================== */
 
 import southernLights from './southern-lights.js';
+import summitFever from './summit-fever.js';
 
 export const GAMES = {
   [southernLights.slug]: southernLights,
+  [summitFever.slug]: summitFever,
 };

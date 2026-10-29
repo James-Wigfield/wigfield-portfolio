@@ -1,0 +1,19 @@
+{
+  "size": 16,
+  "themes": [
+    "forest",
+    "rock",
+    "ice",
+    "snowrock"
+  ],
+  "cols": [
+    "ledgeL",
+    "ledgeM",
+    "ledgeR",
+    "ledgeSolo",
+    "wall",
+    "wallFaceR",
+    "wallFaceL",
+    "wallAlt"
+  ]
+}
