@@ -2,6 +2,21 @@
   "_comment": "The single arcade registry. The cabinet grid at /arcade reads this; the slug must match public/arcade/<slug>/ and the key in workers/arcade/games/index.js.",
   "games": [
     {
+      "slug": "devils-ivy",
+      "title": "Devil's Ivy",
+      "tagline": "Two vines, one kitchen. Never stop, only steer — and don't touch a vine.",
+      "blurb": "You are a pothos vine loose in a real kitchen. You never stop growing and you can't slow down; all you can do is steer. Creep up the cupboards, over the ledge, across the ceiling, down the fridge and over the shopping bags while your friend does the same. Touch any vine, even your own, and you wilt. Race for the sun drops, sprint on dew, and box each other in.",
+      "art": "devils-ivy/art/cabinet.png",
+      "players": "1–4",
+      "length": "~4 min",
+      "tags": [
+        "versus",
+        "3D",
+        "real-time"
+      ],
+      "status": "live"
+    },
+    {
       "slug": "summit-fever",
       "title": "Summit Fever",
       "tagline": "Three friends, one mountain, every kind of weather. Carry a cookie.",

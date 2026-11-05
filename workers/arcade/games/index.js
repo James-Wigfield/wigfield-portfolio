@@ -29,8 +29,10 @@
 
 import southernLights from './southern-lights.js';
 import summitFever from './summit-fever.js';
+import devilsIvy from './devils-ivy.js';
 
 export const GAMES = {
   [southernLights.slug]: southernLights,
   [summitFever.slug]: summitFever,
+  [devilsIvy.slug]: devilsIvy,
 };

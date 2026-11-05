@@ -1,0 +1,1428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Devil's Ivy — Wigfield Arcade</title>
+  <meta name="description" content="Two to four devil's ivy vines in one kitchen. Grow up the cupboards, over the ledges, across the ceiling and round the fridge. Never stop, only steer, and don't touch a vine. A real-time multiplayer 3D game for phones." />
+  <meta name="theme-color" content="#0b0d10" />
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/arcade/shared/arcade.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/arcade/shared/vendor/three/three.module.min.js",
+        "three/addons/": "/arcade/shared/vendor/three/addons/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --dv-leaf: #6ee7a5;
+      --dv-sun: #ffc23a;
+      --dv-dew: #7fdcff;
+      --dv-glass: rgba(8, 11, 16, 0.62);
+      --dv-glass-line: rgba(255, 255, 255, 0.09);
+    }
+    html, body { height: 100%; overflow: hidden; background: #0b0d10; }
+    body { overscroll-behavior: none; }
+
+    #view {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      display: block;
+      touch-action: none;
+    }
+
+    /* ── Landing gate, floating over the kitchen ─────────────────────────── */
+    #gate {
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      padding: calc(12px + env(safe-area-inset-top)) var(--ar-gutter) calc(28px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(5, 8, 12, 0.25) 0%, rgba(5, 8, 12, 0.55) 38%, rgba(5, 8, 12, 0.88) 100%);
+      z-index: 30;
+    }
+    #gate[hidden] { display: none; }
+    #gate .ar-gate { padding-top: 34vh; }
+    #gate .ar-wordmark { text-shadow: 0 0 24px rgba(110, 231, 165, 0.45); }
+    #gate .ar-gate__panel { background: rgba(10, 15, 24, 0.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .dv-gatetop {
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top));
+      left: var(--ar-gutter);
+      z-index: 31;
+    }
+    .dv-gatetop a { color: rgba(232, 237, 248, 0.7); text-decoration: none; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    /* ── HUD ─────────────────────────────────────────────────────────────── */
+    #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+    #hud[hidden] { display: none; }
+    #pad { position: fixed; inset: 0; z-index: 5; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+    #pad[hidden] { display: none; }
+
+    .dv-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: calc(8px + env(safe-area-inset-top)) 10px 6px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(232, 237, 248, 0.75);
+      background: linear-gradient(180deg, rgba(5, 8, 12, 0.7), rgba(5, 8, 12, 0));
+    }
+    .dv-spacer { flex: 1; }
+    .dv-hbtn {
+      pointer-events: auto;
+      appearance: none;
+      background: var(--dv-glass);
+      border: 1px solid var(--dv-glass-line);
+      border-radius: 4px;
+      color: inherit;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      text-decoration: none;
+      padding: 9px 10px;
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .dv-code { font-family: var(--ar-display); font-size: 10px; color: var(--ar-amber); letter-spacing: 0.18em; }
+
+    .dv-scores {
+      position: absolute;
+      top: calc(52px + env(safe-area-inset-top));
+      left: 10px; right: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .dv-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--dv-glass);
+      border: 1px solid var(--dv-glass-line);
+      font-size: 11px;
+      color: #e8edf8;
+      transition: opacity 0.3s;
+    }
+    .dv-chip b { font-family: var(--ar-display); font-size: 9px; }
+    .dv-chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px currentColor; }
+    .dv-chip[data-dead="1"] { opacity: 0.45; text-decoration: line-through; }
+    .dv-chip[data-me="1"] { border-color: rgba(255, 255, 255, 0.35); }
+
+    .dv-feed {
+      position: absolute;
+      top: calc(92px + env(safe-area-inset-top));
+      left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 0 12px;
+    }
+    .dv-toast {
+      max-width: 92vw;
+      padding: 7px 12px;
+      border-radius: 4px;
+      background: rgba(8, 11, 16, 0.72);
+      border: 1px solid var(--dv-glass-line);
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: #e8edf8;
+      text-align: center;
+      animation: dv-toast 4.2s ease forwards;
+    }
+    .dv-toast em { font-style: normal; font-weight: 700; }
+    @keyframes dv-toast {
+      0% { opacity: 0; transform: translateY(-6px); }
+      8% { opacity: 1; transform: none; }
+      82% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .dv-center {
+      position: absolute;
+      left: 0; right: 0;
+      top: 38%;
+      transform: translateY(-50%);
+      text-align: center;
+      padding: 0 20px;
+    }
+    .dv-big {
+      font-family: var(--ar-display);
+      font-size: clamp(30px, 12vw, 64px);
+      color: #fff;
+      text-shadow: 0 0 30px rgba(110, 231, 165, 0.55), 0 4px 0 rgba(0, 0, 0, 0.35);
+      animation: dv-pop 0.5s cubic-bezier(.2,1.6,.4,1);
+    }
+    .dv-mid {
+      margin-top: 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #e8edf8;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+    }
+    .dv-mid b { color: var(--dv-col, #fff); }
+    @keyframes dv-pop { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    .dv-bottom {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      background: linear-gradient(0deg, rgba(5, 8, 12, 0.6), rgba(5, 8, 12, 0));
+    }
+    .dv-where { font-size: 11px; letter-spacing: 0.08em; color: rgba(232, 237, 248, 0.85); text-shadow: 0 1px 4px #000; min-height: 1.2em; }
+    .dv-dew {
+      position: relative;
+      width: min(260px, 64vw);
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(8, 11, 16, 0.7);
+      border: 1px solid rgba(127, 220, 255, 0.35);
+      overflow: hidden;
+    }
+    .dv-dew__fill { position: absolute; inset: 0 auto 0 0; width: 40%; background: linear-gradient(90deg, #3aa8e0, #9fe8ff); transition: width 0.12s linear; }
+    .dv-dew span { position: absolute; inset: 0; text-align: center; font-size: 8px; line-height: 12px; letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.85); text-transform: uppercase; }
+    .dv-hint { font-size: 10.5px; color: rgba(232, 237, 248, 0.6); letter-spacing: 0.04em; text-align: center; }
+
+    .dv-press {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 50%;
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .dv-press--l { left: 0; background: linear-gradient(90deg, rgba(110, 231, 165, 0.16), rgba(110, 231, 165, 0)); }
+    .dv-press--r { right: 0; background: linear-gradient(270deg, rgba(110, 231, 165, 0.16), rgba(110, 231, 165, 0)); }
+    .dv-press[data-on="1"] { opacity: 1; }
+    .dv-press--boost { left: 0; width: 100%; background: radial-gradient(ellipse at 50% 110%, rgba(127, 220, 255, 0.25), rgba(127, 220, 255, 0) 60%); }
+
+    /* off-screen markers */
+    .dv-mk {
+      position: absolute;
+      left: 0; top: 0;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 9.5px;
+      letter-spacing: 0.06em;
+      color: #fff;
+      text-shadow: 0 1px 3px #000, 0 0 2px #000;
+      white-space: nowrap;
+      will-change: transform;
+    }
+    .dv-mk__dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; box-shadow: 0 0 10px currentColor; }
+    .dv-mk__arrow {
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 13px solid currentColor;
+      filter: drop-shadow(0 0 4px rgba(0,0,0,0.8));
+    }
+    .dv-mk[data-off="1"] .dv-mk__dot { display: none; }
+    .dv-mk[data-off="0"] .dv-mk__arrow { display: none; }
+    .dv-mk[hidden] { display: none; }
+
+    /* ── Panels (lobby, round over, match over) ──────────────────────────── */
+    .dv-panel {
+      position: fixed;
+      left: 50%;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      width: min(440px, calc(100vw - 24px));
+      max-height: calc(100dvh - 120px - env(safe-area-inset-top));
+      overflow-y: auto;
+      z-index: 20;
+      background: rgba(10, 15, 24, 0.9);
+      border: 1px solid var(--ar-line);
+      border-radius: 6px;
+      padding: 18px 18px 16px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .dv-panel[hidden] { display: none; }
+    .dv-panel h2 { font-family: var(--ar-display); font-size: 15px; line-height: 1.5; margin: 0 0 6px; color: #fff; text-shadow: 0 0 20px rgba(110, 231, 165, 0.45); }
+    .dv-panel p { margin: 0; color: var(--ar-dim); font-size: 12px; line-height: 1.7; }
+    .dv-coderow { display: flex; gap: 8px; align-items: center; margin: 12px 0 14px; }
+    .dv-coderow .ar-code-display { flex: 1; text-align: left; padding: 0; font-size: clamp(22px, 8vw, 30px); }
+    .dv-coderow .ar-btn { width: auto; padding: 12px 14px; }
+    .dv-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .dv-list li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--ar-line-soft);
+      border-radius: 4px;
+      font-size: 12.5px;
+      color: var(--ar-ink);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .dv-list li .dv-sw { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 10px currentColor; background: currentColor; }
+    .dv-list li .dv-var { color: var(--ar-faint); font-size: 10.5px; margin-left: auto; text-align: right; }
+    .dv-list li .dv-pts { font-family: var(--ar-display); font-size: 11px; color: #fff; margin-left: auto; }
+    .dv-list li .dv-gain { font-family: var(--ar-display); font-size: 9px; color: var(--ar-green); width: 34px; text-align: right; }
+    .dv-list li[data-off="1"] { opacity: 0.5; }
+    .dv-bots { display: flex; gap: 6px; align-items: center; margin: 4px 0 14px; flex-wrap: wrap; }
+    .dv-bots span { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ar-faint); margin-right: 4px; }
+    .dv-bots button {
+      appearance: none;
+      min-width: 44px; min-height: 36px;
+      background: transparent;
+      border: 1px solid var(--ar-line);
+      border-radius: 4px;
+      color: var(--ar-ink);
+      font-family: var(--ar-mono);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .dv-bots button[aria-pressed="true"] { background: var(--dv-leaf); border-color: var(--dv-leaf); color: #06130b; font-weight: 700; }
+    .dv-how { margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid var(--ar-line-soft); }
+    .dv-how li { color: var(--ar-dim); font-size: 11.5px; line-height: 1.65; margin-left: 16px; }
+    .dv-awards { display: grid; gap: 6px; margin: 4px 0 14px; }
+    .dv-award { padding: 8px 10px; border: 1px solid var(--ar-line-soft); border-radius: 4px; }
+    .dv-award b { display: block; font-family: var(--ar-display); font-size: 9px; color: var(--ar-amber); margin-bottom: 4px; }
+    .dv-award span { font-size: 12px; color: var(--ar-ink); }
+    .dv-award small { display: block; color: var(--ar-faint); font-size: 10.5px; margin-top: 2px; }
+    .dv-wait { text-align: center; color: var(--ar-faint); font-size: 11px; letter-spacing: 0.08em; margin-top: 8px; }
+    .dv-panel .ar-btn { margin-top: 4px; }
+    .dv-panel .ar-btn--start { background: var(--dv-leaf); border-color: var(--dv-leaf); }
+
+    .dv-keys { display: none; }
+    @media (hover: hover) and (pointer: fine) {
+      .dv-keys { display: block; }
+      .dv-touchhint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div class="dv-gatetop" id="gateTop"><a href="/arcade/">← Arcade</a></div>
+  <div id="gate"></div>
+  <div id="pad" hidden></div>
+
+  <div id="hud" hidden>
+    <div class="dv-press dv-press--l" id="pressL"></div>
+    <div class="dv-press dv-press--r" id="pressR"></div>
+    <div class="dv-press dv-press--boost" id="pressB"></div>
+    <div id="markers"></div>
+    <div class="dv-top">
+      <a class="dv-hbtn" href="/arcade/">‹</a>
+      <span class="dv-code" id="code">—</span>
+      <span id="roundLabel"></span>
+      <span class="dv-spacer"></span>
+      <button class="dv-hbtn" id="viewBtn" type="button">View</button>
+      <button class="dv-hbtn" id="muteBtn" type="button">Sound</button>
+    </div>
+    <div class="dv-scores" id="scores"></div>
+    <div class="dv-feed" id="feed"></div>
+    <div class="dv-center" id="center"></div>
+    <div class="dv-bottom" id="bottom">
+      <div class="dv-where" id="where"></div>
+      <div class="dv-dew"><div class="dv-dew__fill" id="dewFill"></div><span>Dew · sprint</span></div>
+      <div class="dv-hint" id="hint">
+        <span class="dv-touchhint">Hold the left or right side to steer · both thumbs to sprint</span>
+        <span class="dv-keys">← → or A D to steer · ↑ or Space to sprint · V to change view</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="dv-panel" id="lobby" hidden></section>
+  <section class="dv-panel" id="results" hidden></section>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
+    import { mountArcade, shareRoom, escapeHtml } from '/arcade/shared/room.js';
+    import {
+      Sim, botDecide, castFree, surfaceAt, normalOf,
+      code as inputCode, TICK_MS, MAX_TICKS, VARIETIES, ENERGY_MAX, ROOM,
+    } from '/arcade/devils-ivy/world.js';
+    import { buildKitchen, PHOTO_VIEW } from '/arcade/devils-ivy/kitchen.js';
+    import { VineView, DropsView, Sparks } from '/arcade/devils-ivy/vines.js';
+
+    const SLUG = 'devils-ivy';
+    const TITLE = "Devil's Ivy";
+    const params = new URLSearchParams(location.search);
+    const POSTER = params.has('poster');
+    const $ = (id) => document.getElementById(id);
+
+    // ── Renderer & scene ────────────────────────────────────────────────
+    const canvas = $('view');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: POSTER });
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, coarse ? 2 : 1.6));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.95;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0b0d10');
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.42;
+
+    const camera = new THREE.PerspectiveCamera(70, 1, 0.008, 20);
+    const kitchen = buildKitchen(scene);
+    const drops = new DropsView(scene);
+    const sparks = new Sparks(scene);
+
+    function resize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ── Sound (all synthesised) ─────────────────────────────────────────
+    const audio = {
+      ctx: null, master: null, hiss: null, hissGain: null,
+      muted: (() => { try { return localStorage.getItem('devils-ivy:mute') === '1'; } catch { return false; } })(),
+      ensure() {
+        if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = this.muted ? 0 : 0.6;
+        this.master.connect(this.ctx.destination);
+        // Sprint whoosh: looped noise through a band-pass, gain driven per frame.
+        const len = this.ctx.sampleRate * 2;
+        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        const bp = this.ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 900;
+        bp.Q.value = 0.8;
+        this.hissGain = this.ctx.createGain();
+        this.hissGain.gain.value = 0;
+        src.connect(bp).connect(this.hissGain).connect(this.master);
+        src.start();
+        this.noiseBuf = buf;
+        // The fridge: a low hum, very quiet.
+        const hum = this.ctx.createOscillator();
+        hum.frequency.value = 50;
+        const humG = this.ctx.createGain();
+        humG.gain.value = 0.018;
+        hum.connect(humG).connect(this.master);
+        hum.start();
+      },
+      setMuted(m) {
+        this.muted = m;
+        try { localStorage.setItem('devils-ivy:mute', m ? '1' : '0'); } catch { /* private mode */ }
+        if (this.master) this.master.gain.value = m ? 0 : 0.6;
+      },
+      tone(freq, dur, { type = 'sine', gain = 0.2, to = null, delay = 0 } = {}) {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime + delay;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t);
+        if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(this.master);
+        o.start(t);
+        o.stop(t + dur + 0.05);
+      },
+      noise(dur, { gain = 0.2, freq = 600, delay = 0 } = {}) {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime + delay;
+        const s = this.ctx.createBufferSource();
+        s.buffer = this.noiseBuf;
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.setValueAtTime(freq, t);
+        f.frequency.exponentialRampToValueAtTime(80, t + dur);
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        s.connect(f).connect(g).connect(this.master);
+        s.start(t, Math.random());
+        s.stop(t + dur + 0.05);
+      },
+      beep() { this.tone(660, 0.12, { type: 'square', gain: 0.07 }); },
+      go() { this.tone(520, 0.35, { type: 'triangle', gain: 0.2, to: 1400 }); },
+      sun() { [1046, 1318, 1568, 2093].forEach((f, i) => this.tone(f, 0.22, { type: 'triangle', gain: 0.12, delay: i * 0.06 })); },
+      dew() { this.tone(1400, 0.16, { gain: 0.16, to: 420 }); },
+      wiltMe() { this.tone(440, 0.8, { type: 'sawtooth', gain: 0.09, to: 60 }); this.noise(0.5, { gain: 0.25, freq: 1800 }); },
+      wiltOther() { this.tone(300, 0.35, { type: 'triangle', gain: 0.1, to: 90 }); this.noise(0.25, { gain: 0.12, freq: 1200 }); },
+      win() { [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.3, { type: 'square', gain: 0.06, delay: i * 0.11 })); },
+      sprint(on) {
+        if (!this.hissGain) return;
+        const t = this.ctx.currentTime;
+        this.hissGain.gain.setTargetAtTime(on ? 0.12 : 0, t, 0.06);
+      },
+    };
+    $('muteBtn').textContent = audio.muted ? 'Muted' : 'Sound';
+    $('muteBtn').addEventListener('click', () => {
+      audio.ensure();
+      audio.setMuted(!audio.muted);
+      $('muteBtn').textContent = audio.muted ? 'Muted' : 'Sound';
+    });
+    window.addEventListener('pointerdown', () => audio.ensure(), { capture: true });
+    window.addEventListener('keydown', () => audio.ensure(), { capture: true });
+
+    // ── Server clock ─────────────────────────────────────────────────────
+    // serverNow − Date.now(), taking the largest sample: that's the message
+    // that spent least time in flight, so it's the best estimate.
+    const offsets = [];
+    let offset = 0;
+    const serverNow = () => Date.now() + offset;
+
+    // ── A round on screen: either the real one or the backdrop demo ─────
+    // { id, sim (confirmed), views[], meta[], me, startAt, endTick, pending[] }
+    let R = null;
+    let G = null;
+    let players = [];
+    let isHost = false;
+    let joined = false;
+    let mySeat = null;
+    let room = null;
+    let lastSpec = null;
+    let seq = 0;
+
+    function disposeRound() {
+      if (!R) return;
+      for (const v of R.views) v.dispose();
+      drops.clear();
+      R = null;
+      lastSpec = null;
+    }
+
+    function makeRound({ id, seed, n, varieties, names, startAt, demo }) {
+      disposeRound();
+      const sim = new Sim(seed, n);
+      R = {
+        id, seed, n, sim, demo,
+        views: varieties.map((v) => new VineView(scene, v)),
+        varieties, names,
+        me: -1,
+        startAt,
+        endTick: null,
+        pending: [],
+        logs: Array.from({ length: n }, () => []),
+        syncAskedAt: 0,
+        meta: null,
+        deathsShown: new Set(),
+        predictedDeath: null,
+        picksShown: new Set(),
+        lastAlive: new Array(n).fill(true),
+        demoAcc: 0,
+        demoEnd: 0,
+      };
+      return R;
+    }
+
+    // ── Backdrop demo: three bot vines growing round the kitchen ─────────
+    function startDemo(seed = (Math.random() * 4294967296) >>> 0) {
+      makeRound({ id: `demo-${seed}`, seed, n: 3, varieties: [0, 1, 3], names: ['Vinnie', 'Ivy', 'Sprout'], startAt: performance.now(), demo: true });
+    }
+
+    function stepDemo(dt, now) {
+      R.demoAcc += dt * 1000;
+      let budget = 4;
+      while (R.demoAcc >= TICK_MS && budget-- > 0) {
+        R.demoAcc -= TICK_MS;
+        if (R.sim.alive() > 1 && R.sim.tick < MAX_TICKS) demoTick();
+      }
+      if (R.demoAcc > TICK_MS * 4) R.demoAcc = 0;
+      if (!R.demoEnd && (R.sim.alive() <= 1 || R.sim.tick >= MAX_TICKS)) R.demoEnd = now + 3200;
+      if (R.demoEnd && now > R.demoEnd) startDemo();
+    }
+
+    function demoTick() {
+      const sim = R.sim;
+      if (sim.tick % 2 === 0) {
+        for (const v of sim.vines) {
+          if (!v.alive) continue;
+          const c = botDecide(sim, v);
+          if (c !== v.code) v.log.push([sim.tick + 1, c]);
+        }
+      }
+      sim.step();
+      handleEvents(sim.events, true);
+      sim.events.length = 0;
+    }
+
+    // ── Joining the real game ────────────────────────────────────────────
+    function onState(msg) {
+      players = msg.players || [];
+      isHost = !!msg.host;
+      mySeat = msg.seat;
+      $('code').textContent = msg.code || '—';
+
+      offsets.push(msg.serverNow - Date.now());
+      if (offsets.length > 30) offsets.shift();
+      offset = Math.max(...offsets);
+
+      const prevPhase = G?.phase;
+      G = msg.game;
+      const r = G.round;
+
+      if (r && G.phase !== 'lobby') {
+        if (!R || R.id !== r.id) {
+          makeRound({ id: r.id, seed: r.seed, n: r.vines.length, varieties: r.vines.map((v) => v.variety), names: r.vines.map((v) => v.name), startAt: r.startAt, demo: false });
+          R.me = G.me;
+          sentCode = -1; // unknown: reconcile below sends whatever is held now
+          cam.intro = true;
+          cam.spectate = -1;
+          cam.deadAt = 0;
+          lastCount = -1;
+        }
+        syncRound(r);
+        reconcileInput();
+      } else if (!R || !R.demo) {
+        startDemo();
+      }
+
+      if (G.phase !== prevPhase) onPhase(prevPhase, G.phase);
+      renderFeed();
+      renderPanels();
+      renderScores();
+    }
+
+    function syncRound(r) {
+      R.meta = r;
+      R.me = G.me;
+      R.endTick = r.endTick;
+      R.startAt = r.startAt;
+      const sim = R.sim;
+      // Merge the logs: a view carries either a whole log or just its tail.
+      let missing = false;
+      r.vines.forEach((v, i) => {
+        if (v.log) R.logs[i] = v.log;
+        else if (R.logs[i].length >= v.lt.from) {
+          R.logs[i].length = v.lt.from;
+          for (const e of v.lt.tail) R.logs[i].push(e);
+        } else missing = true;
+      });
+      if (missing) {
+        // Too far behind to splice the tail on: ask for whole logs and wait.
+        if (performance.now() - R.syncAskedAt > 1000) {
+          R.syncAskedAt = performance.now();
+          room.send({ t: 'sync' });
+        }
+        return;
+      }
+      // Logs only grow. If what we've already consumed doesn't match the
+      // server any more (it restarted from an older copy), replay from scratch.
+      let stale = false;
+      R.logs.forEach((log, i) => {
+        const sv = sim.vines[i];
+        if (sv.lp > log.length) stale = true;
+        else if (sv.lp > 0) {
+          const a = log[sv.lp - 1];
+          if (!sv.lastSeen || a[0] !== sv.lastSeen[0] || a[1] !== sv.lastSeen[1]) stale = true;
+        }
+      });
+      if (stale || sim.tick > r.simTick) rebuildRound(r);
+      R.logs.forEach((log, i) => (R.sim.vines[i].log = log));
+      while (R.sim.tick < r.simTick) {
+        R.sim.step();
+        // Catching up a long way (joined mid-round): show it, don't replay
+        // every old wilt's sound and buzz at once.
+        handleEvents(R.sim.events, false, r.simTick - R.sim.tick > 25);
+        R.sim.events.length = 0;
+      }
+      R.sim.vines.forEach((sv) => (sv.lastSeen = sv.lp > 0 ? sv.log[sv.lp - 1].slice() : null));
+      // Inputs the server has acknowledged are in its log now.
+      if (R.me >= 0) {
+        const ack = r.vines[R.me].q;
+        seq = Math.max(seq, ack); // after a reload, carry on numbering past the server's
+        // Acknowledged inputs are in the log now; one that has had a second
+        // and still isn't was lost on the way, and reconcileInput resends.
+        const old = performance.now() - 1200;
+        R.pending = R.pending.filter((p) => p.q > ack && p.at > old);
+      }
+      // The server's word on who is alive is final.
+      r.vines.forEach((v, i) => {
+        if (!v.alive && R.sim.vines[i].alive) console.warn('[devils-ivy] desync: server says vine', i, 'wilted');
+        if (!v.alive) R.views[i].wilt(performance.now());
+      });
+    }
+
+    function rebuildRound(r) {
+      const sim = new Sim(r.seed, r.vines.length);
+      R.logs.forEach((log, i) => (sim.vines[i].log = log));
+      R.sim = sim;
+      R.views.forEach((v) => v.reset());
+      R.deathsShown = new Set();
+      R.picksShown = new Set();
+    }
+
+    // Events from the CONFIRMED simulation (or the demo).
+    function handleEvents(events, demo, quiet = false) {
+      const now = performance.now();
+      if (quiet) demo = true; // effects without sound or vibration
+      for (const e of events) {
+        if (e.t === 'die') {
+          if (R.deathsShown.has(e.i)) continue;
+          R.deathsShown.add(e.i);
+          R.views[e.i].wilt(now);
+          const n = normalOf(R.sim.vines[e.i].w.na * 2 + (R.sim.vines[e.i].w.ns > 0 ? 0 : 1));
+          sparks.burst(e.x, e.y, e.z, n, '#c99a4a', 40, 0.7, 1.1, true);
+          sparks.burst(e.x, e.y, e.z, n, VARIETIES[R.varieties[e.i]].glow, 24, 1.1, 0.7);
+          if (!demo) {
+            if (e.i === R.me) {
+              if (R.predictedDeath == null) wiltMe(e);
+            } else {
+              audio.wiltOther();
+            }
+          }
+        } else if (e.t === 'pick') {
+          if (R.picksShown.has(e.id)) continue;
+          R.picksShown.add(e.id);
+          sparks.burst(e.x, e.y, e.z, [0, 0, 0], e.kind === 0 ? '#ffd24a' : '#8fe3ff', e.kind === 0 ? 50 : 24, e.kind === 0 ? 1.2 : 0.8, 0.8);
+          if (!demo && e.i === R.me) (e.kind === 0 ? audio.sun() : audio.dew());
+        }
+      }
+    }
+
+    function wiltMe() {
+      audio.wiltMe();
+      cam.shake = 1;
+      cam.deadAt = performance.now();
+      if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+    }
+
+    // ── Prediction: the confirmed round plus the last few hundred ms ─────
+    // My log as the server will have it once my pending inputs land — the
+    // same merge rule as the rules module's input().
+    function myLog(spec) {
+      const out = R.logs[R.me].slice();
+      for (const p of R.pending) {
+        let k = Math.max(p.k, spec.tick + 1);
+        const last = out[out.length - 1];
+        if (last && k < last[0]) k = last[0];
+        if (last && last[0] === k && k > p.k) k += 1;
+        if (last && last[0] === k) out[out.length - 1] = [k, p.c];
+        else if (!last || last[1] !== p.c) out.push([k, p.c]);
+      }
+      return out;
+    }
+
+    function predict() {
+      if (!R || R.demo || !R.meta) return null;
+      if (R.endTick != null) return null;
+      const target = Math.min(Math.floor((serverNow() - R.startAt) / TICK_MS), MAX_TICKS);
+      const spec = R.sim.fork();
+      if (R.me >= 0) {
+        const v = spec.vines[R.me];
+        v.log = myLog(spec);
+        let lp = 0;
+        while (lp < v.log.length && v.log[lp][0] <= spec.tick) lp++;
+        v.lp = lp;
+      }
+      let budget = 45;
+      while (spec.tick < target && budget-- > 0) spec.step();
+      // Things the prediction saw that the server hasn't confirmed yet.
+      for (const e of spec.events) {
+        if (e.t === 'die' && e.i === R.me && R.predictedDeath == null && !R.deathsShown.has(e.i)) {
+          R.predictedDeath = { tick: e.k, at: performance.now() };
+          wiltMe(e);
+        }
+        if (e.t === 'pick' && e.i === R.me && !R.picksShown.has(e.id)) {
+          R.picksShown.add(e.id);
+          sparks.burst(e.x, e.y, e.z, [0, 0, 0], e.kind === 0 ? '#ffd24a' : '#8fe3ff', e.kind === 0 ? 50 : 24, 1.1, 0.8);
+          e.kind === 0 ? audio.sun() : audio.dew();
+        }
+      }
+      // A predicted wilt the server never confirmed (it was a near miss after all).
+      if (R.predictedDeath && R.me >= 0 && spec.vines[R.me].alive && R.sim.vines[R.me].alive && performance.now() - R.predictedDeath.at > 900) {
+        R.predictedDeath = null;
+        cam.deadAt = 0;
+      }
+      return spec;
+    }
+
+    // ── Input ───────────────────────────────────────────────────────────
+    const keys = { left: false, right: false, boost: false };
+    const touches = new Map(); // pointerId -> 'l' | 'r'
+    let sentCode = 1;
+
+    function currentCode() {
+      let l = keys.left;
+      let r = keys.right;
+      let b = keys.boost;
+      let tl = false;
+      let tr = false;
+      for (const side of touches.values()) {
+        if (side === 'l') tl = true;
+        else tr = true;
+      }
+      if (tl && tr) b = true;
+      else {
+        l = l || tl;
+        r = r || tr;
+      }
+      const steer = l && !r ? 1 : r && !l ? -1 : 0;
+      $('pressL').dataset.on = steer === 1 && !(tl && tr) ? '1' : '0';
+      $('pressR').dataset.on = steer === -1 && !(tl && tr) ? '1' : '0';
+      $('pressB').dataset.on = b ? '1' : '0';
+      return inputCode(steer, b);
+    }
+
+    function pushInput(force = false) {
+      const c = currentCode();
+      if (!R || R.demo || !G || R.me < 0) return;
+      if (G.phase !== 'play' && G.phase !== 'countdown') return;
+      if (c === sentCode && !force) return;
+      const k = Math.max(1, Math.floor((serverNow() - R.startAt) / TICK_MS) + 1);
+      const q = seq + 1;
+      // Only count it as sent if it went out; while reconnecting it didn't,
+      // and reconcileInput sends whatever is held once we're back.
+      if (!room.send({ t: 'in', k, c, q })) return;
+      seq = q;
+      sentCode = c;
+      R.pending.push({ q, k, c, at: performance.now() });
+      audio.sprint(c >= 3);
+    }
+
+    // After every server update: if nothing of mine is in flight and the
+    // server's latest input for my vine isn't what I'm holding (a send lost to
+    // a reconnect, a reload mid-turn), send it again.
+    function reconcileInput() {
+      if (!R || R.demo || R.me < 0 || !R.meta) return;
+      if (G.phase !== 'play' && G.phase !== 'countdown') return;
+      if (!R.meta.vines[R.me]?.alive || R.pending.length) return;
+      const log = R.logs[R.me];
+      const serverCode = log.length ? log[log.length - 1][1] : 1;
+      const want = currentCode();
+      if (serverCode !== want) pushInput(true);
+      else sentCode = want;
+    }
+
+    const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'boost', KeyW: 'boost', Space: 'boost', ShiftLeft: 'boost' };
+    window.addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLInputElement) return;
+      const k = KEYMAP[e.code];
+      if (k) {
+        e.preventDefault();
+        if (!keys[k]) {
+          keys[k] = true;
+          pushInput();
+        }
+      } else if (e.code === 'KeyV') cycleView();
+      else if (e.code === 'KeyM') $('muteBtn').click();
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = KEYMAP[e.code];
+      if (k && keys[k]) {
+        keys[k] = false;
+        pushInput();
+      }
+    });
+    window.addEventListener('blur', () => {
+      keys.left = keys.right = keys.boost = false;
+      touches.clear();
+      pushInput();
+    });
+
+    const pad = $('pad');
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      pad.setPointerCapture?.(e.pointerId);
+      touches.set(e.pointerId, e.clientX < window.innerWidth / 2 ? 'l' : 'r');
+      pushInput();
+    });
+    pad.addEventListener('pointermove', (e) => {
+      if (!touches.has(e.pointerId)) return;
+      const side = e.clientX < window.innerWidth / 2 ? 'l' : 'r';
+      if (touches.get(e.pointerId) !== side) {
+        touches.set(e.pointerId, side);
+        pushInput();
+      }
+    });
+    const lift = (e) => {
+      if (touches.delete(e.pointerId)) pushInput();
+    };
+    pad.addEventListener('pointerup', lift);
+    pad.addEventListener('pointercancel', lift);
+    pad.addEventListener('lostpointercapture', lift);
+    pad.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // ── Camera ──────────────────────────────────────────────────────────
+    const cam = {
+      pos: PHOTO_VIEW.pos.clone(),
+      quat: new THREE.Quaternion(),
+      n: new THREE.Vector3(0, 1, 0),
+      f: new THREE.Vector3(0, 0, -1),
+      fresh: true,
+      intro: false,
+      mode: 'auto', // auto | photo
+      spectate: -1,
+      deadAt: 0,
+      shake: 0,
+    };
+    const _m4 = new THREE.Matrix4();
+    const _v = new THREE.Vector3();
+    const _w = new THREE.Vector3();
+    const _look = new THREE.Vector3();
+    const hit = { axis: 0, sign: 0, plane: 0, box: 0 };
+    const _side = new THREE.Vector3();
+    const _dir = new THREE.Vector3();
+    // Camera spots relative to the tip: [up the surface normal, back along the
+    // heading, sideways]. The first that has a clear line wins.
+    const CAM_SPOTS = [[0.52, 0.72, 0], [0.62, 0.36, 0], [0.42, 0.5, 0.36], [0.42, 0.5, -0.36], [0.7, 0.08, 0]];
+
+    function photoPose(now, outPos, outQuat) {
+      outPos.copy(PHOTO_VIEW.pos);
+      outPos.x += Math.sin(now / 4100) * 0.05;
+      outPos.y += Math.sin(now / 5300) * 0.025;
+      _look.copy(PHOTO_VIEW.look);
+      _m4.lookAt(outPos, _look, THREE.Object3D.DEFAULT_UP);
+      outQuat.setFromRotationMatrix(_m4);
+    }
+
+    function chasePose(view, dt, outPos, outQuat, snap) {
+      const k1 = snap ? 1 : 1 - Math.exp(-dt * 7);
+      const k2 = snap ? 1 : 1 - Math.exp(-dt * 9);
+      cam.n.lerp(view.headNormal, k1).normalize();
+      cam.f.lerp(view.headDir, k2);
+      cam.f.addScaledVector(cam.n, -cam.f.dot(cam.n));
+      if (cam.f.lengthSq() < 1e-6) cam.f.copy(view.headDir);
+      cam.f.normalize();
+      const head = view.headPos;
+      // Behind and well above the growing tip, looking down along it, so you
+      // can see the surface ahead and your own vine curling behind. In a tight
+      // spot (between appliances, under a cupboard) try higher, closer and
+      // off-to-the-side positions before pulling in towards the tip.
+      _side.crossVectors(cam.f, cam.n).normalize();
+      const origin = _w.copy(head).addScaledVector(cam.n, 0.06);
+      let best = null;
+      for (let c = 0; c < CAM_SPOTS.length; c++) {
+        const [up, back, side] = CAM_SPOTS[c];
+        _v.copy(head).addScaledVector(cam.n, up).addScaledVector(cam.f, -back).addScaledVector(_side, side);
+        _dir.subVectors(_v, origin);
+        const len = _dir.length();
+        _dir.divideScalar(len);
+        const t = castFree(origin.x, origin.y, origin.z, _dir.x, _dir.y, _dir.z, len, hit);
+        const reach = t < len ? Math.max(0.05, t - 0.04) : len;
+        const score = reach / len - c * 0.03 + (t >= len ? 0.5 : 0);
+        if (!best || score > best.score) best = { score, reach, x: _dir.x, y: _dir.y, z: _dir.z };
+        if (t >= len && c === 0) break;
+      }
+      outPos.copy(origin).add(_dir.set(best.x, best.y, best.z).multiplyScalar(best.reach));
+      _look.copy(head).addScaledVector(cam.f, 0.75);
+      _m4.lookAt(outPos, _look, cam.n);
+      outQuat.setFromRotationMatrix(_m4);
+    }
+
+    const _pPos = new THREE.Vector3();
+    const _pQuat = new THREE.Quaternion();
+    const _cPos = new THREE.Vector3();
+    const _cQuat = new THREE.Quaternion();
+
+    function updateCamera(dt, now) {
+      let follow = -1;
+      let blend = 0; // 0 = photo, 1 = chase
+      if (R && !R.demo && cam.mode !== 'photo') {
+        const meAlive = R.me >= 0 && R.views[R.me] && !R.deathsShown.has(R.me) && !R.predictedDeath;
+        if (G.phase === 'countdown') {
+          const left = (G.phaseEnds - serverNow()) / 1000;
+          follow = R.me >= 0 ? R.me : 0;
+          blend = R.me >= 0 ? smooth(1 - (left - 0.2) / 1.6) : 0;
+        } else if (meAlive) {
+          follow = R.me;
+          blend = 1;
+        } else {
+          // Dead (or watching): hold on the wilt a moment, then follow a survivor.
+          const since = cam.deadAt ? now - cam.deadAt : 99999;
+          if (since < 1500 && R.me >= 0) {
+            follow = R.me;
+            blend = 1;
+          } else {
+            const alive = R.views.map((_, i) => i).filter((i) => R.sim.vines[i].alive && !R.deathsShown.has(i));
+            if (cam.spectate >= 0 && !alive.includes(cam.spectate)) cam.spectate = -1;
+            if (cam.spectate < 0 && alive.length && G.phase === 'play') cam.spectate = alive[0];
+            follow = cam.spectate;
+            blend = follow >= 0 && G.phase === 'play' ? 1 : 0;
+          }
+        }
+      }
+      photoPose(now, _pPos, _pQuat);
+      let tPos = _pPos;
+      let tQuat = _pQuat;
+      if (follow >= 0 && blend > 0) {
+        if (cam.fresh || cam.lastFollow !== follow) {
+          cam.n.copy(R.views[follow].headNormal);
+          cam.f.copy(R.views[follow].headDir);
+        }
+        chasePose(R.views[follow], dt, _cPos, _cQuat, cam.fresh || cam.lastFollow !== follow);
+        cam.lastFollow = follow;
+        tPos = _cPos.lerp(_pPos, 1 - blend);
+        tQuat = _cQuat.slerp(_pQuat, 1 - blend);
+      } else {
+        cam.lastFollow = -1;
+      }
+      const k = cam.fresh ? 1 : 1 - Math.exp(-dt * (follow >= 0 && blend >= 1 ? 9 : 3.2));
+      cam.pos.lerp(tPos, k);
+      cam.quat.slerp(tQuat, k);
+      cam.fresh = false;
+      camera.position.copy(cam.pos);
+      camera.quaternion.copy(cam.quat);
+      if (cam.shake > 0) {
+        cam.shake = Math.max(0, cam.shake - dt * 2.2);
+        const s = cam.shake * 0.012;
+        camera.position.x += (Math.random() - 0.5) * s;
+        camera.position.y += (Math.random() - 0.5) * s;
+        camera.position.z += (Math.random() - 0.5) * s;
+      }
+      // Wider lens on the chase cam in landscape; narrower in portrait for the photo view.
+      const portrait = camera.aspect < 1;
+      const fov = blend > 0.5 ? (portrait ? 78 : 66) : portrait ? 74 : 58;
+      if (Math.abs(camera.fov - fov) > 0.05) {
+        camera.fov += (fov - camera.fov) * Math.min(1, dt * 4);
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    function smooth(x) {
+      const t = Math.min(1, Math.max(0, x));
+      return t * t * (3 - 2 * t);
+    }
+
+    function cycleView() {
+      if (!R || R.demo) return;
+      const meAlive = R.me >= 0 && !R.deathsShown.has(R.me) && !R.predictedDeath;
+      if (meAlive) {
+        cam.mode = cam.mode === 'photo' ? 'auto' : 'photo';
+      } else {
+        const alive = R.views.map((_, i) => i).filter((i) => R.sim.vines[i].alive && !R.deathsShown.has(i));
+        if (cam.mode === 'photo') {
+          cam.mode = 'auto';
+          cam.spectate = alive[0] ?? -1;
+        } else {
+          const at = alive.indexOf(cam.spectate);
+          if (at < 0 || at === alive.length - 1) cam.mode = 'photo';
+          else cam.spectate = alive[at + 1];
+        }
+      }
+      $('viewBtn').textContent = cam.mode === 'photo' ? 'Photo' : 'View';
+    }
+    $('viewBtn').addEventListener('click', cycleView);
+
+    // ── Drawing a round each frame ───────────────────────────────────────
+    function drawRound(spec, now) {
+      const sim = R.sim;
+      for (let i = 0; i < R.n; i++) {
+        const view = R.views[i];
+        view.consume(sim.trail.v[i], now);
+        const src = spec || sim;
+        const sv = src.vines[i];
+        const lane = spec ? spec.trail.v[i] : null;
+        const alive = sv.alive && !(R.deathsShown.has(i));
+        view.setTail(lane, sv.w, alive, sv.s);
+        view.animate(now, sv.s);
+        view.faceCamera(camera.position);
+      }
+      drops.sync((spec || sim).pickups, now, camera.position);
+    }
+
+    // ── HUD ─────────────────────────────────────────────────────────────
+    const markers = new Map();
+    function marker(key, color, label) {
+      let m = markers.get(key);
+      if (!m) {
+        const el = document.createElement('div');
+        el.className = 'dv-mk';
+        el.innerHTML = '<div class="dv-mk__arrow"></div><div class="dv-mk__dot"></div><div class="dv-mk__label"></div>';
+        $('markers').appendChild(el);
+        m = { el, label: el.querySelector('.dv-mk__label'), arrow: el.querySelector('.dv-mk__arrow') };
+        markers.set(key, m);
+      }
+      m.el.style.color = color;
+      m.text = label;
+      m.used = true;
+      return m;
+    }
+
+    const _proj = new THREE.Vector3();
+    function placeMarker(m, pos, from) {
+      _proj.copy(pos).project(camera);
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      let x = _proj.x;
+      let y = _proj.y;
+      const behind = _proj.z > 1;
+      if (behind) { x = -x; y = -y; }
+      const off = behind || Math.abs(x) > 0.92 || Math.abs(y) > 0.86;
+      if (off) {
+        const len = Math.max(Math.abs(x) / 0.9, Math.abs(y) / 0.78, 1e-6);
+        x /= len;
+        y /= len;
+      }
+      const sx = (x * 0.5 + 0.5) * W;
+      const sy = (-y * 0.5 + 0.5) * H;
+      m.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -50%)`;
+      m.el.dataset.off = off ? '1' : '0';
+      if (off) m.arrow.style.transform = `rotate(${Math.atan2(x, y)}rad)`;
+      const d = from ? from.distanceTo(pos) : 0;
+      m.label.textContent = from ? `${m.text} ${d.toFixed(1)} m` : m.text;
+      m.el.hidden = false;
+    }
+
+    let whereAt = 0;
+    function updateHud(spec, now) {
+      for (const m of markers.values()) m.used = false;
+      const live = R && !R.demo && G && (G.phase === 'play' || G.phase === 'countdown');
+      if (live) {
+        const src = spec || R.sim;
+        const meIdx = R.me;
+        const from = meIdx >= 0 ? R.views[meIdx].headPos : null;
+        for (const p of src.pickups) {
+          if (!p.live || p.kind !== 0) continue;
+          placeMarker(marker('sun', '#ffc23a', 'Sun'), _v.set(p.x, p.y, p.z), from);
+        }
+        for (let i = 0; i < R.n; i++) {
+          if (i === meIdx || !src.vines[i].alive || R.deathsShown.has(i)) continue;
+          if (G.phase === 'countdown' && meIdx >= 0) continue;
+          placeMarker(marker(`v${i}`, VARIETIES[R.varieties[i]].css, R.names[i]), R.views[i].headPos, from);
+        }
+        if (G.phase === 'countdown' && meIdx >= 0) {
+          placeMarker(marker('you', VARIETIES[R.varieties[meIdx]].css, 'You'), R.views[meIdx].headPos, null);
+        }
+        if (meIdx >= 0) {
+          const v = src.vines[meIdx];
+          $('dewFill').style.width = `${(100 * v.energy) / ENERGY_MAX}%`;
+          if (now > whereAt) {
+            whereAt = now + 250;
+            const w = v.w;
+            $('where').textContent = v.alive && !R.predictedDeath ? `on ${surfaceAt(w.x, w.y, w.z, w.na, w.ns).label}` : '';
+          }
+          audio.sprint(v.alive && v.boosting && G.phase === 'play');
+        }
+      } else {
+        audio.sprint(false);
+      }
+      for (const [k, m] of markers) {
+        if (!m.used) m.el.hidden = true;
+        void k;
+      }
+      $('bottom').style.visibility = live && R.me >= 0 && !R.deathsShown.has(R.me) ? 'visible' : 'hidden';
+      updateCenter(now);
+    }
+
+    let lastCount = -1;
+    let centerKey = '';
+    function setCenter(key, html) {
+      if (key === centerKey) return;
+      centerKey = key;
+      $('center').innerHTML = html;
+    }
+
+    function updateCenter(now) {
+      if (!G || !R || R.demo) return setCenter('', '');
+      const me = R.me;
+      const col = me >= 0 ? VARIETIES[R.varieties[me]].css : '#fff';
+      if (G.phase === 'countdown') {
+        const left = Math.ceil((G.phaseEnds - serverNow()) / 1000);
+        if (left !== lastCount && left > 0 && left <= 3) audio.beep();
+        lastCount = left;
+        const intro = me >= 0
+          ? `You are the <b style="color:${col}">${VARIETIES[R.varieties[me]].name}</b>.<br>Round ${G.roundNo} · first to ${G.target}`
+          : `Round ${G.roundNo} — you'll grow next round`;
+        return setCenter(`cd${left}`, `${left <= 3 ? `<div class="dv-big">${Math.max(1, left)}</div>` : ''}<div class="dv-mid" style="--dv-col:${col}">${intro}</div>`);
+      }
+      if (G.phase === 'play') {
+        const t = serverNow() - R.startAt;
+        if (lastCount !== 0 && t < 900) {
+          lastCount = 0;
+          audio.go();
+        }
+        if (t < 900) return setCenter('go', '<div class="dv-big">GROW!</div>');
+        const dead = me >= 0 && (R.deathsShown.has(me) || R.predictedDeath);
+        if (dead) {
+          const mv = G.round.vines[me];
+          const why = mv && !mv.alive ? deathLine(me, mv.by, mv.where) : 'You touched a vine.';
+          const watching = cam.mode === 'photo' ? 'Photo view' : cam.spectate >= 0 ? `Watching ${escapeHtml(R.names[cam.spectate])}` : '';
+          return setCenter(`dead${mv?.alive}${cam.spectate}${cam.mode}`, `<div class="dv-big" style="font-size:clamp(24px,9vw,44px)">WILTED</div><div class="dv-mid">${why}${watching ? `<br><span style="opacity:.7">${watching} · tap View to switch</span>` : ''}</div>`);
+        }
+        return setCenter('', '');
+      }
+      return setCenter('', '');
+    }
+
+    function nameOf(i) {
+      return escapeHtml(R?.names?.[i] ?? '?');
+    }
+    function colOf(i) {
+      return VARIETIES[R.varieties[i]].css;
+    }
+    function deathLine(i, by, where) {
+      const w = where ? ` on ${escapeHtml(where)}` : '';
+      if (by === i) return `Tangled in ${i === R.me ? 'your' : 'their'} own vine${w}.`;
+      if (by >= 0) return `Ran into <em style="color:${colOf(by)}">${nameOf(by)}</em>'s vine${w}.`;
+      return `Wilted${w}.`;
+    }
+
+    const shownFeed = new Set();
+    function renderFeed() {
+      if (!G?.feed || !R || R.demo) return;
+      for (const e of G.feed) {
+        if (shownFeed.has(e.id)) continue;
+        shownFeed.add(e.id);
+        const el = document.createElement('div');
+        el.className = 'dv-toast';
+        if (e.t === 'die') {
+          el.innerHTML = `<em style="color:${colOf(e.who)}">${nameOf(e.who)}</em> wilted${e.where ? ` on ${escapeHtml(e.where)}` : ''}${e.by === e.who ? ' — tangled in their own vine' : e.by >= 0 ? ` — ran into <em style="color:${colOf(e.by)}">${nameOf(e.by)}</em>` : ''}`;
+        } else if (e.t === 'sun') {
+          el.innerHTML = `<em style="color:${colOf(e.who)}">${nameOf(e.who)}</em> caught the sun · +1`;
+        } else continue;
+        $('feed').prepend(el);
+        setTimeout(() => el.remove(), 4300);
+        while ($('feed').children.length > 3) $('feed').lastChild.remove();
+      }
+    }
+
+    function renderScores() {
+      const el = $('scores');
+      if (!G || !R || R.demo || G.phase === 'lobby') {
+        el.innerHTML = '';
+        $('roundLabel').textContent = '';
+        return;
+      }
+      $('roundLabel').textContent = `Round ${G.roundNo} · to ${G.target}`;
+      const inRound = new Map(G.round ? G.round.vines.map((v, i) => [v.key, i]) : []);
+      el.innerHTML = G.scores
+        .filter((s) => inRound.has(s.key))
+        .map((s) => {
+          const i = inRound.get(s.key);
+          const dead = G.round.vines[i] && !G.round.vines[i].alive;
+          return `<span class="dv-chip" data-dead="${dead ? 1 : 0}" data-me="${i === R.me ? 1 : 0}"><i style="color:${VARIETIES[s.variety].css};background:${VARIETIES[s.variety].css}"></i>${escapeHtml(s.name)}${s.bot ? ' (bot)' : ''} <b>${s.pts}</b></span>`;
+        })
+        .join('');
+    }
+
+    // ── Panels ──────────────────────────────────────────────────────────
+    function renderPanels() {
+      const lobby = $('lobby');
+      const results = $('results');
+      if (!joined || !G) {
+        lobby.hidden = results.hidden = true;
+        return;
+      }
+      if (G.phase === 'lobby') {
+        results.hidden = true;
+        lobby.hidden = false;
+        lobby.innerHTML = lobbyHtml();
+        wireLobby();
+      } else if (G.phase === 'roundover' || G.phase === 'matchover') {
+        lobby.hidden = true;
+        results.hidden = false;
+        results.innerHTML = G.phase === 'roundover' ? roundHtml() : matchHtml();
+        wireResults();
+      } else {
+        lobby.hidden = results.hidden = true;
+      }
+      $('pad').hidden = !(G.phase === 'play' || G.phase === 'countdown');
+    }
+
+    function lobbyHtml() {
+      const host = players.find((p) => p.host);
+      const online = players.filter((p) => p.online);
+      const rows = online
+        .map((p) => {
+          const v = VARIETIES[p.seat % VARIETIES.length];
+          return `<li><span class="dv-sw" style="color:${v.css}"></span>${escapeHtml(p.name)}${p.seat === mySeat ? ' (you)' : ''}<span class="dv-var">${v.name}${p.host ? ' · host' : ''}</span></li>`;
+        })
+        .join('');
+      const nb = G.botsIfStarted;
+      const botRow = nb ? `<li data-off="1"><span class="dv-sw" style="color:#8e9ab6"></span>+ ${nb} bot vine${nb === 1 ? '' : 's'}<span class="dv-var">grown by the server</span></li>` : '';
+      const opts = [[-1, 'Auto'], [0, '0'], [1, '1'], [2, '2'], [3, '3']];
+      const bots = isHost
+        ? `<div class="dv-bots"><span>Bots</span>${opts.map(([n, l]) => `<button type="button" data-bots="${n}" aria-pressed="${G.bots === n}">${l}</button>`).join('')}</div>`
+        : '';
+      return `
+        <h2>${TITLE}</h2>
+        <p>Send the code to whoever's in the kitchen with you.</p>
+        <div class="dv-coderow"><div class="ar-code-display">${escapeHtml(room.code() || '')}</div><button class="ar-btn ar-btn--ghost" id="shareBtn" type="button">Share</button></div>
+        <ul class="dv-list">${rows}${botRow}</ul>
+        ${bots}
+        ${isHost ? '<button class="ar-btn ar-btn--start" id="startBtn" type="button">Start growing</button>' : `<p class="dv-wait">Waiting for ${escapeHtml(host?.name || 'the host')} to start…</p>`}
+        <ul class="dv-how">
+          <li>You never stop and you can't slow down — you can only steer.</li>
+          <li>Ledges, walls, the ceiling, the fridge: you creep over all of it.</li>
+          <li>Touch any vine, even your own, and you wilt. Every wilt is a point for everyone still growing.</li>
+          <li>Sun drops are a point each. Dew fills your sprint. First to ${G.target}.</li>
+        </ul>`;
+    }
+
+    function wireLobby() {
+      $('shareBtn')?.addEventListener('click', async () => {
+        const r = await shareRoom(SLUG, room.code(), TITLE);
+        if (r === 'copied') $('shareBtn').textContent = 'Copied';
+      });
+      $('startBtn')?.addEventListener('click', () => {
+        audio.ensure();
+        room.send({ t: 'start' });
+      });
+      document.querySelectorAll('[data-bots]').forEach((b) =>
+        b.addEventListener('click', () => room.send({ t: 'bots', n: Number(b.dataset.bots) })),
+      );
+    }
+
+    function standings(gainMap) {
+      return G.scores
+        .map((s) => {
+          const g = gainMap ? gainMap[s.key] || 0 : null;
+          return `<li><span class="dv-sw" style="color:${VARIETIES[s.variety].css}"></span>${escapeHtml(s.name)}${s.bot ? ' (bot)' : ''}${s.seat === mySeat && !s.bot ? ' (you)' : ''}${g != null ? `<span class="dv-gain">${g ? `+${g}` : ''}</span>` : ''}<span class="dv-pts">${s.pts}</span></li>`;
+        })
+        .join('');
+    }
+
+    function roundHtml() {
+      const lr = G.lastRound;
+      const w = lr?.winner ? G.scores.find((s) => s.key === lr.winner) : null;
+      const survivors = G.round ? G.round.vines.filter((v) => v.alive).length : 0;
+      const head = w
+        ? `<b style="color:${VARIETIES[w.variety].css}">${escapeHtml(w.name)}</b> is the last vine growing.`
+        : survivors > 1
+          ? `Time's up — ${survivors} vines still growing, a point each.`
+          : 'Nobody made it.';
+      const secs = Math.max(0, Math.ceil((G.phaseEnds - serverNow()) / 1000));
+      return `<h2>Round ${lr?.no ?? G.roundNo}</h2><p>${head} First to ${G.target}.</p><ul class="dv-list" style="margin-top:12px">${standings(lr?.gained)}</ul><p class="dv-wait" id="nextIn">Next round in ${secs}…</p>`;
+    }
+
+    function matchHtml() {
+      const champ = G.scores.find((s) => s.key === G.champion);
+      const aw = (G.awards || [])
+        .map((a) => {
+          const s = G.scores.find((x) => x.key === a.key);
+          return `<div class="dv-award"><b>${escapeHtml(a.title)}</b><span style="color:${VARIETIES[s?.variety ?? 0].css}">${escapeHtml(s?.name || '?')}</span> · <span>${escapeHtml(a.value)}</span><small>${escapeHtml(a.line)}</small></div>`;
+        })
+        .join('');
+      return `<h2>${champ ? `${escapeHtml(champ.name)} takes the kitchen` : 'Match over'}</h2>
+        <p>${champ ? `The ${VARIETIES[champ.variety].name} has the run of the place.` : ''}</p>
+        <ul class="dv-list" style="margin-top:12px">${standings(null)}</ul>
+        <div class="dv-awards">${aw}</div>
+        ${isHost ? '<button class="ar-btn ar-btn--start" id="rematchBtn" type="button">Grow again</button>' : `<p class="dv-wait">Waiting for the host to start another…</p>`}`;
+    }
+
+    function wireResults() {
+      $('rematchBtn')?.addEventListener('click', () => room.send({ t: 'rematch' }));
+    }
+
+    function onPhase(prev, phase) {
+      if (phase === 'roundover') {
+        const lr = G.lastRound;
+        if (lr?.winner && G.round?.vines[R?.me]?.key === lr.winner) audio.win();
+      }
+      if (phase === 'matchover' && G.champion && G.round?.vines[R?.me]?.key === G.champion) audio.win();
+      if (phase === 'lobby' || phase === 'matchover') {
+        cam.mode = 'auto';
+        $('viewBtn').textContent = 'View';
+      }
+      if (phase === 'countdown') {
+        if (R) R.predictedDeath = null;
+        cam.shake = 0;
+        pushInput(); // anything already held down counts from tick 1
+      }
+    }
+
+    // ── Room ────────────────────────────────────────────────────────────
+    if (!POSTER) {
+      room = mountArcade({
+        slug: SLUG,
+        title: TITLE,
+        tagline: 'Two vines, one kitchen. Up the cupboards, over the ledges, across the ceiling. Never stop, only steer — and don\'t touch a vine.',
+        createLabel: 'Plant a room',
+        namePlaceholder: 'Who is growing?',
+        soloNote: 'Built for two phones in the same kitchen (up to four). On your own? Bot vines fill the room so you can still play.',
+        gateEl: $('gate'),
+        onJoined: () => {
+          joined = true;
+          $('gateTop').hidden = true;
+          $('hud').hidden = false;
+          renderPanels();
+        },
+        onState,
+      });
+    }
+
+    // ── Main loop ───────────────────────────────────────────────────────
+    let lastFrame = performance.now();
+    function drive(now) {
+      const dt = Math.min(0.1, (now - lastFrame) / 1000);
+      lastFrame = now;
+      if (!R) startDemo();
+      let spec = null;
+      if (R.demo) stepDemo(dt, now);
+      else spec = predict();
+      lastSpec = spec;
+      drawRound(spec, now);
+      sparks.update(dt);
+      updateCamera(dt, now);
+      updateHud(spec, now);
+      if (G?.phase === 'roundover' && $('nextIn')) {
+        $('nextIn').textContent = `Next round in ${Math.max(0, Math.ceil((G.phaseEnds - serverNow()) / 1000))}…`;
+      }
+      renderer.render(scene, camera);
+    }
+    function frame(now) {
+      drive(now);
+      requestAnimationFrame(frame);
+    }
+
+    if (POSTER) {
+      // For the arcade cabinet card: a fixed demo grown for ~14 s, photo view.
+      startDemo(Number(params.get('seed')) || 20261106);
+      for (let i = 0; i < (Number(params.get('ticks')) || 360) && R.sim.alive() > 1; i++) demoTick();
+      R.demoEnd = Infinity;
+      $('gate').hidden = true;
+      $('gateTop').hidden = true;
+      const now = performance.now();
+      drawRound(null, now - 5000);
+      R.views.forEach((v, i) => v.animate(now, R.sim.vines[i].s));
+      cam.fresh = true;
+      updateCamera(0.016, 0);
+      renderer.render(scene, camera);
+      // Keep presenting the same frame so a screenshot always has one.
+      setInterval(() => renderer.render(scene, camera), 100);
+      document.body.dataset.ready = '1';
+    } else if (params.has('drive')) {
+      // Testing aid: an unfocused automated browser never fires
+      // requestAnimationFrame, so drive the loop from a timer instead.
+      setInterval(() => drive(performance.now()), 33);
+    } else {
+      requestAnimationFrame(frame);
+    }
+
+    window.__ivy = { get R() { return R; }, get G() { return G; }, camera, renderer, scene, cam, keys, pushInput };
+    void ROOM;
+  </script>
+</body>
+</html>

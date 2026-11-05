@@ -306,8 +306,13 @@ export function mountArcade(opts) {
   }
 
   return {
+    /** Returns true if the message went out (false while reconnecting). */
     send(msg) {
-      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(msg));
+        return true;
+      }
+      return false;
     },
     code: () => code,
     seat: () => seat,

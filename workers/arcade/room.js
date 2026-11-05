@@ -232,8 +232,11 @@ export class ArcadeRoom {
   // ── Alarm tick ────────────────────────────────────────────────────────────
   async alarm() {
     this._alarmAt = null;
-    this.flush();
+    // A game ticking faster than its persistMs (Devil's Ivy: 100 ms ticks,
+    // 1 s persistMs) would otherwise write the game row on every alarm.
+    if (this._dirty && Date.now() - this._persistedAt >= this.persistMs()) this.flush();
     if (this.isExpired()) {
+      this.flush();
       this.ctx.storage.sql.exec('DELETE FROM state');
       this._game = null;
       this._dirty = false;

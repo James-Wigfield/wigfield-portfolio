@@ -6,7 +6,8 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   // **/.wrangler = wrangler's local dev/build scratch (gitignored), not source.
-  globalIgnores(['dist', 'mcp-pixel-gif', '**/.wrangler/']),
+  // public/arcade/shared/vendor = third-party builds (three.js), not source.
+  globalIgnores(['dist', 'mcp-pixel-gif', '**/.wrangler/', 'public/arcade/shared/vendor/']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
