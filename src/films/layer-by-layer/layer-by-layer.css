@@ -1,0 +1,466 @@
+/* ============================================================================
+   LAYER BY LAYER — styles for the /layer-by-layer film, and nothing else.
+   Every selector starts with .lbl. The one document-level rule (html.lbl-lock)
+   only matches while the film is mounted; the route removes the class on exit.
+   The film keeps its own palette here rather than in src/styles/, because it is
+   a self-contained piece with its own look, not part of the app's theme.
+   ========================================================================= */
+
+html.lbl-lock,
+html.lbl-lock body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #000;
+}
+
+.lbl {
+  --lbl-black: #000;
+  --lbl-ink: #f3f1ec;
+  --lbl-dim: rgba(243, 241, 236, 0.58);
+  --lbl-faint: rgba(243, 241, 236, 0.2);
+  --lbl-line: rgba(243, 241, 236, 0.32);
+  --lbl-press: rgba(243, 241, 236, 0.08);
+  --lbl-shade: rgba(0, 0, 0, 0.55);
+  --lbl-cyan: #8fe3ff;
+  --lbl-cold: #5b93ff;
+  --lbl-warm: #ff7d22;
+  --lbl-display: 'Anton', 'Arial Narrow', sans-serif;
+  --lbl-mono: 'Space Mono', ui-monospace, Menlo, monospace;
+  --lbl-left: max(16px, env(safe-area-inset-left));
+  --lbl-right: max(16px, env(safe-area-inset-right));
+  --lbl-top: calc(env(safe-area-inset-top) + 14px);
+  --lbl-bottom: env(safe-area-inset-bottom);
+
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: var(--lbl-black);
+  color: var(--lbl-ink);
+  font-family: var(--lbl-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lbl *,
+.lbl *::before,
+.lbl *::after {
+  box-sizing: border-box;
+}
+
+.lbl p {
+  margin: 0;
+}
+
+.lbl button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lbl__stage {
+  position: absolute;
+  inset: 0;
+}
+
+.lbl__stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── HUD ─────────────────────────────────────────────────────────────────── */
+
+.lbl__hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.lbl[data-phase='film'] .lbl__hud {
+  opacity: 1;
+}
+
+.lbl__counter {
+  position: absolute;
+  top: var(--lbl-top);
+  left: var(--lbl-left);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 10px var(--lbl-shade);
+}
+
+.lbl__counter-index {
+  font-weight: 700;
+}
+
+.lbl__counter-name {
+  color: var(--lbl-dim);
+}
+
+.lbl__sound {
+  pointer-events: auto;
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0px);
+  right: max(4px, env(safe-area-inset-right));
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lbl-dim);
+  transition: opacity 0.45s ease;
+}
+
+.lbl__decode {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 48px);
+  right: var(--lbl-right);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  white-space: pre;
+  color: var(--lbl-cyan);
+  text-shadow: 0 0 12px var(--lbl-shade);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lbl__sym {
+  --lbl-p: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--lbl-warm) calc(var(--lbl-p) * 100%), var(--lbl-cold));
+  text-shadow: 0 1px 10px var(--lbl-shade);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  will-change: transform;
+}
+
+.lbl__sym-row {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.lbl__sym-bar {
+  position: relative;
+  display: block;
+  width: 118px;
+  height: 2px;
+  background: var(--lbl-faint);
+}
+
+.lbl__sym-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  transform-origin: left center;
+  transform: scaleX(var(--lbl-p));
+}
+
+.lbl__caption {
+  position: absolute;
+  left: var(--lbl-left);
+  right: var(--lbl-right);
+  bottom: calc(var(--lbl-bottom) + 92px);
+  text-align: center;
+  font-size: clamp(15px, 4.3vw, 24px);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow:
+    0 1px 2px var(--lbl-shade),
+    0 2px 26px var(--lbl-shade);
+  opacity: 0;
+}
+
+/* ── The kick ────────────────────────────────────────────────────────────── */
+
+.lbl__kick {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 var(--lbl-right) 0 var(--lbl-left);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+}
+
+.lbl__kick-line {
+  opacity: 0;
+}
+
+.lbl__kick-line--soon {
+  font-weight: 700;
+  letter-spacing: 0.3em;
+}
+
+.lbl__replay {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 28px;
+  padding: 0 20px;
+  border: 1px solid var(--lbl-line);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  animation: lbl-in 1.2s ease both;
+}
+
+.lbl__replay:active {
+  background-color: var(--lbl-press);
+}
+
+/* ── Controls ────────────────────────────────────────────────────────────── */
+
+.lbl__controls {
+  pointer-events: auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 24px max(8px, env(safe-area-inset-right)) calc(var(--lbl-bottom) + 6px) max(8px, env(safe-area-inset-left));
+  background: linear-gradient(to top, var(--lbl-shade), transparent);
+  transition: opacity 0.45s ease;
+}
+
+.lbl[data-chrome='off'] .lbl__controls,
+.lbl[data-chrome='off'] .lbl__sound {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lbl__play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.lbl__play:active {
+  background-color: var(--lbl-press);
+}
+
+.lbl__scrub {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 44px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+
+.lbl__track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--lbl-faint);
+}
+
+.lbl__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--lbl-ink);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.lbl__tick {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 8px;
+  background: var(--lbl-dim);
+}
+
+.lbl__scrub:focus-visible .lbl__track {
+  outline: 1px solid var(--lbl-ink);
+  outline-offset: 8px;
+}
+
+.lbl__time {
+  flex: none;
+  padding-right: 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--lbl-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Gate ────────────────────────────────────────────────────────────────── */
+
+.lbl__gate {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--lbl-black);
+}
+
+.lbl__enter {
+  min-height: 52px;
+  padding: 0 28px 0 36px; /* the trailing letter-space makes it look off-centre otherwise */
+  border: 1px solid var(--lbl-line);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  animation: lbl-in 1s ease both;
+}
+
+.lbl__enter:focus-visible {
+  outline: 1px solid var(--lbl-ink);
+  outline-offset: 5px;
+}
+
+.lbl__enter:active {
+  background-color: var(--lbl-press);
+}
+
+.lbl__loading {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lbl-dim);
+  animation: lbl-breathe 1.1s ease-in-out infinite;
+}
+
+/* ── Fallback ────────────────────────────────────────────────────────────── */
+
+.lbl__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 32px var(--lbl-right) 32px var(--lbl-left);
+  overflow-y: auto;
+  touch-action: pan-y;
+  user-select: text;
+  -webkit-user-select: text;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--lbl-dim);
+}
+
+.lbl__fallback h1 {
+  margin: 0;
+  font-family: var(--lbl-display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--lbl-ink);
+}
+
+.lbl__fallback ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@keyframes lbl-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lbl-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lbl__enter,
+  .lbl__replay,
+  .lbl__loading {
+    animation: none;
+  }
+}
+
+/* Added when the film moved to /films: the way back to the index. */
+.lbl__end {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 22px;
+  margin-top: 28px;
+  animation: lbl-in 1.2s ease both;
+}
+.lbl__end .lbl__replay {
+  margin-top: 0;
+}
+.lbl__exit {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--lbl-dim);
+  transition: color 0.2s;
+}
+.lbl__exit:hover,
+.lbl__exit:focus-visible {
+  color: var(--lbl-ink);
+}
+.lbl__exit--corner {
+  position: absolute;
+  top: calc(var(--lbl-top) - 12px);
+  left: var(--lbl-left);
+  letter-spacing: 0.18em;
+}

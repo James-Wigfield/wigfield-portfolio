@@ -32,6 +32,12 @@ import Portal from './components/portal/Portal';
 // and the landing stylesheets never load for the rest of the site.
 const PortaraTest = lazy(() => import('./portara-test/index.tsx'));
 
+// Films (src/films/README.md): the /films index and one route per film, both lazy.
+// A film is a folder in src/films/ — adding one never touches this file.
+const FilmsIndex = lazy(() => import('./films/FilmsIndex.jsx'));
+const FilmPlayer = lazy(() => import('./films/FilmPlayer.jsx'));
+const filmsGround = <div style={{ position: 'fixed', inset: 0, background: '#050505' }} />;
+
 function Portfolio() {
   // Tag <html> while the home route is mounted so home.css can override the
   // global cyberpunk scrollbar (index.css) for the Reading Room only.
@@ -78,6 +84,9 @@ export default function App() {
       <Route path="/games/chaos" element={<ChaosReactor />} />
       <Route path="/games/twin-flames" element={<TwinFlames />} />
       <Route path="/games/overmind" element={<Overmind />} />
+      {/* Public films made by the seth skill — see src/films/README.md */}
+      <Route path="/films" element={<Suspense fallback={filmsGround}><FilmsIndex /></Suspense>} />
+      <Route path="/films/:slug" element={<Suspense fallback={filmsGround}><FilmPlayer /></Suspense>} />
       {/* Private management portal — gated client-side (placeholder for Supabase Auth).
           /portal/<toolId>/<sub> deep-links to a tool (see portal/portalRoute.js). */}
       <Route path="/portal/:toolId?/*" element={<Portal />} />
