@@ -113,15 +113,21 @@ export async function addCapture(spot, files, { clearDraft = true } = {}) {
     createdAt: Date.now(),
     doneAt: null,
   };
-  const stores = clearDraft ? ['outbox', 'outboxFiles', 'draft', 'draftPhotos'] : ['outbox', 'outboxFiles'];
-  await write(stores, (w) => {
+  // 1. The capture lands in the outbox (the commit point: from here it can't be lost).
+  await write(['outbox', 'outboxFiles'], (w) => {
     w.put('outbox', entry);
     for (const f of files) w.put('outboxFiles', { key: fileKey(spot.id, f.type, f.n), blob: f.blob });
-    if (clearDraft) {
+  });
+  // 2. Then the draft is cleared in its OWN transaction. Clearing the stores the
+  //    photos came from inside the same transaction that re-stores them made iOS
+  //    Safari hang on Save. If this step fails, the draft is dropped on next load
+  //    because its id is already in the outbox (useDraft).
+  if (clearDraft) {
+    await write(['draft', 'draftPhotos'], (w) => {
       w.clear('draft');
       w.clear('draftPhotos');
-    }
-  });
+    }).catch((err) => console.warn('[memory-rooms] draft not cleared (it will be on next load)', err));
+  }
   persistOnce();
   await refresh();
   kickOutbox();

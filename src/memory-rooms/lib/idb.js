@@ -49,6 +49,38 @@ const done = (req) =>
     req.onerror = () => reject(req.error);
   });
 
+/* Files are stored as plain ArrayBuffers, never as Blobs. WebKit refuses Blobs in
+   IndexedDB in some modes ("DataCloneError: BlobURLs are not yet supported", e.g.
+   Safari private browsing), and re-storing database-backed Blobs is fragile there.
+   ArrayBuffers work in every browser and mode. Top-level Blob fields are packed
+   before a write and unpacked on every read, so callers only ever see Blobs.
+   (Rows written by older builds that hold real Blobs still read fine.) */
+const PACKED = '__mrBlob';
+
+async function pack(value) {
+  if (!value || typeof value !== 'object') return value;
+  let out = value;
+  for (const [k, v] of Object.entries(value)) {
+    if (typeof Blob !== 'undefined' && v instanceof Blob) {
+      if (out === value) out = { ...value };
+      out[k] = { [PACKED]: true, type: v.type, buffer: await v.arrayBuffer() };
+    }
+  }
+  return out;
+}
+
+function unpack(value) {
+  if (!value || typeof value !== 'object') return value;
+  let out = value;
+  for (const [k, v] of Object.entries(value)) {
+    if (v && typeof v === 'object' && v[PACKED]) {
+      if (out === value) out = { ...value };
+      out[k] = new Blob([v.buffer], { type: v.type });
+    }
+  }
+  return out;
+}
+
 /** True when we're on the in-memory fallback (nothing survives a reload). */
 export async function isVolatile() {
   return !(await open());
@@ -57,20 +89,20 @@ export async function isVolatile() {
 export async function getAll(store) {
   const db = await open();
   if (!db) return Array.from(memory.get(store).values());
-  return done(db.transaction(store).objectStore(store).getAll());
+  return (await done(db.transaction(store).objectStore(store).getAll())).map(unpack);
 }
 
 export async function get(store, key) {
   const db = await open();
   if (!db) return memory.get(store).get(key) ?? null;
-  return (await done(db.transaction(store).objectStore(store).get(key))) ?? null;
+  return unpack((await done(db.transaction(store).objectStore(store).get(key))) ?? null);
 }
 
 /** Every row whose key starts with `prefix` (string keys). */
 export async function getByPrefix(store, prefix) {
   const db = await open();
   if (!db) return Array.from(memory.get(store).entries()).filter(([k]) => String(k).startsWith(prefix)).map(([, v]) => v);
-  return done(db.transaction(store).objectStore(store).getAll(IDBKeyRange.bound(prefix, `${prefix}￿`)));
+  return (await done(db.transaction(store).objectStore(store).getAll(IDBKeyRange.bound(prefix, `${prefix}￿`)))).map(unpack);
 }
 
 /**
@@ -92,16 +124,29 @@ export async function write(storeNames, fn) {
     });
     return;
   }
+  // Record the operations first, so Blobs can be packed (async) BEFORE the
+  // transaction opens: an IndexedDB transaction commits as soon as the code
+  // awaits anything, so nothing async may happen inside it.
+  const ops = [];
+  fn({
+    put: (s, v) => ops.push(['put', s, v]),
+    del: (s, k) => ops.push(['del', s, k]),
+    delPrefix: (s, p) => ops.push(['delPrefix', s, p]),
+    clear: (s) => ops.push(['clear', s]),
+  });
+  for (const op of ops) if (op[0] === 'put') op[2] = await pack(op[2]);
+
   await new Promise((resolve, reject) => {
     let t;
     try {
       t = db.transaction(names, 'readwrite');
-      fn({
-        put: (s, v) => t.objectStore(s).put(v),
-        del: (s, k) => t.objectStore(s).delete(k),
-        delPrefix: (s, p) => t.objectStore(s).delete(IDBKeyRange.bound(p, `${p}￿`)),
-        clear: (s) => t.objectStore(s).clear(),
-      });
+      for (const [kind, s, arg] of ops) {
+        const os = t.objectStore(s);
+        if (kind === 'put') os.put(arg);
+        else if (kind === 'del') os.delete(arg);
+        else if (kind === 'delPrefix') os.delete(IDBKeyRange.bound(arg, `${arg}￿`));
+        else os.clear();
+      }
     } catch (err) {
       try {
         t?.abort();

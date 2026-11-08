@@ -84,6 +84,8 @@ export const COPY = {
     save: 'Save spot',
     saving: 'Saving…',
     saveFailed: "Couldn't save on this phone. Try again.",
+    saveSlow: 'This is taking longer than it should. Keep this page open; your photos are safe on this phone.',
+    photosMissing: "Some photos didn't come back after the page reloaded. Add them again, then save.",
     startOver: 'Start over',
     startOverConfirm: 'Discard this capture and start again?',
     loading: 'Opening…',

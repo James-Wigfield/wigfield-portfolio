@@ -27,6 +27,11 @@ const fresh = () => ({
   scan: null, // { name, size }
 });
 
+/** A plain in-memory copy of a Blob (one read out of IndexedDB is backed by the database's own file). */
+async function inMemory(blob) {
+  return new Blob([await blob.arrayBuffer()], { type: blob.type || 'image/jpeg' });
+}
+
 const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan'];
 const metaOf = (s) => Object.fromEntries(META_KEYS.map((k) => [k, s[k]]));
 const isDirty = (s) => Boolean(s.kind || s.title || s.note || s.photos.length || s.scan || s.loc);
@@ -70,7 +75,15 @@ export function useDraft() {
     (async () => {
       let draft = null;
       try {
-        const meta = await get('draft', 'current');
+        let meta = await get('draft', 'current');
+        // Saved already (the draft clean-up after Save didn't finish): drop it, don't offer it twice.
+        if (meta?.id && (await get('outbox', meta.id))) {
+          await write(['draft', 'draftPhotos'], (w) => {
+            w.clear('draft');
+            w.clear('draftPhotos');
+          }).catch(() => {});
+          meta = null;
+        }
         if (meta) {
           const rows = await getAll('draftPhotos');
           const photos = rows
@@ -181,18 +194,33 @@ export function useDraft() {
     async (who) => {
       saving.current = true;
       try {
+        // Prefer this session's in-memory files: re-storing files READ BACK from
+        // IndexedDB is what hung Save on iOS Safari. Files that only exist in the
+        // database (a draft restored after a reload) are copied into memory first.
+        const needStored = state.photos.some((p) => !blobs.current.get(p.id)?.photo) || (state.scan && !blobs.current.get('scan'));
         let stored = new Map();
-        try {
-          stored = new Map((await getAll('draftPhotos')).map((r) => [r.id, r]));
-        } catch {
-          /* use the in-memory copies */
+        if (needStored) {
+          try {
+            stored = new Map((await getAll('draftPhotos')).map((r) => [r.id, r]));
+          } catch {
+            /* nothing stored: use what's in memory */
+          }
         }
-        const pics = state.photos.map((p) => stored.get(p.id) || { ...p, ...blobs.current.get(p.id) }).filter((r) => r.photo && r.thumb);
+        const pics = [];
+        for (const p of state.photos) {
+          const mem = blobs.current.get(p.id);
+          if (mem?.photo && mem?.thumb) {
+            pics.push({ ...p, ...mem });
+            continue;
+          }
+          const row = stored.get(p.id);
+          if (row?.photo && row?.thumb) pics.push({ ...p, ...row, photo: await inMemory(row.photo), thumb: await inMemory(row.thumb) });
+        }
         const files = [
           ...pics.map((r, i) => ({ type: 'thumb', n: i + 1, blob: r.thumb, width: r.thumbWidth, height: r.thumbHeight, contentType: 'image/jpeg' })),
           ...pics.map((r, i) => ({ type: 'photo', n: i + 1, blob: r.photo, width: r.width, height: r.height, contentType: 'image/jpeg' })),
         ];
-        const scan = stored.get('scan')?.blob || blobs.current.get('scan')?.blob;
+        const scan = blobs.current.get('scan')?.blob || (stored.get('scan')?.blob ? await inMemory(stored.get('scan').blob) : null);
         if (state.scan && scan) files.push({ type: 'scan', n: 'scan', blob: scan, contentType: 'application/octet-stream' });
 
         const loc = state.loc || {};

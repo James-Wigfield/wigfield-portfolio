@@ -54,7 +54,10 @@ export default function CapturePage() {
     );
 
   const step = draft.step;
-  const go = (n) => d.set({ step: n });
+  const go = (n) => {
+    setSaveError(null); // a save message belongs to the step it was shown on
+    d.set({ step: n });
+  };
   const valid = [
     Boolean(draft.kind && draft.title.trim()),
     draft.photos.length >= MIN_PHOTOS && !queue.busy,
@@ -64,17 +67,28 @@ export default function CapturePage() {
   const back = () => (step === 0 ? navigate(paths.home()) : go(step - 1));
 
   const save = async () => {
+    // A draft restored after a reload can come back without its photos (if the
+    // phone couldn't store them): never save a spot with fewer than the minimum.
+    if (draft.photos.length < MIN_PHOTOS) {
+      go(1);
+      setSaveError(c.photosMissing);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
+    // Saving is local (IndexedDB) and normally takes well under a second; never spin silently.
+    const slow = setTimeout(() => setSaveError(c.saveSlow), 12000);
     try {
       const result = await d.save(who || 'james');
       releaseThumbs();
       thumbUrls.current = (result.thumbs || []).map((b) => URL.createObjectURL(b));
+      setSaveError(null);
       setSaved({ ...result, thumbUrls: thumbUrls.current });
     } catch (err) {
       console.error('[memory-rooms] save', err);
       setSaveError(c.saveFailed);
     } finally {
+      clearTimeout(slow);
       setSaving(false);
     }
   };

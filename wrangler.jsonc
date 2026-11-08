@@ -77,11 +77,6 @@
 		{
 			"binding": "MEMORIES",
 			"bucket_name": "memory-rooms"
-		},
-		{
-			"bucket_name": "memory-rooms",
-			"binding": "memory_rooms",
-			"remote": true
 		}
 	],
 	"observability": {
