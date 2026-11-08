@@ -1,0 +1,267 @@
+{
+  "spot": "59b48bb5-63e7-42ce-ad0b-2ad1549a6b1c",
+  "at": "2026-11-08T12:36:19.670Z",
+  "room": {
+    "frameRotation": "0°",
+    "width": {
+      "truth": 4.4,
+      "recon": 4.29,
+      "err": 0.11,
+      "pct": 2.5
+    },
+    "depth": {
+      "truth": 3.4,
+      "recon": 3.31,
+      "err": 0.09,
+      "pct": 2.65
+    },
+    "height": {
+      "truth": 2.75,
+      "recon": 2.73,
+      "err": 0.02,
+      "pct": 0.73
+    },
+    "area": {
+      "truth": 14.96,
+      "recon": 14.2
+    }
+  },
+  "openings": [
+    {
+      "truth": "window on north @ 1.6 m, 1.2 m wide",
+      "found": true,
+      "offsetErr": 0.21,
+      "widthErr": 0.4
+    },
+    {
+      "truth": "door on south @ 3.3 m, 0.82 m wide",
+      "found": true,
+      "offsetErr": 0.11,
+      "widthErr": 0
+    }
+  ],
+  "objects": {
+    "truthCount": 13,
+    "reconCount": 13,
+    "matched": 13,
+    "missed": [],
+    "extra": [],
+    "posErrMean": 0.07,
+    "posErrMedian": 0.08,
+    "sizeErrMean": 0.03,
+    "rotErrMedianDeg": 0,
+    "detail": [
+      {
+        "truth": "poster",
+        "recon": "map",
+        "kit": "frame",
+        "posErr": 0.01,
+        "sizeErr": 0.01,
+        "rotErr": 0
+      },
+      {
+        "truth": "table",
+        "recon": "table",
+        "kit": "table",
+        "posErr": 0.05,
+        "sizeErr": 0.02,
+        "rotErr": 0
+      },
+      {
+        "truth": "chair-1",
+        "recon": "chair-w",
+        "kit": "chair",
+        "posErr": 0.05,
+        "sizeErr": 0.02,
+        "rotErr": 0
+      },
+      {
+        "truth": "bunk-west",
+        "recon": "bunk-west",
+        "kit": "bunk",
+        "posErr": 0.06,
+        "sizeErr": 0.03,
+        "rotErr": 0
+      },
+      {
+        "truth": "pendant",
+        "recon": "pendant",
+        "kit": "pendant",
+        "posErr": 0.06,
+        "sizeErr": 0.06,
+        "rotErr": 0
+      },
+      {
+        "truth": "rug",
+        "recon": "rug",
+        "kit": "rug",
+        "posErr": 0.08,
+        "sizeErr": 0,
+        "rotErr": 0
+      },
+      {
+        "truth": "lamp",
+        "recon": "lamp",
+        "kit": "lamp",
+        "posErr": 0.08,
+        "sizeErr": 0.05,
+        "rotErr": 0
+      },
+      {
+        "truth": "lockers",
+        "recon": "cabinet",
+        "kit": "cabinet",
+        "posErr": 0.08,
+        "sizeErr": 0.02,
+        "rotErr": 0
+      },
+      {
+        "truth": "chair-2",
+        "recon": "chair-e",
+        "kit": "chair",
+        "posErr": 0.08,
+        "sizeErr": 0.02,
+        "rotErr": 0
+      },
+      {
+        "truth": "curtain",
+        "recon": "curtain",
+        "kit": "curtain",
+        "posErr": 0.08,
+        "sizeErr": 0.02,
+        "rotErr": 0
+      },
+      {
+        "truth": "plant",
+        "recon": "plant",
+        "kit": "plant",
+        "posErr": 0.09,
+        "sizeErr": 0.06,
+        "rotErr": 0
+      },
+      {
+        "truth": "bunk-east",
+        "recon": "bunk-east",
+        "kit": "bunk",
+        "posErr": 0.09,
+        "sizeErr": 0.03,
+        "rotErr": 0
+      },
+      {
+        "truth": "shelf",
+        "recon": "bookshelf",
+        "kit": "shelf",
+        "posErr": 0.1,
+        "sizeErr": 0.04,
+        "rotErr": 0
+      }
+    ]
+  },
+  "cameras": {
+    "posErrMean": 0.1,
+    "aimErrMeanDeg": 1,
+    "detail": [
+      {
+        "photo": 1,
+        "posErr": 0.04,
+        "aimErrDeg": 1,
+        "fovErr": 1
+      },
+      {
+        "photo": 2,
+        "posErr": 0.08,
+        "aimErrDeg": 0,
+        "fovErr": 1
+      },
+      {
+        "photo": 3,
+        "posErr": 0.14,
+        "aimErrDeg": 0,
+        "fovErr": 1
+      },
+      {
+        "photo": 4,
+        "posErr": 0.1,
+        "aimErrDeg": 0,
+        "fovErr": 1
+      },
+      {
+        "photo": 5,
+        "posErr": 0.09,
+        "aimErrDeg": 2,
+        "fovErr": 1
+      },
+      {
+        "photo": 6,
+        "posErr": 0.14,
+        "aimErrDeg": 1,
+        "fovErr": 1
+      }
+    ]
+  },
+  "images": {
+    "final": {
+      "structure": 0.769,
+      "tone": 0.973,
+      "colour": 0.927
+    },
+    "perCamera": [
+      {
+        "photo": 1,
+        "structure": 0.8,
+        "tone": 0.977,
+        "colour": 0.936
+      },
+      {
+        "photo": 2,
+        "structure": 0.736,
+        "tone": 0.973,
+        "colour": 0.934
+      },
+      {
+        "photo": 3,
+        "structure": 0.896,
+        "tone": 0.978,
+        "colour": 0.938
+      },
+      {
+        "photo": 4,
+        "structure": 0.861,
+        "tone": 0.974,
+        "colour": 0.93
+      },
+      {
+        "photo": 5,
+        "structure": 0.524,
+        "tone": 0.959,
+        "colour": 0.897
+      },
+      {
+        "photo": 6,
+        "structure": 0.794,
+        "tone": 0.975,
+        "colour": 0.928
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "structure": 0.668,
+        "tone": 0.96,
+        "colour": 0.898
+      },
+      {
+        "round": 2,
+        "structure": 0.743,
+        "tone": 0.97,
+        "colour": 0.915
+      },
+      {
+        "round": 3,
+        "structure": 0.769,
+        "tone": 0.973,
+        "colour": 0.927
+      }
+    ]
+  }
+}

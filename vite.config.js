@@ -61,6 +61,9 @@ function localData(name, route, dir, types, { revalidate = false } = {}) {
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Dev only: API_PROXY=http://127.0.0.1:8788 forwards /api/* to a running `wrangler dev`,
+  // so `vite` (with HMR) can talk to the Worker. Unset = no proxy (the default).
+  server: process.env.API_PROXY ? { proxy: { '/api': { target: process.env.API_PROXY } } } : undefined,
   plugins: [
     react(),
     localData('psma-motion-data', '/__psma-motion-data', MOTION_DATA, MOTION_TYPES),

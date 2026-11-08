@@ -78,6 +78,7 @@ import PortaraPlatform from './modules/PortaraPlatform';
 import PortaraMotion from './modules/PortaraMotion';
 import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BaristaGuide from './modules/barista/BaristaGuide';
+import MemoryRoomsPlan from './modules/memory-rooms-plan/MemoryRoomsPlan';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -388,6 +389,14 @@ export const MODULES = [
     icon: 'cup',
     group: 'Personal',
     component: BaristaGuide,
+  },
+  {
+    // Plan + build prompt for the /memories tool. Deep-linked: /portal/memory-rooms-plan/<tab>.
+    id: 'memory-rooms-plan',
+    label: 'Memory Rooms · Plan',
+    icon: 'cube',
+    group: 'Personal',
+    component: MemoryRoomsPlan,
   },
   {
     id: 'america-first-plan',

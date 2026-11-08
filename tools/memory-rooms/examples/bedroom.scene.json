@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "kind": "interior",
+  "title": "Front bedroom (example)",
+  "notes": "Invented example room. Exercises most interior kit pieces; used as a fixture by the Blender kit, the viewer and check-scene.",
+  "style": { "mood": "evening", "palette": ["#e9e2d4", "#a7774f", "#56677f"] },
+  "shell": {
+    "width": 3.6, "depth": 4.1, "height": 2.7,
+    "floor": { "finish": "timber", "color": "#a7774f" },
+    "walls": { "finish": "paint", "color": "#e9e2d4", "thickness": 0.12, "skirting": true },
+    "ceiling": { "show": true, "color": "#f3efe6" },
+    "openings": [
+      { "wall": "north", "type": "window", "offset": 0.9, "width": 1.4, "height": 1.2, "sill": 0.95, "color": "#f4f1ea" },
+      { "wall": "east", "type": "door", "offset": 3.1, "width": 0.82, "height": 2.04, "color": "#f4f1ea", "open": 0.35 }
+    ]
+  },
+  "objects": [
+    { "id": "bed", "kit": "bed", "label": "Double bed", "size": [1.53, 0.55, 2.03], "at": [1.015, 0, 2.7], "rotY": 90, "color": "#ddd6c8", "accent": "#56677f", "material": "linen", "accentMaterial": "wool", "photos": [1, 2, 3] },
+    { "id": "nightstand", "kit": "cabinet", "size": [0.45, 0.55, 0.4], "at": [0.2, 0, 1.55], "rotY": 90, "color": "#7a5a3c", "material": "walnut" },
+    { "id": "lamp", "kit": "lamp", "size": [0.26, 0.45, 0.26], "at": [0.2, 0.55, 1.55], "color": "#f2e6c8", "accent": "#3a3a3a", "accentMaterial": "metal" },
+    { "id": "desk", "kit": "desk", "size": [1.2, 0.75, 0.6], "at": [2.9, 0, 0.3], "rotY": 0, "color": "#7a5a3c", "material": "oak" },
+    { "id": "chair", "kit": "chair", "size": [0.46, 0.88, 0.5], "at": [2.85, 0, 0.75], "rotY": 180, "color": "#3f4a5c", "material": "oak", "overlaps": ["desk"] },
+    { "id": "rug", "kit": "rug", "size": [1.6, 0.012, 1.1], "at": [2.25, 0, 2.7], "rotY": 90, "color": "#c8a46a", "accent": "#8a4f3a", "material": "wool", "overlaps": ["bed", "armchair"] },
+    { "id": "shelf", "kit": "shelf", "size": [0.8, 1.8, 0.32], "at": [2.0, 0, 3.94], "rotY": 180, "color": "#8a6a4a", "material": "pine", "params": { "shelves": 4, "books": true } },
+    { "id": "plant", "kit": "plant", "size": [0.4, 0.95, 0.4], "at": [0.32, 0, 0.32], "color": "#4f7a4a", "accent": "#b56a45", "accentMaterial": "ceramic" },
+    { "id": "poster", "kit": "frame", "size": [0.7, 0.5, 0.03], "at": [0.015, 1.25, 2.7], "rotY": 90, "color": "#2d3340", "accent": "#d9744a", "mount": "wall" },
+    { "id": "curtain", "kit": "curtain", "size": [1.9, 1.6, 0.1], "at": [1.6, 0.8, 0.07], "rotY": 0, "color": "#56677f", "material": "linen", "mount": "wall", "params": { "open": 0.6 } },
+    { "id": "pendant", "kit": "pendant", "size": [0.36, 0.55, 0.36], "at": [1.8, 2.15, 2.05], "color": "#e8dcc4", "material": "paper", "mount": "ceiling" },
+    { "id": "armchair", "kit": "armchair", "size": [0.8, 0.85, 0.82], "at": [3.12, 0, 2.55], "rotY": 270, "color": "#9c6b4e", "material": "velvet" }
+  ],
+  "lights": [
+    { "type": "lamp", "at": [0.2, 0.85, 1.55], "color": "#ffd8a0", "intensity": 1.0, "object": "lamp" },
+    { "type": "pendant", "at": [1.8, 2.25, 2.05], "color": "#ffe2b8", "intensity": 0.7, "object": "pendant" },
+    { "type": "window", "intensity": 0.6 },
+    { "type": "sun", "from": "northwest", "elevation": 18, "intensity": 0.8 }
+  ],
+  "pins": [ { "at": [1.0, 0.8, 2.7], "text": "Where the whole trip got planned", "photo": 1 } ],
+  "cameras": [
+    { "photo": 1, "pos": [3.3, 1.5, 3.8], "look": [0.8, 0.9, 1.0], "fov": 70, "aspect": 0.75 },
+    { "photo": 2, "pos": [0.35, 1.5, 3.8], "look": [3.0, 0.9, 0.8], "fov": 70, "aspect": 0.75 }
+  ],
+  "frame": { "group": "example-flat", "origin": [0, 0], "rotY": 0 }
+}

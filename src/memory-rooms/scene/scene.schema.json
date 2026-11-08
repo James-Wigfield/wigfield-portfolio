@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory-rooms/scene.schema.json",
+  "title": "Memory Rooms scene v1",
+  "description": "The layout contract for one memory spot. Units are metres; the floor is y = 0; x runs west -> east, z runs north -> south. Interior origin = the room's north-west floor corner; exterior origin = the centre of the site. `at` is the centre of an object's footprint on its base. rotY is degrees about +y (0 = the object's front faces south/+z, 90 = east, 180 = north, 270 = west). Validated by src/memory-rooms/scene/validate.js (JS) and tools/memory-rooms/blender/scene_io.py (Python), which implement the same keyword subset.",
+  "type": "object",
+  "required": ["version", "kind", "title", "objects", "cameras"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "string" },
+    "version": { "const": 1 },
+    "kind": { "enum": ["interior", "exterior"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "notes": { "type": "string", "maxLength": 4000, "description": "Free text for the modeller (Claude). Not shown on the site." },
+    "style": { "$ref": "#/$defs/style" },
+    "shell": { "$ref": "#/$defs/shell" },
+    "site": { "$ref": "#/$defs/site" },
+    "objects": { "type": "array", "maxItems": 400, "items": { "$ref": "#/$defs/object" } },
+    "lights": { "type": "array", "maxItems": 40, "items": { "$ref": "#/$defs/light" } },
+    "pins": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/pin" } },
+    "cameras": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/camera" } },
+    "hero": { "$ref": "#/$defs/view", "description": "Optional override for the 3/4 hero shot used on the map card. Omit to let Blender frame it." },
+    "frame": { "$ref": "#/$defs/frame" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "interior" } }, "required": ["kind"] },
+      "then": { "required": ["shell"], "not": { "required": ["site"] } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "exterior" } }, "required": ["kind"] },
+      "then": { "required": ["site"], "not": { "required": ["shell"] } }
+    }
+  ],
+  "$defs": {
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "vec2": { "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }], "minItems": 2, "maxItems": 2 },
+    "vec3": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }, { "type": "number" }],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "size3": {
+      "description": "[w, h, d] in metres: w along the object's local x (side to side), h up, d along its local z (back to front).",
+      "type": "array",
+      "prefixItems": [
+        { "type": "number", "exclusiveMinimum": 0, "maximum": 200 },
+        { "type": "number", "exclusiveMinimum": 0, "maximum": 400 },
+        { "type": "number", "exclusiveMinimum": 0, "maximum": 200 }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "wall": { "enum": ["north", "south", "east", "west"] },
+    "compass": { "enum": ["north", "south", "east", "west", "northeast", "northwest", "southeast", "southwest"] },
+    "kit": {
+      "description": "Interior pieces, exterior pieces, then glb (imported asset) and bespoke (a Blender function in memory-rooms-work/<spot>/bespoke/<script>.py). An unknown name fails validation.",
+      "enum": [
+        "box", "cylinder", "bed", "bunk", "sofa", "armchair", "table", "desk", "chair", "stool", "shelf", "cabinet",
+        "counter", "bar", "fridge", "tv", "rug", "lamp", "pendant", "plant", "frame", "curtain", "sign",
+        "block", "awning", "tree", "palm", "pine", "streetlight", "car", "fence", "bench",
+        "glb", "bespoke"
+      ]
+    },
+    "material": {
+      "description": "Names in tools/memory-rooms/blender/materials.py. Each is procedural and tinted by the object's color (or accent).",
+      "enum": [
+        "oak", "pine", "walnut", "plaster", "brick", "concrete", "tile", "stone", "marble",
+        "linen", "wool", "velvet", "leather", "metal", "chrome", "brass", "glass", "ceramic",
+        "plastic", "paper", "plant", "emissive"
+      ]
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mood": { "enum": ["morning", "day", "golden", "evening", "night", "overcast"] },
+        "palette": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/hex" } },
+        "exposure": { "type": "number", "minimum": -4, "maximum": 4, "description": "Cycles exposure offset in stops." }
+      }
+    },
+    "shell": {
+      "type": "object",
+      "required": ["width", "depth", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "number", "minimum": 0.8, "maximum": 60, "description": "Interior size along x (west -> east wall)." },
+        "depth": { "type": "number", "minimum": 0.8, "maximum": 60, "description": "Interior size along z (north -> south wall)." },
+        "height": { "type": "number", "minimum": 1.8, "maximum": 15, "description": "Floor to ceiling." },
+        "floor": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["timber", "carpet", "tile", "concrete", "vinyl", "stone"] },
+            "color": { "$ref": "#/$defs/hex" }
+          }
+        },
+        "walls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["paint", "plaster", "brick", "timber", "tile", "concrete", "wallpaper"] },
+            "color": { "$ref": "#/$defs/hex" },
+            "thickness": { "type": "number", "minimum": 0.05, "maximum": 0.6, "description": "Built OUTSIDE the interior box, so width/depth stay exact. Default 0.12." },
+            "skirting": { "type": "boolean", "description": "Skirting boards along the floor. Default true." }
+          }
+        },
+        "ceiling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "show": { "type": "boolean", "description": "Default true. The viewer hides it in dollhouse view either way." },
+            "color": { "$ref": "#/$defs/hex" }
+          }
+        },
+        "openings": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/opening" } }
+      }
+    },
+    "opening": {
+      "description": "A door, window or open gap in one wall. offset runs along the wall from its lower-x end (north/south walls) or lower-z end (east/west walls) to the opening's near edge.",
+      "type": "object",
+      "required": ["wall", "type", "offset", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "wall": { "$ref": "#/$defs/wall" },
+        "type": { "enum": ["door", "window", "opening"] },
+        "offset": { "type": "number", "minimum": 0 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 30 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 15 },
+        "sill": { "type": "number", "minimum": 0, "description": "Height of the bottom edge above the floor. Doors and openings: 0 (the default). Windows: default 0.9." },
+        "color": { "$ref": "#/$defs/hex", "description": "Frame / door leaf colour." },
+        "open": { "type": "number", "minimum": 0, "maximum": 1, "description": "Doors: how far the leaf swings open (0 shut, 1 = 90 degrees). Default 0." }
+      }
+    },
+    "site": {
+      "type": "object",
+      "required": ["ground"],
+      "additionalProperties": false,
+      "properties": {
+        "ground": {
+          "type": "object",
+          "required": ["finish", "size"],
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["asphalt", "grass", "sand", "snow", "paving", "concrete", "gravel", "dirt"] },
+            "size": {
+              "type": "array",
+              "prefixItems": [
+                { "type": "number", "minimum": 2, "maximum": 400 },
+                { "type": "number", "minimum": 2, "maximum": 400 }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "[w, d] of the ground plate, centred on the origin."
+            },
+            "color": { "$ref": "#/$defs/hex" }
+          }
+        }
+      }
+    },
+    "object": {
+      "type": "object",
+      "required": ["id", "kit", "size", "at"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$" },
+        "kit": { "$ref": "#/$defs/kit" },
+        "label": { "type": "string", "maxLength": 80 },
+        "size": { "$ref": "#/$defs/size3" },
+        "at": { "$ref": "#/$defs/vec3", "description": "Centre of the footprint, on the object's base (y = base height)." },
+        "rotY": { "type": "number", "minimum": -360, "maximum": 360 },
+        "color": { "$ref": "#/$defs/hex" },
+        "accent": { "$ref": "#/$defs/hex" },
+        "material": { "$ref": "#/$defs/material" },
+        "accentMaterial": { "$ref": "#/$defs/material" },
+        "mount": {
+          "enum": ["floor", "on", "wall", "ceiling", "free"],
+          "description": "How it is held up. Omit to let check-scene infer it (floor if y = 0, on if it rests on another object's top, wall/ceiling if it touches one). 'free' opts out of the float check."
+        },
+        "overlaps": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string" },
+          "description": "Ids this object may interpenetrate on purpose (a chair tucked under a desk, a rug under a bed)."
+        },
+        "script": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,47}$", "description": "bespoke only: memory-rooms-work/<spot>/bespoke/<script>.py, which defines build(ctx, spec)." },
+        "src": { "type": "string", "pattern": "^[A-Za-z0-9_./-]{1,200}\\.glb$", "description": "glb only: path relative to the spot's work folder." },
+        "params": { "type": "object", "description": "Kit-specific options (see tools/memory-rooms/blender/kit/README.md). Unknown keys are ignored by the kit." },
+        "photos": { "type": "array", "maxItems": 12, "items": { "type": "integer", "minimum": 1, "maximum": 12 }, "description": "Which photos show it (documentation for the compare loop)." }
+      },
+      "allOf": [
+        { "if": { "properties": { "kit": { "const": "bespoke" } }, "required": ["kit"] }, "then": { "required": ["script"] } },
+        { "if": { "properties": { "kit": { "const": "glb" } }, "required": ["kit"] }, "then": { "required": ["src"] } }
+      ]
+    },
+    "light": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["lamp", "pendant", "ceiling", "spot", "area", "window", "sun"],
+          "description": "lamp/pendant: warm point light at `at`. ceiling: area light just under the ceiling. spot/area: aimed at `look`. window: daylight through every window (no `at`). sun: the sun (interior through openings; exterior with the sky)."
+        },
+        "at": { "$ref": "#/$defs/vec3" },
+        "look": { "$ref": "#/$defs/vec3" },
+        "color": { "$ref": "#/$defs/hex" },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 20, "description": "Relative: 1 = a normal light of its type." },
+        "size": { "type": "number", "exclusiveMinimum": 0, "maximum": 20, "description": "Radius (lamp) or side length (area/ceiling) in metres." },
+        "from": { "$ref": "#/$defs/compass", "description": "sun only: compass direction the sun shines FROM." },
+        "azimuth": { "type": "number", "minimum": -360, "maximum": 360, "description": "sun only: degrees clockwise from north, overrides `from`." },
+        "elevation": { "type": "number", "minimum": 0, "maximum": 90, "description": "sun only: degrees above the horizon." },
+        "object": { "type": "string", "description": "Id of the object this light belongs to (a lamp's shade glows)." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "enum": ["lamp", "pendant", "ceiling", "spot", "area"] } }, "required": ["type"] },
+          "then": { "required": ["at"] }
+        }
+      ]
+    },
+    "pin": {
+      "type": "object",
+      "required": ["at", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "$ref": "#/$defs/vec3" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 280 },
+        "photo": { "type": "integer", "minimum": 1, "maximum": 12 }
+      }
+    },
+    "view": {
+      "type": "object",
+      "required": ["pos", "look"],
+      "additionalProperties": false,
+      "properties": {
+        "pos": { "$ref": "#/$defs/vec3" },
+        "look": { "$ref": "#/$defs/vec3" },
+        "fov": { "type": "number", "minimum": 10, "maximum": 130 }
+      }
+    },
+    "camera": {
+      "description": "Where photo N was taken from. fov = field of view across the photo's LONG edge in degrees (phone main camera ~ 68-73; 0.5x ultrawide ~ 105-120). aspect = photo width / height (0.75 portrait, 1.333 landscape).",
+      "type": "object",
+      "required": ["photo", "pos", "look"],
+      "additionalProperties": false,
+      "properties": {
+        "photo": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "pos": { "$ref": "#/$defs/vec3" },
+        "look": { "$ref": "#/$defs/vec3" },
+        "fov": { "type": "number", "minimum": 10, "maximum": 130 },
+        "aspect": { "type": "number", "minimum": 0.3, "maximum": 3.5 },
+        "roll": { "type": "number", "minimum": -45, "maximum": 45, "description": "Degrees, positive = clockwise as seen by the photographer." }
+      }
+    },
+    "frame": {
+      "description": "Places this room in a shared building frame: the room's origin sits at `origin` = [x, z] in the group frame, rotated by rotY about +y, lifted by y (upper floors).",
+      "type": "object",
+      "required": ["group", "origin"],
+      "additionalProperties": false,
+      "properties": {
+        "group": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,47}$" },
+        "origin": { "$ref": "#/$defs/vec2" },
+        "rotY": { "type": "number", "minimum": -360, "maximum": 360 },
+        "y": { "type": "number", "minimum": -20, "maximum": 200 }
+      }
+    }
+  }
+}

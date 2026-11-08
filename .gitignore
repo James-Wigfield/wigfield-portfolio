@@ -36,3 +36,8 @@ motion-data/
 # page renders of the unsubmitted dissertation (tools/dissertation-diff); local only
 dissertation-diff-data/
 seminar-export/
+
+# Memory Rooms: per-spot Blender work folders (pull.mjs / build_room.py); local only
+memory-rooms-work/
+# Python bytecode (Blender kit imports)
+__pycache__/

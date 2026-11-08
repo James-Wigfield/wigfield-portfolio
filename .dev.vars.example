@@ -1,0 +1,22 @@
+# Local Cloudflare Worker secrets: TEMPLATE.
+# Copy this file to `.dev.vars` (gitignored) and fill in real values for local dev.
+# In production each secret is set once with:  npx wrangler secret put <NAME>
+#
+# SUPABASE_URL is NOT here: it's non-secret and lives in wrangler.jsonc `vars`.
+
+# Supabase service-role key (server-side only, never sent to the browser).
+SUPABASE_SECRET_KEY=
+
+# Gates the portal's /api/* routes; must match MOCK_PASSWORD in portal/auth.js.
+# Memory Rooms also accepts it.
+PORTAL_PASSWORD=
+
+# ── Memory Rooms (/memories) ───────────────────────────────────────────────
+# The password James and Justin type once per device. Production: wrangler secret put MEMORIES_PASSWORD
+MEMORIES_PASSWORD=trip-local
+# "local" keeps rows as JSON in the (simulated) R2 bucket, so wrangler dev needs
+# no Supabase. Production uses "supabase" (wrangler.jsonc vars).
+MEMORIES_ROW_STORE=local
+# Optional: the HMAC key for signed file links. Unset = derived from the passwords
+# (changing a password then expires every link, which is fine).
+# MEMORIES_SIGNING_KEY=

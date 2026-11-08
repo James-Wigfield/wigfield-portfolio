@@ -38,6 +38,16 @@ const FilmsIndex = lazy(() => import('./films/FilmsIndex.jsx'));
 const FilmPlayer = lazy(() => import('./films/FilmPlayer.jsx'));
 const filmsGround = <div style={{ position: 'fixed', inset: 0, background: '#050505' }} />;
 
+// Memory Rooms (src/memory-rooms/README.md): trip spots on a map, each opening its
+// Blender-built 3D room. One lazy chunk; `page` picks the screen inside it.
+const MemoryRooms = lazy(() => import('./memory-rooms/MemoryRoomsApp.jsx'));
+const memoriesGround = <div className="mr-ground" style={{ position: 'fixed', inset: 0, background: 'Canvas' }} />;
+const memories = (page) => (
+  <Suspense fallback={memoriesGround}>
+    <MemoryRooms page={page} />
+  </Suspense>
+);
+
 function Portfolio() {
   // Tag <html> while the home route is mounted so home.css can override the
   // global cyberpunk scrollbar (index.css) for the Reading Room only.
@@ -87,6 +97,11 @@ export default function App() {
       {/* Public films made by the seth skill — see src/films/README.md */}
       <Route path="/films" element={<Suspense fallback={filmsGround}><FilmsIndex /></Suspense>} />
       <Route path="/films/:slug" element={<Suspense fallback={filmsGround}><FilmPlayer /></Suspense>} />
+      {/* Memory Rooms: password-gated trip spots, see src/memory-rooms/README.md */}
+      <Route path="/memories" element={memories('map')} />
+      <Route path="/memories/new" element={memories('new')} />
+      <Route path="/memories/group/:group" element={memories('group')} />
+      <Route path="/memories/:spotId" element={memories('spot')} />
       {/* Private management portal — gated client-side (placeholder for Supabase Auth).
           /portal/<toolId>/<sub> deep-links to a tool (see portal/portalRoute.js). */}
       <Route path="/portal/:toolId?/*" element={<Portal />} />

@@ -48,8 +48,20 @@
   // Non-secret, committed config (readable as env.SUPABASE_URL in the Worker).
   // ▶ Replace with YOUR Supabase project URL before deploying.
   "vars": {
-    "SUPABASE_URL": "https://trcnbmxtudhbuswqmqxy.supabase.co"
+    "SUPABASE_URL": "https://trcnbmxtudhbuswqmqxy.supabase.co",
+    // Memory Rooms row store: "supabase" in production (run supabase/memory_rooms.sql
+    // first); .dev.vars sets it to "local" so `wrangler dev` needs no Supabase.
+    "MEMORIES_ROW_STORE": "supabase"
   },
+
+  // ── Memory Rooms (/memories) ──────────────────────────────────────────────
+  // Photos, scans, GLBs and renders. Create the bucket once before the next
+  // deploy (a deploy fails while the bucket doesn't exist):
+  //   npx wrangler r2 bucket create memory-rooms
+  // `wrangler dev` simulates it locally (.wrangler/state), no setup needed.
+  "r2_buckets": [
+    { "binding": "MEMORIES", "bucket_name": "memory-rooms" }
+  ],
 
   "observability": { "enabled": true }
 

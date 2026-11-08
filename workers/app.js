@@ -19,6 +19,7 @@ import { createClient } from '@supabase/supabase-js';
 import { handleArcadeApi } from './arcade/room.js';
 import { handleDeckRemoteApi } from './deck-remote.js';
 import { handlePapersApi } from './papers.js';
+import { handleMemoriesApi } from './memory-rooms.js';
 
 // The arcade's Durable Object. One class serves every arcade game — see
 // workers/arcade/room.js and ADR-005. Must be re-exported from the Worker entry
@@ -57,6 +58,13 @@ async function handleApi(request, env, url) {
   // portal-password gated; the WebSocket is authorised by a room token.
   if (url.pathname.startsWith('/api/deck-remote/')) {
     return handleDeckRemoteApi(request, env, url, { requirePortalAuth, json, readJson });
+  }
+
+  // Memory Rooms — trip spots (capture, files in R2, rows in Supabase or the
+  // local R2 row store). Bearer = MEMORIES_PASSWORD or PORTAL_PASSWORD; files
+  // also accept a signed ?t= token. See workers/memory-rooms.js.
+  if (url.pathname.startsWith('/api/memories/')) {
+    return handleMemoriesApi(request, env, url, { json, readJson });
   }
 
   // Health check — confirms the Worker is live and whether Supabase is wired up.
