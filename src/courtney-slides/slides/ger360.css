@@ -1,0 +1,114 @@
+/* Chapter 4 — GER360 (slides 10–14). Canvas px; finished frames. */
+
+.cs .g-chair path, .cs .g-chair--one { fill: none; stroke: var(--ink-2); stroke-width: 7; stroke-linecap: round; }
+.cs .g-chair .g-chair__seat { stroke-width: 12; }
+.cs .g-floor { stroke: var(--rule-2); stroke-width: 3; fill: none; }
+.cs .g-db rect { fill: var(--c-bone); }
+.cs .g-foot { fill: var(--fig); }
+.cs .g-foot--lifted { fill: none; stroke: var(--fig); stroke-width: 3; stroke-dasharray: 7 6; }
+.cs .g-arrow { fill: none; stroke: var(--c-move); stroke-width: 5; stroke-linecap: round; }
+.cs .g-arrowhead { fill: none; stroke: var(--c-move); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.cs .g-arrow--risk, .cs .g-arrowhead--risk { stroke: var(--c-move); stroke-dasharray: none; }
+.cs .g-hurdle { fill: var(--c-risk-soft); stroke: var(--c-risk); stroke-width: 3; }
+.cs .g-bos { fill: var(--c-move-wash); stroke: var(--c-move); stroke-width: 3; stroke-dasharray: 8 6; }
+
+/* ── 10. Targets ───────────────────────────────────────────────────────── */
+.s-tg__stand { left: 112px; top: 262px; }
+.s-tg__fig { left: 0; top: 0; }
+.s-tg__row { left: 960px; right: 112px; height: 118px; }
+.s-tg__row > * { position: absolute; }
+.s-tg__rule { left: 0; right: 0; top: 0; height: 2px; background: var(--rule); display: block; }
+.s-tg__sw { left: -6px; top: 18px; }
+.cs .s-tg__sw path { stroke: var(--c-bone); stroke-width: 12; stroke-linecap: round; fill: none; }
+.s-tg__name { left: 52px; top: 22px; font: 600 34px/1.1 var(--f-display); }
+.cs .s-tg__what { left: 52px; top: 66px; font: 400 26px/1.2 var(--f-body); color: var(--ink-2); }
+.s-tg__frule { left: 960px; right: 112px; top: 902px; height: 3px; background: var(--ink); display: block; }
+.s-tg__func { left: 960px; right: 112px; top: 920px; font: 560 32px/1.2 var(--f-display); }
+
+/* ── 11. Balance ───────────────────────────────────────────────────────── */
+.s-bl__h1 { left: 112px; top: 262px; display: flex; gap: 12px; align-items: center; }
+.s-bl__panel { top: 300px; width: 320px; height: 430px; }
+.s-bl__panel > * { position: absolute; }
+.s-bl__svg { left: 0; top: 0; }
+.cs .s-bl__hullfill { fill: var(--c-move-wash); }
+.cs .s-bl__hull { fill: none; stroke: var(--c-move); stroke-width: 3; stroke-linejoin: round; }
+.cs .s-bl__sway { fill: none; stroke: var(--c-risk); stroke-width: 2; opacity: 0.6; }
+.cs .s-bl__cop { fill: var(--c-risk); stroke: var(--paper); stroke-width: 3; }
+.s-bl__name { left: 0; right: 0; top: 304px; text-align: center; font: 600 30px/1.1 var(--f-display); }
+.cs .s-bl__sub { left: 0; right: 0; top: 340px; text-align: center; font: 400 22px/1.1 var(--f-body); color: var(--muted); }
+.s-bl__lvl { left: 100px; top: 382px; display: flex; gap: 8px; }
+.s-bl__lvl span { width: 18px; height: 8px; border-radius: 4px; background: var(--rule); display: block; }
+.s-bl__lvl span.is-on { background: var(--c-move); }
+.s-bl__harder { left: 0; top: 700px; }
+.cs .s-bl__hline { fill: none; stroke: var(--rule-2); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.s-bl__hlbl { right: 160px; top: 690px; }
+.s-bl__h2 { left: 112px; top: 778px; display: flex; gap: 12px; align-items: center; }
+.s-bl__dyn { top: 816px; width: 540px; height: 200px; }
+.s-bl__dyn > * { position: absolute; }
+.s-bl__drule { left: 0; right: 0; top: 0; height: 2px; background: var(--rule); display: block; }
+.s-bl__dg { left: -10px; top: 6px; }
+.cs .s-bl__dtxt { left: 200px; right: 0; top: 52px; font: 500 28px/1.2 var(--f-body); color: var(--ink); }
+.s-bl__foot { left: 112px; bottom: 30px; }
+.cs .s-bl__foot { font-size: 18px; }
+
+/* ── 12. Progress ──────────────────────────────────────────────────────── */
+.s-pg__knobs, .s-pg__fig { left: 0; top: 0; }
+.cs .s-pg__ktrack { fill: none; stroke: var(--rule); stroke-width: 10; stroke-linecap: round; }
+.cs .s-pg__kfill { fill: none; stroke: var(--c-bone); stroke-width: 10; stroke-linecap: round; }
+.cs .s-pg__kbody { fill: var(--paper); stroke: var(--ink); stroke-width: 4; }
+.cs .s-pg__kptr { stroke: var(--ink); stroke-width: 8; stroke-linecap: round; }
+.s-pg__klbl { top: 448px; width: 280px; text-align: center; font: 600 30px/1 var(--f-display); }
+.s-pg__exrule { left: 860px; right: 112px; top: 600px; height: 3px; background: var(--ink); display: block; }
+.s-pg__exk { left: 860px; top: 620px; }
+.cs .s-pg__ex { left: 860px; right: 112px; top: 654px; font: 400 32px/1.28 var(--f-body); color: var(--ink); }
+.cs .s-pg__or { left: 860px; right: 112px; top: 760px; font: 500 30px/1.2 var(--f-body); display: flex; align-items: center; gap: 14px; color: var(--c-bone); }
+.cs .s-pg__or--2 { top: 806px; }
+.s-pg__cvrule { left: 860px; width: 420px; top: 872px; height: 2px; background: var(--rule-2); display: block; }
+.s-pg__cvk { left: 860px; top: 888px; }
+.cs .s-pg__cv { left: 860px; width: 440px; top: 920px; font: 400 25px/1.3 var(--f-body); color: var(--ink-2); }
+.s-pg__goalrule { left: 1340px; right: 112px; top: 872px; height: 2px; background: var(--rule-2); display: block; }
+.s-pg__goal { left: 1340px; right: 112px; top: 890px; font: 560 32px/1.18 var(--f-display); }
+
+/* ── 13. GER360 today ──────────────────────────────────────────────────── */
+.s-cs__playhead { left: 112px; top: 284px; width: 4px; height: 400px; background: var(--c-bone); display: block; opacity: 0; }
+.s-cs__block { top: 290px; height: 400px; }
+.s-cs__block > * { position: absolute; }
+.s-cs__brule { left: 0; right: 0; top: 0; height: 4px; background: var(--ink); display: block; }
+.cs .s-cs__bn { left: 0; top: 18px; font: 500 22px/1 var(--f-mono); color: var(--c-bone); }
+.s-cs__bicon { left: 0; top: 52px; }
+.cs .s-cs__bicon { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.s-cs__bname { left: 0; right: 0; top: 156px; font: 600 30px/1.1 var(--f-display); }
+.cs .s-cs__bwhat { left: 0; right: 0; top: 236px; font: 400 22px/1.3 var(--f-body); color: var(--ink-2); }
+.s-cs__links { left: 0; top: 0; }
+.cs .s-cs__link { fill: none; stroke-width: 3; opacity: 0.85; }
+.cs .s-cs__link--bone { stroke: var(--c-bone); }
+.cs .s-cs__link--move { stroke: var(--c-move); }
+.cs .s-cs__link--ink { stroke: var(--ink-2); }
+.s-cs__comp { top: 846px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.s-cs__cname { font: 600 28px/1.15 var(--f-body); text-align: center; max-width: 300px; }
+.s-cs__cnote { left: 112px; top: 984px; }
+
+/* ── 14. Compare ───────────────────────────────────────────────────────── */
+.s-cp__re { left: 112px; right: 112px; top: 268px; font: 560 54px/1.15 var(--f-display); letter-spacing: -0.01em; }
+.s-cp__which { position: relative; display: inline-block; color: var(--muted); }
+.s-cp__strike { position: absolute; left: 0; right: 0.3em; top: 54%; height: 5px; background: var(--c-risk); display: block; }
+.s-cp__q { top: 420px; width: 540px; }
+.s-cp__q > * { position: relative; }
+.s-cp__qrule { display: block; height: 2px; background: var(--rule); }
+.cs .s-cp__qn { margin-top: 16px; font: 500 22px/1 var(--f-mono); color: var(--c-bone); }
+.cs .s-cp__qt { margin-top: 10px; font: 500 30px/1.25 var(--f-body); }
+.s-cp__thrule { left: 112px; right: 112px; top: 552px; height: 3px; background: var(--ink); display: block; }
+.s-cp__th { top: 520px; }
+.s-cp__row { left: 112px; right: 112px; height: 92px; }
+.s-cp__row > * { position: absolute; }
+.s-cp__trule { left: 0; right: 0; top: 0; height: 1px; background: var(--rule); display: block; }
+.s-cp__row:first-of-type .s-cp__trule { display: none; }
+.s-cp__rec { left: 0; width: 500px; top: 26px; font: 600 30px/1.15 var(--f-display); }
+.cs .s-cp__now { left: 528px; width: 560px; top: 26px; font: 400 26px/1.25 var(--f-body); color: var(--ink-2); display: flex; gap: 14px; align-items: baseline; }
+.cs .s-cp__now .dot { transform: translateY(1px); }
+.cs .s-cp__opp { left: 1128px; right: 0; top: 26px; font: 500 26px/1.25 var(--f-body); color: var(--c-bone); display: flex; gap: 12px; }
+.s-cp__arrow { flex: none; }
+.s-cp__key { right: 112px; top: 524px; display: flex; gap: 10px; align-items: center; }
+.cs .s-cp__key { font-size: 20px; }
+.s-cp__endrule { left: 112px; right: 112px; top: 946px; height: 2px; background: var(--rule-2); display: block; }
+.s-cp__end { left: 112px; right: 112px; top: 964px; font: 560 34px/1.15 var(--f-display); }

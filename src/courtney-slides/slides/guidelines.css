@@ -1,0 +1,74 @@
+/* Chapter 3 — Guidelines (slides 8–9). Canvas px; finished frames. */
+
+/* ── 8. Adults 65+ ─────────────────────────────────────────────────────── */
+.s-g65__day { top: 262px; width: 100px; text-align: center; }
+.s-g65__ex { left: 112px; top: 262px; }
+.s-g65__row { left: 112px; right: 112px; height: 120px; }
+.s-g65__row > * { position: absolute; }
+.s-g65__rrule { left: 0; right: 0; top: 0; height: 2px; background: var(--rule); display: block; }
+.s-g65__name { left: 0; top: 22px; width: 600px; font: 600 34px/1.1 var(--f-display); }
+.cs .s-g65__rule { left: 0; top: 66px; width: 600px; font: 500 26px/1.2 var(--f-body); }
+.s-g65__cells { left: -112px; top: 0; }
+.cs .s-g65__cell--ink { fill: var(--ink-2); }
+.cs .s-g65__cell--bone { fill: var(--c-bone); }
+.cs .s-g65__cell--move { fill: var(--c-move); }
+.cs .s-g65__open { fill: none; stroke: var(--rule-2); stroke-width: 3; stroke-dasharray: 6 7; }
+.cs .s-g65__band { fill: var(--muted); opacity: 0.55; }
+.s-g65__also { left: 112px; top: 872px; }
+.cs .s-g65__also { font-size: 24px; }
+.s-g65__nrule { left: 112px; right: 112px; top: 934px; height: 3px; background: var(--ink); display: block; }
+.s-g65__next { left: 112px; right: 260px; top: 952px; font: 560 38px/1.15 var(--f-display); }
+.s-g65__arrow { right: 140px; top: 958px; }
+.cs .s-g65__arrow path { fill: none; stroke: var(--c-bone); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── 9. Osteoporosis ───────────────────────────────────────────────────── */
+.s-os__src { left: 112px; top: 262px; display: flex; gap: 12px; align-items: center; }
+.s-os__col { top: 304px; width: 528px; height: 600px; }
+.s-os__col > * { position: absolute; }
+.s-os__crule { left: 0; right: 0; top: 0; height: 3px; background: var(--ink); display: block; }
+.s-os__k { left: 0; top: 18px; font: 500 22px/1 var(--f-mono); letter-spacing: 0.08em; }
+.s-os__name { left: 0; top: 50px; font: 600 40px/1.05 var(--f-display); }
+.cs .s-os__line { left: 0; right: 0; top: 104px; font: 400 25px/1.25 var(--f-body); color: var(--ink-2); }
+.s-os__hba { left: 0; top: 196px; }
+.s-os__viz { left: 0; top: 214px; }
+.cs .s-os__det { left: 0; right: 0; top: 488px; font: 400 25px/1.28 var(--f-body); color: var(--ink); }
+.cs .s-os__det b { font-weight: 700; }
+.cs .s-os__det--warn, .cs .s-os__det--note { top: 562px; font-size: 23px; color: var(--muted); padding-left: 24px; }
+.cs .s-os__det--warn::before { content: ""; position: absolute; left: 0; top: 0.42em; width: 12px; height: 12px; border-radius: 50%; background: var(--c-risk); }
+.cs .s-os__det--note::before { content: ""; position: absolute; left: 0; top: 0.42em; width: 12px; height: 12px; border-radius: 50%; background: var(--c-move); }
+
+.cs .s-os__garc { fill: none; stroke: var(--rule-2); stroke-width: 18; stroke-linecap: round; }
+.cs .s-os__gband { fill: none; stroke: var(--c-bone); stroke-width: 30; }
+.cs .s-os__gt { stroke: var(--muted); stroke-width: 2; }
+.cs .s-os__gtl { font: 500 18px/1 var(--f-mono); fill: var(--muted); }
+.cs .s-os__needle { stroke: var(--ink); stroke-width: 7; stroke-linecap: round; }
+.cs .s-os__hub { fill: var(--ink); }
+.cs .s-os__gl { font: 500 18px/1 var(--f-mono); fill: var(--muted); letter-spacing: 0.06em; }
+.cs .s-os__rep { fill: var(--rule); }
+.cs .s-os__rep.is-on { fill: var(--c-bone); }
+.cs .s-os__rep.is-range { fill: var(--c-bone-soft); }
+.cs .s-os__rep.is-opt { opacity: 0.45; }
+.cs .s-os__br { fill: none; stroke: var(--muted); stroke-width: 2; }
+.cs .s-os__brl { font: 500 18px/1 var(--f-mono); fill: var(--ink-2); }
+
+.cs .s-os__ground { stroke: var(--ink); stroke-width: 3; }
+.cs .s-os__ripple { fill: none; stroke: var(--c-bone); stroke-width: 3; opacity: 0; }
+.cs .s-os__foot { fill: var(--fig); }
+.cs .s-os__bw { font: 500 18px/1 var(--f-mono); fill: var(--c-bone); letter-spacing: 0.04em; }
+.s-os__num { left: 326px; top: 250px; font: 600 120px/1 var(--f-display); letter-spacing: -0.03em; }
+.cs .s-os__num { color: var(--c-bone); }
+.s-os__numl { left: 332px; top: 384px; white-space: normal; line-height: 1.35; }
+
+.cs .s-os__rtrack { fill: none; stroke: var(--rule); stroke-width: 22; }
+.cs .s-os__rseg { fill: none; stroke: var(--c-move); stroke-width: 22; stroke-linecap: round; }
+.cs .s-os__sess { fill: var(--c-move-wash); stroke: var(--c-move); stroke-width: 3; }
+.cs .s-os__sessl { font: 600 20px/1 var(--f-mono); fill: var(--c-move); }
+.s-os__hrs { left: 82px; top: 292px; width: 80px; text-align: center; font: 600 80px/1 var(--f-display); }
+.cs .s-os__hrs { color: var(--c-move); }
+.s-os__hrsl { left: 42px; top: 378px; width: 160px; text-align: center; }
+.cs .s-os__hrsl { font-size: 14px; letter-spacing: 0.1em; }
+
+.s-os__cavrule { left: 112px; right: 112px; top: 916px; height: 2px; background: var(--rule-2); display: block; }
+.cs .s-os__cav { left: 112px; width: 1100px; top: 930px; font: 400 23px/1.3 var(--f-body); color: var(--ink-2); }
+.cs .s-os__cav b { color: var(--ink); }
+.cs .s-os__cav--2 { left: 1260px; width: 548px; }

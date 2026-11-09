@@ -1,0 +1,127 @@
+/* Chapter 2 — Ageing & bone (slides 4–7). Canvas px; finished frames. */
+
+/* ── Shared micro-graphic strokes ──────────────────────────────────────── */
+.cs .g-axis { stroke: var(--rule-2); stroke-width: 2; fill: none; }
+.cs .g-dash { stroke-dasharray: 6 6; }
+.cs .g-ghost { stroke: var(--muted); stroke-width: 2.5; fill: none; stroke-dasharray: 5 6; opacity: 0.7; }
+.cs .g-risk-line { stroke: var(--c-risk); stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.cs .g-risk-bar { stroke: var(--c-risk); stroke-width: 12; fill: none; stroke-linecap: round; }
+.cs .g-bone-line { stroke: var(--c-bone); stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.cs .g-move-line { stroke: var(--c-move); stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.cs .g-tag { font: 500 16px/1 var(--f-mono); fill: var(--muted); letter-spacing: 0.06em; }
+.cs .g-fibre { fill: #c98f84; stroke: var(--paper); stroke-width: 2; }
+.cs .g-fibre.is-lost { opacity: 0.2; }
+.cs .g-flash { stroke: var(--ink); stroke-width: 3; fill: none; stroke-linecap: round; }
+.cs .g-flash circle { fill: var(--ink); }
+.cs .g-reserve { fill: none; stroke: var(--c-risk); stroke-width: 3; stroke-dasharray: 10 9; opacity: 0.85; }
+.cs .g-heart { fill: var(--c-risk); }
+.cs .g-eye { fill: var(--c-risk); }
+.cs .g-wave { fill: none; stroke: var(--c-risk); stroke-width: 3.5; stroke-linecap: round; }
+.cs .rig-band.is-risk { stroke: var(--c-risk); }
+
+/* ── 4. Systems ────────────────────────────────────────────────────────── */
+.s-sys__fig { left: 0; top: 0; }
+.cs .s-sys__tag { font: 600 26px/1 var(--f-mono); fill: var(--c-risk); letter-spacing: 0.04em; }
+.s-sys__q { width: 628px; display: flex; flex-direction: column; }
+.s-sys__qrule { height: 2px; background: var(--ink); display: block; transform-origin: 0 50%; }
+.s-sys__qh { margin-top: 20px !important; font: 600 32px/1.1 var(--f-display); display: flex; gap: 16px; align-items: baseline; white-space: nowrap; }
+.s-sys__row { display: flex; gap: 30px; margin-top: 22px; }
+.s-sys__qh span { font: 500 22px/1 var(--f-mono); color: var(--c-risk); letter-spacing: 0.06em; }
+.s-sys__g { width: 220px; height: 140px; flex: none; }
+.s-sys__items { flex: 1; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.s-sys__items li { font: 400 25px/1.22 var(--f-body); color: var(--ink); padding-left: 20px; position: relative; }
+.s-sys__items li::before { content: ""; position: absolute; left: 0; top: 0.5em; width: 8px; height: 8px; border-radius: 50%; background: var(--c-risk); }
+.cs .s-sys__so { margin-top: 18px; font: 400 24px/1.3 var(--f-body); color: var(--muted); }
+.s-sys__so span { color: var(--c-risk); font-weight: 600; }
+.s-sys__endrule { left: 112px; right: 112px; top: 966px; height: 2px; background: var(--rule); display: block; }
+.s-sys__end { left: 112px; right: 112px; top: 984px; text-align: center; font: 500 34px/1.2 var(--f-display); }
+
+/* ── 5. Remodelling ────────────────────────────────────────────────────── */
+.s-rm__svg { left: 0; top: 0; }
+.s-rm__lbl { top: 262px; }
+.s-rm__lbl--l { left: 112px; }
+.s-rm__lbl--r { left: 760px; }
+.s-rm__k { display: flex; align-items: center; gap: 14px; font: 600 40px/1.1 var(--f-display); }
+.cs .s-rm__v { margin-top: 8px; font: 400 30px/1.2 var(--f-body); color: var(--ink-2); padding-left: 28px; }
+.cs .s-rm__marrow { fill: #f3ece0; }
+.cs .s-rm__old { stroke: var(--bone-edge); stroke-width: 3; }
+.cs .s-rm__lam { fill: none; stroke: var(--bone-edge); stroke-width: 1.6; opacity: 0.45; }
+.cs .s-rm__ocyte path:first-child { fill: #8c7b5c; }
+.cs .s-rm__dend { fill: none; stroke: #8c7b5c; stroke-width: 1.6; stroke-linecap: round; }
+.cs .s-rm__ocyte--new path:first-child { fill: var(--c-bone); }
+.cs .s-rm__ocyte--new .s-rm__dend { stroke: var(--c-bone); }
+.cs .s-rm__new { fill: var(--c-bone-soft); fill-opacity: 0.75; stroke: var(--c-bone); stroke-width: 3; }
+.cs .s-rm__gapline { fill: none; stroke: var(--c-risk); stroke-width: 3; stroke-dasharray: 10 8; }
+.cs .s-rm__ob rect { fill: var(--c-bone); stroke: var(--paper); stroke-width: 3; }
+.cs .s-rm__obn { fill: #cfe3f2; }
+.cs .s-rm__oc path { fill: #e9a27c; stroke: var(--c-risk); stroke-width: 3; }
+.cs .s-rm__ocn { fill: #8a3a10; }
+.cs .s-rm__tag { font: 600 20px/1 var(--f-mono); letter-spacing: 0.16em; fill: var(--muted); }
+.cs .s-rm__tag--o { fill: var(--c-risk); }
+.cs .s-rm__fulcrum { fill: var(--ink); }
+.cs .s-rm__beam { stroke: var(--ink); stroke-width: 6; stroke-linecap: round; }
+.cs .s-rm__pan { fill: none; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+.cs .s-rm__pan--l { stroke: var(--c-risk); fill: var(--c-risk-wash); }
+.cs .s-rm__pan--r { stroke: var(--c-bone); fill: var(--c-bone-wash); }
+.s-rm__sl { left: 1330px; top: 250px; font: 600 26px/1 var(--f-body); }
+.s-rm__sr { left: 1690px; top: 250px; font: 600 26px/1 var(--f-body); }
+.s-rm__loss { left: 1160px; top: 650px; }
+.s-rm__cyl { left: 1180px; top: 976px; width: 620px; text-align: right; }
+.cs .s-rm__cyl { font-size: 22px; }
+.s-rm__shift { left: 1290px; top: 398px; width: 540px; font: 560 30px/1.15 var(--f-display); text-align: center; }
+
+/* ── 6. Spectrum ───────────────────────────────────────────────────────── */
+.s-sp__lat, .s-sp__ts { left: 0; top: 0; }
+.cs .s-sp__lens { fill: none; stroke: var(--ink); stroke-width: 3; }
+.cs .s-sp__lens2 { fill: none; stroke: var(--rule-2); stroke-width: 1.5; stroke-dasharray: 3 9; }
+.s-sp__cap { left: 112px; top: 268px; }
+.s-sp__stage { left: 1010px; top: 300px; width: 800px; }
+.s-sp__name { font: 600 92px/1 var(--f-display); letter-spacing: -0.02em; }
+.cs .s-sp__def { margin-top: 18px; font: 400 36px/1.25 var(--f-body); color: var(--ink-2); max-width: 760px; }
+.cs .s-sp__z0 { fill: #ffffff; stroke: var(--rule); }
+.cs .s-sp__z1 { fill: #f6dcc8; }
+.cs .s-sp__z2 { fill: #ecb48c; }
+.cs .s-sp__tick { stroke: var(--muted); stroke-width: 2; }
+.cs .s-sp__tickl { font: 500 22px/1 var(--f-mono); fill: var(--ink-2); }
+.cs .s-sp__zl { font: 600 22px/1 var(--f-body); fill: var(--ink-2); }
+.cs .s-sp__zl--r { fill: #7a2f00; }
+.cs .s-sp__axis { font: 500 20px/1 var(--f-mono); letter-spacing: 0.14em; fill: var(--muted); }
+.cs .s-sp__mk { fill: var(--ink); }
+.cs .s-sp__mkline { stroke: var(--ink); stroke-width: 4; }
+.s-sp__archrule { left: 1010px; width: 800px; top: 880px; height: 2px; background: var(--ink); display: block; }
+.s-sp__arch { left: 1010px; width: 800px; top: 898px; font: 500 34px/1.18 var(--f-display); }
+.s-sp__arch2 { left: 1010px; top: 990px; }
+.s-sp__stubkey { left: 112px; top: 306px; display: flex; gap: 12px; align-items: center; }
+.cs .s-sp__stubkey { color: var(--c-risk); }
+
+/* ── 7. Clinical ───────────────────────────────────────────────────────── */
+.s-cl__svg { left: 0; top: 0; }
+.cs .s-cl__body { fill: #c9c3b8; stroke: #c9c3b8; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-cl__torso { stroke-width: 128; }
+.cs .s-cl__arm { fill: none; stroke-width: 34; }
+.cs .s-cl__leg { fill: none; stroke-width: 50; }
+.cs .s-cl__vert { fill: var(--paper); }
+.cs .s-cl__vert.is-hit { fill: var(--c-risk-soft); }
+.cs .s-cl__femur circle { fill: var(--paper); }
+.cs .s-cl__femur path { stroke: var(--paper); stroke-width: 12; stroke-linecap: round; }
+.cs .s-cl__ring { fill: rgba(213, 94, 0, 0.08); stroke: var(--c-risk); stroke-width: 3.5; }
+.cs .s-cl__crack { fill: none; stroke: var(--c-risk); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.s-cl__sitel { font-weight: 600; }
+.s-cl__sitecap { left: 112px; top: 268px; }
+.cs .s-cl__loopghost { fill: none; stroke: var(--rule); stroke-width: 1.5; }
+.cs .s-cl__seg { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+.cs .s-cl__head { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-cl__node { fill: var(--ink); stroke: var(--paper); stroke-width: 4; }
+.cs .s-cl__node.is-risk { fill: var(--c-risk); }
+.cs .s-cl__orbit { fill: var(--c-risk); opacity: 0; }
+.cs .s-cl__clabel { font-size: 28px; }
+.s-cl__core { width: 300px; text-align: center; }
+.cs .s-cl__brk path { fill: none; stroke-linecap: round; }
+.cs .s-cl__brk [data-a="bar"] { stroke-width: 12; }
+.cs .s-cl__brk--move path { stroke: var(--c-move); }
+.cs .s-cl__brk--bone path { stroke: var(--c-bone); }
+.cs .s-cl__blead { stroke-width: 2.5; }
+.s-cl__brkl { width: 360px; }
+.s-cl__brkk { font: 600 27px/1.15 var(--f-body); }
+.cs .s-cl__brkv { margin-top: 4px; font: 400 25px/1.2 var(--f-body); }
+.s-cl__both { left: 960px; right: 112px; top: 980px; text-align: right; font: 560 36px/1.1 var(--f-display); }

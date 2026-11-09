@@ -1,0 +1,248 @@
+/* ============================================================================
+   COURTNEY'S SLIDES (/courtney-slides) — scoped under .cs
+   Warm bone-white paper, dark ink, three role colours used for meaning only
+   (Okabe-Ito, colour-blind safe):
+     --c-bone  #0072B2  bone formation, loading, strength
+     --c-risk  #D55E00  resorption, loss, fracture risk
+     --c-move  #009E73  balance, falls prevention, function
+   Display: Fraunces. Body: Hanken Grotesk. Labels: IBM Plex Mono.
+   Every rule describes the FINISHED frame; motion.js animates from it.
+   ========================================================================== */
+
+.cs {
+  --paper: #f6f3ee;
+  --paper-2: #efe9df;
+  --ink: #16191e;
+  --ink-2: #3a414c;
+  --muted: #69707b;
+  --rule: #d8d1c5;
+  --rule-2: #c3bbad;
+  --bone: #ece2cf;
+  --bone-2: #e0d2b8;
+  --bone-edge: #a8987a;
+  --bone-deep: #8c7b5c;
+  --marrow: #f7eedf;
+  --fig: #3e4552;
+  --fig-far: #aab0b8;
+  --fig-arm: #555d6a;
+  --c-bone: #0072b2;
+  --c-bone-soft: #9cc4e2;
+  --c-bone-wash: rgba(0, 114, 178, 0.09);
+  --c-risk: #d55e00;
+  --c-risk-soft: #f0b48c;
+  --c-risk-wash: rgba(213, 94, 0, 0.09);
+  --c-move: #009e73;
+  --c-move-soft: #8fd3bd;
+  --c-move-wash: rgba(0, 158, 115, 0.1);
+  --f-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --f-body: 'Hanken Grotesk', 'Segoe UI', Arial, sans-serif;
+  --f-mono: 'IBM Plex Mono', Consolas, monospace;
+  color: var(--ink);
+  font-family: var(--f-body);
+}
+
+.cs *,
+.cs *::before,
+.cs *::after { box-sizing: border-box; }
+:where(.cs) p { color: inherit; margin: 0; }
+:where(.cs) h1, :where(.cs) h2, :where(.cs) h3 { margin: 0; font-weight: inherit; }
+.cs svg { max-width: none; display: block; overflow: visible; }
+.cs button { font-family: var(--f-body); }
+
+/* ── Page shell ─────────────────────────────────────────────────────────── */
+html.cs-active, html.cs-active body { background: #1b1d21; overflow: hidden; }
+html.cs-active body::-webkit-scrollbar { display: none; }
+
+.cs-root {
+  position: fixed; inset: 0; background: #1b1d21; user-select: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.cs-root.is-idle { cursor: none; }
+
+.cs-fit { position: absolute; inset: 0; overflow: hidden; }
+.cs-canvas {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
+  transform-origin: 0 0; overflow: hidden; background: var(--paper);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+
+/* One slide fills the canvas. Hidden slots are kept for the wipe. */
+.cs-slot { position: absolute; inset: 0; background: var(--paper); will-change: clip-path, transform; }
+.cs-slide { position: absolute; inset: 0; overflow: hidden; }
+.cs-slide > * { position: absolute; }
+
+/* Paper grain + faint ruled margin, the deck's ground. */
+.cs-ground { position: absolute; inset: 0; pointer-events: none; }
+.cs-ground::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(1200px 700px at 78% 30%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(900px 600px at 10% 100%, rgba(224, 210, 184, 0.28), transparent 70%);
+}
+
+/* The wipe between slides. */
+.cs-wipe { position: absolute; top: 0; bottom: 0; width: 14px; left: 0; pointer-events: none; z-index: 30; opacity: 0; }
+.cs-wipe i { position: absolute; top: 0; bottom: 0; }
+.cs-wipe i:nth-child(1) { left: 0; width: 8px; background: var(--c-bone); }
+.cs-wipe i:nth-child(2) { left: -46px; width: 3px; background: var(--ink); }
+
+/* Deck progress, a hairline along the bottom of the canvas. */
+.cs-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; z-index: 25; pointer-events: none; }
+.cs-progress__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--c-bone); transform-origin: 0 50%; transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+.cs-progress__tick { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--paper); }
+
+/* ── Frame ──────────────────────────────────────────────────────────────── */
+.cs-frame { position: absolute; inset: 0; pointer-events: none; }
+.cs-frame > * { position: absolute; }
+.cs-frame__rule { left: 112px; right: 112px; top: 64px; height: 3px; background: var(--ink); display: block; }
+.cs-frame__kicker {
+  left: 112px; top: 86px; display: flex; align-items: center; gap: 14px;
+  font: 500 22px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.cs-frame__no { right: 112px; top: 86px; font: 500 22px/1 var(--f-mono); letter-spacing: 0.1em; color: var(--ink); }
+.cs-frame__no span { color: var(--muted); }
+.cs-frame__title {
+  left: 112px; right: 112px; top: 132px;
+  font: 480 68px/1.08 var(--f-display); letter-spacing: -0.012em; color: var(--ink);
+  font-variation-settings: 'opsz' 96;
+}
+.cs-frame__foot {
+  left: 112px; right: 260px; bottom: 34px;
+  font: 400 19px/1.35 var(--f-body); color: var(--muted);
+}
+.cs-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--c-bone); flex: none; }
+
+/* Masked words (Words.jsx). */
+.cs-w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.08em 0.1em 0.14em 0.02em; margin: -0.08em -0.1em -0.14em -0.02em; }
+.cs-wi { display: inline-block; will-change: transform; }
+.cs-em { font-style: italic; color: var(--c-bone); }
+.cs-em-risk .cs-em { color: var(--c-risk); }
+
+/* ── Shared type ───────────────────────────────────────────────────────── */
+.cs .t-micro { font: 500 20px/1.2 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.cs .t-label { font: 500 30px/1.2 var(--f-body); color: var(--ink); }
+.cs .t-label b { font-weight: 700; }
+.cs .t-small { font: 400 26px/1.3 var(--f-body); color: var(--muted); }
+.cs .t-body { font: 400 34px/1.32 var(--f-body); color: var(--ink-2); }
+.cs .t-lead { font: 400 42px/1.25 var(--f-body); color: var(--ink); }
+.cs .t-big { font: 560 96px/1 var(--f-display); letter-spacing: -0.02em; }
+.cs .t-mono { font-family: var(--f-mono); }
+.cs .c-bone { color: var(--c-bone); }
+.cs .c-risk { color: var(--c-risk); }
+.cs .c-move { color: var(--c-move); }
+.cs .c-muted { color: var(--muted); }
+.cs .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.cs .dot--bone { background: var(--c-bone); }
+.cs .dot--risk { background: var(--c-risk); }
+.cs .dot--move { background: var(--c-move); }
+.cs .dot--ink { background: var(--ink); }
+.cs .dot--hollow { background: transparent; box-shadow: inset 0 0 0 3px var(--muted); }
+.cs .dot--half { background: linear-gradient(90deg, var(--c-bone) 50%, transparent 50%); box-shadow: inset 0 0 0 3px var(--c-bone); }
+
+/* SVG strokes shared by the art */
+.cs .sv-ink { stroke: var(--ink); fill: none; }
+.cs .sv-rule { stroke: var(--rule-2); fill: none; }
+.cs .sv-leader { stroke: var(--muted); stroke-width: 2; fill: none; }
+.cs .sv-anchor { fill: var(--ink); stroke: var(--paper); stroke-width: 3; }
+
+/* Rig */
+.cs .rig-casing { stroke: var(--paper); }
+.cs .rig-near { stroke: var(--fig); fill: var(--fig); }
+.cs .rig-arm { stroke: var(--fig-arm); }
+.cs .rig-far { stroke: var(--fig-far); }
+.cs .rig-head { stroke: none; }
+.cs .rig-band { stroke: var(--c-bone); }
+.cs .rig-band.is-move { stroke: var(--c-move); }
+
+/* Lattice */
+.cs .lat-strut { stroke: var(--bone-deep); }
+.cs .lat-stub { stroke: var(--c-risk); }
+
+/* ── Controls overlay (outside the canvas) ─────────────────────────────── */
+.cs-ui {
+  position: absolute; right: 18px; bottom: 16px; z-index: 40; display: flex; align-items: center; gap: 4px;
+  padding: 6px; border-radius: 12px; background: rgba(22, 25, 30, 0.82); backdrop-filter: blur(8px);
+  transition: opacity 0.4s ease; color: #e9e4da;
+}
+.cs-root.is-idle .cs-ui { opacity: 0; pointer-events: none; }
+.cs-ui button {
+  display: grid; place-items: center; height: 38px; min-width: 38px; padding: 0 10px; border-radius: 8px;
+  color: #e9e4da; font: 500 13px/1 var(--f-mono); letter-spacing: 0.06em;
+}
+.cs-ui button:hover { background: rgba(255, 255, 255, 0.1); }
+.cs-ui button:focus-visible { outline: 2px solid #9cc4e2; outline-offset: 1px; }
+.cs-ui__count { font: 500 13px/1 var(--f-mono); padding: 0 8px; color: #bfb8ab; min-width: 72px; text-align: center; }
+.cs-ui svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cs-ui__sep { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.16); margin: 0 4px; }
+
+.cs-hint {
+  position: absolute; left: 18px; bottom: 18px; z-index: 39;
+  font: 500 13px/1 var(--f-mono); letter-spacing: 0.08em; color: #cfc8bb; background: rgba(22, 25, 30, 0.82);
+  padding: 10px 14px; border-radius: 10px; transition: opacity 0.6s ease; white-space: nowrap;
+}
+.cs-root.is-idle .cs-hint, .cs-hint.is-gone { opacity: 0; }
+
+/* Notes drawer (N) */
+.cs-notes {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 38; max-height: 38vh; overflow: auto;
+  background: rgba(16, 18, 22, 0.94); color: #ece7dd; padding: 18px 26px 70px;
+  font: 400 17px/1.55 var(--f-body); user-select: text;
+}
+.cs-notes p { margin: 0 0 10px; color: #8d8679; }
+.cs-notes p.is-now { color: #f4efe6; }
+.cs-notes h4 { margin: 0 0 10px; font: 500 12px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: #9cc4e2; }
+
+/* Overview grid (G) */
+.cs-grid {
+  position: absolute; inset: 0; z-index: 50; overflow: auto; background: rgba(16, 18, 22, 0.97);
+  padding: 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; align-content: start;
+}
+.cs-grid__item { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.cs-grid__item > span { font: 500 12px/1.3 var(--f-mono); letter-spacing: 0.06em; color: #d9d3c7; }
+.cs-grid__item.is-current .cs-thumb { outline: 3px solid #9cc4e2; outline-offset: 3px; }
+.cs-thumb { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; background: var(--paper); }
+.cs-thumb .cs-canvas { box-shadow: none; }
+
+/* ── Presenter view ─────────────────────────────────────────────────────── */
+.cs-pv { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 16px; padding: 16px; background: #15171b; color: #ece7dd; user-select: none; }
+.cs-pv__bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; font: 500 14px/1 var(--f-mono); color: #bfb8ab; }
+.cs-pv__bar b { color: #f4efe6; font-size: 26px; font-weight: 500; letter-spacing: 0.04em; }
+.cs-pv__bar .grow { flex: 1; }
+.cs-pv__bar button { color: #e9e4da; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 8px; padding: 9px 12px; font: 500 13px/1 var(--f-mono); }
+.cs-pv__bar button:hover { background: rgba(255, 255, 255, 0.08); }
+.cs-pv__main { position: relative; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.cs-pv__label { font: 500 12px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase; color: #8d8679; }
+.cs-pv__screen { position: relative; flex: 1; min-height: 0; border-radius: 8px; overflow: hidden; }
+.cs-pv__side { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.cs-pv__next { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; flex: none; }
+.cs-pv__notes { flex: 1; min-height: 0; overflow: auto; font: 400 21px/1.5 var(--f-body); padding-right: 6px; user-select: text; }
+.cs-pv__notes p { margin: 0 0 14px; color: #6f695f; transition: color 0.3s ease; }
+.cs-pv__notes p.is-done { color: #a39b8d; }
+.cs-pv__notes p.is-now { color: #f7f2e9; }
+.cs-pv__notes p.is-now::before { content: '▸ '; color: #9cc4e2; }
+.cs-pv__notes .cue { font: 500 12px/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: #9cc4e2; margin: 18px 0 8px; display: block; }
+
+/* ── Print (?view=print) ────────────────────────────────────────────────── */
+.cs-print { background: #fff; }
+.cs-print__page { position: relative; width: 1920px; height: 1080px; overflow: hidden; break-after: page; }
+@media print {
+  @page { size: 1920px 1080px; margin: 0; }
+  html.cs-active, html.cs-active body { overflow: visible !important; background: #fff !important; }
+  .cs-print .cs-canvas { box-shadow: none; }
+}
+
+/* ── Phones: the canvas letterboxes; keep the controls reachable ───────── */
+.cs-rotate { display: none; }
+@media (max-width: 640px) and (orientation: portrait) {
+  .cs .cs-rotate {
+    display: block; position: absolute; left: 16px; right: 16px; top: 22px; z-index: 39; margin: 0; text-align: center;
+    font: 500 12px/1.4 var(--f-mono); letter-spacing: 0.08em; color: #bfb8ab;
+  }
+}
+@media (max-width: 640px) {
+  .cs-ui { right: 8px; bottom: 8px; gap: 2px; padding: 4px; }
+  .cs-ui button { height: 34px; min-width: 34px; padding: 0 6px; }
+  .cs-ui__opt { display: none !important; }
+  .cs-hint { display: none; }
+  .cs-pv { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); }
+}

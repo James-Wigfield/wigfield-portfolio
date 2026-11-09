@@ -1,0 +1,87 @@
+/* ============================================================================
+   Per-slide layout. Coordinates are canvas px (1920 x 1080). Each block is the
+   FINISHED frame; the slide's timeline animates into it.
+   ========================================================================== */
+
+.cs-stage { position: absolute; inset: 0; }
+.cs-stage > * { position: absolute; }
+
+/* ── Femur art ─────────────────────────────────────────────────────────── */
+.cs .fem-ring { fill: none; stroke: var(--rule-2); stroke-width: 1.5; }
+.cs .fem-ring--dash { stroke-dasharray: 2 9; stroke: var(--muted); }
+.cs .fem-tick { stroke: var(--muted); stroke-width: 1.5; }
+.cs .fem-canal { fill: var(--marrow); }
+.cs .fem-trab { fill: none; stroke: var(--bone-deep); stroke-width: 3.2; stroke-linecap: round; opacity: 0.78; }
+.cs .fem-trab--t { stroke-width: 2.7; }
+.cs .fem-trab--s { stroke-width: 2.2; opacity: 0.55; }
+.cs .fem-pulse { fill: none; stroke: var(--c-bone); stroke-width: 7; stroke-linecap: round; opacity: 0; }
+.cs .fem-edge { fill: none; stroke: var(--ink); stroke-width: 3.5; stroke-linejoin: round; }
+.cs .fem-load line, .cs .fem-load path { stroke: var(--c-bone); stroke-width: 7; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Person glyph */
+.cs .g-person { fill: var(--fig); }
+.cs .g-person__line { fill: none; stroke: var(--c-risk); stroke-width: 3.5; stroke-dasharray: 9 7; opacity: 0; }
+.cs [data-a="lost"] [data-a="pfill"] { opacity: 0; }
+.cs [data-a="lost"] [data-a="pline"] { opacity: 1; }
+
+/* ── 1. Title ──────────────────────────────────────────────────────────── */
+.s-title__kicker {
+  left: 120px; top: 168px; display: flex; align-items: center; gap: 14px;
+  font: 500 24px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+}
+.s-title__h {
+  left: 112px; top: 218px; font: 500 172px/0.96 var(--f-display); letter-spacing: -0.03em; color: var(--ink);
+  font-variation-settings: 'opsz' 144;
+}
+.s-title__sub { left: 120px; top: 762px; font: 400 46px/1.2 var(--f-body); color: var(--ink-2); }
+.s-title__rule { left: 120px; top: 860px; width: 120px; height: 6px; background: var(--c-bone); display: block; }
+.s-title__who { left: 120px; top: 896px; font: 600 34px/1.2 var(--f-body); }
+.s-title__role { left: 120px; top: 942px; font: 400 28px/1.2 var(--f-body); color: var(--muted); }
+.s-title__cap { right: 112px; top: 1010px; }
+
+/* ── 2. Why ────────────────────────────────────────────────────────────── */
+.s-why__cascade { inset: 0; }
+.s-why__cascade > * { position: absolute; }
+.s-why__ward { left: 112px; top: 268px; }
+.s-why__svg { left: 0; top: 0; }
+.s-why__track { fill: none; stroke: var(--rule-2); stroke-width: 3; stroke-dasharray: 2 10; stroke-linecap: round; }
+.s-why__runner { fill: var(--c-risk); opacity: 0; }
+.s-why__disc { fill: var(--paper); stroke: var(--ink); stroke-width: 3; }
+.s-why__disc.is-risk { stroke: var(--c-risk); }
+.s-why__ic { fill: none; stroke: var(--ink); stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+.s-why__ic.is-risk { stroke: var(--c-risk); }
+.s-why__ic .ic-ground { stroke: var(--muted); stroke-width: 3; }
+.s-why__ic .ic-motion { stroke: var(--muted); stroke-width: 3; }
+.s-why__ic .ic-bone { stroke-width: 14; }
+.s-why__ic .ic-knob { fill: var(--ink); stroke: none; }
+.s-why__ic .ic-crack { stroke: var(--c-risk); stroke-width: 5; }
+.s-why__label { width: 300px; text-align: center; font-size: 28px; line-height: 1.22; }
+
+.s-why__stat { inset: 0; pointer-events: none; }
+.s-why__stat > * { position: absolute; }
+.s-why__statrule { left: 112px; right: 112px; top: 700px; height: 2px; background: var(--rule); display: block; }
+.s-why__more { left: 118px; top: 720px; }
+.cs .s-why__more { color: var(--c-risk); }
+.s-why__big { left: 112px; top: 748px; font: 600 200px/1 var(--f-display); letter-spacing: -0.03em; color: var(--c-risk); }
+.s-why__big span { font-style: italic; font-weight: 400; font-size: 120px; color: var(--ink-2); }
+.s-why__statl { left: 640px; top: 760px; width: 580px; }
+.cs .s-why__statl { font-size: 34px; }
+.s-why__statsrc { left: 640px; top: 928px; width: 640px; font-family: var(--f-mono); font-size: 22px; letter-spacing: 0.04em; }
+.s-why__people { left: 1250px; top: 712px; }
+.s-why__ptag { left: 1612px; top: 980px; color: var(--c-risk); }
+
+.s-why__qwash { inset: 0; background: radial-gradient(900px 420px at 50% 52%, rgba(246, 243, 238, 0.95), rgba(246, 243, 238, 0)); pointer-events: none; }
+.s-why__q {
+  left: 220px; right: 220px; top: 430px; text-align: center;
+  font: 560 84px/1.12 var(--f-display); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance;
+}
+.s-why__qrule { left: 900px; width: 120px; top: 690px; height: 6px; background: var(--c-bone); display: block; }
+
+/* ── 3. Today ──────────────────────────────────────────────────────────── */
+.s-today__row { left: 112px; right: 112px; height: 150px; }
+.s-today__rule { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--rule); display: block; }
+.s-today__rule--end { left: 112px; right: 112px; }
+.s-today__num { position: absolute; left: 0; top: 46px; font: 500 30px/1 var(--f-mono); color: var(--c-bone); letter-spacing: 0.06em; }
+.s-today__txt { position: absolute; left: 150px; top: 36px; font: 500 58px/1.1 var(--f-display); letter-spacing: -0.01em; }
+.s-today__tag { position: absolute; right: 0; top: 56px; }
+.s-today__play { left: 96px; top: 328px; width: 6px; height: 96px; background: var(--c-bone); display: block; }

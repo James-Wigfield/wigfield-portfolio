@@ -48,6 +48,15 @@ const memories = (page) => (
   </Suspense>
 );
 
+// Courtney's slides: a public, unlisted motion-graphics talk deck (src/courtney-slides/).
+const CourtneySlides = lazy(() => import('./courtney-slides/CourtneySlides.jsx'));
+const slidesGround = <div style={{ position: 'fixed', inset: 0, background: '#1b1d21' }} />;
+const courtneySlides = (
+  <Suspense fallback={slidesGround}>
+    <CourtneySlides />
+  </Suspense>
+);
+
 function Portfolio() {
   // Tag <html> while the home route is mounted so home.css can override the
   // global cyberpunk scrollbar (index.css) for the Reading Room only.
@@ -78,6 +87,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Portfolio />} />
+      {/* Public, unlisted (noindex) talk deck - see src/courtney-slides/CourtneySlides.jsx */}
+      <Route path="/courtney-slides" element={courtneySlides} />
+      <Route path="/courtneyslides" element={courtneySlides} />
       {/* Public party page — intentionally NOT behind the PinGate that protects /hub and /games */}
       <Route path="/olympics" element={<Olympics />} />
       <Route path="/hub" element={<Hub />} />

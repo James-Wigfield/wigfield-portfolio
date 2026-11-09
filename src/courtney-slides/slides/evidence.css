@@ -1,0 +1,118 @@
+/* Chapters 5–6 — Evidence & ideas, Close (slides 15–20). Canvas px; finished frames. */
+
+/* ── 15. Mechanism ─────────────────────────────────────────────────────── */
+.s-mc__svg { left: 0; top: 0; }
+.cs .s-mc__blk { stroke: var(--bone-edge); stroke-width: 3; }
+.cs .s-mc__lam { fill: none; stroke: var(--bone-edge); stroke-width: 1.5; opacity: 0.4; }
+.cs .s-mc__dend { stroke: #7fb0d6; stroke-width: 2; }
+.cs .s-mc__cyte { fill: var(--c-bone); stroke: var(--paper); stroke-width: 2; }
+.cs .s-mc__new { fill: var(--c-bone-soft); stroke: var(--c-bone); stroke-width: 2; }
+.cs .s-mc__obl { fill: var(--c-bone); stroke: var(--paper); stroke-width: 3; }
+.cs .s-mc__load path { fill: none; stroke: var(--c-bone); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-mc__tag { font: 600 28px/1 var(--f-mono); fill: var(--c-bone); }
+.s-mc__step { left: 600px; width: 470px; height: 130px; }
+.s-mc__step > * { position: absolute; }
+.cs .s-mc__sn { left: 0; top: 4px; font: 600 26px/1 var(--f-mono); color: var(--c-bone); }
+.s-mc__st { left: 44px; right: 0; top: 0; font: 500 32px/1.2 var(--f-display); }
+.s-mc__kind { left: 1180px; right: 112px; }
+.s-mc__kind > * { position: relative; }
+.s-mc__krule { display: block; height: 3px; background: var(--ink); }
+.cs .s-mc__kh { margin-top: 16px; font: 600 34px/1.1 var(--f-display); }
+.cs .s-mc__kt { margin-top: 10px; font: 400 25px/1.3 var(--f-body); color: var(--ink-2); }
+.cs .s-mc__bone { fill: var(--bone-2); stroke: var(--bone-edge); stroke-width: 3; }
+.cs .s-mc__muscle { fill: #d79b8f; stroke: #a85e50; stroke-width: 3; }
+.cs .s-mc__tendon { stroke: #a8987a; stroke-width: 6; stroke-linecap: round; fill: none; }
+.cs .s-mc__pull path { fill: none; stroke: var(--c-bone); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-mc__axis { fill: none; stroke: var(--ink-2); stroke-width: 2.5; }
+.cs .s-mc__walk { fill: none; stroke: var(--muted); stroke-width: 4; stroke-dasharray: 8 6; }
+.cs .s-mc__impact { fill: none; stroke: var(--c-bone); stroke-width: 5; stroke-linejoin: round; }
+.cs .s-mc__ax { font: 500 18px/1 var(--f-mono); fill: var(--muted); }
+.s-mc__legend { left: 1180px; top: 1004px; display: flex; gap: 10px; align-items: center; }
+.cs .s-mc__legend { font-size: 20px; }
+.s-mc__lw, .s-mc__li { display: inline-block; width: 34px; height: 0; border-top: 4px dashed var(--muted); margin-left: 8px; }
+.s-mc__li { border-top: 5px solid var(--c-bone); }
+
+/* ── 16. Evidence ──────────────────────────────────────────────────────── */
+.s-ev > div[data-who] { inset: 0; pointer-events: none; }
+.s-ev > div[data-who] > * { position: absolute; }
+.s-ev__svg { left: 0; top: 0; }
+.cs .s-ev__ref { stroke: var(--rule-2); stroke-width: 2; stroke-dasharray: 5 7; }
+.cs .s-ev__refl { font: 500 18px/1 var(--f-mono); fill: var(--muted); letter-spacing: 0.06em; }
+.cs .s-ev__zero { stroke: var(--ink); stroke-width: 2.5; }
+.cs .s-ev__axis { stroke: var(--ink-2); stroke-width: 2.5; fill: none; }
+.cs .s-ev__tl { font: 500 20px/1 var(--f-mono); fill: var(--ink-2); }
+.cs .s-ev__axl { font: 500 18px/1 var(--f-mono); fill: var(--muted); letter-spacing: 0.04em; }
+.cs .s-ev__ci { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; fill: none; }
+.cs .s-ev__pt { fill: var(--c-bone); stroke: var(--paper); stroke-width: 3; }
+.cs .s-ev__pt.is-ns { fill: var(--paper); stroke: var(--ink); stroke-width: 3.5; }
+.cs .s-ev__val { font: 600 22px/1 var(--f-mono); fill: var(--ink); }
+.s-ev__study { left: 112px; display: flex; gap: 12px; align-items: center; }
+.s-ev__rl { left: 112px; width: 460px; font: 600 30px/1.2 var(--f-display); }
+.s-ev__pstudy { left: 1280px; top: 380px; }
+.s-ev__prl { left: 1280px; font: 600 23px/1.2 var(--f-display); }
+.s-ev__takerule { left: 1280px; right: 112px; top: 712px; height: 3px; background: var(--ink); display: block; }
+.s-ev__take { left: 1280px; right: 112px; top: 730px; font: 560 34px/1.15 var(--f-display); }
+.s-ev__take2 { left: 1280px; right: 112px; top: 866px; }
+.cs .s-ev__take2 { font-size: 23px; }
+
+/* ── 17. Levers ────────────────────────────────────────────────────────── */
+.s-lv__svg { left: 0; top: 0; }
+.cs .s-lv__ghost { fill: none; stroke: var(--c-risk); stroke-width: 2.5; stroke-dasharray: 9 8; opacity: 0.6; }
+.cs .s-lv__risk { fill: rgba(213, 94, 0, 0.16); stroke: var(--c-risk); stroke-width: 4; }
+.cs .s-lv__rt { font: 600 40px/1 var(--f-display); fill: var(--c-risk); }
+.cs .s-lv__ax { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-lv__push path { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-lv__push--move path { stroke: var(--c-move); }
+.cs .s-lv__push--bone path { stroke: var(--c-bone); }
+.s-lv__axl { font: 500 24px/1 var(--f-mono); letter-spacing: 0.06em; color: var(--ink-2); }
+.s-lv__axl--x { left: 300px; top: 924px; }
+.s-lv__axl--y { left: 168px; top: 600px; transform: rotate(-90deg); transform-origin: 0 0; }
+.s-lv__rule { left: 1260px; right: 112px; height: 2px; background: var(--rule-2); display: block; }
+.s-lv__h { left: 1260px; right: 112px; font: 600 38px/1.1 var(--f-display); }
+.cs .s-lv__t { left: 1260px; right: 112px; font: 400 27px/1.3 var(--f-body); color: var(--ink-2); }
+.s-lv__both { left: 1260px; right: 112px; top: 880px; font: 560 40px/1.15 var(--f-display); }
+
+/* ── 18. Additions ─────────────────────────────────────────────────────── */
+.s-ad__svg { left: 0; top: 0; }
+.s-ad__rule { top: 262px; width: 808px; height: 3px; background: var(--ink); display: block; }
+.cs .s-ad__k { top: 282px; font: 500 22px/1 var(--f-mono); }
+.s-ad__h { top: 312px; font: 600 42px/1.05 var(--f-display); }
+.s-ad__list { top: 392px; width: 480px; display: flex; flex-direction: column; gap: 16px; }
+.cs .s-ad__ex { font: 500 27px/1.2 var(--f-body); display: flex; gap: 14px; align-items: baseline; }
+.cs .s-ad__ex .dot { transform: translateY(-2px); }
+.cs .s-ad__ben { left: 112px; width: 460px; top: 700px; font: 400 23px/1.32 var(--f-body); color: var(--muted); }
+.cs .s-ad__brace path { fill: none; stroke: var(--c-bone); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.cs .s-ad__rip { fill: none; stroke: var(--c-bone); stroke-width: 4; opacity: 0; }
+.cs .s-ad__ml { font: 500 18px/1 var(--f-mono); fill: var(--muted); letter-spacing: 0.12em; }
+.cs .s-ad__mt { font: 500 20px/1 var(--f-body); fill: var(--ink-2); }
+.cs .s-ad__mlow { fill: var(--rule-2); }
+.cs .s-ad__mhigh { fill: var(--c-bone); }
+.s-ad__saferule { left: 112px; right: 112px; top: 950px; height: 2px; background: var(--rule-2); display: block; }
+.cs .s-ad__safe { left: 112px; right: 112px; top: 968px; font: 400 25px/1.3 var(--f-body); color: var(--ink); display: flex; gap: 14px; align-items: baseline; }
+
+/* ── 19. Conclusion ────────────────────────────────────────────────────── */
+.s-co__lead { left: 112px; width: 1000px; top: 262px; font: 560 50px/1.12 var(--f-display); letter-spacing: -0.01em; }
+.s-co__have { left: 112px; width: 1060px; top: 388px; display: flex; flex-wrap: wrap; gap: 8px 24px; font: 500 24px/1.2 var(--f-body); color: var(--ink-2); }
+.s-co__hv { display: inline-flex; align-items: center; gap: 10px; }
+.s-co__row { left: 112px; width: 1000px; height: 86px; }
+.s-co__row > * { position: absolute; }
+.s-co__nrule { left: 0; right: 0; top: 0; height: 2px; background: var(--rule); display: block; }
+.cs .s-co__n { left: 0; top: 18px; font: 500 22px/1 var(--f-mono); color: var(--c-bone); }
+.s-co__k { left: 64px; top: 12px; font: 600 30px/1.1 var(--f-display); }
+.cs .s-co__v { left: 64px; top: 50px; font: 400 23px/1.2 var(--f-body); color: var(--ink-2); }
+.cs .s-co__care { left: 112px; width: 1000px; top: 814px; font: 400 23px/1.3 var(--f-body); color: var(--ink-2); display: flex; gap: 12px; align-items: baseline; }
+.s-co__aimrule { left: 112px; width: 1000px; top: 860px; height: 3px; background: var(--ink); display: block; }
+.s-co__aim { left: 112px; width: 1040px; top: 874px; font: 560 34px/1.16 var(--f-display); }
+.s-co__fem { left: 1220px; top: 150px; width: 640px; height: 920px; }
+.s-co__fem > svg { position: absolute; }
+.s-co__thanks { right: 112px; top: 930px; font: 600 72px/1 var(--f-display); letter-spacing: -0.02em; }
+.cs .s-co__thanks { color: var(--c-bone); }
+
+/* ── 20. References ────────────────────────────────────────────────────── */
+.s-rf__list {
+  left: 112px; right: 112px; top: 250px; bottom: 76px; margin: 0; padding: 0;
+  columns: 2; column-gap: 64px; font: 400 17.5px/1.34 var(--f-body); color: var(--ink-2);
+}
+.s-rf__list { list-style: none; }
+.s-rf__list li { break-inside: avoid; margin: 0 0 12px; padding-left: 1.6em; text-indent: -1.6em; word-break: break-word; }
+.s-rf__list li i { font-style: italic; }
