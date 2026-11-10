@@ -360,6 +360,14 @@ const PATHS = {
       <circle cx="16.3" cy="11.4" r="0.7" />
     </>
   ),
+  // Dual monitors — two screens side by side on stands (Dev setup)
+  monitors: (
+    <>
+      <rect x="2.5" y="5" width="9" height="7.5" rx="1.2" />
+      <rect x="12.5" y="5" width="9" height="7.5" rx="1.2" />
+      <path d="M7 12.5v3.5M17 12.5v3.5M4.5 18.5h5M14.5 18.5h5" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 18, strokeWidth = 1.6, className, ...rest }) {

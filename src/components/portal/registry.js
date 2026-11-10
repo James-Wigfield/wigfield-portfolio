@@ -79,6 +79,7 @@ import PortaraMotion from './modules/PortaraMotion';
 import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BaristaGuide from './modules/barista/BaristaGuide';
 import MemoryRoomsPlan from './modules/memory-rooms-plan/MemoryRoomsPlan';
+import DevSetup from './modules/dev-setup/DevSetup';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -397,6 +398,14 @@ export const MODULES = [
     icon: 'cube',
     group: 'Personal',
     component: MemoryRoomsPlan,
+  },
+  {
+    // Home-PC dev workflow plan (layout, start-dev launch, mouse, terminal). Deep-linked: /portal/dev-setup/<tab>.
+    id: 'dev-setup',
+    label: 'Dev Setup · Home PC',
+    icon: 'monitors',
+    group: 'Personal',
+    component: DevSetup,
   },
   {
     id: 'america-first-plan',
