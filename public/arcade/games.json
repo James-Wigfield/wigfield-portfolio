@@ -2,6 +2,21 @@
   "_comment": "The single arcade registry. The cabinet grid at /arcade reads this; the slug must match public/arcade/<slug>/ and the key in workers/arcade/games/index.js.",
   "games": [
     {
+      "slug": "swerve-valley",
+      "title": "Swerve Valley",
+      "tagline": "Five cellar doors. One bus. Nobody is sitting down.",
+      "blurb": "A wine tour on an open-top bus with up to eleven friends, one phone each. One of you drives each leg — round the bends, past the roos, the right way at the fork and onto the line in the car park — while everyone in the back catches bottles, leans into corners and smiles for photos. At every cellar door you pick your pour and play the winery's game. The drunker the bus gets, the harder it is to drive, and the keys always go to whoever is soberest.",
+      "art": "swerve-valley/art/cabinet.png",
+      "players": "1–11",
+      "length": "~8 min",
+      "tags": [
+        "party",
+        "co-op",
+        "driving"
+      ],
+      "status": "live"
+    },
+    {
       "slug": "devils-ivy",
       "title": "Devil's Ivy",
       "tagline": "Two vines, one kitchen. Never stop, only steer — and don't touch a vine.",

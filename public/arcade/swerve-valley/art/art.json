@@ -1,0 +1,116 @@
+{
+  "cast": {
+    "cell": 64,
+    "order": [
+      "mandyh",
+      "doug",
+      "kathy",
+      "david",
+      "john",
+      "kelly",
+      "louise",
+      "nick",
+      "james",
+      "mandyf",
+      "mike"
+    ]
+  },
+  "cast32": {
+    "cell": 32
+  },
+  "sprites": {
+    "bus-rear": {
+      "w": 66,
+      "h": 80
+    },
+    "bus-side": {
+      "w": 143,
+      "h": 57
+    },
+    "roo": {
+      "w": 27,
+      "h": 41
+    },
+    "sheep": {
+      "w": 33,
+      "h": 36
+    },
+    "gum": {
+      "w": 52,
+      "h": 76
+    },
+    "cellar": {
+      "w": 101,
+      "h": 66
+    }
+  },
+  "faces": {
+    "mandyh": {
+      "x": 22,
+      "y": 16,
+      "w": 20,
+      "h": 9
+    },
+    "doug": {
+      "x": 21,
+      "y": 23,
+      "w": 23,
+      "h": 9
+    },
+    "kathy": {
+      "x": 21,
+      "y": 24,
+      "w": 22,
+      "h": 10
+    },
+    "david": {
+      "x": 19,
+      "y": 17,
+      "w": 26,
+      "h": 11
+    },
+    "john": {
+      "x": 19,
+      "y": 22,
+      "w": 21,
+      "h": 9
+    },
+    "kelly": {
+      "x": 18,
+      "y": 19,
+      "w": 26,
+      "h": 11
+    },
+    "louise": {
+      "x": 23,
+      "y": 21,
+      "w": 18,
+      "h": 10
+    },
+    "nick": {
+      "x": 19,
+      "y": 22,
+      "w": 22,
+      "h": 10
+    },
+    "james": {
+      "x": 22,
+      "y": 21,
+      "w": 19,
+      "h": 10
+    },
+    "mandyf": {
+      "x": 17,
+      "y": 23,
+      "w": 24,
+      "h": 11
+    },
+    "mike": {
+      "x": 22,
+      "y": 20,
+      "w": 19,
+      "h": 9
+    }
+  },
+  "_faces": "faces = eyes (top edge) down to cheeks (bottom edge) in 64px cell coords; halve for cast32. Blush goes in the bottom-left / bottom-right quarters."
+}

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Swerve Valley — Wigfield Arcade</title>
+  <meta name="description" content="A wine tour on an open-top bus. Five cellar doors, one designated driver, eleven questionable decisions. A multiplayer pixel-art party game for up to eleven phones." />
+  <meta name="theme-color" content="#1a0f1c" />
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/arcade/shared/arcade.css" />
+  <style>
+    :root {
+      --sv-bg: #1a0f1c;
+      --sv-bg-2: #24142a;
+      --sv-cream: #f6ecd2;
+      --sv-paper: #fff8e7;
+      --sv-wine: #7a1f3d;
+      --sv-wine-2: #a8324f;
+      --sv-ink: #2a1020;
+      --sv-gold: #ffcf5a;
+      --sv-leaf: #6fbf4a;
+      --sv-green: #5fdc8a;
+      --sv-red: #ff5d5d;
+      --sv-sky: #7ec8f2;
+      --sv-shadow: 0 4px 0 var(--sv-ink);
+    }
+    html, body { height: 100%; }
+    body { background: var(--sv-bg); color: var(--sv-cream); }
+    #game[hidden], [hidden] { display: none !important; }
+    canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+    .sv {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 560px;
+      margin: 0 auto;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      background: var(--sv-bg);
+    }
+
+    /* ── header ─────────────────────────────────────────────────────────── */
+    .sv-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #b9a5b6;
+      background: #120a14;
+      border-bottom: 2px solid #000;
+      flex: 0 0 auto;
+      z-index: 5;
+    }
+    .sv-head a { color: #b9a5b6; text-decoration: none; }
+    .sv-head .sv-spacer { flex: 1; }
+    .sv-hbtn {
+      appearance: none; background: none; border: 0; padding: 12px 6px; margin: -8px 0;
+      color: #d9c8d6; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer;
+    }
+    .sv-code { font-family: var(--ar-display); font-size: 10px; color: var(--sv-gold); }
+    .sv-me { display: flex; align-items: center; gap: 6px; }
+    .sv-me canvas { width: 22px; height: 22px; border: 2px solid #000; background: #3a2340; }
+    .sv-me b { font-family: var(--ar-display); font-size: 8px; color: var(--sv-cream); font-weight: normal; }
+    .sv-tier { font-size: 9px; color: var(--sv-gold); }
+
+    /* ── shared bits ────────────────────────────────────────────────────── */
+    .sv-screen { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .sv-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px calc(24px + env(safe-area-inset-bottom)); }
+    .sv-h1 { font-family: var(--ar-display); font-size: 18px; line-height: 1.35; color: var(--sv-gold); margin: 6px 0 8px; text-shadow: 0 3px 0 #000; }
+    .sv-h2 { font-family: var(--ar-display); font-size: 12px; line-height: 1.5; color: var(--sv-cream); margin: 18px 0 10px; }
+    .sv-p { font-size: 13px; line-height: 1.55; color: #e9dce6; margin: 0 0 10px; }
+    .sv-dim { color: #a993a6; }
+    .sv-btn {
+      appearance: none; display: block; width: 100%;
+      font-family: var(--ar-display); font-size: 12px; letter-spacing: 0.04em;
+      padding: 16px 14px; margin: 14px 0 6px;
+      color: var(--sv-ink); background: var(--sv-gold);
+      border: 3px solid var(--sv-ink); border-radius: 0;
+      box-shadow: var(--sv-shadow); cursor: pointer;
+    }
+    .sv-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--sv-ink); }
+    .sv-btn:disabled { opacity: 0.45; }
+    .sv-btn--ghost { background: var(--sv-cream); }
+    .sv-paper {
+      background: var(--sv-cream); color: var(--sv-ink);
+      border: 3px solid var(--sv-ink); box-shadow: var(--sv-shadow);
+      padding: 12px;
+    }
+    .sv-paper .sv-p { color: #3b2230; }
+    .sv-rule { border: 0; border-top: 2px dashed rgba(246, 236, 210, 0.2); margin: 16px 0; }
+    .sv-stars { font-family: var(--ar-display); color: var(--sv-gold); letter-spacing: 2px; }
+    .sv-stars i { font-style: normal; color: rgba(255, 207, 90, 0.25); }
+
+    /* ── lobby ──────────────────────────────────────────────────────────── */
+    .sv-room {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; background: var(--sv-bg-2); border: 2px solid #000; margin-bottom: 12px;
+    }
+    .sv-room b { font-family: var(--ar-display); font-size: 18px; color: var(--sv-gold); letter-spacing: 0.12em; }
+    .sv-room small { display: block; font-size: 10px; color: #a993a6; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+    .sv-room .sv-btn { width: auto; margin: 0; padding: 10px 12px; font-size: 9px; }
+    .sv-cast {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px;
+    }
+    .sv-card {
+      appearance: none; position: relative; text-align: center; cursor: pointer;
+      background: var(--sv-cream); color: var(--sv-ink);
+      border: 3px solid var(--sv-ink); box-shadow: var(--sv-shadow);
+      padding: 6px 4px 7px; font: inherit;
+    }
+    .sv-card canvas { display: block; width: 64px; height: 64px; margin: 0 auto 4px; }
+    .sv-card b { display: block; font-family: var(--ar-display); font-size: 8px; line-height: 1.4; }
+    .sv-card small { display: block; font-size: 10px; margin-top: 3px; color: #7a5a6c; min-height: 12px; }
+    .sv-card[data-state="mine"] { background: var(--sv-gold); }
+    .sv-card[data-state="mine"] small { color: var(--sv-ink); font-weight: bold; }
+    .sv-card[data-state="taken"] { background: #c9b7c3; cursor: default; }
+    .sv-card[data-state="taken"] canvas { filter: grayscale(0.6); }
+    .sv-card[data-state="away"] { background: #e7dcc4; }
+    .sv-card:active:not([data-state="taken"]) { transform: translateY(3px); box-shadow: 0 1px 0 var(--sv-ink); }
+    .sv-how { margin: 4px 0 0; padding: 0; list-style: none; }
+    .sv-how li { position: relative; padding: 8px 0 8px 22px; font-size: 13px; line-height: 1.5; color: #e9dce6; border-bottom: 1px dashed rgba(246, 236, 210, 0.15); }
+    .sv-how li::before { content: ""; position: absolute; left: 4px; top: 14px; width: 8px; height: 8px; background: var(--sv-gold); }
+    .sv-how li:nth-child(2)::before { background: var(--sv-leaf); }
+    .sv-how li:nth-child(3)::before { background: var(--sv-wine-2); }
+    .sv-how li:nth-child(4)::before { background: var(--sv-sky); }
+
+    /* ── brief / arrive / tally (story screens) ─────────────────────────── */
+    .sv-story { text-align: center; }
+    .sv-story .sv-h1 { font-size: 16px; }
+    .sv-scene { position: relative; margin: 6px -14px 12px; background: linear-gradient(#f7b878, #f9e1a8 60%, #7bb04a 60%); height: 150px; overflow: hidden; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+    .sv-scene img { position: absolute; image-rendering: pixelated; }
+    .sv-scene .sv-cellar { left: 8%; bottom: 16px; width: 202px; }
+    .sv-scene .sv-busside { right: 6%; bottom: 10px; width: 216px; }
+    .sv-scene .sv-road { position: absolute; left: 0; right: 0; bottom: 0; height: 16px; background: #5a5653; border-top: 3px solid #a0603a; }
+    .sv-busrow { margin: 0 -14px 12px; background: #000; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+    .sv-busrow canvas { display: block; width: 100%; height: auto; }
+    .sv-countdown {
+      position: sticky; bottom: calc(-24px - env(safe-area-inset-bottom)); margin: 8px -14px 0; padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+      background: var(--sv-bg); border-top: 2px solid #000;
+      font-family: var(--ar-display); font-size: 11px; color: var(--sv-gold);
+    }
+    .sv-keys {
+      display: flex; align-items: center; gap: 12px; text-align: left;
+      margin: 12px 0; padding: 10px 12px; background: var(--sv-bg-2); border: 2px solid #000;
+    }
+    .sv-keys canvas { width: 64px; height: 64px; border: 3px solid var(--sv-gold); background: #3a2340; flex: 0 0 auto; }
+    .sv-keys b { display: block; font-family: var(--ar-display); font-size: 11px; color: var(--sv-gold); line-height: 1.5; }
+    .sv-keys span { font-size: 12px; color: #d9c8d6; line-height: 1.45; }
+    .sv-itin { list-style: none; padding: 0; margin: 10px 0; text-align: left; }
+    .sv-itin li { display: flex; align-items: baseline; gap: 10px; padding: 7px 0; border-bottom: 1px dashed rgba(246, 236, 210, 0.15); font-size: 13px; }
+    .sv-itin li i { font-style: normal; font-family: var(--ar-display); font-size: 9px; color: var(--sv-gold); width: 64px; flex: 0 0 auto; }
+    .sv-itin li .sv-dot { width: 8px; height: 8px; flex: 0 0 auto; }
+    .sv-result { font-family: var(--ar-display); font-size: 20px; line-height: 1.35; margin: 10px 0; text-shadow: 0 3px 0 #000; }
+    .sv-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 8px 0; font-size: 12px; color: #e9dce6; }
+    .sv-chips span { display: inline-flex; align-items: center; gap: 6px; }
+    .sv-chips span::before { content: ""; width: 8px; height: 8px; background: var(--c, var(--sv-gold)); }
+    .sv-podium { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin: 14px 0 6px; }
+    .sv-podium div { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 92px; }
+    .sv-podium canvas { width: 64px; height: 64px; }
+    .sv-podium b { font-family: var(--ar-display); font-size: 8px; line-height: 1.4; }
+    .sv-podium em { display: block; width: 100%; background: var(--sv-wine); border: 3px solid #000; font-style: normal; font-family: var(--ar-display); font-size: 12px; color: var(--sv-gold); padding: 6px 0; }
+    .sv-podium div:nth-child(1) em { height: 48px; }
+    .sv-podium div:nth-child(2) em { height: 72px; background: var(--sv-wine-2); }
+    .sv-podium div:nth-child(3) em { height: 36px; }
+    .sv-party { display: grid; grid-template-columns: repeat(11, 1fr); gap: 3px; margin: 10px 0; align-items: end; }
+    .sv-party div { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .sv-party canvas { width: 100%; max-width: 32px; height: auto; }
+    .sv-bar { width: 8px; height: 46px; background: #3a2340; border: 1px solid #000; position: relative; }
+    .sv-bar i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(var(--sv-wine-2), var(--sv-wine)); }
+    .sv-party small { font-size: 9px; color: #c7b3c3; }
+
+    /* ── drive ──────────────────────────────────────────────────────────── */
+    .sv-drive { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .sv-roadwrap { position: relative; flex: 0 0 38%; min-height: 0; background: #000; overflow: hidden; }
+    .sv-drive.is-driver .sv-roadwrap { flex: 1 1 auto; }
+    #road { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .sv-buswrap { flex: 0 0 auto; background: #000; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+    .sv-buswrap canvas { display: block; width: 100%; height: auto; }
+    .sv-drive.is-driver .sv-buswrap { display: none; }
+    #jobs { position: relative; flex: 1 1 auto; min-height: 0; }
+    .sv-drive.is-driver #jobs { display: none; }
+    .sv-hud { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; gap: 6px; padding: 6px 8px; pointer-events: none; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .sv-hud > div { background: rgba(18, 10, 20, 0.72); border: 2px solid #000; padding: 4px 6px; line-height: 1.5; }
+    .sv-hud b { font-family: var(--ar-display); font-size: 8px; color: var(--sv-gold); font-weight: normal; }
+    .sv-hud .sv-stars { font-size: 9px; }
+    .sv-fork {
+      position: absolute; left: 50%; top: 42px; transform: translateX(-50%);
+      display: flex; gap: 0; background: #1e6b3a; border: 3px solid #fff; outline: 2px solid #000; box-shadow: 0 4px 0 #000;
+      font-family: var(--ar-display); font-size: 11px; color: #fff; line-height: 1.45; pointer-events: none;
+      max-width: calc(100% - 12px);
+    }
+    .sv-fork span { padding: 8px 10px; flex: 1 1 50%; text-align: center; }
+    .sv-fork span + span { border-left: 2px solid #fff; }
+    .sv-prompt {
+      position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+      font-family: var(--ar-display); font-size: 13px; color: #fff; text-shadow: 0 3px 0 #000, 0 0 8px #000;
+      pointer-events: none; text-align: center; white-space: nowrap; animation: sv-pulse 0.7s steps(2) infinite;
+    }
+    .sv-prompt[data-top="1"] { bottom: auto; top: 46px; animation: none; background: rgba(18, 10, 20, 0.78); border: 2px solid #000; padding: 6px 10px; }
+    .sv-prompt small { display: block; font-family: var(--ar-mono); font-size: 11px; margin-top: 6px; animation: none; }
+    @keyframes sv-pulse { 50% { opacity: 0.55; } }
+    .sv-nav {
+      position: absolute; left: 8px; right: 8px; bottom: 8px; pointer-events: none;
+      background: var(--sv-paper); color: var(--sv-ink); border: 3px solid var(--sv-ink); box-shadow: var(--sv-shadow);
+      padding: 6px 8px; font-size: 11px; line-height: 1.4; display: flex; gap: 8px; align-items: center;
+    }
+    .sv-nav b { font-family: var(--ar-display); font-size: 9px; color: var(--sv-wine); }
+    .sv-nav[data-hot="1"] { background: var(--sv-gold); animation: sv-pulse 0.6s steps(2) infinite; }
+    .sv-wrong {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      background: rgba(10, 4, 16, 0.82); font-family: var(--ar-display); font-size: 16px; color: var(--sv-gold); text-align: center; line-height: 1.5;
+    }
+    .sv-wrong small { font-family: var(--ar-mono); font-size: 12px; color: #fff; }
+    .sv-controls {
+      flex: 0 0 auto; display: grid; grid-template-columns: 1fr 108px; grid-template-rows: auto auto; gap: 8px;
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); background: #120a14; border-top: 2px solid #000;
+    }
+    .sv-drive.is-passenger .sv-controls { display: none; }
+    .sv-pad {
+      grid-row: 1 / span 2; position: relative; min-height: 132px; touch-action: none;
+      background: repeating-linear-gradient(90deg, #24142a 0 10px, #2a1830 10px 20px); border: 3px solid #000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sv-pad canvas { width: 104px; height: 104px; pointer-events: none; }
+    .sv-pad small { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center; font-size: 9px; color: #8f7a8c; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
+    .sv-ctl {
+      appearance: none; touch-action: none; font-family: var(--ar-display); font-size: 11px; color: #fff;
+      border: 3px solid #000; box-shadow: var(--sv-shadow); cursor: pointer; padding: 0; min-height: 62px;
+    }
+    .sv-ctl:active, .sv-ctl[data-on="1"] { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+    .sv-brake { background: #c8322f; }
+    .sv-brake[data-hot="1"] { animation: sv-pulse 0.4s steps(2) infinite; background: #ff3b30; }
+    .sv-horn { background: #3d6fb6; font-size: 9px; }
+    .sv-wipe { position: absolute; right: 10px; bottom: 10px; z-index: 3; background: var(--sv-sky); color: var(--sv-ink); padding: 0 14px; min-height: 48px; animation: sv-pulse 0.5s steps(2) infinite; }
+
+    /* ── toasts ─────────────────────────────────────────────────────────── */
+    .sv-toasts { position: absolute; left: 8px; right: 8px; top: 40px; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+    .sv-toasts.is-driving { top: 96px; }
+    .sv-toasts.is-driving .sv-toast:not(:last-child) { display: none; }
+    .sv-toast {
+      max-width: 100%; background: var(--sv-paper); color: var(--sv-ink); border: 3px solid var(--sv-ink); box-shadow: var(--sv-shadow);
+      padding: 6px 10px; font-size: 12px; line-height: 1.4; display: flex; align-items: center; gap: 8px;
+      animation: sv-in 0.18s steps(3);
+    }
+    .sv-toast canvas { width: 28px; height: 28px; flex: 0 0 auto; }
+    .sv-toast b { font-family: var(--ar-display); font-size: 9px; }
+    .sv-toast[data-tone="bad"] { background: #ffd6d6; }
+    .sv-toast[data-tone="good"] { background: #d9f7e2; }
+    .sv-toast[data-tone="big"] { background: var(--sv-gold); font-size: 13px; }
+    @keyframes sv-in { from { transform: translateY(-8px); opacity: 0; } }
+
+    /* ── stops + pick overlay ───────────────────────────────────────────── */
+    #stops { position: relative; flex: 1; min-height: 0; }
+    .sv-overlay { position: absolute; inset: 0; z-index: 30; background: rgba(18, 10, 20, 0.96); overflow-y: auto; }
+
+    /* ── ending ─────────────────────────────────────────────────────────── */
+    .sv-ending .sv-h1 { font-size: 17px; }
+    .sv-awards { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .sv-award { display: flex; gap: 10px; align-items: center; background: var(--sv-bg-2); border: 2px solid #000; padding: 6px 8px; }
+    .sv-award canvas { width: 48px; height: 48px; flex: 0 0 auto; background: #3a2340; }
+    .sv-award b { display: block; font-family: var(--ar-display); font-size: 9px; color: var(--sv-gold); line-height: 1.5; }
+    .sv-award span { font-size: 12px; color: #e9dce6; line-height: 1.4; }
+    .sv-award small { display: block; font-size: 10px; color: #a993a6; text-transform: uppercase; letter-spacing: 0.08em; }
+    .sv-award[data-me="1"] { background: var(--sv-cream); }
+    .sv-award[data-me="1"] span, .sv-award[data-me="1"] small { color: var(--sv-ink); }
+    .sv-award[data-me="1"] b { color: var(--sv-wine); }
+    .sv-album { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 8px; }
+    .sv-polaroid { background: #fffdf6; padding: 8px 8px 10px; border: 2px solid #000; box-shadow: 0 4px 0 #000; transform: rotate(var(--r, 0deg)); }
+    .sv-polaroid canvas { display: block; width: 100%; height: auto; }
+    .sv-polaroid p { margin: 8px 2px 0; font-size: 12px; color: #3b2230; line-height: 1.4; }
+    .sv-rank { list-style: none; padding: 0; margin: 0; counter-reset: r; }
+    .sv-rank li { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px dashed rgba(246, 236, 210, 0.15); font-size: 13px; counter-increment: r; }
+    .sv-rank li::before { content: counter(r); font-family: var(--ar-display); font-size: 9px; color: var(--sv-gold); width: 22px; }
+    .sv-rank canvas { width: 28px; height: 28px; }
+    .sv-rank em { margin-left: auto; font-style: normal; font-family: var(--ar-display); font-size: 9px; color: var(--sv-gold); }
+    .sv-rank li[data-h="1"] { color: #fff; font-weight: bold; }
+
+    /* ── tipsy screen ───────────────────────────────────────────────────── */
+    .sv-sway { animation: sv-sway var(--sway-s, 4s) ease-in-out infinite; transform-origin: 50% 60%; }
+    @keyframes sv-sway {
+      0%, 100% { transform: rotate(calc(var(--sway, 0deg) * -1)) translateX(calc(var(--swayx, 0px) * -1)); }
+      50% { transform: rotate(var(--sway, 0deg)) translateX(var(--swayx, 0px)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sv-sway { animation: none; }
+      .sv-prompt, .sv-nav[data-hot="1"], .sv-brake[data-hot="1"], .sv-wipe { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gate"></div>
+
+  <div id="game" class="sv" hidden>
+    <header class="sv-head">
+      <a href="/arcade/">&larr; Arcade</a>
+      <span class="sv-code" id="code"></span>
+      <button class="sv-hbtn" id="share" type="button">Share</button>
+      <span class="sv-spacer"></span>
+      <span class="sv-me" id="me-chip" hidden><canvas width="32" height="32"></canvas><span><b id="me-name"></b><br /><span class="sv-tier" id="me-tier"></span></span></span>
+      <button class="sv-hbtn" id="sound" type="button" aria-label="Sound">Sound on</button>
+    </header>
+
+    <div class="sv-screen" id="stage">
+      <div class="sv-toasts" id="toasts" aria-live="polite"></div>
+
+      <!-- lobby -->
+      <section class="sv-screen sv-scroll" id="sc-lobby" hidden></section>
+
+      <!-- brief / arrive / tally / ending: story screens -->
+      <section class="sv-screen sv-scroll sv-story" id="sc-story" hidden></section>
+
+      <!-- drive -->
+      <section class="sv-drive" id="sc-drive" hidden>
+        <div class="sv-roadwrap" id="roadwrap">
+          <canvas id="road"></canvas>
+          <div class="sv-hud" id="hud"></div>
+          <div class="sv-fork" id="fork" hidden></div>
+          <div class="sv-prompt" id="prompt" hidden></div>
+          <div class="sv-nav" id="nav" hidden></div>
+          <button class="sv-ctl sv-wipe" id="wipe" type="button" hidden>WIPE</button>
+          <div class="sv-wrong" id="wrong" hidden></div>
+        </div>
+        <div class="sv-buswrap"><canvas id="bus"></canvas></div>
+        <div id="jobs"></div>
+        <div class="sv-controls">
+          <div class="sv-pad" id="pad"><canvas id="wheel" width="52" height="52"></canvas><small>Drag left / right to steer</small></div>
+          <button class="sv-ctl sv-brake" id="brake" type="button">BRAKE</button>
+          <button class="sv-ctl sv-horn" id="horn" type="button">HORN</button>
+        </div>
+      </section>
+
+      <!-- winery stops (stops.js owns this) -->
+      <section class="sv-screen" id="sc-stops" hidden><div id="stops"></div></section>
+
+      <div class="sv-overlay" id="pick" hidden></div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

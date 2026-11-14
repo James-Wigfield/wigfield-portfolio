@@ -201,6 +201,7 @@ export class ArcadeRoom {
     } catch {
       return;
     }
+    if (!msg || typeof msg !== 'object') return;
 
     const att = ws.deserializeAttachment();
     if (!att) return;
@@ -284,6 +285,9 @@ export class ArcadeRoom {
       else next = rules.action(state, ctx) ?? state;
     } catch (err) {
       console.error('arcade rules error', this.get('slug'), kind, err);
+      // Re-arm soon rather than letting alarm() fall back to the six-hour
+      // expiry: one bad tick must not freeze the room for good.
+      this.schedule(Date.now() + 2000);
       return;
     }
 
