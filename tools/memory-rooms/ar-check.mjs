@@ -693,7 +693,9 @@ async function androidFail(spot) {
   const scales = await page.$$eval(sel('ar-start'), (bs) => bs.map((b) => b.dataset.scale).join());
   record(`${label}: the WebXR buttons show (tabletop, life), enabled once the room has loaded`, enabled && scales === 'tabletop,life', scales);
   const l0 = loaded(page);
-  record(`${label}: before a start only the AR entry chunk has loaded`, l0.entry && !l0.usdz && !l0.xr && !l0.qr, loadedStr(l0));
+  // xr.js is fetched with the WebXR panel on purpose: requestSession must run inside the tap's user
+  // activation, which a slow chunk download after the tap could outlast (DECISIONS 79)
+  record(`${label}: with the panel open, the entry and xr chunks have loaded, never usdz or the QR code`, l0.entry && l0.xr && !l0.usdz && !l0.qr, loadedStr(l0));
   await page.$eval(sel('ar'), (el) => el.scrollIntoView({ block: 'center' }));
   await wait(300);
   await shot(page, `ar-xr-390-${tag}`);

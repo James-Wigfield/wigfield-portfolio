@@ -5,10 +5,11 @@ Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password)
 
 | Route | Screen |
 |---|---|
-| `/memories` | map + list of spots, filter by person and status, outbox status |
+| `/memories` | map + list of spots, filter by person and status, outbox status; **Play the trip** (`?play=1`): the globe flies through every spot in capture order, drawing the route, standing rendered rooms up in 3D |
 | `/memories/new` | capture, phone first: kind + name → photos (shot guide) → the memory → location → save to the outbox |
-| `/memories/:spotId` | the spot: 3D viewer (Model ⇄ Scan), photo strip, note, photo viewpoints with a photo/model blend |
+| `/memories/:spotId` | the spot: 3D viewer (Model ⇄ Scan), photo strip, note, photo viewpoints with a photo/model blend; **Walk in** (+ who's in the room now) and **See it in your space** (AR: Quick Look on iPhone, WebXR on Android, a QR code on a desktop; `?ar=1` opens it) |
 | `/memories/:spotId/edit` | fix its details after capture: the place (pin / GPS / typed, + its name), name, note, captured day, who saved it; kind + size until it has a 3D room. One PATCH with `ifUpdatedAt` (409 → reload theirs under yours); needs signal, the typed draft waits in sessionStorage |
+| `/memories/:spotId/walk` | walk the 3D room as your pixel character, together with whoever else is in it (a Durable Object per spot): WASD / joystick, photo marks that blend into the real photo, sit, wave, jump, chat |
 | `/memories/group/:group` | every room of one building, assembled in its shared frame |
 
 ## Where things are
@@ -29,12 +30,21 @@ src/memory-rooms/
                          models.js / useModels.js / models3d.js: past zoom 15 the rendered spots on screen
                          stand as live 3D dioramas, one three.js custom layer in the map's own context (lazy)
     Atlas*.jsx, geo.js   the SVG atlas fallback (d3-geo + topojson, atlas.json built by tools/memory-rooms/build-atlas.mjs)
+    flyover/             "Play the trip": plan.js (stops + great-circle route), useFlyover.js (the state machine),
+                         FlyoverOverlay.jsx (caption + bar), useFlyoverAtlas.js; the globe's driver is
+                         mapbox/useFlyoverMapbox.js (a line layer on the same map)
   capture/               the capture flow, photo resizing, IndexedDB outbox, geolocation
                          LocationPicker.jsx: the location picker, shared by capture (step 4) and the edit page
   viewer/                plain three.js viewer (GLTFLoader, OrbitControls, Spark) + its thin React wrapper
+  ar/                    "See it in your space": ArEntry.jsx (lazy), usdz.js (Quick Look file made in the browser),
+                         xr.js (WebXR inside the viewer), qr.js (the desktop's QR code)
+  walk/                  walking in together: WalkGame.js (plain three.js), grid.js (walkable grid from the GLB +
+                         A*), net.js (the room's socket), characters.js (THE file to swap a character) +
+                         characters/ (PixelLab sheets), WalkEntry.jsx (the spot page's Walk in)
   pages/                 one component per route
     edit/                the edit page's parts: form.js (diff → PATCH, merge on reload), draft.js, EditPlace.jsx
 workers/memory-rooms.js  the /api/memories routes, R2 files, local or Supabase row store
+workers/memory-walk.js   MemoryWalkRoom, the Durable Object behind walking in together (one per spot)
 supabase/memory_rooms.sql
 tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test (see its README)
 .claude/skills/memory-render/SKILL.md   "render spot X"

@@ -22,6 +22,8 @@
                until "Change location", then 1; offline; ?map=atlas; two phones (409); leaving asks
                (page-check-edit.mjs; it puts every spot it edits back)
      console   zero console errors and zero page errors on every screen
+     extras    then ar-check, fly-check, walk-check and walk-mp-check as their own processes (logs in
+               _page-check/<name>-<scheme>.log); --no-extras skips them, --python goes to ar-check
    Screenshots → memory-rooms-work/_page-check/. Exit 1 if anything fails.
    Needs at least one rendered spot with a model (seed-dev.mjs --examples-only gives two). */
 
@@ -710,6 +712,35 @@ for (const width of [1440, 390]) {
 await editWalk({ browser, base, api, open, record, shot, sel, wait, noErrors, idle, loads, atlasDrawn, jump, modelsSettled, OUT, scheme });
 
 await browser.close();
+
+// ── the night's features, each its own focused check (run here so page-check covers every section) ──
+// ar-check (AR), fly-check (the flyover), walk-check + walk-mp-check (walking in, alone and together).
+// --no-extras skips them; --python <usd-core 25.8 python> is passed to ar-check for usdchecker.
+if (!args.includes('--no-extras')) {
+  const { spawnSync } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const extra = [
+    ['ar-check.mjs', args.includes('--python') ? ['--python', opt('--python')] : []],
+    ['fly-check.mjs', []],
+    ['walk-check.mjs', []],
+    ['walk-mp-check.mjs', []],
+  ];
+  for (const [file, more] of extra) {
+    const script = path.join(here, file);
+    if (!fs.existsSync(script)) {
+      record(`${file}: present`, false, 'missing');
+      continue;
+    }
+    const run = spawnSync(process.execPath, [script, '--base', base, ...(scheme === 'dark' ? ['--dark'] : []), ...more], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, MEMORIES_API: base } });
+    const out = `${run.stdout || ''}${run.stderr || ''}`;
+    const pass = (out.match(/^✓/gm) || []).length;
+    const fails = out.split(/\r?\n/).filter((l) => l.startsWith('✗'));
+    fs.writeFileSync(path.join(OUT, `${file.replace(/\.mjs$/, '')}-${scheme}.log`), out);
+    record(`${file}: ${pass} passed, ${fails.length} failed`, run.status === 0 && fails.length === 0, fails.slice(0, 3).join(' | ') || (run.status ? `exit ${run.status}` : ''));
+  }
+}
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed (${scheme}${mapstyle ? `, ${mapstyle}` : ''}). Screenshots: ${OUT}`);
 process.exit(failed.length ? 1 : 0);

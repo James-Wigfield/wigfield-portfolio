@@ -177,6 +177,28 @@ ok(!(await api.listSpots()).some((s) => s.id === id), 'a deleted spot leaves the
 ok((await api.listSpots({ deleted: true })).some((s) => s.id === id && s.deletedAt), '?deleted=1 still shows it');
 await api.restoreSpot(id);
 ok((await api.listSpots()).some((s) => s.id === id), 'restore brings it back');
+
+// ── walk in together (ticket + presence + the socket's door; the room itself: walk-mp-check.mjs) ──
+const auth = { authorization: `Bearer ${cfg.token}`, 'content-type': 'application/json' };
+const walkPost = (sid, body, headers = auth) => raw(`/api/memories/spots/${sid}/walk`, { method: 'POST', headers, body: JSON.stringify(body) });
+ok((await walkPost(id, { who: 'james' }, { 'content-type': 'application/json' })).status === 401, 'a walk ticket without the password is 401');
+ok((await walkPost(id, { who: 'bob' })).status === 400, 'a walk ticket for someone who is not James or Justin is 400');
+ok((await walkPost('00000000-0000-4000-8000-000000000000', { who: 'james' })).status === 404, 'a walk ticket for a spot that does not exist is 404');
+const ticketRes = await walkPost(id, { who: 'justin' });
+const ticket = (await ticketRes.json()).data;
+ok(ticketRes.status === 200 && /^[0-9a-f-]{36}\.justin\.\d+\.[\w-]+$/.test(ticket?.ticket || '') && ticket.socket?.startsWith('/api/memories/walk/ws?t='), 'a walk ticket: <spot>.<who>.<exp>.<sig> and its socket path', JSON.stringify(ticket));
+ok(Date.parse(ticket.expiresAt) - Date.now() <= 121000 && Date.parse(ticket.expiresAt) > Date.now(), 'the ticket expires within 2 minutes');
+const presence = await raw(`/api/memories/spots/${id}/walk`, { headers: auth });
+const presenceBody = await presence.json();
+ok(presence.status === 200 && Array.isArray(presenceBody.data?.people), 'presence answers { people: [] }', JSON.stringify(presenceBody));
+ok((await raw(`/api/memories/spots/${id}/walk`)).status === 401, 'presence without the password is 401');
+ok((await raw('/api/memories/walk/ws')).status === 401, 'the walk socket without a ticket is 401');
+ok((await raw('/api/memories/walk/ws?t=nope')).status === 403, 'the walk socket with a bad ticket is 403');
+const [tSpot, tWho, tExp, tSig] = ticket.ticket.split('.');
+ok((await raw(`/api/memories/walk/ws?t=${encodeURIComponent(`${tSpot}.james.${tExp}.${tSig}`)}`)).status === 403, 'a ticket with its person swapped is 403');
+ok((await raw(`/api/memories/walk/ws?t=${encodeURIComponent(`${tSpot}.${tWho}.${Number(tExp) + 600}.${tSig}`)}`)).status === 403, 'a ticket with its expiry pushed back is 403');
+ok((await raw(ticket.socket)).status === 426, 'a good ticket without a WebSocket upgrade is 426');
+
 await api.deleteSpot(id);
 
 console.log(`\n${passed} checks passed against ${cfg.base} (${ping.rowStore} row store).`);
