@@ -1,6 +1,6 @@
 /* ALL user-facing text for Memory Rooms lives here (one file, so a tone pass
    touches nothing else). Components import COPY and never hard-code strings.
-   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, group. */
+   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, ar, group. */
 
 export const COPY = {
   app: {
@@ -327,6 +327,32 @@ export const COPY = {
     camTag: (n) => `Photo ${n}`,
     thumbCaption: (n) => `Photo ${n}`,
   },
+  // ── the spot page's "See it in your space" (ar/) ──────────────────────────
+  ar: {
+    open: 'See it in your space',
+    close: 'Close',
+    title: 'In your space',
+    tabletop: 'Tabletop',
+    tabletopHint: 'A 1:20 model on a table, roof off',
+    life: 'Life size',
+    lifeHint: 'The room at 1:1, so you can stand in it',
+    quickLookLabel: (scale, title) => `See ${title} ${scale === 'life' ? 'at life size' : 'on a table'} in AR`,
+    preparing: 'Preparing the 3D file…',
+    prepareFailed: "Couldn't prepare the 3D file. Try again.",
+    waiting: 'Waiting for the room to finish loading…',
+    qrLine: 'Scan this with your phone to see the room in your space.',
+    qrLabel: (title) => `QR code that opens ${title} on a phone`,
+    noAr: "This phone can't place 3D rooms in the space around it.",
+    startFailed: "Couldn't start AR on this phone.",
+    // inside the AR session (drawn over the camera)
+    finding: 'Move the phone slowly to find the floor or a table.',
+    tapToPlace: 'Tap to place it.',
+    placed: 'Drag to move. Pinch to resize. Twist to turn.',
+    scale: (s) => (s >= 0.98 ? 'Life size' : `1:${Math.round(1 / s)}`),
+    reset: (mode) => (mode === 'life' ? 'Back to life size' : 'Back to 1:20'),
+    exit: 'Exit AR',
+  },
+
   group: {
     label: 'Building',
     title: (slug) => {

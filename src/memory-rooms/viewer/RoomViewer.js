@@ -1022,6 +1022,11 @@ export class RoomViewer {
     if (this.disposed || !this.renderer) return;
     w = Math.max(1, Math.round(w));
     h = Math.max(1, Math.round(h));
+    if (this.xrSession) {
+      // the XR device owns the canvas size while presenting; apply it on exit
+      this.pendingSize = [w, h];
+      return;
+    }
     if (w === this.width && h === this.height) return;
     this.width = w;
     this.height = h;
@@ -1084,13 +1089,43 @@ export class RoomViewer {
   }
 
   requestRender() {
-    if (this.disposed || !this.renderer) return;
+    if (this.disposed || !this.renderer || this.xrSession) return;
     if (!this.raf) this.raf = requestAnimationFrame(this.tick);
+  }
+
+  // ── AR (ar/xr.js takes the renderer over for a WebXR session) ───────────
+
+  /** Stop drawing our own frames and hide the page-only extras until exitXR(). */
+  enterXR(session) {
+    if (this.view !== 'orbit' || this.flying) this.exitViewpointNow();
+    this.closePin();
+    this.xrSession = session;
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    this.lastTick = undefined;
+    this.extras.visible = false;
+    this.overlay.hidden = true;
+    this.container.dataset.xr = 'on';
+  }
+
+  exitXR() {
+    this.xrSession = null;
+    this.extras.visible = true;
+    this.overlay.hidden = false;
+    delete this.container.dataset.xr;
+    this.renderer?.setScissorTest(false);
+    const size = this.pendingSize;
+    this.pendingSize = null;
+    this.width = 0; // force setSize to re-apply after the XR device's size
+    if (size) this.setSize(size[0], size[1]);
+    else this.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.occlusionDirty = true;
+    this.requestRender();
   }
 
   tick(now) {
     this.raf = 0;
-    if (this.disposed) return;
+    if (this.disposed || this.xrSession) return;
     const dt = Math.min(50, Math.max(0, now - (this.lastTick ?? now)));
     this.lastTick = now;
     let again = false;
@@ -1269,6 +1304,11 @@ export class RoomViewer {
 
   dispose() {
     if (this.disposed) return;
+    if (this.xrSession) {
+      this.xrSession.end().catch(() => {});
+      this.renderer?.setAnimationLoop(null);
+      this.xrSession = null;
+    }
     this.loadToken++;
     this.clearContent();
     this.disposed = true;

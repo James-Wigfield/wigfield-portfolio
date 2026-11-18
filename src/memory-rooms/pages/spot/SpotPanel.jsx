@@ -2,8 +2,8 @@
    meta and the photo strip. (Viewpoints + the blend slider live on the stage,
    in StageBar.) Layout only; the page passes the viewer in. */
 
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { COPY } from '../../copy.js';
 import { mediaOf } from '../../lib/api.js';
 import { clearFlash, peekFlash } from '../../lib/flash.js';
@@ -11,6 +11,9 @@ import { paths } from '../../routes.js';
 import { useViewerState } from '../../viewer/useViewer.js';
 import { ModeToggle } from '../../viewer/ViewerControls.jsx';
 import PhotoStrip from './PhotoStrip.jsx';
+
+// AR is its own chunk (and pulls the USDZ exporter / WebXR / QR code only on demand).
+const ArEntry = lazy(() => import('../../ar/ArEntry.jsx'));
 
 function statusLine(spot, stage) {
   const lines = COPY.spot.lines;
@@ -29,6 +32,9 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
   // "Saved" once, right after the edit page saved this spot (lib/flash.js).
   const [saved] = useState(() => ({ id: spot.id, on: peekFlash(`saved:${spot.id}`) }));
   useEffect(() => () => clearFlash(`saved:${spot.id}`), [spot.id]);
+  // ?ar=1 (the desktop's QR code) opens "See it in your space" straight away.
+  const [params] = useSearchParams();
+  const arOpen = params.get('ar') === '1';
 
   return (
     <aside className="mr-spot__panel">
@@ -56,6 +62,12 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
         <section className="mr-spot__controls">
           <ModeToggle mode={vstate.mode} disabled={!viewer} onChange={(m) => viewer?.setMode(m)} />
         </section>
+      )}
+
+      {stage === 'model' && (
+        <Suspense fallback={null}>
+          <ArEntry key={spot.id} spot={spot} viewer={viewer} startOpen={arOpen} />
+        </Suspense>
       )}
 
       <dl className="mr-meta">

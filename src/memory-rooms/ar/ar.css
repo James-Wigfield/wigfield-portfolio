@@ -1,0 +1,108 @@
+/* "See it in your space" (ar/ArEntry.jsx). Tokens only (memory-rooms.css). */
+
+.mr-ar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-4);
+  padding-top: var(--mr-space-5);
+  border-top: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-ar__open { justify-content: flex-start; }
+.mr-ar__open[aria-expanded='true'] { background: var(--mr-surface-2); }
+
+.mr-ar__panel { display: flex; flex-direction: column; gap: var(--mr-space-4); }
+
+.mr-ar__options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mr-ar__option {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-4);
+  padding: var(--mr-space-3) 0;
+  border-bottom: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-ar__option:first-child { border-top: var(--mr-hairline) solid var(--mr-rule); }
+
+.mr-ar__tile {
+  flex: none;
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-stage);
+  overflow: hidden;
+}
+.mr-ar__tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.mr-ar__option[data-ready='0'] .mr-ar__tile img { opacity: 0.55; }
+.mr-ar__tile:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 2px; }
+
+.mr-ar__label {
+  flex: 1;
+  display: flex;
+  min-height: var(--mr-tap);
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mr-ar__label--btn {
+  padding: 0 var(--mr-space-3);
+  border: var(--mr-hairline) solid var(--mr-rule-strong);
+  border-radius: var(--mr-radius-s);
+}
+.mr-ar__label--btn[disabled] { opacity: 0.45; cursor: default; }
+.mr-ar__option:has(.mr-ar__label--btn) { border: 0; padding: var(--mr-space-1) 0; }
+.mr-ar__text { display: flex; flex-direction: column; gap: 2px; padding: var(--mr-space-2) 0; }
+.mr-ar__name { font: 600 var(--mr-text-m) / 1.2 var(--mr-font-sans); color: var(--mr-ink); }
+.mr-ar__hint { font-size: var(--mr-text-s); color: var(--mr-ink-3); }
+
+/* desktop: a QR code that opens the spot on a phone */
+.mr-ar__qr { display: flex; align-items: center; gap: var(--mr-space-4); }
+.mr-ar__qrcode { flex: none; width: 124px; height: 124px; }
+.mr-ar__qrpaper { fill: var(--mr-qr-paper); }
+.mr-ar__qrink { fill: var(--mr-qr-ink); }
+.mr-ar__qrline { margin: 0; font-size: var(--mr-text-s); color: var(--mr-ink-2); text-wrap: pretty; }
+
+/* Android: drawn over the camera while the WebXR session runs (dom-overlay root). */
+.mr-ar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: max(var(--mr-space-5), env(safe-area-inset-top)) var(--mr-space-4) max(var(--mr-space-5), env(safe-area-inset-bottom));
+  pointer-events: none;
+  background: transparent;
+  color: var(--mr-ar-ink);
+}
+.mr-ar-overlay__hint {
+  align-self: center;
+  max-width: 34ch;
+  margin: 0;
+  padding: var(--mr-space-2) var(--mr-space-3);
+  font: 500 var(--mr-text-m) / 1.35 var(--mr-font-sans);
+  text-align: center;
+  text-shadow: 0 1px 3px var(--mr-ar-shade);
+}
+.mr-ar-overlay__hint:empty { visibility: hidden; }
+.mr-ar-overlay__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-3);
+  padding: var(--mr-space-2);
+  border-radius: var(--mr-radius-m);
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  box-shadow: var(--mr-shadow);
+  pointer-events: auto;
+}
+.mr-ar-overlay__scale { flex: 1; padding-left: var(--mr-space-2); }
+.mr-ar-overlay__bar .mr-btn { min-height: var(--mr-tap); }
