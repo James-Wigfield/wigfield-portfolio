@@ -46,6 +46,9 @@ export const RIGS = {
   // Ultra-short throw under the apex, looking straight down: the floor.
   //                                                     49 / 19 / 0 → 20 %
   centreDown: { x: 2.18, y: 2.2, z: 2.18, yaw: 0, pitch: -89, roll: 0, throw: 0.25 },
+  // Short throw on a 1 m stand east of centre, looking straight up: closer
+  // than floorUp, so the roof is lit brightly enough for the swingers.
+  roofStand: { x: 2.9, y: 1.0, z: 2.18, yaw: 0, pitch: 89, roll: 0, throw: 0.3 },
   // Opposite corners at the eave, short throw, tilted down 10°: the best
   // two-projector placement found.                     17 / 71 / 88 → 63 %
   // (+ centreDown as a third projector:                 53 / 73 / 95 → 76 %)
@@ -68,7 +71,11 @@ export const PRESETS = [
       'proj.count': 1,
       ...pose(0, RIGS.seHero),
       'p0.brightness': 1.8,
+      // frustum rays slashed across the hero (visual critic): the mounted
+      // body says where the projector is; the Projectors group turns rays on
+      'proj.frustum': false,
       'map.mode': 'mapped',
+      'life.gsPalette': 'ember', // warm walls between the cyan floor and the neon roof
       'life.sys.floor': 'physarum',
       'life.sys.wall': 'grayscott',
       'life.sys.ceiling': 'particlelife',
@@ -87,6 +94,7 @@ export const PRESETS = [
       ...pose(1, RIGS.swCorner),
       ...pose(2, RIGS.centreDown),
       'proj.frustum': false,
+      'room.ambient': 0.03,
       'life.sys.floor': 'physarum',
       'life.sys.wall': 'physarum',
       'life.sys.ceiling': 'physarum',
@@ -106,7 +114,8 @@ export const PRESETS = [
     camera: 'door',
     values: {
       'proj.count': 1,
-      ...pose(0, RIGS.seShort),
+      ...pose(0, RIGS.seHero),
+      'proj.frustum': false,
       'life.sys.floor': 'grayscott',
       'life.sys.wall': 'grayscott',
       'life.sys.ceiling': 'grayscott',
@@ -114,7 +123,7 @@ export const PRESETS = [
       // on, and 2.2× speed × 2 substeps has it dripping within ~7 s of the
       // click (coral proper took 30–45 s to fill — QA, 2026-11-18).
       'life.gsPreset': 'worms',
-      'life.gsPalette': 'aurora',
+      'life.gsPalette': 'ember', // warm coral (aurora's pink + green read as colour fringing)
       'life.drift': 0.8,
       'life.speed': 2.2,
       'life.substeps': 2,
@@ -127,21 +136,20 @@ export const PRESETS = [
     id: 'ceiling-swingers',
     name: 'Ceiling swingers',
     blurb: 'A steep roof, weak grip: creatures hang, swing, let go — and some of them fall.',
-    camera: 'door',
+    camera: 'loft', // lying on the loft looking up: the hanging bodies on their arms read best here (visual critic)
     values: {
       'room.apex': 4.0,
       'room.ambient': 0.05,
       'proj.count': 1,
-      ...pose(0, RIGS.floorUp),
-      'p0.brightness': 1.8,
+      ...pose(0, RIGS.roofStand),
+      'p0.brightness': 2.5,
       'proj.frustum': false,
       'life.sys.floor': 'physarum',
       'life.sys.wall': 'grayscott',
-      // dim white droplets creeping downslope: the roof reads as a surface,
-      // the creatures' coloured bodies and white arms stay the brightest thing
-      'life.sys.ceiling': 'grayscott',
-      'life.gsPreset': 'mitosis',
-      'life.gsPalette': 'mono',
+      // roof background off: the creatures are the only thing up there (the
+      // grey droplets read as smudges — visual critic); creatures still draw
+      // on an 'off' patch
+      'life.sys.ceiling': 'off',
       'life.physPalette': 'ember',
       'cr.on': true,
       'cr.ceiling': 40,
@@ -167,6 +175,8 @@ export const PRESETS = [
       'proj.count': 2,
       ...pose(0, RIGS.seLevel),
       ...pose(1, RIGS.centreDown),
+      'proj.frustum': false,
+      'room.ambient': 0.05,
       'life.sys.floor': 'physarum',
       'life.sys.wall': 'grayscott',
       'life.sys.ceiling': 'off',

@@ -8,7 +8,7 @@ export const PROJECTOR_COLORS = ['#ffd27a', '#7ad7ff', '#ff8ad8'];
 
 /** Coverage view: colour = how many projectors reach a surface (occlusion-aware). */
 export const COVERAGE_LEGEND = [
-  { count: 0, label: 'Not reached', color: '#5a2330' },
+  { count: 0, label: 'Not reached (room, dimmed)', color: '#3b3934' },
   { count: 1, label: '1 projector', color: '#2fbf71' },
   { count: 2, label: '2 projectors', color: '#2f8fe0' },
   { count: 3, label: '3 projectors', color: '#b07cff' },

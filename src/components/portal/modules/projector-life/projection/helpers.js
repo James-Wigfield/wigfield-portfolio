@@ -59,6 +59,58 @@ export function createHelpers(scene) {
   ventGeo.translate(0, 0.051, 0.16);
   const bodyMat = new THREE.MeshBasicMaterial({ color: 0x2a2e36 });
   const ventMat = new THREE.MeshBasicMaterial({ color: 0x14161b });
+  // Mounts (lead, after the visual critic: bodies "floated like placeholders"):
+  // a vertical rod to the roof when the projector is nearer the roof, else a
+  // stand down to the floor or the loft deck, with a plate where it meets.
+  const rodGeo = new THREE.CylinderGeometry(0.014, 0.014, 1, 10);
+  const plateGeo = new THREE.CylinderGeometry(0.075, 0.1, 0.018, 20);
+  const mountMat = new THREE.MeshBasicMaterial({ color: 0x1d2027 });
+
+  /** Roof underside height above (x, z): inside a convex pyramid, the lowest facet plane. */
+  function roofY(patches, x, z) {
+    let y = Infinity;
+    for (const p of patches) {
+      if (p.kind !== 'roof') continue;
+      const [nx, ny, nz] = p.normal;
+      if (Math.abs(ny) < 1e-6) continue;
+      const [ox, oy, oz] = p.origin;
+      y = Math.min(y, oy - (nx * (x - ox) + nz * (z - oz)) / ny);
+    }
+    return Number.isFinite(y) ? y : null;
+  }
+
+  /** Floor (or loft deck) height under (x, z) below height h. */
+  function floorY(patches, x, z, h) {
+    const loft = patches.find((p) => p.id === 'loft');
+    if (loft && h > loft.origin[1]) {
+      const lx = x - loft.origin[0], ly = loft.origin[2] - z;
+      let inside = false;
+      const poly = loft.polygon;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, yi] = poly[i], [xj, yj] = poly[j];
+        if (yi > ly !== yj > ly && lx < ((xj - xi) * (ly - yi)) / (yj - yi) + xi) inside = !inside;
+      }
+      if (inside) return loft.origin[1];
+    }
+    return 0;
+  }
+
+  function addMount(group, P, patches) {
+    if (!patches?.length) return;
+    const [x, y, z] = P.pos;
+    const top = roofY(patches, x, z);
+    const bot = floorY(patches, x, z, y);
+    const up = top != null && top - y < y - bot;
+    const a = up ? y + 0.05 : bot + 0.009;
+    const b = up ? top : y - 0.05;
+    if (b - a < 0.02) return;
+    const rod = new THREE.Mesh(rodGeo, mountMat);
+    rod.scale.set(1, b - a, 1);
+    rod.position.set(x, (a + b) / 2, z);
+    const plate = new THREE.Mesh(plateGeo, mountMat);
+    plate.position.set(x, up ? top - 0.009 : bot + 0.009, z);
+    group.add(rod, plate);
+  }
 
   const slots = []; // per projector: { group, body, frustum, mats, geos }
 
@@ -91,6 +143,7 @@ export function createHelpers(scene) {
       mats.push(lensMat);
       body.add(new THREE.Mesh(bodyGeo, bodyMat), new THREE.Mesh(ventGeo, ventMat), new THREE.Mesh(lensGeo, lensMat));
       group.add(body);
+      addMount(group, P, patches);
 
       const frustum = new THREE.Group();
       frustum.visible = !!showFrustum;
@@ -177,6 +230,9 @@ export function createHelpers(scene) {
     ventGeo.dispose();
     bodyMat.dispose();
     ventMat.dispose();
+    rodGeo.dispose();
+    plateGeo.dispose();
+    mountMat.dispose();
   }
 
   return { rebuild, setFrustumVisible, beforeRender, dispose, root };

@@ -215,11 +215,15 @@ const MAIN_FRAG = /* glsl */ `
   vec3 pjlOutC = pjlBaked * pjlAmbient + pjlAlbedo * acc.light;
   float pjlShade = 0.3 + 0.7 * clamp( pjlLuma( pjlAlbedo ) * 1.5, 0.0, 1.0 );
   if ( ( pjlMode & 1 ) != 0 ) {
+    // Not reached = the room itself, dimmed (a maroon flood hid the room —
+    // visual critic); reached = the count colour with the projected life
+    // still showing through it.
     float c = clamp( acc.count, 0.0, 3.0 );
     float lo = floor( c );
-    vec3 c0 = lo < 0.5 ? pjlCov[0] : lo < 1.5 ? pjlCov[1] : lo < 2.5 ? pjlCov[2] : pjlCov[3];
-    vec3 c1 = lo < 0.5 ? pjlCov[1] : lo < 1.5 ? pjlCov[2] : pjlCov[3];
-    pjlOutC = mix( c0, c1, c - lo ) * pjlShade;
+    vec3 dim = pjlBaked * max( pjlAmbient * 1.6, 0.16 );
+    vec3 c0 = lo < 0.5 ? dim : ( lo < 1.5 ? pjlCov[1] : lo < 2.5 ? pjlCov[2] : pjlCov[3] ) * pjlShade * 0.75;
+    vec3 c1 = ( lo < 0.5 ? pjlCov[1] : lo < 1.5 ? pjlCov[2] : pjlCov[3] ) * pjlShade * 0.75;
+    pjlOutC = mix( c0, c1, c - lo ) + pjlAlbedo * acc.light * 0.55;
   }
   if ( ( pjlMode & 2 ) != 0 ) {
     vec3 tint = acc.tint / max( acc.tintW, 1.0 );
