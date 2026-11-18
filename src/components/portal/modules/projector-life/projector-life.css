@@ -198,7 +198,7 @@
 }
 .pjl-ov button { pointer-events: auto; }
 .pjl-ov__shade { position: absolute; left: 0; right: 0; pointer-events: none; }
-.pjl-ov__shade--top { top: 0; height: 150px; background: linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0)); }
+.pjl-ov__shade--top { top: 0; height: 170px; background: linear-gradient(rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0)); /* readable over the white balustrade (critic) */ }
 .pjl-ov__shade--bot { bottom: 0; height: 70px; background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45)); }
 
 .pjl-ov__grid {
@@ -527,7 +527,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 0.9rem 1.2rem;
+  padding: 0 0.9rem 3rem; /* room under the last footnote (it was clipped) */
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
@@ -1050,3 +1050,8 @@
   .pjl-cov__bar i,
   .pjl-hist__bar { transition: none; }
 }
+
+/* MCP preview: soft-wrap the one-call-per-line JSON (lines were clipped at
+   the right edge with no visible scroll cue — visual critic). */
+.pjl-mcp .pjl-code__code { min-width: 0; }
+.pjl-mcp .pjl-code__line { white-space: pre-wrap; overflow-wrap: anywhere; }

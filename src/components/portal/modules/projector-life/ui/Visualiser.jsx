@@ -35,7 +35,7 @@ export default function Visualiser({ scene, setScene }) {
   const [attempt, setAttempt] = useState(0);
   const [patches, setPatches] = useState([]);
   const [fs, setFs] = useState(false);
-  const [open, setOpen] = useState(() => ({ scenes: true, room: true, ...loadPref('open', {}) }));
+  const [open, setOpen] = useState(() => ({ scenes: true, room: typeof window === 'undefined' || window.innerWidth >= 860, ...loadPref('open', {}) }));
   const [folded, setFolded] = useState(() => !!loadPref('folded', false));
   const [drawerShut, setDrawerShut] = useState(() => !!loadPref('drawerShut', false));
 
@@ -153,7 +153,8 @@ export default function Visualiser({ scene, setScene }) {
         setOpen((o) => {
           const n = { ...o };
           for (const g of p.open) n[g] = true;
-          savePref('open', n);
+          // not persisted: a preset opening a group is for this visit only
+          // (persisting it left every group open on phones — visual critic)
           return n;
         });
         // Bring the first opened group into view inside the side panel (the
@@ -256,8 +257,8 @@ export default function Visualiser({ scene, setScene }) {
         />
       </div>
       <div className="pjl-below">
-        <McpPreview stage={stage} values={scene.values} patches={patches} />
         <Honesty />
+        <McpPreview stage={stage} values={scene.values} patches={patches} />
       </div>
     </div>
   );
