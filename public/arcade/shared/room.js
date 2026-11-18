@@ -173,7 +173,14 @@ export function mountArcade(opts) {
       token = res.token;
       seat = res.seat;
       saveSession(slug, code, { token, seat, name: res.name });
-    } catch {
+    } catch (err) {
+      // Our token is gone and the room is full: this seat has been picked up
+      // on another device. Retrying forever with a dead token helps nobody.
+      if (/full/i.test(err?.message || '')) {
+        closed = true;
+        setBanner('Your seat is open on another device');
+        return;
+      }
       /* server unreachable — the socket retry below will keep trying */
     }
     connect();

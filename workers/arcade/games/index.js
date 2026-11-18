@@ -31,10 +31,12 @@ import southernLights from './southern-lights.js';
 import summitFever from './summit-fever.js';
 import devilsIvy from './devils-ivy.js';
 import swerveValley from './swerve-valley.js';
+import rottoSubHunt from './rotto-sub-hunt.js';
 
 export const GAMES = {
   [southernLights.slug]: southernLights,
   [summitFever.slug]: summitFever,
   [devilsIvy.slug]: devilsIvy,
   [swerveValley.slug]: swerveValley,
+  [rottoSubHunt.slug]: rottoSubHunt,
 };

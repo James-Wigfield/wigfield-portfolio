@@ -60,6 +60,17 @@
         "mystery"
       ],
       "status": "live"
+    },
+    {
+      "slug": "rotto-sub-hunt",
+      "title": "Rotto Sub Hunt",
+      "tagline": "Battleship off Rottnest. Do not shoot the quokkas.",
+      "blurb": "Hide a sub, a Rotto ferry, a patrol boat and a tinny in the water off Wadjemup, then take turns firing at each other's grid. You get two sonar pings each, and there are quokkas paddling around both sides — hit one and the ranger fines you a turn. No mate handy? The CPU skipper will have a go.",
+      "art": "rotto-sub-hunt/art/cabinet.png",
+      "players": "1–2",
+      "length": "~6 min",
+      "tags": ["versus", "hidden fleets", "quokkas"],
+      "status": "live"
     }
   ]
 }

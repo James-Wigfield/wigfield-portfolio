@@ -295,6 +295,12 @@ export class ArcadeRoom {
       // No state change (illegal move, wrong phase, not your turn). Still
       // rebroadcast on presence-driven kinds so late joiners settle.
       if (kind !== 'action') this.broadcast();
+      // An alarm that changed nothing has been consumed; re-arm it, or a room
+      // whose last_seen moved on would never get its expiry alarm again.
+      if (kind === 'tick') {
+        const due = rules.nextTickAt ? rules.nextTickAt(state) : null;
+        this.schedule(due && due > Date.now() ? due : null);
+      }
       return;
     }
 
@@ -306,7 +312,9 @@ export class ArcadeRoom {
   schedule(at) {
     const now = Date.now();
     const expiry = this.lastSeen() + ROOM_TTL_MS;
-    let when = at && at > now ? Math.min(at, expiry) : expiry;
+    // A deadline that is already due (it can slip past while the rules ran)
+    // fires straight away rather than being dropped in favour of expiry.
+    let when = at ? Math.min(Math.max(at, now + 10), expiry) : expiry;
     // A deferred write must land soon even if the game then goes quiet.
     if (this._dirty) when = Math.max(now + 1, Math.min(when, this._persistedAt + this.persistMs()));
     if (when === this._alarmAt) return; // already set — no need to write it again
@@ -372,6 +380,9 @@ export class ArcadeRoom {
     const rules = GAMES[slug];
     this.setGameState(rules ? rules.init() : {});
     this.touch(true);
+    // Arm the expiry alarm now: a room that is created and never started
+    // otherwise has no alarm at all, and is never cleaned up.
+    this.schedule(null);
   }
 
   claimSeat(name) {
