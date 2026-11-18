@@ -298,3 +298,11 @@ partial overrides of `defaults()`; the first preset is the default scene.
   hand-written and selection only tunes numbers — say so where it shows.
 * Don't touch: `public/artificial-life/`, `ArtificialLife.jsx/.css`,
   `src/memory-rooms/`, `workers/`, `memory-rooms-work/`, `package.json`.
+
+## §9 Notes from review
+* `setView('projector', { projector: i })` follows projector i; the camera
+  stays upright (no roll) at the canvas aspect — OrbitControls caches
+  `camera.up`. The projector-output inset is the exact output.
+* `stage.onValues(fn)` reports every changed key after `set()`/`replace()`.
+* Patch changes reach life/projection at most every 180 ms during a drag
+  (plus a trailing flush); `replace()` flushes immediately.

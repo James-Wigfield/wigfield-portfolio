@@ -386,12 +386,23 @@ function ticks(host, n) {
       host.clear();
       host.seed('wall-E', 0.9, 1.1);
       ticks(host, 5);
+      // The Stage's order when one set() both changes the patch list and the
+      // systems (loft off, then a preset): setPatches → setParams → reseed /
+      // stats BEFORE the next step. Must not map new indices onto the old domain.
+      for (const ps of [buildPatches({ apex: 3.3, loft: false }), buildPatches({ apex: 3.3 })]) {
+        host.setPatches(ps);
+        host.setParams({ ...values, 'life.sys.wall': 'physarum', 'life.sys.floor': 'grayscott', 'region.roof-N.system': 'lenia' }, ['life.sys.wall', 'life.sys.floor', 'region.roof-N.system']);
+        host.reseed();
+        host.stats();
+        ticks(host, 5);
+        if (host.surfaces().size !== ps.length) throw new Error(`${id}: ${host.surfaces().size} surfaces for ${ps.length} patches after setPatches+setParams`);
+      }
       host.dispose();
     }
   } catch (e) {
     err = e;
   }
-  check(!err, 'churn: patches + masks change', err ? String(err.stack || err).split('\n').slice(0, 2).join(' ') : 'loft off/on, apex change, masks stripped, walls only, ppm 24, regions off, reseed/clear/seed: no throw');
+  check(!err, 'churn: patches + masks change', err ? String(err.stack || err).split('\n').slice(0, 2).join(' ') : 'loft off/on, apex change, masks stripped, walls only, ppm 24, regions off, reseed/clear/seed, setPatches→setParams→reseed before a step: no throw');
 }
 
 // ── 12. evolution: habitats drift apart (slow) ───────────────────────────────

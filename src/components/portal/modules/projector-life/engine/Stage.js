@@ -26,6 +26,7 @@ const STATS_MS = 250;
 const TWEEN_MS = 900;
 const MAX_AIR = 256;
 const MAX_DT = 1 / 20; // a stalled tab never hands the sims a huge step
+const PATCH_MS = 180; // patch hand-over cadence during a drag (see _schedulePatches)
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
@@ -82,6 +83,11 @@ export class Stage {
     this.scene.background = new THREE.Color(0x000000);
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.03, 60);
 
+    // OrbitControls hangs a capture keydown listener on the canvas's root node
+    // (the document, now). React detaches our DOM before effect cleanups run,
+    // so controls.dispose() would then look up a different root and miss it —
+    // leaking the whole Stage. Remember the root and unhook it ourselves.
+    this._keyRoot = renderer.domElement.getRootNode();
     this.controls = new OrbitControls(this.camera, renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
@@ -129,7 +135,15 @@ export class Stage {
     document.removeEventListener('visibilitychange', this._onVis);
     this._ro?.disconnect();
     this._unbindPointer?.();
-    this.controls?.dispose();
+    if (this.controls) {
+      const c = this.controls;
+      this.controls.dispose();
+      if (this._keyRoot) {
+        if (c._interceptControlDown) this._keyRoot.removeEventListener('keydown', c._interceptControlDown, { capture: true });
+        if (c._interceptControlUp) this._keyRoot.removeEventListener('keyup', c._interceptControlUp, { capture: true });
+      }
+    }
+    this._keyRoot = null;
     this.projection?.dispose();
     this.life?.dispose();
     this.room?.dispose();
@@ -149,7 +163,11 @@ export class Stage {
       this.renderer.forceContextLoss();
       this.renderer.domElement.remove();
     }
+    // Drop every reference so nothing a stray listener still holds can keep
+    // the canvas, the container DOM or the GPU objects alive.
     this.renderer = this.scene = this.room = this.life = this.projection = null;
+    this.controls = this.camera = this.container = this.inset = this.air = this.netCanvas = null;
+    this.tween = null;
   }
 
   // ── public API (CONTRACTS.md §5) ──────────────────────────────────────────
@@ -170,10 +188,7 @@ export class Stage {
       for (const fn of this.valueListeners) fn(diff);
     }
     const { patchesChanged } = this.room.setParams(this.values, changed) || {};
-    if (patchesChanged) {
-      this.life.setPatches(this.room.patches);
-      this.projection.setPatches(this.room.patches);
-    }
+    if (patchesChanged) this._schedulePatches();
     this.life.setParams(this.values, changed);
     this.projection.setParams(this.values, changed);
     if (changed.some((k) => k.startsWith('cr.showAir'))) this.air.visible = !!this.values['cr.showAir'];
@@ -189,7 +204,24 @@ export class Stage {
     // Region keys are generated per patch; reset any a preset doesn't mention.
     for (const k of Object.keys(this.values)) if (!(k in next)) next[k] = k.endsWith('.on') ? true : 'auto';
     this.set(next);
+    if (this._patchesDirty) this._flushPatches(); // a preset lands in one go
     if (reseed) this.life?.reseed();
+  }
+
+  // The roof reshapes in place every frame of an apex drag, but rebuilding
+  // the life domain (~11 ms) and the projection's patch scene (~5 ms) every
+  // frame halves the frame rate. Hand new patches over at most every
+  // PATCH_MS while changes keep coming, plus once more when they stop.
+  _schedulePatches() {
+    this._patchesDirty = true;
+    if (performance.now() - (this._patchesT || 0) > PATCH_MS) this._flushPatches();
+  }
+
+  _flushPatches() {
+    this._patchesDirty = false;
+    this._patchesT = performance.now();
+    this.life.setPatches(this.room.patches);
+    this.projection.setPatches(this.room.patches);
   }
 
   getValues() {
@@ -318,6 +350,7 @@ export class Stage {
     const t0 = performance.now();
     const dt = Math.min(MAX_DT, Math.max(0, (t - this.lastT) / 1000));
     this.lastT = t;
+    if (this._patchesDirty && t0 - this._patchesT > PATCH_MS) this._flushPatches();
 
     if (this.playing || this._stepOnce) {
       this.life.step(this._stepOnce ? 1 / 30 : dt);
@@ -416,9 +449,12 @@ export class Stage {
       renderer.setViewport(x, size.h - y - h, w, h);
       renderer.setScissor(x, size.h - y - h, w, h);
       renderer.setScissorTest(true);
-      inset.quad.material.map = o.texture;
-      inset.quad.material.needsUpdate = inset.quad.material.userData.lastMap !== o.texture;
-      inset.quad.material.userData.lastMap = o.texture;
+      const mat = inset.quad.material;
+      // Only a map appearing/disappearing changes the program (USE_MAP); a
+      // swap between projectors' textures is just a uniform, refreshed by
+      // three on every render() call.
+      if (!mat.map !== !o.texture) mat.needsUpdate = true;
+      mat.map = o.texture;
       renderer.render(inset.scene, inset.cam);
       x += w + 6;
     }

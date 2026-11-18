@@ -12,7 +12,7 @@
 
 import { toLocal, pointInPolygon } from './roomModel.js';
 
-const _hits = [];
+
 
 /**
  * ctx = {
@@ -42,10 +42,10 @@ export function pickPatch(raycaster, ctx) {
   if (!best) return null;
 
   // something solid in front of the surface?
-  _hits.length = 0;
+  const hits = []; // local: a module-level array would keep the last mesh (and its atlas) alive
   const blockers = ctx.blockers.filter((b) => b.visible !== false && isShown(b));
-  raycaster.intersectObjects(blockers, true, _hits);
-  const first = _hits.find((h) => isShown(h.object));
+  raycaster.intersectObjects(blockers, true, hits);
+  const first = hits.find((h) => isShown(h.object));
   if (first && first.distance < best.t - 1e-4) {
     // Trim proud of the surface (band, skirting, battens: ≤ 2 cm) and the
     // surface's own mesh don't block; anything standing further out does.

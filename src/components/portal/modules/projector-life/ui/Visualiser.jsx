@@ -66,7 +66,10 @@ export default function Visualiser({ scene, setScene }) {
         st = s;
         stageRef.current = s;
         window.__pjlStage = s;
-        s.set(valuesRef.current); // catch up on edits made while it loaded
+        // Catch up on anything picked while it loaded (a preset's values,
+        // its region resets AND its camera), not just the edited keys.
+        s.replace(valuesRef.current, { reseed: false });
+        if (viewRef.current && viewRef.current !== s.view) s.setView(viewRef.current, { instant: true });
         // Changes made on the Stage directly (QA hooks, the console) reach the
         // panel too; echoes of the panel's own writes are equal and no-ops.
         s.onValues((diff) => {

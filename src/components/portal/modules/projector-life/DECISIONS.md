@@ -66,3 +66,12 @@ One line each: the call, then why. Newest at the bottom of each section.
 - On opening, the page glides so the tab bar meets the portal's sticky page header and the stage (100vh − header − tabs) fills the viewport. Only from near the top, once per visit, instant under reduced motion. — the portal banner + header put the stage 420 px down; "the first thing I see is the render".
 - Added `life.leniaPreset` / `life.leniaPalette` keys; Stage: dispose on failed init, smaller projector inset, "Projector's view" follows any projector, `onValues()`.
 - Screenshots kept as JPEG (q≈80) in `Documents/projector-life/screenshots/`. — the full matrix as PNG would add ~50 MB to the repo.
+
+## Code review fixes (fresh-eyes reviewer, 2026-11-18)
+- life host: while a rebuild is pending (setPatches since the last step), setParams defers assignment + reseeds to rebuild(); reseed/clear/stats rebuild first. — loft off + a preset froze the stage (new indices mapped onto the old domain); now in sim-check's churn test.
+- Stage: OrbitControls' capture keydown listener is removed from the root node remembered at init, and teardown nulls every reference. — React detaches the DOM before effect cleanups, so controls.dispose() missed it and each tab switch leaked a whole Stage (canvas, lost context, DOM).
+- room/pick.js: the raycast hit list is local. — a module-level array kept the last mesh and its 16 MB atlas bitmap alive after unmount.
+- Stage inset: needsUpdate only when the map appears/disappears. — with 2–3 projectors it bumped material.version twice a frame.
+- Stage: patch hand-over to life/projection coalesced to ≤ 1 per 180 ms during a drag (+ a trailing flush; presets flush at once). — apex drags ran at ~35 fps (life domain rebuild ~11 ms per step); now ~94 fps, median 7 ms.
+- Visualiser: a preset picked while the stage loads lands fully after load (replace + its camera). — only the values used to catch up.
+- "Projector's view" stays upright at the canvas aspect: OrbitControls caches camera.up at construction, so rolling it would break orbiting. The projector-output inset shows the true (rolled, true-aspect) output. — honest and simple; noted in CONTRACTS §6.

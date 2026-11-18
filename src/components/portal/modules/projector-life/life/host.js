@@ -275,7 +275,10 @@ export function createLifeHost({ patches, landing = null, values = {}, seed } = 
     creatures.setParams(V);
     if (changed.includes('cr.on') && V['cr.on']) creatures.reseed();
     if (!D) return;
-    if (needRebuild) {
+    // A pending rebuild (setPatches() since the last step) means sysOf / D
+    // still describe the OLD patch list: never map new indices onto it —
+    // defer the assignment and reseeds to rebuild(), which applies both.
+    if (needRebuild || dirty) {
       dirty = true;
       for (const id of reseedSys) pendingReseed.add(id);
       if (raw.s) raw.sysId = null;
@@ -385,7 +388,8 @@ export function createLifeHost({ patches, landing = null, values = {}, seed } = 
     },
 
     reseed() {
-      if (!D) return;
+      if (!D || disposed) return;
+      if (dirty) rebuild();
       for (const id of SYSTEM_IDS) {
         sys[id].restoreTargets?.();
         sys[id].reseed();
@@ -396,7 +400,8 @@ export function createLifeHost({ patches, landing = null, values = {}, seed } = 
     },
 
     clear() {
-      if (!D) return;
+      if (!D || disposed) return;
+      if (dirty) rebuild();
       for (const id of SYSTEM_IDS) sys[id].clear();
       creatures.clear();
       if (raw.s) raw.s.clear();
@@ -404,6 +409,7 @@ export function createLifeHost({ patches, landing = null, values = {}, seed } = 
     },
 
     stats() {
+      if (dirty && !disposed && D) rebuild();
       const cs = creatures.stats();
       const census = creatures.census();
       const { H, means } = creatures.histograms();
