@@ -211,6 +211,14 @@ runs it in Node). Returns:
 * Masks: active masks (`map.mask.*`) are black and are walls for agents.
 * Budget: one global budget split by patch area; default preset must cost
   ≲ 6 ms/frame on this PC. Pause is the Stage's job (it stops calling step).
+* Additions (life agent): `createLifeHost({ …, seed })` for repeatable runs;
+  `seed()` returns `{ patchId, x, y, system }`; `stats()` also carries
+  `particles`, `means`, `assignment` and crossing / fall breakdowns;
+  `frame()` row 0 is the BOTTOM of the projector image (same convention as
+  the patches); `airborne()` returns a reused array of reused objects (valid
+  until the next call); a `surfaces()` entry is replaced (new object + data)
+  when its w/h/ppm change, otherwise reused; `_debug()` is for checks only.
+  Lenia reads `life.leniaPreset` / `life.leniaPalette`.
 
 ---
 

@@ -37,3 +37,32 @@ One line each: the call, then why. Newest at the bottom of each section.
 - Coverage view: 0 maroon, 1 green, 2 blue, 3 violet, shaded by albedo. Pixel view: a grid line every 32 projector pixels coloured by px/m. — grid shows shape (keystone, stretch), colour shows density.
 - Coverage readout: 5 cm grid on every patch (~20 k samples), masks excluded, ≤ 5 recomputes/s (~10 ms incl. readback), never per frame.
 - Projector defaults in `params.js` came from an exhaustive occlusion-aware placement search (36 % best single at throw 0.5; 62.7 % best pair; ~72 % with three). — numbers grounded in the model, not guesses.
+
+## Life (life agent — full reasoning in `life/NOTES.md`)
+- One global domain: every patch's grid laid end to end in one index space at one px/m. — seam exchange for grid sims is a table lookup; no soft-fade fallback was needed (5.5k cross-patch links).
+- A seam to a patch running ANOTHER system is a zero-flux wall. — "empty" neighbours poured blank substrate in from the eave and washed walls clean.
+- Gray-Scott drift = upwind advection of u and v together along g_t; while drifting, nuclei "rain" in along each patch's upstream band; default wall preset = worms ("Rain"). — a drifting pattern with no source washes off a wall in < 1 min.
+- Physarum in metres, `network` re-tuned (30° sensors, decay 0.06); sensing reads across seams through a halo table; agents cross with seam.M + mapAngle. — the cabinet's tuning coarsened to 3–4 trunks on a 4 m floor.
+- Particle Life sparser and wider (115/m², rmax 0.26 m) with ghost particles across seams; six castes of grip; facets peel particles off and they fall and land. — 6 ms → 1.2 ms per tick, clusters still read across a room.
+- Lenia: direct convolution on a half-resolution domain (pruned ring kernel). — the cabinet's FFT needs a periodic power-of-two torus; patches are neither.
+- Fixed 30 Hz ticks, ≤ 4 per frame, 9 ms budget, debt dropped; budgets split by area inside each system (≤ 45k Physarum agents, ≤ 6k particles). — heavy settings slow down instead of stalling.
+- Rebuild by patch id, lazily on the next step. — patches can appear/disappear (loft toggle) and apex drags coalesce to one rebuild per frame.
+- Creatures at toy gravity 0.3 g; hold model: adhesive feet in shear (walls), peel (ceiling), a hooked hand ~2.6 body weights for brachiation; ceiling gait = pendulum hang + brachiation only. — at 1 g swings are too fast to read; with a safe ceiling crawl, selection evolved crawlers instead of swingers.
+- Selection: parents ∝ stored energy², crowding culls the hungriest; falls kill only on a hard landing; genes are relative to the sliders; food = the sim under the creature + a little ambient. — culling the oldest homogenised the habitats; sliders act live.
+- Creature glyphs (~30 cm, dark halo, white planted feet, red when slipping, white swing arm) are drawn INTO the patch buffers. — they are projected content; mid-air bodies are the Stage's 3-D spheres.
+
+## UI (UI + Plan agent — full list in `ui/NOTES.md`)
+- The page always opens on the Visualiser (tab not remembered); scene state lives in the shell so a trip to Plan disposes the Stage and rebuilds it on return. — "first thing I see is the render", and no hidden render loop while reading.
+- Plan and Applications tabs are React.lazy chunks; the engine is a dynamic import. — the portal's main chunk pays nothing.
+- Every control generated from params.js (group → section → per-projector sub-groups); widget by def type. — adding a control = adding a def.
+- Values mirrored in React and flushed to the Stage once per animation frame; the Stage echoes external changes back (`onValues`). — an apex drag rebuilds once a frame; QA/console changes reach the panel.
+- Habitat colours: a validated categorical trio (floor amber, wall teal, roof violet) used in panel, histograms, coverage and region map. — one identity everywhere.
+- Presets may `open` panel groups and show an on-stage Coverage · Raw · Mapped `compare` switch; Reset returns to the first preset. — the food web shows histograms; the reality check flips raw/mapped in one click.
+- MCP preview: one call per line, pretty toggle, group filters, copy copies exactly what's shown; tool names labelled "proposed". — scannable, and honest that the names are a proposal.
+
+## Integration (lead)
+- Hero rig searched for what the cutaway camera sees (SE corner 2.1 m, heading −22.5°, tilt −22°, throw 0.35): 50 % of the visible half, floor 39 % (was 5 %). — the default scene should show all three habitats alive.
+- Default room lights 0.14 → 0.06 (living shed 0.05) and projector brightness 1 → 1.5 (living shed 1.8). — at 0.14 the bake washed the projection to pastel; projection needs the dark.
+- On opening, the page glides so the tab bar meets the portal's sticky page header and the stage (100vh − header − tabs) fills the viewport. Only from near the top, once per visit, instant under reduced motion. — the portal banner + header put the stage 420 px down; "the first thing I see is the render".
+- Added `life.leniaPreset` / `life.leniaPalette` keys; Stage: dispose on failed init, smaller projector inset, "Projector's view" follows any projector, `onValues()`.
+- Screenshots kept as JPEG (q≈80) in `Documents/projector-life/screenshots/`. — the full matrix as PNG would add ~50 MB to the repo.
