@@ -7,7 +7,8 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   // **/.wrangler = wrangler's local dev/build scratch (gitignored), not source.
   // public/arcade/shared/vendor = third-party builds (three.js), not source.
-  globalIgnores(['dist', 'mcp-pixel-gif', '**/.wrangler/', 'public/arcade/shared/vendor/']),
+  // public/artificial-life = mirror of the separate artifical-life repo.
+  globalIgnores(['dist', 'mcp-pixel-gif', '**/.wrangler/', 'public/arcade/shared/vendor/', 'public/artificial-life']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

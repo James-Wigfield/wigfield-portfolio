@@ -72,6 +72,7 @@ import PixelGifStudio from './modules/PixelGifStudio';
 import PdReader from './modules/PdReader';
 import DeckStudio from './modules/DeckStudio';
 import PaperReader from './modules/paper-reader/PaperReader';
+import ArtificialLife from './modules/ArtificialLife';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import PortaraPricing from './modules/PortaraPricing';
 import PortaraPlatform from './modules/PortaraPlatform';
@@ -406,6 +407,13 @@ export const MODULES = [
     icon: 'monitors',
     group: 'Personal',
     component: DevSetup,
+  },
+  {
+    id: 'artificial-life',
+    label: 'Artificial Life',
+    icon: 'specimen',
+    group: 'Personal',
+    component: ArtificialLife,
   },
   {
     id: 'america-first-plan',

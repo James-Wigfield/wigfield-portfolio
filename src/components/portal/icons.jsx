@@ -219,6 +219,16 @@ const PATHS = {
       <path d="M7.6 14.5h8.8" />
     </>
   ),
+  // Specimen — a petri dish with cells (artificial-life simulations)
+  specimen: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="9.5" cy="10" r="2.2" />
+      <circle cx="14.8" cy="14" r="1.6" />
+      <circle cx="14.5" cy="8.6" r="0.7" />
+      <circle cx="9" cy="15.4" r="0.7" />
+    </>
+  ),
   // Chart — axes with a rising curve and an end marker (run-results analysis)
   chart: (
     <>

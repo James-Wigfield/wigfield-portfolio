@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Specimen Cabinet — Artificial Life</title>
+<meta name="description" content="Six artificial-life systems, kept running: Lenia, Gray-Scott reaction-diffusion, Physarum transport networks, Particle Life, the Primordial Particle System, and an evolving ecology of Particle Life organisms.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="plate"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<aside class="sheet sheet--left" id="sheet-left">
+  <section class="block block--masthead">
+    <p class="eyebrow">Cabinet of artificial life</p>
+    <h1 class="masthead__title">Living<br>Specimens</h1>
+    <p class="masthead__sub">Six systems, kept running.<br>Each plate is computed, not recorded.</p>
+  </section>
+
+  <nav class="block block--index" aria-label="Specimen index">
+    <p class="eyebrow eyebrow--rule">Index of plates</p>
+    <ol class="index" id="index"></ol>
+  </nav>
+
+  <section class="block block--record" id="record" aria-live="polite">
+    <p class="eyebrow eyebrow--rule">Field record</p>
+    <div class="record__body" id="record-body"></div>
+  </section>
+</aside>
+
+<aside class="sheet sheet--right" id="sheet-right">
+  <section class="block block--instr">
+    <p class="eyebrow eyebrow--rule">Instruments</p>
+    <div class="presets" id="presets" role="group" aria-label="Presets"></div>
+    <p class="preset-note" id="preset-note"></p>
+    <div class="dials" id="dials"></div>
+    <div class="extras" id="extras"></div>
+  </section>
+
+  <section class="block block--readout">
+    <p class="eyebrow eyebrow--rule">Readout</p>
+    <div class="readout">
+      <button class="state" id="state" type="button" aria-live="polite">Running</button>
+      <dl class="gauges">
+        <div class="gauge"><dt>frames</dt><dd class="mono" id="fps">—</dd></div>
+        <div class="gauge"><dt>step</dt><dd class="mono" id="ms">—</dd></div>
+        <div class="gauge"><dt id="metric-label">metric</dt><dd class="mono" id="metric">—</dd></div>
+        <div class="gauge"><dt>tick</dt><dd class="mono" id="ticks">0</dd></div>
+      </dl>
+      <canvas class="trace" id="trace" width="256" height="34" aria-hidden="true"></canvas>
+      <div class="dials dials--speed" id="speed-dial"></div>
+    </div>
+    <p class="keys">
+      <span><b>space</b> hold</span><span><b>.</b> step</span><span><b>r</b> reseed</span>
+      <span><b>h</b> hide</span><span><b>1–6</b> plate</span><span><b>s</b> save</span>
+      <span class="keys__drag">drag on the plate to seed it</span>
+    </p>
+  </section>
+</aside>
+
+<div class="marks" aria-hidden="true">
+  <i class="mark mark--tl"></i><i class="mark mark--tr"></i>
+  <i class="mark mark--bl"></i><i class="mark mark--br"></i>
+  <span class="plate-no mono" id="plate-no">pl. i / vi</span>
+</div>
+
+<noscript><p class="noscript">This cabinet is computed live in the browser; it needs JavaScript and a
+static server (module scripts will not load from a file:// URL).</p></noscript>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
