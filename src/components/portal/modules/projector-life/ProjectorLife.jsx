@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { defaults } from './params.js';
 import { DEFAULT_PRESET, PRESET_BY_ID } from './presets.js';
 import Visualiser from './ui/Visualiser';
@@ -36,6 +36,29 @@ export default function ProjectorLife() {
   const [tab, setTab] = useState('vis');
   const [scene, setScene] = useState(initialScene);
   const tabRefs = useRef({});
+  const rootRef = useRef(null);
+
+  // "The first thing I see is the render": the portal's banner and page header
+  // sit above every module, so on opening, glide the page until the tab bar
+  // meets the sticky page header — the stage then fills the rest of the
+  // viewport (its height is 100vh minus header + tabs). Only from near the top
+  // of the page (never fights a reader who has scrolled), once per visit.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return undefined;
+    const head = document.querySelector('.portal__topbar');
+    const headH = head ? head.getBoundingClientRect().height : 0;
+    const top = Math.round(el.getBoundingClientRect().top + window.scrollY - headH - 6);
+    if (top <= 0 || window.scrollY > top) return undefined;
+    let reduce = false;
+    try {
+      reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      /* no matchMedia: animate */
+    }
+    const id = requestAnimationFrame(() => window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' }));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const onKey = useCallback(
     (e) => {
@@ -56,7 +79,7 @@ export default function ProjectorLife() {
   const preset = PRESET_BY_ID[scene.presetId];
 
   return (
-    <div className="pt-module pjl">
+    <div className="pt-module pjl" ref={rootRef}>
       <div className="pjl-tabs">
         <div className="pjl-tabs__list" role="tablist" aria-label="Projector Life" onKeyDown={onKey}>
           {TABS.map((t, i) => (

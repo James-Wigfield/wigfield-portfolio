@@ -14,7 +14,7 @@
   --pjl-ceiling: #7a5cc8;
   --pjl-warn: #c27d12;
   --pjl-mono: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
-  --pjl-stage-h: clamp(420px, calc(100vh - 150px), 980px);
+  --pjl-stage-h: clamp(420px, calc(100vh - 186px), 980px);
   --pjl-panel-w: 316px;
 
   /* the stage's own palette (on black, every theme) */

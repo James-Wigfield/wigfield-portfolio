@@ -95,7 +95,7 @@ function projectorParams(i) {
     p(R(`p${i}.roll`, 'Roll', g, d.roll, -45, 45, 1, { unit: '°', digits: 0 })),
     p(R(`p${i}.throw`, 'Throw ratio', g, d.throw, 0.2, 2.5, 0.01, { digits: 2, hint: 'distance ÷ image width' })),
     p(S(`p${i}.aspect`, 'Aspect', g, '16:9', ASPECTS)),
-    p(R(`p${i}.brightness`, 'Brightness', g, 1, 0, 2, 0.01, { digits: 2 })),
+    p(R(`p${i}.brightness`, 'Brightness', g, 1.5, 0, 2.5, 0.01, { digits: 2, hint: '1 = full white on a 4 m-wide picture, square on' })),
     p(R(`p${i}.black`, 'Black level', g, 0.025, 0, 0.2, 0.001, { digits: 3, hint: 'glow a real projector throws for black' })),
   ];
 }
@@ -106,7 +106,7 @@ export const PARAMS = [
   T('room.furniture', 'Show furniture', 'room', true),
   T('room.loft', 'Show loft', 'room', true),
   T('room.cutaway', 'Fade near walls (cutaway)', 'room', true),
-  R('room.ambient', 'Room lights', 'room', 0.14, 0, 1, 0.01, { digits: 2, hint: '0 = pitch dark, 1 = the baked night look' }),
+  R('room.ambient', 'Room lights', 'room', 0.06, 0, 1, 0.01, { digits: 2, hint: '0 = pitch dark, 1 = the baked night look' }),
   T('room.oldRoof', 'Show the old low roof', 'room', false),
 
   // ── Projectors ────────────────────────────────────────────────────────────

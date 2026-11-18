@@ -27,6 +27,12 @@ function pose(i, p) {
 }
 
 export const RIGS = {
+  // The hero rig (lead, 2026-11-18): SE corner at 2.1 m, heading NNW, tilted
+  // 22° down, throw 0.35. Searched for the share of what the CUTAWAY camera
+  // shows (walls SW–NE, their roof facets, floor, loft) with every habitat in
+  // play: 50 % of the visible half (floor 39 · walls 55 · roof 60); room-wide
+  //                                                     31 / 41 / 41 → 39 %
+  seHero: { x: 3.3, y: 2.1, z: 3.7, yaw: -22.5, pitch: -22, roll: 0, throw: 0.35 },
   // High in the SE corner, looking NW across the room at the half the cutaway
   // camera sees.                                        5 / 27 / 39 → 26 %
   seShort: { x: 3.45, y: 2.15, z: 3.45, yaw: -45, pitch: -12, roll: 0, throw: 0.5 },
@@ -58,8 +64,10 @@ export const PRESETS = [
     camera: 'cutaway',
     values: {
       'room.apex': 3.3,
+      'room.ambient': 0.05,
       'proj.count': 1,
-      ...pose(0, RIGS.seShort),
+      ...pose(0, RIGS.seHero),
+      'p0.brightness': 1.8,
       'map.mode': 'mapped',
       'life.sys.floor': 'physarum',
       'life.sys.wall': 'grayscott',
