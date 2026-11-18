@@ -16,22 +16,43 @@
    the seam map between them is a plain 2-D rotation + translation.
 
    Lead-authored reference implementation; the room agent owns and extends it
-   (loft polygon, measured masks, heightfield) without changing the shape.
+   (measured loft polygon + deck height, measured masks, old-roof apex)
+   without changing the patch shape. Measured numbers come from measured.js,
+   generated from the GLB by tools/projector-life/room-check.mjs --write.
    ========================================================================== */
+
+import { MEASURED } from './measured.js';
+
+// The old roof: a low pyramid from the eave (apothem 2.18, y 2.25) to a flat
+// octagonal cap (circumradius 0.28 at y 2.68). Extended through the cap its
+// facets meet at a virtual apex of ≈ 2.738 m (pitch ≈ 12.6°).
+const OLD_CAP_APOTHEM = 0.28 * Math.cos(Math.PI / 8);
+const OLD_SLOPE = (2.68 - 2.25) / (2.18 - OLD_CAP_APOTHEM);
 
 export const SHED = Object.freeze({
   centre: [2.18, 0, 2.18],
   apothem: 2.18,
   circumradius: 2.18 / Math.cos(Math.PI / 8), // 2.3596
   side: 2 * 2.18 * Math.tan(Math.PI / 8), //     1.8059
+  wallThickness: 0.1, //                          outer face at apothem 2.28
   floorY: 0,
   eaveY: 2.25,
   fasciaY: 2.14,
   jointY: 1.23,
-  oldRoof: { pitchDeg: 12, capY: 2.68, capR: 0.28 },
-  loftDeckY: 1.1,
-  apex: { min: 2.7, max: 4.2, default: 3.3 },
+  oldRoof: Object.freeze({
+    capY: 2.68,
+    capR: 0.28,
+    apex: 2.25 + 2.18 * OLD_SLOPE, //           2.7379
+    pitchDeg: (Math.atan(OLD_SLOPE) * 180) / Math.PI, // 12.6
+  }),
+  loftDeckY: MEASURED.deck.y, //                 1.100 (measured)
+  apex: Object.freeze({ min: 2.7, max: 4.2, default: 3.3 }),
 });
+
+/** Apex the roof patches use: the slider's value, or the old roof's virtual apex. */
+export function effectiveApex(values) {
+  return values['room.oldRoof'] ? SHED.oldRoof.apex : values['room.apex'];
+}
 
 /** Flat k = 0..7, clockwise from north seen from above. */
 export const FLATS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -212,11 +233,23 @@ export function linkSeams(patches) {
 
 /**
  * Build the patch list for a given apex height.
- *   opts.apex      roof apex height, m (SHED.apex.min..max)
- *   opts.loft      include the loft deck patch (polygon from opts.loftPolygon
- *                  in floor-local coordinates, else the measured default)
+ *   opts.apex        roof apex height, m (SHED.apex.min..max; SHED.oldRoof.apex for the old roof)
+ *   opts.loft        include the loft deck patch AND the loft masks (walls under/behind
+ *                    the deck, the under-loft floor)
+ *   opts.loftPolygon deck outline in floor-local coordinates (default: measured)
+ *   opts.loftY       deck height (default: measured, 1.100)
+ *   opts.furniture   include the furniture masks (floor footprints, walls stood against)
+ *   opts.masks       mask list [{ patch, id, kind, polygon }] (default: measured, MEASURED.masks)
+ * Masks are attached to their patch as { id, kind, polygon } (patch-local, CCW).
  */
-export function buildPatches({ apex = SHED.apex.default, loft = true, loftPolygon = null } = {}) {
+export function buildPatches({
+  apex = SHED.apex.default,
+  loft = true,
+  loftPolygon = null,
+  loftY = null,
+  furniture = true,
+  masks = null,
+} = {}) {
   const { side: s, eaveY: H, apothem: A, centre: C } = SHED;
   const up = [0, 1, 0];
   const patches = [];
@@ -257,9 +290,17 @@ export function buildPatches({ apex = SHED.apex.default, loft = true, loftPolygo
   // (its edges meet the walls mid-height, not edge to edge); creatures reach
   // it by falling. Polygon measured from the GLB by the room agent.
   if (loft) {
-    const lo = [fo[0], SHED.loftDeckY, fo[2]];
+    const lo = [fo[0], loftY ?? SHED.loftDeckY, fo[2]];
     const poly = loftPolygon || DEFAULT_LOFT_POLYGON;
     patches.push(makePatch('loft', 'loft', lo, floorU, floorV, poly, { noSeams: true }));
+  }
+
+  const byId = new Map(patches.map((p) => [p.id, p]));
+  for (const m of masks || MEASURED.masks) {
+    if (m.kind === 'loft' && !loft) continue;
+    if (m.kind === 'furniture' && !furniture) continue;
+    const p = byId.get(m.patch);
+    if (p) p.masks.push({ id: m.id, kind: m.kind, polygon: m.polygon.map((q) => q.slice()) });
   }
 
   linkSeams(patches);
@@ -268,24 +309,11 @@ export function buildPatches({ apex = SHED.apex.default, loft = true, loftPolygo
 
 /**
  * Loft deck outline in floor-local coordinates (x east, y north from the SW
- * bounding corner). Placeholder from layout.md (front edge from the SW flat to
- * the N flat); the room agent replaces it with the measured GLB outline.
+ * bounding corner), CCW: measured from the GLB (the upward faces of `obj__loft`
+ * at the deck height, clipped to the inner wall faces). The front edge runs
+ * from the SW flat (1.148, 0.130) to the N flat (1.998, 4.360).
  */
-export const DEFAULT_LOFT_POLYGON = (() => {
-  const A = SHED.apothem;
-  // layout.md centre-frame points (x east, z south): (−1.03, 2.05) and (−0.18, −2.18)
-  const toLocal = ([x, z]) => [x + A, A - z];
-  const front0 = toLocal([-1.03, 2.05]);
-  const front1 = toLocal([-0.18, -2.18]);
-  const fo = [SHED.centre[0] - A, 0, SHED.centre[2] + A];
-  const c = (k) => {
-    const w = cornerXZ(k);
-    return [w[0] - fo[0], fo[2] - w[2]];
-  };
-  // front0 (on the SW flat) → front1 (on the N flat) → corners N|NW, NW|W, W|SW
-  const poly = [front0, front1, c(0), c(7), c(6)];
-  return polygonArea(poly) < 0 ? poly.reverse() : poly;
-})();
+export const DEFAULT_LOFT_POLYGON = MEASURED.deck.polygon.map((q) => q.slice());
 
 /** Summary used by checks, the MCP preview and the Plan tab. */
 export function describeRoom(patches) {
