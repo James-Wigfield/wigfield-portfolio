@@ -15,7 +15,13 @@ A new portal tab **Projector Life** (`/portal/projector-life`, Personal group, r
 
 ## Merge status
 
-See the end of this file (filled in after the merge step).
+**Merged into local `main`** as `1ceccc4` (`--no-ff`, from `feat/projector-life` at `5c1412b`); **not pushed, not deployed**.
+
+- Before merging I compared the branch's 163 changed paths with the main checkout's 39 dirty or untracked paths: no overlap. Nothing was staged in main's index, and main hadn't moved since the branch point.
+- After the merge, the main checkout's dirty set is the same 39 paths, untouched. They belong to another session's in-progress Memory Rooms edit work (`src/memory-rooms/*`, `src/App.jsx`, `tools/memory-rooms/*`, `workers/memory-rooms.js`) plus the prompt-dumping files.
+- Nothing was stashed, reset or checked out.
+- The worktree is kept at `.claude/worktrees/projector-life` on branch `feat/projector-life`. You can remove it with `git worktree remove .claude/worktrees/projector-life` once you're happy.
+- Smoke test against the main checkout's own dev server (5173): every preset 146 fps, zero console errors. The first load there took 3.97 s because Vite was compiling the new module on demand for the first time; later loads match the worktree's ~1–2 s.
 
 ## Measured
 
@@ -41,7 +47,7 @@ See the end of this file (filled in after the merge step).
 | `room-check.mjs` (patches close the room, seams pair, gravity, masks, flats vs the GLB) | 143 / 143 |
 | `projection-check.mjs` (throw → FOV, poses, coverage maths) | 41 / 41 |
 | `sim-check.mjs --quick` (no NaN, bounded, budget, seams crossed, drift, geotaxis, falls, pitch, masks, churn, no creep) | 19 / 19 (full run adds the evolution check) |
-| `page-check.mjs` (load, fps per preset, presets, roof, seed, PNG, MCP, tabs, leaks, layout 1440/390, reduced motion, broken storage, console) | see "Final page-check" below |
+| `page-check.mjs` (load, fps per preset, presets, roof, seed, PNG, MCP, tabs, leaks, layout 1440/390, reduced motion, broken storage, console) | **54 / 54** (final run on `3e17161`) |
 | `shots.mjs` | 76 screenshots |
 | `soak.mjs` | flat (above) |
 | `npx eslint src/components/portal/modules/projector-life tools/projector-life` | clean |
