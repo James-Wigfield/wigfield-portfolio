@@ -73,6 +73,7 @@ import PdReader from './modules/PdReader';
 import DeckStudio from './modules/DeckStudio';
 import PaperReader from './modules/paper-reader/PaperReader';
 import ArtificialLife from './modules/ArtificialLife';
+import ProjectorLife from './modules/projector-life/ProjectorLife';
 import PortaraBusinessPlan from './modules/PortaraBusinessPlan';
 import PortaraPricing from './modules/PortaraPricing';
 import PortaraPlatform from './modules/PortaraPlatform';
@@ -414,6 +415,14 @@ export const MODULES = [
     icon: 'specimen',
     group: 'Personal',
     component: ArtificialLife,
+  },
+  {
+    // 3-D visualiser: artificial life projection-mapped onto the She'd. Module in ./modules/projector-life/.
+    id: 'projector-life',
+    label: 'Projector Life',
+    icon: 'projector',
+    group: 'Personal',
+    component: ProjectorLife,
   },
   {
     id: 'america-first-plan',

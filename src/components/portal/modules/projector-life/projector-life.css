@@ -1,0 +1,16 @@
+/* PROJECTOR LIFE — scoped styles, prefix `pjl-`. STUB; the UI agent owns this. */
+.pjl-stage {
+  position: relative;
+  height: min(78vh, 820px);
+  min-height: 360px;
+  background: #000;
+  overflow: hidden;
+}
+.pjl-canvas {
+  display: block;
+  touch-action: none;
+}
+.pjl-err {
+  color: var(--error);
+  font-family: var(--font-mono, monospace);
+}
