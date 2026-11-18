@@ -31,7 +31,12 @@ const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) 
 
 export async function createStage(container, opts = {}) {
   const stage = new Stage(container, opts);
-  await stage.init();
+  try {
+    await stage.init();
+  } catch (e) {
+    stage.dispose(); // a failed GLB load must not leave a WebGL context behind
+    throw e;
+  }
   return stage;
 }
 
@@ -166,7 +171,9 @@ export class Stage {
     this.life.setParams(this.values, changed);
     this.projection.setParams(this.values, changed);
     if (changed.some((k) => k.startsWith('cr.showAir'))) this.air.visible = !!this.values['cr.showAir'];
-    if (this.view === 'projector' && changed.some((k) => /^p0\./.test(k))) this.setView('projector', { instant: true });
+    if (this.view === 'projector' && changed.some((k) => k.startsWith(`p${this.viewProjector || 0}.`) || k === 'proj.count')) {
+      this.setView('projector', { instant: true, projector: this.viewProjector || 0 });
+    }
     this._emit(true);
   }
 
@@ -233,10 +240,11 @@ export class Stage {
   }
 
   /** Smoothly move to a named view ('cutaway' | 'door' | … | 'projector' | 'plan'). */
-  setView(id, { instant = false } = {}) {
+  setView(id, { instant = false, projector = null } = {}) {
     if (!this.room) return;
     let v;
-    if (id === 'projector') v = this.projection.projectorView(0);
+    if (projector != null) this.viewProjector = Math.max(0, Math.min((this.values['proj.count'] || 1) - 1, projector | 0));
+    if (id === 'projector') v = this.projection.projectorView(this.viewProjector || 0);
     else v = this.room.views[id] || this.room.views.cutaway;
     if (!v) return;
     this.view = id;
@@ -385,7 +393,7 @@ export class Stage {
     if (!outs.length) return;
     const narrow = size.w < 640;
     const pad = narrow ? 8 : 14;
-    const each = Math.min(narrow ? 0.34 : 0.22, 0.9 / outs.length) * size.w;
+    const each = Math.min(narrow ? 0.3 : 0.2, 0.6 / outs.length) * size.w;
     const rects = [];
     let x = pad;
     for (const o of outs) {

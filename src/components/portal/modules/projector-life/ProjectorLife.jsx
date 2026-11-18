@@ -1,37 +1,101 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useRef, useState } from 'react';
+import { defaults } from './params.js';
+import { DEFAULT_PRESET, PRESET_BY_ID } from './presets.js';
+import Visualiser from './ui/Visualiser';
 import './projector-life.css';
 
-/* PROJECTOR LIFE — shell. STUB by the lead (stage mounts, nothing else); the
-   UI agent replaces this file with the tabs, controls, presets and plan.
-   The engine is a dynamic import so three.js only loads with this tab. */
-export default function ProjectorLife() {
-  const hostRef = useRef(null);
-  const [err, setErr] = useState(null);
+// The registry imports this shell eagerly; the reading tabs load on demand.
+const PlanTab = lazy(() => import('./ui/PlanTab'));
+const ApplicationsTab = lazy(() => import('./ui/ApplicationsTab'));
 
-  useEffect(() => {
-    let stage = null;
-    let dead = false;
-    import('./engine/Stage.js')
-      .then(({ createStage }) => createStage(hostRef.current))
-      .then((s) => {
-        if (dead) s.dispose();
-        else {
-          stage = s;
-          window.__pjlStage = s;
-        }
-      })
-      .catch((e) => !dead && setErr(String(e?.message || e)));
-    return () => {
-      dead = true;
-      stage?.dispose();
-      if (window.__pjlStage === stage) delete window.__pjlStage;
-    };
-  }, []);
+/* ============================================================================
+   PROJECTOR LIFE — shell: top tabs (Visualiser · Plan · Applications)
+   ----------------------------------------------------------------------------
+   The Visualiser is the default and always the tab the page opens on (the
+   brief: "the first thing I see is the render"), so the tab is NOT remembered
+   across visits. The scene (values, camera view, active preset) is held here
+   so it survives a trip to the Plan tab: the Stage is disposed when its tab
+   unmounts and rebuilt from this state when you come back.
+   The engine is a dynamic import inside ui/Visualiser.jsx.
+   ========================================================================== */
+
+const TABS = [
+  { id: 'vis', label: 'Visualiser' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'apps', label: 'Applications' },
+];
+
+const initialScene = () => ({
+  values: { ...defaults(), ...DEFAULT_PRESET.values },
+  view: DEFAULT_PRESET.camera || 'cutaway',
+  presetId: DEFAULT_PRESET.id,
+  edited: false,
+});
+
+export default function ProjectorLife() {
+  const [tab, setTab] = useState('vis');
+  const [scene, setScene] = useState(initialScene);
+  const tabRefs = useRef({});
+
+  const onKey = useCallback(
+    (e) => {
+      const i = TABS.findIndex((t) => t.id === tab);
+      let j = null;
+      if (e.key === 'ArrowRight') j = (i + 1) % TABS.length;
+      else if (e.key === 'ArrowLeft') j = (i - 1 + TABS.length) % TABS.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = TABS.length - 1;
+      if (j == null) return;
+      e.preventDefault();
+      setTab(TABS[j].id);
+      tabRefs.current[TABS[j].id]?.focus();
+    },
+    [tab],
+  );
+
+  const preset = PRESET_BY_ID[scene.presetId];
 
   return (
     <div className="pt-module pjl">
-      <div ref={hostRef} className="pjl-stage" />
-      {err && <p className="pjl-err">{err}</p>}
+      <div className="pjl-tabs">
+        <div className="pjl-tabs__list" role="tablist" aria-label="Projector Life" onKeyDown={onKey}>
+          {TABS.map((t, i) => (
+            <button
+              key={t.id}
+              ref={(el) => {
+                tabRefs.current[t.id] = el;
+              }}
+              type="button"
+              role="tab"
+              id={`pjl-tab-${t.id}`}
+              aria-selected={tab === t.id}
+              aria-controls={`pjl-panel-${t.id}`}
+              tabIndex={tab === t.id ? 0 : -1}
+              className={`pjl-tabs__tab${tab === t.id ? ' is-on' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              <span className="pjl-tabs__n">{String(i + 1).padStart(2, '0')}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="pjl-tabs__status">
+          <span className={`pjl-dot ${scene.edited ? 'pjl-dot--hollow' : 'pjl-dot--live'}`} />
+          <span className="pjl-tabs__statusk">on stage</span>
+          <span className="pjl-tabs__statusv">
+            {preset?.name || 'Custom scene'}
+            {scene.edited ? ' · edited' : ''}
+          </span>
+        </div>
+      </div>
+
+      <div role="tabpanel" id={`pjl-panel-${tab}`} aria-labelledby={`pjl-tab-${tab}`} className="pjl-tabpanel">
+        {tab === 'vis' && <Visualiser scene={scene} setScene={setScene} />}
+        <Suspense fallback={<div className="pjl-wait">loading…</div>}>
+          {tab === 'plan' && <PlanTab />}
+          {tab === 'apps' && <ApplicationsTab />}
+        </Suspense>
+      </div>
     </div>
   );
 }

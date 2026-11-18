@@ -52,13 +52,14 @@ export const THROW_PRESETS = [
   { label: 'Ultra-short', value: 0.25, note: 'typical ultra-short throw' },
 ];
 
+/* `short` is the stage-overlay button text; `label` is its tooltip / aria. */
 export const CAMERA_VIEWS = [
-  { value: 'cutaway', label: 'Cutaway ¾' },
-  { value: 'door', label: 'At the door' },
-  { value: 'armchair', label: 'In the armchair' },
-  { value: 'loft', label: 'On the loft, looking up' },
-  { value: 'projector', label: "Projector's view" },
-  { value: 'plan', label: 'Top-down plan' },
+  { value: 'cutaway', label: 'Cutaway ¾', short: 'Cutaway' },
+  { value: 'door', label: 'At the door', short: 'Door' },
+  { value: 'armchair', label: 'In the armchair', short: 'Armchair' },
+  { value: 'loft', label: 'On the loft, looking up', short: 'Loft' },
+  { value: 'projector', label: "Projector's view", short: 'Projector' },
+  { value: 'plan', label: 'Top-down plan', short: 'Plan' },
 ];
 
 const R = (key, label, group, def, min, max, step, extra = {}) => ({ key, label, group, type: 'range', default: def, min, max, step, ...extra });
@@ -67,11 +68,17 @@ const T = (key, label, group, def, extra = {}) => ({ key, label, group, type: 't
 const S = (key, label, group, def, options, extra = {}) => ({ key, label, group, type: 'select', default: def, options, ...extra });
 
 /** Default pose of each projector (index 0..2). Inside the room, metres/degrees. */
+// Found with the occlusion-aware coverage readout (projection/NOTES.md, "Placement
+// search"); all three sit ≥ 15 cm under the 3.3 m roof. Coverage, masks on:
+//   p0 alone 34.5 % (floor 19 · walls 42 · roof 37; 43 % of what the cutaway shows)
+//   p0 + p1  61.3 % (28 · 71 · 73)      p0 + p1 + p2  72.2 % (58 · 80 · 73)
 const PROJ_DEFAULTS = [
-  // On the loft rail, looking across and down at the E/SE walls and floor.
-  { x: 1.35, y: 2.05, z: 2.2, yaw: 95, pitch: -18, roll: 0, throw: 0.5, on: true },
-  { x: 3.6, y: 2.0, z: 3.5, yaw: -55, pitch: -15, roll: 0, throw: 0.5, on: true },
-  { x: 2.18, y: 0.35, z: 2.18, yaw: 0, pitch: 80, roll: 0, throw: 0.5, on: true },
+  // Over the loft's south end, aiming NNE across the room into the half the cutaway camera sees.
+  { x: 1.35, y: 2.05, z: 3.9, yaw: 22.5, pitch: -12, roll: 0, throw: 0.5, on: true },
+  // High on the north wall above the armchair, aiming SSW: the loft walls and most of the roof.
+  { x: 2.2, y: 2.3, z: 0.5, yaw: -157.5, pitch: -12, roll: 0, throw: 0.5, on: true },
+  // High in the NE, steeply down: mostly buys floor.
+  { x: 3.9, y: 2.3, z: 1.78, yaw: -135, pitch: -60, roll: 0, throw: 0.5, on: true },
 ];
 
 function projectorParams(i) {
@@ -83,9 +90,9 @@ function projectorParams(i) {
     p(R(`p${i}.x`, 'Position x (east)', g, d.x, 0.25, 4.11, 0.01, { unit: 'm', digits: 2 })),
     p(R(`p${i}.y`, 'Height', g, d.y, 0.1, 4.0, 0.01, { unit: 'm', digits: 2 })),
     p(R(`p${i}.z`, 'Position z (south)', g, d.z, 0.25, 4.11, 0.01, { unit: 'm', digits: 2 })),
-    p(R(`p${i}.yaw`, 'Aim — heading', g, d.yaw, -180, 180, 1, { unit: '°', hint: '0 = north, 90 = east' })),
-    p(R(`p${i}.pitch`, 'Aim — tilt', g, d.pitch, -90, 90, 1, { unit: '°', hint: '+ looks up' })),
-    p(R(`p${i}.roll`, 'Roll', g, d.roll, -45, 45, 1, { unit: '°' })),
+    p(R(`p${i}.yaw`, 'Aim — heading', g, d.yaw, -180, 180, 1, { unit: '°', digits: 0, hint: '0 = north, 90 = east · or drag the aim dot' })),
+    p(R(`p${i}.pitch`, 'Aim — tilt', g, d.pitch, -90, 90, 1, { unit: '°', digits: 0, hint: '+ looks up' })),
+    p(R(`p${i}.roll`, 'Roll', g, d.roll, -45, 45, 1, { unit: '°', digits: 0 })),
     p(R(`p${i}.throw`, 'Throw ratio', g, d.throw, 0.2, 2.5, 0.01, { digits: 2, hint: 'distance ÷ image width' })),
     p(S(`p${i}.aspect`, 'Aspect', g, '16:9', ASPECTS)),
     p(R(`p${i}.brightness`, 'Brightness', g, 1, 0, 2, 0.01, { digits: 2 })),
@@ -95,7 +102,7 @@ function projectorParams(i) {
 
 export const PARAMS = [
   // ── Room ──────────────────────────────────────────────────────────────────
-  R('room.apex', 'Roof apex height', 'room', 3.3, 2.7, 4.2, 0.01, { unit: 'm', digits: 2, hint: 'pitch shown alongside' }),
+  R('room.apex', 'Roof apex height', 'room', 3.3, 2.7, 4.2, 0.01, { unit: 'm', digits: 2, hint: 'steeper roof = more slide, less peel' }),
   T('room.furniture', 'Show furniture', 'room', true),
   T('room.loft', 'Show loft', 'room', true),
   T('room.cutaway', 'Fade near walls (cutaway)', 'room', true),
@@ -106,22 +113,22 @@ export const PARAMS = [
   I('proj.count', 'Projectors', 'projectors', 1, 1, 3),
   T('proj.frustum', 'Show frustum', 'projectors', true),
   T('proj.coverage', 'Coverage view', 'projectors', false, { hint: 'colour = how many projectors reach a surface' }),
-  T('proj.occlusion', 'Occlusion (projection shadows)', 'projectors', true),
-  T('proj.pixels', 'Pixel-size view', 'projectors', false),
-  S('proj.res', 'Projector resolution', 'projectors', '1920', [
-    { value: '1280', label: '1280 wide (720p)' },
-    { value: '1920', label: '1920 wide (1080p)' },
-    { value: '3840', label: '3840 wide (4K)' },
-  ]),
+  T('proj.occlusion', 'Occlusion (projection shadows)', 'projectors', true, { hint: 'loft and furniture cast shadows' }),
+  T('proj.pixels', 'Pixel-size view', 'projectors', false, { hint: 'projector pixels per metre where they land' }),
+  S('proj.res', 'Resolution', 'projectors', '1920', [
+    { value: '1280', label: '720p' },
+    { value: '1920', label: '1080p' },
+    { value: '3840', label: '4K' },
+  ], { hint: '1280 / 1920 / 3840 px wide' }),
   ...projectorParams(0),
   ...projectorParams(1),
   ...projectorParams(2),
 
   // ── Mapping ───────────────────────────────────────────────────────────────
   S('map.mode', 'Mapping', 'mapping', 'mapped', [
-    { value: 'mapped', label: 'Mapped (per region)' },
-    { value: 'raw', label: 'Raw (one flat rectangle)' },
-  ]),
+    { value: 'mapped', label: 'Mapped' },
+    { value: 'raw', label: 'Raw' },
+  ], { hint: 'raw = one flat rectangle, warped by the corners' }),
   T('map.mask.door', 'Mask the door', 'mapping', true),
   T('map.mask.window', 'Mask the window', 'mapping', true),
   T('map.mask.loft', 'Mask the loft', 'mapping', true),
@@ -152,12 +159,12 @@ export const PARAMS = [
   R('life.gravity', 'Gravity strength', 'life', 1, 0, 2, 0.01, { digits: 2, section: 'Gravity' }),
   R('life.drift', 'Gray-Scott drift along g', 'life', 0.35, 0, 1, 0.01, { digits: 2, section: 'Gravity', hint: 'patterns drip down walls' }),
   S('life.geoSign', 'Physarum geotaxis', 'life', 'down', [
-    { value: 'down', label: 'Sinks (positive)' },
-    { value: 'up', label: 'Climbs (negative)' },
+    { value: 'down', label: 'Sinks' },
+    { value: 'up', label: 'Climbs' },
   ], { section: 'Gravity' }),
   R('life.geotaxis', 'Geotaxis strength', 'life', 0.3, 0, 1, 0.01, { digits: 2, section: 'Gravity' }),
-  T('life.seams', 'Cross seams', 'life', true, { section: 'Space' }),
-  R('life.ppm', 'Sim resolution', 'life', 40, 16, 64, 4, { unit: 'px/m', section: 'Space' }),
+  T('life.seams', 'Cross seams', 'life', true, { section: 'Space', hint: 'wall → roof at the eave, wall → wall at corners' }),
+  R('life.ppm', 'Sim resolution', 'life', 40, 16, 64, 4, { unit: 'px/m', section: 'Space', hint: 'one scale everywhere, so life keeps its size' }),
   S('life.gsPalette', 'Gray-Scott palette', 'life', 'aurora', PALETTES, { section: 'Palettes' }),
   S('life.physPalette', 'Physarum palette', 'life', 'bio', PALETTES, { section: 'Palettes' }),
   S('life.plPalette', 'Particle Life palette', 'life', 'neon', PALETTES, { section: 'Palettes' }),
@@ -176,10 +183,10 @@ export const PARAMS = [
   T('cr.selection', 'Selection (death + mutation)', 'creatures', true, { section: 'Evolution' }),
   R('cr.mutation', 'Mutation rate', 'creatures', 0.08, 0, 0.5, 0.005, { digits: 3, section: 'Evolution' }),
   T('cr.detritus', 'Detritus food web', 'creatures', true, { section: 'Evolution' }),
-  T('cr.showAir', 'Show mid-air bodies (not projectable)', 'creatures', true, { section: 'Evolution' }),
+  T('cr.showAir', 'Show mid-air bodies', 'creatures', true, { section: 'Evolution', hint: 'off = what the real projection shows' }),
 
   // ── Visual aids ───────────────────────────────────────────────────────────
-  T('aid.gravity', 'Gravity arrows', 'aids', false),
+  T('aid.gravity', 'Gravity arrows', 'aids', false, { hint: 'g_t arrow, g_n ring' }),
   T('aid.seams', 'Seam lines', 'aids', false),
   T('aid.labels', 'Patch labels', 'aids', false),
   T('aid.projInset', 'Projector-output inset', 'aids', true),
