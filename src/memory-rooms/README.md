@@ -1,6 +1,6 @@
 # Memory Rooms (`/memories`)
 
-Trip spots captured on a phone, turned into Blender-built 3D rooms, on a map of the USA and western Canada.
+Trip spots captured on a phone, turned into Blender-built 3D rooms, on a Mapbox globe that opens on the USA and western Canada.
 Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password).
 
 | Route | Screen |
@@ -21,7 +21,10 @@ src/memory-rooms/
   CONTRACTS.md           shapes every part agrees on: coordinates, API, R2 keys, GLB, Blender kit
   scene/                 scene.schema.json + validate.js (shared with the Worker and scripts) + geometry.js
   lib/api.js             browser client for /api/memories
-  map/                   SVG map (d3-geo + topojson, atlas.json built by tools/memory-rooms/build-atlas.mjs)
+  map/                   the maps: SpotsMap.jsx / PickMap.jsx choose an engine
+    mapbox/              Mapbox GL globe (engine.js loader + fallback rules, useMapbox.js = one map per page,
+                         style.js = the look from the --mr-map-* tokens, project.js screen maths)
+    Atlas*.jsx, geo.js   the SVG atlas fallback (d3-geo + topojson, atlas.json built by tools/memory-rooms/build-atlas.mjs)
   capture/               the capture flow, photo resizing, IndexedDB outbox, geolocation
   viewer/                plain three.js viewer (GLTFLoader, OrbitControls, Spark) + its thin React wrapper
   pages/                 one component per route
@@ -36,7 +39,11 @@ tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test
 - Nothing here imports from `src/components/portal/` or `@react-three/*`.
 - The viewer is a plain class (`viewer/RoomViewer.js`); React only owns its lifecycle.
 - The server side is one file (`workers/memory-rooms.js`) plus `scene/validate.js` + the schema.
-- A UI restyle starts in the token block of `memory-rooms.css` and in `copy.js`.
+- A UI restyle starts in the token block of `memory-rooms.css` and in `copy.js`. That includes the Mapbox map:
+  `map/mapbox/style.js` paints its layers from the `--mr-map-*` tokens.
+- The maps need `VITE_MAPBOX_TOKEN` (a public `pk.` token, in `.env.local`, never in code or `.dev.vars`). Without it,
+  without WebGL 2, or offline, both maps draw the SVG atlas instead. Every Mapbox `Map` is a billed load, so
+  each page makes one (see `map/mapbox/useMapbox.js`); `mapbox-gl` is a lazy chunk only the maps fetch.
 
 ## Run it locally
 
@@ -44,5 +51,6 @@ tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test
 npm run build
 npx wrangler dev --port 8788          # restart after every build; 8787 belongs to another project
 # open http://127.0.0.1:8788/memories, password from .dev.vars (MEMORIES_PASSWORD)
+# ?map=atlas forces the SVG fallback; ?mapstyle=standard tries the other Mapbox style
 ```
 With HMR instead: keep `wrangler dev --port 8788` running and start `API_PROXY=http://127.0.0.1:8788 npx vite`.

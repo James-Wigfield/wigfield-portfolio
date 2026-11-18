@@ -26,6 +26,7 @@ function Zone({ z, ox, oy }) {
   return (
     <g className="dws-zone" data-role={z.role}>
       <rect x={x + 1.5} y={y + 1.5} width={w - 3} height={h - 3} rx="2" />
+      {z.color && <circle className="dws-zone__color" cx={x + 9} cy={y + 9} r="3.5" fill={z.color} />}
       <text className="dws-zone__label" x={x + w / 2} y={y + h / 2 - (z.sub ? 3 : -4)} data-big={big}>
         {z.role === 'claude' ? `Claude ${z.label}` : z.label}
       </text>
@@ -75,8 +76,8 @@ export function MonitorPair({ layout }) {
   const W = rx + SCR_W + 8;
   return (
     <svg className="dws-mon" viewBox={`0 0 ${W} ${PAD + SCR_H + 54}`} role="img" aria-label={`${layout.name}: both monitors with window zones`}>
-      <Screen ox={lx} zones={layout.left} title="Side monitor" sub="DISPLAY2 · left in Windows" />
-      <Screen ox={rx} zones={layout.right} title="Terminal monitor" sub="DISPLAY1 · primary · right" />
+      <Screen ox={lx} zones={layout.left} title="Left monitor" sub="VS Code + Chrome" />
+      <Screen ox={rx} zones={layout.right} title="Right monitor" sub="Claude grid · primary" />
       <text className="dws-mon__seam" x={lx + SCR_W + GAP / 2} y={PAD + SCR_H / 2} transform={`rotate(-90 ${lx + SCR_W + GAP / 2} ${PAD + SCR_H / 2})`}>
         seam
       </text>

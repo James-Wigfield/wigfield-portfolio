@@ -6,8 +6,8 @@ const Icon = ({ d }) => (
   </svg>
 );
 
-/** Zoom in / out / show everything. Required (wheel, drag and pinch are extras). */
-export default function MapControls({ onIn, onOut, onReset, canIn = true, canReset = true }) {
+/** Zoom in / out / show everything (or `resetLabel`). Required (wheel, drag and pinch are extras). */
+export default function MapControls({ onIn, onOut, onReset, canIn = true, canReset = true, resetLabel = COPY.map.zoomReset }) {
   return (
     <div className="mr-mapctl" role="group" aria-label={COPY.map.mapLabel}>
       <button type="button" className="mr-mapctl-btn" data-mr="zoom-in" onClick={onIn} disabled={!canIn} aria-label={COPY.map.zoomIn} title={COPY.map.zoomIn}>
@@ -22,8 +22,8 @@ export default function MapControls({ onIn, onOut, onReset, canIn = true, canRes
         data-mr="zoom-reset"
         onClick={onReset}
         disabled={!canReset}
-        aria-label={COPY.map.zoomReset}
-        title={COPY.map.zoomReset}
+        aria-label={resetLabel}
+        title={resetLabel}
       >
         <Icon d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
       </button>

@@ -25,8 +25,8 @@ export const FACTS = [
   },
   {
     k: 'Primary',
-    v: 'The terminal monitor (DISPLAY1), which Windows places on the right',
-    note: 'You described the terminals as being on the left. Check Settings › Display › Identify. Every plan below follows the Windows arrangement.',
+    v: 'The right-hand screen (internally DISPLAY1)',
+    note: 'The 1 / 2 numbers in Settings › Display aren’t the same as Windows’ internal names. The script picks screens by position: the Claude grid goes on the right, and VS Code + Chrome on the left.',
     tone: 'maybe',
   },
   {
@@ -78,22 +78,49 @@ export const PROJECTS = [
 ];
 
 /* ── 02 layouts (monitor-local px; work area 2560×1392, taskbar below) ───── */
+// Same as $Sessions / $Grid in start-dev.ps1 (decided 2026-11-18: A = 5 Portara
+// + 1 Wigfield, B = 6 Portara + 2 Wigfield). The colours are the 8 that /color
+// accepts (read from Claude Code 2.1.322); hex is only for drawing them here.
+export const SESSIONS = [
+  { id: 'P1', name: 'portara-repo-1', color: 'red', hex: '#e5484d', in: 'A + B' },
+  { id: 'P2', name: 'portara-repo-2', color: 'blue', hex: '#3e7bfa', in: 'A + B' },
+  { id: 'P3', name: 'portara-repo-3', color: 'green', hex: '#2f9e5b', in: 'A + B' },
+  { id: 'P4', name: 'portara-repo-4', color: 'purple', hex: '#8e5cf0', in: 'A + B' },
+  { id: 'P5', name: 'portara-repo-5', color: 'pink', hex: '#e2559b', in: 'A + B' },
+  { id: 'P6', name: 'portara-repo-6', color: 'cyan', hex: '#13a8c2', in: 'B' },
+  { id: 'W1', name: 'wigfield-portfolio-1', color: 'yellow', hex: '#d9a800', in: 'A + B' },
+  { id: 'W2', name: 'wigfield-portfolio-2', color: 'orange', hex: '#f0782a', in: 'B' },
+];
+const GRID = {
+  a: ['P1', 'P2', 'P3', 'P4', 'P5', 'W1'],
+  b: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'W1', 'W2'],
+};
+const hexOf = (id) => SESSIONS.find((s) => s.id === id)?.hex;
+
 // role: claude | code | web | under (window hidden behind another)
-const grid = (cols, rows, w0 = 0, wTotal = 2560, sub = '') => {
+const grid = (cols, rows, order, sub = '') => {
   const out = [];
-  const w = wTotal / cols;
+  const w = 2560 / cols;
   const h = 1392 / rows;
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
-      out.push({ x: w0 + c * w, y: r * h, w, h, role: 'claude', label: `${r * cols + c + 1}`, sub });
+      const n = r * cols + c;
+      out.push({ x: c * w, y: r * h, w, h, role: 'claude', label: `${n + 1}`, sub, color: hexOf(order[n]) });
     }
   }
   return out;
 };
 
+// Same side monitor in A and B: thin VS Code on the outer edge, Chrome against the seam.
+const SIDE = [
+  { x: 0, y: 0, w: 560, h: 1392, role: 'code', label: 'VS Code', sub: '560 px' },
+  { x: 560, y: 0, w: 2000, h: 1392, role: 'web', label: 'Chrome', sub: '2000 px · DevTools fit docked' },
+];
+
 export const LAYOUTS = {
   today: {
     name: 'Today',
+    // Measured: left = DISPLAY2 (x -2560), right = DISPLAY1 (x 0, primary), each in its own local px.
     left: [
       { x: 0, y: 0, w: 2560, h: 1392, role: 'under', label: 'Chrome (maximised underneath)', sub: '' },
       { x: 0, y: 0, w: 1934, h: 1392, role: 'code', label: 'VS Code ×3', sub: 'stacked · 1934 px each' },
@@ -113,32 +140,25 @@ export const LAYOUTS = {
     ],
   },
   a: {
-    name: 'A · Terminal wall',
-    left: [
-      { x: 0, y: 0, w: 560, h: 1392, role: 'code', label: 'VS Code', sub: '560 px' },
-      { x: 560, y: 0, w: 2000, h: 1392, role: 'web', label: 'Chrome', sub: '2000 px · DevTools fit docked' },
-    ],
-    right: grid(3, 2, 0, 2560, '≈105×39'),
+    name: 'A · Six sessions',
+    left: SIDE,
+    right: grid(3, 2, GRID.a, '≈105×39'),
     stats: [
-      ['Claude sessions', '6'],
+      ['Claude sessions', '6 · Portara ×5, Wigfield ×1'],
       ['Each session', '≈ 105 × 39 at 10.5 pt'],
-      ['Chrome', '2000 px, always visible'],
-      ['VS Code', '560 px, one window'],
+      ['Haptic panel', 'Layout A · Ctrl + Alt + D'],
+      ['Side monitor', 'VS Code 560 · Chrome 2000'],
     ],
   },
   b: {
-    name: 'B · Max sessions',
-    left: [
-      { x: 0, y: 0, w: 480, h: 1392, role: 'code', label: 'VS Code', sub: '480 px' },
-      { x: 480, y: 0, w: 1440, h: 1392, role: 'web', label: 'Chrome', sub: '1440 px' },
-      { x: 1920, y: 0, w: 640, h: 1392, role: 'claude', label: '9', sub: '≈79×79 tall' },
-    ],
-    right: grid(4, 2, 0, 2560, '≈79×39'),
+    name: 'B · Eight sessions',
+    left: SIDE,
+    right: grid(4, 2, GRID.b, '≈79×39'),
     stats: [
-      ['Claude sessions', '9'],
+      ['Claude sessions', '8 · Portara ×6, Wigfield ×2'],
       ['Each session', '≈ 79 × 39 at 10.5 pt'],
-      ['Chrome', '1440 px'],
-      ['VS Code', '480 px'],
+      ['Haptic panel', 'Layout B · Ctrl + Alt + Shift + D'],
+      ['Side monitor', 'same as A'],
     ],
   },
 };
@@ -146,26 +166,27 @@ export const LAYOUTS = {
 export const LAYOUT_WHY = [
   ['One terminal window, panes inside it', 'The grid is one Windows Terminal window with 6 panes, so it has one tab row instead of six and one window to place. Alt + arrows moves between sessions, and zoom (Ctrl + Shift + Z) fills the monitor with one pane until you press it again.'],
   ['Chrome against the seam', 'The browser you look at most sits closest to the terminals. VS Code, which you only glance at, goes on the outer curved edge.'],
-  ['One VS Code window', 'A multi-root workspace holds portara-repo, wigfield-portfolio and honours-dissertation in one explorer. That replaces three 1934 px windows.'],
+  ['One VS Code window', 'A multi-root workspace holds portara-repo and wigfield-portfolio, the two repos you open almost every day, in one explorer. That replaces three 1934 px windows.'],
   ['10.5 pt instead of 12 pt', 'Today each session has about 68 columns. In the A grid at 10.5 pt each pane has about 105. Turn the thumb wheel to zoom one pane when you need bigger text.'],
+  ['A and B differ on one monitor only', 'B drops the tall 9th session, so both layouts share the same side monitor. Only the Claude grid changes: 3 × 2 or 4 × 2.'],
+  ['A colour per session', 'Each pane opens with its own /color and a name, so you can tell portara-repo 1, 2 and 3 apart at a glance. A colour belongs to a session, not a position, so wigfield-portfolio is yellow in A and in B.'],
 ];
 
 export const ZONE_STEPS = [
   ['PowerToys › General', 'Turn on Run at startup, then launch PowerToys.'],
   ['FancyZones › settings', 'Turn on Override Windows Snap and Move windows between zones across all monitors. Turn on Move newly created windows to their last known zone.'],
-  ['FancyZones › Layout editor (Win + Shift + `)', 'On the side monitor, create a Custom › Canvas layout called “Studio”: 560 | 2000, with spacing 0. Create a second one called “Studio + 1”: 480 | 1440 | 640. Give them quick keys 1 and 2.'],
-  ['Terminal monitor', 'Set its layout to No layout. The maximised Terminal window holds the grid.'],
-  ['Switch', 'Win + Ctrl + Alt + 1 or 2 swaps the side monitor between A and B.'],
+  ['FancyZones › Layout editor (Win + Shift + `)', 'On the side monitor, create a Custom › Canvas layout called “Studio”: 560 | 2000, with spacing 0. A and B both use it, so one layout is enough.'],
+  ['Terminal monitor', 'Set its layout to No layout. The maximised Terminal window holds the grid in both A and B.'],
 ];
 
 export const WORKSPACE_FILE = `{
   "folders": [
     { "path": "business/portara-repo" },
-    { "path": "personal-projects/wigfield-portfolio" },
-    { "path": "university/cits4010/honours-dissertation" }
+    { "path": "personal-projects/wigfield-portfolio" }
   ],
   "settings": {
     "workbench.activityBar.location": "top",
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
     "workbench.startupEditor": "none",
     "breadcrumbs.enabled": false,
     "editor.minimap.enabled": false
@@ -203,10 +224,17 @@ export const LAUNCH_OPTIONS = [
 
 export const TRIGGER_STEPS = [
   ['Save', 'Save the script to Documents\\dev-tools\\start-dev.ps1, and the workspace file to Documents\\dev.code-workspace.'],
-  ['Test', 'From any shell, run powershell -ExecutionPolicy Bypass -File start-dev.ps1 and check where each window lands.'],
-  ['Shortcut', 'Start menu › Programs › New shortcut, named “Start Dev”. Target: powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\\Users\\james\\Documents\\dev-tools\\start-dev.ps1"'],
-  ['Hotkey', 'In the shortcut’s Properties › Shortcut key, set Ctrl + Alt + D. Make a second shortcut ending in -Max with Ctrl + Alt + Shift + D.'],
-  ['Mouse', 'In Logi Options+, set a Keyboard shortcut action to Ctrl + Alt + D (see the Mouse tab).'],
+  ['Test', 'From any shell, run powershell -ExecutionPolicy Bypass -File start-dev.ps1 -Layout A, then the same with -Layout B. Check where each window lands and that each prompt bar shows its colour.'],
+  ['Shortcut A', 'Start menu › Programs › New shortcut, named “Dev Layout A”. Target: powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\\Users\\james\\Documents\\dev-tools\\start-dev.ps1" -Layout A. In Properties › Shortcut key, set Ctrl + Alt + D.'],
+  ['Shortcut B', 'Copy it, rename it “Dev Layout B”, change the end of the target to -Layout B and set Ctrl + Alt + Shift + D.'],
+  ['Haptic panel', 'In Logi Options+, put both on the Actions Ring as Keyboard shortcut actions named Layout A and Layout B (see the Mouse tab).'],
+];
+
+export const COLOR_NOTES = [
+  ['How', 'Each pane starts as claude … -n portara-repo-1 \'/color red\'. The name and the colour show in the prompt bar, and the name also becomes the pane’s title.'],
+  ['Kept', '/color is saved with the session, so it comes back when you /resume it.'],
+  ['If it doesn’t take', 'If a pane opens without its colour, type /color red (or whichever) in it once. Nothing else in the plan depends on it.'],
+  ['One press, one set', 'Each press opens a new grid. To switch between A and B, close the current grid first, or you’ll have two sets of sessions running.'],
 ];
 
 /* ── 04 mouse ────────────────────────────────────────────────────────────── */
@@ -244,7 +272,7 @@ export const MAPPINGS = [
   },
   {
     control: 'Haptic panel · ring',
-    all: 'Start dev (Ctrl + Alt + D) · Start dev max (Ctrl + Alt + Shift + D) · Snip (Win + Shift + S) · Copy · Paste · Undo',
+    all: 'Layout A (Ctrl + Alt + D) · Layout B (Ctrl + Alt + Shift + D) · Snip (Win + Shift + S) · Copy · Paste · Undo',
     term: 'adds Interrupt (Esc) · Plan mode (Shift + Tab) · Paste image (Alt + V)',
     chrome: 'adds DevTools (F12) · Hard reload (Ctrl + Shift + R)',
     code: 'adds Reveal in File Explorer (Shift + Alt + R)',
@@ -275,7 +303,7 @@ export const MAPPINGS = [
 export const LOGI_STEPS = [
   ['Open', 'Open Logi Options+ › MX Master 4. Leave All applications selected.'],
   ['Gesture button', 'Click it › Gestures › Custom. Set Click to Switch applications. For Left, Right, Up and Down, use Keyboard shortcut and press Win + ←, Win + →, Win + PgDn and Win + D.'],
-  ['Actions Ring', 'Click the thumb panel › Actions Ring › Edit. Replace Cut, Back, Forward and Redo with Keyboard shortcut actions named Start dev, Start dev max and Snip.'],
+  ['Actions Ring', 'Click the thumb panel › Actions Ring › Edit. Replace Cut, Back, Forward and Redo with Keyboard shortcut actions: Layout A (Ctrl + Alt + D), Layout B (Ctrl + Alt + Shift + D) and Snip (Win + Shift + S).'],
   ['Per-app profiles', 'Click All applications at the top › + Add application. Add Terminal (WindowsTerminal.exe), Google Chrome and Visual Studio Code. Now each control has a separate tab for each app.'],
   ['Fill the columns', 'Pick an app, click a control, and set the actions in that app’s column of the table above. Anything you don’t change stays as it is under All applications.'],
   ['Feel', 'Keep gesture haptics on (60 % now). A tick confirms each swipe, so you can move between panes without looking.'],
@@ -364,14 +392,14 @@ ${schemes}}
 
 /* ── 06 order ────────────────────────────────────────────────────────────── */
 export const ORDER = [
-  { t: 'Confirm which monitor is primary', d: 'Settings › Display › Identify. The terminal monitor should be primary.', min: 2 },
+  { t: 'Check the monitor arrangement', d: 'Settings › Display should show the screens in the same order as your desk (checked 14 Nov). The Claude grid goes on whichever is on the right.', min: 1 },
   { t: 'Back up settings.json', d: 'Copy the Windows Terminal settings.json before editing it.', min: 1 },
   { t: 'Start PowerToys at login', d: 'Then set up FancyZones (Screen layout tab).', min: 10 },
   { t: 'Terminal look + pane zoom key', d: 'Paste the snippet from the Terminal look tab.', min: 5 },
   { t: 'Create dev.code-workspace', d: 'One VS Code window for three repos.', min: 2 },
-  { t: 'Save and test start-dev.ps1', d: 'Run it by hand once. Adjust the $Panes folders.', min: 10 },
-  { t: 'Start Dev shortcut + Ctrl + Alt + D', d: 'Plus the -Max variant on Ctrl + Alt + Shift + D.', min: 3 },
-  { t: 'Logi: global gesture + Actions Ring', d: 'Everywhere column of the Mouse tab.', min: 10 },
+  { t: 'Save and test start-dev.ps1', d: 'Run it with -DryRun first, then for real with -Layout A and -Layout B. $Sessions and $Grid set which project fills each pane. Check the colours.', min: 10 },
+  { t: 'Layout A and B shortcuts', d: 'Ctrl + Alt + D for A, Ctrl + Alt + Shift + D for B.', min: 4 },
+  { t: 'Logi: global gesture + Actions Ring', d: 'Everywhere column of the Mouse tab. Layout A and B go on the haptic panel.', min: 10 },
   { t: 'Logi: Terminal, Chrome, VS Code profiles', d: 'The other three columns.', min: 15 },
-  { t: 'Live with it for a week', d: 'Then decide on A or B and on focus mode.', min: 0 },
+  { t: 'Live with it for a week', d: 'Then decide on focus mode and whether the colours should follow projects instead.', min: 0 },
 ];

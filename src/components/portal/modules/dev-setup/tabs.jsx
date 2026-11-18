@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  FACTS, PROJECTS, LAYOUTS, LAYOUT_WHY, ZONE_STEPS, WORKSPACE_FILE, LAUNCH_OPTIONS, TRIGGER_STEPS,
+  FACTS, PROJECTS, LAYOUTS, LAYOUT_WHY, ZONE_STEPS, WORKSPACE_FILE, LAUNCH_OPTIONS, TRIGGER_STEPS, SESSIONS, COLOR_NOTES,
   CONTROLS, MAPPINGS, LOGI_STEPS, LOOKS, TWEAKS, settingsSnippet, ORDER,
 } from './content';
 import { MonitorPair, MouseArt, TermPreview } from './diagrams';
@@ -196,8 +196,8 @@ export function Layout() {
     <section className="dws-tab">
       <Head
         n="02"
-        hook="A grid of six Claude panes on one monitor, with Chrome and a thin VS Code on the other."
-        sub="Option A is recommended. Option B is for days with lots of sessions running at once."
+        hook="Two layouts, one on each haptic-panel shortcut: six Claude panes or eight, with Chrome and a thin VS Code beside them."
+        sub="A is the everyday grid. B is for days with lots of sessions running at once. The side monitor is the same in both."
       />
       <div className="dws-block">
         <div className="dws-block__bar">
@@ -205,7 +205,6 @@ export function Layout() {
             {['today', 'a', 'b'].map((id) => (
               <button key={id} type="button" aria-pressed={pick === id} onClick={() => setPick(id)}>
                 {LAYOUTS[id].name}
-                {id === 'a' ? ' ★' : ''}
               </button>
             ))}
           </div>
@@ -254,8 +253,8 @@ export function Launch() {
     <section className="dws-tab">
       <Head
         n="03"
-        hook="One keypress, one script: the Claude grid, VS Code and Chrome, each in its place."
-        sub="Ctrl + Alt + D runs start-dev.ps1 from a Start-menu shortcut. The mouse sends the same keys."
+        hook="One tap on the haptic panel, one script: a colour-coded Claude grid, VS Code and Chrome, each in its place."
+        sub="Layout A sends Ctrl + Alt + D and Layout B sends Ctrl + Alt + Shift + D. Each key runs start-dev.ps1 from a Start-menu shortcut with -Layout A or -Layout B."
       />
       <div className="dws-lanes">
         {LAUNCH_OPTIONS.map((o) => (
@@ -278,7 +277,7 @@ export function Launch() {
         ))}
       </div>
       <div className="dws-flow" aria-label="What happens when you press Ctrl + Alt + D">
-        {['Mouse button or Ctrl + Alt + D', 'Start Dev.lnk', 'start-dev.ps1', 'wt grid → maximise', 'VS Code → 560 px', 'Chrome → 2000 px'].map(
+        {['Haptic panel › Layout A or B', 'Dev Layout A/B.lnk', 'start-dev.ps1 -Layout A|B', '3×2 or 4×2 grid, each pane /color', 'VS Code → 560 px', 'Chrome → 2000 px'].map(
           (s, i) => (
             <span key={s} className="dws-flow__step">
               <span className="dws-flow__n">{i + 1}</span>
@@ -292,11 +291,32 @@ export function Launch() {
           <span className="dws-micro">Wire it up</span>
           <Steps items={TRIGGER_STEPS} />
           <p className="dws-cap">
-            Checked on this PC: the script parses, the window helper compiles, and the generated wt command builds the
-            grid in the right order. Nothing was launched.
+            Checked on this PC: the script parses, and the generated wt command builds both grids in the right order
+            with a name and colour per pane. Nothing was launched, so the colour arriving through the opening prompt is
+            still to be seen on the first real run.
           </p>
         </div>
         <CodeBlock file="start-dev.ps1" lang="ps1" code={START_DEV} tall />
+      </div>
+      <div className="dws-split">
+        <div className="dws-block">
+          <span className="dws-micro">Session colours · /color, set as each pane opens</span>
+          <ol className="dws-colors">
+            {SESSIONS.map((s) => (
+              <li key={s.id} style={{ '--dws-sc': s.hex }}>
+                <span className="dws-colors__n">{s.id}</span>
+                <span className="dws-colors__c">{s.color}</span>
+                <span className="dws-colors__f">{s.name}</span>
+                <span className="dws-colors__in">{s.in}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="dws-cap">These are the only 8 colours /color accepts, so B uses every one.</p>
+        </div>
+        <div className="dws-block">
+          <span className="dws-micro">How the colours work</span>
+          <Steps items={COLOR_NOTES} />
+        </div>
       </div>
     </section>
   );

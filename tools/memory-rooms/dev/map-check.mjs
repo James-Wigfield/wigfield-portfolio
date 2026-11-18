@@ -63,7 +63,7 @@ async function open(viewport, scheme, label) {
   await presetLogin(page);
   await page.setViewport(viewport);
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
-  await page.goto(`${APP}/memories`, { waitUntil: 'networkidle0' });
+  await page.goto(`${APP}/memories?map=atlas`, { waitUntil: 'networkidle0' }); // the SVG atlas (the Mapbox fallback)
   await page.waitForSelector('[data-mr="map"]', { timeout: 15000 });
   await page.waitForSelector('[data-mr="spot-dot"], [data-mr="cluster"]', { timeout: 15000 });
   await sleep(400);

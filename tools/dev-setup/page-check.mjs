@@ -68,7 +68,9 @@ for (const theme of THEMES) {
   const count = async () => page.$$eval('.dws-mon .dws-zone[data-role="claude"]', (z) => z.length);
   ok((await count()) === 6, 'layout A shows 6 Claude zones');
   await page.evaluate(() => [...document.querySelectorAll('.dws-seg button')].find((b) => b.textContent.startsWith('B'))?.click());
-  ok((await count()) === 9, 'layout B shows 9 Claude zones');
+  ok((await count()) === 8, 'layout B shows 8 Claude zones');
+  const dots = await page.$$eval('.dws-mon .dws-zone__color', (d) => new Set(d.map((x) => x.getAttribute('fill'))).size);
+  ok(dots === 8, `layout B shows 8 distinct session colours (${dots})`);
   await page.evaluate(() => [...document.querySelectorAll('.dws-seg button')].find((b) => b.textContent.startsWith('Today'))?.click());
   ok((await count()) === 5, 'today shows 5 Claude zones');
   await page.close();

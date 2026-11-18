@@ -45,10 +45,11 @@ environment, falling back to `.dev.vars`. Blender path: `BLENDER` env, default
 |---|---|
 | `api-check.mjs` | every `/api/memories` route (31 checks), against any running Worker |
 | `pgrest-stub.mjs` | in-memory PostgREST stand-in to run api-check against the Supabase row store locally |
-| `page-check.mjs [--dark]` | the screens in headless Edge at 1440 and 390 px: gate, map, capture, viewer, zero console errors; screenshots in `memory-rooms-work/_page-check/` |
+| `page-check.mjs [--dark] [--swiftshader] [--mapstyle x]` | the screens in headless Edge (real GPU: Mapbox needs WebGL 2) at 1440 and 390 px: gate, the Mapbox map (tiles, clusters, card, elsewhere, reset, ONE map load), the atlas fallback (`?map=atlas`, WebGL off), capture + pick map (pin, offline → atlas), viewer, zero console errors; ~5 Mapbox loads a run; screenshots in `memory-rooms-work/_page-check/` |
 | `seed-dev.mjs [--examples-only]` | demo spots for a LOCAL Worker (refuses anything else) |
-| `build-atlas.mjs` | rebuilds `src/memory-rooms/map/atlas.json` from us-atlas + world-atlas |
-| `dev/`, `dev-viewer/` | the UI agents' deeper headless suites (capture offline/outbox, map clusters, viewer alignment, disposal) |
+| `build-atlas.mjs` | rebuilds `src/memory-rooms/map/atlas.json` (the SVG fallback map) from us-atlas + world-atlas |
+| `dev/map-style-shots.mjs` | the Mapbox style candidates side by side (opening view, globe, region, street; light + dark) → `memory-rooms-work/_map-styles/` |
+| `dev/`, `dev-viewer/` | the UI agents' deeper headless suites (capture offline/outbox, map clusters on the atlas via `?map=atlas`, viewer alignment, disposal) |
 | `examples/` | `bedroom.scene.json` (interior) and `diner.scene.json` (exterior), fixtures for the kit and viewer |
 
 ## Run everything locally

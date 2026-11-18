@@ -37,6 +37,14 @@ html.mr-active {
   --mr-map-border: rgba(29, 28, 26, 0.14);
   --mr-map-coast: rgba(29, 28, 26, 0.36);
   --mr-map-label: #77736b;
+  /* + the Mapbox globe (map/mapbox/style.js paints its layers from these) */
+  --mr-map-park: #f4f2ec;
+  --mr-map-building: #eeebe4;
+  --mr-map-road: rgba(29, 28, 26, 0.1);
+  --mr-map-road-major: rgba(29, 28, 26, 0.2);
+  --mr-map-label-strong: #5b5852;
+  --mr-map-space: var(--mr-bg); /* around the globe */
+  --mr-map-glow: #e6e2d9; /* the atmosphere at the globe's edge */
 
   /* type */
   --mr-font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -95,6 +103,13 @@ html.mr-active {
     --mr-map-border: rgba(236, 235, 230, 0.16);
     --mr-map-coast: rgba(236, 235, 230, 0.38);
     --mr-map-label: #9a978f;
+    --mr-map-park: #2d2c28;
+    --mr-map-building: #33322e;
+    --mr-map-road: rgba(236, 235, 230, 0.08);
+    --mr-map-road-major: rgba(236, 235, 230, 0.17);
+    --mr-map-label-strong: #bdbab2;
+    --mr-map-space: var(--mr-bg);
+    --mr-map-glow: #262522;
   }
 }
 
@@ -612,6 +627,39 @@ html.mr-active ::-webkit-scrollbar-thumb {
   stroke-width: 3px;
   stroke-linejoin: round;
 }
+
+/* the Mapbox globe (map/mapbox/): the map fills the container, the markers, labels and
+   pin are an SVG overlay above it (only the markers take pointer events) */
+.mr-mbx,
+.mr-mbx.mapboxgl-map { position: absolute; inset: 0; background: var(--mr-map-space); font: inherit; }
+.mr-mbx .mapboxgl-canvas { outline: none; opacity: 0; transition: opacity 320ms var(--mr-ease); }
+.mr-mbx[data-ready] .mapboxgl-canvas { opacity: 1; }
+.mr-mbx .mapboxgl-canvas-container.mapboxgl-interactive { cursor: grab; }
+.mr-mbx .mapboxgl-canvas-container.mapboxgl-interactive:active { cursor: grabbing; }
+.mr-mapoverlay { position: absolute; inset: 0; z-index: 1; display: block; max-width: none; pointer-events: none; overflow: visible; }
+.mr-mapoverlay .mr-mapspot,
+.mr-mapoverlay .mr-cluster,
+.mr-mapoverlay .mr-locpin { pointer-events: auto; }
+.mr-mapoverlay .mr-locpin { touch-action: none; }
+/* Mapbox's attribution (required, kept compact) in the house style: square, hairline */
+.mr-mbx .mapboxgl-ctrl-bottom-left .mapboxgl-ctrl { margin: 0 0 var(--mr-space-2) var(--mr-space-2); }
+.mr-mbx .mapboxgl-ctrl-attrib.mapboxgl-compact {
+  min-height: 24px;
+  border: var(--mr-hairline) solid var(--mr-rule);
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-bg);
+  color: var(--mr-ink-2);
+  font: var(--mr-text-xs) / 1.5 var(--mr-font-sans);
+}
+.mr-mbx .mapboxgl-ctrl-attrib.mapboxgl-compact-show { padding: 2px 28px 2px 8px; }
+.mr-mbx .mapboxgl-ctrl-attrib a { color: var(--mr-ink-2); }
+.mr-mbx .mapboxgl-ctrl-attrib-button { border-radius: var(--mr-radius-s); background-color: transparent; }
+@media (prefers-color-scheme: dark) {
+  .mr-mbx .mapboxgl-ctrl-attrib-button { filter: invert(1); }
+}
+/* on the globe the corner note moves to the top, clear of the Mapbox logo */
+.mr-spotsmap[data-engine='mapbox'] .mr-map-note { top: var(--mr-space-4); bottom: auto; }
+.mr-spotsmap[data-engine='mapbox'][data-compact] .mr-map-note { top: var(--mr-space-3); bottom: auto; }
 
 /* status glyphs (map dots and anywhere else): ring / half / filled */
 .mr-glyph { color: var(--mr-status-captured); }

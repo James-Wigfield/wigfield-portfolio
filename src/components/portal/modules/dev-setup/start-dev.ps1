@@ -1,30 +1,36 @@
 <#
   start-dev.ps1 - one action opens the whole dev layout.
-    Terminal monitor (primary): one Windows Terminal, Claude Code in a pane grid
-    Side monitor:               VS Code (narrow) | Chrome   [+ one tall Claude with -Max]
+    Right-hand monitor: one Windows Terminal, Claude Code in a pane grid
+    Left-hand monitor:  VS Code (narrow) | Chrome   (the same in A and B)
+    Chosen by position in Settings > Display, so it doesn't matter which is primary.
 
-  Run:   powershell -NoProfile -ExecutionPolicy Bypass -File start-dev.ps1 [-Max]
-  -Max   4x2 grid (8 panes) + a 9th tall session on the side monitor
+  Run:   powershell -NoProfile -ExecutionPolicy Bypass -File start-dev.ps1 -Layout A|B [-DryRun]
+  A      3x2 grid: 5 Portara + 1 Wigfield      B   4x2 grid: 6 Portara + 2 Wigfield
+  Every session keeps its name and /color in both layouts. -DryRun prints the plan and opens nothing.
 #>
-param([switch]$Max)
+param([ValidateSet('A', 'B')][string]$Layout = 'A', [switch]$DryRun)
 
 # ---- edit me --------------------------------------------------------------
-$Docs    = "$HOME\Documents"
-$Portara = "$Docs\business\portara-repo"
-# One folder per pane, left to right, top row first (6 for the grid, 8 with -Max).
-$Panes = @(
-  $Portara, $Portara, $Portara,
-  "$Docs\personal-projects\wigfield-portfolio",
-  "$Docs\university\cits4010\honours-dissertation",
-  "$Docs\personal-projects\usa-trip",
-  "$Docs\university\cits5017\cits5017-project-two",
-  "$Docs\university\cits4010\Mamba_PSMA"
-)
-$TallPane  = $Portara                                  # -Max only
+$Docs     = "$HOME\Documents"
+$Portara  = "$Docs\business\portara-repo"
+$Wigfield = "$Docs\personal-projects\wigfield-portfolio"
+# Every session: folder, name, /color. These are all 8 colours that /color accepts.
+$Sessions = @{
+  P1 = @($Portara, 'portara-repo-1', 'red');     P2 = @($Portara, 'portara-repo-2', 'blue')
+  P3 = @($Portara, 'portara-repo-3', 'green');   P4 = @($Portara, 'portara-repo-4', 'purple')
+  P5 = @($Portara, 'portara-repo-5', 'pink');    P6 = @($Portara, 'portara-repo-6', 'cyan')
+  W1 = @($Wigfield, 'wigfield-portfolio-1', 'yellow')
+  W2 = @($Wigfield, 'wigfield-portfolio-2', 'orange')
+}
+# Which session fills each pane: left to right, top row first.
+$Grid = @{
+  A = @('P1', 'P2', 'P3',        'P4', 'P5', 'W1')         # 3x2
+  B = @('P1', 'P2', 'P3', 'P4',  'P5', 'P6', 'W1', 'W2')   # 4x2
+}
 $Claude    = 'claude --dangerously-skip-permissions'   # same as today
 $Workspace = "$Docs\dev.code-workspace"                # multi-root: one VS Code window
-$ChromeProfile = 'Profile 3'                           # Chrome profile "James" (last used)
-$Urls      = @('https://github.com/tiboto/portara-repo')   # add your localhost dev URL
+$ChromeProfile = 'Profile 2'                           # Chrome profile for the Portara account
+$Urls      = @()                                       # empty = Chrome's normal new-tab page
 $CodeExe   = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe"
 $ChromeExe = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 # ---------------------------------------------------------------------------
@@ -88,52 +94,72 @@ function Wait-NewWin([string]$Name, $Before, [int]$Seconds = 20) {
   }
   Write-Warning "No new $Name window after $Seconds s - left where it opened."
 }
-# wt arguments for a cols x 2 grid of panes, each running Claude Code in its folder.
-function Get-GridArgs([string[]]$Dirs, [int]$Cols) {
-  $run = "powershell -NoExit -Command $Claude"
-  $a = @("-w new -d `"$($Dirs[0])`" $run")
-  for ($c = 1; $c -lt $Cols; $c++) {                       # top row, left to right
+# wt arguments for one session: its folder, then Claude Code with its name and /color.
+function Get-Run([string]$Key) {
+  $dir, $name, $color = $Sessions[$Key]
+  "-d `"$dir`" powershell -NoExit -Command $Claude -n $name '/color $color'"
+}
+# The grid is built ONE SPLIT PER wt CALL, and every call first focuses the pane it splits
+# by its id. Never chain two splits in one call: wt splits whichever pane is active, and a
+# brand-new pane isn't active yet while it is still starting (Claude panes take seconds),
+# so the next split lands on an older pane. Seen 2026-11-18 on a real launch: the top row,
+# still sent as one burst, came out red|green|blue at 1/6|1/6|2/3. Probe panes start too
+# fast to show this, so test with real Claude panes.
+# Pane ids count up in creation order: 0..Cols-1 = top row, then the bottom row.
+function Get-Steps([string[]]$Keys, [int]$Cols, [string]$Win) {
+  $s = @("-w $Win $(Get-Run $Keys[0])")                     # new named window: pane 0, top-left
+  for ($c = 1; $c -lt $Cols; $c++) {                        # top row: split pane c-1 to the right
     $share = [math]::Round(($Cols - $c) / ($Cols - $c + 1), 3)
-    $a += "sp -V -s $share -d `"$($Dirs[$c])`" $run"
+    $s += "-w $Win fp -t $($c - 1) ; sp -V -s $share $(Get-Run $Keys[$c])"
   }
-  $a += @('mf left') * ($Cols - 1)                         # back to top-left
-  for ($c = 0; $c -lt $Cols; $c++) {                       # split each column down
-    if ($c -gt 0) { $a += 'mf right' }
-    $a += "sp -H -s 0.5 -d `"$($Dirs[$Cols + $c])`" $run"
+  for ($c = 0; $c -lt $Cols; $c++) {                        # bottom row: split top pane c down
+    $s += "-w $Win fp -t $c ; sp -H -s 0.5 $(Get-Run $Keys[$Cols + $c])"
   }
-  $a -join ' ; '
+  $s
 }
 
-$screens = [System.Windows.Forms.Screen]::AllScreens
-$Term = ($screens | Where-Object Primary).WorkingArea                 # 2560x1392 at x 0
-$Side = ($screens | Where-Object { -not $_.Primary }).WorkingArea     # 2560x1392 at x -2560
-if (-not $Side) { throw 'Second monitor not found.' }
+# By position, not by primary: Claude grid on the right-hand screen, VS Code + Chrome on the left.
+$screens = @([System.Windows.Forms.Screen]::AllScreens | Sort-Object { $_.Bounds.X })
+if ($screens.Count -lt 2) { throw 'Second monitor not found.' }
+$Side = $screens[0].WorkingArea      # left on the desk
+$Term = $screens[-1].WorkingArea     # right on the desk
 
-$cols = if ($Max) { 4 } else { 3 }
-if ($Max) { $codeW = 480; $webW = 1440 } else { $codeW = 560; $webW = $Side.Width - 560 }
+$cols = if ($Layout -eq 'B') { 4 } else { 3 }
+$codeW = 560; $webW = $Side.Width - $codeW                         # side monitor: same in A and B
+$win   = "dev$Layout-$(Get-Date -Format HHmmss)"                   # this grid's own window
+$steps = @(Get-Steps $Grid[$Layout] $cols $win)
 
-# 1. Claude Code grid -> terminal monitor, maximised
+if ($DryRun) {
+  "Layout $Layout  ($cols x 2)"
+  for ($i = 0; $i -lt $Grid[$Layout].Count; $i++) {
+    $dir, $name, $color = $Sessions[$Grid[$Layout][$i]]
+    "  pane {0}  row {1}  {2,-22} {3,-7} {4}" -f ($i + 1), ([math]::Floor($i / $cols) + 1), $name, $color, $dir
+  }
+  "Claude grid -> $Term"
+  "VS Code     -> x $($Side.X), $codeW px wide ($Workspace)"
+  "Chrome      -> x $($Side.X + $codeW), $webW px wide"
+  ''
+  $steps | ForEach-Object { "wt.exe $_" }
+  return
+}
+
+# 1. Claude Code grid -> terminal monitor, maximised. Open the window with pane 0, then send
+#    each split as its own call, with a pause so every new pane has settled before the next.
 $before = Get-Wins 'WindowsTerminal' | ForEach-Object Handle
-Start-Process wt.exe -ArgumentList (Get-GridArgs $Panes[0..($cols * 2 - 1)] $cols)
+Start-Process wt.exe -ArgumentList $steps[0]
 $h = Wait-NewWin 'WindowsTerminal' $before
+Start-Sleep -Milliseconds 1200
+foreach ($s in $steps[1..($steps.Count - 1)]) { Start-Process wt.exe -ArgumentList $s; Start-Sleep -Milliseconds 700 }
 if ($h) { [DevWin]::Place($h, $Term.X, $Term.Y, $Term.Width, $Term.Height, $true) }
 
-# 2. Tall 9th session against the seam (-Max only)
-if ($Max) {
-  $before = Get-Wins 'WindowsTerminal' | ForEach-Object Handle
-  Start-Process wt.exe -ArgumentList "-w new -d `"$TallPane`" powershell -NoExit -Command $Claude"
-  $h = Wait-NewWin 'WindowsTerminal' $before
-  if ($h) { [DevWin]::Place($h, ($Side.X + $codeW + $webW), $Side.Y, ($Side.Width - $codeW - $webW), $Side.Height, $false) }
-}
-
-# 3. VS Code -> narrow strip on the outer edge
+# 2. VS Code -> narrow strip on the outer edge
 $before = Get-Wins 'Code' | ForEach-Object Handle
 Start-Process $CodeExe -ArgumentList "-n `"$Workspace`""
 $h = Wait-NewWin 'Code' $before 12
 if (-not $h) { $h = (Get-Wins 'Code' | Where-Object Title -like '*dev (Workspace)*' | Select-Object -First 1).Handle }   # already open
 if ($h) { [DevWin]::Place($h, $Side.X, $Side.Y, $codeW, $Side.Height, $false) }
 
-# 4. Chrome -> the rest of the side monitor, next to the seam
+# 3. Chrome -> the rest of the side monitor, next to the seam
 $before = Get-Wins 'chrome' | ForEach-Object Handle
 Start-Process $ChromeExe -ArgumentList (@("--profile-directory=`"$ChromeProfile`"", '--new-window') + $Urls)
 $h = Wait-NewWin 'chrome' $before
