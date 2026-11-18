@@ -22,8 +22,8 @@
 const CORNER_TO_FAR_FLAT = Math.hypot(3.45 - 2.18, 3.45 - 2.18) + 2.18;
 
 export const MEASUREMENTS = {
-  measured: false,
-  date: null, // 'YYYY-MM-DD'
+  measured: true,
+  date: '2026-11-18', // 'YYYY-MM-DD'
   how: 'headless Edge (ANGLE d3d11) on the home PC; Stage coverage readout (occlusion on) and fps',
 
   facts: [
@@ -56,15 +56,29 @@ export const MEASUREMENTS = {
       note: 'wider than the room: the whole far half, corners and all',
     },
 
-    // ── measured (lead fills) ──
-    { id: 'fps-default', source: 'measured', label: 'Frame rate, default scene', value: null, unit: 'fps', digits: 0, note: 'target ≥ 45' },
+    // ── measured 2026-11-18 (lead): coverage = share of unmasked surface area
+    //    lit by ≥ 1 projector, occlusion on, apex 3.3 m; "best" = best of
+    //    544 single poses (17 spots × 2 heights × 16 headings × 4 tilts) ──
+    { id: 'fps-default', source: 'measured', label: 'Frame rate, default scene', value: 150, unit: 'fps', digits: 0, note: 'the headless frame cap; ~1 ms CPU per frame (target ≥ 45)' },
     { id: 'fps-heavy', source: 'measured', label: 'Frame rate, heaviest preset', value: null, unit: 'fps', digits: 0, note: '' },
-    { id: 'cov-std', source: 'measured', label: 'One standard-throw projector covers', value: null, unit: '%', digits: 0, note: 'all surfaces, occlusion on' },
-    { id: 'cov-short', source: 'measured', label: 'One short-throw projector covers', value: null, unit: '%', digits: 0, note: 'SE corner, aimed NW' },
-    { id: 'cov-two', source: 'measured', label: 'Two-projector rig covers', value: null, unit: '%', digits: 0, note: 'opposite corners' },
-    { id: 'cov-roof', source: 'measured', label: 'Roof reached by the two-projector rig', value: null, unit: '%', digits: 0, note: 'the ceiling habitat' },
+    { id: 'cov-std', source: 'measured', label: 'One standard-throw projector (1.5) covers, at best', value: 0.082, unit: '%', digits: 0, note: 'floor 0 · walls 6 · roof 17 — and ~700 px/m (1.4 mm pixels) is resolution the sims never use' },
+    { id: 'cov-short', source: 'measured', label: 'One short-throw projector (0.5) covers, at best', value: 0.351, unit: '%', digits: 0, note: 'over the loft’s south end aiming NE: floor 11 · walls 46 · roof 40, ~220 px/m' },
+    { id: 'cov-ust', source: 'measured', label: 'One ultra-short (0.25) covers, at best', value: 0.598, unit: '%', digits: 0, note: 'floor 33 · walls 63 · roof 75 — but a centred 0.25 lens is a fisheye no real UST is' },
+    { id: 'cov-two', source: 'measured', label: 'Two short-throw projectors, opposite corners at the eave', value: 0.633, unit: '%', digits: 0, note: 'floor 17 · walls 71 · roof 88; only 4 % lit twice' },
+    { id: 'cov-roof', source: 'measured', label: 'Roof reached by that two-projector rig', value: 0.88, unit: '%', digits: 0, note: 'the ceiling habitat is the easy one' },
+    { id: 'cov-three', source: 'measured', label: '+ a third looking straight down from under the apex', value: 0.749, unit: '%', digits: 0, note: 'floor 17 → 55 %: the floor needs its own projector' },
   ],
 
-  uncovered: [], // e.g. 'under the loft deck', 'the wall behind the armchair'
-  takeaways: [], // 2–4 one-liners
+  uncovered: [
+    'the floor under and beside the loft deck (the deck shadows the west half)',
+    'the floor round the furniture (armchair, trunk, duvet, wheelchair)',
+    'the loft deck itself (14 % with the corner rig)',
+    'the wall-SW flat behind the loft post (44 %)',
+  ],
+  takeaways: [
+    'Short throw (~0.5) is the right lens for a 4.4 m shed; a standard-throw lens lights under a tenth of it from anywhere.',
+    'Two short-throw projectors in opposite corners at the eave reach about two-thirds of the room and almost all the roof.',
+    'The floor is the hard habitat: the loft and the furniture shadow it from any wall-height projector; a straight-down third projector fixes it.',
+    'At 130–220 projector px per metre, the sims (40 px/m) set the detail, not the projector.',
+  ],
 };

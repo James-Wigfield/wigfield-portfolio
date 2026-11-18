@@ -132,6 +132,22 @@ export const RISKS = [
     why: 'The loft, furniture and people block light. Two projectors from opposite corners fill most shadows.',
     tone: 'mild',
   },
+  // Learned building the visualiser (2026-11-18)
+  {
+    t: 'Learned: rain needs clouds',
+    why: 'Gray-Scott drifting down a wall washes itself off in under a minute. Feed it from the top edge (nuclei along the eave).',
+    tone: 'mild',
+  },
+  {
+    t: 'Learned: selection takes the easy way',
+    why: 'Given a safe upside-down crawl, ceiling creatures evolved 8-foot crawlers, not swingers. Plate VII must make swinging pay.',
+    tone: 'warn',
+  },
+  {
+    t: 'Learned: small populations drift by luck',
+    why: 'At 10–15 creatures a surface, grip separates by habitat every run; mass and swing flip with the seed. The phase 4 harness needs big populations and many seeds.',
+    tone: 'mild',
+  },
 ];
 
 export const QUESTIONS = [

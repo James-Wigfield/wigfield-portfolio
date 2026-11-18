@@ -108,29 +108,43 @@ If your stack isn't browser/JS: either run the sims in a browser output window y
 4. **Seams across regions with different pixel densities.** Simulate in metres at one px/m everywhere; your mapper resamples per region — never the sim.
 5. **Projection shadows.** Furniture, a loft and people block light. One projector leaves big shadows; two from opposite corners fill most of them.
 
+Learned building the visualiser (worth knowing before phases 3–4):
+
+- **Rain needs clouds.** Gray-Scott drifting down a wall washes itself off in under a minute; feed it from the top edge (nuclei along the eave).
+- **One grid over every region** at one px/m made seam exchange trivial: neighbouring cells across a seam line up, so grid sims swap edge cells instead of fading at the borders.
+- **Selection takes the easy way.** Given a safe upside-down crawl, ceiling creatures evolved 8-footed crawlers instead of swingers. Plate VII's fitness has to make swinging pay (reach and speed between grips).
+- **Small populations drift by luck.** At 10–15 creatures per surface, grip separates by habitat every run, but mass and swing flip with the random seed. The phase 4 harness needs big populations and several seeds.
+- **Coverage-optimal isn't view-optimal.** The best-coverage pose threw much of its picture onto walls nobody faces from the door; pick the rig for where people sit.
+
 ## 6. What the visualiser measured
 
-<!-- LEAD FILLS THIS SECTION after the coverage + fps run.
-     Source of truth for the page: src/components/portal/modules/projector-life/ui/measurements.js -->
+<!-- Source of truth for the page: src/components/portal/modules/projector-life/ui/measurements.js -->
 
-> **Pending.** Numbers go here once measured (headless Edge, d3d11, the Stage's coverage readout with occlusion on).
+Measured 2026-11-18 in headless Edge (ANGLE d3d11) with the visualiser's coverage readout: share of the unmasked surface area lit by at least one projector, occlusion on (the loft and furniture cast real projection shadows), roof apex 3.3 m (≈ 26°). "Best" = the best of 544 single-projector poses (17 spots × 2 heights × 16 headings × 4 tilts). The lens model is centred (no lens shift), so treat these as a guide for choosing a lens and a rig, not a calibration.
 
-Computed from the room's geometry (true now):
+| Measure | Value |
+|---|---|
+| Frame rate, default scene (sims + creatures + 1 projector) | **150 fps** (the headless cap); ~1 ms CPU per frame, the sims ~0.6 ms |
+| One **standard-throw (1.5)** projector, best pose | **8 %** of the room (floor 0 · walls 6 · roof 17); ~700 projector px/m |
+| One **short-throw (0.5)** projector, best pose | **35 %** (floor 11 · walls 46 · roof 40); ~220 px/m |
+| One **ultra-short (0.25)**, best pose | **60 %** (floor 33 · walls 63 · roof 75) — but a centred 0.25 lens is a fisheye no real UST is |
+| **Two short-throw**, opposite corners (NE + SW) at the eave, tilted 10° down | **63 %** (floor 17 · walls 71 · roof **88**); only 4 % lit twice |
+| + a third, ultra-short, looking straight down from under the apex | **75 %** (floor **55** · walls 76 · roof 88) |
+
+Surfaces that stay dark with the two-projector rig: the floor under and beside the loft deck (the deck shadows the west half), the floor round the furniture, the loft deck itself (14 %), and the SW wall flat behind the loft post (44 %).
+
+What that means:
+
+- **Short throw (~0.5) is the right lens for a room this size.** A standard-throw lens lights under a tenth of it from anywhere, at a resolution the sims never use.
+- **Two short-throw projectors in opposite corners at the eave** reach about two-thirds of the room and almost all of the roof — the ceiling habitat is the easy one.
+- **The floor is the hard habitat.** Lofts and furniture shadow it from any wall-height projector; a third projector looking straight down fixes it.
+- **The sims set the detail, not the projector:** 130–220 projector px per metre vs 40 sim px per metre.
+
+Computed from the room's geometry:
 
 - A throw ratio of **~1.2** fills one wall flat from the room centre (2.18 m away, 1.81 m wide).
 - A typical **standard-throw (~1.5)** projector in a corner throws a picture about **2.7 m** wide on the far wall: about one and a half flats.
 - A typical **short-throw (~0.5)** from the same corner throws **~8 m**: the whole far half of the room, corners included — which is why mapping (not one flat rectangle) matters.
-
-To fill:
-
-| Measure | Value |
-|---|---|
-| Frame rate, default scene | *pending* |
-| Coverage, one standard-throw projector | *pending* |
-| Coverage, one short-throw projector | *pending* |
-| Coverage, two-projector rig (opposite corners) | *pending* |
-| Roof facets reached by the two-projector rig | *pending* |
-| Surfaces that stay dark | *pending* |
 
 ## 7. Questions for you (answer from your repo first)
 
