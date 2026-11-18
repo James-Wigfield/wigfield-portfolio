@@ -643,6 +643,9 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-mapoverlay .mr-cluster,
 .mr-mapoverlay .mr-locpin { pointer-events: auto; }
 .mr-mapoverlay .mr-locpin { touch-action: none; }
+/* Chrome ignores touch-action on an SVG <g>, so a finger dragging the pin scrolled the form
+   instead (pointercancel). The overlay is pointer-events: none, so only the pin is affected. */
+.mr-pickmap .mr-mapoverlay { touch-action: none; }
 /* Mapbox's attribution (required, kept compact) in the house style: square, hairline */
 .mr-mbx .mapboxgl-ctrl-bottom-left .mapboxgl-ctrl { margin: 0 0 var(--mr-space-2) var(--mr-space-2); }
 .mr-mbx .mapboxgl-ctrl-attrib.mapboxgl-compact {
@@ -1206,6 +1209,87 @@ html.mr-active ::-webkit-scrollbar-thumb {
 }
 .mr-saved .mr-dot { align-items: baseline; font-size: var(--mr-text-m); color: var(--mr-ink-2); }
 .mr-saved .mr-dot::before { transform: translateY(-1px); }
+
+/* ── /memories/:id/edit: fix a spot's details ─────────────────────────────── */
+
+/* Same frame as capture: the form scrolls, Back + Save stay pinned at the bottom. */
+.mr-edit {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.mr-edit-loading { padding: var(--mr-space-6) var(--mr-gutter); }
+.mr-edit-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.mr-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-5);
+  padding: var(--mr-space-5) var(--mr-gutter) var(--mr-space-6);
+}
+.mr-edit-head { display: flex; flex-direction: column; gap: var(--mr-space-2); }
+.mr-edit-title {
+  font: 500 var(--mr-text-xl) / 1.12 var(--mr-font-sans);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.mr-edit-head .mr-msg { margin-top: var(--mr-space-2); }
+/* Sections are ruled, not boxed. */
+.mr-edit-sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  padding-top: var(--mr-space-5);
+  border-top: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-edit-sec > h2 { margin: 0; font-weight: 400; }
+.mr-edit-choice { display: flex; gap: var(--mr-space-2); }
+.mr-edit-choice .mr-preset { flex: 1 1 0; }
+.mr-edit-sec .mr-presets { margin-bottom: var(--mr-space-3); }
+.mr-edit-date {
+  max-width: 260px;
+  color-scheme: light dark; /* the native calendar follows the theme */
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+.mr-edit-date::-webkit-date-and-time-value { text-align: left; }
+
+/* place: the summary until "Change location", then the shared picker */
+.mr-edit-place { display: flex; flex-direction: column; gap: var(--mr-space-1); }
+.mr-edit-place-name { font: 500 1.125rem / 1.3 var(--mr-font-sans); overflow-wrap: anywhere; }
+.mr-edit-place-meta { font: var(--mr-text-s) / 1.4 var(--mr-font-mono); color: var(--mr-ink-2); }
+.mr-edit-place .mr-btn { margin-top: var(--mr-space-3); }
+.mr-edit-picker { display: flex; flex-direction: column; }
+.mr-edit-reset { align-self: flex-start; }
+
+/* kind + size once a 3D room exists: read-only values */
+.mr-edit-fixed { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mr-space-4); margin: 0; }
+.mr-edit-fixed > div { display: flex; flex-direction: column; gap: var(--mr-space-1); min-width: 0; }
+.mr-edit-fixed dd { margin: 0; font-size: var(--mr-text-m); color: var(--mr-ink); overflow-wrap: anywhere; }
+.mr-edit-discard { padding-top: var(--mr-space-1); }
+
+/* the action bar's lines: offline, conflict, a failed save, "leave without saving?" */
+.mr-edit-lines { display: flex; flex-direction: column; gap: var(--mr-space-2); }
+.mr-edit-lines:not(:empty) { margin-bottom: var(--mr-space-3); }
+.mr-edit-line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mr-space-3); }
+.mr-edit-line .mr-linkbtn { flex: none; }
+.mr-edit-leave { font: 500 var(--mr-text-m) / 1.3 var(--mr-font-sans); }
+
+/* the spot page: its Edit link, and "Saved" once after an edit */
+.mr-spot__edit { margin-left: auto; }
+.mr-spot__saved { margin-top: var(--mr-space-3); color: var(--mr-ink); animation: mr-rise 240ms var(--mr-ease) both; }
+.mr-spot__saved::before { background: var(--mr-accent); }
 
 /* ── motion ───────────────────────────────────────────────────────────────── */
 

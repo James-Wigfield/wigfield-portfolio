@@ -17,6 +17,10 @@
      capture   /memories/new: every step reachable at 390 (4 photos uploaded), nothing saved; the pick
                map loads at 390 and 1440 and a tap drops the pin; going offline swaps it to the atlas
      viewer    a rendered spot's GLB loads (data-state=ready) at 1440 and 390, a photo viewpoint flies
+     edit      /memories/:id/edit at 390 (touch) and 1440: title, day and place (drag, GPS far away, typed
+               place) → Save → spot page, reload, the marker + 3D diorama at the new place; 0 Mapbox loads
+               until "Change location", then 1; offline; ?map=atlas; two phones (409); leaving asks
+               (page-check-edit.mjs; it puts every spot it edits back)
      console   zero console errors and zero page errors on every screen
    Screenshots → memory-rooms-work/_page-check/. Exit 1 if anything fails.
    Needs at least one rendered spot with a model (seed-dev.mjs --examples-only gives two). */
@@ -26,6 +30,7 @@ import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import sharp from 'sharp';
 import { client, config, WORK } from './lib/api.mjs';
+import { editWalk } from './page-check-edit.mjs';
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const args = process.argv.slice(2);
@@ -700,6 +705,9 @@ for (const width of [1440, 390]) {
   noErrors(page, `viewer ${width}`);
   await page.close();
 }
+
+// ── edit (/memories/:id/edit) ────────────────────────────────────────────────
+await editWalk({ browser, base, api, open, record, shot, sel, wait, noErrors, idle, loads, atlasDrawn, jump, modelsSettled, OUT, scheme });
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

@@ -1,5 +1,5 @@
 /* Memory Rooms entry (lazy-loaded from src/App.jsx). `page` picks the screen:
-   map | new | spot | group.
+   map | new | spot | edit | group.
 
    The shell: password gate (once per device) → who-picker (once per device, for
    the map and capture pages) → slim header + outbox line + the page. The viewer
@@ -14,6 +14,7 @@ import { onUnauthorized } from './lib/auth.js';
 import { resumeOutbox, startOutbox } from './lib/outbox.js';
 import { readWho, writeWho } from './lib/storage.js';
 import CapturePage from './pages/CapturePage.jsx';
+import EditPage from './pages/EditPage.jsx';
 import MapPage from './pages/MapPage.jsx';
 import Gate from './shell/Gate.jsx';
 import Header from './shell/Header.jsx';
@@ -106,7 +107,7 @@ export default function MemoryRoomsApp({ page }) {
   const changeWho = () => setChoosing(true);
 
   const needsWho = page === 'map' || page === 'new';
-  const fixed = authed && !choosing && (page === 'map' || page === 'new');
+  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit');
 
   let body;
   if (!authed) {
@@ -122,6 +123,7 @@ export default function MemoryRoomsApp({ page }) {
           <PageBoundary key={page}>
             {page === 'map' && <MapPage />}
             {page === 'new' && <CapturePage />}
+            {page === 'edit' && <EditPage />}
             {(page === 'spot' || page === 'group') && (
               <Suspense fallback={<p className="mr-state mr-state-body">{COPY.app.loading}</p>}>
                 {page === 'spot' ? <SpotPage /> : <GroupPage />}

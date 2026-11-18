@@ -7,7 +7,7 @@
      GET    /api/memories/ping                         → gate check
      GET    /api/memories/spots[?deleted=1]            → { data: [Spot…] }
      GET    /api/memories/spots/:id                    → { data: Spot }
-     POST   /api/memories/spots                        → upsert by client uuid
+     POST   /api/memories/spots                        → create once by client uuid (a re-send changes nothing)
      PATCH  /api/memories/spots/:id                    → edit; scene is validated + versioned
      DELETE /api/memories/spots/:id                    → soft delete
      POST   /api/memories/spots/:id/restore            → undo soft delete
@@ -33,6 +33,7 @@ const MEDIA_TYPES = ['photo', 'thumb', 'scan', 'model', 'render', 'compare'];
 const PEOPLE = ['james', 'justin'];
 const STATUSES = ['captured', 'modelling', 'rendered'];
 const KINDS = ['interior', 'exterior'];
+const LOC_SOURCES = ['gps', 'pin', 'typed'];
 const MB = 1024 * 1024;
 const LIMITS = { photo: 15 * MB, thumb: 2 * MB, scan: 100 * MB, model: 40 * MB, render: 25 * MB, compare: 25 * MB };
 const SIGN_WINDOW_S = 6 * 3600; // signed urls stay identical for a 6 h window (browser cache friendly)
@@ -104,7 +105,9 @@ async function listSpots(ctx, includeDeleted) {
   return ctx.json({ data });
 }
 
-/** POST: create, or (retry / re-send) refresh the capture fields only. Never resets status/scene. */
+/** POST: create once. A POST for an id that exists (an outbox retry, a re-send) changes nothing and
+    returns the stored row: capture fields are set here once, every later change is a PATCH, so a
+    late retry can't undo an edit made on the spot page. */
 async function upsertSpot(ctx, body) {
   if (!body || typeof body !== 'object') return ctx.json({ error: 'JSON body required' }, 400);
   const problems = [];
@@ -117,11 +120,7 @@ async function upsertSpot(ctx, body) {
   if (problems.length) return ctx.json({ error: 'Invalid spot', details: problems }, 400);
 
   const existing = await ctx.store.getSpot(body.id);
-  if (existing) {
-    const next = { ...existing, ...capture, updatedAt: ctx.now };
-    await ctx.store.putSpot(next);
-    return ctx.json({ data: await withMedia(ctx, next) }, 200);
-  }
+  if (existing) return ctx.json({ data: await withMedia(ctx, existing) }, 200);
   const spot = {
     id: body.id,
     createdAt: ctx.now,
@@ -140,36 +139,66 @@ async function upsertSpot(ctx, body) {
 }
 
 function captureFields(body, problems) {
-  const out = {
+  return {
     title: String(body.title || '').trim(),
     note: String(body.note || '').trim(),
     kind: body.kind,
-    lat: numOrNull(body.lat),
-    lng: numOrNull(body.lng),
+    ...latLng(body.lat, body.lng, problems),
     locAccuracyM: numOrNull(body.locAccuracyM),
     placeLabel: body.placeLabel ? String(body.placeLabel).slice(0, 120) : null,
-    locSource: ['gps', 'pin', 'typed'].includes(body.locSource) ? body.locSource : null,
+    locSource: LOC_SOURCES.includes(body.locSource) ? body.locSource : null,
     scaleHint: body.scaleHint ? String(body.scaleHint).slice(0, 80) : null,
-    capturedAt: isIsoDate(body.capturedAt) ? body.capturedAt : new Date().toISOString(),
+    capturedAt: isIsoDateTime(body.capturedAt) ? new Date(body.capturedAt).toISOString() : new Date().toISOString(),
   };
-  if (out.lat !== null && (out.lat < -90 || out.lat > 90)) problems.push('lat out of range');
-  if (out.lng !== null && (out.lng < -180 || out.lng > 180)) problems.push('lng out of range');
-  if ((out.lat === null) !== (out.lng === null)) problems.push('lat and lng go together');
-  return out;
+}
+
+/** A location as stored: both numbers in range, or both null (no location). POST and PATCH share it. */
+function latLng(rawLat, rawLng, problems) {
+  const coord = (v, name, max) => {
+    if (v === null || v === undefined || v === '') return null;
+    const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN;
+    if (!Number.isFinite(n)) {
+      problems.push(`${name} must be a number`);
+      return null;
+    }
+    if (n < -max || n > max) problems.push(`${name} out of range`);
+    return n;
+  };
+  const lat = coord(rawLat, 'lat', 90);
+  const lng = coord(rawLng, 'lng', 180);
+  if ((lat === null) !== (lng === null)) problems.push('lat and lng go together');
+  return { lat, lng };
 }
 
 async function patchSpot(ctx, id, body) {
   if (!body || typeof body !== 'object') return ctx.json({ error: 'JSON body required' }, 400);
   const spot = await ctx.store.getSpot(id);
   if (!spot) return ctx.json({ error: 'Spot not found' }, 404);
+  // The edit page sends the updatedAt its form opened with; someone else saving since wins, and it asks first.
+  if ('ifUpdatedAt' in body && !sameInstant(body.ifUpdatedAt, spot.updatedAt)) {
+    return ctx.json({ error: 'This spot changed since the form opened', details: [`updatedAt is now ${spot.updatedAt}`] }, 409);
+  }
 
   const next = { ...spot };
   const problems = [];
   if ('title' in body) str(body.title, 1, 120) ? (next.title = body.title.trim()) : problems.push('title must be 1–120 characters');
   if ('note' in body) str(body.note, 1, 600) ? (next.note = body.note.trim()) : problems.push('note must be 1–600 characters');
-  if ('kind' in body) KINDS.includes(body.kind) ? (next.kind = body.kind) : problems.push('bad kind');
+  if ('kind' in body) KINDS.includes(body.kind) ? (next.kind = body.kind) : problems.push(`kind must be one of ${KINDS.join(', ')}`);
   if ('status' in body) STATUSES.includes(body.status) ? (next.status = body.status) : problems.push(`status must be one of ${STATUSES.join(', ')}`);
-  for (const k of ['lat', 'lng', 'locAccuracyM']) if (k in body) next[k] = numOrNull(body[k]);
+  if ('createdBy' in body) PEOPLE.includes(body.createdBy) ? (next.createdBy = body.createdBy) : problems.push(`createdBy must be one of ${PEOPLE.join(', ')}`);
+  if ('lat' in body || 'lng' in body) {
+    if ('lat' in body && 'lng' in body) Object.assign(next, latLng(body.lat, body.lng, problems));
+    else problems.push(`${'lat' in body ? 'lat' : 'lng'}: lat and lng go together (send both)`);
+  }
+  if ('locAccuracyM' in body) next.locAccuracyM = numOrNull(body.locAccuracyM);
+  if ('locSource' in body) {
+    if (body.locSource === null || LOC_SOURCES.includes(body.locSource)) next.locSource = body.locSource;
+    else problems.push(`locSource must be one of ${LOC_SOURCES.join(', ')} (or null)`);
+  }
+  if ('capturedAt' in body) {
+    if (isIsoDateTime(body.capturedAt)) next.capturedAt = new Date(body.capturedAt).toISOString();
+    else problems.push('capturedAt must be an ISO 8601 date-time with a zone, like 2026-12-20T19:30:00.000Z');
+  }
   for (const k of ['placeLabel', 'scaleHint', 'tripStopId']) if (k in body) next[k] = body[k] == null ? null : String(body[k]).slice(0, 120);
   if ('frameGroup' in body) {
     if (body.frameGroup === null || /^[a-z0-9][a-z0-9-]{0,47}$/.test(body.frameGroup)) next.frameGroup = body.frameGroup;
@@ -186,10 +215,14 @@ async function patchSpot(ctx, id, body) {
     }
     next.sceneVersion = (spot.sceneVersion || 0) + 1;
   }
+  // The 3D room was built as this kind (the render pipeline owns it from here).
+  if (next.kind !== spot.kind && next.scene) problems.push(`kind can't change while the spot has a 3D room (it was built as ${spot.kind})`);
   if (problems.length) return ctx.json({ error: 'Invalid change', details: problems }, 400);
   next.updatedAt = ctx.now;
   await ctx.store.putSpot(next);
-  return ctx.json({ data: await withMedia(ctx, next) });
+  // Read it back: Supabase's trigger sets updated_at, and the edit page sends that value as its next ifUpdatedAt.
+  const stored = (await ctx.store.getSpot(id)) || next;
+  return ctx.json({ data: await withMedia(ctx, stored) });
 }
 
 async function setDeleted(ctx, id, when) {
@@ -458,7 +491,15 @@ function supabaseStore(db) {
 
 const isUuid = (s) => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 const str = (v, min, max) => typeof v === 'string' && v.trim().length >= min && v.trim().length <= max;
-const isIsoDate = (v) => typeof v === 'string' && !Number.isNaN(Date.parse(v));
+/** "2026-12-20T19:30:00.000Z" or "…+08:00": a real calendar date, a time and a zone (Date.parse alone takes "1"). */
+function isIsoDateTime(v) {
+  const m = typeof v === 'string' && /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})$/.exec(v);
+  if (!m || !Number.isFinite(Date.parse(v))) return false;
+  const day = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return day.getUTCMonth() === Number(m[2]) - 1 && day.getUTCDate() === Number(m[3]);
+}
+/** Two timestamps for the same instant (Supabase gives microseconds and "+00:00"; the local store "Z"). */
+const sameInstant = (a, b) => typeof a === 'string' && typeof b === 'string' && (a === b || (Number.isFinite(Date.parse(a)) && Date.parse(a) === Date.parse(b)));
 function numOrNull(v) {
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);

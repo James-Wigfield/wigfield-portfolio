@@ -87,12 +87,23 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 | `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map"] } }` (the gate's password check; scripts upload `model/map` only when `models` has `"map"`: an older Worker stores every model name as room.glb) |
 | `GET /api/memories/spots` | `?deleted=1` includes soft-deleted | `{ data: [Spot…] }` newest `capturedAt` first, media with signed urls |
 | `GET /api/memories/spots/:id` | – | `{ data: Spot }` (404 if missing) |
-| `POST /api/memories/spots` | Spot capture fields incl. client `id` | `{ data: Spot }` 201 new / 200 existing. **Upsert**: a retry never duplicates and never resets `status`, `scene` or `sceneVersion`. |
+| `POST /api/memories/spots` | Spot capture fields incl. client `id` | `{ data: Spot }` 201 new / 200 existing. **Create once**: a POST for an id that already exists changes nothing and returns the stored row, so a retry never duplicates and never resets anything, and a late outbox re-send can't undo an edit. Every later change goes through PATCH. |
 | `PUT /api/memories/spots/:id/media/:type/:n` | raw bytes; headers `content-type`, optional `x-width`, `x-height` | `{ data: Media }` (upserts the media row; the spot must exist) |
-| `PATCH /api/memories/spots/:id` | any of `title, note, kind, lat, lng, locAccuracyM, placeLabel, scaleHint, status, frameGroup, tripStopId, scene` | `{ data: Spot }`. A `scene` is validated with `validateScene` (400 + `details: errors[]` if invalid), bumps `sceneVersion`, and sets `frameGroup` from `scene.frame.group`. |
+| `PATCH /api/memories/spots/:id` | any of `title, note, kind, lat, lng, locAccuracyM, placeLabel, locSource, scaleHint, capturedAt, createdBy, status, frameGroup, tripStopId, scene`, plus optional `ifUpdatedAt` | `{ data: Spot }`, its `updatedAt` the stored one (send it back as the next `ifUpdatedAt`). A `scene` is validated with `validateScene` (400 + `details: errors[]` if invalid), bumps `sceneVersion`, and sets `frameGroup` from `scene.frame.group`. Other fields are checked as listed below (400, every problem in `details`); unknown fields are ignored. |
 | `DELETE /api/memories/spots/:id` | – | soft delete → `{ data: { id, deletedAt } }` |
 | `POST /api/memories/spots/:id/restore` | – | clears `deletedAt` |
 | `GET /api/memories/file/<r2Key>` | bearer or `?t=` | the bytes, with `content-type`, `etag`, `cache-control: private, max-age=3600` |
+
+PATCH checks (POST shares the location and date ones; each `details` entry starts with the field it's about,
+so a form can show it next to that field):
+
+- `title` 1–120 characters, `note` 1–600, `kind` interior | exterior, `status` captured | modelling | rendered.
+- `lat` and `lng` go together (send both, or neither), each a number in range or both `null` (no location).
+- `locSource` gps | pin | typed | `null`; `createdBy` james | justin.
+- `capturedAt` an ISO 8601 date-time with a zone (`2026-12-20T19:30:00.000Z`).
+- `kind` can't change while the spot has a scene (the 3D room was built as that kind): 400.
+- `ifUpdatedAt`: when present and not the spot's current `updatedAt`, nothing is saved and the answer is
+  **409** (someone else changed the spot since the form opened). The edit page sends it; scripts don't.
 
 Limits: photo/thumb must be `image/jpeg` ≤ 15 MB; scan ≤ 100 MB; model ≤ 40 MB (`model/gltf-binary`);
 render/compare `image/png` or `image/jpeg` ≤ 25 MB. `:n` for photo/thumb is 1–12.

@@ -2,8 +2,12 @@
    meta and the photo strip. (Viewpoints + the blend slider live on the stage,
    in StageBar.) Layout only; the page passes the viewer in. */
 
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { COPY } from '../../copy.js';
 import { mediaOf } from '../../lib/api.js';
+import { clearFlash, peekFlash } from '../../lib/flash.js';
+import { paths } from '../../routes.js';
 import { useViewerState } from '../../viewer/useViewer.js';
 import { ModeToggle } from '../../viewer/ViewerControls.jsx';
 import PhotoStrip from './PhotoStrip.jsx';
@@ -22,6 +26,9 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
   const line = statusLine(spot, stage);
   const has3d = stage === 'model' || stage === 'preview';
   const showControls = has3d && hasScan;
+  // "Saved" once, right after the edit page saved this spot (lib/flash.js).
+  const [saved] = useState(() => ({ id: spot.id, on: peekFlash(`saved:${spot.id}`) }));
+  useEffect(() => () => clearFlash(`saved:${spot.id}`), [spot.id]);
 
   return (
     <aside className="mr-spot__panel">
@@ -31,10 +38,18 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
           <span className="mr-dot mr-label" data-status={spot.status}>
             {COPY.app.status[spot.status] || spot.status}
           </span>
+          <Link to={paths.edit(spot.id)} state={{ from: 'spot' }} className="mr-linkbtn mr-spot__edit" aria-label={COPY.edit.linkLabel(spot.title)} data-mr="spot-edit">
+            {COPY.edit.link}
+          </Link>
         </div>
         <h1 className="mr-spot__title">{spot.title}</h1>
         {spot.note && <p className="mr-spot__note">{spot.note}</p>}
         {line && <p className="mr-spot__line">{line}</p>}
+        {saved.on && saved.id === spot.id && (
+          <p className="mr-msg mr-spot__saved" role="status" data-mr="spot-saved">
+            {COPY.edit.savedFlash}
+          </p>
+        )}
       </header>
 
       {showControls && (

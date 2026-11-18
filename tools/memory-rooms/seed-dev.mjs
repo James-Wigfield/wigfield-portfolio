@@ -73,11 +73,15 @@ const onlyExamples = args.includes('--examples-only');
 for (const [idx, s] of SPOTS.entries()) {
   if (onlyExamples && !s.example) continue;
   const id = uuidFor(s.title);
-  await api.saveSpot({
-    id, createdBy: s.by, kind: s.kind, title: s.title, note: s.note,
+  const fields = {
+    createdBy: s.by, kind: s.kind, title: s.title, note: s.note,
     lat: s.lat, lng: s.lng, locAccuracyM: 20 + idx, locSource: 'gps', placeLabel: s.place,
     scaleHint: s.scale, capturedAt: `${s.day}T${String(10 + (idx % 9)).padStart(2, '0')}:30:00.000Z`,
-  });
+  };
+  const saved = await api.saveSpot({ id, ...fields });
+  // A POST for an existing id changes nothing (CONTRACTS §3), so a re-run puts the demo values back with a PATCH
+  // (undoing edits made in the UI, e.g. by page-check's edit walk). The kind stays while a scene exists.
+  await api.patchSpot(id, saved.scene ? { ...fields, kind: saved.kind } : fields);
 
   const { renders } = s.example ? exampleAssets(s.example) : {};
   const photoCount = s.kind === 'interior' ? 6 : 6;

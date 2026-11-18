@@ -8,6 +8,7 @@ Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password)
 | `/memories` | map + list of spots, filter by person and status, outbox status |
 | `/memories/new` | capture, phone first: kind + name → photos (shot guide) → the memory → location → save to the outbox |
 | `/memories/:spotId` | the spot: 3D viewer (Model ⇄ Scan), photo strip, note, photo viewpoints with a photo/model blend |
+| `/memories/:spotId/edit` | fix its details after capture: the place (pin / GPS / typed, + its name), name, note, captured day, who saved it; kind + size until it has a 3D room. One PATCH with `ifUpdatedAt` (409 → reload theirs under yours); needs signal, the typed draft waits in sessionStorage |
 | `/memories/group/:group` | every room of one building, assembled in its shared frame |
 
 ## Where things are
@@ -29,8 +30,10 @@ src/memory-rooms/
                          stand as live 3D dioramas, one three.js custom layer in the map's own context (lazy)
     Atlas*.jsx, geo.js   the SVG atlas fallback (d3-geo + topojson, atlas.json built by tools/memory-rooms/build-atlas.mjs)
   capture/               the capture flow, photo resizing, IndexedDB outbox, geolocation
+                         LocationPicker.jsx: the location picker, shared by capture (step 4) and the edit page
   viewer/                plain three.js viewer (GLTFLoader, OrbitControls, Spark) + its thin React wrapper
   pages/                 one component per route
+    edit/                the edit page's parts: form.js (diff → PATCH, merge on reload), draft.js, EditPlace.jsx
 workers/memory-rooms.js  the /api/memories routes, R2 files, local or Supabase row store
 supabase/memory_rooms.sql
 tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test (see its README)

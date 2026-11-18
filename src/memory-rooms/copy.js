@@ -1,6 +1,6 @@
 /* ALL user-facing text for Memory Rooms lives here (one file, so a tone pass
    touches nothing else). Components import COPY and never hard-code strings.
-   Sections: app, gate, map, list, capture, outbox, spot, viewer, group. */
+   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, group. */
 
 export const COPY = {
   app: {
@@ -256,6 +256,49 @@ export const COPY = {
     errorTitle: "Couldn't open this spot.",
     errorOffline: "You're offline. It will open when there's signal.",
     retry: 'Try again',
+  },
+
+  // ── /memories/:spotId/edit: fix a spot's details after capture ───────────
+  edit: {
+    link: 'Edit',
+    linkLabel: (title) => `Edit the details of ${title}`,
+    savedFlash: 'Saved. The changes are live.',
+    pageTitle: (title) => `Edit ${title}`,
+    eyebrow: 'Edit details',
+    loading: 'Opening the spot…',
+    restored: "Picked up where you left off. These changes aren't saved yet.",
+
+    titleLabel: 'Name',
+    noteLabel: 'Why does it matter?',
+    placeLabel: 'Location',
+    noPlace: 'No location saved',
+    noLabel: 'No place name',
+    changePlace: 'Change location',
+    resetPlace: 'Put the saved location back',
+    placeHint: 'Drag the pin, use where you are, or type a place.',
+    relabeled: (from, to, far) =>
+      to ? `More than ${far} from ${from}, so the place now reads ${to}.` : `More than ${far} from ${from}, so that place name went. Type one if you like.`,
+    dateLabel: 'Captured on',
+    dateHint: 'Only the day changes; the time of day stays.',
+    byLabel: 'Saved by',
+    kindLabel: 'Kind',
+    scaleLabel: 'How big is it?',
+    locked: 'The 3D room was built from these, so they stay as they are.',
+    required: { title: 'Give it a name.', note: 'One line on why it matters.', day: 'Pick a day.' },
+
+    back: 'Back',
+    save: 'Save changes',
+    saving: 'Saving…',
+    unchanged: 'Nothing changed yet.',
+    offline: "No signal, so this can't save yet. What you've typed stays on this phone until you save or discard it.",
+    failed: "Couldn't save. Try again.",
+    discard: 'Discard changes',
+    leaveTitle: 'Leave without saving?',
+    leaveDiscard: 'Discard',
+    leaveStay: 'Keep editing',
+    conflict: (name) => `${name || 'Someone'} changed this spot while you were editing.`,
+    reload: 'Reload',
+    reloaded: 'Reloaded with their changes. Yours are still here: check them, then save.',
   },
   viewer: {
     label: (title) => `3D model of ${title}`,

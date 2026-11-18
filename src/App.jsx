@@ -114,6 +114,7 @@ export default function App() {
       <Route path="/memories/new" element={memories('new')} />
       <Route path="/memories/group/:group" element={memories('group')} />
       <Route path="/memories/:spotId" element={memories('spot')} />
+      <Route path="/memories/:spotId/edit" element={memories('edit')} />
       {/* Private management portal — gated client-side (placeholder for Supabase Auth).
           /portal/<toolId>/<sub> deep-links to a tool (see portal/portalRoute.js). */}
       <Route path="/portal/:toolId?/*" element={<Portal />} />

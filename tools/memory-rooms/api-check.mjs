@@ -4,7 +4,8 @@
      npx wrangler dev --port 8788         (in another terminal; MEMORIES_ROW_STORE=local)
      node tools/memory-rooms/api-check.mjs [--base http://127.0.0.1:8788]
 
-   Creates one throwaway spot ("api-check …"), checks upsert idempotency, media
+   Creates one throwaway spot ("api-check …"), checks create-once idempotency, edits
+   (PATCH checks, ifUpdatedAt → 409, a re-POST never undoing an edit), media
    upload + signed links, scene validation + versioning, soft delete + restore,
    then soft-deletes it again. Exits 1 on the first failure. */
 
@@ -72,6 +73,48 @@ ok(retried.id === id && retried.status === 'modelling', 'a retried POST upserts 
 const list1 = await api.listSpots();
 ok(list1.filter((s) => s.id === id).length === 1, 'the list holds exactly one copy');
 
+// ── edit (the spot page's edit form: PATCH, ifUpdatedAt) ─────────────────────
+const fix = { title: `${capture.title} (edited)`, lat: -31.95, lng: 115.86, locAccuracyM: null, locSource: 'pin', placeLabel: 'Perth, WA', capturedAt: '2026-12-21T03:15:00.000Z', createdBy: 'justin' };
+const edited = await api.patchSpot(id, fix);
+ok(
+  edited.title === fix.title && edited.lat === fix.lat && edited.lng === fix.lng && edited.locAccuracyM === null && edited.locSource === 'pin' &&
+    edited.placeLabel === 'Perth, WA' && Date.parse(edited.capturedAt) === Date.parse(fix.capturedAt) && edited.createdBy === 'justin',
+  'PATCH saves the place, locSource, capturedAt and createdBy',
+);
+const resent = await api.saveSpot(capture);
+ok(resent.title === fix.title && resent.lat === fix.lat && resent.placeLabel === 'Perth, WA' && resent.createdBy === 'justin', 'a late re-POST of the capture (outbox retry) does not undo the edit');
+const latOnly = await expectStatus(api.patchSpot(id, { lat: 10 }), 400, 'lat without lng is 400');
+ok(latOnly.details?.some((d) => /^lat\b/.test(d)), 'the problem names its field first', latOnly.details?.join('; '));
+await expectStatus(api.patchSpot(id, { lng: 10 }), 400, 'lng without lat is 400');
+await expectStatus(api.patchSpot(id, { lat: 91, lng: 0 }), 400, 'lat out of range is 400');
+await expectStatus(api.patchSpot(id, { lat: 0, lng: -181 }), 400, 'lng out of range is 400');
+await expectStatus(api.patchSpot(id, { lat: 'north', lng: 5 }), 400, 'a lat that is not a number is 400');
+await expectStatus(api.patchSpot(id, { lat: null, lng: 5 }), 400, 'a null lat with a lng is 400');
+await expectStatus(api.patchSpot(id, { createdBy: 'bob' }), 400, 'a bad createdBy is 400');
+await expectStatus(api.patchSpot(id, { capturedAt: 'yesterday' }), 400, 'a capturedAt that is not a date is 400');
+await expectStatus(api.patchSpot(id, { capturedAt: '2026-02-30T10:00:00Z' }), 400, 'a capturedAt on a day that does not exist is 400');
+await expectStatus(api.patchSpot(id, { capturedAt: '2026-12-21' }), 400, 'a capturedAt without a time and zone is 400');
+await expectStatus(api.patchSpot(id, { locSource: 'satellite' }), 400, 'a bad locSource is 400');
+const many = await expectStatus(api.patchSpot(id, { title: 'never saved', lat: 95, lng: 0, createdBy: 'bob' }), 400, 'a PATCH with a bad field is refused whole');
+ok(many.details?.length >= 2, 'the 400 lists every problem', many.details?.join('; '));
+const afterBad = await api.getSpot(id);
+ok(afterBad.title === fix.title && afterBad.lat === fix.lat && afterBad.createdBy === 'justin', 'a refused PATCH changes nothing');
+const flipped = await api.patchSpot(id, { kind: 'exterior' });
+ok(flipped.kind === 'exterior' && (await api.patchSpot(id, { kind: 'interior' })).kind === 'interior', 'kind can change while there is no scene');
+
+const opened = await api.getSpot(id);
+const first = await api.patchSpot(id, { note: 'saved with ifUpdatedAt', ifUpdatedAt: opened.updatedAt });
+ok(first.note === 'saved with ifUpdatedAt', 'a PATCH with the current ifUpdatedAt saves');
+const stale = await expectStatus(api.patchSpot(id, { title: 'stale edit', ifUpdatedAt: opened.updatedAt }), 409, 'a stale ifUpdatedAt is 409');
+ok(/changed/i.test(stale.message), 'the 409 says the spot changed', stale.message);
+ok((await api.getSpot(id)).title === fix.title, 'the 409 saved nothing');
+const chained = await api.patchSpot(id, { title: fix.title, ifUpdatedAt: first.updatedAt });
+ok(chained.title === fix.title, 'the updatedAt a PATCH returns works as the next ifUpdatedAt');
+const scriptStyle = await api.patchSpot(id, { status: 'modelling' });
+ok(scriptStyle.status === 'modelling', 'a PATCH without ifUpdatedAt (the scripts) is never refused for staleness');
+const cleared = await api.patchSpot(id, { lat: null, lng: null, locSource: null });
+ok(cleared.lat === null && cleared.lng === null && cleared.locSource === null, 'lat + lng null clears the location');
+
 // ── media ────────────────────────────────────────────────────────────────────
 const jpeg = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#a7774f' } }).jpeg({ quality: 85 }).toBuffer();
 const m1 = await api.putMedia(id, 'photo', 1, jpeg, { contentType: 'image/jpeg', width: 64, height: 48 });
@@ -123,6 +166,10 @@ ok(v1.sceneVersion === 1 && v1.frameGroup === 'example-flat', 'a valid scene sav
 const v2 = await api.patchSpot(id, { scene, status: 'rendered' });
 ok(v2.sceneVersion === 2 && v2.status === 'rendered', 'the next scene write bumps to version 2');
 await expectStatus(api.patchSpot(id, { status: 'done' }), 400, 'an unknown status is rejected');
+const kindLock = await expectStatus(api.patchSpot(id, { kind: 'exterior' }), 400, 'a kind change on a spot with a scene is 400');
+ok(kindLock.details?.some((d) => /^kind\b/.test(d)), 'the kind refusal names kind', kindLock.details?.join('; '));
+const sameKind = await api.patchSpot(id, { kind: 'interior', scaleHint: 'big room' });
+ok(sameKind.kind === 'interior' && sameKind.scaleHint === 'big room' && sameKind.sceneVersion === 2, 'the same kind (no change) still saves, and leaves the scene alone');
 
 // ── soft delete ──────────────────────────────────────────────────────────────
 await api.deleteSpot(id);
