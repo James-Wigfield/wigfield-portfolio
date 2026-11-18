@@ -76,10 +76,26 @@ export async function startAr(viewer, { mode = 'tabletop', overlay, onPhase, onS
   // three also runs it from the window's rAF, drawing every frame twice.
   let live = false; // frames wait until everything below is set up (an XR frame can land mid-await)
   renderer.setAnimationLoop((t, frame) => live && frame && onFrame(t, frame));
-  await renderer.xr.setSession(session);
-
-  const viewerSpace = await session.requestReferenceSpace('viewer');
-  let hitSource = await session.requestHitTestSource({ space: viewerSpace });
+  let hitSource = null;
+  try {
+    await renderer.xr.setSession(session);
+    const viewerSpace = await session.requestReferenceSpace('viewer');
+    hitSource = await session.requestHitTestSource({ space: viewerSpace });
+  } catch (err) {
+    // put the viewer back as it was and end the session: nothing below ever ran
+    renderer.setAnimationLoop(null);
+    renderer.xr.enabled = false;
+    renderer.autoClear = saved.autoClear;
+    world.position.set(0, 0, 0);
+    (saved.parent || scene).add(world);
+    place.removeFromParent();
+    reticle.removeFromParent();
+    reticle.geometry.dispose();
+    reticle.material.dispose();
+    viewer.exitXR();
+    session.end().catch(() => {});
+    throw err;
+  }
   let touchSource = null;
   session
     .requestHitTestSourceForTransientInput?.({ profile: 'generic-touchscreen' })

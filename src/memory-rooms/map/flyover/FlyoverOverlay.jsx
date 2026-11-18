@@ -47,7 +47,7 @@ export default function FlyoverOverlay({ fly, engine }) {
       data-rendered={stop.rendered ? '' : undefined}
       data-reduced={reduced ? '' : undefined}
     >
-      {reduced && <div className="mr-fly__fade" data-on={phase === 'flying' ? '' : undefined} aria-hidden="true" />}
+      {reduced && <div className="mr-fly__fade" data-on={phase === 'flying' && (playing || fly.stepping) ? '' : undefined} aria-hidden="true" />}
 
       {showCaption && !ended && (
         <Link key={stop.id} to={paths.spot(stop.id)} className="mr-fly__caption" aria-label={c.open(spot.title)} data-mr="fly-caption">

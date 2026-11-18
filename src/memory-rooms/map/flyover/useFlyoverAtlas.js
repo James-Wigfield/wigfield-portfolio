@@ -21,7 +21,7 @@ function worldPoints(stops) {
 }
 
 export function useFlyoverAtlas(vp, fly, stops, compact) {
-  const { active, index, phase, playing, reduced } = fly;
+  const { active, index, phase, playing, stepping, reduced } = fly;
   const sized = Boolean(vp.size?.w && vp.size?.h);
   const arrive = useEffectEvent((i) => fly.arrived(i));
   const ctl = useEffectEvent((what, arg) => {
@@ -55,7 +55,7 @@ export function useFlyoverAtlas(vp, fly, stops, compact) {
       ctl('fit');
       return undefined;
     }
-    if (phase !== 'flying' || !playing) return undefined;
+    if (phase !== 'flying' || !(playing || stepping)) return undefined;
     let later = 0;
     const timer = setTimeout(
       () => {
@@ -69,7 +69,7 @@ export function useFlyoverAtlas(vp, fly, stops, compact) {
       clearTimeout(later);
       if (!reduced) ctl('hold');
     };
-  }, [active, sized, index, phase, playing, reduced]);
+  }, [active, sized, index, phase, playing, stepping, reduced]);
 
   // Start / exit: put the view back as it was. Declared AFTER the camera effect on purpose: React
   // runs cleanups in order, so the camera's "hold" (which halts a move) runs first, then this.

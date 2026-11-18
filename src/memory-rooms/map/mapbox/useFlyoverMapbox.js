@@ -117,7 +117,7 @@ function removeRoute(map) {
  * padding: keeps each stop clear of the caption and the bar.
  */
 export function useFlyoverMapbox(map, ready, fly, stops, legs, padding) {
-  const { active, index, phase, playing, speed, reduced } = fly;
+  const { active, index, phase, playing, stepping, speed, reduced } = fly;
   const drawn = useRef({ index: -1, t: 0 }); // how much of the current leg is on the map
   const live = active && fly.count > 0 && ready && Boolean(map);
   const pad = useRef(padding);
@@ -191,8 +191,8 @@ export function useFlyoverMapbox(map, ready, fly, stops, legs, padding) {
       return () => safely(map, () => map.stop());
     }
 
-    // flying
-    if (!playing) return undefined;
+    // flying (playing, or one step by next / prev while paused)
+    if (!playing && !stepping) return undefined;
     const target = stop.rendered
       ? { center: [stop.lng, stop.lat], zoom: DIVE_ZOOM, pitch: DIVE_PITCH, bearing: map.getBearing(), padding }
       : { center: [stop.lng, stop.lat], zoom: PLAIN_ZOOM, pitch: 0, bearing: 0, padding };
@@ -232,5 +232,5 @@ export function useFlyoverMapbox(map, ready, fly, stops, legs, padding) {
         map.off('moveend', onEnd);
         map.stop();
       });
-  }, [live, map, index, phase, playing, speed, reduced, stops, legs]);
+  }, [live, map, index, phase, playing, stepping, speed, reduced, stops, legs]);
 }

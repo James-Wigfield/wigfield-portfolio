@@ -22,7 +22,7 @@ export const LONG_FLY_MS = 6500;
 export const FADE_MS = 220;
 
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-const IDLE = { active: false, index: 0, phase: 'flying', playing: false, speed: 1 };
+const IDLE = { active: false, index: 0, phase: 'flying', playing: false, stepping: false, speed: 1 };
 const noop = () => {};
 /** A map with no flyover (the default prop). */
 export const NO_FLY = { ...IDLE, count: 0, stop: null, reduced: false, start: noop, exit: noop, toggle: noop, pause: noop, next: noop, prev: noop, toggleSpeed: noop, arrived: noop };
@@ -52,9 +52,10 @@ export function useFlyover(stops, { autoplay = false, onExit } = {}) {
     setS((p) => ({ ...IDLE, speed: p.speed }));
     exitHook.current?.();
   };
+  // next / prev while paused still fly there (`stepping`), then hold at the stop, still paused
   const goTo = (i) => {
     fresh();
-    setS((p) => (p.active ? { ...p, index: Math.max(0, Math.min(last, i)), phase: 'flying' } : p));
+    setS((p) => (p.active ? { ...p, index: Math.max(0, Math.min(last, i)), phase: 'flying', stepping: !p.playing } : p));
   };
   const next = () => goTo(index + 1);
   const prev = () => goTo(s.phase === 'end' ? last : index - 1);
@@ -62,13 +63,13 @@ export function useFlyover(stops, { autoplay = false, onExit } = {}) {
     if (s.phase === 'end') fresh();
     setS((p) => {
       if (!p.active) return p;
-      if (p.phase === 'end') return { ...p, index: 0, phase: 'flying', playing: true };
-      return { ...p, playing: !p.playing };
+      if (p.phase === 'end') return { ...p, index: 0, phase: 'flying', playing: true, stepping: false };
+      return { ...p, playing: !p.playing, stepping: false };
     });
   };
-  const pause = useCallback(() => setS((p) => (p.active && p.playing ? { ...p, playing: false } : p)), []);
+  const pause = useCallback(() => setS((p) => (p.active && (p.playing || p.stepping) ? { ...p, playing: false, stepping: false } : p)), []);
   const toggleSpeed = () => setS((p) => ({ ...p, speed: p.speed === 1 ? 2 : 1 }));
-  const arrived = useCallback((i) => setS((p) => (p.active && p.phase === 'flying' && Math.min(p.index, last) === i ? { ...p, index: i, phase: 'linger' } : p)), [last]);
+  const arrived = useCallback((i) => setS((p) => (p.active && p.phase === 'flying' && Math.min(p.index, last) === i ? { ...p, index: i, phase: 'linger', stepping: false } : p)), [last]);
 
   // The linger clock: runs only while playing, keeps its elapsed time across a pause.
   useEffect(() => {
@@ -111,12 +112,14 @@ export function useFlyover(stops, { autoplay = false, onExit } = {}) {
       prev();
     }
   });
+  // (only once there's something to fly: an autoplay still waiting for its spots, or filters that
+  // left none, mustn't eat the page's keys)
   useEffect(() => {
-    if (!s.active) return undefined;
+    if (!s.active || !count) return undefined;
     const handler = (e) => onKey(e);
     document.addEventListener('keydown', handler, true);
     return () => document.removeEventListener('keydown', handler, true);
-  }, [s.active]);
+  }, [s.active, count]);
 
   const stop = s.active && count ? stops[index] : null;
   return { ...s, index, count, stop, reduced, start, exit, toggle, pause, next, prev, toggleSpeed, arrived };

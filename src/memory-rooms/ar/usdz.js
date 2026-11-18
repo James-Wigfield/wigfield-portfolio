@@ -59,6 +59,12 @@ async function toCache(key, blob) {
 /** A blob: url of the USDZ for this spot at this scale. Rejects if the viewer has no room loaded. */
 export function usdzUrl(viewer, spot, scale) {
   const key = cacheKey(spot, scale);
+  // another spot (or a newer version of this one): free the blobs held for the last one
+  for (const [k, job] of memo) {
+    if (k.split('?')[0].split('/').slice(-2, -1)[0] === spot.id && k.split('?')[1] === key.split('?')[1]) continue;
+    memo.delete(k);
+    job.then((url) => URL.revokeObjectURL(url)).catch(() => {});
+  }
   if (!memo.has(key)) {
     const job = (async () => {
       let blob = await fromCache(key);

@@ -184,10 +184,21 @@ function WebXr({ viewer, ready }) {
     return () => bar.removeEventListener('beforexrselect', stop);
   }, []);
 
-  // Leaving the page ends the session.
+  // The session must be asked for inside the tap's user activation, so the module is fetched now,
+  // with the panel, not after the tap (a slow line would let the activation run out).
+  useEffect(() => {
+    import('./xr.js').catch(() => {});
+  }, []);
+
+  // Leaving the page ends the session (also one still starting: `gone` makes it end on arrival).
+  const gone = useRef(false);
   useEffect(() => {
     const live = ctrl;
-    return () => live.current?.end();
+    gone.current = false;
+    return () => {
+      gone.current = true;
+      live.current?.end();
+    };
   }, []);
 
   const start = async (mode) => {
@@ -198,7 +209,7 @@ function WebXr({ viewer, ready }) {
     try {
       const { startAr } = await import('./xr.js');
       setSession({ mode, phase: 'finding', scale: mode === 'life' ? 1 : 1 / 20 });
-      ctrl.current = await startAr(viewer, {
+      const started = await startAr(viewer, {
         mode,
         overlay,
         onPhase: (phase) => setSession((s) => s && { ...s, phase }),
@@ -209,6 +220,8 @@ function WebXr({ viewer, ready }) {
           setSession(null);
         },
       });
+      if (gone.current) started.end();
+      else ctrl.current = started;
     } catch (err) {
       console.info('[memory-rooms] AR did not start:', err?.message || err);
       overlay.style.display = 'none';
