@@ -234,6 +234,15 @@ runs it in Node). Returns:
 }
 ```
 
+* Additions (projection agent): `coverage({ force })` skips the 200 ms throttle
+  and returns extra `pxPerM` (median projector px/m per surface type), `area`
+  (m² sampled, masks excluded), `occlusion`, `samples`, `ms`/`computeMs`;
+  `projectorView(i)` also returns `up` and `aspect`; `setTestCard(on)` (25 cm
+  checkers per patch / one flat card in raw); `debug()` counters;
+  `projection/legend.js` (`COVERAGE_LEGEND`, `PIXEL_LEGEND`, `GRID_PX`,
+  `PROJECTOR_COLORS`, no three.js) for UI legends. The projection reads the
+  room's `userData.pjl` tags and treats `.visible` along the parent chain as
+  "physically present" (cutaway fades use layers, so they never change shadows).
 * The projection system adds its own helpers (frustums, projector bodies) to
   `scene` and removes them on dispose.
 * Light model per fragment: `out = baked·ambient + albedo · Σ_projectors light`,

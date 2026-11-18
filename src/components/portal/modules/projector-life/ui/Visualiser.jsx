@@ -67,6 +67,16 @@ export default function Visualiser({ scene, setScene }) {
         stageRef.current = s;
         window.__pjlStage = s;
         s.set(valuesRef.current); // catch up on edits made while it loaded
+        // Changes made on the Stage directly (QA hooks, the console) reach the
+        // panel too; echoes of the panel's own writes are equal and no-ops.
+        s.onValues((diff) => {
+          setScene((sc) => {
+            let same = true;
+            for (const k in diff) if (sc.values[k] !== diff[k]) same = false;
+            return same ? sc : { ...sc, values: { ...sc.values, ...diff } };
+          });
+          if (Object.keys(diff).some((k) => k.startsWith('room.'))) setPatches(s.getPatches());
+        });
         setPatches(s.getPatches());
         setStage(s);
       })

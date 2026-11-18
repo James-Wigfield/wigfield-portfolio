@@ -49,6 +49,7 @@ export class Stage {
     this.playing = true;
     this.disposed = false;
     this.listeners = new Set();
+    this.valueListeners = new Set();
     this.raf = 0;
     this.lastT = 0;
     this.fps = 0;
@@ -141,6 +142,7 @@ export class Stage {
       this.inset.quad.material.dispose();
     }
     this.listeners.clear();
+    this.valueListeners.clear();
     if (this.renderer) {
       this.renderer.renderLists.dispose();
       this.renderer.dispose();
@@ -163,6 +165,10 @@ export class Stage {
       }
     }
     if (!changed.length) return;
+    if (this.valueListeners.size) {
+      const diff = Object.fromEntries(changed.map((k) => [k, this.values[k]]));
+      for (const fn of this.valueListeners) fn(diff);
+    }
     const { patchesChanged } = this.room.setParams(this.values, changed) || {};
     if (patchesChanged) {
       this.life.setPatches(this.room.patches);
@@ -227,6 +233,12 @@ export class Stage {
     this.listeners.add(fn);
     fn(this._stats());
     return () => this.listeners.delete(fn);
+  }
+
+  /** fn({ key: value, … }) after every set() that changed something (keeps a UI mirror honest). */
+  onValues(fn) {
+    this.valueListeners.add(fn);
+    return () => this.valueListeners.delete(fn);
   }
 
   /** The DOM canvas the unfolded-room inset is drawn into (or null). */

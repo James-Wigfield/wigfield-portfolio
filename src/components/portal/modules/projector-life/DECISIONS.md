@@ -25,3 +25,15 @@ One line each: the call, then why. Newest at the bottom of each section.
 - Masks measured offline into `room/measured.js` (room-check --write), not at load; door/window masks include their trim; loft masks cover the walls below the deck, the end post and the deck footprint. — zero load cost; no life slivers around frames; no projector reaches under the loft.
 - Landing heightfield: 4 cm cells, 8 height layers, loft bags count as the loft. — 14 ms build, 0.35 µs/query.
 - Hero cutaway from the SSE (bearing 152°, 3.75 m up, fov 46), dropping with the pitch and dollying back on portrait canvases. — the default projector throws west, so the lit side faces the camera.
+
+## Projection (projection agent — full reasoning and the placement search in `projection/NOTES.md`)
+- Centred lens (no lens shift); throw t → hFOV = 2·atan(1/2t). — honest, simple pose maths; a shift can come later as an off-axis matrix.
+- A projector's output = the content scene (patch polygons + life buffers) rendered from its own camera. — projecting it back through the same lens IS the mapping pre-warp, so mapped content is undistorted by construction.
+- Masks: door/window draw black 2 mm in front of the patch; furniture and loft draw black as depth-tested proxies. With a mask off the wall content is emitted and spills onto the furniture in 3-D. — the honest "what if you don't mask it" picture.
+- Raw mode = `life.frame()` stretched over the whole frame, no masks. — the unmapped "before".
+- Light on paint: `baked·ambient + albedo·Σ light`, albedo white-balanced from the bake onto the sage paint (#cfdad2), leaning 80 % to the room's paint hints. — the bake is a warm night look, not albedo.
+- Fall-off: brightness·cosθ·min((4 m·t)²/d², 3); black level falls off like light across the whole frustum. — inverse square + same lumens spread over a bigger picture; the grey glow is visible at ambient 0.
+- Shadows: one packed linear-depth map per projector, 4-tap PCF, re-rendered only on pose/count/roof/furniture/loft change; the same texels feed coverage(). — view and readout always agree.
+- Coverage view: 0 maroon, 1 green, 2 blue, 3 violet, shaded by albedo. Pixel view: a grid line every 32 projector pixels coloured by px/m. — grid shows shape (keystone, stretch), colour shows density.
+- Coverage readout: 5 cm grid on every patch (~20 k samples), masks excluded, ≤ 5 recomputes/s (~10 ms incl. readback), never per frame.
+- Projector defaults in `params.js` came from an exhaustive occlusion-aware placement search (36 % best single at throw 0.5; 62.7 % best pair; ~72 % with three). — numbers grounded in the model, not guesses.
