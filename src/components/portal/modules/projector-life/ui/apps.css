@@ -1,0 +1,121 @@
+/* PROJECTOR LIFE — Applications tab (prefix pjl-). A ruled grid of cards on
+   desktop, a swipeable row on phones. Vignettes are always-dark mini stages
+   (projection needs the dark) with CSS keyframes, all off under reduced
+   motion. */
+
+.pjl-apps { display: flex; flex-direction: column; gap: 1.1rem; max-width: 1280px; }
+.pjl-stand--apps { padding-bottom: 0.9rem; }
+
+.pjl-apps__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.4rem 1.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pjl-app { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.pjl-app__vig { overflow: hidden; border-radius: 4px; background: #050608; box-shadow: 0 0 0 1px var(--line); }
+.pjl-app__body { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 0.55rem; border-top: 2px solid var(--ink); }
+.pjl-app__n { margin: 0; font-family: var(--pjl-mono); font-size: 0.68rem; font-weight: 700; color: var(--accent-ink); }
+.pjl-app__title { margin: 0; font-family: var(--font-display, Georgia, serif); font-weight: 500; font-size: 1.12rem; line-height: 1.2; color: var(--ink); }
+.pjl-app__line { margin: 0; font-size: 0.84rem; color: var(--ink-2); font-style: italic; }
+.pjl-app__bullets { display: flex; flex-direction: column; margin: 0.1rem 0 0; padding: 0; list-style: none; }
+.pjl-app__bullets li { position: relative; padding: 0.3rem 0 0.3rem 0.95rem; font-size: 0.8rem; line-height: 1.45; color: var(--ink-2); }
+.pjl-app__bullets li + li { border-top: 1px solid var(--line-2); }
+.pjl-app__bullets li::before { content: ''; position: absolute; left: 0.1rem; top: 0.86rem; width: 5px; height: 1.5px; background: var(--accent); }
+.pjl-app__facts { display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; margin: 0.25rem 0 0; padding-top: 0.45rem; border-top: 1px solid var(--line-2); }
+.pjl-app__facts div { display: flex; align-items: center; gap: 0.4rem; }
+.pjl-app__facts dt { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--pjl-mono); font-size: 0.56rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); }
+.pjl-app__facts dd { margin: 0; font-family: var(--pjl-mono); font-size: 0.68rem; color: var(--ink); }
+
+/* phones: one swipeable row instead of a long scroll */
+@media (max-width: 760px) {
+  .pjl-apps__grid {
+    display: flex;
+    gap: 0.9rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.6rem;
+    scrollbar-width: thin;
+  }
+  .pjl-app { flex: 0 0 82%; scroll-snap-align: start; }
+}
+
+/* ── vignettes ───────────────────────────────────────────────────────────── */
+.pjl-vig { display: block; width: 100%; height: auto; }
+.pjl-v-bg { fill: #050608; }
+.pjl-v-line { fill: none; stroke: rgba(242, 239, 232, 0.55); stroke-width: 1.2; stroke-linejoin: round; }
+.pjl-v-dim { stroke: rgba(242, 239, 232, 0.22); }
+.pjl-v-thread { stroke: rgba(242, 239, 232, 0.35); stroke-width: 0.8; }
+.pjl-v-solid { fill: #15171c; stroke: rgba(242, 239, 232, 0.18); stroke-width: 1; }
+.pjl-v-lift { fill: #1d2028; }
+.pjl-v-head { fill: #1b1e25; stroke: rgba(242, 239, 232, 0.16); stroke-width: 1; }
+.pjl-v-wall { fill: #0d0f13; }
+.pjl-v-wall2 { fill: #111419; }
+.pjl-v-door { fill: #020203; stroke: rgba(242, 239, 232, 0.2); stroke-width: 1; }
+.pjl-v-glass { fill: rgba(80, 110, 140, 0.08); stroke: rgba(242, 239, 232, 0.4); stroke-width: 1.4; }
+.pjl-v-text { font-family: var(--pjl-mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; fill: rgba(242, 239, 232, 0.6); }
+.pjl-v-score { font-size: 9px; fill: rgba(242, 239, 232, 0.85); }
+.pjl-v-arrow { fill: none; stroke: #ffd27a; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* projection colours (the stage trio + lamp) */
+.pjl-v-amber { fill: #e7a43c; }
+.pjl-v-teal { fill: #3fd0a0; }
+.pjl-v-violet { fill: #a98bff; }
+.pjl-v-coral { fill: #ff7a5c; }
+.pjl-v-bio { fill: #8cffb4; }
+.pjl-v-glow { filter: drop-shadow(0 0 4px currentColor); }
+.pjl-v-amber.pjl-v-glow { color: #e7a43c; }
+.pjl-v-teal.pjl-v-glow { color: #3fd0a0; }
+.pjl-v-violet.pjl-v-glow { color: #a98bff; }
+.pjl-v-coral.pjl-v-glow { color: #ff7a5c; }
+.pjl-v-bio.pjl-v-glow { color: #8cffb4; }
+.pjl-v-star { fill: #ffd27a; animation: pjl-v-twinkle 3s ease-in-out infinite; }
+.pjl-v-eye { fill: #ffe9a8; }
+
+/* motion */
+.pjl-v-swing { animation: pjl-v-swing 2.6s ease-in-out infinite alternate; }
+.pjl-v-streak { stroke: rgba(255, 140, 110, 0.35); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 60; animation: pjl-v-streak 3.2s ease-in infinite; }
+.pjl-v-drip { animation: pjl-v-drip 3.2s ease-in infinite; }
+.pjl-v-vein { fill: none; stroke: #8cffb4; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 100; filter: drop-shadow(0 0 3px #8cffb4); animation: pjl-v-grow 5s ease-out infinite; }
+.pjl-v-crawl { animation: pjl-v-crawl 3.4s ease-in-out infinite alternate; }
+.pjl-v-climb { animation: pjl-v-climb 2.2s ease-in-out infinite alternate; }
+.pjl-v-bar { transform-box: fill-box; transform-origin: 50% 100%; animation: pjl-v-bar 3.6s ease-in-out infinite alternate; }
+.pjl-v-drop { animation: pjl-v-drop 4.4s ease-in infinite; }
+.pjl-v-blink { animation: pjl-v-blink 3.8s steps(1) infinite; }
+.pjl-v-ring { fill: none; stroke: #7fd8ff; stroke-width: 1.4; opacity: 0.5; filter: drop-shadow(0 0 3px #7fd8ff); animation: pjl-v-breathe 6s ease-in-out infinite; }
+.pjl-v-blob { opacity: 0.75; animation: pjl-v-blob 3.9s ease-in-out infinite alternate; }
+.pjl-v-meter { transform-box: fill-box; transform-origin: 0 50%; animation: pjl-v-meter 3.9s ease-in-out infinite alternate; }
+.pjl-v-orbit { animation: pjl-v-orbit 9s linear infinite; }
+.pjl-v-walk { animation: pjl-v-walk 9s linear infinite; }
+
+@keyframes pjl-v-swing { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+@keyframes pjl-v-twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes pjl-v-streak { 0% { stroke-dashoffset: 60; opacity: 0; } 30% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0.15; } }
+@keyframes pjl-v-drip { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(70px); opacity: 0; } }
+@keyframes pjl-v-grow { 0% { stroke-dashoffset: 100; opacity: 0.9; } 70% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0.25; } }
+@keyframes pjl-v-crawl { from { transform: translateX(0); } to { transform: translateX(30px); } }
+@keyframes pjl-v-climb { from { transform: translateY(-14px); } to { transform: translateY(14px); } }
+@keyframes pjl-v-bar { 0% { transform: scaleY(0.3); } 100% { transform: scaleY(1); } }
+@keyframes pjl-v-drop {
+  0% { transform: translateY(-40px); }
+  45% { transform: translateY(0); }
+  60% { transform: translateY(0); }
+  78% { transform: translateY(84px); opacity: 1; }
+  86%, 100% { transform: translateY(84px); opacity: 0; }
+}
+@keyframes pjl-v-blink { 0%, 92% { opacity: 1; } 94% { opacity: 0; } }
+@keyframes pjl-v-breathe { 0%, 100% { transform: scale(0.75); opacity: 0.2; } 50% { transform: scale(1.15); opacity: 0.75; } }
+@keyframes pjl-v-blob { from { transform: scale(0.75); } to { transform: scale(1.2); } }
+@keyframes pjl-v-meter { from { transform: scaleX(0.3); } to { transform: scaleX(1); } }
+@keyframes pjl-v-orbit { to { transform: rotate(360deg); } }
+@keyframes pjl-v-walk { from { transform: translateX(-20px); } to { transform: translateX(260px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pjl-vig * { animation: none !important; }
+  .pjl-v-vein { stroke-dashoffset: 0; }
+  .pjl-v-drop { transform: none; }
+  .pjl-v-walk { transform: translateX(40px); }
+}

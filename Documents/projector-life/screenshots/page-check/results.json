@@ -1,0 +1,731 @@
+{
+  "when": "2026-11-18T12:59:43.435Z",
+  "rows": [
+    {
+      "check": "load",
+      "pass": true,
+      "label": "live render (stage ready, life ticking, canvas lit) in 1.87 s — target ≈ 2 s, FAIL > 4 s (cold browser cache)",
+      "extra": "ticking at 1699 ms, 35 % of the stage lit at 1867 ms (screenshot latency included), DOMContentLoaded 900 ms"
+    },
+    {
+      "check": "load",
+      "pass": true,
+      "label": "nothing in the module above the stage except the tab bar (DOM order + boxes)",
+      "extra": "clean"
+    },
+    {
+      "check": "load",
+      "pass": true,
+      "label": "after the opening glide the whole stage is in view and fills most of the viewport",
+      "extra": "stage 176–890 px of 900 (79 %), tab bar 117–162 vs the sticky header's bottom 111, scrollY 242"
+    },
+    {
+      "check": "load",
+      "pass": true,
+      "label": "default preset \"The living shed\" on stage (name, tab-bar status, cutaway view, values)",
+      "extra": "The living shed · The living shed · cutaway"
+    },
+    {
+      "check": "load",
+      "pass": null,
+      "label": "warm reloads (HTTP cache primed): stage ready + ticking",
+      "extra": "1015 ms, 874 ms"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "default preset ≥ 45 fps at 1440×900 (in-page rAF counter, 6.0 s)",
+      "extra": "146.1 fps · Stage 146.3 fps · frame 1.10 ms (CPU) · sim 0.68 ms/frame, 3.13 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.5 / max 7.7 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "01 The living shed: applies by click — name, blurb, values, cutaway view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "The living shed: 146.7 fps (≥ 45)",
+      "extra": "Stage 146.3 fps · frame 1.01 ms (CPU) · sim 0.61 ms/frame, 3.10 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.6 / max 7.7 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "02 Slime-mould shed: applies by click — name, blurb, values, armchair view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "Slime-mould shed: 146.5 fps (≥ 20)",
+      "extra": "Stage 146.4 fps · frame 1.24 ms (CPU) · sim 0.50 ms/frame, 2.50 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.5 / max 7.7 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "03 Coral walls, dripping: applies by click — name, blurb, values, door view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "Coral walls, dripping: 146.4 fps (≥ 20)",
+      "extra": "Stage 146.4 fps · frame 1.91 ms (CPU) · sim 1.43 ms/frame, 3.17 ms/tick at 66 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.6 / max 7.9 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "04 Ceiling swingers: applies by click — name, blurb, values, loft view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "Ceiling swingers: 146.2 fps (≥ 20)",
+      "extra": "Stage 146.2 fps · frame 0.79 ms (CPU) · sim 0.38 ms/frame, 1.84 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.6 / max 7.8 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "05 Room food web: applies by click — name, blurb, values, cutaway view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "Room food web: 146.3 fps (≥ 20)",
+      "extra": "Stage 146.9 fps · frame 0.87 ms (CPU) · sim 0.41 ms/frame, 1.88 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.5 / max 7.7 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "06 Projector reality check: applies by click — name, blurb, values, cutaway view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "Projector reality check: 146.5 fps (≥ 20)",
+      "extra": "Stage 146.3 fps · frame 1.26 ms (CPU) · sim 0.88 ms/frame, 4.11 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.1 / p99 7.5 / max 7.7 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "07 Two-projector rig: applies by click — name, blurb, values, cutaway view, no errors",
+      "extra": "ok"
+    },
+    {
+      "check": "fps",
+      "pass": true,
+      "label": "Two-projector rig: 146.5 fps (≥ 20)",
+      "extra": "Stage 146.0 fps · frame 1.18 ms (CPU) · sim 0.68 ms/frame, 3.24 ms/tick at 30 ticks/s · frame gaps p50 7.0 / p95 7.2 / p99 7.5 / max 7.6 ms, 0 > 20 ms"
+    },
+    {
+      "check": "presets",
+      "pass": true,
+      "label": "the ‹ › arrows on the stage cycle the scenes (and wrap)",
+      "extra": "→ Slime-mould shed; ← ← Two-projector rig"
+    },
+    {
+      "check": "roof",
+      "pass": true,
+      "label": "the apex slider (keyboard Home / End) sets 2.70 m and 4.20 m and stats.pitchDeg follows",
+      "extra": "3.3 m 25.7° → 2.7 m 11.7° → 4.2 m 41.8°; readout \"2.70 m · 11.7°\" / \"4.20 m · 41.8°\""
+    },
+    {
+      "check": "roof",
+      "pass": true,
+      "label": "roof patches rebuild: steeper roof = more downslope g_t, less peel-off g_n",
+      "extra": "|g_t| 0.202 → 0.667, g_n -0.979 → -0.745, facet pitch 11.7° → 41.8°"
+    },
+    {
+      "check": "roof",
+      "pass": null,
+      "label": "apex 2.70 m (11.7°), 2 × 1800 ticks",
+      "extra": "peel 79, roof falls 10 (all falls 11), releases 482, catches 411, misses 0, PL on roof at end 1848 || peel 134, roof falls 10 (all falls 12), releases 480, catches 395, misses 0, PL on roof at end 1848"
+    },
+    {
+      "check": "roof",
+      "pass": null,
+      "label": "apex 4.20 m (41.8°), 2 × 1800 ticks",
+      "extra": "peel 82, roof falls 6 (all falls 7), releases 290, catches 179, misses 2, PL on roof at end 2432 || peel 78, roof falls 10 (all falls 13), releases 168, catches 106, misses 0, PL on roof at end 2432"
+    },
+    {
+      "check": "roof",
+      "pass": true,
+      "label": "the apex visibly changes ceiling behaviour over equal sim time (≥ 25 % change in roof peel-off, roof falls or swing releases)",
+      "extra": "2.7 m → 4.2 m: Particle Life peel-off 213 → 160 (-25 %), creature roof falls 20 → 16, swing releases 962 → 458 (-52 %) — sums of 2 runs × 60 s sim; ticks equal: true"
+    },
+    {
+      "check": "seed",
+      "pass": true,
+      "label": "a click (not a drag) on a lit wall in the cutaway seeds life there (_stats().lastSeed)",
+      "extra": "wall-NE (coverage 89 %) at (921, 402) → lastSeed wall-NE local [0.54, 1.69] · hint \"seeded · Wall NE — click again\""
+    },
+    {
+      "check": "seed",
+      "pass": true,
+      "label": "a drag (orbit) on the same wall does not seed",
+      "extra": ""
+    },
+    {
+      "check": "png",
+      "pass": true,
+      "label": "Save PNG downloads a blob that is a non-empty, non-black PNG",
+      "extra": "projector-life-living-shed.png · blob:http://… · 432652 bytes · 778×714, 34 % lit"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "the MCP preview drawer opens and its JSON parses (one call per line)",
+      "extra": "42 calls (bar says 42) · tools: set_projector, describe_region, set_climate, set_region_life, introduce_species, seed_region"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "pretty-printed JSON parses too",
+      "extra": "42"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "Plan tab renders (and the stage is gone: canvas removed, 0 live WebGL contexts)",
+      "extra": "688 px tall, 2 SVGs, ~177 words; stage canvas present: false; live GL contexts 0"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "Plan: all 5 sub-sections render (Phases · Architecture · Risks · What it showed · Ask him)",
+      "extra": "Phases 396px/103w/1svg, Architecture 765px/160w/2svg, Risks 792px/205w/0svg, What it showed 1027px/401w/0svg, Ask him 479px/105w/0svg"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "Plan: the phase timeline shows each of its 7 phases",
+      "extra": "0. Read his repo, agree the interface · 1. Life as projected content · 2. The room model · 3. Cheap spatial wins · 4. Plate VII — life that evolves its grip · 5. Claude, the room’s naturalist · 6. The room looks back"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "Applications tab renders (and the stage is gone: canvas removed, 0 live WebGL contexts)",
+      "extra": "1022 px tall, 8 SVGs, ~326 words, 8 cards; stage canvas present: false; live GL contexts 0"
+    },
+    {
+      "check": "tabs",
+      "pass": true,
+      "label": "arrow keys / Home / End move focus and selection along the top tabs (wrapping)",
+      "extra": "Plan:true, Applications:true, Visualiser:true, Applications:true, Visualiser:true, Applications:true, Visualiser:true"
+    },
+    {
+      "check": "leaks",
+      "pass": true,
+      "label": "live WebGL contexts after 10 cycles (20 stage rebuilds): 1",
+      "extra": "created 42, lost 38, collected 3 (start: created 2, lost 1); live: [{\"type\":\"webgl2\",\"cls\":\"pjl-canvas\",\"connected\":true}]"
+    },
+    {
+      "check": "leaks",
+      "pass": true,
+      "label": "every stage the switches created released its context (webglcontextlost, or its canvas was collected first)",
+      "extra": "+40 created (2 per mount: React StrictMode mounts twice in dev), +37 lost events, +3 collected before the event"
+    },
+    {
+      "check": "leaks",
+      "pass": true,
+      "label": "renderer.info of the fresh stage ≤ the first stage (geometries / textures / programs)",
+      "extra": "first 92 / 24 / 12 → fresh 92 / 24 / 12"
+    },
+    {
+      "check": "leaks",
+      "pass": true,
+      "label": "disposed stages are garbage-collectable (no lost-context canvas still reachable after a forced GC)",
+      "extra": "0 of 38 disposed stage canvases still reachable"
+    },
+    {
+      "check": "leaks",
+      "pass": true,
+      "label": "no document-level listeners left behind (keydown on document, via CDP)",
+      "extra": "document listeners 5 → 5; keydown 1 → 1"
+    },
+    {
+      "check": "leaks",
+      "pass": true,
+      "label": "JS heap roughly flat after 20 rebuilds (forced GC; FAIL ≥ 25 MB)",
+      "extra": "109.0 MB → 113.2 MB → 113.2 MB after a further settle (+4.2 MB); a cycle took 1888 ms"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "1440: after the opening glide the tab bar sits below the sticky portal header (visible) and the stage is in view",
+      "extra": "header bottom 111, tab bar 117–162, stage 176–890 of 900, scrollY 242"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "1440×900: no horizontal page scroll",
+      "extra": "0 px"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "1440: side panel sits beside the stage, not over it",
+      "extra": "stage 778×714, panel 316 px wide at x 1079"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "1440: panel text readable (HTML ≥ 8.5 px — the mono micro-labels are 0.56–0.6 rem by design — SVG labels ≥ 8 px rendered, nothing clipped without an ellipsis)",
+      "extra": "smallest HTML 8.96px \"on\"; smallest SVG label ≈ 9.2px \"25.7°\""
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "1440: projector-output inset, net inset and overlay blocks never collide (all 7 presets)",
+      "extra": "clean"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "390: after the opening glide the tab bar sits below the sticky portal header (visible) and the stage is in view",
+      "extra": "header bottom 101, tab bar 107–149, stage 163–687 of 844, scrollY 3133"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "390×844: no horizontal page scroll",
+      "extra": "0 px"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "390: the controls are a drawer below the stage",
+      "extra": "stage 340×523 ends at 687, panel starts at 687"
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "390: panel text readable (HTML ≥ 8.5 px — the mono micro-labels are 0.56–0.6 rem by design — SVG labels ≥ 8 px rendered, nothing clipped without an ellipsis)",
+      "extra": "smallest HTML 8.96px \"on\"; smallest SVG label ≈ 99.0px "
+    },
+    {
+      "check": "layout",
+      "pass": true,
+      "label": "390: projector-output inset, net inset and overlay blocks never collide (all 7 presets)",
+      "extra": "clean"
+    },
+    {
+      "check": "reduced",
+      "pass": true,
+      "label": "prefers-reduced-motion: the stage renders and is alive",
+      "extra": "35 % lit"
+    },
+    {
+      "check": "reduced",
+      "pass": true,
+      "label": "prefers-reduced-motion: views (buttons and presets) switch instantly, on the next frame",
+      "extra": "Door: 0.0000 m · Plan: 0.0000 m · Loft: 0.0000 m · Cutaway: 0.0000 m · preset → loft: 0.0000 m"
+    },
+    {
+      "check": "storage",
+      "pass": true,
+      "label": "with localStorage throwing, the page still renders a live stage",
+      "extra": "35 % lit"
+    },
+    {
+      "check": "storage",
+      "pass": true,
+      "label": "with localStorage throwing, presets and the Plan tab still work",
+      "extra": "688 px"
+    },
+    {
+      "check": "console",
+      "pass": true,
+      "label": "zero console errors and warnings attributable to the page across the whole run",
+      "extra": "excluded 0 (none)"
+    }
+  ],
+  "results": {
+    "load": {
+      "tickingMs": 1699,
+      "litMs": 1867,
+      "liveMs": 1867,
+      "litFrac": 0.35268914763848985,
+      "dclMs": 900,
+      "cold": true,
+      "geometry": {
+        "headBottom": 111.453125,
+        "tabsTop": 117.453125,
+        "tabsBottom": 161.578125,
+        "frameTop": 176.171875,
+        "frameBottom": 890.171875,
+        "frameH": 714,
+        "vh": 900,
+        "scrollY": 242
+      },
+      "warmMs": [
+        1015,
+        874
+      ]
+    },
+    "fps": [
+      {
+        "id": "living-shed",
+        "name": "The living shed",
+        "fps": 146.09605357405144,
+        "stageFps": 146.32689627712531,
+        "frameMs": 1.0988581472070047,
+        "simMs": 0.6810672730383304,
+        "tickMs": 3.1268704184044815,
+        "ticksPerSec": 29.985507004936444,
+        "gapP50": 7,
+        "gapP95": 7.100000000000364,
+        "gapP99": 7.5,
+        "gapMax": 7.700000000000728,
+        "over20": 0,
+        "secs": 6.002900000002235,
+        "initial": true
+      },
+      {
+        "id": "living-shed",
+        "name": "The living shed",
+        "fps": 146.69731188168282,
+        "stageFps": 146.29777070063705,
+        "frameMs": 1.011973861854335,
+        "simMs": 0.6137243631929553,
+        "tickMs": 3.096777590553395,
+        "ticksPerSec": 29.979014689717197,
+        "gapP50": 7,
+        "gapP95": 7.100000000002183,
+        "gapP99": 7.599999999998545,
+        "gapMax": 7.700000000000728,
+        "over20": 0,
+        "secs": 5.0035
+      },
+      {
+        "id": "slime-mould",
+        "name": "Slime-mould shed",
+        "fps": 146.5150212875877,
+        "stageFps": 146.35603345280742,
+        "frameMs": 1.23668910559998,
+        "simMs": 0.5047567377419415,
+        "tickMs": 2.4983328567880028,
+        "ticksPerSec": 29.98261008613664,
+        "gapP50": 7,
+        "gapP95": 7.100000000002183,
+        "gapP99": 7.5,
+        "gapMax": 7.700000000000728,
+        "over20": 0,
+        "secs": 5.002900000002235
+      },
+      {
+        "id": "coral-drip",
+        "name": "Coral walls, dripping",
+        "fps": 146.36487243052943,
+        "stageFps": 146.38518223461398,
+        "frameMs": 1.907828677988596,
+        "simMs": 1.4308862898072123,
+        "tickMs": 3.1682223384931505,
+        "ticksPerSec": 65.98416380064852,
+        "gapP50": 7,
+        "gapP95": 7.100000000005821,
+        "gapP99": 7.599999999998545,
+        "gapMax": 7.900000000001455,
+        "over20": 0,
+        "secs": 5.001200000002981
+      },
+      {
+        "id": "ceiling-swingers",
+        "name": "Ceiling swingers",
+        "fps": 146.17368873607106,
+        "stageFps": 146.23955431754916,
+        "frameMs": 0.7898530816421785,
+        "simMs": 0.37924294674283227,
+        "tickMs": 1.8390993215223481,
+        "ticksPerSec": 29.994600971834007,
+        "gapP50": 7,
+        "gapP95": 7.100000000005821,
+        "gapP99": 7.599999999998545,
+        "gapMax": 7.80000000000291,
+        "over20": 0,
+        "secs": 5.00089999999851
+      },
+      {
+        "id": "food-web",
+        "name": "Room food web",
+        "fps": 146.33268696397477,
+        "stageFps": 146.92653673163417,
+        "frameMs": 0.8704400398793061,
+        "simMs": 0.4143303108343005,
+        "tickMs": 1.878387239256017,
+        "ticksPerSec": 29.986206345076795,
+        "gapP50": 7,
+        "gapP95": 7.099999999998545,
+        "gapP99": 7.5,
+        "gapMax": 7.700000000004366,
+        "over20": 0,
+        "secs": 5.002300000000745
+      },
+      {
+        "id": "reality-check",
+        "name": "Projector reality check",
+        "fps": 146.5150212876968,
+        "stageFps": 146.31233203941412,
+        "frameMs": 1.2632917374262902,
+        "simMs": 0.8762161474885144,
+        "tickMs": 4.113124830496797,
+        "ticksPerSec": 29.982610086158964,
+        "gapP50": 7,
+        "gapP95": 7.100000000005821,
+        "gapP99": 7.5,
+        "gapMax": 7.69999999999709,
+        "over20": 0,
+        "secs": 5.00289999999851
+      },
+      {
+        "id": "two-projector",
+        "name": "Two-projector rig",
+        "fps": 146.52087872551004,
+        "stageFps": 145.97080583883266,
+        "frameMs": 1.181748896023961,
+        "simMs": 0.6843903164776483,
+        "tickMs": 3.2379110116042065,
+        "ticksPerSec": 30.18370080157165,
+        "gapP50": 7,
+        "gapP95": 7.19999999999709,
+        "gapP99": 7.5,
+        "gapMax": 7.600000000005821,
+        "over20": 0,
+        "secs": 5.002699999999255
+      }
+    ],
+    "roof": {
+      "start": {
+        "apex": 3.3,
+        "pitchDeg": 25.71785555700073,
+        "gt": 0.4339398735994063,
+        "gn": -0.9009418328063868,
+        "facetPitch": 25.71785555700073,
+        "readout": "3.30 m · 25.7°",
+        "sliderValue": "3.3",
+        "roofPatches": 8
+      },
+      "lo": {
+        "apex": 2.7,
+        "pitchDeg": 11.663294034863874,
+        "gt": 0.20215992453624007,
+        "gn": -0.9793525233088961,
+        "facetPitch": 11.663294034863874,
+        "readout": "2.70 m · 11.7°",
+        "sliderValue": "2.7",
+        "roofPatches": 8
+      },
+      "hi": {
+        "apex": 4.2,
+        "pitchDeg": 41.81248639090825,
+        "gt": 0.6666949149859653,
+        "gn": -0.7453307254714895,
+        "facetPitch": 41.81248639090825,
+        "readout": "4.20 m · 41.8°",
+        "sliderValue": "4.2",
+        "roofPatches": 8
+      },
+      "runs": {
+        "lo": [
+          {
+            "tick": 1800,
+            "fell": 11,
+            "fellRoof": 10,
+            "releases": 482,
+            "catches": 411,
+            "misses": 0,
+            "slid": 4,
+            "detached": 79,
+            "plCeiling": 0,
+            "plCeilingEnd": 1848,
+            "ms": 4881
+          },
+          {
+            "tick": 1800,
+            "fell": 12,
+            "fellRoof": 10,
+            "releases": 480,
+            "catches": 395,
+            "misses": 0,
+            "slid": 5,
+            "detached": 134,
+            "plCeiling": 0,
+            "plCeilingEnd": 1848,
+            "ms": 5065
+          }
+        ],
+        "hi": [
+          {
+            "tick": 1800,
+            "fell": 7,
+            "fellRoof": 6,
+            "releases": 290,
+            "catches": 179,
+            "misses": 2,
+            "slid": 17,
+            "detached": 82,
+            "plCeiling": 0,
+            "plCeilingEnd": 2432,
+            "ms": 6625
+          },
+          {
+            "tick": 1800,
+            "fell": 13,
+            "fellRoof": 10,
+            "releases": 168,
+            "catches": 106,
+            "misses": 0,
+            "slid": 4,
+            "detached": 78,
+            "plCeiling": 0,
+            "plCeilingEnd": 2432,
+            "ms": 7138
+          }
+        ]
+      },
+      "sums": {
+        "det": {
+          "lo": 213,
+          "hi": 160
+        },
+        "fr": {
+          "lo": 20,
+          "hi": 16
+        },
+        "rl": {
+          "lo": 962,
+          "hi": 458
+        }
+      }
+    },
+    "seed": {
+      "hit": {
+        "id": "wall-NE",
+        "cov": 0.8939393939393939,
+        "x": 920.8364320267901,
+        "y": 401.9177289057875,
+        "seed": {
+          "patchId": "wall-NE",
+          "local": [
+            0.541791231464172,
+            1.687500009898757
+          ],
+          "world": [
+            3.4660898197290737,
+            1.687500009898757,
+            0.3831042537557261
+          ]
+        },
+        "hint": "seeded · Wall NE — click again"
+      },
+      "candidates": 32
+    },
+    "png": {
+      "download": "projector-life-living-shed.png",
+      "size": 432652,
+      "sig": true,
+      "px": {
+        "frac": 0.339360422832372,
+        "mean": 17.441634623724752,
+        "w": 778,
+        "h": 714
+      }
+    },
+    "leaks": {
+      "m0": {
+        "heapMB": 108.99508476257324,
+        "geometries": 92,
+        "textures": 24,
+        "programs": 12,
+        "calls": 1,
+        "triangles": 2
+      },
+      "m1": {
+        "heapMB": 113.16076755523682,
+        "geometries": 92,
+        "textures": 24,
+        "programs": 12,
+        "calls": 1,
+        "triangles": 2
+      },
+      "m2": {
+        "heapMB": 113.15314197540283,
+        "geometries": 92,
+        "textures": 24,
+        "programs": 12,
+        "calls": 1,
+        "triangles": 2
+      },
+      "gl0": {
+        "created": 2,
+        "lost": 1,
+        "collected": 0,
+        "live": 1,
+        "retained": 0,
+        "liveList": [
+          {
+            "type": "webgl2",
+            "cls": "pjl-canvas",
+            "connected": true
+          }
+        ]
+      },
+      "gl1": {
+        "created": 42,
+        "lost": 38,
+        "collected": 3,
+        "live": 1,
+        "retained": 0,
+        "liveList": [
+          {
+            "type": "webgl2",
+            "cls": "pjl-canvas",
+            "connected": true
+          }
+        ]
+      },
+      "gl2": {
+        "created": 42,
+        "lost": 38,
+        "collected": 3,
+        "live": 1,
+        "retained": 0,
+        "liveList": [
+          {
+            "type": "webgl2",
+            "cls": "pjl-canvas",
+            "connected": true
+          }
+        ]
+      },
+      "ls0": {
+        "total": 5,
+        "keydown": 1
+      },
+      "ls1": {
+        "total": 5,
+        "keydown": 1
+      },
+      "cycleMs": [
+        2496,
+        1854,
+        1827,
+        1805,
+        1842,
+        1819,
+        1852,
+        1825,
+        1786,
+        1778
+      ]
+    },
+    "console": {
+      "kept": [],
+      "excluded": []
+    }
+  }
+}

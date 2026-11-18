@@ -229,6 +229,16 @@ const PATHS = {
       <circle cx="9" cy="15.4" r="0.7" />
     </>
   ),
+  // Projector — a projector body with its lens throwing a cone onto a surface
+  projector: (
+    <>
+      <rect x="2.5" y="9" width="8.5" height="6" rx="1.4" />
+      <circle cx="8.2" cy="12" r="1.5" />
+      <path d="M11 10.2 20.5 5.5v13L11 13.8" />
+      <path d="M20.5 5.5v13" />
+      <path d="M4.5 15v2.2M9 15v2.2" />
+    </>
+  ),
   // Chart — axes with a rising curve and an end marker (run-results analysis)
   chart: (
     <>
