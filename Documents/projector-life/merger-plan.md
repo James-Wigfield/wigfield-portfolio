@@ -124,7 +124,8 @@ Measured 2026-11-18 in headless Edge (ANGLE d3d11) with the visualiser's coverag
 
 | Measure | Value |
 |---|---|
-| Frame rate, default scene (sims + creatures + 1 projector) | **150 fps** (the headless cap); ~1 ms CPU per frame, the sims ~0.6 ms |
+| Frame rate, default scene (sims + creatures + 1 projector) | **145 fps** (the headless cap; ≈ 2,100 fps uncapped), the sims ~0.6 ms a frame |
+| Frame rate, heaviest preset (Room food web: 2 projectors, 72 creatures) | **145 fps** (≈ 885 fps uncapped) |
 | One **standard-throw (1.5)** projector, best pose | **8 %** of the room (floor 0 · walls 6 · roof 17); ~700 projector px/m |
 | One **short-throw (0.5)** projector, best pose | **35 %** (floor 11 · walls 46 · roof 40); ~220 px/m |
 | One **ultra-short (0.25)**, best pose | **60 %** (floor 33 · walls 63 · roof 75) — but a centred 0.25 lens is a fisheye no real UST is |

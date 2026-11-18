@@ -28,7 +28,7 @@
 import * as THREE from 'three';
 import { SHED, cornerXZ } from './roomModel.js';
 
-const OVERHANG = 2.46; //       apothem of the overhang's edge (outer wall face 2.28 + 18 cm)
+const OVERHANG = 2.34; //       apothem of the overhang edge (outer wall face 2.28 + 6 cm; 18 cm read as stray spikes beside faded facets — QA)
 const BATTEN_W = 0.06; //       hip batten width
 const BATTEN_H = 0.025; //      …and how far it hangs below the hip
 const BOSS_R = 0.075; //        apex boss (where the battens meet)

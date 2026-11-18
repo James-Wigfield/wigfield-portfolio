@@ -46,18 +46,41 @@ export default function ProjectorLife() {
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return undefined;
-    const head = document.querySelector('.portal__topbar');
-    const headH = head ? head.getBoundingClientRect().height : 0;
-    const top = Math.round(el.getBoundingClientRect().top + window.scrollY - headH - 6);
-    if (top <= 0 || window.scrollY > top) return undefined;
+    const targetTop = () => {
+      const head = document.querySelector('.portal__topbar');
+      const headH = head ? head.getBoundingClientRect().height : 0;
+      return Math.round(el.getBoundingClientRect().top + window.scrollY - headH - 6);
+    };
+    const first = targetTop();
+    if (first <= 0 || window.scrollY > first) return undefined;
     let reduce = false;
     try {
       reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch {
       /* no matchMedia: animate */
     }
-    const id = requestAnimationFrame(() => window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' }));
-    return () => cancelAnimationFrame(id);
+    // The layout above can still settle after this (at phone width the
+    // portal's chrome shrinks ~70 px a moment later — QA), so re-aim a few
+    // times; the first touch, wheel, key or click hands control back.
+    let user = false;
+    const EVS = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+    const stop = () => {
+      user = true;
+    };
+    EVS.forEach((e) => window.addEventListener(e, stop, { passive: true }));
+    const id = requestAnimationFrame(() => window.scrollTo({ top: first, behavior: reduce ? 'auto' : 'smooth' }));
+    const timers = [750, 1300, 2000, 2800].map((ms) =>
+      setTimeout(() => {
+        if (user) return;
+        const t = targetTop();
+        if (t > 0 && Math.abs(window.scrollY - t) > 2) window.scrollTo({ top: t, behavior: 'auto' });
+      }, ms),
+    );
+    return () => {
+      cancelAnimationFrame(id);
+      timers.forEach(clearTimeout);
+      EVS.forEach((e) => window.removeEventListener(e, stop));
+    };
   }, []);
 
   const onKey = useCallback(

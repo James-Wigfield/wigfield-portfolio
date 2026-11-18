@@ -466,7 +466,14 @@
   .pjl-ov__blurb { display: none; }
   .pjl-ov__shade--top { height: 170px; }
   .pjl-net { right: 8px; bottom: 8px; width: 34cqi; }
-  .pjl-ov__cov { width: min(220px, 100%); }
+  /* On a phone the full card hid half the room (QA): one compact line of
+     figures instead — no bars, no overlap strip. */
+  .pjl-ov__cov { width: auto; max-width: 100%; margin-top: 0.4rem; padding: 0.3rem 0.5rem; }
+  .pjl-ov__cov .pjl-cov { flex-direction: row; flex-wrap: wrap; gap: 0.15rem 0.7rem; }
+  .pjl-ov__cov .pjl-cov__row { display: inline-flex; gap: 0.3rem; }
+  .pjl-ov__cov .pjl-cov__bar,
+  .pjl-ov__cov .pjl-cov__by { display: none; }
+  .pjl-ov__cov .pjl-cov__k { font-size: 0.7rem; }
 }
 
 /* ── panel ───────────────────────────────────────────────────────────────── */

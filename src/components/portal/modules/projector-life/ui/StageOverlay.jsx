@@ -171,7 +171,7 @@ export default function StageOverlay({
       {values['aid.projInset'] &&
         insets.map((r) => (
           <span key={r.index} className="pjl-ov__label pjl-ov__inset" style={{ left: r.x, top: Math.max(0, r.y - 18), maxWidth: insets.length > 1 ? r.w + 4 : undefined }}>
-            {insets.length > 1 || narrow ? `projector ${r.index + 1} output` : `what projector ${r.index + 1} actually outputs`}
+            {insets.length > 1 && narrow ? `p${r.index + 1} output` : insets.length > 1 || narrow ? `projector ${r.index + 1} output` : `what projector ${r.index + 1} actually outputs`}
           </span>
         ))}
 

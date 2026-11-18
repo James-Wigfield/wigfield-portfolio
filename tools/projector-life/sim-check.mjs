@@ -405,6 +405,22 @@ function ticks(host, n) {
   check(!err, 'churn: patches + masks change', err ? String(err.stack || err).split('\n').slice(0, 2).join(' ') : 'loft off/on, apex change, masks stripped, walls only, ppm 24, regions off, reseed/clear/seed, setPatches→setParams→reseed before a step: no throw');
 }
 
+// ── 11b. no creep: the default roof Particle Life stays near its share ───────
+// (QA's soak caught the roof total creeping 2.1k → 5k+ and the tick 4 → 12 ms
+// over a few minutes: particles crowd some facets while starved ones respawn.)
+{
+  const { host } = makeHost(3.3, { 'life.sys.ceiling': 'particlelife' }, 11);
+  const pl = () => host._debug().sys.particlelife.stats().particles;
+  ticks(host, Math.round(20 / TICK));
+  const early = pl();
+  const t0 = performance.now();
+  ticks(host, Math.round(100 / TICK));
+  const late = pl();
+  const msPerTick = (performance.now() - t0) / Math.round(100 / TICK);
+  host.dispose();
+  check(late <= early * 1.15, 'budget: no Particle Life creep', `roof particles ${early} at 20 s → ${late} at 120 s (≤ +15 %), ${fmt(msPerTick)} ms/tick`);
+}
+
 // ── 12. evolution: habitats drift apart (slow) ───────────────────────────────
 if (!QUICK) {
   const seeds = [5, 21];

@@ -451,14 +451,30 @@ export function createParticleLife({ rng, budget, onDetach }) {
       }
 
       // ── keep each patch near its share (roofs keep raining) ────────────────
+      // Particles drift across seams and crowd some patches (round the apex),
+      // so topping up only the starved ones let the TOTAL creep to the cap and
+      // the tick cost triple over a few minutes (lead, after QA's soak). Top
+      // up only while the total is under the summed targets, and thin a patch
+      // that holds more than 1.5× its share.
       onPatch = new Int32Array(D.P.length);
       for (let i = 0; i < count; i++) onPatch[pp[i]]++;
+      let totalTarget = 0;
+      for (const pi of owned) totalTarget += target[pi];
       for (const pi of owned) {
-        const deficit = target[pi] - onPatch[pi];
+        const deficit = Math.min(target[pi] - onPatch[pi], totalTarget - count);
         const n = Math.min(deficit, 3);
         for (let k = 0; k < n; k++) {
           const pt = D.randomPoint(pi, rng);
           if (pt) spawn(pi, pt[0], pt[1]);
+        }
+        let excess = Math.min(onPatch[pi] - Math.ceil(target[pi] * 1.5), 4);
+        if (excess > 0) {
+          for (let i = count - 1; i >= 0 && excess > 0; i--) {
+            if (pp[i] !== pi || rng() > 0.5) continue;
+            kill(i);
+            onPatch[pi]--;
+            excess--;
+          }
         }
       }
     },

@@ -149,7 +149,9 @@ export class Stage {
     this.room?.dispose();
     if (this.air) {
       this.air.geometry.dispose();
+      this.air.material.matcap?.dispose();
       this.air.material.dispose();
+      this.air.dispose?.(); // InstancedMesh frees its instance buffers
     }
     if (this.inset) {
       this.inset.quad.geometry.dispose();
@@ -465,8 +467,23 @@ export class Stage {
 
   // ── mid-air bodies (not projectable) ──────────────────────────────────────
   _buildAir() {
-    const geo = new THREE.IcosahedronGeometry(1, 1);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+    const geo = new THREE.IcosahedronGeometry(1, 2);
+    // A tiny generated matcap (no lights in this unlit scene): a lit top-left,
+    // a dark rim — so a falling body reads as a solid bead, not a flat disc.
+    const mc = document.createElement('canvas');
+    mc.width = mc.height = 64;
+    const g = mc.getContext('2d');
+    const grad = g.createRadialGradient(24, 22, 2, 32, 32, 32);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.35, '#d8d8d8');
+    grad.addColorStop(0.8, '#5a5a5a');
+    grad.addColorStop(1, '#1a1a1a');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    const matcap = new THREE.CanvasTexture(mc);
+    matcap.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshMatcapMaterial({ color: 0xffffff, matcap });
+    geo.computeVertexNormals();
     const mesh = new THREE.InstancedMesh(geo, mat, MAX_AIR);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.count = 0;
@@ -485,7 +502,7 @@ export class Stage {
     const m = this._m4;
     for (let i = 0; i < n; i++) {
       const b = list[i];
-      const r = b.r || 0.03;
+      const r = (b.r || 0.04) * 0.75;
       m.makeScale(r, r, r).setPosition(b.x, b.y, b.z);
       this.air.setMatrixAt(i, m);
       const c = b.color || [1, 0.4, 0.3];

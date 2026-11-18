@@ -61,7 +61,7 @@ function Wide() {
       <Defs />
       <Node x={xs[0]} y={Y} w={W} h={H} k="my repo" t="Specimen Cabinet" s="sims as a library" phase="P1" />
       <Node x={xs[1]} y={Y} w={W} h={H} k="the join" t="RegionContent" s="init · step · render" tone="accent" phase="P0" />
-      <Node x={xs[2]} y={Y} w={W} h={H} k="his repo" t="Mapper" s="regions · warps · masks" phase="P2" />
+      <Node x={xs[2]} y={Y} w={W} h={H} k="his repo" t="Mapper" s="regions · warps" phase="P2" />
       <Node x={xs[3]} y={Y} w={W} h={H} k="hardware" t="Projector 1–3" s="throw · black level" />
       <Node x={xs[4]} y={Y} w={W} h={H} k="the room" t="The She'd" s="18 habitats" tone="room" />
       {[0, 1, 2, 3].map((i) => (
@@ -85,7 +85,7 @@ function Wide() {
       <Flow d={`M 490 ${8 + H} C 490 105, ${xs[2] + W / 2} 100, ${xs[2] + W / 2} ${Y - 4}`} label="describe_region" lx={470} ly={112} anchor="start" />
       <Flow d={`M ${xs[4] + W / 2} ${Y - 4} C ${xs[4] + W / 2} 60, 600 42, 534 42`} dashed label="snapshot · census" lx={722} ly={104} anchor="end" />
 
-      <Node x={500} y={258} w={W} h={H - 6} k="phase 6" t="Camera" s="shadows · calibration" tone="later" />
+      <Node x={500} y={258} w={W} h={H - 6} k="phase 6" t="Camera" s="shadows · calibrate" tone="later" />
       <Flow d={`M ${xs[4] + W / 2} ${Y + H + 4} C ${xs[4] + W / 2} 290, 680 290, ${500 + W + 4} 290`} dashed />
       <Flow d={`M 500 290 C 420 290, ${xs[2] + W / 2} 280, ${xs[2] + W / 2} ${Y + H + 4}`} dashed label="calibrate_room" lx={440} ly={312} />
     </svg>

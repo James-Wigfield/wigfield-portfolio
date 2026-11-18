@@ -110,10 +110,16 @@ export const PRESETS = [
       'life.sys.floor': 'grayscott',
       'life.sys.wall': 'grayscott',
       'life.sys.ceiling': 'grayscott',
-      'life.gsPreset': 'coral',
+      // "Rain" (worms) seeds nuclei along each wall's top edge while drift is
+      // on, and 2.2× speed × 2 substeps has it dripping within ~7 s of the
+      // click (coral proper took 30–45 s to fill — QA, 2026-11-18).
+      'life.gsPreset': 'worms',
       'life.gsPalette': 'aurora',
       'life.drift': 0.8,
-      'life.speed': 1.4,
+      'life.speed': 2.2,
+      'life.substeps': 2,
+      'room.ambient': 0.05,
+      'p0.brightness': 1.8,
       'cr.on': false,
     },
   },
@@ -121,23 +127,33 @@ export const PRESETS = [
     id: 'ceiling-swingers',
     name: 'Ceiling swingers',
     blurb: 'A steep roof, weak grip: creatures hang, swing, let go — and some of them fall.',
-    camera: 'loft',
+    camera: 'door',
     values: {
       'room.apex': 4.0,
+      'room.ambient': 0.05,
       'proj.count': 1,
       ...pose(0, RIGS.floorUp),
+      'p0.brightness': 1.8,
       'proj.frustum': false,
       'life.sys.floor': 'physarum',
       'life.sys.wall': 'grayscott',
-      'life.sys.ceiling': 'off', // creatures still draw on an 'off' patch: black roof, bright bodies
+      // dim white droplets creeping downslope: the roof reads as a surface,
+      // the creatures' coloured bodies and white arms stay the brightest thing
+      'life.sys.ceiling': 'grayscott',
+      'life.gsPreset': 'mitosis',
+      'life.gsPalette': 'mono',
       'life.physPalette': 'ember',
       'cr.on': true,
       'cr.ceiling': 40,
       'cr.wall': 8,
       'cr.floor': 6,
-      'cr.grip': 0.55,
-      'cr.swing': 0.36,
-      'cr.flight': 0.6,
+      // Selection OFF: immigrants keep the roof topped up, so the falls are a
+      // steady show. With selection on, falls outran births and the roof
+      // emptied to 1–2 swingers within a minute (QA, 2026-11-18).
+      'cr.selection': false,
+      'cr.grip': 0.7,
+      'cr.swing': 0.32,
+      'cr.flight': 0.25,
       'cr.showAir': true,
     },
   },

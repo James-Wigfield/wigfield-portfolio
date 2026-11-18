@@ -59,8 +59,8 @@ export const MEASUREMENTS = {
     // ── measured 2026-11-18 (lead): coverage = share of unmasked surface area
     //    lit by ≥ 1 projector, occlusion on, apex 3.3 m; "best" = best of
     //    544 single poses (17 spots × 2 heights × 16 headings × 4 tilts) ──
-    { id: 'fps-default', source: 'measured', label: 'Frame rate, default scene', value: 150, unit: 'fps', digits: 0, note: 'the headless frame cap; ~1 ms CPU per frame (target ≥ 45)' },
-    { id: 'fps-heavy', source: 'measured', label: 'Frame rate, heaviest preset', value: null, unit: 'fps', digits: 0, note: '' },
+    { id: 'fps-default', source: 'measured', label: 'Frame rate, default scene', value: 145, unit: 'fps', digits: 0, note: 'the headless frame cap (≈ 2,100 fps uncapped); target ≥ 45' },
+    { id: 'fps-heavy', source: 'measured', label: 'Frame rate, heaviest preset (Room food web)', value: 145, unit: 'fps', digits: 0, note: 'still at the cap (≈ 885 fps uncapped: ~1.1 ms a frame)' },
     { id: 'cov-std', source: 'measured', label: 'One standard-throw projector (1.5) covers, at best', value: 0.082, unit: '%', digits: 0, note: 'floor 0 · walls 6 · roof 17 — and ~700 px/m (1.4 mm pixels) is resolution the sims never use' },
     { id: 'cov-short', source: 'measured', label: 'One short-throw projector (0.5) covers, at best', value: 0.351, unit: '%', digits: 0, note: 'over the loft’s south end aiming NE: floor 11 · walls 46 · roof 40, ~220 px/m' },
     { id: 'cov-ust', source: 'measured', label: 'One ultra-short (0.25) covers, at best', value: 0.598, unit: '%', digits: 0, note: 'floor 33 · walls 63 · roof 75 — but a centred 0.25 lens is a fisheye no real UST is' },
