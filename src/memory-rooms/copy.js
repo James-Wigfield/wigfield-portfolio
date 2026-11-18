@@ -1,6 +1,6 @@
 /* ALL user-facing text for Memory Rooms lives here (one file, so a tone pass
    touches nothing else). Components import COPY and never hard-code strings.
-   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, ar, group. */
+   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, fly, ar, group. */
 
 export const COPY = {
   app: {
@@ -327,6 +327,28 @@ export const COPY = {
     camTag: (n) => `Photo ${n}`,
     thumbCaption: (n) => `Photo ${n}`,
   },
+  // ── /memories "Play the trip": the flyover (map/flyover/) ─────────────────
+  fly: {
+    play: 'Play the trip',
+    playLabel: 'Play the trip: fly through every spot in the order it was captured',
+    label: 'Trip flyover',
+    pause: 'Pause',
+    resume: 'Play',
+    again: 'Play again',
+    prev: 'Previous spot',
+    next: 'Next spot',
+    speed: (s) => `${s}×`,
+    speedLabel: (s) => `Speed ${s}×. Change speed`,
+    exit: 'Exit',
+    exitLabel: 'Stop the flyover and go back to the map',
+    counter: (i, n) => `${i} / ${n}`,
+    open: (title) => `Open ${title}`,
+    meta: (date, who) => [date, who].filter(Boolean).join(' · '),
+    endTitle: 'The whole trip',
+    endBody: (n) => `${n} ${n === 1 ? 'spot' : 'spots'}, in the order they were captured.`,
+    offMap: 'Off this map',
+  },
+
   // ── the spot page's "See it in your space" (ar/) ──────────────────────────
   ar: {
     open: 'See it in your space',

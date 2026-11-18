@@ -27,6 +27,9 @@ import { wantedModels } from './models.js';
 import { TRIP_BOUNDS, boundsOf, nearestM, pxPerMetre, spanM, toScreen, zoomForPx, zoomForSpan } from './project.js';
 import { useMapbox } from './useMapbox.js';
 import { useModels, useNear, useTilt } from './useModels.js';
+import FlyoverOverlay from '../flyover/FlyoverOverlay.jsx';
+import { NO_FLY } from '../flyover/useFlyover.js';
+import { useFlyoverMapbox } from './useFlyoverMapbox.js';
 
 const MIN_ZOOM = 0.6;
 /** Closer than a neighbourhood the spots map has nothing more to say (the pick map goes further). */
@@ -44,6 +47,9 @@ const LABEL_SPAN_DEG = 28;
 const TOWN_LABELS_FROM = 7.5;
 const NO_POINTS = [];
 const NO_MODELS = [];
+/** The flyover keeps each stop clear of its caption and bar (bottom; bottom-left when wide). */
+const FLY_PAD_COMPACT = { top: 48, right: 24, bottom: 250, left: 24 };
+const FLY_PAD_WIDE = { top: 64, right: 64, bottom: 96, left: 440 };
 
 /** The opening view: the trip's spots (or the trip area), flat and north up. */
 function homeCamera(map, trip, padding) {
@@ -51,7 +57,7 @@ function homeCamera(map, trip, padding) {
   return cam && { ...cam, bearing: 0, pitch: 0 };
 }
 
-export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, onFail, children }) {
+export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, onFail, fly = NO_FLY, flyStops = NO_POINTS, flyLegs = NO_POINTS, children }) {
   const [auto, setAuto] = useState(true); // the view follows homeCamera until the user moves it
   const [clusterIds, setClusterIds] = useState(null);
   const [cardEl, setCardEl] = useState(null);
@@ -69,6 +75,7 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
     onFail,
   );
   const ready = Boolean(map && size?.w && size?.h);
+  const flyOn = fly.active && fly.count > 0;
 
   const points = useMemo(() => spots.filter(hasCoords).map((spot) => ({ id: spot.id, lat: spot.lat, lng: spot.lng, spot })), [spots]);
   const trip = useMemo(() => points.filter((p) => onMap(p)), [points]);
@@ -78,19 +85,24 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
 
   // Follow the home view while auto: jump on the first fit and on resizes, fly otherwise.
   useEffect(() => {
-    if (!ready || !auto) return;
+    if (!ready || !auto || flyOn) return; // the flyover owns the camera (and puts it back)
     const cam = homeCamera(map, trip, pad);
     if (!cam) return;
     const prev = homeFor.current;
     homeFor.current = size;
     if (!prev || prev.w !== size.w || prev.h !== size.h) map.jumpTo(cam);
     else map.flyTo({ ...cam, maxDuration: 1600 });
-  }, [ready, map, size, auto, trip, pad]);
+  }, [ready, map, size, auto, trip, pad, flyOn]);
 
-  // Any drag, pinch, wheel or key the user makes ends auto.
+  // Any drag, pinch, wheel or key the user makes ends auto (not during the flyover: a drag there only
+  // pauses it, and exit puts the view back exactly, auto included).
+  const flyingRef = useRef(flyOn);
+  useEffect(() => {
+    flyingRef.current = flyOn;
+  }, [flyOn]);
   useEffect(() => {
     if (!map) return undefined;
-    const leave = (e) => e.originalEvent && setAuto(false);
+    const leave = (e) => e.originalEvent && !flyingRef.current && setAuto(false);
     map.on('movestart', leave);
     return () => map.off('movestart', leave);
   }, [map]);
@@ -127,7 +139,8 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
 
   // Past zoom 15 the rendered spots on screen stand as live 3D models (markers until each is ready).
   const near = useNear(map);
-  useTilt(map, near);
+  useTilt(map, near, flyOn);
+  useFlyoverMapbox(map, ready, fly, flyStops, flyLegs, compact ? FLY_PAD_COMPACT : FLY_PAD_WIDE);
   const wanted = near && ready ? wantedModels(standing, size, zoom, compact) : NO_MODELS;
   const models = useModels(map, wanted, { compact, selectedId, focusedId });
   const items = models ? behindModels(standing.map((it) => withModel(it, models, wanted))) : standing;
@@ -315,6 +328,7 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
       )}
 
       {children}
+      {flyOn && <FlyoverOverlay fly={fly} engine="mapbox" />}
 
       {selected && <SpotCard key={selected.id} spot={selected} style={cardStyle} compact={compact} cardRef={setCardEl} onClose={close} />}
       {!selected && clusterSpots && (

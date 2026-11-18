@@ -17,6 +17,11 @@ import { CLUSTER_PX, clusterPoints, worldBox } from './clusters.js';
 import { onMap, project } from './geo.js';
 import { useMapViewport } from './useMapViewport.js';
 import { HOME, baseScale, fitBox, transformOf } from './zoom.js';
+import FlyoverOverlay from './flyover/FlyoverOverlay.jsx';
+import { NO_FLY } from './flyover/useFlyover.js';
+import { atlasRoutePath, useFlyoverAtlas } from './flyover/useFlyoverAtlas.js';
+
+const NO_LEGS = [];
 
 /* Opening view: the spots, never closer than about a region. Padding keeps markers
    clear of the controls (a row along the bottom on a phone, a stack bottom-right). */
@@ -34,7 +39,7 @@ function minDistance(members, from) {
   return d;
 }
 
-export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, engineReason = null, children }) {
+export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, engineReason = null, fly = NO_FLY, flyStops = NO_LEGS, flyLegs = NO_LEGS, children }) {
   const [clusterIds, setClusterIds] = useState(null);
   const [cardEl, setCardEl] = useState(null);
   const [cardH, setCardH] = useState(320);
@@ -58,6 +63,10 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
   const vp = useMapViewport({ auto });
   const { t, size } = vp;
   const maxK = vp.maxK;
+  // "Play the trip" on the atlas: pan/zoom from stop to stop, the route as an SVG path (no 3D).
+  const flyOn = fly.active && fly.count > 0;
+  useFlyoverAtlas(vp, flyOn ? fly : NO_FLY, flyStops, compact);
+  const route = flyOn ? atlasRoutePath(flyLegs, fly.index, fly.phase, t) : '';
 
   // Rendered spots stand as their marker images (same sizes as on the globe at the same scale);
   // laid out on every render, so a marker image arriving (useMarkerImages) redraws them.
@@ -171,6 +180,7 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
   return (
     <div className="mr-spotsmap" data-compact={compact ? '' : undefined} data-engine="atlas" data-engine-reason={engineReason || undefined}>
       <AtlasMap vp={vp} dataMr="map" label={COPY.map.mapLabel} onBackgroundTap={close} avoid={avoid}>
+        {route && <path className="mr-fly-route" d={route} data-mr="fly-route" />}
         <MapSpots
           items={items}
           selectedId={selectedId}
@@ -191,6 +201,7 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
       )}
 
       {children}
+      {flyOn && <FlyoverOverlay fly={fly} engine="atlas" />}
 
       {selected && (
         <SpotCard key={selected.id} spot={selected} style={cardStyle} compact={compact} cardRef={setCardEl} onClose={close} />

@@ -46,6 +46,7 @@ html.mr-active {
   --mr-map-space: var(--mr-bg); /* around the globe */
   --mr-map-glow: #e6e2d9; /* the atmosphere at the globe's edge */
   --mr-marker-shadow: rgba(29, 28, 26, 0.34); /* contact shadow under a rendered spot's cut-out */
+  --mr-map-route: var(--mr-accent); /* the flyover's route line */
   --mr-qr-ink: #1d1c1a; /* the AR QR code: always dark on light, so every camera reads it */
   --mr-qr-paper: #ffffff;
   --mr-ar-ink: #ffffff; /* text over the AR camera feed (same in both themes) */
@@ -116,6 +117,7 @@ html.mr-active {
     --mr-map-space: var(--mr-bg);
     --mr-map-glow: #262522;
     --mr-marker-shadow: rgba(0, 0, 0, 0.62);
+    --mr-map-route: var(--mr-accent);
     --mr-qr-ink: #141413;
     --mr-qr-paper: #ecebe6;
   }

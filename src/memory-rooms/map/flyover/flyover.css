@@ -1,0 +1,156 @@
+/* "Play the trip" (map/flyover/). Tokens only (memory-rooms.css). */
+
+.mr-fly-play {
+  position: absolute;
+  z-index: 2;
+  top: var(--mr-space-4);
+  right: var(--mr-space-4); /* the top-left corner is the globe's "n elsewhere" note */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  min-height: 40px;
+  padding: 0 var(--mr-space-4) 0 var(--mr-space-3);
+  border: var(--mr-hairline) solid var(--mr-rule);
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  font: 500 var(--mr-text-s) / 1 var(--mr-font-sans);
+  cursor: pointer;
+}
+.mr-fly-play svg { width: 16px; height: 16px; }
+.mr-fly-play:hover { background: var(--mr-surface-2); }
+.mr-fly-play:disabled { opacity: 0.45; cursor: default; }
+.mr-fly-play:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 2px; }
+.mr-spotsmap[data-compact] .mr-fly-play { top: var(--mr-space-3); right: var(--mr-space-3); min-height: 44px; }
+
+/* while flying: the overlay owns the map's edges */
+.mr-mappage[data-flying] .mr-mapctl,
+.mr-mappage[data-flying] .mr-map-note,
+.mr-mappage[data-flying] .mr-map-status,
+.mr-mappage[data-flying] .mr-card { display: none; }
+
+@media (max-width: 819px) {
+  /* a phone gives the map the whole screen for the flyover; the list comes back on exit */
+  .mr-mappage[data-flying] { grid-template-rows: minmax(0, 1fr); }
+  .mr-mappage[data-flying] .mr-mappage-map { height: auto; border-bottom: 0; }
+  .mr-mappage[data-flying] .mr-mappage-side { display: none; }
+}
+
+.mr-fly {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--mr-space-3);
+  padding: var(--mr-space-4);
+  pointer-events: none;
+}
+.mr-spotsmap[data-compact] .mr-fly {
+  align-items: stretch;
+  padding: var(--mr-space-3) var(--mr-space-3) max(var(--mr-space-3), env(safe-area-inset-bottom));
+}
+/* on the globe, clear of the Mapbox logo AND the attribution button stacked above it in the
+   bottom-left corner (their terms: always visible and usable) */
+.mr-spotsmap[data-engine='mapbox'] .mr-fly { padding-bottom: calc(var(--mr-space-4) + 68px); }
+.mr-spotsmap[data-engine='mapbox'][data-compact] .mr-fly { padding-bottom: calc(max(var(--mr-space-3), env(safe-area-inset-bottom)) + 68px); }
+
+.mr-fly__fade {
+  position: absolute;
+  inset: 0;
+  background: var(--mr-bg);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.mr-fly__fade[data-on] { opacity: 1; }
+
+.mr-fly__caption {
+  position: relative;
+  display: flex;
+  gap: var(--mr-space-3);
+  width: min(380px, 100%);
+  padding: var(--mr-space-3) var(--mr-space-4);
+  border: var(--mr-hairline) solid var(--mr-rule);
+  border-radius: var(--mr-radius-m);
+  background: var(--mr-bg);
+  box-shadow: var(--mr-shadow);
+  color: var(--mr-ink);
+  text-decoration: none;
+  pointer-events: auto;
+  animation: mr-rise var(--mr-dur) var(--mr-ease);
+}
+a.mr-fly__caption:hover .mr-fly__title { text-decoration: underline; text-underline-offset: 3px; }
+.mr-fly__caption:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 2px; }
+.mr-spotsmap[data-compact] .mr-fly__caption { width: auto; }
+.mr-fly__thumb {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--mr-radius-s);
+  object-fit: cover;
+  background: var(--mr-surface-2);
+}
+.mr-fly__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mr-fly__meta { color: var(--mr-ink-3); }
+.mr-fly__title {
+  font: 600 var(--mr-text-l) / 1.15 var(--mr-font-sans);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.mr-fly__note {
+  font-size: var(--mr-text-s);
+  line-height: 1.4;
+  color: var(--mr-ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mr-fly__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-1);
+  padding: var(--mr-space-1);
+  border: var(--mr-hairline) solid var(--mr-rule);
+  border-radius: var(--mr-radius-m);
+  background: var(--mr-bg);
+  box-shadow: var(--mr-shadow);
+  pointer-events: auto;
+}
+.mr-spotsmap[data-compact] .mr-fly__bar { justify-content: space-between; }
+.mr-fly__btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 var(--mr-space-2);
+  border: 0;
+  border-radius: var(--mr-radius-s);
+  background: none;
+  color: var(--mr-ink);
+  font: 500 var(--mr-text-s) / 1 var(--mr-font-mono);
+  cursor: pointer;
+}
+.mr-fly__btn:hover { background: var(--mr-surface-2); }
+.mr-fly__btn:disabled { color: var(--mr-ink-3); background: none; cursor: default; }
+.mr-fly__btn:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: -2px; }
+.mr-fly__btn--main { color: var(--mr-bg); background: var(--mr-ink); }
+.mr-fly__btn--main:hover { background: var(--mr-ink-2); }
+.mr-fly__count { min-width: 56px; padding: 0 var(--mr-space-2); text-align: center; color: var(--mr-ink-2); }
+@media (pointer: coarse) {
+  .mr-fly__btn { min-width: 48px; height: 48px; }
+}
+
+/* the route on the atlas fallback (the globe draws it as a Mapbox line layer) */
+.mr-fly-route {
+  fill: none;
+  stroke: var(--mr-map-route);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}

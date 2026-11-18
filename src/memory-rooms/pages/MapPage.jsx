@@ -3,7 +3,7 @@
    scrolling on its own (never one long page); the spot card docks at the bottom. */
 
 import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import { useMedia } from '../lib/useMedia.js';
@@ -12,6 +12,9 @@ import SpotList from '../map/SpotList.jsx';
 import SpotsMap from '../map/SpotsMap.jsx';
 import { WORLD, onMap } from '../map/geo.js';
 import { useSpots } from '../map/useSpots.js';
+import { PlayButton } from '../map/flyover/FlyoverOverlay.jsx';
+import { flightLegs, flightStops } from '../map/flyover/plan.js';
+import { useFlyover } from '../map/flyover/useFlyover.js';
 
 function StateBlock({ title, body, action }) {
   return (
@@ -38,6 +41,32 @@ export default function MapPage() {
   const onMapSpots = useMemo(() => filtered.filter(onMap), [filtered]);
   const elsewhere = useMemo(() => filtered.filter((s) => !onMap(s)), [filtered]);
   const selected = selectedId && filtered.some((s) => s.id === selectedId) ? selectedId : null;
+
+  // "Play the trip" (and /memories?play=1): the flyover over the same map. The card closes for
+  // it and comes back on exit; the filters decide which spots it visits.
+  const [params, setParams] = useSearchParams();
+  const [autoplay] = useState(() => params.get('play') === '1');
+  const stops = useMemo(() => flightStops(filtered), [filtered]);
+  const legs = useMemo(() => flightLegs(stops), [stops]);
+  const beforeFly = useRef(null);
+  const fly = useFlyover(stops, {
+    autoplay,
+    onExit: () => {
+      setSelectedId(beforeFly.current);
+      beforeFly.current = null;
+      if (params.has('play')) {
+        const next = new URLSearchParams(params);
+        next.delete('play');
+        setParams(next, { replace: true });
+      }
+    },
+  });
+  const flying = fly.active && fly.count > 0;
+  const play = () => {
+    beforeFly.current = selectedId;
+    setSelectedId(null);
+    fly.start();
+  };
 
   const total = spots.length;
   const countText = filtered.length === total ? COPY.map.count(total) : COPY.map.countOf(filtered.length, total);
@@ -111,7 +140,8 @@ export default function MapPage() {
       className="mr-mappage"
       data-narrow={narrow ? '' : undefined}
       data-status={status}
-      data-card={narrow && selected ? '' : undefined}
+      data-card={narrow && selected && !flying ? '' : undefined}
+      data-flying={flying ? '' : undefined}
       style={{ '--mr-map-ratio': (WORLD.h / WORLD.w).toFixed(3) }}
     >
       <section className="mr-mappage-map">
@@ -122,8 +152,12 @@ export default function MapPage() {
           elsewhereCount={elsewhere.length}
           onElsewhere={showElsewhere}
           compact={narrow}
+          fly={fly}
+          flyStops={stops}
+          flyLegs={legs}
         >
           {(narrow || !total) && mapNote}
+          {!flying && total > 0 && <PlayButton onPlay={play} disabled={!stops.length} />}
         </SpotsMap>
       </section>
 

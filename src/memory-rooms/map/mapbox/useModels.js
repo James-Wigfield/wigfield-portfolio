@@ -100,10 +100,11 @@ export function useModels(map, wanted, { compact, selectedId, focusedId }) {
  * unlock (up to MAX_PITCH) and, if the map is flat, it eases to REST_PITCH, the angle the
  * dioramas match their markers at. Zooming back out below the threshold eases it flat and north
  * up again and locks both. Nothing runs mid-gesture: changes wait for the move to end.
+ * `hold` (the flyover running) pauses the rule; it re-applies when the flyover ends.
  */
-export function useTilt(map, near) {
+export function useTilt(map, near, hold = false) {
   useEffect(() => {
-    if (!map) return undefined;
+    if (!map || hold) return undefined; // the flyover owns tilt + bearing while it runs
     let alive = true;
     let done = false;
     const apply = () => {
@@ -133,5 +134,5 @@ export function useTilt(map, near) {
       alive = false;
       map.off('moveend', apply);
     };
-  }, [map, near]);
+  }, [map, near, hold]);
 }
