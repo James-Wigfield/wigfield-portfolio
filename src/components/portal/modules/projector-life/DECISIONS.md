@@ -75,3 +75,16 @@ One line each: the call, then why. Newest at the bottom of each section.
 - Stage: patch hand-over to life/projection coalesced to ≤ 1 per 180 ms during a drag (+ a trailing flush; presets flush at once). — apex drags ran at ~35 fps (life domain rebuild ~11 ms per step); now ~94 fps, median 7 ms.
 - Visualiser: a preset picked while the stage loads lands fully after load (replace + its camera). — only the values used to catch up.
 - "Projector's view" stays upright at the canvas aspect: OrbitControls caches camera.up at construction, so rolling it would break orbiting. The projector-output inset shows the true (rolled, true-aspect) output. — honest and simple; noted in CONTRACTS §6.
+
+## QA + visual-critic fixes (lead, 2026-11-18)
+- Particle Life top-up caps the TOTAL at the summed targets and thins a patch over 1.5× its share. — particles crowded round the apex while starved facets respawned: the roof crept 2k → 5.6k particles and the tick 3 → 13 ms in 4 sim-min; now flat at 2.0k / 3.2 ms (regression check in sim-check, probe `tools/projector-life/pl-creep.mjs`).
+- Ceiling swingers runs selection OFF, grip 0.7, short flights, a projector on a 1 m stand, roof background off, viewed lying on the loft. — with selection on, falls outran births and the roof emptied; the loft view shows the hanging bodies on their arms.
+- Coral walls uses Gray-Scott "Rain" at 2.2× speed × 2 substeps, the hero rig and the warm ember palette. — coral proper took 30–45 s to fill; aurora's pink + green read as colour fringing.
+- Phone opening scroll re-aims at 0.75 / 1.3 / 2 / 2.8 s until the first user input. — the portal chrome shrinks ~70 px after the first measure.
+- Roof overhang 18 → 6 cm past the outer wall face. — beside faded facets the overhang corners read as stray spikes.
+- Mid-air bodies are matcap-shaded beads at 0.75× radius. — flat pink discs.
+- Projectors get a mount: a rod to the roof when nearer the roof, else a stand to the floor/loft deck with a plate. — bodies "floated like placeholders".
+- Coverage view: not reached = the room dimmed (not maroon); reached = the count colour with the life showing through. — the maroon flood hid the room the view is about.
+- Frustum rays off in the life-first presets (living shed, slime, coral, swingers, food web); on in the reality check and the two-projector rig. — rays slashed across the hero shots; the mounted body still says where the projector is.
+- Darker rooms (0.03–0.05 ambient) and brighter projectors (1.8–2.5) in the presets; living-shed walls ember between the cyan floor and neon roof. — projected life must outshine the room.
+- Honesty key moved directly under the stage (above the MCP drawer); MCP JSON soft-wraps; phones open only Scenes; a preset's `open` groups aren't persisted. — the key was buried and phones opened every group (~4,700 px).

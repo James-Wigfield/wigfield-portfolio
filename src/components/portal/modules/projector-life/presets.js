@@ -46,9 +46,9 @@ export const RIGS = {
   // Ultra-short throw under the apex, looking straight down: the floor.
   //                                                     49 / 19 / 0 → 20 %
   centreDown: { x: 2.18, y: 2.2, z: 2.18, yaw: 0, pitch: -89, roll: 0, throw: 0.25 },
-  // Short throw on a 1 m stand east of centre, looking straight up: closer
-  // than floorUp, so the roof is lit brightly enough for the swingers.
-  roofStand: { x: 2.9, y: 1.0, z: 2.18, yaw: 0, pitch: 89, roll: 0, throw: 0.3 },
+  // Ultra-short throw (4:3) on a 1 m stand under the apex, looking straight
+  // up: the whole roof lit, and closer than floorUp so it's bright enough.
+  roofStand: { x: 2.18, y: 1.0, z: 2.18, yaw: 0, pitch: 89, roll: 0, throw: 0.25 },
   // Opposite corners at the eave, short throw, tilted down 10°: the best
   // two-projector placement found.                     17 / 71 / 88 → 63 %
   // (+ centreDown as a third projector:                 53 / 73 / 95 → 76 %)
@@ -142,6 +142,7 @@ export const PRESETS = [
       'room.ambient': 0.05,
       'proj.count': 1,
       ...pose(0, RIGS.roofStand),
+      'p0.aspect': '4:3',
       'p0.brightness': 2.5,
       'proj.frustum': false,
       'life.sys.floor': 'physarum',
