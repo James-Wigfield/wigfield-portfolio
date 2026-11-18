@@ -66,6 +66,8 @@ async function open(width, { authed = true, via = browser } = {}) {
   await page.emulate({ viewport: { width, height: mobile ? 844 : 900, deviceScaleFactor: mobile ? 2 : 1, isMobile: mobile, hasTouch: mobile }, userAgent: mobile ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' : ua });
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
   page.problems = [];
+  page.heroRequests = 0; // the 1600 px hero render: the map should only ever fetch markers
+  page.on('request', (r) => /\/renders\/hero\.png/.test(r.url()) && (page.heroRequests += 1));
   page.on('pageerror', (e) => page.problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
     if (m.type() === 'error') page.problems.push(`console.error: ${m.text()}`);
@@ -156,6 +158,107 @@ const markerIds = (page) =>
   page.$$eval(`${sel('spot-dot')}, ${sel('cluster')}`, (els) => els.flatMap((e) => (e.dataset.id ? [e.dataset.id] : (e.dataset.ids || '').split(','))));
 const click = (handle) => handle.evaluate((el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 
+/* Rendered spots stand on the map as their marker image (render/marker; the hero shrunk in
+   the browser when a spot has none yet). A dot: data-marker = 'marker' | 'hero' once shown,
+   data-w = its width. A cluster holding rendered spots: data-fan = how many it fans out. */
+const named = (s, name) => s.media.some((m) => m.type === 'render' && m.name === name);
+const RENDERED = spots.filter((s) => s.status === 'rendered' && Number.isFinite(s.lat) && (named(s, 'marker') || named(s, 'hero')));
+const withMarker = new Set(RENDERED.filter((s) => named(s, 'marker')).map((s) => s.id));
+/** The rendered spot furthest from any other spot: it stands alone at city zoom. */
+const SOLO = RENDERED.map((s) => ({ s, d: Math.min(...spots.filter((o) => o !== s && Number.isFinite(o.lat)).map((o) => Math.hypot(o.lat - s.lat, o.lng - s.lng))) }))
+  .sort((a, b) => b.d - a.d)[0]?.s;
+const markerState = (page) =>
+  page.$$eval(`${sel('spot-dot')}, ${sel('cluster')}`, (els) =>
+    els.map((e) => ({ id: e.dataset.id || null, ids: (e.dataset.ids || '').split(',').filter(Boolean), status: e.dataset.status || null, marker: e.dataset.marker || null, w: Number(e.dataset.w || 0), fan: Number(e.dataset.fan || 0) })),
+  );
+/** Every rendered spot on screen shows its marker (alone) or is fanned by its cluster; true, or false after 10 s. */
+const markersShown = (page, ids) =>
+  page
+    .waitForFunction(
+      (ids) => {
+        const dots = [...document.querySelectorAll('[data-mr="spot-dot"]')];
+        const clusters = [...document.querySelectorAll('[data-mr="cluster"]')];
+        return ids.every((id) => {
+          const d = dots.find((e) => e.dataset.id === id);
+          if (d) return Boolean(d.dataset.marker);
+          const c = clusters.find((e) => (e.dataset.ids || '').split(',').includes(id));
+          return c ? Number(c.dataset.fan || 0) > 0 : true; // off screen
+        });
+      },
+      { timeout: 10000 },
+      ids,
+    )
+    .then(() => true)
+    .catch(() => false);
+const cameraOf = (page) =>
+  page.$eval(sel('map'), (el) => {
+    const c = el.__mrMap.getCenter();
+    return { center: [c.lng, c.lat], zoom: el.__mrMap.getZoom() };
+  });
+const jump = (page, camera) =>
+  page.evaluate(
+    (camera) =>
+      new Promise((done) => {
+        const map = document.querySelector('[data-mr="map"]').__mrMap;
+        map.jumpTo(camera);
+        map.once('idle', () => done());
+        map.triggerRepaint();
+        setTimeout(done, 15000);
+      }),
+    camera,
+  );
+/* Past zoom 15 rendered spots stand as live 3D models (src/memory-rooms/map/mapbox/models3d.js):
+   window.__mrModels() → { live, loading, loaded, disposed, textures, geometries, … }. */
+const MODEL_CAP = { 1440: 6, 390: 3 };
+const modelStats = (page) => page.evaluate(() => window.__mrModels?.() || null);
+const modelsSettled = (page, min = 1) =>
+  page
+    .waitForFunction((min) => {
+      const s = window.__mrModels?.();
+      return s && s.live >= min && s.loading === 0;
+    }, { timeout: 45000 }, min)
+    .then(() => true)
+    .catch(() => false);
+const pitchOf = (page) => page.$eval(sel('map'), (el) => Number(el.dataset.pitch || 0));
+/** Mean grey-level change in a screen box when the 3D layer is switched off: > 0 means it draws there. */
+async function layerDiff(page, b) {
+  const clip = { x: Math.max(0, b.x0), y: Math.max(0, b.y0), width: Math.max(4, b.x1 - b.x0), height: Math.max(4, b.y1 - b.y0) };
+  const grab = async () => sharp(await page.screenshot({ clip })).greyscale().raw().toBuffer();
+  const toggle = (on) =>
+    page.evaluate(
+      (on) =>
+        new Promise((done) => {
+          const map = document.querySelector('[data-mr="map"]').__mrMap;
+          map.setLayoutProperty('mr-models', 'visibility', on ? 'visible' : 'none');
+          map.once('render', () => requestAnimationFrame(() => done()));
+          map.triggerRepaint();
+          setTimeout(done, 3000);
+        }),
+      on,
+    );
+  await page.$eval('.mr-mapoverlay', (el) => (el.style.visibility = 'hidden')).catch(() => {});
+  const on = await grab();
+  await toggle(false);
+  const off = await grab();
+  await toggle(true);
+  await page.$eval('.mr-mapoverlay', (el) => (el.style.visibility = '')).catch(() => {});
+  let sum = 0;
+  for (let i = 0; i < on.length; i++) sum += Math.abs(on[i] - off[i]);
+  return sum / on.length;
+}
+/** The screen box of a spot's model hit target (data-model), or null. */
+const modelBox = (page, id) =>
+  page.$eval(`${sel('spot-dot')}[data-id="${id}"][data-model] rect`, (el) => {
+    const r = el.getBoundingClientRect();
+    return { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom, model: el.parentElement.dataset.model };
+  }).catch(() => null);
+const WITH_MODEL = RENDERED.filter((s) => s.media.some((m) => m.type === 'model'));
+
+const boxOf = (handle) => handle.evaluate((el) => {
+  const r = el.getBoundingClientRect();
+  return { x0: r.left, x1: r.right, y0: r.top, y1: r.bottom };
+});
+
 const ON_MAP = { west: -141, east: -52, south: 18, north: 60.5 }; // the trip area, src/memory-rooms/map/geo.js
 const awayIds = spots
   .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && !(s.lat >= ON_MAP.south && s.lat <= ON_MAP.north && s.lng >= ON_MAP.west && s.lng <= ON_MAP.east))
@@ -179,7 +282,114 @@ for (const width of [1440, 390]) {
   const dots = await page.$$eval(`${sel('spot-dot')}, ${sel('cluster')}`, (els) => els.length);
   const style = await page.$eval(sel('map'), (el) => el.dataset.style);
   record(`map ${width}: tiles drawn and spots placed`, spread > 3 && dots > 0, `style ${style}, canvas spread ${spread.toFixed(1)}, ${dots} dots/clusters`);
+
+  // rendered spots stand as their markers (from render/marker, never the 1600 px hero)
+  const shown = await markersShown(page, RENDERED.map((s) => s.id));
+  const opening = await markerState(page);
+  const standing = opening.filter((d) => d.marker);
+  const fans = opening.filter((d) => d.fan > 0);
+  const fromHero = standing.filter((d) => withMarker.has(d.id) && d.marker !== 'marker');
+  record(
+    `map ${width}: rendered spots stand as markers (clusters fan them)`,
+    shown && standing.length + fans.length > 0 && fromHero.length === 0 && page.heroRequests === 0,
+    `${standing.length} marker(s) ${standing.map((d) => `${d.w}px`).join(' ')}, ${fans.length} fanned cluster(s), ${page.heroRequests} hero request(s)`,
+  );
   await shot(page, `map-${width}`);
+
+  // markers grow as you zoom in; a click on one opens its card, beside the marker
+  if (SOLO) {
+    const before = await cameraOf(page);
+    const countryW = opening.find((d) => d.id === SOLO.id)?.w || Math.min(...standing.map((d) => d.w), Infinity);
+    await jump(page, { center: [SOLO.lng, SOLO.lat], zoom: 12 });
+    await markersShown(page, [SOLO.id]);
+    const city = (await markerState(page)).find((d) => d.id === SOLO.id);
+    record(`map ${width}: markers grow as you zoom in`, Boolean(city?.marker) && city.w > countryW + 20, `"${SOLO.title}" ${Number.isFinite(countryW) ? countryW : '?'} px → ${city?.w ?? 'none'} px at zoom 12`);
+    const marker = await page.$(`${sel('spot-dot')}[data-id="${SOLO.id}"]`);
+    if (marker) {
+      await click(marker);
+      const card = await page.waitForSelector(sel('spot-card'), { visible: true, timeout: 5000 }).catch(() => null);
+      const title = card ? await card.evaluate((el) => el.textContent) : '';
+      let beside = true;
+      if (card && width >= 600) {
+        await wait(450);
+        const a = await boxOf(card);
+        const b = await boxOf(await page.$(`${sel('spot-dot')}[data-id="${SOLO.id}"] .mr-marker-img`));
+        beside = a.x0 >= b.x1 - 1 || a.x1 <= b.x0 + 1;
+      }
+      record(`map ${width}: clicking a marker opens its card${width >= 600 ? ' beside it' : ''}`, Boolean(card) && title.includes(SOLO.title) && beside);
+      await wait(450);
+      await shot(page, `map-${width}-marker-card`);
+      await page.keyboard.press('Escape');
+    }
+    await jump(page, before);
+  }
+
+  // past zoom 15 the spot's baked GLB stands on the map in 3D (one custom layer, no new map),
+  // the map tilts, a click on the model opens its card, and zooming back out disposes it
+  const LIVE = WITH_MODEL.find((s) => s.id === SOLO?.id) || WITH_MODEL[0];
+  if (LIVE) {
+    const before = await cameraOf(page);
+    await jump(page, { center: [LIVE.lng, LIVE.lat], zoom: 15.8 });
+    const settled = await modelsSettled(page);
+    await page.waitForFunction(() => Number(document.querySelector('[data-mr="map"]').dataset.pitch) >= 45, { timeout: 8000 }).catch(() => {});
+    await idle(page);
+    const st = await modelStats(page);
+    const box = await modelBox(page, LIVE.id);
+    const diff = box ? await layerDiff(page, box) : 0;
+    record(
+      `map ${width}: past zoom 15 "${LIVE.title}" stands in 3D, within the cap`,
+      settled && Boolean(box) && diff > 4 && st.live >= 1 && st.live <= MODEL_CAP[width] && !st.broken,
+      `${st?.live} live (cap ${MODEL_CAP[width]}), from model/${box?.model}, layer changes ${diff.toFixed(1)} grey levels, pitch ${await pitchOf(page)}°, ${st?.textures} textures / ${st?.geometries} geometries`,
+    );
+    await shot(page, `map-${width}-3d`);
+    if (box) {
+      // a real click (a tap on a phone) on the model: the map's own click finds it under the pointer
+      const cx = (box.x0 + box.x1) / 2;
+      const cy = (box.y0 + box.y1) / 2;
+      if (width < 600) await page.touchscreen.tap(cx, cy);
+      else await page.mouse.click(cx, cy);
+      const card = await page.waitForSelector(sel('spot-card'), { visible: true, timeout: 5000 }).catch(() => null);
+      const title = card ? await card.evaluate((el) => el.textContent) : '';
+      record(`map ${width}: ${width < 600 ? 'tapping' : 'clicking'} a 3D model opens its card`, Boolean(card) && title.includes(LIVE.title));
+      await wait(450);
+      await shot(page, `map-${width}-3d-card`);
+      await page.keyboard.press('Escape');
+      await wait(300);
+      // a drag that starts on the model pans the map (models let the pointer through)
+      const c0 = await cameraOf(page);
+      if (width < 600) {
+        await page.touchscreen.touchStart(cx, cy);
+        for (let k = 1; k <= 12; k++) await page.touchscreen.touchMove(cx - k * 12, cy);
+        await page.touchscreen.touchEnd();
+      } else {
+        await page.mouse.move(cx, cy);
+        await page.mouse.down();
+        for (let k = 1; k <= 12; k++) await page.mouse.move(cx - k * 12, cy);
+        await page.mouse.up();
+      }
+      await wait(500);
+      const c1 = await cameraOf(page);
+      const moved = Math.hypot(c1.center[0] - c0.center[0], c1.center[1] - c0.center[1]);
+      record(`map ${width}: a drag that starts on a 3D model pans the map`, moved > 1e-4 && !(await page.$(sel('spot-card'))), `centre moved ${(moved * 111000).toFixed(0)} m`);
+    }
+    await jump(page, { center: [LIVE.lng, LIVE.lat], zoom: 12 });
+    const gone = await page
+      .waitForFunction(() => {
+        const s = window.__mrModels?.();
+        return s && s.live === 0 && s.loading === 0 && s.geometries === 0;
+      }, { timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
+    await page.waitForFunction(() => Number(document.querySelector('[data-mr="map"]').dataset.pitch) === 0, { timeout: 8000 }).catch(() => {});
+    const after = await modelStats(page);
+    const marker = (await markerState(page)).find((d) => d.id === LIVE.id);
+    record(
+      `map ${width}: zooming back out disposes the models, flattens the map, the marker returns`,
+      gone && (await pitchOf(page)) === 0 && after.disposed >= after.loaded && after.textures <= 1 && Boolean(marker?.marker),
+      `${after?.loaded} loaded / ${after?.disposed} disposed, ${after?.textures} textures / ${after?.geometries} geometries left, pitch ${await pitchOf(page)}°`,
+    );
+    await jump(page, before);
+  }
 
   // a spot opens its card
   const dot = await page.$(sel('spot-dot'));
@@ -252,9 +462,117 @@ async function atlasDrawn(page, root = sel('map')) {
   const { ok, geometry } = await atlasDrawn(page);
   const dots = await page.$$eval(`${sel('spot-dot')}, ${sel('cluster')}`, (els) => els.length);
   record('fallback: ?map=atlas draws the SVG atlas with spots', ok && dots > 0, `land/borders/canada ${geometry.join('/')}, ${dots} dots/clusters`);
+  const shown = await markersShown(page, RENDERED.map((s) => s.id));
+  const st = await markerState(page);
+  record(
+    'fallback: the atlas shows the same markers',
+    shown && st.some((d) => d.marker === 'marker' || d.fan > 0) && page.heroRequests === 0,
+    `${st.filter((d) => d.marker).length} marker(s), ${st.filter((d) => d.fan).length} fanned cluster(s), ${page.heroRequests} hero request(s)`,
+  );
   await shot(page, 'map-1440-atlas');
   record('fallback: the atlas makes no Mapbox load', (await loads(page)) === 0);
   noErrors(page, 'fallback atlas');
+  await page.close();
+}
+{
+  // A spot pushed before markers existed has only its hero: the map shrinks that in the browser.
+  // (The atlas, so this costs no Mapbox load: the marker images are the same on both engines.)
+  const page = await open(1440);
+  await page.setRequestInterception(true);
+  const stripped = (await api.listSpots()).map((s) => ({ ...s, media: s.media.filter((m) => !(m.type === 'render' && m.name === 'marker')) }));
+  page.on('request', (r) => {
+    if (new URL(r.url()).pathname === '/api/memories/spots' && r.method() === 'GET') {
+      r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: stripped }) });
+    } else r.continue();
+  });
+  await page.goto(`${base}/memories?map=atlas`, { waitUntil: 'networkidle2' });
+  await atlasDrawn(page);
+  const shown = await markersShown(page, RENDERED.map((s) => s.id));
+  const st = await markerState(page);
+  const heroMarkers = st.filter((d) => d.marker === 'hero');
+  record('fallback: a spot without a marker shows its hero, shrunk in the browser', shown && heroMarkers.length > 0 && st.every((d) => !d.marker || d.marker === 'hero'), `${heroMarkers.length} from the hero, ${page.heroRequests} hero download(s)`);
+  await shot(page, 'map-1440-atlas-hero-fallback');
+  noErrors(page, 'fallback hero markers');
+  await page.close();
+}
+
+// ── 3D: many rendered spots close together (copies injected into the spot list, nothing written) ──
+// The cap holds (6 wide, 3 on a phone), nearest the centre first; a spot without model/map loads
+// room.glb (textures shrunk in the browser); panning away and back leaves the GPU counts as they were.
+const near3d = WITH_MODEL.find((s) => s.media.some((m) => m.type === 'model' && m.name === 'map'));
+for (const width of near3d ? [1440, 390] : []) {
+  const page = await open(width);
+  const real = await api.listSpots();
+  const fakes = [];
+  for (let i = 0; i < 12; i++) {
+    const src = WITH_MODEL[i % WITH_MODEL.length];
+    const a = i * 2.39996; // golden angle: an even scatter
+    const r = 0.0009 + 0.00035 * i; // degrees of latitude (≈ 100–550 m)
+    fakes.push({
+      ...src,
+      id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+      title: `${src.title} (copy ${i + 1})`,
+      lat: near3d.lat + r * Math.sin(a),
+      lng: near3d.lng + (r * Math.cos(a)) / Math.cos((near3d.lat * Math.PI) / 180),
+      // copy 1 has only room.glb: the browser shrinks its textures
+      media: i === 0 ? src.media.filter((m) => !(m.type === 'model' && m.name === 'map')) : src.media,
+    });
+  }
+  await page.setRequestInterception(true);
+  page.on('request', (r) => {
+    if (new URL(r.url()).pathname === '/api/memories/spots' && r.method() === 'GET') r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [...real, ...fakes] }) });
+    else r.continue();
+  });
+  await page.goto(`${base}${q('/memories')}`, { waitUntil: 'networkidle2' });
+  const ready = await page.waitForSelector(MAPBOX_READY, { timeout: 30000 }).then(() => true).catch(() => false);
+  if (!ready) {
+    record(`3d ${width}: the map loads with ${fakes.length} extra spots`, false);
+    await page.close();
+    continue;
+  }
+  const home = { center: [near3d.lng, near3d.lat], zoom: 15.4 };
+  await jump(page, home);
+  await modelsSettled(page);
+  await page.waitForFunction(() => Number(document.querySelector('[data-mr="map"]').dataset.pitch) >= 45, { timeout: 8000 }).catch(() => {});
+  await idle(page);
+  await modelsSettled(page);
+  const s0 = await modelStats(page);
+  const dots = await page.$$eval(`${sel('spot-dot')}`, (els) => els.map((e) => ({ id: e.dataset.id, model: e.dataset.model || null, marker: e.dataset.marker || null })));
+  const standing = dots.filter((d) => d.model);
+  const room = dots.find((d) => d.id === fakes[0].id);
+  record(
+    `3d ${width}: ${dots.length} rendered spots on screen, ${MODEL_CAP[width]} at most live, the rest stay markers`,
+    s0.live === Math.min(MODEL_CAP[width], dots.length) && standing.length === s0.live,
+    `${s0.live} live, ${dots.filter((d) => d.marker).length} markers, ${dots.length - s0.live - dots.filter((d) => d.marker).length} dots (a model stands in front), ${s0.textures} textures / ${s0.geometries} geometries`,
+  );
+  if (room?.model) record(`3d ${width}: a spot without model/map loads room.glb instead`, room.model === 'room');
+  await shot(page, `map-${width}-3d-many`);
+
+  // pan away and back, five times: everything that leaves is disposed, the counts come back
+  const path3d = [
+    { center: [near3d.lng + 0.012, near3d.lat], zoom: 15.4 },
+    { center: [near3d.lng - 0.004, near3d.lat + 0.004], zoom: 15.8 },
+    { center: [near3d.lng + 0.004, near3d.lat - 0.004], zoom: 15.2 },
+    { center: [near3d.lng, near3d.lat + 0.02], zoom: 15.4 },
+    home,
+  ];
+  const seen = [];
+  for (const cam of path3d) {
+    await jump(page, cam);
+    await modelsSettled(page, 0);
+    await idle(page);
+    const s = await modelStats(page);
+    seen.push(`${s.live}:${s.textures}/${s.geometries}`);
+  }
+  await modelsSettled(page);
+  const s1 = await modelStats(page);
+  record(
+    `3d ${width}: panning away and back leaves the GPU counts where they were`,
+    s1.textures === s0.textures && s1.geometries === s0.geometries && s1.live === s0.live && s1.disposed > 0,
+    `live:textures/geometries ${seen.join(' → ')}; ${s1.loaded} loaded, ${s1.disposed} disposed`,
+  );
+  record(`3d ${width}: still one map load`, (await loads(page)) === 1, `${await loads(page)} load(s)`);
+  noErrors(page, `3d ${width}`);
   await page.close();
 }
 {

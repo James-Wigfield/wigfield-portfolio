@@ -11,6 +11,19 @@ export function heroOf(spot) {
   return mediaNamed(spot, 'render', 'hero') || mediaOf(spot, 'thumb').sort(bySort)[0] || null;
 }
 
+/** The baked room GLB the viewer shows (model/room), never its small map copy (model/map). */
+export function roomModelOf(spot) {
+  return mediaNamed(spot, 'model', 'room') || mediaOf(spot, 'model').find((m) => m.name !== 'map') || null;
+}
+
+/** The GLB the map stands up close: model/map (512 px textures, compressed), else room.glb. */
+export function mapModelOf(spot) {
+  const map = mediaNamed(spot, 'model', 'map');
+  if (map?.url) return { media: map, lod: true };
+  const room = roomModelOf(spot);
+  return room?.url ? { media: room, lod: false } : null;
+}
+
 /** Small list image: the first thumbnail, else the hero. */
 export function thumbOf(spot) {
   return mediaOf(spot, 'thumb').sort(bySort)[0] || mediaNamed(spot, 'render', 'hero') || null;

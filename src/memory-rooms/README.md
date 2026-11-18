@@ -22,8 +22,11 @@ src/memory-rooms/
   scene/                 scene.schema.json + validate.js (shared with the Worker and scripts) + geometry.js
   lib/api.js             browser client for /api/memories
   map/                   the maps: SpotsMap.jsx / PickMap.jsx choose an engine
+                         markers.js + markerImages.js: rendered spots stand as their hero cut-out (both engines)
     mapbox/              Mapbox GL globe (engine.js loader + fallback rules, useMapbox.js = one map per page,
                          style.js = the look from the --mr-map-* tokens, project.js screen maths)
+                         models.js / useModels.js / models3d.js: past zoom 15 the rendered spots on screen
+                         stand as live 3D dioramas, one three.js custom layer in the map's own context (lazy)
     Atlas*.jsx, geo.js   the SVG atlas fallback (d3-geo + topojson, atlas.json built by tools/memory-rooms/build-atlas.mjs)
   capture/               the capture flow, photo resizing, IndexedDB outbox, geolocation
   viewer/                plain three.js viewer (GLTFLoader, OrbitControls, Spark) + its thin React wrapper
@@ -44,6 +47,8 @@ tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test
 - The maps need `VITE_MAPBOX_TOKEN` (a public `pk.` token, in `.env.local`, never in code or `.dev.vars`). Without it,
   without WebGL 2, or offline, both maps draw the SVG atlas instead. Every Mapbox `Map` is a billed load, so
   each page makes one (see `map/mapbox/useMapbox.js`); `mapbox-gl` is a lazy chunk only the maps fetch.
+  The 3D dioramas go onto that same map as a custom layer (never a second map or WebGL context), and
+  three.js + GLTFLoader load only once the map passes zoom 15.
 
 ## Run it locally
 

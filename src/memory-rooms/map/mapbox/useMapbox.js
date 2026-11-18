@@ -19,6 +19,7 @@ import { applyLook, onZoomEnd, styleChoice, styleOptions } from './style.js';
  *   minZoom, maxZoom
  *   placeLabelsFrom   zoom below which the base map's town labels stay hidden (0 = never hidden)
  *   timeout           ms to wait for the first full load before giving up
+ *   antialias         MSAA on the map's canvas (the spots map: its 3D dioramas share it)
  * onFail(reason)      'import' | 'webgl' | 'token' | 'style' | 'timeout': swap to the atlas.
  * → { setContainer, map (null until loaded), size, frame, option }
  */
@@ -48,7 +49,7 @@ export function useMapbox(opts, onFail) {
     let m = null;
     let timer = 0;
     let scheme = null;
-    const { camera, minZoom = 0, maxZoom = 18, placeLabelsFrom = 0, timeout = 12000 } = initial;
+    const { camera, minZoom = 0, maxZoom = 18, placeLabelsFrom = 0, timeout = 12000, antialias = false } = initial;
     // Repainting is ours, not a load failure: a property Mapbox rejects is warned about
     // and skipped (its 'error' event fires while `painting`), never fatal.
     let painting = false;
@@ -92,10 +93,13 @@ export function useMapbox(opts, onFail) {
             ...(camera.bounds ? { bounds: camera.bounds, fitBoundsOptions: { padding: camera.padding ?? 24 } } : { center: camera.center, zoom: camera.zoom }),
             minZoom,
             maxZoom,
+            antialias,
             attributionControl: false,
             logoPosition: 'bottom-left',
+            // Flat and north up. The spots map unlocks rotation and tilt (right-drag does both)
+            // only while 3D models are up (useModels.js useTilt); the pick map never does.
             dragRotate: false,
-            pitchWithRotate: false,
+            pitchWithRotate: true,
             touchPitch: false,
             maxPitch: 0,
             performanceMetricsCollection: false,

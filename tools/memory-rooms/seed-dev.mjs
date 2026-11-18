@@ -5,6 +5,8 @@
      node tools/memory-rooms/seed-dev.mjs [--base http://127.0.0.1:8788] [--examples-only]
 
    --examples-only seeds just the two rendered example spots (bedroom, diner).
+   --no-map-assets skips what the map shows (render/marker, model/map), like a spot pushed
+                   before those existed; backfill-map-assets.mjs adds them.
 
    Ids are derived from the titles, so re-running updates the same spots.
    Rendered demo spots use the best GLB/renders available for the example scenes:
@@ -16,6 +18,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { client, config, REPO } from './lib/api.mjs';
+import { makeMapModel } from './lib/mapModel.mjs';
+import { makeMarker } from './lib/marker.mjs';
 
 const args = process.argv.slice(2);
 const cfg = config();
@@ -94,9 +98,16 @@ for (const [idx, s] of SPOTS.entries()) {
     await api.patchSpot(id, { scene });
     const { glb, renders: r } = exampleAssets(s.example);
     if (glb) await api.putMedia(id, 'model', 'room', fs.readFileSync(glb), { contentType: 'model/gltf-binary' });
+    // the map's small copy, as push.mjs would make it
+    if (glb && !args.includes('--no-map-assets')) await api.putMedia(id, 'model', 'map', (await makeMapModel(glb)).buffer, { contentType: 'model/gltf-binary' });
     if (r) {
-      for (const f of fs.readdirSync(r).filter((f) => /^[a-z0-9-]+\.png$/.test(f))) {
+      for (const f of fs.readdirSync(r).filter((f) => /^[a-z0-9-]+\.png$/.test(f) && f !== 'marker.png')) {
         await api.putMedia(id, 'render', f.replace(/\.png$/, ''), fs.readFileSync(path.join(r, f)), { contentType: 'image/png' });
+      }
+      // the map marker, as push.mjs would make it (made in memory: _dev/ is shared with other checks)
+      if (fs.existsSync(path.join(r, 'hero.png')) && !args.includes('--no-map-assets')) {
+        const m = await makeMarker(path.join(r, 'hero.png'));
+        await api.putMedia(id, 'render', 'marker', m.buffer, { contentType: 'image/png', width: m.width, height: m.height });
       }
     }
   }

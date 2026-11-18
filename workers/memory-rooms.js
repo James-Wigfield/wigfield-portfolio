@@ -55,7 +55,9 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
 
     if (section === 'ping') {
       if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
-      return json({ data: { ok: true, rowStore: store.kind } });
+      // `models`: the model names this Worker stores apart. Scripts check for 'map' before uploading
+      // map.glb: an older Worker stores every model as room.glb and would overwrite the real one.
+      return json({ data: { ok: true, rowStore: store.kind, models: ['room', 'map'] } });
     }
     if (section !== 'spots') return json({ error: 'Not found' }, 404);
 
@@ -283,7 +285,8 @@ export function mediaKey(spotId, type, n) {
     return `${base}/${type === 'photo' ? 'photos' : 'thumbs'}/${Number(n)}.jpg`;
   }
   if (type === 'scan') return `${base}/scan.spz`;
-  if (type === 'model') return `${base}/model/room.glb`;
+  // model: the baked room (`room`, any other name too, as before) or its small map copy (`map`)
+  if (type === 'model') return `${base}/model/${n === 'map' ? 'map' : 'room'}.glb`;
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(n || '')) return null;
   return type === 'render' ? `${base}/renders/${n}.png` : `${base}/compare/${n}.png`;
 }
@@ -291,7 +294,7 @@ export function mediaKey(spotId, type, n) {
 function mediaName(type, n) {
   if (type === 'photo' || type === 'thumb') return String(Number(n));
   if (type === 'scan') return 'scan';
-  if (type === 'model') return 'room';
+  if (type === 'model') return n === 'map' ? 'map' : 'room';
   return n;
 }
 

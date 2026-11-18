@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-/* bake: Blender bake_export.py on a built room → room.glb + renders/hero.png.
+/* bake: Blender bake_export.py on a built room → room.glb + renders/hero.png, then what the
+   /memories map shows: renders/marker.png (the hero trimmed to its content, 240 px: lib/marker.mjs)
+   and map.glb (room.glb with 512 px textures, meshopt-compressed: lib/mapModel.mjs).
 
      node tools/memory-rooms/bake.mjs <spotId | work dir> [--atlas 2048] [--samples 256]
 
@@ -9,6 +11,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BLENDER, REPO, workDir } from './lib/api.mjs';
+import { ensureMapModelFile } from './lib/mapModel.mjs';
+import { ensureMarkerFile } from './lib/marker.mjs';
 
 const args = process.argv.slice(2);
 // the first argument that is neither a --flag nor a flag's value
@@ -39,3 +43,13 @@ if (res.status !== 0 || !fs.existsSync(path.join(dir, 'room.glb'))) {
 const mb = fs.statSync(path.join(dir, 'room.glb')).size / 1024 / 1024;
 console.log(`✓ bake + export (${((Date.now() - t0) / 1000).toFixed(1)}s): room.glb ${mb.toFixed(2)} MB${mb > 8 ? '  ! over the 8 MB target' : ''}`);
 console.log(`  hero: ${path.join(dir, 'renders', 'hero.png')}`);
+const marker = await ensureMarkerFile(path.join(dir, 'renders'), { force: true }).catch((e) => {
+  console.error(`  ! no map marker: ${e.message}`);
+  return null;
+});
+if (marker) console.log(`  marker: ${marker.path} (${marker.width}×${marker.height}, ${(marker.bytes / 1024).toFixed(0)} KB)`);
+const mapModel = await ensureMapModelFile(dir, { force: true }).catch((e) => {
+  console.error(`  ! no map model: ${e.message}`);
+  return null;
+});
+if (mapModel) console.log(`  map model: ${mapModel.path} (${(mapModel.bytes / 1024).toFixed(0)} KB)`);

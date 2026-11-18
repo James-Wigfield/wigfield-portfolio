@@ -67,8 +67,9 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
 | photo | 1…12 | `spots/<id>/photos/<n>.jpg` |
 | thumb | 1…12 | `spots/<id>/thumbs/<n>.jpg` |
 | scan | `scan` (ignored) | `spots/<id>/scan.spz` |
-| model | `room` (ignored) | `spots/<id>/model/room.glb` |
-| render | name `[a-z0-9-]+` | `spots/<id>/renders/<name>.png` (`hero`, `top`, `three-quarter`, `cam1`…) |
+| model | `room` (any other name too) | `spots/<id>/model/room.glb`: the baked room the viewer shows |
+| model | `map` | `spots/<id>/model/map.glb`: its small copy for the map's 3D dioramas (§4) |
+| render | name `[a-z0-9-]+` | `spots/<id>/renders/<name>.png` (`hero`, `marker`, `top`, `three-quarter`, `cam1`…) |
 | compare | name `[a-z0-9-]+` | `spots/<id>/compare/<name>.png` (`compare`, `round1`…) |
 
 Local row store (`MEMORIES_ROW_STORE=local`): `rows/spots/<id>.json`, `rows/media/<id>.json` in the same bucket.
@@ -83,7 +84,7 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 
 | Method & path | Body | Response |
 |---|---|---|
-| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase" } }` (the gate's password check) |
+| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map"] } }` (the gate's password check; scripts upload `model/map` only when `models` has `"map"`: an older Worker stores every model name as room.glb) |
 | `GET /api/memories/spots` | `?deleted=1` includes soft-deleted | `{ data: [Spot…] }` newest `capturedAt` first, media with signed urls |
 | `GET /api/memories/spots/:id` | – | `{ data: Spot }` (404 if missing) |
 | `POST /api/memories/spots` | Spot capture fields incl. client `id` | `{ data: Spot }` 201 new / 200 existing. **Upsert**: a retry never duplicates and never resets `status`, `scene` or `sceneVersion`. |
@@ -116,6 +117,21 @@ Clients: browser `src/memory-rooms/lib/api.js`, Node `tools/memory-rooms/lib/api
   - `pin__<n>` is NOT exported; the viewer draws pins from scene.json.
 - Textures WebP. Target ≤ 8 MB per room (warn above, fail above 15 MB).
 - No cameras, no lights, no animations in the GLB.
+
+### What the map shows (made from the above by `tools/memory-rooms/lib/`, no Blender)
+
+- `renders/marker.png` (render `marker`): `renders/hero.png` trimmed to its non-transparent content
+  (+2 px), shrunk to fit 240 × 240, palette PNG with alpha; an edge where the content ran into the
+  hero's frame fades out. The map stands a rendered spot on its location as this image (bottom
+  centre on the point). `lib/marker.mjs`.
+- `map.glb` (model `map`): `room.glb` with every texture shrunk to fit 512 px (WebP) and the geometry
+  quantised + meshopt-compressed (`EXT_meshopt_compression`, `KHR_mesh_quantization`). Same frame,
+  node names and material names as `room.glb` (checked: it fails if a node name is lost), so the
+  dollhouse cut-away and the material prefixes work the same. ~3–4× smaller (bedroom 2.0 MB →
+  563 KB). The map's 3D diorama past zoom 15. `lib/mapModel.mjs`.
+- `bake.mjs` makes both, `push.mjs` makes either when missing or older than its source,
+  `backfill-map-assets.mjs` makes them for spots already pushed. A spot without them still works:
+  the map shrinks the hero, or room.glb's textures, in the browser (more to download).
 
 ## 5. Blender kit API (`tools/memory-rooms/blender/`)
 

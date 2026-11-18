@@ -6,10 +6,22 @@ const Icon = ({ d }) => (
   </svg>
 );
 
-/** Zoom in / out / show everything (or `resetLabel`). Required (wheel, drag and pinch are extras). */
-export default function MapControls({ onIn, onOut, onReset, canIn = true, canReset = true, resetLabel = COPY.map.zoomReset }) {
+/**
+ * Zoom in / out / show everything (or `resetLabel`). Required (wheel, drag and pinch are extras).
+ * With `onNorth`, a compass shows while the map is turned (`bearing`, deg) and turns it north up.
+ */
+export default function MapControls({ onIn, onOut, onReset, canIn = true, canReset = true, resetLabel = COPY.map.zoomReset, bearing = 0, onNorth }) {
+  const turned = Boolean(onNorth) && Math.abs(((bearing + 540) % 360) - 180) > 0.5;
   return (
     <div className="mr-mapctl" role="group" aria-label={COPY.map.mapLabel}>
+      {turned && (
+        <button type="button" className="mr-mapctl-btn mr-mapctl-north" data-mr="north-up" onClick={onNorth} aria-label={COPY.map.northUp} title={COPY.map.northUp}>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" style={{ transform: `rotate(${-bearing}deg)` }}>
+            <path d="M8 2.5 10.5 8h-5Z" fill="currentColor" />
+            <path d="M8 13.5 5.5 8h5Z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
       <button type="button" className="mr-mapctl-btn" data-mr="zoom-in" onClick={onIn} disabled={!canIn} aria-label={COPY.map.zoomIn} title={COPY.map.zoomIn}>
         <Icon d="M8 3v10M3 8h10" />
       </button>

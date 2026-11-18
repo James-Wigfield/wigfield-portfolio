@@ -42,6 +42,16 @@ export class ApiError extends Error {
   }
 }
 
+/** True when the Worker stores model/map apart from model/room (ping lists it). An older Worker
+    stores every model name as room.glb, so uploading map.glb to it would overwrite the room. */
+export async function supportsMapModel(api) {
+  try {
+    return (await api.ping())?.models?.includes('map') === true;
+  } catch {
+    return false;
+  }
+}
+
 export function client({ base, token } = config()) {
   async function call(p, { method = 'GET', body, headers = {} } = {}) {
     const init = { method, headers: { authorization: `Bearer ${token}`, ...headers } };

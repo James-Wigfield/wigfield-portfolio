@@ -1,6 +1,7 @@
 /* What a spot page needs from a Spot row (CONTRACTS.md §2), in one place. */
 
 import { mediaNamed, mediaOf } from '../../lib/api.js';
+import { roomModelOf } from '../../lib/spots.js';
 
 /** Photos sorted by number: [{ photo, url, thumb, width, height }]. */
 export function spotPhotos(spot) {
@@ -23,7 +24,7 @@ export function spotPhotos(spot) {
  *   'photos'  no scene yet: the photos are the hero
  */
 export function stageKind(spot) {
-  const model = mediaOf(spot, 'model')[0];
+  const model = roomModelOf(spot);
   if (model && (spot.status === 'rendered' || !spot.scene)) return 'model';
   if (spot.scene) return 'preview';
   return 'photos';
@@ -39,7 +40,7 @@ export function viewerSource(spot) {
   return {
     id: spot.id,
     scene: spot.scene || null,
-    glbUrl: kind === 'model' ? mediaOf(spot, 'model')[0].url : null,
+    glbUrl: kind === 'model' ? roomModelOf(spot).url : null,
     // while the GLB loads: the hero render, over the first photo (small, instant)
     posterUrl: kind === 'model' ? hero?.url || null : null,
     posterLowUrl: kind === 'model' ? first?.thumb || null : null,

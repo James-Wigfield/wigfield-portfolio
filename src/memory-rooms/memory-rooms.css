@@ -45,6 +45,7 @@ html.mr-active {
   --mr-map-label-strong: #5b5852;
   --mr-map-space: var(--mr-bg); /* around the globe */
   --mr-map-glow: #e6e2d9; /* the atmosphere at the globe's edge */
+  --mr-marker-shadow: rgba(29, 28, 26, 0.34); /* contact shadow under a rendered spot's cut-out */
 
   /* type */
   --mr-font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -110,6 +111,7 @@ html.mr-active {
     --mr-map-label-strong: #bdbab2;
     --mr-map-space: var(--mr-bg);
     --mr-map-glow: #262522;
+    --mr-marker-shadow: rgba(0, 0, 0, 0.62);
   }
 }
 
@@ -682,6 +684,27 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-cluster-disc { fill: var(--mr-ink); stroke: var(--mr-map-land); stroke-width: 2px; transition: fill var(--mr-dur) var(--mr-ease); }
 .mr-cluster:hover .mr-cluster-disc { fill: var(--mr-ink-2); }
 .mr-cluster-n { fill: var(--mr-bg); font: 500 11px var(--mr-font-mono); pointer-events: none; }
+
+/* rendered spots stand on the map as their baked cut-out (map/markers.js), over a soft
+   contact shadow; the ring on the ground marks the selected or focused one */
+.mr-marker-shadow-stop { stop-color: var(--mr-marker-shadow); stop-opacity: 1; }
+.mr-marker-shadow-stop[data-mid] { stop-opacity: 0.45; }
+.mr-marker-shadow-stop[data-edge] { stop-opacity: 0; }
+.mr-marker-img { transition: transform var(--mr-dur) var(--mr-ease); }
+.mr-marker:hover .mr-marker-img,
+.mr-marker[data-hover] .mr-marker-img,
+.mr-marker[data-selected] .mr-marker-img { transform: translateY(-3px); }
+/* on the Mapbox map, markers and 3D models let the pointer through (a drag on one pans the map;
+   the map's click finds them); the keyboard still focuses them */
+.mr-mapoverlay .mr-mapspot[data-pass] { pointer-events: none; }
+.mr-marker-ring { fill: none; stroke: var(--mr-accent); stroke-width: 1.5px; opacity: 0; transition: opacity var(--mr-dur) var(--mr-ease); }
+.mr-marker[data-selected] .mr-marker-ring,
+.mr-marker:focus-visible .mr-marker-ring { opacity: 1; }
+.mr-cluster-fan { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mr-marker-img,
+  .mr-marker-ring { transition: none; }
+}
 
 /* controls + corner notes */
 .mr-mapctl {

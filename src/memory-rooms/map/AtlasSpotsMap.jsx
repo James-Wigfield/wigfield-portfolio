@@ -9,9 +9,11 @@ import { COPY } from '../copy.js';
 import AtlasMap from './AtlasMap.jsx';
 import { anchorOf, cardPosition } from './cardPlace.js';
 import MapControls from './MapControls.jsx';
+import MapSpots from './MapSpots.jsx';
+import { useMarkerImages } from './markerImages.js';
+import { atlasZoom, avoidOf, markerPx, withMarkers } from './markers.js';
 import { ClusterCard, SpotCard } from './SpotCard.jsx';
-import { ClusterDot, SpotDot } from './SpotDot.jsx';
-import { CLUSTER_PX, clusterPoints, clusterRadius, worldBox } from './clusters.js';
+import { CLUSTER_PX, clusterPoints, worldBox } from './clusters.js';
 import { onMap, project } from './geo.js';
 import { useMapViewport } from './useMapViewport.js';
 import { HOME, baseScale, fitBox, transformOf } from './zoom.js';
@@ -57,22 +59,17 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
   const { t, size } = vp;
   const maxK = vp.maxK;
 
-  const items = useMemo(() => {
-    if (!t) return [];
-    const screen = points.map((p) => ({ ...p, x: p.wx * t.s + t.tx, y: p.wy * t.s + t.ty }));
-    return clusterPoints(screen, CLUSTER_PX);
-  }, [points, t]);
+  // Rendered spots stand as their marker images (same sizes as on the globe at the same scale);
+  // laid out on every render, so a marker image arriving (useMarkerImages) redraws them.
+  useMarkerImages();
+  const clustered = useMemo(
+    () => (t ? clusterPoints(points.map((p) => ({ ...p, x: p.wx * t.s + t.tx, y: p.wy * t.s + t.ty })), CLUSTER_PX) : []),
+    [points, t],
+  );
+  const items = t ? withMarkers(clustered, markerPx(atlasZoom(t.s), compact)) : clustered;
 
   // Where markers sit, so place labels keep clear of them.
-  const avoid = useMemo(
-    () =>
-      items.map((it) =>
-        it.type === 'spot'
-          ? { x: it.point.x, y: it.point.y, r: dotR + 4 }
-          : { x: it.x, y: it.y, r: clusterRadius(it.members.length, clusterBase) + 3 },
-      ),
-    [items, dotR, clusterBase],
-  );
+  const avoid = avoidOf(items, dotR, clusterBase);
 
   const selected = selectedId ? spots.find((s) => s.id === selectedId) || null : null;
   const clusterSpots = clusterIds ? clusterIds.map((id) => spots.find((s) => s.id === id)).filter(Boolean) : null;
@@ -171,25 +168,18 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
 
   const cardStyle = !compact && size && (selected || clusterSpots) ? cardPosition(anchor, size, cardH) : undefined;
 
-  // Selected item drawn last so its ring sits on top.
-  const ordered = [...items].sort((a, b) => {
-    const sa = a.type === 'spot' ? a.point.id === selectedId : a.id === anchor?.cluster;
-    const sb = b.type === 'spot' ? b.point.id === selectedId : b.id === anchor?.cluster;
-    return sa - sb;
-  });
-
   return (
     <div className="mr-spotsmap" data-compact={compact ? '' : undefined} data-engine="atlas" data-engine-reason={engineReason || undefined}>
       <AtlasMap vp={vp} dataMr="map" label={COPY.map.mapLabel} onBackgroundTap={close} avoid={avoid}>
-        <g className="mr-mapspots">
-          {ordered.map((it) =>
-            it.type === 'spot' ? (
-              <SpotDot key={it.point.id} point={it.point} r={dotR} selected={it.point.id === selectedId} onActivate={() => pick(it.point.id)} />
-            ) : (
-              <ClusterDot key={it.id} item={it} base={clusterBase} selected={it.id === anchor?.cluster} onActivate={() => openCluster(it)} />
-            ),
-          )}
-        </g>
+        <MapSpots
+          items={items}
+          selectedId={selectedId}
+          selectedCluster={anchor?.cluster}
+          dotR={dotR}
+          clusterBase={clusterBase}
+          onPick={pick}
+          onCluster={openCluster}
+        />
       </AtlasMap>
 
       <MapControls onIn={() => vp.zoomBy(2)} onOut={() => vp.zoomBy(0.5)} onReset={() => vp.reset()} canIn={vp.view.k < maxK - 0.01} canReset={!vp.isAuto} />

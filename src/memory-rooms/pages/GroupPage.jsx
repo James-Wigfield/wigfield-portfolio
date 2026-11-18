@@ -5,7 +5,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, mediaOf } from '../lib/api.js';
+import { api } from '../lib/api.js';
+import { roomModelOf } from '../lib/spots.js';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import RoomViewer from '../viewer/RoomViewer.jsx';
@@ -20,7 +21,7 @@ import '../viewer/viewer.css';
 function roomOf(spot) {
   const kind = stageKind(spot);
   if (kind === 'photos') return null;
-  return { id: spot.id, scene: spot.scene || null, glbUrl: kind === 'model' ? mediaOf(spot, 'model')[0].url : null };
+  return { id: spot.id, scene: spot.scene || null, glbUrl: kind === 'model' ? roomModelOf(spot).url : null };
 }
 
 export default function GroupPage() {

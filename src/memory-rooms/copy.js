@@ -49,6 +49,7 @@ export const COPY = {
     zoomOut: 'Zoom out',
     zoomReset: 'Show everything',
     zoomHome: 'Back to the trip',
+    northUp: 'Turn north up',
     elsewhere: (n) => `${n} elsewhere`,
     cluster: (n) => `${n} spots, zoom in`,
     clusterHere: (n) => `${n} spots in one place`,

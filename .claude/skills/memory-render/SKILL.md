@@ -64,14 +64,14 @@ Speed: `--only cam2,top` re-renders just what you're fixing; `--samples 32` for 
 ```
 node tools/memory-rooms/bake.mjs <spotId>
 ```
-Bakes the lighting into one atlas, exports `room.glb` (WebP, target ≤ 8 MB) and renders `renders/hero.png` at full samples. Read `hero.png`: it's the map card, so it must look good.
+Bakes the lighting into one atlas, exports `room.glb` (WebP, target ≤ 8 MB) and renders `renders/hero.png` at full samples. Read `hero.png`: it's the map card, so it must look good. It then makes what the `/memories` map shows: `renders/marker.png` (the hero trimmed to its content, 240 px: the spot stands on the map as this) and `map.glb` (room.glb with 512 px textures, meshopt-compressed: the 3D diorama past zoom 15). The hero's view is also the diorama's default view, so a hero that reads well from its corner is a map that reads well.
 
 ## 8. Push
 
 ```
 node tools/memory-rooms/push.mjs <spotId>
 ```
-Uploads room.glb, every render and compare sheet, saves the scene (validated again by the Worker, `sceneVersion` +1) and sets the status to `rendered`. Then open `/memories/<spotId>` to see it.
+Uploads room.glb and map.glb (making map.glb and renders/marker.png first if they're missing or older than room.glb / the hero), every render and compare sheet, saves the scene (validated again by the Worker, `sceneVersion` +1) and sets the status to `rendered`. Then open `/memories/<spotId>` to see it.
 
 ## "Render the next captured spots"
 

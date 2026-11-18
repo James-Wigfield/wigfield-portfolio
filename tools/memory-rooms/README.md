@@ -20,8 +20,8 @@ pull.mjs <id> ─► palette.mjs ─► (Claude writes layout.md + scene.json) �
 | `build.mjs <id> [--round N] [--samples 64] [--only cam1,top]` | check-scene → `blender/build_room.py` → `compare.mjs` |
 | `blender/build_room.py` | scene.json → `room.blend` + Cycles renders `renders/cam<n>.png`, `top.png`, `three-quarter.png`, `build-report.json` |
 | `compare.mjs <id> [--round N]` | `compare.png`: photo \| render \| 50/50 overlay per camera + top-down, with structure/tone/colour scores (`compare.json`) |
-| `bake.mjs <id>` | `blender/bake_export.py`: bakes the lighting into one atlas, exports `room.glb` (WebP, ≤ 8 MB target), `renders/hero.png` |
-| `push.mjs <id> [--dry-run]` | uploads GLB + renders + compare sheets, saves the scene (validated, version +1), status `rendered` |
+| `bake.mjs <id>` | `blender/bake_export.py`: bakes the lighting into one atlas, exports `room.glb` (WebP, ≤ 8 MB target), `renders/hero.png`; then what the map shows: `renders/marker.png` (`lib/marker.mjs`) and `map.glb` (`lib/mapModel.mjs`) |
+| `push.mjs <id> [--dry-run]` | uploads `room.glb` + `map.glb` + renders + compare sheets (making `map.glb` / `marker.png` if missing or stale), saves the scene (validated, version +1), status `rendered` |
 
 Every Node script reads `MEMORIES_API` (default `http://127.0.0.1:8788`) and `MEMORIES_PASSWORD` from the
 environment, falling back to `.dev.vars`. Blender path: `BLENDER` env, default
@@ -45,9 +45,12 @@ environment, falling back to `.dev.vars`. Blender path: `BLENDER` env, default
 |---|---|
 | `api-check.mjs` | every `/api/memories` route (31 checks), against any running Worker |
 | `pgrest-stub.mjs` | in-memory PostgREST stand-in to run api-check against the Supabase row store locally |
-| `page-check.mjs [--dark] [--swiftshader] [--mapstyle x]` | the screens in headless Edge (real GPU: Mapbox needs WebGL 2) at 1440 and 390 px: gate, the Mapbox map (tiles, clusters, card, elsewhere, reset, ONE map load), the atlas fallback (`?map=atlas`, WebGL off), capture + pick map (pin, offline → atlas), viewer, zero console errors; ~5 Mapbox loads a run; screenshots in `memory-rooms-work/_page-check/` |
-| `seed-dev.mjs [--examples-only]` | demo spots for a LOCAL Worker (refuses anything else) |
+| `page-check.mjs [--dark] [--swiftshader] [--mapstyle x]` | the screens in headless Edge (real GPU: Mapbox needs WebGL 2) at 1440 and 390 px: gate, the Mapbox map (tiles, clusters, card, elsewhere, reset, ONE map load), markers (never the hero; grow with zoom; card beside them; hero fallback; atlas too), 3D past zoom 15 (draws, cap, click/tap opens the card, a drag on a model pans, zooming out disposes + flattens, room.glb fallback, GPU counts back where they were after panning), the atlas fallback (`?map=atlas`, WebGL off), capture + pick map (pin, offline → atlas), viewer, zero console errors; ~7 Mapbox loads a run; screenshots in `memory-rooms-work/_page-check/` |
+| `seed-dev.mjs [--examples-only] [--no-map-assets]` | demo spots for a LOCAL Worker (refuses anything else), with their marker + map.glb unless `--no-map-assets` |
+| `backfill-map-assets.mjs [--dry-run] [--only id] [--what marker,map] [--live]` | gives rendered spots pushed before them their `render/marker` and `model/map`, made from the stored hero / room.glb; a non-local Worker needs `--live` |
 | `build-atlas.mjs` | rebuilds `src/memory-rooms/map/atlas.json` (the SVG fallback map) from us-atlas + world-atlas |
+| `dev/marker-shots.mjs` | the markers and 3D dioramas on the map (country, city, 3D close-ups, a clicked model, atlas; light + dark, 1440 + 390) → `memory-rooms-work/_markers/<tag>-sheet.png` |
+| `dev/model-soak.mjs` | fps + GPU texture/geometry counts while dragging the map with 3D models live (12 injected copies, cap 6 / 3), mouse at 1440, touch + CPU ÷4 at 390, 3D on vs off |
 | `dev/map-style-shots.mjs` | the Mapbox style candidates side by side (opening view, globe, region, street; light + dark) → `memory-rooms-work/_map-styles/` |
 | `dev/`, `dev-viewer/` | the UI agents' deeper headless suites (capture offline/outbox, map clusters on the atlas via `?map=atlas`, viewer alignment, disposal) |
 | `examples/` | `bedroom.scene.json` (interior) and `diner.scene.json` (exterior), fixtures for the kit and viewer |

@@ -44,6 +44,7 @@ ok((await raw('/api/memories/ping')).status === 401, 'ping without a token is 40
 ok((await raw('/api/memories/ping', { headers: { authorization: 'Bearer nope' } })).status === 401, 'ping with a wrong token is 401');
 const ping = await api.ping();
 ok(ping.ok === true, `ping with the password works (row store: ${ping.rowStore})`);
+ok(Array.isArray(ping.models) && ping.models.includes('map'), 'ping says model/map is stored apart from room.glb');
 
 // ── create (idempotent) ──────────────────────────────────────────────────────
 const id = crypto.randomUUID();
@@ -101,6 +102,12 @@ if (fs.existsSync(glbPath)) {
   const glb = fs.readFileSync(glbPath);
   const mm = await api.putMedia(id, 'model', 'room', glb, { contentType: 'model/gltf-binary' });
   ok(mm.r2Key === `spots/${id}/model/room.glb` && mm.bytes === glb.length, 'a GLB uploads as model/room.glb');
+  const mp = await api.putMedia(id, 'model', 'map', glb.subarray(0, 1024), { contentType: 'model/gltf-binary' });
+  const both = (await api.getSpot(id)).media.filter((m) => m.type === 'model');
+  ok(
+    mp.r2Key === `spots/${id}/model/map.glb` && mp.name === 'map' && both.length === 2 && both.some((m) => m.name === 'room' && m.bytes === glb.length),
+    'the map copy uploads as model/map.glb beside room.glb',
+  );
   const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: '#fff' } }).png().toBuffer();
   const r = await api.putMedia(id, 'render', 'hero', png, { contentType: 'image/png' });
   ok(r.r2Key === `spots/${id}/renders/hero.png`, 'a render uploads under renders/<name>.png');
