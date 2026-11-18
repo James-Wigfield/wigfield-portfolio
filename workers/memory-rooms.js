@@ -13,6 +13,10 @@
      POST   /api/memories/spots/:id/restore            → undo soft delete
      PUT    /api/memories/spots/:id/media/:type/:n     → raw bytes into R2 + media row
      GET    /api/memories/file/<r2Key>[?t=<exp>.<sig>] → the file (bearer OR signed token)
+     POST   /api/memories/spots/:id/walk               → { ticket } for walking the room together
+     GET    /api/memories/spots/:id/walk               → who's walking it now
+     GET    /api/memories/walk/ws?t=<ticket>           → WebSocket into the spot's walk room
+                                                         (Durable Object MemoryWalkRoom, workers/memory-walk.js)
 
    Auth: Bearer MEMORIES_PASSWORD (shared with Justin) or PORTAL_PASSWORD. Fails
    closed when neither is set. Files live in R2 (binding MEMORIES). Rows live
@@ -45,6 +49,8 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
   try {
     // Files accept a signed token instead of the bearer, so <img>, GLTFLoader and Spark can load them.
     if (section === 'file') return await serveFile(request, env, url, json);
+    // The walk room's WebSocket: browsers can't send the bearer on one, so it carries a signed ticket instead.
+    if (section === 'walk') return await walkSocket(request, env, url, json);
 
     const denied = await checkAuth(request, env, json);
     if (denied) return denied;
@@ -75,6 +81,7 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
       if (request.method !== 'PUT') return json({ error: 'Method not allowed' }, 405);
       return await putMedia(ctx, request, id, type, n);
     }
+    if (sub === 'walk') return await walkRoute(ctx, request, id);
     if (sub === 'restore') {
       if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       return await setDeleted(ctx, id, null);
@@ -306,6 +313,48 @@ async function serveFile(request, env, url, json) {
   if (!('body' in obj) || !obj.body) return new Response(null, { status: 304, headers });
   headers.set('content-length', String(obj.size));
   return new Response(request.method === 'HEAD' ? null : obj.body, { headers });
+}
+
+// ── walk in together (the Durable Object is workers/memory-walk.js) ──────────
+
+const WALK_TICKET_S = 120;
+
+async function walkRoute(ctx, request, id) {
+  const { env, json } = ctx;
+  if (!env.MEMORY_WALK) return json({ error: 'Durable Object binding MEMORY_WALK is missing (wrangler.jsonc).' }, 503);
+  if (request.method === 'GET') {
+    const res = await env.MEMORY_WALK.get(env.MEMORY_WALK.idFromName(id)).fetch('https://walk/presence');
+    return json(await res.json());
+  }
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  let body = {};
+  try {
+    body = (await request.json()) || {};
+  } catch {
+    body = {};
+  }
+  if (!PEOPLE.includes(body.who)) return json({ error: 'who must be james or justin', details: [`who must be one of ${PEOPLE.join(', ')}`] }, 400);
+  if (!(await ctx.store.getSpot(id))) return json({ error: 'Spot not found' }, 404);
+  const exp = Math.floor(Date.now() / 1000) + WALK_TICKET_S;
+  const sig = await hmac(env, `walk|${id}|${body.who}|${exp}`);
+  const ticket = `${id}.${body.who}.${exp}.${sig}`;
+  return json({ data: { ticket, expiresAt: new Date(exp * 1000).toISOString(), socket: `${PREFIX}walk/ws?t=${encodeURIComponent(ticket)}` } });
+}
+
+async function walkSocket(request, env, url, json) {
+  if (url.pathname !== `${PREFIX}walk/ws`) return json({ error: 'Not found' }, 404);
+  const ticket = url.searchParams.get('t');
+  if (!ticket) return json({ error: 'Unauthorized' }, 401);
+  const [spotId, who, expStr, sig] = ticket.split('.');
+  const exp = Number(expStr);
+  const valid =
+    isUuid(spotId || '') && PEOPLE.includes(who) && Number.isFinite(exp) && exp * 1000 > Date.now() && Boolean(sig) && (await hmac(env, `walk|${spotId}|${who}|${exp}`)) === sig;
+  if (!valid) return json({ error: 'Ticket expired or invalid' }, 403);
+  if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return json({ error: 'Expected a WebSocket upgrade' }, 426);
+  if (!env.MEMORY_WALK) return json({ error: 'Durable Object binding MEMORY_WALK is missing (wrangler.jsonc).' }, 503);
+  const headers = new Headers(request.headers);
+  headers.set('x-walk-who', who);
+  return env.MEMORY_WALK.get(env.MEMORY_WALK.idFromName(spotId)).fetch(new Request('https://walk/ws', { method: 'GET', headers }));
 }
 
 // ── media helpers ────────────────────────────────────────────────────────────

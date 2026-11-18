@@ -1,5 +1,5 @@
 /* Memory Rooms entry (lazy-loaded from src/App.jsx). `page` picks the screen:
-   map | new | spot | edit | group.
+   map | new | spot | edit | walk | group.
 
    The shell: password gate (once per device) → who-picker (once per device, for
    the map and capture pages) → slim header + outbox line + the page. The viewer
@@ -27,6 +27,8 @@ import WhoPicker from './shell/WhoPicker.jsx';
 // phone signal) never wait for three.js, and a viewer problem can't take them down.
 const SpotPage = lazy(() => import('./pages/SpotPage.jsx'));
 const GroupPage = lazy(() => import('./pages/GroupPage.jsx'));
+// Walking a room together: its own chunk (three.js, the characters, the socket).
+const WalkPage = lazy(() => import('./pages/WalkPage.jsx'));
 
 /** Theme background on <body>, the tab title, and the browser chrome colour while mounted. */
 function usePageTakeover(page, authed) {
@@ -106,8 +108,8 @@ export default function MemoryRoomsApp({ page }) {
   };
   const changeWho = () => setChoosing(true);
 
-  const needsWho = page === 'map' || page === 'new';
-  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit');
+  const needsWho = page === 'map' || page === 'new' || page === 'walk'; // walking: you're your character
+  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit' || page === 'walk');
 
   let body;
   if (!authed) {
@@ -124,9 +126,9 @@ export default function MemoryRoomsApp({ page }) {
             {page === 'map' && <MapPage />}
             {page === 'new' && <CapturePage />}
             {page === 'edit' && <EditPage />}
-            {(page === 'spot' || page === 'group') && (
+            {(page === 'spot' || page === 'group' || page === 'walk') && (
               <Suspense fallback={<p className="mr-state mr-state-body">{COPY.app.loading}</p>}>
-                {page === 'spot' ? <SpotPage /> : <GroupPage />}
+                {page === 'spot' ? <SpotPage /> : page === 'walk' ? <WalkPage /> : <GroupPage />}
               </Suspense>
             )}
           </PageBoundary>

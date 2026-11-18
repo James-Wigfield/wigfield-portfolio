@@ -8,5 +8,6 @@ export const paths = {
   capture: () => `${BASE}/new`,
   spot: (id) => `${BASE}/${encodeURIComponent(id)}`,
   edit: (id) => `${BASE}/${encodeURIComponent(id)}/edit`,
+  walk: (id) => `${BASE}/${encodeURIComponent(id)}/walk`,
   group: (group) => `${BASE}/group/${encodeURIComponent(group)}`,
 };

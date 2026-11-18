@@ -1,6 +1,6 @@
 /* ALL user-facing text for Memory Rooms lives here (one file, so a tone pass
    touches nothing else). Components import COPY and never hard-code strings.
-   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, fly, ar, group. */
+   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, fly, walk, ar, group. */
 
 export const COPY = {
   app: {
@@ -347,6 +347,45 @@ export const COPY = {
     endTitle: 'The whole trip',
     endBody: (n) => `${n} ${n === 1 ? 'spot' : 'spots'}, in the order they were captured.`,
     offMap: 'Off this map',
+  },
+
+  // ── /memories/:spotId/walk: walk in together (walk/) ──────────────────────
+  walk: {
+    link: 'Walk in',
+    linkLabel: (title) => `Walk around ${title} as your character`,
+    here: (names) => `${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} in this room`,
+    pageTitle: (title) => `Walk in · ${title}`,
+    back: 'Spot',
+    backLabel: 'Back to the spot',
+    loading: 'Opening the room…',
+    noRoomTitle: 'Nothing to walk yet.',
+    noRoom: 'This spot gets its 3D room after the trip. Walking in comes with it.',
+    error: "The room didn't load.",
+    retry: 'Try again',
+    live: (others) => (others.length ? `Live · ${others.join(', ')} here` : 'Live · just you'),
+    connecting: 'Connecting…',
+    retrying: 'Reconnecting…',
+    offline: "Offline. You're walking alone; others appear when you're back online.",
+    joined: (name) => `${name} walked in`,
+    left: (name) => `${name} left`,
+    hint: {
+      seat: (kit) => `E to sit on the ${kit}`,
+      seatTouch: (kit) => `Sit on the ${kit}`,
+      stand: 'E or move to stand up',
+      standTouch: 'Move to stand up',
+      mark: 'Stand still here to see the photo',
+      photo: (n) => `Photo ${n}. Move to come back`,
+    },
+    interact: { seat: (kit) => `Sit on the ${kit}`, stand: 'Stand up', photo: 'Back', mark: 'Look' },
+    emotes: { wave: 'Wave', jump: 'Jump', sit: 'Sit' },
+    emotesLabel: 'Emotes',
+    view: { first: 'First person', third: 'Third person' },
+    chat: 'Say',
+    chatLabel: 'Say something',
+    chatPlaceholder: 'Say something (80 characters)',
+    send: 'Send',
+    keys: 'WASD walk · ←/→ turn · Shift run · drag to look · E sit · 1 2 3 wave, jump, sit · V first person · Enter to talk',
+    touch: 'Left thumb walks · drag right to look · tap the floor to walk there',
   },
 
   // ── the spot page's "See it in your space" (ar/) ──────────────────────────

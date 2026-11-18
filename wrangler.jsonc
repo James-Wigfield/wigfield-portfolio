@@ -34,6 +34,10 @@
 	// A second, separate class: one room per four-letter code, linking the phone's
 	// script page to the presenting laptop. See workers/deck-remote.js and ADR-007.
 	// Migration v2 adds it; v1 is untouched.
+	//
+	// ── Memory Rooms "walk in together" (/memories/:id/walk) ─────────────────
+	// A third class, MemoryWalkRoom: one per spot id, behind the memories password
+	// (a signed ticket). Migration v3 adds it. See workers/memory-walk.js.
 	"durable_objects": {
 		"bindings": [
 			{
@@ -43,6 +47,10 @@
 			{
 				"name": "DECK_REMOTE",
 				"class_name": "DeckRemote"
+			},
+			{
+				"name": "MEMORY_WALK",
+				"class_name": "MemoryWalkRoom"
 			}
 		]
 	},
@@ -57,6 +65,14 @@
 			"tag": "v2",
 			"new_sqlite_classes": [
 				"DeckRemote"
+			]
+		},
+		{
+			// Memory Rooms "walk in together": one room per spot id (workers/memory-walk.js).
+			// Stores nothing; v1 and v2 are untouched.
+			"tag": "v3",
+			"new_sqlite_classes": [
+				"MemoryWalkRoom"
 			]
 		}
 	],

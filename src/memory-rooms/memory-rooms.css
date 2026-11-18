@@ -51,6 +51,8 @@ html.mr-active {
   --mr-qr-paper: #ffffff;
   --mr-ar-ink: #ffffff; /* text over the AR camera feed (same in both themes) */
   --mr-ar-shade: rgba(0, 0, 0, 0.75);
+  --mr-person-james: #2f6db5; /* walk-in: name tags + markers, matching each character's jacket */
+  --mr-person-justin: #c2592a;
 
   /* type */
   --mr-font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -120,6 +122,8 @@ html.mr-active {
     --mr-map-route: var(--mr-accent);
     --mr-qr-ink: #141413;
     --mr-qr-paper: #ecebe6;
+    --mr-person-james: #7aaae6;
+    --mr-person-justin: #ec9460;
   }
 }
 

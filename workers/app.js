@@ -28,6 +28,9 @@ export { ArcadeRoom } from './arcade/room.js';
 // The seminar deck's phone remote (DECK_REMOTE binding) — see
 // workers/deck-remote.js and ADR-007.
 export { DeckRemote } from './deck-remote.js';
+// Memory Rooms' "walk in together" rooms (MEMORY_WALK binding): one per spot, behind the
+// memories password (a signed ticket). See workers/memory-walk.js.
+export { MemoryWalkRoom } from './memory-walk.js';
 
 export default {
   async fetch(request, env) {

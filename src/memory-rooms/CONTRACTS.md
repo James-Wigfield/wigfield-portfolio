@@ -78,7 +78,9 @@ Local row store (`MEMORIES_ROW_STORE=local`): `rows/spots/<id>.json`, `rows/medi
 
 Auth on every route: `Authorization: Bearer <MEMORIES_PASSWORD or PORTAL_PASSWORD>`. Fails closed (503) when
 neither secret is set. `/file/` also accepts `?t=<exp>.<sig>` (HMAC-SHA256 of `<r2Key>.<exp>`, key =
-`MEMORIES_SIGNING_KEY` or, when unset, a hash of the passwords).
+`MEMORIES_SIGNING_KEY` or, when unset, a hash of the passwords). `/walk/ws` takes only its walk ticket
+`<spotId>.<who>.<exp>.<sig>` (HMAC of `walk|<spotId>|<who>|<exp>`, same key), minted by the bearer-checked
+`POST /spots/:id/walk`.
 
 Every JSON response is `{ data }` or `{ error, details? }`.
 
@@ -93,6 +95,9 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 | `DELETE /api/memories/spots/:id` | – | soft delete → `{ data: { id, deletedAt } }` |
 | `POST /api/memories/spots/:id/restore` | – | clears `deletedAt` |
 | `GET /api/memories/file/<r2Key>` | bearer or `?t=` | the bytes, with `content-type`, `etag`, `cache-control: private, max-age=3600` |
+| `POST /api/memories/spots/:id/walk` | `{ who: "james"\|"justin" }` | `{ data: { ticket, expiresAt, socket: "/api/memories/walk/ws?t=<ticket>" } }`: a signed ticket for walking this spot's room together, valid **120 s** (to connect; the socket then lives on). 404 if the spot doesn't exist, 400 for a bad `who`. |
+| `GET /api/memories/spots/:id/walk` | – | `{ data: { people: [{ who, since }] } }`: who is walking this room right now (one entry per person) |
+| `GET /api/memories/walk/ws?t=<ticket>` | WebSocket upgrade, **no bearer** (browsers can't send one on a WebSocket) | 101 into the spot's walk room (Durable Object `MemoryWalkRoom`, one per spot id). No ticket: 401; a bad or expired one: 403; not an upgrade: 426. Messages: `workers/memory-walk.js` header. Nothing is stored: the room keeps only who's connected. |
 
 PATCH checks (POST shares the location and date ones; each `details` entry starts with the field it's about,
 so a form can show it next to that field):

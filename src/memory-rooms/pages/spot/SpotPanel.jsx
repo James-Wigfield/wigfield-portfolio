@@ -14,6 +14,8 @@ import PhotoStrip from './PhotoStrip.jsx';
 
 // AR is its own chunk (and pulls the USDZ exporter / WebXR / QR code only on demand).
 const ArEntry = lazy(() => import('../../ar/ArEntry.jsx'));
+// "Walk in" + who's in the room now (its own small chunk; the walk page itself is another).
+const WalkEntry = lazy(() => import('../../walk/WalkEntry.jsx'));
 
 function statusLine(spot, stage) {
   const lines = COPY.spot.lines;
@@ -66,6 +68,7 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
 
       {stage === 'model' && (
         <Suspense fallback={null}>
+          <WalkEntry key={`walk-${spot.id}`} spot={spot} />
           <ArEntry key={spot.id} spot={spot} viewer={viewer} startOpen={arOpen} />
         </Suspense>
       )}

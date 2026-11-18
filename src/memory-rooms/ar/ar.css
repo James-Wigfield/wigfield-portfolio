@@ -106,3 +106,13 @@
 }
 .mr-ar-overlay__scale { flex: 1; padding-left: var(--mr-space-2); }
 .mr-ar-overlay__bar .mr-btn { min-height: var(--mr-tap); }
+
+/* the spot page's "Walk in" (walk/WalkEntry.jsx) sits just above, in the same ruled column */
+.mr-walkentry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  padding-top: var(--mr-space-5);
+  border-top: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-walkentry + .mr-ar { border-top: 0; padding-top: 0; }

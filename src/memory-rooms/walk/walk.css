@@ -1,0 +1,172 @@
+/* /memories/:spotId/walk (pages/WalkPage.jsx + walk/WalkGame.js). Tokens only (memory-rooms.css). */
+
+.mr-walk {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--mr-stage);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mr-walk__stage { position: absolute; inset: 0; touch-action: none; }
+.mr-walk__canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.mr-walk__photo {
+  position: absolute;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0;
+}
+.mr-walk__overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+/* name tags + chat bubbles, placed in px by WalkGame (translate to the head) */
+.mr-walk__tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  will-change: transform;
+}
+.mr-walk__tag > * { transform: translate(-50%, -100%); }
+.mr-walk__tag > .mr-walk__bubble { transform: translate(-50%, calc(-100% - 22px)); position: absolute; }
+.mr-walk__name {
+  position: absolute;
+  padding: 2px 6px;
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  font: 600 var(--mr-text-xs) / 1.3 var(--mr-font-mono);
+  letter-spacing: var(--mr-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--mr-person, var(--mr-ink));
+}
+.mr-walk__tag[data-who='james'] { --mr-person: var(--mr-person-james); }
+.mr-walk__tag[data-who='justin'] { --mr-person: var(--mr-person-justin); }
+.mr-walk__bubble {
+  max-width: 220px;
+  padding: 6px 10px;
+  border: var(--mr-hairline) solid var(--mr-rule);
+  border-radius: var(--mr-radius-m);
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  font: 500 var(--mr-text-s) / 1.35 var(--mr-font-sans);
+  box-shadow: var(--mr-shadow);
+  white-space: normal;
+  width: max-content;
+  text-align: center;
+}
+
+/* the phone joystick (drawn where the left thumb lands) */
+.mr-walk__stick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 112px;
+  height: 112px;
+  margin: -56px 0 0 -56px;
+  border: 2px solid var(--mr-rule-strong);
+  border-radius: 50%;
+  background: var(--mr-surface);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.mr-walk__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  background: var(--mr-ink);
+}
+
+/* chrome */
+.mr-walk__top {
+  position: absolute;
+  top: var(--mr-space-3);
+  left: var(--mr-space-3);
+  right: var(--mr-space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-3);
+  pointer-events: none;
+}
+.mr-walk__top > * { pointer-events: auto; }
+.mr-walk__back { background: var(--mr-bg); padding-left: var(--mr-space-3); }
+.mr-walk__where {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--mr-space-1) var(--mr-space-3);
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-bg);
+}
+.mr-walk__title { font: 600 var(--mr-text-m) / 1.2 var(--mr-font-sans); color: var(--mr-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.mr-walk__lines {
+  position: absolute;
+  left: 50%;
+  top: 76px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mr-space-2);
+  width: min(560px, calc(100% - 32px));
+  pointer-events: none;
+}
+.mr-walk__note,
+.mr-walk__hint {
+  margin: 0;
+  padding: var(--mr-space-2) var(--mr-space-3);
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-bg);
+  color: var(--mr-ink-2);
+  font-size: var(--mr-text-s);
+  text-align: center;
+}
+.mr-walk__note { color: var(--mr-ink); animation: mr-rise var(--mr-dur) var(--mr-ease); }
+.mr-walk__hint[data-tone='danger'] { color: var(--mr-danger); }
+
+.mr-walk__bar {
+  position: absolute;
+  left: var(--mr-space-3);
+  right: var(--mr-space-3);
+  bottom: max(var(--mr-space-3), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--mr-space-2);
+  pointer-events: none;
+}
+.mr-walk__bar > * { pointer-events: auto; }
+.mr-walk__keys {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--mr-space-1) var(--mr-space-2);
+  border-radius: var(--mr-radius-s);
+  background: var(--mr-bg);
+  color: var(--mr-ink-2);
+  text-align: right;
+  pointer-events: none !important;
+}
+.mr-walk__buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--mr-space-2); }
+.mr-walk__buttons .mr-btn { background: var(--mr-bg); }
+.mr-walk__buttons .mr-btn--primary { background: var(--mr-ink); }
+.mr-walk__chat { display: flex; gap: var(--mr-space-2); width: min(520px, 100%); }
+.mr-walk__chat .mr-input { flex: 1; min-width: 0; font-size: 16px; }
+
+/* a phone: buttons on the right, under the right thumb; the left half stays the joystick */
+.mr-walk[data-touch] .mr-walk__buttons { max-width: 62%; }
+.mr-walk[data-touch] .mr-walk__buttons .mr-btn { min-height: 48px; }
+.mr-walk[data-touch] .mr-walk__keys { text-align: left; }
+@media (max-width: 480px) {
+  .mr-walk__lines { top: 68px; }
+  .mr-walk__keys { font-size: 10px; }
+}

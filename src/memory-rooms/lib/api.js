@@ -83,6 +83,10 @@ export const api = {
     if (height) headers['x-height'] = String(Math.round(height));
     return call(`/spots/${encodeURIComponent(id)}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: blob, headers, signal });
   },
+  /** Walk in together: a short-lived ticket for the room's WebSocket → { ticket, expiresAt, socket }. */
+  walkTicket: (id, who) => call(`/spots/${encodeURIComponent(id)}/walk`, { method: 'POST', body: { who } }),
+  /** Who's walking a spot's room right now → { people: [{ who, since }] }. */
+  walkPresence: (id, { signal } = {}) => call(`/spots/${encodeURIComponent(id)}/walk`, { signal }),
 };
 
 /** Media helpers over a Spot's `media` array. */
