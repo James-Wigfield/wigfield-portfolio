@@ -9,16 +9,17 @@
    Export PDF print path (print media + the module's @page) gives an A4 PDF
    with no portal chrome, v2 on at most 2 pages; no entry split across a page
    break; no em-dash in the module's source; zero console errors or warnings.
-   Screenshots + both PDFs land in outDir.
+   Screenshots + both PDFs land in outDir (default: <temp>/rsm-out).
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const BASE = process.env.SITE_URL || 'http://localhost:5191';
 const ROUTE = '/portal/resume';
-const OUT = path.resolve(process.argv[2] || 'tools/resume/out');
+const OUT = path.resolve(process.argv[2] || path.join(os.tmpdir(), 'rsm-out'));
 const THEMES = ['jade', 'coral', 'arcade'];
 fs.mkdirSync(OUT, { recursive: true });
 

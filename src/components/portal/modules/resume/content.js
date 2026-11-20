@@ -6,11 +6,12 @@
      updated, updatedText     ISO date + the printed "last updated" date
      pdfName                  document.title while printing = the PDF's file name
      about                    one line above the document (screen only)
-     person                   { name, headline?, contact: [..] }
-     summary?                 lede paragraph under the header
+     person                   { name, contact: [..] } (contact prints joined by ' | ')
+     summary?, summaryTitle?  a first section with one paragraph (title 'Summary')
      sections                 [{ title, lede?, keep?, entries?, facts?, list? }]
                               entry: { org, when?, role?, lines?, bullets? }
-                              facts: [{ k, v }]   list: [{ k?, v }]
+                              facts / list: [{ k?, v }], printed as bullets
+                              "**label**: text", like the doc's labelled lines
      notes?                   screen-only notes under the document
 
    "{{confirm: text}}" anywhere marks a fact still to be confirmed; it renders
@@ -46,16 +47,16 @@ const V1 = {
           role: 'B.S. Advanced Computer Science',
           lines: ['Major in Artificial Intelligence'],
           bullets: [
-            'GPA: 5.0/7.0',
-            'Relevant Coursework: Natural Language Processing, Computer Vision, Professional Computing',
+            '**GPA**: 5.0/7.0',
+            '**Relevant Coursework**: Natural Language Processing, Computer Vision, Professional Computing',
           ],
         },
         {
           org: 'Peter Carnley Anglican Community School',
           when: '2021 graduate',
           bullets: [
-            'ATAR: 93.2 (top of the class for Computer Science, Physics, Chemistry)',
-            'Awards/Roles: Academic Dux of the Year, Head Boy (year 12)',
+            '**ATAR**: 93.2 (top of the class for Computer Science, Physics, Chemistry)',
+            '**Awards/Roles**: Academic Dux of the Year, Head Boy (year 12)',
           ],
         },
       ],
@@ -132,8 +133,6 @@ const V2 = {
     "Current CV, written for the directors' CVs the insurers asked for in the Portara technology liability application. Every line is sourced and was checked by an independent reader; highlighted text still needs confirming before it is sent.",
   person: {
     name: 'James Wigfield',
-    headline:
-      'Co-founder and Director, Portara Pty Ltd. Hands-on software and IT work since 2024. Completing a Bachelor of Advanced Computer Science (Honours) in Artificial Intelligence at UWA.',
     contact: ['Perth, Western Australia', 'james@portara.com.au', '0455 887 910', 'linkedin.com/in/james-wigfield-66381737a'],
   },
   summary:

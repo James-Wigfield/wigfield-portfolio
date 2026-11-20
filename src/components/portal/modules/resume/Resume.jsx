@@ -21,39 +21,37 @@ import './resume.css';
    module adds on mount and removes on unmount: it sits after portal.css, so
    it beats the full-bleed @page that Wall Art installs portal-wide.
 
-   The look follows the Portara HQ print documents: white paper whatever the
-   portal theme, Jost name, Inter body, IBM Plex Mono labels, one accent rule
-   under the header and above the footer, structure from rules and space.
+   The paper copies the original Google Doc resume (Lexend Deca, light 10pt
+   body, 13pt section heads over a grey rule, 10mm margins), on white paper
+   whatever the portal theme. No footer and no page numbers, like the doc.
    No em-dashes anywhere in this module.
    ========================================================================== */
 
-const FONT_HREF =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600&display=swap';
+const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500&display=swap';
 
 const PAGE_CSS = `
 @media print {
-  @page {
-    size: A4 portrait; margin: 13mm 0 14mm;
-    @bottom-center { content: "Page " counter(page) " of " counter(pages);
-                     font-family: "IBM Plex Mono", ui-monospace, monospace;
-                     font-size: 7pt; letter-spacing: .08em; color: #9b9a97; }
-  }
+  @page { size: A4 portrait; margin: 28.3pt; }
 }`;
 
 // "{{confirm: what}}" inside any string marks a fact James still has to
 // confirm. It renders as a highlighted placeholder, on screen and in print,
 // so an unconfirmed line can never go out looking final.
+// "**label**" renders bold, like the labels in the Google Doc's bullets.
 function Text({ children }) {
   if (typeof children !== 'string') return children ?? null;
-  const parts = children.split(/(\{\{confirm:[^}]*\}\})/g);
+  const parts = children.split(/(\{\{confirm:[^}]*\}\}|\*\*[^*]+\*\*)/g);
   return parts.map((p, i) => {
     const m = p.match(/^\{\{confirm:\s*([^}]*)\}\}$/);
-    if (!m) return p;
-    return (
-      <mark key={i} className="rsm-tbc" title="To confirm before sending">
-        {m[1]}
-      </mark>
-    );
+    if (m) {
+      return (
+        <mark key={i} className="rsm-tbc" title="To confirm before sending">
+          {m[1]}
+        </mark>
+      );
+    }
+    const b = p.match(/^\*\*([^*]+)\*\*$/);
+    return b ? <b key={i}>{b[1]}</b> : p;
   });
 }
 
@@ -98,34 +96,24 @@ function Entry({ e }) {
 }
 
 function Section({ s }) {
+  const labelled = [...(s.facts || []), ...(s.list || [])];
   return (
     <section className={`rsm-sec${s.keep ? ' rsm-sec--keep' : ''}`}>
       <h2>{s.title}</h2>
       {s.lede ? (
-        <p className="rsm-sec__lede">
+        <p className="rsm-para">
           <Text>{s.lede}</Text>
         </p>
       ) : null}
       {(s.entries || []).map((e, i) => (
         <Entry e={e} key={i} />
       ))}
-      {s.facts ? (
-        <dl className="rsm-facts">
-          {s.facts.map((f) => (
-            <div key={f.k}>
-              <dt>{f.k}</dt>
-              <dd>
-                <Text>{f.v}</Text>
-              </dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-      {s.list ? (
+      {labelled.length ? (
         <ul className="rsm-list">
-          {s.list.map((l, i) => (
+          {labelled.map((l, i) => (
             <li key={i}>
-              {l.k ? <b>{l.k}: </b> : null}
+              {l.k ? <b>{l.k}</b> : null}
+              {l.k ? ': ' : null}
               <Text>{l.v}</Text>
             </li>
           ))}
@@ -138,46 +126,29 @@ function Section({ s }) {
 function Document({ v }) {
   return (
     <article className="rsm-doc" aria-label={`${v.person.name} resume, ${v.tab}`}>
-      <header className="rsm-band">
-        <div>
-          <h1>{v.person.name}</h1>
-          {v.person.headline ? (
-            <p className="rsm-headline">
-              <Text>{v.person.headline}</Text>
-            </p>
-          ) : null}
-        </div>
-        <div className="rsm-band__right">
-          <p className="rsm-eyebrow">Curriculum vitae</p>
-          <p className="rsm-contact">
-            {v.person.contact.map((c, i) => (
-              <span key={i}>
-                <Text>{c}</Text>
-              </span>
-            ))}
-          </p>
-        </div>
+      <header>
+        <h1 className="rsm-name">{v.person.name}</h1>
+        <p className="rsm-contact">
+          {v.person.contact.map((c, i) => (
+            <span key={i}>
+              {i ? ' | ' : null}
+              <Text>{c}</Text>
+            </span>
+          ))}
+        </p>
       </header>
 
-      <div className="rsm-sheet">
-        {v.summary ? (
-          <p className="rsm-lede">
+      {v.summary ? (
+        <section className="rsm-sec">
+          <h2>{v.summaryTitle || 'Summary'}</h2>
+          <p className="rsm-para">
             <Text>{v.summary}</Text>
           </p>
-        ) : null}
-        {v.sections.map((s) => (
-          <Section s={s} key={s.title} />
-        ))}
-      </div>
-
-      <footer className="rsm-foot">
-        <span>
-          {v.person.name} · curriculum vitae
-        </span>
-        <span>
-          {v.tab} · updated {v.updatedText}
-        </span>
-      </footer>
+        </section>
+      ) : null}
+      {v.sections.map((s) => (
+        <Section s={s} key={s.title} />
+      ))}
     </article>
   );
 }
@@ -189,7 +160,7 @@ export default function Resume() {
   const [busy, setBusy] = useState(false);
   const tbc = countConfirms(v);
 
-  // Fonts for the paper (Inter + Jost; IBM Plex Mono is already loaded site-wide)
+  // The paper's font (Lexend Deca, as in the Google Doc)
   // and the @page box, for as long as the resume is on screen.
   useEffect(() => {
     let link = document.getElementById('rsm-fonts');
