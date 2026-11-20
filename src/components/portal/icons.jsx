@@ -372,6 +372,15 @@ const PATHS = {
       <path d="M5 19.5h14" />
     </>
   ),
+  // Resume - an A4 sheet with a head-and-shoulders and three text lines (Resume)
+  resume: (
+    <>
+      <rect x="5" y="3" width="14" height="18" rx="1.6" />
+      <circle cx="9.6" cy="8" r="1.7" />
+      <path d="M7.3 12.2c.5-1.3 1.3-1.9 2.3-1.9s1.8.6 2.3 1.9" />
+      <path d="M13.6 7.4h2.9M13.6 10.2h2.9M8 15.2h8.5M8 18h6" />
+    </>
+  ),
   printer: (
     <>
       <path d="M7 8.5V4h10v4.5" />

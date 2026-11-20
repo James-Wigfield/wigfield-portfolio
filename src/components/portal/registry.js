@@ -82,6 +82,7 @@ import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BaristaGuide from './modules/barista/BaristaGuide';
 import MemoryRoomsPlan from './modules/memory-rooms-plan/MemoryRoomsPlan';
 import DevSetup from './modules/dev-setup/DevSetup';
+import Resume from './modules/resume/Resume';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -408,6 +409,14 @@ export const MODULES = [
     icon: 'monitors',
     group: 'Personal',
     component: DevSetup,
+  },
+  {
+    // CV as an A4 document with Export PDF; v2 (default) and v1. Deep-linked: /portal/resume/v1 (id must not change).
+    id: 'resume',
+    label: 'Resume',
+    icon: 'resume',
+    group: 'Personal',
+    component: Resume,
   },
   {
     id: 'artificial-life',

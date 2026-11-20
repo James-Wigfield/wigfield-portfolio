@@ -1,0 +1,188 @@
+/* ============================================================================
+   RESUME (Personal) - screen chrome in portal tokens, the paper in fixed
+   light colours (a picture of paper, whatever the portal theme says), and the
+   print rules that turn the page into a clean A4 PDF.
+   Follows the Portara HQ print documents: rules, type and space only; no
+   tinted callouts, no coloured side bars.
+   ========================================================================== */
+
+.rsm { max-width: 1000px; }
+
+/* ── screen chrome ────────────────────────────────────────────────────────── */
+.rsm-top { display: flex; flex-direction: column; gap: 0.9rem; }
+.rsm-micro {
+  font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.rsm-top__title {
+  margin: 0.25rem 0 0; font-family: var(--font-display); font-size: 2.1rem;
+  line-height: 1.05; color: var(--ink);
+}
+.rsm-top__lede { margin: 0.45rem 0 0; max-width: 62ch; color: var(--ink-2); line-height: 1.55; }
+
+.rsm-bar {
+  display: flex; align-items: center; gap: 0.75rem 1.25rem; flex-wrap: wrap;
+  padding: 0.7rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.rsm-switch { display: flex; gap: 1.1rem; }
+.rsm-switch__btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
+  padding: 0.2rem 0 0.35rem; background: none; border: 0;
+  border-bottom: 2px solid transparent; color: var(--ink-3); cursor: pointer; text-align: left;
+}
+.rsm-switch__btn b { font-size: 0.95rem; font-weight: 650; color: inherit; }
+.rsm-switch__btn span { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.rsm-switch__btn:hover { color: var(--ink); }
+.rsm-switch__btn.is-on { color: var(--ink); border-bottom-color: var(--accent); }
+.rsm-switch__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.rsm-bar__meta {
+  flex: 1 1 16rem; display: flex; flex-direction: column; gap: 0.2rem;
+  font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; color: var(--ink-3);
+}
+.rsm-bar__tbc { color: var(--ink-2); }
+
+.rsm-export {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.1rem; font-size: 0.85rem; font-weight: 650;
+  color: var(--ground, #fff); background: var(--ink); border: 1px solid var(--ink);
+  border-radius: 6px; cursor: pointer;
+}
+.rsm-export:hover { background: var(--accent); border-color: var(--accent); }
+.rsm-export:disabled { opacity: 0.6; cursor: progress; }
+.rsm-hint { margin: 0; font-size: 0.8rem; color: var(--ink-3); }
+
+.rsm-stage {
+  display: flex; justify-content: center; padding: 1.25rem;
+  background: #dfe4e8; border-radius: 4px; overflow-x: auto;
+}
+
+.rsm-notes { max-width: 210mm; }
+.rsm-notes__title {
+  margin: 0 0 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono); font-weight: 400; font-size: 0.72rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2);
+}
+.rsm-notes ul { margin: 0; padding-left: 1.1rem; color: var(--ink-2); font-size: 0.88rem; line-height: 1.55; }
+.rsm-notes li + li { margin-top: 0.3rem; }
+
+/* "to confirm" placeholder: a highlighter stroke, on screen and in print */
+.rsm-tbc {
+  background: #fff0a0; color: #5a4300; padding: 0 2px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+
+/* ── the paper ────────────────────────────────────────────────────────────── */
+.rsm-doc, .rsm-doc *, .rsm-doc *::before, .rsm-doc *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+.rsm-doc {
+  --ink: #1b1e21; --body: #3d4348; --muted: #6d7378; --faint: #9b9a97;
+  --rule: #c9c4be; --rule-soft: #e6e2dd;
+  --acc: #ff4e2b; --acc-deep: #c93a19;
+  --f-display: "Jost", ui-sans-serif, system-ui, sans-serif;
+  --f-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --ink-2: var(--body); /* the site sets .hp p { color: var(--ink-2) } */
+  color-scheme: light;
+  flex: 0 0 auto; width: 210mm; min-height: 297mm; background: #fff;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.25); padding: 0 0 12mm;
+  font-family: var(--f-body); color: var(--body); font-size: 10.2px; line-height: 1.5;
+  counter-reset: sec; text-align: left;
+}
+.rsm-doc :where(h1, h2, h3) { text-wrap: balance; }
+.rsm-doc :where(p, li, dd) { text-wrap: pretty; }
+
+.rsm-band {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+  padding: 22px 16mm 13px; border-bottom: 3px solid var(--acc);
+}
+.rsm-band h1 {
+  font-family: var(--f-display); font-weight: 500; font-size: 27px; line-height: 1.05;
+  letter-spacing: -0.015em; color: var(--ink);
+}
+.rsm-doc .rsm-headline { margin-top: 5px; font-size: 10.6px; color: var(--body); max-width: 92mm; }
+.rsm-band__right { text-align: right; }
+.rsm-doc .rsm-eyebrow {
+  font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--acc-deep);
+}
+.rsm-doc .rsm-contact { margin-top: 4px; display: flex; flex-direction: column; gap: 1px; font-size: 9.5px; color: var(--muted); }
+
+.rsm-sheet { padding: 0 16mm; }
+
+.rsm-doc .rsm-lede { margin-top: 13px; font-size: 10.9px; line-height: 1.55; color: var(--ink); }
+
+.rsm-doc h2 {
+  display: flex; align-items: baseline; gap: 10px; margin: 18px 0 2px;
+  font-family: var(--f-mono); font-weight: 400; font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink);
+  border-bottom: 1px solid var(--ink); padding-bottom: 5px; break-after: avoid;
+}
+.rsm-doc h2::before { counter-increment: sec; content: counter(sec, decimal-leading-zero); color: var(--acc-deep); }
+.rsm-doc .rsm-sec__lede { margin-top: 6px; }
+.rsm-sec--keep { break-inside: avoid; }
+
+.rsm-entry { padding-top: 8px; break-inside: avoid; }
+.rsm-entry + .rsm-entry { margin-top: 2px; border-top: 1px solid var(--rule-soft); }
+.rsm-entry__head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+.rsm-doc h3 { font-size: 11px; font-weight: 650; color: var(--ink); break-after: avoid; }
+.rsm-when {
+  flex: none; font-family: var(--f-mono); font-size: 8.2px; letter-spacing: 0.06em;
+  color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.rsm-doc .rsm-role { margin-top: 1px; font-weight: 500; color: var(--ink); }
+.rsm-doc .rsm-line { margin-top: 1px; color: var(--body); }
+
+.rsm-doc ul { margin-top: 4px; padding-left: 13px; list-style: disc; }
+.rsm-doc li { padding-left: 2px; }
+.rsm-doc li + li { margin-top: 2px; }
+.rsm-doc li::marker { color: var(--faint); }
+
+.rsm-facts { display: grid; grid-template-columns: 34mm minmax(0, 1fr); gap: 4px 12px; margin-top: 8px; }
+.rsm-facts > div { display: contents; }
+.rsm-facts dt {
+  padding-top: 1px; font-family: var(--f-mono); font-size: 7.8px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.rsm-facts dd { color: var(--body); }
+
+.rsm-list { margin-top: 7px; }
+.rsm-list b { font-weight: 650; color: var(--ink); }
+
+.rsm-foot {
+  display: flex; justify-content: space-between; gap: 20px;
+  margin: 20px 16mm 0; padding: 8px 0 0; border-top: 3px solid var(--acc);
+  font-family: var(--f-mono); font-size: 7.6px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--faint);
+}
+
+/* Screen only, phone width: a print page is narrower than 760 CSS px in
+   Chrome and would otherwise take this layout. */
+@media screen and (max-width: 760px) {
+  .rsm-stage { padding: 0.5rem; }
+  .rsm-doc { width: 100%; min-height: 0; }
+  .rsm-band { padding: 18px 16px 12px; flex-direction: column; align-items: flex-start; }
+  .rsm-band__right { text-align: left; }
+  .rsm-sheet { padding: 0 16px; }
+  .rsm-foot { margin: 20px 16px 0; flex-direction: column; gap: 4px; }
+  .rsm-entry__head { flex-direction: column; gap: 0; }
+  .rsm-facts { grid-template-columns: minmax(0, 1fr); }
+  .rsm-facts dd { margin-bottom: 4px; }
+}
+
+/* ── print: just the paper ────────────────────────────────────────────────── */
+@media print {
+  html:has(.rsm), body:has(.rsm), .hp.portal:has(.rsm) { background: #fff !important; }
+  .hp.portal:has(.rsm) :is(.portal__banner, .portal__sidebar, .portal__topbar) { display: none !important; }
+  .hp.portal:has(.rsm) :is(.portal__body, .portal__main, .portal__content) {
+    display: block !important; margin: 0 !important; padding: 0 !important;
+    max-width: none !important; background: #fff !important;
+    overflow: visible !important; animation: none !important; transform: none !important;
+  }
+  .rsm { display: block !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .rsm-top, .rsm-notes { display: none !important; }
+  .rsm-stage { display: block; padding: 0; background: none; border-radius: 0; overflow: visible; }
+  .rsm-doc { width: auto; min-height: 0; padding: 0; box-shadow: none; }
+  .rsm-band { padding-top: 0; }
+  .rsm-doc, .rsm-doc * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
