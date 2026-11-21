@@ -1,4 +1,4 @@
-"""Where a building's walls meet (pure Python, no bpy: build_building.py uses it, test_building_mesh.py checks it).
+"""Where a building's walls meet (pure Python, no bpy: build_building.py uses it; building-selftest.mjs checks the result).
 
 Every wall of a level's graph is a slab along its centreline, `thickness` wide. At each node the walls meeting
 there are sorted by angle; between two neighbours the faces that look at each other meet at one corner (the

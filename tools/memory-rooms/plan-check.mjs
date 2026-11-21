@@ -78,8 +78,9 @@ const ai = num1 / den;
 const T = ([x, z]) => [ar * (x - pc[0]) - ai * (z - pc[1]) + qc[0], ai * (x - pc[0]) + ar * (z - pc[1]) + qc[1]];
 const scale = Math.hypot(ar, ai);
 
-const img = sharp(opt('--photo'));
-const meta = await img.metadata();
+// the photo as it is SEEN (a phone photo carries its rotation as an EXIF tag): pixels are given in that frame
+const { data: upright, info: meta } = await sharp(opt('--photo')).rotate().toBuffer({ resolveWithObject: true });
+const img = sharp(upright);
 const W = meta.width;
 const H = meta.height;
 const lines = wallLines(b, levelId);

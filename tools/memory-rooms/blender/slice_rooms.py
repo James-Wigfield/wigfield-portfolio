@@ -56,20 +56,23 @@ def main():
     meta = json.loads(bpy.context.scene.get("mr_meta", "{}"))
     level_id = meta.get("level")
     level = B.level_by_id(b, level_id)
-    scenes = BB.room_scenes(b, args.scenes)
+    scenes = BB.room_scenes(b, args.scenes, every=True)
     rooms = [r for r in b.get("rooms", []) if r["level"] == level_id and r["id"] in scenes]
     report = []
-    for r in rooms:
+    jobs = [(r, sc_dir) for r in rooms for (_sc, sc_dir) in scenes[r["id"]]]
+    for r, spot_dir in jobs:
         bpy.ops.wm.open_mainfile(filepath=blend)
         rid = r["id"]
         edges = B.room_edges(b, r)
         outward = {e["wall"]: e["out"] for e in edges if e["wall"]}
         keep_roots = {f"floor__{rid}", f"ceiling__{rid}", *(f"wall__{w}" for w in outward)}
+        corners = set(r["outline"])  # the junction hubs at this room's corners (whoever owns them)
         prefix = f"room__{rid}__"
         kept = set()
         for o in bpy.data.objects:
             root = top_root(o)
-            if root.name in keep_roots or root.name.startswith(prefix):
+            hub = root.name.rsplit("__hub__", 1)[1] if "__hub__" in root.name else None
+            if root.name in keep_roots or root.name.startswith(prefix) or (hub and hub in corners):
                 kept.add(o.name)
         for o in list(bpy.data.objects):
             if o.name not in kept:
@@ -90,7 +93,6 @@ def main():
                 if n:
                     mw = {"id": wid, "normal": [round(n[0], 6), round(n[1], 6)]}
                 o["mrWall"] = mw
-        spot_dir = scenes[rid][1]
         out = Path(args.out) / f"{rid}.glb" if args.out else Path(spot_dir) / "room.glb"
         out.parent.mkdir(parents=True, exist_ok=True)
         bpy.ops.export_scene.gltf(

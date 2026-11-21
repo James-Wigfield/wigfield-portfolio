@@ -102,10 +102,15 @@ export class PlanCut {
     // keep y <= floor + CUT_Y (three.js discards the plane's negative side)
     const plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), opts.y ?? _p.y + CUT_Y);
     const saved = new Map();
+    const sides = new Map(); // every clipped material front-sided while cut: a cut piece stays hollow, never dark inside
     const clip = (mat) => {
       if (!mat || saved.has(mat)) return;
       saved.set(mat, mat.clippingPlanes);
       mat.clippingPlanes = [plane];
+      if (mat.side !== THREE.FrontSide && !/glass/i.test(mat.name || '')) {
+        sides.set(mat, mat.side);
+        mat.side = THREE.FrontSide;
+      }
       mat.needsUpdate = true;
     };
     room.root.traverse((o) => {
@@ -115,7 +120,6 @@ export class PlanCut {
 
     const poche = [];
     const inks = [];
-    const sides = new Map();
     const shell = room.shell;
     if (opts.cap || (shell?.outline?.length >= 3 && shell.walls?.length)) {
       // the section cap, a hair under the cut, in the room's own frame

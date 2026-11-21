@@ -1722,3 +1722,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
 @media (pointer: coarse) {
   .mr-building__bar .mr-seg button { min-height: 44px; }
 }
+/* the spot sheet's Show / View toggles: thumb-sized on touch */
+@media (pointer: coarse) {
+  .mr-spot__controls .mr-seg button { min-height: 44px; min-width: 44px; }
+}

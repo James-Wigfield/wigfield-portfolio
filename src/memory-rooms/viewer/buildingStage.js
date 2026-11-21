@@ -66,10 +66,12 @@ export class BuildingStage {
     this.b = building;
     this.stage = 'outside';
     this.level = building.levels[0]?.id || null;
-    this.levels = [...building.levels].sort((p, q) => p.elevation - q.elevation);
+    // only the levels that loaded (a level without its model has nothing to show)
+    this.levels = [...building.levels].sort((p, q) => p.elevation - q.elevation).filter((l) => viewer.rooms.some((r) => r.id === `level-${l.id}`));
+    if (!this.levels.some((l) => l.id === this.level)) this.level = this.levels[0]?.id || null;
     // the viewer hands taps to the page, and lets the stage re-frame itself on a resize
     viewer.buildingMode = true;
-    viewer.buildingRefit = () => this.frame(false);
+    viewer.buildingRefit = (animate = false) => this.frame(animate);
   }
 
   frame(animate) {
@@ -105,8 +107,9 @@ export class BuildingStage {
       const shown = stage === 'plan' ? lv.id === this.level : true;
       v.setRoomVisible(room.id, shown);
       v.setRoomOffset(room.id, stage === 'levels' ? i * LEVEL_GAP : 0);
-      // outside: everything up; inside: the top level opened (lower ones stay closed under it); levels: all opened
-      const cut = stage === 'outside' ? 'never' : stage === 'inside' ? (lv.id === top ? 'auto' : 'never') : 'auto';
+      // outside: everything up; inside: the top level opened (lower ones stay closed under it); levels: all
+      // opened; plan: every wall up (the cut opens it, as a spot's plan)
+      const cut = stage === 'outside' || stage === 'plan' ? 'never' : stage === 'inside' ? (lv.id === top ? 'auto' : 'never') : 'auto';
       v.setRoomCutaway(room.id, cut);
       if (stage === 'plan' && lv.id === this.level) {
         const y = lv.elevation + CUT_Y;

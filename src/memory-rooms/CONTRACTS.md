@@ -344,12 +344,15 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   GLB already sits at its elevation): per level `level-<levelId>.glb` (its walls once, floors,
   ceilings, stairs, every room's furnishing; one light solve per level with the sky and sun, so
   the exterior walls' outer faces are lit too), `exterior.glb` (roof + site), `renders/hero.png` + `marker.png`,
-  `model/map` (the small copy), and for every spot in `rooms[].spotIds` its own `room.glb` (its slice of the level
+  and for every spot in `rooms[].spotIds` its own `room.glb` (its slice of the level
   bake, moved into its room frame, so the spot page, walk and AR work as for any spot). Node names in a level GLB:
   `floor__<roomId>`, `ceiling__<roomId>`, `floor__band` (the section under the walls), `floor__slab`,
-  `wall__<wallId>` (+ `__window0`, `__door0_leaf`, `__hub<n>` at a T or a cross…; its extras `mrWall = {id, normal:
-  its left normal, exterior, rooms: {left, right}}`), `stair__<id>`, and each furnishing piece as its own top-level
+  `wall__<wallId>` (+ `__window0`, `__door0_leaf`…, joined into the wall by the bake; its extras `mrWall = {id,
+  normal: its left normal, exterior, rooms: {left, right}}`), `wall__<ownerWallId>__hub__<nodeId>` (the junction
+  piece at a T or a cross, its own node so a room's slice keeps the corners it touches; it hides with its owner),
+  `stair__<id>`, and each furnishing piece as its own top-level
   node `room__<roomId>__obj__<id>` (Blender names are global, and two rooms may both have a `bed`; no shared parent:
   the bake joins meshes per top-level node). A room's `room.glb` slice renames them back to `obj__<id>`, moves
-  everything into the room frame, and gives each of its walls `mrWall.normal` = the outward normal from that room. Floors are built facing up (a fan over a positive outline faces down: reverse it). `exterior.glb`: `roof` (+ `roof__<n>` parts), `ground`,
-  `site__<areaId>`, `fence__<id>`, `tree__<id>`.
+  everything into the room frame, and gives each of its walls `mrWall.normal` = the outward normal from that room. Floors are built facing up (a fan over a positive outline faces down: reverse it). `exterior.glb`: `roof` (one mesh, every part), `ground`,
+  `site__<areaId>` (fences and trees: not built yet). No `model/map` for a building yet (the map shows its marker).
+  Several spots in one room's `spotIds` each get the same slice (the first room scene found furnishes it).

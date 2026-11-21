@@ -3,14 +3,16 @@
 
      node tools/memory-rooms/push-building.mjs <buildingId | work dir> [--dry-run] [--keep-status] [--rooms]
 
-   From memory-rooms-work/b-<id>/ (after build-building.mjs): uploads level-<levelId>.glb (model/level-<id>),
-   exterior.glb (model/exterior), the map's small copy (model/map, made from the exterior + levels if missing),
-   renders (hero / marker / per-level three-quarter + top), PATCHes `plan` (building.json, validated by the
-   Worker; planVersion +1) and the status to "rendered". With --rooms it also runs push.mjs for every spot whose
+   From memory-rooms-work/b-<id>/ (after build-building.mjs): PATCHes `plan` (building.json, validated by the
+   Worker; planVersion +1; with the row's updatedAt, so a change made meanwhile stops it BEFORE any upload), then
+   uploads level-<levelId>.glb (model/level-<id>), exterior.glb (model/exterior) and the renders (hero / marker /
+   per-level three-quarter + top), then sets the status to "rendered". (No `model/map` yet: the map shows the
+   place's marker; a building model on the map is future work.) With --rooms it also runs push.mjs for every spot whose
    room.glb slice was written (rooms[].spotIds that have a work folder with room.glb).
 
    Talks to MEMORIES_API (default the LOCAL Worker, http://127.0.0.1:8788) with MEMORIES_PASSWORD, like push.mjs.
-   Refuses a Worker without the building routes (ping features), and GLBs over 15 MB. */
+   Prints where it is about to write; anything but a local Worker needs --live. Refuses a Worker without the
+   building routes (ping features), and GLBs over 15 MB. */
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -69,6 +71,12 @@ if (dry) {
 
 const cfg = config();
 const api = client(cfg);
+const local = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(cfg.base);
+console.log(`push-building → ${cfg.base}${local ? ' (local)' : ''}`);
+if (!local && !args.includes('--live')) {
+  console.error(`${cfg.base} is not a local Worker: pass --live to publish there.`);
+  process.exit(1);
+}
 if (!(await supportsBuildings(api))) {
   console.error(`${cfg.base} has no building routes (or its database has no building tables yet): deploy the Worker and run supabase/memory_buildings.sql first.`);
   process.exit(1);
@@ -78,20 +86,23 @@ if (!row) {
   console.error(`no building ${id} at ${cfg.base} (a place is created by the phone; this pushes its render)`);
   process.exit(1);
 }
+// the plan first: a change made on the row meanwhile (409) stops here, before any file goes up
+const saved = await api.patchBuilding(id, { plan, ifUpdatedAt: row.updatedAt });
+console.log(`✓ plan v${saved.planVersion}`);
 for (const u of uploads) {
   await api.putBuildingMedia(id, u.type, u.name, fs.readFileSync(u.file), { contentType: u.contentType });
   console.log(`  ✓ ${u.type}/${u.name}`);
 }
-const patch = { plan, ifUpdatedAt: row.updatedAt };
-if (!args.includes('--keep-status')) patch.status = 'rendered';
-const saved = await api.patchBuilding(id, patch);
-console.log(`✓ building ${id}: plan v${saved.planVersion}, status ${saved.status}`);
+if (!args.includes('--keep-status')) {
+  const done = await api.patchBuilding(id, { status: 'rendered' });
+  console.log(`✓ building ${id}: status ${done.status}`);
+}
 
 if (args.includes('--rooms')) {
   for (const r of plan.rooms) {
     for (const sid of r.spotIds || []) {
       if (!fs.existsSync(path.join(WORK, sid, 'room.glb'))) continue;
-      const res = spawnSync(process.execPath, [path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), 'push.mjs'), sid], { stdio: 'inherit' });
+      const res = spawnSync(process.execPath, [path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), 'push.mjs'), sid], { stdio: 'inherit', env: { ...process.env, MEMORIES_API: cfg.base } });
       if (res.status !== 0) process.exitCode = 1;
     }
   }

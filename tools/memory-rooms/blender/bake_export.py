@@ -337,7 +337,8 @@ def split_wall_backed(objs, info, log_fn):
         ]
     made = []
     for ob in list(objs):
-        if not top_root(ob).name.startswith("obj__"):
+        root_name = top_root(ob).name
+        if not (root_name.startswith("obj__") or "__obj__" in root_name):  # a building's pieces: room__<r>__obj__<id>
             continue
         mw = ob.matrix_world
         m3 = mw.to_3x3()
@@ -626,7 +627,7 @@ def main():
         inf = meta.get("info") or {}
         if kind == "interior" and inf.get("W"):
             roots_now = [o for o in bpy.data.collections["room"].objects
-                         if o.parent is None and o.name.startswith("obj__")]
+                         if o.parent is None and (o.name.startswith("obj__") or "__obj__" in o.name)]
             v2walls = {wp["node"]: wp for wp in inf.get("wall_planes", []) if wp.get("node")} or None
             cleanup = lighting.dollhouse_fill(hide, inf["W"], inf["D"], inf["H"], inf.get("t", 0.12), roots_now,
                                               float((meta.get("exposure") or {}).get("measured", 0.2)),

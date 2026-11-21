@@ -831,11 +831,12 @@ export class RoomViewer {
         this.camera.lookAt(t3);
       },
       done,
+      goal: { pos: to.pos.clone(), target: to.target.clone() },
     });
   }
 
-  tween({ kind, ms, easing, step, done }) {
-    const tw = { kind, start: performance.now(), ms: this.reducedMotion ? 0 : ms, easing, step, done };
+  tween({ kind, ms, easing, step, done, goal = null }) {
+    const tw = { kind, start: performance.now(), ms: this.reducedMotion ? 0 : ms, easing, step, done, goal };
     this.tweens.add(tw);
     this.requestRender();
     return tw;
@@ -989,7 +990,11 @@ export class RoomViewer {
       return;
     }
     if (this.flying) return; // already on the way back
-    const pose = this.mode === 'scan' ? this.scanHome?.pose : this.homePose;
+    if (this.buildingRefit) {
+      this.buildingRefit(true);
+      return;
+    }
+    const pose = this.mode === 'scan' ? this.scanHome?.pose : this.plan && this.poses.planHome ? this.poses.planHome : this.homePose;
     this.focused = null;
     if (pose) this.tweenOrbit(pose, FOCUS_MS);
     this.emit('room', { id: null });
@@ -1065,16 +1070,20 @@ export class RoomViewer {
     const want = Boolean(on) && this.mode !== 'scan' && this.rooms.some((r) => r.interior);
     if (want === this.plan) return;
     if (this.view !== 'orbit' || this.flying) this.exitViewpointNow();
-    for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
     this.closePin();
+    const goingTo = [...this.tweens].find((tw) => tw.kind === 'orbit' && tw.goal)?.goal;
     this.plan = want;
     if (want) {
-      this.poses.beforePlan = this.captureOrbit();
+      // "where you were": a swing still under way counts as arrived (fast Room / Plan toggles)
+      this.poses.beforePlan = goingTo ? { pos: goingTo.pos.clone(), target: goingTo.target.clone() } : this.captureOrbit();
       for (const room of this.rooms) if (room.interior) this.planCut.apply(room, this.theme?.ink);
       const box = this.bounds.clone();
       box.max.y = Math.min(box.max.y, box.min.y + CUT_Y);
       const plan = this.computeHome(box, true, { azimuth: 0, elevation: 82 });
-      this.applyLimits({ ...plan.limits, maxPolarAngle: 50 * RAD });
+      // a plan only tilts a little (further, the walls' outsides show)
+      this.applyLimits({ ...plan.limits, maxPolarAngle: 28 * RAD });
+      this.poses.planHome = plan.pose;
+      for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
       if (animate) this.tweenOrbit(plan.pose, 700);
       else this.setOrbitPose(plan.pose);
     } else {
@@ -1082,6 +1091,8 @@ export class RoomViewer {
       this.applyLimits(this.limits.main);
       const back = this.poses.beforePlan || this.homePose;
       this.poses.beforePlan = null;
+      this.poses.planHome = null;
+      for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
       if (animate) this.tweenOrbit(back, 600);
       else this.setOrbitPose(back);
     }
@@ -1296,7 +1307,7 @@ export class RoomViewer {
   }
 
   pick(e) {
-    if (this.view !== 'orbit' || this.flying) return;
+    if (this.view !== 'orbit' || this.flying || this.diving) return;
     const photo = this.pickGlyph(e);
     if (photo != null) {
       this.flyToPhoto(photo);
@@ -1313,7 +1324,7 @@ export class RoomViewer {
       while (o && o.userData.roomId == null) o = o.parent;
       // a building page picks rooms itself (its "rooms" here are whole levels): it gets the point
       if (this.buildingMode) {
-        if (hit && o) this.emit('tap', { point: hit.point.clone().sub(o.position), roomId: o.userData.roomId });
+        if (hit && o) this.emit('tap', { point: hit.point.clone().sub(o.position), world: hit.point.clone(), roomId: o.userData.roomId });
         return;
       }
       if (o) this.focusRoom(o.userData.roomId);
@@ -1390,13 +1401,20 @@ export class RoomViewer {
       o.visible = opacity > 0.01;
       o.traverse((c) => {
         if (!c.isMesh) return;
-        for (const m of Array.isArray(c.material) ? c.material : [c.material]) {
-          if (m.userData.baseOpacity == null) {
+        if (!c.userData.liftOwn) {
+          // its own copy: fading the roof must not fade (or reorder) the ground and trees sharing its atlas
+          c.material = Array.isArray(c.material) ? c.material.map((m) => m.clone()) : c.material.clone();
+          for (const m of Array.isArray(c.material) ? c.material : [c.material]) {
             m.userData.baseOpacity = m.opacity;
             m.userData.baseTransparent = m.transparent;
           }
+          c.userData.liftOwn = true;
+        }
+        for (const m of Array.isArray(c.material) ? c.material : [c.material]) {
+          const transparent = m.userData.baseTransparent || opacity < 1;
+          if (m.transparent !== transparent) m.needsUpdate = true; // the shader is built opaque or not
           m.opacity = m.userData.baseOpacity * opacity;
-          m.transparent = m.userData.baseTransparent || opacity < 1;
+          m.transparent = transparent;
           m.depthWrite = opacity >= 1;
         }
       });
@@ -1411,7 +1429,7 @@ export class RoomViewer {
     for (const r of this.rooms) if (r.holder.visible) box.expandByObject(r.holder);
     if (box.isEmpty()) return;
     const home = this.computeHome(box, stage !== 'outside', { azimuth: stage === 'plan' ? 0 : 38, elevation });
-    this.applyLimits(stage === 'plan' ? { ...home.limits, maxPolarAngle: 50 * RAD } : home.limits);
+    this.applyLimits(stage === 'plan' ? { ...home.limits, maxPolarAngle: 28 * RAD } : home.limits);
     this.homePose = home.pose;
     this.limits.main = home.limits;
     for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);

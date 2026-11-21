@@ -72,8 +72,9 @@ def bl(p, z=0.0):
     return Vector((float(p[0]), -float(p[1]), float(z)))
 
 
-def room_scenes(b, scenes_dir):
-    """{roomId: (scene, work dir)} for every scene.json under scenes_dir whose shell is a room of this building."""
+def room_scenes(b, scenes_dir, every=False):
+    """{roomId: (scene, work dir)} for every scene.json under scenes_dir whose shell is a room of this building (the
+    first per room furnishes it); every=True: {roomId: [(scene, work dir), ...]} (each gets the room's slice)."""
     out = {}
     root = Path(scenes_dir)
     if not root.exists():
@@ -85,7 +86,10 @@ def room_scenes(b, scenes_dir):
             continue
         sh = sc.get("shell") or {}
         if sh.get("building") == b.get("id") and sh.get("room"):
-            out.setdefault(sh["room"], (sc, f.parent))
+            if every:
+                out.setdefault(sh["room"], []).append((sc, f.parent))
+            else:
+                out.setdefault(sh["room"], (sc, f.parent))
     return out
 
 
@@ -139,16 +143,28 @@ def build_level(b, level, coll, scenes, report):
         return ob
 
     walls_by_id = {}
-    for wid, line in J["lines"].items():
-        fr = BM.wall_frame(line, J["walls"][wid])
+    for wid, line0 in J["lines"].items():
+        rooms = sides[wid]
+        ends0 = J["walls"][wid]
+        flip = bool(rooms["left"]) and not rooms["right"]
+        if flip:
+            line = {**line0, "pa": line0["pb"], "pb": line0["pa"], "a": line0["b"], "b": line0["a"],
+                    "dir": [-line0["dir"][0], -line0["dir"][1]], "left": [-line0["left"][0], -line0["left"][1]]}
+            ends = {"a": {"left": ends0["b"]["right"], "right": ends0["b"]["left"]},
+                    "b": {"left": ends0["a"]["right"], "right": ends0["a"]["left"]}}
+            rooms = {"left": rooms["right"], "right": rooms["left"]}
+        else:
+            line, ends = line0, ends0
+        fr = BM.wall_frame(line, ends)
         t = fr["thickness"]
         F = S2.PolyWallFrame({"id": wid, "length": fr["length"], "a": fr["a"], "b": fr["b"], "out": fr["out"]}, t, fr["ea"], fr["eb"])
         L = fr["length"]
         H = float(line["height"])
         holes = []
         for k, o in enumerate(B.wall_openings(b, wid)):
-            a = max(0.0, min(L - 0.05, o["u0"] - fr["shift"]))
-            bb = max(a + 0.05, min(L, o["u1"] - fr["shift"]))
+            u0, u1 = (line0["length"] - o["u1"], line0["length"] - o["u0"]) if flip else (o["u0"], o["u1"])
+            a = max(0.0, min(L - 0.05, u0 - fr["shift"]))
+            bb = max(a + 0.05, min(L, u1 - fr["shift"]))
             s = max(0.0, min(H - 0.05, o["sill"]))
             h = max(s + 0.05, min(H, o["head"]))
             holes.append({"index": k, "type": o["type"], "a": a, "b": bb, "s": s, "h": h, "spec": o["spec"]})
@@ -157,9 +173,9 @@ def build_level(b, level, coll, scenes, report):
         if wall is None:
             continue
         wall.location.z = elev
-        rooms = sides[wid]
-        wall["mrWall"] = {"id": wid, "normal": [round(line["left"][0], 6), round(line["left"][1], 6)],
-                          "exterior": bool(line["exterior"]), "rooms": {"left": rooms["left"], "right": rooms["right"]}}
+        # the extras always describe the wall as building.json has it (a to b), whichever way it was built
+        wall["mrWall"] = {"id": wid, "normal": [round(line0["left"][0], 6), round(line0["left"][1], 6)],
+                          "exterior": bool(line0["exterior"]), "rooms": {"left": sides[wid]["left"], "right": sides[wid]["right"]}}
         walls_by_id[wid] = wall
         made["walls"].append(wid)
         # skirting on each face with a room (w = 0 is the right face, w = t the left)
@@ -179,7 +195,7 @@ def build_level(b, level, coll, scenes, report):
             if rooms["right"]:
                 F.wbox(sk, max(0.0, u0), min(L, u1), 0.0, 0.09, -0.014, 0.0, skm)
             if rooms["left"]:
-                F.wbox(sk, max(0.0, u0), min(L, u1), 0.0, 0.09, t, t + 0.014, skm)
+                F.wbox(sk, F.uo(max(0.0, u0)), F.uo(min(L, u1)), 0.0, 0.09, t, t + 0.014, skm)
         link(sk, f"{name}__skirting", wall, bevel_w=0.004)
         th = MB()
         fmat_th = SH.floor_mat("timber", None)
@@ -197,7 +213,11 @@ def build_level(b, level, coll, scenes, report):
                 if gob is not None:
                     gob.visible_shadow = False
             else:
-                hinge_low = o["a"] <= L - o["b"]
+                hinge = o["spec"].get("hinge")
+                if hinge in ("a", "b"):
+                    hinge_low = (hinge == "a") != flip
+                else:
+                    hinge_low = o["a"] <= L - o["b"]
                 leaf_mat = materials.get("plaster", col)
                 fr_mb, leaf, hw = SH._door(F, o, tm, leaf_mat, metal, hinge_low)
                 link(fr_mb, f"{name}__door{k}_frame", wall, bevel_w=0.004)
@@ -207,7 +227,7 @@ def build_level(b, level, coll, scenes, report):
                             part.visible_shadow = False
         # the faces a room looks at, for the bake's wall-backed split
         right = [-line["left"][0], -line["left"][1]]
-        if rooms["right"]:
+        if rooms["right"]:  # (the frame's w = 0 face)
             planes.append({"node": name, "point": fr["a"], "end": fr["b"], "out": list(line["left"])})
         if rooms["left"]:
             pa = [fr["a"][0] + line["left"][0] * t, fr["a"][1] + line["left"][1] * t]
@@ -231,7 +251,11 @@ def build_level(b, level, coll, scenes, report):
             j = (i + 1) % n
             a, c = pts[i], pts[j]
             mb.poly([bot[i], bot[j], top[j], top[i]], wmat, (c[1] - a[1], c[0] - a[0], 0))
-        link(mb, f"wall__{hub['owner']}__hub{k}", owner)
+        hub_ob = link(mb, f"wall__{hub['owner']}__hub__{hub['node']}")
+        if hub_ob is not None:
+            hub_ob.location.z = elev
+            mw = owner["mrWall"]
+            hub_ob["mrWall"] = mw.to_dict() if hasattr(mw, "to_dict") else dict(mw)
         made["hubs"] += 1
 
     # floors, the section band under the walls, the slab
@@ -280,6 +304,13 @@ def build_level(b, level, coll, scenes, report):
     if ob is not None:
         ob.location.z = elev
     pm = SH.plinth_mat()
+    below = [lv for lv in b.get("levels", []) if float(lv.get("elevation", 0.0)) < elev - 1e-6]
+    if below:
+        lb = max(below, key=lambda lv: float(lv.get("elevation", 0.0)))
+        gap = elev - (float(lb.get("elevation", 0.0)) + float(lb.get("height", 2.6)))
+        slab_t = float(level.get("slab", max(SH.FLOOR_T, gap)))
+    else:
+        slab_t = float(level.get("slab", SH.FLOOR_T))
     slab = MB()
     for loop in B.exterior_loops(b, lid):
         ext_t = max((J["lines"][w]["thickness"] for w in J["lines"] if J["lines"][w]["exterior"]), default=0.2)
@@ -289,9 +320,9 @@ def build_level(b, level, coll, scenes, report):
             a, c = ring[i], ring[(i + 1) % n]
             A, C = bl(a), bl(c)
             nrm = (c[1] - a[1], c[0] - a[0], 0)
-            slab.poly([A + Vector((0, 0, -SH.FLOOR_T)), C + Vector((0, 0, -SH.FLOOR_T)), C, A], pm, nrm)
+            slab.poly([A + Vector((0, 0, -slab_t)), C + Vector((0, 0, -slab_t)), C, A], pm, nrm)
         for tri in S2.triangulate(ring):
-            slab.poly([bl(ring[i], -SH.FLOOR_T) for i in reversed(tri)], pm, (0, 0, -1))
+            slab.poly([bl(ring[i], -slab_t) for i in reversed(tri)], pm, (0, 0, -1))
     ob = link(slab, "floor__slab")
     if ob is not None:
         ob.location.z = elev
@@ -331,11 +362,18 @@ def build_level(b, level, coll, scenes, report):
         ctx = kitmod.KitContext(scene=sc, work=Path(work), collection=coll)
         before = set(bpy.data.objects)
         for spec in sc.get("objects", []):
+            mark = set(bpy.data.objects)
             try:
                 root = kitmod.build_object(ctx, spec)
             except Exception as e:  # never abort a level for one piece
                 report["warnings"].append(f"{r['id']}/{spec['id']}: {type(e).__name__}: {e}")
-                root = kitmod.build_object(ctx, {**spec, "kit": "box"})
+                for ob in set(bpy.data.objects) - mark:
+                    bpy.data.objects.remove(ob, do_unlink=True)
+                try:
+                    root = kitmod.build_object(ctx, {**spec, "kit": "box"})
+                except Exception as e2:
+                    report["warnings"].append(f"{r['id']}/{spec['id']}: box fallback failed too: {e2}")
+                    root = None
             if root is not None:
                 # each piece stays its own top-level node (the bake joins per top-level node), moved from the
                 # room frame into the plan frame

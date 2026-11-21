@@ -131,6 +131,15 @@ for (const lv of building.levels) {
   const floorTop = Math.max(...nodes.filter((n) => /^floor__/.test(n.name || '') && n.name !== 'floor__slab').map((n) => n.translation?.[1] ?? 0));
   ok(Math.abs(floorTop - lv.elevation) < 0.01, `level ${lv.id}: sits at its elevation ${lv.elevation} m`, `floors at ${floorTop}`);
   ok(bounds.min[1] > lv.elevation - 0.5 && bounds.max[1] < lv.elevation + lv.height + 0.5, `level ${lv.id}: nothing above or below the level`, `${bounds.min[1].toFixed(2)}..${bounds.max[1].toFixed(2)}`);
+  const hubs = names.filter((n) => /^wall__[a-z0-9-]+__hub__[a-z0-9-]+$/.test(n));
+  ok(hubs.length > 0, `level ${lv.id}: junction hubs are their own nodes (wall__<owner>__hub__<node>)`, `${hubs.length}`);
+  // no see-through band between storeys: this level's slab reaches down to the walls of the level below
+  const under = building.levels.filter((x) => x.elevation < lv.elevation).sort((a, c) => c.elevation - a.elevation)[0];
+  if (under) {
+    const slabNode = nodes.find((n) => n.name === 'floor__slab');
+    const meshMin = slabNode ? readGlb(file).g.accessors[readGlb(file).g.meshes[slabNode.mesh].primitives[0].attributes.POSITION].min[1] + (slabNode.translation?.[1] || 0) : Infinity;
+    ok(meshMin <= under.elevation + under.height + 0.01, `level ${lv.id}: its slab closes the gap down to the walls below (${under.elevation + under.height} m)`, `slab bottom ${meshMin.toFixed(2)}`);
+  }
 }
 
 {
@@ -164,6 +173,9 @@ for (const lv of building.levels) {
     const pieces = living.objects.filter((o) => !sl.names.includes(`obj__${o.id}`)).map((o) => o.id);
     ok(pieces.length === 0, 'slice: pieces renamed obj__<id>', pieces.join(', '));
     ok(sl.names.includes('floor__living') && sl.names.includes('ceiling__living'), 'slice: its floor and ceiling');
+    const room = building.rooms.find((r) => r.id === 'living');
+    const hubNodes = sl.names.filter((n) => /__hub__/.test(n)).map((n) => n.split('__hub__')[1]);
+    ok(hubNodes.length > 0 && hubNodes.every((n) => room.outline.includes(n)), "slice: the junction hubs at its corners, and only those", hubNodes.join(','));
     const others = sl.names.filter((n) => /^(floor|ceiling)__/.test(n) && !/living/.test(n));
     ok(others.length === 0, "slice: no other room's floor or ceiling", others.join(', '));
     // the room frame: x, z start near 0 (the walls' half thickness out), y at the floor
