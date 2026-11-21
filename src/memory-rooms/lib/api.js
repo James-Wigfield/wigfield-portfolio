@@ -6,10 +6,11 @@ export const API_BASE = '/api/memories';
 const TOKEN_KEY = 'mr:token';
 
 export class ApiError extends Error {
-  constructor(message, status, details) {
+  constructor(message, status, details, code = null) {
     super(message);
     this.status = status;
     this.details = details;
+    this.code = code; // e.g. 'needs-sql': the database isn't set up for whole places yet
   }
 }
 
@@ -62,7 +63,7 @@ async function call(path, { method = 'GET', body, headers = {}, token = getToken
   } catch {
     payload = null;
   }
-  if (!res.ok) throw new ApiError(payload?.error || `HTTP ${res.status}`, res.status, payload?.details);
+  if (!res.ok) throw new ApiError(payload?.error || `HTTP ${res.status}`, res.status, payload?.details, payload?.code || null);
   return payload?.data;
 }
 
@@ -87,6 +88,21 @@ export const api = {
   walkTicket: (id, who) => call(`/spots/${encodeURIComponent(id)}/walk`, { method: 'POST', body: { who } }),
   /** Who's walking a spot's room right now → { people: [{ who, since }] }. */
   walkPresence: (id, { signal } = {}) => call(`/spots/${encodeURIComponent(id)}/walk`, { signal }),
+
+  // ── whole places (CONTRACTS.md 6.4) ──
+  listBuildings: ({ deleted = false } = {}) => call(`/buildings${deleted ? '?deleted=1' : ''}`),
+  getBuilding: (id) => call(`/buildings/${encodeURIComponent(id)}`),
+  /** Create once by client uuid: safe to retry. */
+  saveBuilding: (b) => call('/buildings', { method: 'POST', body: b }),
+  patchBuilding: (id, patch) => call(`/buildings/${encodeURIComponent(id)}`, { method: 'PATCH', body: patch }),
+  deleteBuilding: (id) => call(`/buildings/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  /** type: plan (1…4) | photo | thumb (1…12) | model (exterior | map | level-<id>) | render | compare. */
+  putBuildingMedia: (id, type, n, blob, { width, height, contentType, signal } = {}) => {
+    const headers = { 'content-type': contentType || blob.type || 'application/octet-stream' };
+    if (width) headers['x-width'] = String(Math.round(width));
+    if (height) headers['x-height'] = String(Math.round(height));
+    return call(`/buildings/${encodeURIComponent(id)}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: blob, headers, signal });
+  },
 };
 
 /** Media helpers over a Spot's `media` array. */

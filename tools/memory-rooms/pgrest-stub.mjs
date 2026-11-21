@@ -13,17 +13,25 @@
    Prefer: resolution=merge-duplicates → only the sent columns change). Enforces the
    schema rules from supabase/memory_rooms.sql that matter: check constraints, the
    media → spot foreign key, unique (spot_id, type, name), unique r2_key, defaults and
-   the updated_at trigger. GET /__state dumps the tables. */
+   the updated_at trigger. GET /__state dumps the tables.
+
+   Buildings (supabase/memory_buildings.sql) are in by default. PGREST_NO_BUILDINGS=1 plays a
+   project where that SQL hasn't run yet: no building tables, and memory_spots has no
+   building_id / room_id (sending either is PostgREST error PGRST204), so api-check can prove spots
+   still save on it. */
 
 import http from 'node:http';
 
 const PORT = Number(process.env.PGREST_PORT || 8797);
-const tables = { memory_spots: [], memory_media: [] };
+const NO_BUILDINGS = process.env.PGREST_NO_BUILDINGS === '1';
+const tables = NO_BUILDINGS ? { memory_spots: [], memory_media: [] } : { memory_spots: [], memory_media: [], memory_buildings: [], memory_building_media: [] };
 const now = () => new Date().toISOString();
 
 const DEFAULTS = {
   memory_spots: () => ({ created_at: now(), updated_at: now(), status: 'captured', scene_version: 0, captured_at: now(), lat: null, lng: null, loc_accuracy_m: null, loc_source: null, place_label: null, scale_hint: null, frame_group: null, scene: null, trip_stop_id: null, deleted_at: null }),
   memory_media: () => ({ created_at: now(), sort: 0, width: null, height: null, bytes: null, content_type: null }),
+  memory_buildings: () => ({ created_at: now(), updated_at: now(), status: 'captured', plan_version: 0, captured_at: now(), note: null, lat: null, lng: null, loc_accuracy_m: null, loc_source: null, place_label: null, sketch: null, plan: null, trip_stop_id: null, deleted_at: null }),
+  memory_building_media: () => ({ created_at: now(), sort: 0, width: null, height: null, bytes: null, content_type: null }),
 };
 const CHECKS = {
   memory_spots: (r) =>
@@ -35,6 +43,13 @@ const CHECKS = {
     (!r.note && 'note not null') ||
     null,
   memory_media: (r) => (!['photo', 'thumb', 'scan', 'model', 'render', 'compare'].includes(r.type) && 'memory_media_type_check') || null,
+  memory_buildings: (r) =>
+    (!['james', 'justin'].includes(r.created_by) && 'memory_buildings_created_by_check') ||
+    (!['captured', 'modelling', 'rendered'].includes(r.status) && 'memory_buildings_status_check') ||
+    ((r.lat == null) !== (r.lng == null) && 'memory_buildings_check') ||
+    (!r.title && 'title not null') ||
+    null,
+  memory_building_media: (r) => (!['plan', 'photo', 'thumb', 'model', 'render', 'compare'].includes(r.type) && 'memory_building_media_type_check') || null,
 };
 
 function pgError(res, status, code, message) {
@@ -83,14 +98,25 @@ http
       const conflict = url.searchParams.get('on_conflict');
       const merge = /resolution=merge-duplicates/.test(String(req.headers.prefer || ''));
       for (const input of Array.isArray(body) ? body : [body]) {
+        if (NO_BUILDINGS && table === 'memory_spots' && ('building_id' in input || 'room_id' in input)) {
+          return pgError(res, 400, 'PGRST204', `Could not find the '${'building_id' in input ? 'building_id' : 'room_id'}' column of 'memory_spots' in the schema cache`);
+        }
+        if (table === 'memory_spots' && input.room_id != null && input.building_id == null) {
+          return pgError(res, 400, '23514', 'new row violates check constraint "memory_spots_room_needs_building"');
+        }
         const existing = conflict && merge ? rows.find((r) => String(r[conflict]) === String(input[conflict])) : null;
         const next = existing ? { ...existing, ...input } : { ...DEFAULTS[table](), ...input };
-        if (existing && table === 'memory_spots') next.updated_at = now(); // trigger
+        if (existing && (table === 'memory_spots' || table === 'memory_buildings')) next.updated_at = now(); // trigger
         const bad = CHECKS[table](next);
         if (bad) return pgError(res, 400, '23514', `new row violates check constraint "${bad}"`);
         if (table === 'memory_media') {
           if (!tables.memory_spots.some((s) => s.id === next.spot_id)) return pgError(res, 409, '23503', 'violates foreign key constraint "memory_media_spot_id_fkey"');
           const dup = rows.find((r) => r !== existing && ((r.spot_id === next.spot_id && r.type === next.type && r.name === next.name) || r.r2_key === next.r2_key));
+          if (dup) return pgError(res, 409, '23505', 'duplicate key value violates unique constraint');
+        }
+        if (table === 'memory_building_media') {
+          if (!tables.memory_buildings.some((b) => b.id === next.building_id)) return pgError(res, 409, '23503', 'violates foreign key constraint "memory_building_media_building_id_fkey"');
+          const dup = rows.find((r) => r !== existing && ((r.building_id === next.building_id && r.type === next.type && r.name === next.name) || r.r2_key === next.r2_key));
           if (dup) return pgError(res, 409, '23505', 'duplicate key value violates unique constraint');
         }
         if (existing) Object.assign(existing, next);

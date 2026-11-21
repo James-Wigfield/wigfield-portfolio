@@ -691,18 +691,7 @@
 .mr-lightbox__nav { display: flex; gap: var(--mr-space-2); }
 
 /* quiet full-page messages (404, errors) */
-.mr-message {
-  min-height: calc(100dvh - var(--mr-header-h, 0px));
-  display: grid;
-  place-items: center;
-  padding: var(--mr-space-5) var(--mr-space-4);
-  background: var(--mr-bg);
-}
-.mr-message__inner { max-width: 420px; display: flex; flex-direction: column; gap: var(--mr-space-3); }
-.mr-message__title { margin: 0; font: 400 var(--mr-text-title) / 1 var(--mr-font-serif); letter-spacing: -0.01em; }
-.mr-message__body { margin: 0; color: var(--mr-ink-2); }
-.mr-message__actions { display: flex; flex-wrap: wrap; gap: var(--mr-space-3); margin-top: var(--mr-space-4); }
-.mr-message__actions .mr-btn--quiet { padding-left: 0; }
+/* .mr-message (the full-page "not found" / "couldn't load" message) lives in memory-rooms.css: the place pages use it too */
 
 /* group: the list of rooms */
 .mr-rooms {

@@ -174,3 +174,35 @@ export function sketchToBuilding(sketch, { title = 'Sketched place', geo = null 
   if (geo) b.geo = { lat: geo.lat, lng: geo.lng, north: sketch.north ?? 0 };
   return b;
 }
+
+/**
+ * Two phones sketching the same place: the server's sketch with this phone's edits on top.
+ * Rooms by id: this phone's version of every room it has wins, the server's other rooms stay
+ * (unless this phone removed them: `removed`, ids), levels likewise; north and grid come from
+ * this phone when it set them. Either side may be null.
+ */
+export function mergeSketch(server, mine, removed = []) {
+  if (!server) return mine;
+  if (!mine) return server;
+  const gone = new Set(removed);
+  const byId = (list) => new Map((list || []).map((x) => [x.id, x]));
+  const levels = byId(server.levels);
+  for (const l of mine.levels || []) levels.set(l.id, l);
+  const rooms = byId((server.rooms || []).filter((r) => !gone.has(r.id)));
+  for (const r of mine.rooms || []) rooms.set(r.id, r);
+  const out = { ...server, ...mine, levels: [...levels.values()], rooms: [...rooms.values()] };
+  if (mine.north === undefined && server.north !== undefined) out.north = server.north;
+  if (mine.grid === undefined && server.grid !== undefined) out.grid = server.grid;
+  // a room on a level nobody has any more goes to the first level
+  const ids = new Set(out.levels.map((l) => l.id));
+  out.rooms = out.rooms.map((r) => (ids.has(r.level) ? r : { ...r, level: out.levels[0]?.id }));
+  return out;
+}
+
+/** A room name nobody on this sketch has yet: "Kitchen", then "Kitchen 2", "Kitchen 3"… (case-insensitive). */
+export function uniqueRoomName(name, names = []) {
+  const taken = new Set(names.map((n) => String(n).trim().toLowerCase()));
+  const base = String(name).trim();
+  if (!taken.has(base.toLowerCase())) return base;
+  for (let k = 2; ; k++) if (!taken.has(`${base} ${k}`.toLowerCase())) return `${base} ${k}`;
+}

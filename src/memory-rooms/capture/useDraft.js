@@ -25,6 +25,10 @@ const fresh = () => ({
   loc: null, // { lat, lng, accuracy, source: 'gps'|'pin'|'typed', label }
   photos: [], // { id, seq, url (thumb object URL), width, height, thumbWidth, thumbHeight, name }
   scan: null, // { name, size }
+  buildingId: null, // a room of a whole place (CONTRACTS.md 6.4): the place
+  roomId: null, //   and the room on its checklist
+  roomOf: null, //   the place's name, for the Saved screen's way back
+  roomName: null, //  the room's name on the checklist (the title may be renamed; the room stays)
 });
 
 /** A plain in-memory copy of a Blob (one read out of IndexedDB is backed by the database's own file). */
@@ -32,7 +36,7 @@ async function inMemory(blob) {
   return new Blob([await blob.arrayBuffer()], { type: blob.type || 'image/jpeg' });
 }
 
-const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan'];
+const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan', 'buildingId', 'roomId', 'roomOf', 'roomName'];
 const metaOf = (s) => Object.fromEntries(META_KEYS.map((k) => [k, s[k]]));
 const isDirty = (s) => Boolean(s.kind || s.title || s.note || s.photos.length || s.scan || s.loc);
 
@@ -239,12 +243,16 @@ export function useDraft() {
           scaleHint: state.scaleHint.trim() || null,
           capturedAt: new Date().toISOString(),
         };
+        if (state.buildingId) {
+          spot.buildingId = state.buildingId;
+          spot.roomId = state.roomId || null;
+        }
         await addCapture(spot, files);
         writeLastLoc(spot.lat, spot.lng);
         const thumbs = files.filter((f) => f.type === 'thumb').map((f) => f.blob);
         forgetFiles();
         dispatch({ type: 'reset' });
-        return { id: spot.id, title: spot.title, files: files.length, thumbs };
+        return { id: spot.id, title: spot.title, files: files.length, thumbs, buildingId: spot.buildingId || null, roomOf: state.roomOf || null };
       } finally {
         saving.current = false;
       }

@@ -320,6 +320,13 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   `PUT /buildings/:id/media/:type/:n`. Spots: POST and PATCH take `buildingId` (uuid or null) and `roomId` (building
   id pattern or null; needs a `buildingId`). The building need not exist yet (the outbox sends it first, but a spot
   never fails on it).
+- **Before `supabase/memory_buildings.sql` has run** (the live database until James runs it): the building routes and a
+  spot carrying `buildingId` / `roomId` answer `503 { error, code: 'needs-sql' }` (a missing table or column), plain
+  spots save as ever, and `GET /ping` lists `features: ['buildings']` only once the table answers. The phone's outbox
+  holds a `needs-sql` entry (kept on the phone, retried every few minutes) and carries on with the rest.
+- **Sketch edits from two phones merge** (`building/sketch.js` `mergeSketch`, in the outbox just before the PATCH):
+  the server's sketch, this phone's rooms on top by id, minus the rooms this phone removed; sent with
+  `ifUpdatedAt` = the server's `updatedAt` it merged into (a 409 is merged again on the next try).
 - **R2 keys**: `buildings/<id>/plan/<n>.jpg` (media type `plan`, 1–4: floor-plan photos), `buildings/<id>/photos/<n>.jpg`
   + `thumbs/<n>.jpg` (1–12: the outside shots), `buildings/<id>/model/<name>.glb` (`exterior`, `level-<levelId>`, `map`),
   `buildings/<id>/renders/<name>.png`, `buildings/<id>/compare/<name>.png`. Local row store: `rows/buildings/<id>.json`,

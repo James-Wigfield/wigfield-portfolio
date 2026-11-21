@@ -89,6 +89,19 @@ export function client({ base, token } = config()) {
       if (height) headers['x-height'] = String(height);
       return call(`/spots/${id}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: buf, headers });
     },
+    // whole places (CONTRACTS.md 6.4)
+    listBuildings: ({ deleted = false } = {}) => call(`/buildings${deleted ? '?deleted=1' : ''}`),
+    getBuilding: (id) => call(`/buildings/${id}`),
+    saveBuilding: (b) => call('/buildings', { method: 'POST', body: b }),
+    patchBuilding: (id, patch) => call(`/buildings/${id}`, { method: 'PATCH', body: patch }),
+    deleteBuilding: (id) => call(`/buildings/${id}`, { method: 'DELETE' }),
+    restoreBuilding: (id) => call(`/buildings/${id}/restore`, { method: 'POST' }),
+    putBuildingMedia: (id, type, n, buf, { contentType, width, height } = {}) => {
+      const headers = { 'content-type': contentType || 'application/octet-stream' };
+      if (width) headers['x-width'] = String(width);
+      if (height) headers['x-height'] = String(height);
+      return call(`/buildings/${id}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: buf, headers });
+    },
     /** Download a media item (its signed url, or any /api/memories/file/ path) to `dest`. */
     async download(media, dest) {
       const url = media.url.startsWith('http') ? media.url : `${base}${media.url}`;
@@ -99,6 +112,12 @@ export function client({ base, token } = config()) {
       return dest;
     },
   };
+}
+
+/** Does this Worker have the building routes (its ping lists 'buildings')? */
+export async function supportsBuildings(api) {
+  const ping = await api.ping();
+  return Array.isArray(ping?.features) && ping.features.includes('buildings');
 }
 
 /** Resolve a spot's work folder, memory-rooms-work/<id>/. */

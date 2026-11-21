@@ -4,7 +4,7 @@
    to the outbox (lib/outbox.js), which uploads it whenever there's signal. */
 
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import CaptureFrame from '../capture/CaptureFrame.jsx';
@@ -29,6 +29,23 @@ export default function CapturePage() {
   const [saveError, setSaveError] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const thumbUrls = useRef([]); // object URLs for the Saved screen's thumbnails
+
+  // A room of a whole place (?building=&room=&name=&of=): the place's checklist sends the room in.
+  // It fills a fresh draft only, so a draft in progress is never overwritten.
+  // Once per visit: after this room is saved the URL still names it, and "Capture another" must
+  // open a plain capture, not the same room again.
+  const [params] = useSearchParams();
+  const forBuilding = params.get('building');
+  const prefilled = useRef(null);
+  useEffect(() => {
+    if (!draft.loaded || !forBuilding) return;
+    const key = `${forBuilding}|${params.get('room')}`;
+    if (prefilled.current === key) return;
+    prefilled.current = key;
+    if (draft.buildingId === forBuilding && draft.roomId === params.get('room')) return;
+    if (draft.kind || draft.title || draft.photos.length) return;
+    d.set({ kind: 'interior', title: params.get('name') || '', buildingId: forBuilding, roomId: params.get('room'), roomOf: params.get('of') || null, roomName: params.get('name') || null });
+  }, [draft.loaded, forBuilding, params, draft.buildingId, draft.roomId, draft.kind, draft.title, draft.photos.length, d]);
 
   const releaseThumbs = () => {
     thumbUrls.current.forEach((u) => URL.revokeObjectURL(u));
@@ -59,7 +76,7 @@ export default function CapturePage() {
     d.set({ step: n });
   };
   const valid = [
-    Boolean(draft.kind && draft.title.trim()),
+    Boolean(draft.kind && draft.kind !== 'place' && draft.title.trim()),
     draft.photos.length >= MIN_PHOTOS && !queue.busy,
     Boolean(draft.note.trim()),
     !saving,
@@ -93,8 +110,18 @@ export default function CapturePage() {
     }
   };
 
+  // "A whole place" has its own capture (name, location, floor plan, outside, then its rooms)
+  // (the draft goes back to empty: "A whole place" is never left behind as a draft kind, which would
+  // stop a room of that place from prefilling later)
+  const toPlace = () => {
+    const title = draft.title;
+    d.reset();
+    navigate(paths.capturePlace(), { state: { title } });
+  };
   const primary =
-    step < 3
+    step === 0 && draft.kind === 'place'
+      ? { label: c.next, mr: 'next', disabled: false, onClick: toPlace }
+      : step < 3
       ? { label: c.next, mr: 'next', disabled: !valid[step], onClick: () => valid[step] && go(step + 1) }
       : { label: saving ? c.saving : c.save, mr: 'save', disabled: saving, onClick: save, arrow: false };
 
@@ -106,12 +133,14 @@ export default function CapturePage() {
       {step === 0 && (
         <>
           {draft.restored && <p className="mr-restored">{c.restored}</p>}
+          {draft.buildingId && <p className="mr-restored" data-mr="room-of">{c.roomOf(draft.roomOf, draft.roomName || draft.title)}</p>}
           <StepKind
             kind={draft.kind}
             title={draft.title}
+            places={!draft.buildingId}
             onKind={(kind) => d.set({ kind })}
             onTitle={(title) => d.set({ title })}
-            onSubmit={() => valid[0] && go(1)}
+            onSubmit={() => (draft.kind === 'place' ? toPlace() : valid[0] && go(1))}
           />
           {dirty && (
             <div className="mr-startover">

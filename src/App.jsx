@@ -112,6 +112,9 @@ export default function App() {
       {/* Memory Rooms: password-gated trip spots, see src/memory-rooms/README.md */}
       <Route path="/memories" element={memories('map')} />
       <Route path="/memories/new" element={memories('new')} />
+      <Route path="/memories/new/place" element={memories('new-place')} />
+      <Route path="/memories/b/:buildingId" element={memories('place')} />
+      <Route path="/memories/b/:buildingId/plan" element={memories('place-plan')} />
       <Route path="/memories/group/:group" element={memories('group')} />
       <Route path="/memories/:spotId" element={memories('spot')} />
       <Route path="/memories/:spotId/edit" element={memories('edit')} />

@@ -10,4 +10,14 @@ export const paths = {
   edit: (id) => `${BASE}/${encodeURIComponent(id)}/edit`,
   walk: (id) => `${BASE}/${encodeURIComponent(id)}/walk`,
   group: (group) => `${BASE}/group/${encodeURIComponent(group)}`,
+  // whole places (CONTRACTS.md 6.4): the place page, its sketch plan, capturing one, a room of one
+  place: (id) => `${BASE}/b/${encodeURIComponent(id)}`,
+  placePlan: (id) => `${BASE}/b/${encodeURIComponent(id)}/plan`,
+  capturePlace: () => `${BASE}/new/place`,
+  captureRoom: (buildingId, roomId, name, of) => {
+    const q = new URLSearchParams({ building: buildingId, room: roomId });
+    if (name) q.set('name', name);
+    if (of) q.set('of', of);
+    return `${BASE}/new?${q}`;
+  },
 };

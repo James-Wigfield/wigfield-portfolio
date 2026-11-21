@@ -63,9 +63,15 @@ export default function Saved({ saved, onAnother }) {
       </div>
       <div className="mr-actionbar">
         <div className="mr-actionbar-row">
-          <Link to={paths.home()} className="mr-btn mr-btn--lg" data-mr="saved-map">
-            {c.seeMap}
-          </Link>
+          {saved.buildingId ? (
+            <Link to={paths.place(saved.buildingId)} className="mr-btn mr-btn--lg" data-mr="saved-place">
+              <span className="mr-saved-backlabel">{c.backToPlace(saved.roomOf)}</span>
+            </Link>
+          ) : (
+            <Link to={paths.home()} className="mr-btn mr-btn--lg" data-mr="saved-map">
+              {c.seeMap}
+            </Link>
+          )}
           <button type="button" className="mr-btn mr-btn--primary mr-btn--lg mr-actionbar-main" onClick={onAnother} data-mr="capture-another">
             {c.captureAnother}
           </button>

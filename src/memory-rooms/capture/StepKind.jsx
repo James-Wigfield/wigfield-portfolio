@@ -1,6 +1,13 @@
 import { COPY } from '../copy.js';
 
 function KindGlyph({ kind }) {
+  if (kind === 'place')
+    return (
+      <svg className="mr-kind-glyph" viewBox="0 0 56 44" aria-hidden="true">
+        <path d="M6 38 V8 H50 V38 Z" />
+        <path className="mr-kind-glyph-soft" d="M28 8 V24 H50 M6 24 H20 M28 30 V38" />
+      </svg>
+    );
   return (
     <svg className="mr-kind-glyph" viewBox="0 0 56 44" aria-hidden="true">
       {kind === 'interior' ? (
@@ -20,13 +27,15 @@ function KindGlyph({ kind }) {
   );
 }
 
-export default function StepKind({ kind, title, onKind, onTitle, onSubmit }) {
+export default function StepKind({ kind, title, places = true, onKind, onTitle, onSubmit }) {
   const c = COPY.capture;
+  // a room of a whole place is always an interior; the third choice starts a whole place
+  const kinds = places ? ['interior', 'exterior', 'place'] : ['interior', 'exterior'];
   return (
     <div className="mr-stepbody">
       <h2 className="mr-step-title">{c.kindTitle}</h2>
-      <div className="mr-kinds">
-        {['interior', 'exterior'].map((k) => (
+      <div className="mr-kinds" data-count={kinds.length}>
+        {kinds.map((k) => (
           <button key={k} type="button" className="mr-kind" aria-pressed={kind === k} data-mr={`kind-${k}`} onClick={() => onKind(k)}>
             <KindGlyph kind={k} />
             <span className="mr-kind-label">{c.kinds[k].label}</span>
@@ -41,7 +50,7 @@ export default function StepKind({ kind, title, onKind, onTitle, onSubmit }) {
           type="text"
           value={title}
           maxLength={120}
-          placeholder={c.namePlaceholder[kind || 'none']}
+          placeholder={c.namePlaceholder[kind || 'none'] || c.namePlaceholder.none}
           autoComplete="off"
           enterKeyHint="next"
           onChange={(e) => onTitle(e.target.value)}

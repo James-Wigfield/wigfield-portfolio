@@ -9,6 +9,7 @@ import { mediaOf } from '../../lib/api.js';
 import { clearFlash, peekFlash } from '../../lib/flash.js';
 import { paths } from '../../routes.js';
 import { tripDayOf } from '../../lib/trip.js';
+import { usePlaceTitle } from '../../lib/places.js';
 import { personName } from '../../lib/spots.js';
 import { useViewerState } from '../../viewer/useViewer.js';
 import { ModeToggle } from '../../viewer/ViewerControls.jsx';
@@ -29,6 +30,8 @@ function statusLine(spot, stage) {
 export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, onOpenPhoto, sheet = null, panelRef = null }) {
   const copy = COPY.spot;
   const vstate = useViewerState(viewer);
+  // a room of a whole place links back to it
+  const placeTitle = usePlaceTitle(spot.buildingId || null);
   const hasScan = mediaOf(spot, 'scan').length > 0;
   const line = statusLine(spot, stage);
   const has3d = stage === 'model' || stage === 'preview';
@@ -96,6 +99,14 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
           <dt className="mr-label">{copy.meta.place}</dt>
           <dd>{spot.placeLabel || copy.noPlace}</dd>
         </div>
+        {spot.buildingId && (
+          <div data-mr="part-of">
+            <dt className="mr-label">{copy.meta.partOf}</dt>
+            <dd>
+              <Link to={paths.place(spot.buildingId)}>{placeTitle || COPY.place.label}</Link>
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="mr-label">{copy.meta.date}</dt>
           <dd>{copy.date(spot.capturedAt) || '–'}</dd>

@@ -13,6 +13,7 @@ export default function OutboxStatus() {
   const hiddenHere = useOutboxStripHidden();
   const { entries, pending, volatile } = box;
   const attention = entries.filter((e) => e.state === 'error');
+  const held = entries.filter((e) => e.held);
   const st = uploadState(box);
   const S = COPY.outbox.state;
 
@@ -52,6 +53,13 @@ export default function OutboxStatus() {
           <button type="button" className="mr-linkbtn" onClick={() => retryOutbox(e.id)}>
             {COPY.outbox.retry}
           </button>
+        </div>
+      ))}
+      {held.map((e) => (
+        <div className="mr-outbox-line mr-outbox-entry" key={e.id} data-mr="outbox-held">
+          <span className="mr-outbox-text">
+            <strong>{e.title}</strong> · {COPY.outbox.held[e.held] || COPY.outbox.held['needs-sql']}
+          </span>
         </div>
       ))}
       {volatile && pending > 0 && <p className="mr-outbox-line mr-outbox-text">{COPY.outbox.volatile}</p>}

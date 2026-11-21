@@ -5,6 +5,12 @@
    thumb, every photo, then the optional scan; each file is flagged `uploaded`
    as it lands. Done entries stay ~24 h, then are pruned. Unsent ones never are.
 
+   Three kinds of entry (CONTRACTS.md 6.4), uploaded oldest first:
+     spot             (kind absent) a capture: saveSpot + its photos / thumbs / scan
+     building         a whole place: saveBuilding + its floor-plan photos and outside shots
+     building-patch   a later change to a place (the sketch plan): one PATCH, the newest
+                      edit replacing an older one still waiting (id `patch:<buildingId>`)
+
    Triggers: right after a save, on `online`, when the tab becomes visible, on
    app load, and a backoff timer (5 s → 5 min) while anything is pending.
    A 401 stops the queue and sends the user to the gate (nothing is dropped);
@@ -13,6 +19,7 @@
    React reads it through useOutbox() (useSyncExternalStore). */
 
 import { api } from './api.js';
+import { mergeSketch } from '../building/sketch.js';
 import { signalUnauthorized } from './auth.js';
 import { get, getAll, isVolatile, write } from './idb.js';
 
@@ -48,15 +55,23 @@ export const subscribeOutbox = (l) => {
 };
 export const getOutboxSnapshot = () => state;
 
+const kindOf = (e) => e.kind || 'spot';
+const entryTitle = (e) => e.spot?.title || e.building?.title || e.title || '';
+
 function summarize(e) {
   const failed = e.files.filter((f) => f.error).length;
   return {
     id: e.id,
-    title: e.spot.title,
+    kind: kindOf(e),
+    title: entryTitle(e),
+    buildingId: e.spot?.buildingId || e.building?.id || e.buildingId || null, // a room of a place, or the place
+    roomId: e.spot?.roomId || null,
     total: e.files.length,
     uploaded: e.files.filter((f) => f.uploaded).length,
     state: e.state,
     error: e.error || null,
+    // kept on this phone for now (the database isn't set up for whole places yet, or its place isn't up)
+    held: e.state === 'pending' && e.held ? e.held : null,
     failed,
     createdAt: e.createdAt,
     doneAt: e.doneAt || null,
@@ -134,6 +149,69 @@ export async function addCapture(spot, files, { clearDraft = true } = {}) {
   return entry.id;
 }
 
+/**
+ * A whole place into the outbox: its row (POSTed once) and its files
+ * ({ type: 'plan'|'photo'|'thumb', n, blob, width?, height?, contentType }).
+ */
+export async function addBuilding(building, files) {
+  const entry = {
+    id: building.id,
+    kind: 'building',
+    building,
+    files: files.map((f) => ({ type: f.type, n: f.n, width: f.width || null, height: f.height || null, contentType: f.contentType, bytes: f.blob.size, uploaded: false })),
+    spotSaved: false,
+    state: 'pending',
+    error: null,
+    attempts: 0,
+    createdAt: Date.now(),
+    doneAt: null,
+  };
+  await write(['outbox', 'outboxFiles'], (w) => {
+    w.put('outbox', entry);
+    for (const f of files) w.put('outboxFiles', { key: fileKey(building.id, f.type, f.n), blob: f.blob });
+  });
+  persistOnce();
+  await refresh();
+  kickOutbox();
+  return entry.id;
+}
+
+/**
+ * A change to a place (e.g. its sketch) into the outbox. One waiting patch per place: a newer
+ * edit merges into it (and keeps its place in the queue, after the place's own row).
+ */
+export async function addBuildingPatch(buildingId, patch, title = '') {
+  const id = `patch:${buildingId}`;
+  const prev = await get('outbox', id);
+  const waiting = prev && prev.state !== 'done';
+  const entry = {
+    id,
+    kind: 'building-patch',
+    buildingId,
+    title,
+    patch: waiting ? { ...prev.patch, ...patch } : patch,
+    files: [],
+    spotSaved: false,
+    state: 'pending',
+    error: null,
+    attempts: waiting ? prev.attempts : 0,
+    createdAt: waiting ? prev.createdAt : Date.now(),
+    doneAt: null,
+  };
+  await write('outbox', (w) => w.put('outbox', entry));
+  await refresh();
+  kickOutbox();
+  return id;
+}
+
+/** Pending changes to one place, newest merged (what the place page shows before the server has it). */
+export async function pendingPlace(buildingId) {
+  const rows = await getAll('outbox');
+  const create = rows.find((e) => e.kind === 'building' && e.id === buildingId && e.state !== 'done');
+  const patch = rows.find((e) => e.kind === 'building-patch' && e.buildingId === buildingId && e.state !== 'done');
+  return { create: create?.building || null, patch: patch?.patch || null };
+}
+
 /* ── uploading ─────────────────────────────────────────────────────────── */
 
 let running = false;
@@ -197,7 +275,10 @@ async function run() {
   }
 }
 
+let heldAny = false;
+
 async function drain() {
+  heldAny = false;
   const rows = (await refresh()).filter((e) => e.state === 'pending');
   if (!rows.length) {
     failures = 0;
@@ -218,6 +299,31 @@ async function drain() {
   failures = 0;
   set({ failing: false, retryAt: null });
   await refresh();
+  // something is held (not the network's fault): look again in a while, without blocking anything
+  if (heldAny) schedule(BACKOFF_MS[BACKOFF_MS.length - 1]);
+}
+
+/**
+ * A place's later change. A sketch is merged into the server's just before it goes (two phones
+ * sketching the same place keep each other's rooms), sent with the server's updatedAt so a write in
+ * between is a 409 (held, merged again next round).
+ */
+async function sendPatch(entry) {
+  const { sketchRemoved, ...patch } = entry.patch || {};
+  if (patch.sketch) {
+    const server = await api.getBuilding(entry.buildingId);
+    patch.sketch = mergeSketch(server?.sketch ?? null, patch.sketch, sketchRemoved || []);
+    if (server?.updatedAt) patch.ifUpdatedAt = server.updatedAt;
+  }
+  await api.patchBuilding(entry.buildingId, patch);
+}
+
+/** Held, not failed: the server can't take this entry YET (it uploads by itself later), the rest go on. */
+function heldReason(kind, err) {
+  if (err?.code === 'needs-sql') return 'needs-sql';
+  if (kind === 'building' && err?.status === 404) return 'needs-sql'; // a Worker without the building routes
+  if (kind === 'building-patch' && (err?.status === 404 || err?.status === 409)) return 'place-first';
+  return null;
 }
 
 /** ms to wait for one request before treating it as a dropped connection. */
@@ -225,10 +331,22 @@ const timeoutFor = (bytes) => 60_000 + Math.round((bytes || 0) / 40); // ~40 KB/
 
 async function uploadEntry(entry) {
   const total = entry.files.length;
+  const kind = kindOf(entry);
   try {
     if (!entry.spotSaved) {
       set({ current: { id: entry.id, index: 0, total } });
-      await api.saveSpot(entry.spot);
+      if (kind === 'building') await api.saveBuilding(entry.building);
+      else if (kind === 'building-patch') {
+        const sent = JSON.stringify(entry.patch);
+        await sendPatch(entry);
+        // a newer edit merged into this entry while it was going up: leave it pending, it goes next
+        const cur = await get('outbox', entry.id);
+        if (cur && JSON.stringify(cur.patch) !== sent) {
+          again = true;
+          return 'next';
+        }
+      } else await api.saveSpot(entry.spot);
+      entry.held = null;
       entry.spotSaved = true;
       entry.attempts += 1;
       await write('outbox', (w) => w.put('outbox', entry));
@@ -244,7 +362,8 @@ async function uploadEntry(entry) {
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), timeoutFor(f.bytes));
         try {
-          await api.putMedia(entry.id, f.type, f.n, row.blob, {
+          const put = kind === 'building' ? api.putBuildingMedia : api.putMedia;
+          await put(entry.id, f.type, f.n, row.blob, {
             width: f.width,
             height: f.height,
             contentType: f.contentType,
@@ -281,6 +400,18 @@ async function uploadEntry(entry) {
       set({ blocked: true, current: null });
       signalUnauthorized();
       return 'stop';
+    }
+    const held = heldReason(kind, err);
+    if (held) {
+      // only touch the counters: a patch entry may have a newer edit merged into it meanwhile
+      const cur = (await get('outbox', entry.id)) || entry;
+      cur.attempts = (cur.attempts || 0) + 1;
+      cur.lastError = describe(err);
+      cur.held = held;
+      await write('outbox', (w) => w.put('outbox', cur));
+      heldAny = true;
+      await refresh();
+      return 'next';
     }
     if (isTransient(status)) {
       if (status === 404) entry.spotSaved = false; // the spot row vanished: POST it again first

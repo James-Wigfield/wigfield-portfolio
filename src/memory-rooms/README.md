@@ -7,10 +7,13 @@ Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password)
 |---|---|
 | `/memories` | map + the index of spots (`No. 001`, each room's cut-out), filter by person, status and day of the trip (the day strip), outbox status; **Play the trip** (`?play=1`): the globe flies through every spot in capture order, drawing the route, standing rendered rooms up in 3D |
 | `/memories/new` | capture, phone first: kind + name → photos (shot guide) → the memory → location → save to the outbox |
+| `/memories/new/place` | capture **a whole place** (the third kind on `/memories/new`): name + note → location → a floor-plan photo (optional) → outside shots (optional) → saved on the phone, uploaded by the outbox; works offline |
 | `/memories/:spotId` | the spot as a drawing sheet: the room **recalls itself** from a cloud of points, a drafting grid under it, a title block (sheet MR-###, place, date, live scale bar, north arrow), numbered callouts for its pins, thin ink photo frustums; 3D viewer (Model ⇄ Scan), photo strip, the note as a pull-quote, photo viewpoints with a photo/model blend; **Walk in** (+ who's in the room now) and **See it in your space** (AR: Quick Look on iPhone, WebXR on Android, a QR code on a desktop; `?ar=1` opens it). On a phone the panel is a bottom sheet |
 | `/memories/:spotId/edit` | fix its details after capture: the place (pin / GPS / typed, + its name), name, note, captured day, who saved it; kind + size until it has a 3D room. One PATCH with `ifUpdatedAt` (409 → reload theirs under yours); needs signal, the typed draft waits in sessionStorage |
 | `/memories/:spotId/walk` | walk the 3D room as your pixel character, together with whoever else is in it (a Durable Object per spot): WASD / joystick, photo marks that blend into the real photo, sit, wave, jump, chat |
 | `/memories/group/:group` | every room of one building, assembled in its shared frame |
+| `/memories/b/:buildingId` | a whole place: its plan (the sketch, or rooms marked on the floor-plan photo) and its room checklist (captured / waiting to upload / to capture); a room's Capture opens the normal capture prefilled (`?building=&room=&name=&of=`). Offline from IndexedDB `places` + the outbox |
+| `/memories/b/:buildingId/plan` | the sketch plan: rooms as rectangles on a half-metre grid (drag, corner to size), levels, north, or marked on the floor-plan photo; overlapping rooms are kept on the phone until fixed |
 
 ## Where things are
 

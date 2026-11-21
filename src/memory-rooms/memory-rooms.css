@@ -1504,3 +1504,210 @@ html.mr-active ::-webkit-scrollbar-thumb {
     transition: none !important;
   }
 }
+
+
+/* ── whole places: the place page (checklist on the plan), the sketch plan, capture ── */
+
+.mr-kinds[data-count='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 480px) {
+  .mr-kinds[data-count='3'] { grid-template-columns: 1fr 1fr; }
+  .mr-kinds[data-count='3'] > :last-child { grid-column: 1 / -1; }
+}
+
+.mr-place {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--mr-space-6) var(--mr-gutter) var(--mr-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-6);
+}
+.mr-place__loading { padding: var(--mr-space-7) 0; }
+.mr-place__title {
+  margin: var(--mr-space-3) 0 0;
+  font: 400 var(--mr-text-title) / 1 var(--mr-font-serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.mr-place__meta { margin: var(--mr-space-2) 0 0; font-size: var(--mr-text-s); color: var(--mr-ink-2); }
+.mr-place__plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  padding-top: var(--mr-space-4);
+  border-top: var(--mr-hairline) solid var(--mr-sheet-line);
+}
+.mr-place__planlinks { display: flex; justify-content: flex-end; }
+.mr-place__noplan { margin: 0; color: var(--mr-ink-2); font-size: var(--mr-text-s); }
+
+/* the plan: rooms on squared paper, inked once captured */
+.mr-planview { width: 100%; height: auto; max-height: 56vh; background: var(--mr-surface); border: var(--mr-hairline) solid var(--mr-rule); touch-action: manipulation; }
+.mr-planview__grid { fill: none; stroke: var(--mr-paper-grid); stroke-width: 0.012; }
+.mr-planview__room { cursor: pointer; outline: none; }
+.mr-planview__room rect { fill: var(--mr-surface); stroke: var(--mr-section); stroke-width: 0.06; transition: fill var(--mr-dur) var(--mr-ease); }
+.mr-planview__room[data-state='captured'] rect { fill: var(--mr-surface-2); }
+.mr-planview__room[data-state='queued'] rect { fill: var(--mr-surface-2); stroke-dasharray: 0.18 0.1; }
+.mr-planview__room[data-sel] rect,
+.mr-planview__room:focus-visible rect { stroke: var(--mr-accent); stroke-width: 0.09; }
+.mr-planview__room text { fill: var(--mr-ink); text-anchor: middle; font-family: var(--mr-font-serif); pointer-events: none; }
+.mr-planview__room .mr-planview__state { fill: var(--mr-ink-3); font-family: var(--mr-font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.mr-planview__north path { fill: var(--mr-ink); }
+.mr-planview__north text { fill: var(--mr-ink); text-anchor: middle; font-family: var(--mr-font-mono); }
+
+/* the floor-plan photo with numbered room marks */
+.mr-planphoto { position: relative; margin: 0; border: var(--mr-hairline) solid var(--mr-rule); background: var(--mr-surface); }
+.mr-planphoto img { display: block; width: 100%; height: auto; max-height: 60vh; object-fit: contain; }
+.mr-planphoto__mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-height: 28px;
+  padding: 2px 6px;
+  border: var(--mr-hairline) solid var(--mr-ink);
+  background: var(--mr-surface);
+  color: var(--mr-ink);
+  font: 400 var(--mr-text-xs) / 1.4 var(--mr-font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mr-planphoto__mark::before { content: ''; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--mr-ink-2); align-self: center; }
+.mr-planphoto__mark[data-state='captured']::before { background: var(--mr-ink); border-color: var(--mr-ink); }
+.mr-planphoto__mark[data-state='queued']::before { box-shadow: inset 3px 0 0 0 var(--mr-ink-2); }
+.mr-planphoto__mark[data-sel] { border-color: var(--mr-accent); box-shadow: 0 0 0 1px var(--mr-accent); }
+.mr-planphoto__n { font-family: var(--mr-font-mono); color: var(--mr-accent); }
+
+/* a picked room */
+.mr-place__pick { display: flex; flex-direction: column; align-items: flex-start; gap: var(--mr-space-2); padding-top: var(--mr-space-4); border-top: var(--mr-hairline) solid var(--mr-rule); }
+.mr-place__roomname { margin: 0; font: 400 1.8rem / 1.05 var(--mr-font-serif); }
+
+/* the checklist: ruled rows, a labelled dot each (captured = filled, waiting = half, to capture = ring) */
+.mr-place__rooms { display: flex; flex-direction: column; gap: var(--mr-space-2); }
+.mr-place__roomshead { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: var(--mr-space-2); border-bottom: var(--mr-hairline) solid var(--mr-sheet-line); }
+.mr-place__roomshead h2 { margin: 0; }
+.mr-place__level { margin: var(--mr-space-4) 0 0; color: var(--mr-ink-3); }
+.mr-checklist { list-style: none; margin: 0; padding: 0; }
+.mr-checklist__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--mr-space-4);
+  min-height: 52px;
+  border-bottom: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-checklist__name { font: 400 1.25rem / 1.1 var(--mr-font-serif); color: var(--mr-ink); }
+.mr-checklist__state { color: var(--mr-ink-3); }
+.mr-checklist__row[data-state='captured'] .mr-checklist__state { color: var(--mr-ink-2); }
+.mr-place__add { margin-top: var(--mr-space-4); }
+.mr-place__addrow { display: flex; gap: var(--mr-space-2); }
+.mr-place__addrow .mr-input { flex: 1; min-width: 0; }
+.mr-place__outside { display: flex; flex-direction: column; gap: var(--mr-space-3); padding-top: var(--mr-space-4); border-top: var(--mr-hairline) solid var(--mr-rule); }
+.mr-place__outside h2 { margin: 0; }
+.mr-place__thumbs { display: flex; gap: var(--mr-space-2); overflow-x: auto; }
+.mr-place__thumbs img { flex: none; width: 96px; height: 120px; object-fit: cover; border: var(--mr-hairline) solid var(--mr-rule); }
+
+/* the sketch plan editor: the grid fills the screen, the panel sits under it */
+.mr-sketch {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: calc(100dvh - var(--mr-header-h, 0px));
+  overflow: hidden;
+}
+.mr-sketch__head { padding: var(--mr-space-3) var(--mr-gutter) var(--mr-space-2); border-bottom: var(--mr-hairline) solid var(--mr-rule); }
+.mr-sketch__head .mr-stagenav__link { margin-left: 0; padding-left: 0; }
+.mr-sketch__title { margin: var(--mr-space-1) 0 0; font: 400 1.9rem / 1 var(--mr-font-serif); }
+.mr-sketch__hint { margin: var(--mr-space-1) 0 0; font-size: var(--mr-text-s); color: var(--mr-ink-2); }
+.mr-sketch__bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--mr-space-2) var(--mr-space-5); margin-top: var(--mr-space-2); }
+.mr-sketch__bar .mr-seg button { min-height: 40px; }
+.mr-sketchgrid { min-height: 0; background: var(--mr-surface); }
+.mr-sketchgrid svg { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; }
+.mr-sketchgrid__minor { fill: none; stroke: var(--mr-paper-grid); stroke-width: 0.012; }
+.mr-sketchgrid__major { fill: none; stroke: var(--mr-rule); stroke-width: 0.02; }
+.mr-sketchgrid__room rect:first-of-type { fill: var(--mr-bg); fill-opacity: 0.88; stroke: var(--mr-section); stroke-width: 0.07; cursor: grab; }
+.mr-sketchgrid__room[data-sel] rect:first-of-type { stroke: var(--mr-accent); stroke-width: 0.1; }
+.mr-sketchgrid__room[data-invalid] rect:first-of-type { stroke: var(--mr-danger); stroke-dasharray: 0.2 0.12; }
+.mr-sketchgrid__room text { fill: var(--mr-ink); text-anchor: middle; font-family: var(--mr-font-serif); pointer-events: none; }
+.mr-sketchgrid__size { fill: var(--mr-ink-3) !important; font-family: var(--mr-font-mono) !important; }
+.mr-sketchgrid__handle { fill: var(--mr-accent); stroke: var(--mr-bg); stroke-width: 0.06; cursor: nwse-resize; }
+.mr-sketch__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  max-height: 42dvh;
+  overflow-y: auto;
+  padding: var(--mr-space-3) var(--mr-gutter) calc(var(--mr-space-4) + env(safe-area-inset-bottom));
+  border-top: var(--mr-hairline) solid var(--mr-sheet-line);
+  background: var(--mr-bg);
+}
+.mr-sketch__errors { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mr-space-1); }
+.mr-sketch__room { display: flex; flex-direction: column; gap: var(--mr-space-3); }
+.mr-sketch__size { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mr-space-3); }
+.mr-sketch__roomactions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mr-space-4); }
+.mr-sketch__actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; gap: var(--mr-space-3); }
+.mr-sketch__undrawn { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--mr-space-1) var(--mr-space-3); font-size: var(--mr-text-s); }
+.mr-sketch__saved { margin: 0; min-height: 1.2em; color: var(--mr-ink-3); }
+.mr-markphoto { min-height: 0; overflow: auto; padding: var(--mr-space-3) var(--mr-gutter); display: flex; flex-direction: column; gap: var(--mr-space-3); }
+.mr-markphoto__frame { position: relative; border: var(--mr-hairline) solid var(--mr-rule); cursor: crosshair; }
+.mr-markphoto__frame img { display: block; width: 100%; height: auto; user-select: none; }
+.mr-markphoto__rooms { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--mr-space-1) var(--mr-space-4); }
+.mr-markphoto__rooms .mr-linkbtn[aria-pressed='true'] { text-decoration-color: var(--mr-accent); color: var(--mr-accent); }
+
+/* capturing a whole place */
+.mr-place-capture__lede { margin: 0; color: var(--mr-ink-2); font-size: var(--mr-text-s); }
+.mr-place-capture__guide { list-style: none; margin: 0; padding: 0; border-top: var(--mr-hairline) solid var(--mr-rule); }
+.mr-place-capture__guide li { padding: var(--mr-space-2) 0; border-bottom: var(--mr-hairline) solid var(--mr-rule); font-size: var(--mr-text-s); color: var(--mr-ink-2); }
+.mr-place-capture__guide li[data-done] { color: var(--mr-ink-3); text-decoration: line-through; text-decoration-color: var(--mr-ink-3); }
+.mr-place-capture__buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--mr-space-2); }
+.mr-place-capture__count { margin: 0; color: var(--mr-ink-3); }
+.mr-place-capture__thumbs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: var(--mr-space-2); }
+.mr-place-capture__thumbs li { display: flex; flex-direction: column; gap: 2px; }
+.mr-place-capture__thumbs img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border: var(--mr-hairline) solid var(--mr-rule); }
+
+@media (max-width: 600px) {
+  .mr-place { padding-top: var(--mr-space-4); gap: var(--mr-space-5); }
+  .mr-checklist__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .mr-checklist__state { display: none; }
+  .mr-sketch__actions { grid-template-columns: 1fr; }
+}
+
+/* ── whole places in the map's index (map/PlaceIndex.jsx) ── */
+.mr-placerow { grid-template-columns: 52px minmax(0, 1fr); text-decoration: none; }
+.mr-placerow__glyph { width: 40px; height: 32px; fill: none; stroke: var(--mr-ink); stroke-width: 1.3; stroke-linejoin: round; }
+.mr-placerow__glyph path + path { stroke: var(--mr-ink-3); }
+/* the place page's eyebrow (viewer.css styles the spot page's, but it only loads with the 3D chunk) */
+.mr-place__head .mr-spot__eyebrow { display: flex; align-items: center; gap: var(--mr-space-4); flex-wrap: wrap; }
+/* the sketch's rooms by keyboard, and the corner handle's thumb-sized target */
+.mr-sketchgrid__room:focus { outline: none; }
+.mr-sketchgrid__room:focus-visible rect:first-of-type { stroke: var(--mr-accent); stroke-width: 0.12; }
+.mr-sketchgrid__hit { cursor: nwse-resize; }
+
+/* ── the full-page message (moved from viewer.css: the place pages, in the main chunk, use it too) ── */
+.mr-message {
+  min-height: calc(100dvh - var(--mr-header-h, 0px));
+  display: grid;
+  place-items: center;
+  padding: var(--mr-space-5) var(--mr-space-4);
+  background: var(--mr-bg);
+}
+.mr-message__inner { max-width: 420px; display: flex; flex-direction: column; gap: var(--mr-space-3); }
+.mr-message__title { margin: 0; font: 400 var(--mr-text-title) / 1 var(--mr-font-serif); letter-spacing: -0.01em; }
+.mr-message__body { margin: 0; color: var(--mr-ink-2); }
+.mr-message__actions { display: flex; flex-wrap: wrap; gap: var(--mr-space-3); margin-top: var(--mr-space-4); }
+.mr-message__actions .mr-btn--quiet { padding-left: 0; }
+
+/* ── whole places: review fixes ── */
+.mr-saved-backlabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mr-actionbar-row [data-mr='saved-place'] { min-width: 0; flex: 0 1 auto; max-width: 52%; }
+/* focus inside a plan: the ring is the room's own stroke (an outline would be drawn in metres) */
+.mr .mr-planview__room:focus-visible,
+.mr .mr-sketchgrid__room:focus-visible { outline: none; }
+.mr-planview__room[data-state='captured'] rect { fill: color-mix(in srgb, var(--mr-ink) 13%, var(--mr-bg)); }
+.mr-place__levels { margin-bottom: var(--mr-space-3); }
+.mr-place__photo { margin-top: var(--mr-space-3); }
+.mr-place__photo img { display: block; width: 100%; height: auto; margin-top: var(--mr-space-2); border: var(--mr-hairline) solid var(--mr-rule); }
+@media (pointer: coarse) {
+  .mr-sketch__bar .mr-seg button,
+  .mr-place__levels button,
+  .mr-outbox .mr-linkbtn { min-height: 44px; }
+}

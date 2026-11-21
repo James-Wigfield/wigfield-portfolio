@@ -5,13 +5,15 @@
      outboxFiles  keyPath key  `${spotId}|${type}|${n}` → { blob, width, height, contentType } (immutable)
      draft        keyPath key  'current' → the capture being filled in (fields + photo order)
      draftPhotos  keyPath id   one processed photo (photo + thumb blobs) or the 'scan' file
+     places       keyPath id   (v2) a whole place this phone captured or edited: its fields, sketch and
+                               files, so its checklist and sketch plan work with no signal (lib/places.js)
 
    If IndexedDB can't open at all (some private modes), everything falls back to
    in-memory maps so the app still works while the tab stays open. */
 
 const NAME = 'memory-rooms';
-const VERSION = 1;
-const STORES = { outbox: 'id', outboxFiles: 'key', draft: 'key', draftPhotos: 'id' };
+const VERSION = 2; // 2: + places (adding a store keeps every existing one as it is)
+const STORES = { outbox: 'id', outboxFiles: 'key', draft: 'key', draftPhotos: 'id', places: 'id' };
 
 let dbPromise = null;
 const memory = new Map(Object.keys(STORES).map((s) => [s, new Map()]));
@@ -32,12 +34,24 @@ function open() {
           if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath });
         }
       };
+      // An older tab still holding version 1 open (frozen in the background) blocks the upgrade. Its
+      // own code closes on versionchange, so this is normally brief; never hang capture on it: after
+      // a few seconds carry on in memory (the page says so) and let the upgrade finish when it can.
+      const stuck = setTimeout(() => resolve(null), 5000);
       r.onsuccess = () => {
+        clearTimeout(stuck);
         const db = r.result;
-        db.onversionchange = () => db.close();
+        db.onversionchange = () => {
+          // a newer version opening elsewhere: let it, and reopen on the next call
+          db.close();
+          dbPromise = null;
+        };
         resolve(db);
       };
-      r.onerror = () => resolve(null);
+      r.onerror = () => {
+        clearTimeout(stuck);
+        resolve(null);
+      };
     });
   }
   return dbPromise;

@@ -10,6 +10,7 @@ import { useMedia } from '../lib/useMedia.js';
 import DayStrip from '../map/DayStrip.jsx';
 import Filters from '../map/Filters.jsx';
 import { rememberSpots, sheetNumbers, spotDate } from '../lib/trip.js';
+import PlaceIndex from '../map/PlaceIndex.jsx';
 import SpotList from '../map/SpotList.jsx';
 import SpotsMap from '../map/SpotsMap.jsx';
 import { WORLD, onMap } from '../map/geo.js';
@@ -185,6 +186,7 @@ export default function MapPage() {
         {total > 0 && <Filters person={person} status={stat} onPerson={setPerson} onStatus={setStat} />}
         {total > 0 && <DayStrip spots={byPerson} day={day} onDay={setDay} />}
         {listBody}
+        <PlaceIndex spots={spots} />
       </aside>
     </div>
   );

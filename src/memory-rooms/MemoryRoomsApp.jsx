@@ -1,5 +1,5 @@
 /* Memory Rooms entry (lazy-loaded from src/App.jsx). `page` picks the screen:
-   map | new | spot | edit | walk | group.
+   map | new | spot | edit | walk | group | new-place | place | place-plan.
 
    The shell: password gate (once per device) → who-picker (once per device, for
    the map and capture pages) → slim header + outbox line + the page. The viewer
@@ -16,6 +16,10 @@ import { readWho, writeWho } from './lib/storage.js';
 import CapturePage from './pages/CapturePage.jsx';
 import EditPage from './pages/EditPage.jsx';
 import MapPage from './pages/MapPage.jsx';
+// Whole places: in the main chunk like capture, so they open offline (public/memories-sw.js).
+import PlaceCapturePage from './pages/PlaceCapturePage.jsx';
+import PlacePage from './pages/PlacePage.jsx';
+import PlanSketchPage from './pages/PlanSketchPage.jsx';
 import Gate from './shell/Gate.jsx';
 import Header from './shell/Header.jsx';
 import OutboxStatus from './shell/OutboxStatus.jsx';
@@ -52,6 +56,7 @@ function usePageTakeover(page, authed) {
   useEffect(() => {
     if (!authed || page === 'map') document.title = COPY.app.name;
     else if (page === 'new') document.title = `${COPY.capture.pageTitle} · ${COPY.app.name}`;
+    else if (page === 'new-place') document.title = `${COPY.placeCapture.nameTitle} · ${COPY.app.name}`;
   }, [page, authed]);
 }
 
@@ -108,8 +113,9 @@ export default function MemoryRoomsApp({ page }) {
   };
   const changeWho = () => setChoosing(true);
 
-  const needsWho = page === 'map' || page === 'new' || page === 'walk'; // walking: you're your character
-  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit' || page === 'walk');
+  // walking: you're your character; a place's rooms and sketch are signed by whoever holds the phone
+  const needsWho = page === 'map' || page === 'new' || page === 'walk' || page === 'new-place' || page === 'place' || page === 'place-plan';
+  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit' || page === 'walk' || page === 'new-place' || page === 'place-plan');
 
   let body;
   if (!authed) {
@@ -126,6 +132,9 @@ export default function MemoryRoomsApp({ page }) {
             {page === 'map' && <MapPage />}
             {page === 'new' && <CapturePage />}
             {page === 'edit' && <EditPage />}
+            {page === 'new-place' && <PlaceCapturePage />}
+            {page === 'place' && <PlacePage />}
+            {page === 'place-plan' && <PlanSketchPage />}
             {(page === 'spot' || page === 'group' || page === 'walk') && (
               <Suspense fallback={<p className="mr-state mr-state-body">{COPY.app.loading}</p>}>
                 {page === 'spot' ? <SpotPage /> : page === 'walk' ? <WalkPage /> : <GroupPage />}
