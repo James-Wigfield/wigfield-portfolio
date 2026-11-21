@@ -347,12 +347,26 @@ const loadedStr = (l) => Object.entries(l).map(([k, v]) => `${k} ${v ? 'yes' : '
 
 async function gotoSpot(page, spot, query = '') {
   await page.goto(`${base}/memories/${spot.id}${query}`, { waitUntil: 'networkidle2', timeout: 90000 });
-  return page.waitForSelector(`${sel('viewer')}[data-state="ready"]`, { timeout: 90000 }).then(() => true).catch(() => false);
+  const ready = await page.waitForSelector(`${sel('viewer')}[data-state="ready"]`, { timeout: 90000 }).then(() => true).catch(() => false);
+  // phones: the spot panel is a bottom sheet that peeks (title + Walk in); open it to reach "See it in your space"
+  const handle = await page.$(`${sel('sheet-handle')}[aria-expanded="false"]`);
+  if (handle) {
+    await handle.tap();
+    await wait(450);
+  }
+  return ready;
 }
 const entryKind = (page) => page.waitForSelector(sel('ar'), { timeout: 15000 }).then((el) => el.evaluate((e) => e.dataset.arKind)).catch(() => null);
 async function press(page, target) {
-  const el = typeof target === 'string' ? await page.$(target) : target;
+  let el = typeof target === 'string' ? await page.$(target) : target;
   if (!el) return false;
+  // phones: a button in the spot panel needs its bottom sheet open (a drag folds it)
+  const inFoldedSheet = await el.evaluate((e) => Boolean(e.closest('[data-mr="spot-panel"]')) && Boolean(document.querySelector('[data-mr="sheet-handle"][aria-expanded="false"]')));
+  if (inFoldedSheet) {
+    await (await page.$(`${sel('sheet-handle')}[aria-expanded="false"]`)).tap();
+    await wait(450);
+    if (typeof target === 'string') el = await page.$(target);
+  }
   if (DEVICES[page.device].touch) await el.tap();
   else await el.click();
   return true;
@@ -360,6 +374,7 @@ async function press(page, target) {
 
 /** The viewer's picture (greyscale, 240 px wide), from the top of the page. */
 async function grabViewer(page) {
+  await foldSheet(page); // the same picture every time: never half under the phone's open sheet
   await page.evaluate(() => window.scrollTo(0, 0));
   await wait(150);
   const el = await page.$(sel('viewer'));
@@ -374,7 +389,16 @@ const meanDiff = (a, b) => {
   return s / a.data.length;
 };
 /** One drag across the viewer (a finger on a phone): the room should turn. */
+/** Phones: fold the spot panel's bottom sheet back down, so a drag lands on the room, not the sheet. */
+async function foldSheet(page) {
+  const open = await page.$(`${sel('sheet-handle')}[aria-expanded="true"]`);
+  if (!open) return;
+  await open.tap();
+  await wait(400);
+}
+
 async function dragViewer(page) {
+  await foldSheet(page);
   await page.evaluate(() => window.scrollTo(0, 0));
   const box = await (await page.$(sel('viewer'))).boundingBox();
   const cx = box.x + box.width / 2;

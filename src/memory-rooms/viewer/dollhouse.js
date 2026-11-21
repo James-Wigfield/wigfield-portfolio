@@ -53,12 +53,8 @@ export function attachedWall(o, shell) {
   return WALL_KITS.has(o.kit) && dist[best] <= FLUSH_M ? best : null;
 }
 
-/**
- * Index a room root: what hides with each wall side (the wall itself, its
- * prefixed parts, and the scene objects attached to it), the ceilings, and a
- * fade record per side + 'ceiling' ({ objs, mats, value, target }).
- */
-export function indexRoom(root, scene = null) {
+/** What hides with each wall side and with the ceiling: { walls: { north: [Object3D]… }, ceilings }. */
+export function groupRoom(root, scene = null) {
   const walls = { north: [], south: [], east: [], west: [] };
   const ceilings = [];
   const byName = new Map();
@@ -70,10 +66,44 @@ export function indexRoom(root, scene = null) {
     if (name.startsWith('obj__') && !byName.has(name)) byName.set(name, obj);
   });
   for (const o of scene?.objects || []) {
+    if (o.kit === 'pendant' || o.mount === 'ceiling') {
+      // hung from the ceiling: it floats once the ceiling is cut away, so it goes with it
+      const node = byName.get(`obj__${o.id}`);
+      if (node) ceilings.push(node);
+      continue;
+    }
     const side = attachedWall(o, scene.shell);
     const node = side && byName.get(`obj__${o.id}`);
     if (node) walls[side].push(node);
   }
+  return { walls, ceilings };
+}
+
+/**
+ * Every mesh a dollhouse view from camXZ hides (the walls on the camera's side, the
+ * ceiling), without touching any material: what "Recall" leaves out of its cloud.
+ */
+export function hiddenAtView(root, scene, camXZ, centreXZ) {
+  const { walls, ceilings } = groupRoom(root, scene);
+  const out = new Set();
+  let dx = camXZ[0] - centreXZ[0];
+  let dz = camXZ[1] - centreXZ[1];
+  const len = Math.hypot(dx, dz) || 1;
+  dx /= len;
+  dz /= len;
+  const take = (list) => list.forEach((o) => o.traverse((c) => out.add(c)));
+  for (const side of SIDES) if (WALL_OUT[side][0] * dx + WALL_OUT[side][1] * dz > HIDE_DOT) take(walls[side]);
+  take(ceilings);
+  return out;
+}
+
+/**
+ * Index a room root: what hides with each wall side (the wall itself, its
+ * prefixed parts, and the scene objects attached to it), the ceilings, and a
+ * fade record per side + 'ceiling' ({ objs, mats, value, target }).
+ */
+export function indexRoom(root, scene = null) {
+  const { walls, ceilings } = groupRoom(root, scene);
 
   const replaced = new Set();
   const fades = {};

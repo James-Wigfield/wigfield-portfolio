@@ -8,6 +8,8 @@ import { COPY } from '../../copy.js';
 import { mediaOf } from '../../lib/api.js';
 import { clearFlash, peekFlash } from '../../lib/flash.js';
 import { paths } from '../../routes.js';
+import { tripDayOf } from '../../lib/trip.js';
+import { personName } from '../../lib/spots.js';
 import { useViewerState } from '../../viewer/useViewer.js';
 import { ModeToggle } from '../../viewer/ViewerControls.jsx';
 import PhotoStrip from './PhotoStrip.jsx';
@@ -24,7 +26,7 @@ function statusLine(spot, stage) {
   return null;
 }
 
-export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, onOpenPhoto }) {
+export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, onOpenPhoto, sheet = null, panelRef = null }) {
   const copy = COPY.spot;
   const vstate = useViewerState(viewer);
   const hasScan = mediaOf(spot, 'scan').length > 0;
@@ -37,9 +39,16 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
   // ?ar=1 (the desktop's QR code) opens "See it in your space" straight away.
   const [params] = useSearchParams();
   const arOpen = params.get('ar') === '1';
+  const day = tripDayOf(spot);
 
   return (
-    <aside className="mr-spot__panel">
+    <aside className="mr-spot__panel" data-mr="spot-panel" ref={panelRef}>
+      {sheet && (
+        <button type="button" className="mr-sheet-handle" aria-expanded={sheet.open} onClick={sheet.toggle} data-mr="sheet-handle">
+          <span className="mr-sheet-handle__grip" aria-hidden="true" />
+          <span className="mr-label">{sheet.open ? copy.sheetLess : copy.sheetMore}</span>
+        </button>
+      )}
       <header className="mr-spot__head">
         <div className="mr-spot__eyebrow">
           <span className="mr-label">{COPY.app.kinds[spot.kind] || spot.kind}</span>
@@ -51,7 +60,12 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
           </Link>
         </div>
         <h1 className="mr-spot__title">{spot.title}</h1>
-        {spot.note && <p className="mr-spot__note">{spot.note}</p>}
+        {spot.note && (
+          <blockquote className="mr-spot__note mr-quote">
+            <p>{copy.quote(spot.note)}</p>
+            <cite className="mr-label">{copy.quoteBy(personName(spot.createdBy) || '')}</cite>
+          </blockquote>
+        )}
         {line && <p className="mr-spot__line">{line}</p>}
         {saved.on && saved.id === spot.id && (
           <p className="mr-msg mr-spot__saved" role="status" data-mr="spot-saved">
@@ -68,7 +82,7 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
 
       {stage === 'model' && (
         <Suspense fallback={null}>
-          <WalkEntry key={`walk-${spot.id}`} spot={spot} />
+          <WalkEntry key={`walk-${spot.id}`} spot={spot} dive={viewer ? () => viewer.diveIn() : null} />
           <ArEntry key={spot.id} spot={spot} viewer={viewer} startOpen={arOpen} />
         </Suspense>
       )}
@@ -86,6 +100,12 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
           <dt className="mr-label">{copy.meta.date}</dt>
           <dd>{copy.date(spot.capturedAt) || '–'}</dd>
         </div>
+        {day && (
+          <div>
+            <dt className="mr-label">{copy.meta.day}</dt>
+            <dd data-mr="trip-day">{copy.tripDay(day)}</dd>
+          </div>
+        )}
       </dl>
 
       <PhotoStrip photos={photos} title={spot.title} active={activePhoto} onOpen={onOpenPhoto} />

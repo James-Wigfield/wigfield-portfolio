@@ -2,12 +2,14 @@
    Phone: the map on top, sized to the trip's shape, and the list below it
    scrolling on its own (never one long page); the spot card docks at the bottom. */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import { useMedia } from '../lib/useMedia.js';
+import DayStrip from '../map/DayStrip.jsx';
 import Filters from '../map/Filters.jsx';
+import { rememberSpots, sheetNumbers, spotDate } from '../lib/trip.js';
 import SpotList from '../map/SpotList.jsx';
 import SpotsMap from '../map/SpotsMap.jsx';
 import { WORLD, onMap } from '../map/geo.js';
@@ -32,12 +34,21 @@ export default function MapPage() {
   const [person, setPerson] = useState('all');
   const [stat, setStat] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
+  const [day, setDay] = useState(null); // 'YYYY-MM-DD' from the day strip, or null for every day
+  const [liftId, setLiftId] = useState(null); // the list row under the mouse lifts its marker
   const elsewhereRef = useRef(null);
 
-  const filtered = useMemo(
+  // sheet numbers (No. 004 / MR-004) by capture order over every spot, whatever the filters
+  const numbers = useMemo(() => sheetNumbers(spots), [spots]);
+  useEffect(() => {
+    if (spots.length) rememberSpots(spots);
+  }, [spots]);
+
+  const byPerson = useMemo(
     () => spots.filter((s) => (person === 'all' || s.createdBy === person) && (stat === 'all' || s.status === stat)),
     [spots, person, stat],
   );
+  const filtered = useMemo(() => (day ? byPerson.filter((s) => spotDate(s) === day) : byPerson), [byPerson, day]);
   const onMapSpots = useMemo(() => filtered.filter(onMap), [filtered]);
   const elsewhere = useMemo(() => filtered.filter((s) => !onMap(s)), [filtered]);
   const selected = selectedId && filtered.some((s) => s.id === selectedId) ? selectedId : null;
@@ -73,6 +84,7 @@ export default function MapPage() {
   const clearFilters = () => {
     setPerson('all');
     setStat('all');
+    setDay(null);
   };
 
   const selectRow = (id) => setSelectedId(id);
@@ -112,7 +124,10 @@ export default function MapPage() {
         }
       />
     );
-  else listBody = <SpotList spots={onMapSpots} elsewhere={elsewhere} selectedId={selected} onSelect={selectRow} elsewhereRef={elsewhereRef} />;
+  else
+    listBody = (
+      <SpotList spots={onMapSpots} elsewhere={elsewhere} selectedId={selected} onSelect={selectRow} onHover={setLiftId} numbers={numbers} elsewhereRef={elsewhereRef} />
+    );
 
   let mapNote = null;
   if (status === 'loading' && !total) mapNote = <p className="mr-map-status">{COPY.map.loading}</p>;
@@ -155,6 +170,7 @@ export default function MapPage() {
           fly={fly}
           flyStops={stops}
           flyLegs={legs}
+          liftId={liftId}
         >
           {(narrow || !total) && mapNote}
           {!flying && total > 0 && <PlayButton onPlay={play} disabled={!stops.length} />}
@@ -167,6 +183,7 @@ export default function MapPage() {
           <span className="mr-label">{countText}</span>
         </div>
         {total > 0 && <Filters person={person} status={stat} onPerson={setPerson} onStatus={setStat} />}
+        {total > 0 && <DayStrip spots={byPerson} day={day} onDay={setDay} />}
         {listBody}
       </aside>
     </div>

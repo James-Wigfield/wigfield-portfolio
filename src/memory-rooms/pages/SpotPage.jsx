@@ -4,7 +4,7 @@
    The viewer stays mounted while moving between 3D spots (it just loads the
    next one), so one WebGL context serves the whole visit. */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import { COPY } from '../copy.js';
@@ -16,7 +16,11 @@ import PageMessage from './spot/PageMessage.jsx';
 import PhotoStage from './spot/PhotoStage.jsx';
 import SpotPanel from './spot/SpotPanel.jsx';
 import StageNav from './spot/StageNav.jsx';
-import { spotPhotos, stageKind, viewerSource } from './spot/photos.js';
+import TitleBlock from './spot/TitleBlock.jsx';
+import { moodOf, spotPhotos, stageKind, viewerSource } from './spot/photos.js';
+import { placeOf } from '../lib/spots.js';
+import { sheetLabel, useSheetNumber } from '../lib/trip.js';
+import { useMedia } from '../lib/useMedia.js';
 import '../viewer/viewer.css';
 
 export default function SpotPage() {
@@ -66,7 +70,11 @@ function SpotView({ spot, stage }) {
   const [viewer, setViewer] = useState(null);
   const [lightbox, setLightbox] = useState(null); // { id, index }
   const [stageIndex, setStageIndex] = useState({ id: null, index: 0 });
+  // phone: the panel is a bottom sheet over a full-bleed stage, peeking (title + Walk in) until opened
+  const [sheet, setSheet] = useState({ id: null, open: false });
   const vp = useViewpoint(viewer);
+  const narrow = useMedia('(max-width: 860px)');
+  const sheetNo = useSheetNumber(spot?.id);
 
   const photos = useMemo(() => (spot ? spotPhotos(spot) : []), [spot]);
   const source = useMemo(() => (spot ? viewerSource(spot) : null), [spot]);
@@ -91,16 +99,47 @@ function SpotView({ spot, stage }) {
   }, [viewer, vp.photo, lightboxIndex]);
 
   const openPhoto = (index) => spot && setLightbox({ id: spot.id, index });
+  const sheetOpen = Boolean(spot && sheet.id === spot.id && sheet.open);
+
+  // phone: the stage ends where the peeking sheet starts (measured), and the open sheet slides up over it
+  const panelRef = useRef(null);
+  const [peekH, setPeekH] = useState(0);
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!narrow || sheetOpen || !el) return undefined;
+    const measure = () => setPeekH(Math.round(el.getBoundingClientRect().height));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [narrow, sheetOpen, spot?.id, stage]);
 
   return (
-    <div className="mr-spot" data-stage={stage}>
-      <section className="mr-spot__stage">
+    <div
+      className="mr-spot"
+      data-stage={stage}
+      data-sheet={narrow ? (sheetOpen ? 'open' : 'peek') : undefined}
+      style={narrow && peekH ? { '--mr-peek-h': `${peekH}px` } : undefined}
+    >
+      <section className="mr-spot__stage" data-mood={moodOf(spot)}>
         {showViewer && (
           <RoomViewer
             source={source}
             onViewer={setViewer}
             label={spot ? COPY.viewer.label(spot.title) : undefined}
             bar={spot ? <StageBar viewer={viewer} cameras={cameras} thumbs={thumbs} /> : null}
+            stamp={
+              spot ? (
+                <TitleBlock
+                  viewer={viewer}
+                  sheet={sheetLabel(sheetNo)}
+                  name={narrow ? null : spot.title}
+                  place={placeOf(spot)}
+                  date={COPY.spot.date(spot.capturedAt)}
+                  compact={narrow}
+                />
+              ) : null
+            }
           />
         )}
         {stage === 'photos' && spot && (
@@ -124,6 +163,8 @@ function SpotView({ spot, stage }) {
           viewer={showViewer ? viewer : null}
           activePhoto={stage === 'photos' ? photoIndex : lightboxIndex}
           onOpenPhoto={openPhoto}
+          sheet={narrow ? { open: sheetOpen, toggle: () => setSheet({ id: spot.id, open: !sheetOpen }) } : null}
+          panelRef={panelRef}
         />
       ) : (
         <aside className="mr-spot__panel mr-spot__panel--loading">

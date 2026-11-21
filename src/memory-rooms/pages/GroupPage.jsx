@@ -6,7 +6,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { roomModelOf } from '../lib/spots.js';
+import { placeOf, roomModelOf } from '../lib/spots.js';
+import { useMedia } from '../lib/useMedia.js';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import RoomViewer from '../viewer/RoomViewer.jsx';
@@ -16,6 +17,7 @@ import PageMessage from './spot/PageMessage.jsx';
 import StageNav from './spot/StageNav.jsx';
 import { stageKind } from './spot/photos.js';
 import { Arrow } from './spot/icons.jsx';
+import TitleBlock from './spot/TitleBlock.jsx';
 import '../viewer/viewer.css';
 
 function roomOf(spot) {
@@ -55,6 +57,7 @@ export default function GroupPage() {
 
 function GroupView({ group, spots }) {
   const [viewer, setViewer] = useState(null);
+  const narrow = useMedia('(max-width: 860px)');
   const [focused, setFocused] = useState(null);
   const vstate = useViewerState(viewer);
   const copy = COPY.group;
@@ -82,7 +85,13 @@ function GroupView({ group, spots }) {
     <div className="mr-spot mr-group" data-stage={source ? 'model' : 'loading'}>
       <section className="mr-spot__stage">
         {(source || !spots) && (
-          <RoomViewer source={source} onViewer={setViewer} label={title} bar={source ? <StageBar viewer={viewer} homeLabel={copy.whole} /> : null} />
+          <RoomViewer
+            source={source}
+            onViewer={setViewer}
+            label={title}
+            bar={source ? <StageBar viewer={viewer} homeLabel={copy.whole} /> : null}
+            stamp={spots?.length ? <TitleBlock viewer={viewer} place={placeOf(spots[0])} date={copy.span(spots)} compact={narrow} /> : null}
+          />
         )}
         {spots && !source && <p className="mr-stage-empty mr-label">{copy.noLayout}</p>}
         <StageNav />

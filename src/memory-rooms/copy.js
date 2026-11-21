@@ -7,6 +7,7 @@ export const COPY = {
     name: 'Memory Rooms',
     tagline: 'Places from the trip, rebuilt room by room.',
     people: { james: 'James', justin: 'Justin' },
+    initials: { james: 'J', justin: 'Ju' },
     status: { captured: 'Captured', modelling: 'Modelling', rendered: 'Rendered' },
     kinds: { interior: 'Interior', exterior: 'Exterior' },
     newSpot: 'New spot',
@@ -69,6 +70,9 @@ export const COPY = {
     retry: 'Try again',
   },
   list: {
+    no: (n) => `No. ${String(n).padStart(3, '0')}`,
+    // the index's date: day and month of a YYYY-MM-DD (the number and the day strip carry the rest)
+    day: (ymd) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : ''),
     person: 'Person',
     status: 'Status',
     all: 'All',
@@ -76,6 +80,18 @@ export const COPY = {
     noLocation: 'No location',
     none: 'No spots match these filters.',
     clear: 'Clear filters',
+  },
+
+  // the trip, day by day (under the filters)
+  days: {
+    label: 'The trip, day by day',
+    slider: 'Day of the trip: tap or drag to show one day',
+    all: 'Every day of the trip',
+    clear: 'All days',
+    short: (d) => d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+    selected: (n, d, count) =>
+      `Day ${n} · ${d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })} · ${count === 0 ? 'nothing yet' : `${count} ${count === 1 ? 'spot' : 'spots'}`}`,
+    cell: (n, d, count) => `Day ${n}, ${d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' })}: ${count} ${count === 1 ? 'spot' : 'spots'}`,
   },
 
   // ── /memories/new (capture/map agent) ─────────────────────────────────────
@@ -217,13 +233,32 @@ export const COPY = {
   },
 
   // ── /memories/:spotId + /memories/group/:group (viewer agent) ─────────────
+  // the drawing sheet's title block on the 3D stage
+  titleBlock: {
+    label: 'Title block',
+    name: 'Name',
+    sheet: 'Sheet',
+    place: 'Place',
+    date: 'Captured',
+    north: 'N',
+    scale: (half, full) => `0 · ${half} · ${full} m`,
+    scaleShort: (full) => `${full} m`,
+  },
+
   spot: {
     back: 'Map',
     backLabel: 'Back to the map',
     groupLink: 'Whole building',
     groupLabel: (name) => `See every room of ${name}`,
     loading: 'Opening the spot…',
-    meta: { by: 'By', place: 'Place', date: 'Captured', kind: 'Kind', status: 'Status' },
+    meta: { by: 'By', place: 'Place', date: 'Captured', kind: 'Kind', status: 'Status', day: 'Trip', building: 'Building' },
+    // the note as a pull-quote, signed by who saved it
+    quote: (note) => `“${note}”`,
+    quoteBy: (name) => (name ? `— ${name}` : ''),
+    tripDay: (n) => `Day ${n} of the trip`,
+    // phone: the panel is a bottom sheet
+    sheetMore: 'More',
+    sheetLess: 'Less',
     date: (iso) => {
       const d = iso ? new Date(iso) : null;
       return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -322,7 +357,9 @@ export const COPY = {
     blendLabel: 'Blend the model and the photo',
     blendModel: 'Model',
     blendPhoto: 'Photo',
+    recalling: 'Recalling the room…',
     pinLabel: (n, text) => `Memory ${n}: ${text}`,
+    pinNumber: (n) => String(n).padStart(2, '0'),
     pinPhoto: (n) => `Photo ${n}`,
     camTag: (n) => `Photo ${n}`,
     thumbCaption: (n) => `Photo ${n}`,
@@ -427,6 +464,18 @@ export const COPY = {
     open: 'Open',
     openLabel: (title) => `Open ${title}`,
     whole: 'Whole building',
+    // the title block's date: the first and last capture of its rooms, as short as it can be said
+    span: (spots) => {
+      const ts = spots.map((s) => Date.parse(s.capturedAt || s.createdAt)).filter(Number.isFinite).sort((a, b) => a - b);
+      if (!ts.length) return '';
+      const a = new Date(ts[0]);
+      const b = new Date(ts[ts.length - 1]);
+      const full = (d) => d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+      if (full(a) === full(b)) return full(a);
+      if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()) return `${a.getDate()}–${full(b)}`;
+      if (a.getFullYear() === b.getFullYear()) return `${a.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} – ${full(b)}`;
+      return `${full(a)} – ${full(b)}`;
+    },
     noLayout: 'No layout yet',
     emptyTitle: 'No rooms in this building yet.',
     emptyBody: 'Rooms join a building when their layout names it.',

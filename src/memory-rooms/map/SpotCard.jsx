@@ -1,7 +1,8 @@
 /* The preview card that opens beside a spot (or docks at the bottom on a phone),
    and the member list for a cluster that zooming can't split. */
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { transitionClick } from '../lib/transition.js';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import { formatDate } from '../lib/format.js';
@@ -19,6 +20,7 @@ function CloseButton({ onClose }) {
 
 export function SpotCard({ spot, style, compact, cardRef, onClose }) {
   const img = heroOf(spot);
+  const navigate = useNavigate();
   const facts = [placeOf(spot), formatDate(spot.capturedAt), personName(spot.createdBy)].filter(Boolean);
   return (
     <article
@@ -31,7 +33,11 @@ export function SpotCard({ spot, style, compact, cardRef, onClose }) {
       aria-label={spot.title}
     >
       <div className="mr-card-media">
-        {img ? <img src={img.url} alt="" width={img.width || undefined} height={img.height || undefined} /> : <span className="mr-label">{COPY.map.noPhoto}</span>}
+        {img ? (
+          <img className="mr-card-img" src={img.url} alt="" width={img.width || undefined} height={img.height || undefined} />
+        ) : (
+          <span className="mr-label">{COPY.map.noPhoto}</span>
+        )}
       </div>
       <div className="mr-card-body">
         <div className="mr-card-meta">
@@ -44,7 +50,7 @@ export function SpotCard({ spot, style, compact, cardRef, onClose }) {
         {spot.note && <p className="mr-card-note">{spot.note}</p>}
         <p className="mr-card-facts">{facts.join(' · ')}</p>
         <div className="mr-card-actions">
-          <Link className="mr-btn mr-btn--primary" to={paths.spot(spot.id)} data-mr="spot-open">
+          <Link className="mr-btn mr-btn--primary" to={paths.spot(spot.id)} onClick={transitionClick(navigate, paths.spot(spot.id))} data-mr="spot-open">
             {COPY.map.open}
           </Link>
           {spot.frameGroup && (

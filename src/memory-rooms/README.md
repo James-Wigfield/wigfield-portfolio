@@ -5,9 +5,9 @@ Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password)
 
 | Route | Screen |
 |---|---|
-| `/memories` | map + list of spots, filter by person and status, outbox status; **Play the trip** (`?play=1`): the globe flies through every spot in capture order, drawing the route, standing rendered rooms up in 3D |
+| `/memories` | map + the index of spots (`No. 001`, each room's cut-out), filter by person, status and day of the trip (the day strip), outbox status; **Play the trip** (`?play=1`): the globe flies through every spot in capture order, drawing the route, standing rendered rooms up in 3D |
 | `/memories/new` | capture, phone first: kind + name → photos (shot guide) → the memory → location → save to the outbox |
-| `/memories/:spotId` | the spot: 3D viewer (Model ⇄ Scan), photo strip, note, photo viewpoints with a photo/model blend; **Walk in** (+ who's in the room now) and **See it in your space** (AR: Quick Look on iPhone, WebXR on Android, a QR code on a desktop; `?ar=1` opens it) |
+| `/memories/:spotId` | the spot as a drawing sheet: the room **recalls itself** from a cloud of points, a drafting grid under it, a title block (sheet MR-###, place, date, live scale bar, north arrow), numbered callouts for its pins, thin ink photo frustums; 3D viewer (Model ⇄ Scan), photo strip, the note as a pull-quote, photo viewpoints with a photo/model blend; **Walk in** (+ who's in the room now) and **See it in your space** (AR: Quick Look on iPhone, WebXR on Android, a QR code on a desktop; `?ar=1` opens it). On a phone the panel is a bottom sheet |
 | `/memories/:spotId/edit` | fix its details after capture: the place (pin / GPS / typed, + its name), name, note, captured day, who saved it; kind + size until it has a 3D room. One PATCH with `ifUpdatedAt` (409 → reload theirs under yours); needs signal, the typed draft waits in sessionStorage |
 | `/memories/:spotId/walk` | walk the 3D room as your pixel character, together with whoever else is in it (a Durable Object per spot): WASD / joystick, photo marks that blend into the real photo, sit, wave, jump, chat |
 | `/memories/group/:group` | every room of one building, assembled in its shared frame |
@@ -36,6 +36,10 @@ src/memory-rooms/
   capture/               the capture flow, photo resizing, IndexedDB outbox, geolocation
                          LocationPicker.jsx: the location picker, shared by capture (step 4) and the edit page
   viewer/                plain three.js viewer (GLTFLoader, OrbitControls, Spark) + its thin React wrapper
+                         recall.js: the "Recall" load (points condensing into the room); helpers.js: the drafting
+                         grid ground + ink frustums; dollhouse.js: the cut-away (and what the opening view hides)
+  lib/trip.js            the trip's days, a spot's day (where it was captured), sheet numbers (MR-004 / No. 004)
+  lib/transition.js      View Transitions around a navigation (the router can't, it's a <BrowserRouter>)
   ar/                    "See it in your space": ArEntry.jsx (lazy), usdz.js (Quick Look file made in the browser),
                          xr.js (WebXR inside the viewer), qr.js (the desktop's QR code)
   walk/                  walking in together: WalkGame.js (plain three.js), grid.js (walkable grid from the GLB +
@@ -56,7 +60,10 @@ tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test
 - The viewer is a plain class (`viewer/RoomViewer.js`); React only owns its lifecycle.
 - The server side is one file (`workers/memory-rooms.js`) plus `scene/validate.js` + the schema.
 - A UI restyle starts in the token block of `memory-rooms.css` and in `copy.js`. That includes the Mapbox map:
-  `map/mapbox/style.js` paints its layers from the `--mr-map-*` tokens.
+  `map/mapbox/style.js` paints its layers from the `--mr-map-*` tokens, and the 3D stage: `RoomViewer.js` reads
+  `--mr-grid-*`, `--mr-frustum` and `--mr-stage` from the stage (a night spot's stage overrides them).
+- The look ("Recall", 2026-11-21): paper and ink, hairline rules, mono labels, ONE serif (Instrument Serif) for titles
+  and the note only, status as a labelled dot (never a filled pill or a coloured callout box), a darkroom dark mode.
 - The maps need `VITE_MAPBOX_TOKEN` (a public `pk.` token, in `.env.local`, never in code or `.dev.vars`). Without it,
   without WebGL 2, or offline, both maps draw the SVG atlas instead. Every Mapbox `Map` is a billed load, so
   each page makes one (see `map/mapbox/useMapbox.js`); `mapbox-gl` is a lazy chunk only the maps fetch.

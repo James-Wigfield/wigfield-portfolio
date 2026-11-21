@@ -87,7 +87,8 @@ async function main() {
   await page.setGeolocation({ latitude: 51.1784, longitude: -115.5708, accuracy: 18 });
 
   /* ── A. full capture ─────────────────────────────────────────────────── */
-  await page.goto(`${APP}/memories/new`, { waitUntil: 'networkidle0' });
+  // the SVG atlas pick map this check was written for (the Mapbox one is page-check's; ?map=atlas costs no Mapbox load)
+  await page.goto(`${APP}/memories/new?map=atlas`, { waitUntil: 'networkidle0' });
   await mr(page, 'gate-password');
   await shot(page, 'cap-390-00-gate');
   await page.type('[data-mr="gate-password"]', 'wrong-password');

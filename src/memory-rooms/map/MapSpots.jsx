@@ -41,9 +41,17 @@ export default function MapSpots({ items, selectedId, selectedCluster, dotR, clu
       )}
       {rest.map((it) =>
         it.type === 'spot' ? (
-          <SpotDot key={it.point.id} point={it.point} r={dotR} selected={it.point.id === selectedId} onActivate={() => onPick(it.point.id)} />
+          <SpotDot key={it.point.id} point={it.point} r={dotR} selected={it.point.id === selectedId} hover={hoverId === it.point.id} onActivate={() => onPick(it.point.id)} />
         ) : (
-          <ClusterDot key={it.id} item={it} base={clusterBase} selected={it.id === selectedCluster} hover={hoverId === it.id} passThrough={passThrough} onActivate={() => onCluster(it)} />
+          <ClusterDot
+            key={it.id}
+            item={it}
+            base={clusterBase}
+            selected={it.id === selectedCluster}
+            hover={hoverId === it.id || (hoverId != null && it.members.some((m) => m.id === hoverId))}
+            passThrough={passThrough}
+            onActivate={() => onCluster(it)}
+          />
         ),
       )}
     </g>

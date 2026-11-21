@@ -107,7 +107,7 @@
   border-radius: var(--mr-radius-s);
   background: var(--mr-bg);
 }
-.mr-walk__title { font: 600 var(--mr-text-m) / 1.2 var(--mr-font-sans); color: var(--mr-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr-walk__title { font: 400 1.15rem / 1.1 var(--mr-font-serif); color: var(--mr-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .mr-walk__lines {
   position: absolute;

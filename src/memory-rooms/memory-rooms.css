@@ -2,6 +2,11 @@
    Memory Rooms: the one scoped stylesheet. Every class is .mr-* and every
    design token sits on the .mr root, so a "make it feel like X" pass edits the
    token block first. Light + dark follow prefers-color-scheme.
+   The look ("Recall", 2026-11-21): each spot is a sheet in an architect's
+   archive of memories. Paper and ink, hairline rules, mono labels, a drafting
+   grid under the rooms, numbered callouts, a title block; one display serif
+   (Instrument Serif) for titles and the note only. Dark mode is the darkroom:
+   deep ink with a warm safelight accent.
    (Token NAMES are a contract shared by all components; values may change.)
    The tokens are also set on html.mr-active (added by the shell while mounted)
    so <body> can take the theme background.
@@ -15,7 +20,7 @@ html.mr-active {
   --mr-surface-2: #efece5;
   --mr-ink: #1d1c1a;
   --mr-ink-2: #5b5852;
-  --mr-ink-3: #8f8b83;
+  --mr-ink-3: #67635c; /* 4.5:1 or more on the paper and the stage: small mono labels stay readable */
   --mr-rule: rgba(29, 28, 26, 0.12);
   --mr-rule-strong: rgba(29, 28, 26, 0.85);
   --mr-field: rgba(29, 28, 26, 0.3); /* input borders */
@@ -54,9 +59,23 @@ html.mr-active {
   --mr-person-james: #2f6db5; /* walk-in: name tags + markers, matching each character's jacket */
   --mr-person-justin: #c2592a;
 
-  /* type */
+  /* the drafting sheet (3D stage): ink lines on the paper, read by viewer/RoomViewer.js */
+  --mr-grid-ink: #1d1c1a; /* the drafting grid + contact shadow under a room */
+  --mr-grid-minor: 0.075; /* opacity of the fine grid lines (every 25 cm under a room) */
+  --mr-grid-major: 0.2; /* every metre (every 5 m under a big site) */
+  --mr-grid-shadow: 0.24; /* the contact shadow's darkest */
+  --mr-grid-shade: #1d1c1a; /* the contact shadow's colour (always dark) */
+  --mr-frustum: #1d1c1a; /* photo viewpoints: thin ink frustums */
+  --mr-leader: rgba(29, 28, 26, 0.62); /* pin leader lines out to the margin */
+  --mr-section: #3a3531; /* flat section ink: the cut through a wall (plan cut, plans) */
+  --mr-sheet-line: var(--mr-ink); /* the title block's frame */
+  --mr-paper-grid: rgba(29, 28, 26, 0.055); /* faint squared paper behind lists and plans */
+
+  /* type: grotesk body, mono labels, ONE serif for titles and the note */
   --mr-font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mr-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --mr-font-serif: 'Instrument Serif', 'Fraunces', Georgia, 'Times New Roman', serif;
+  --mr-text-title: clamp(2rem, 1.3rem + 2.6vw, 3.1rem); /* a sheet's title (serif runs small: size it up) */
   --mr-text-xs: 0.6875rem;
   --mr-text-s: 0.8125rem;
   --mr-text-m: 0.9375rem;
@@ -83,26 +102,36 @@ html.mr-active {
   --mr-gutter: var(--mr-space-5);
 }
 
+/* Darkroom: deep warm ink, prints pegged up under a safelight. */
 @media (prefers-color-scheme: dark) {
   .mr,
   html.mr-active {
-    --mr-bg: #141413;
-    --mr-surface: #1b1b19;
-    --mr-surface-2: #23221f;
-    --mr-ink: #ecebe6;
-    --mr-ink-2: #aeaba3;
-    --mr-ink-3: #77746d;
-    --mr-rule: rgba(236, 235, 230, 0.12);
-    --mr-rule-strong: rgba(236, 235, 230, 0.8);
-    --mr-field: rgba(236, 235, 230, 0.26);
-    --mr-accent: #e07a52;
-    --mr-accent-ink: #141413;
-    --mr-status-captured: #aeaba3;
-    --mr-status-modelling: #aeaba3;
-    --mr-status-rendered: #ecebe6;
+    --mr-bg: #121110;
+    --mr-surface: #191715;
+    --mr-surface-2: #221f1c;
+    --mr-ink: #ece7de;
+    --mr-ink-2: #b3ab9f;
+    --mr-ink-3: #938b80; /* 4.9:1 in the darkroom */
+    --mr-rule: rgba(236, 231, 222, 0.12);
+    --mr-rule-strong: rgba(236, 231, 222, 0.8);
+    --mr-field: rgba(236, 231, 222, 0.26);
+    --mr-accent: #e8653f; /* the safelight */
+    --mr-accent-ink: #121110;
+    --mr-status-captured: #b3ab9f;
+    --mr-status-modelling: #b3ab9f;
+    --mr-status-rendered: #ece7de;
     --mr-danger: #f2766b;
-    --mr-stage: #1f1e1b;
+    --mr-stage: #0f0e0d;
     --mr-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.45);
+    --mr-grid-ink: #ece7de;
+    --mr-grid-minor: 0.06;
+    --mr-grid-major: 0.11;
+    --mr-grid-shadow: 0.55;
+    --mr-grid-shade: #000000;
+    --mr-frustum: #ece7de;
+    --mr-leader: rgba(236, 231, 222, 0.55);
+    --mr-section: #b9ad9c;
+    --mr-paper-grid: rgba(236, 231, 222, 0.04);
 
     --mr-map-water: #0d0d0c;
     --mr-map-land: #2a2926;
@@ -130,8 +159,36 @@ html.mr-active {
 @media (max-width: 480px) {
   .mr {
     --mr-gutter: var(--mr-space-4);
-    --mr-header-h: 52px;
+    --mr-header-h: 48px;
   }
+}
+
+@media (prefers-color-scheme: dark) {
+  .mr .mr-seg button[aria-pressed='true'] { border-bottom-color: var(--mr-accent); }
+}
+
+/* A spot captured at night opens on the darkroom stage, even in light mode (scene.style.mood).
+   Only the stage takes these; the page around it stays as it is. */
+.mr [data-mood='night'] {
+  --mr-stage: #0f0e0d;
+  --mr-bg: #121110;
+  --mr-surface: #191715;
+  --mr-surface-2: #221f1c;
+  --mr-ink: #ece7de;
+  --mr-ink-2: #b3ab9f;
+  --mr-ink-3: #938b80;
+  --mr-rule: rgba(236, 231, 222, 0.12);
+  --mr-rule-strong: rgba(236, 231, 222, 0.8);
+  --mr-accent: #e8653f;
+  --mr-accent-ink: #121110;
+  --mr-grid-ink: #ece7de;
+  --mr-grid-minor: 0.06;
+  --mr-grid-major: 0.11;
+  --mr-grid-shadow: 0.55;
+  --mr-grid-shade: #000000;
+  --mr-frustum: #ece7de;
+  --mr-leader: rgba(236, 231, 222, 0.55);
+  color: var(--mr-ink);
 }
 
 /* ── page takeover: theme ground under everything, quiet scrollbars ─────── */
@@ -274,9 +331,11 @@ html.mr-active ::-webkit-scrollbar-thumb {
 @media (hover: hover) {
   .mr-btn:hover { background: var(--mr-surface-2); }
   .mr-btn--primary:hover { background: var(--mr-ink-2); border-color: var(--mr-ink-2); }
-  .mr-btn--primary[disabled]:hover { background: var(--mr-ink); border-color: var(--mr-ink); }
+  .mr-btn--primary[disabled]:hover { background: transparent; border-color: var(--mr-rule-strong); }
 }
 .mr-btn:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 2px; }
+.mr-btn--primary[disabled],
+.mr-btn--primary[aria-disabled='true'] { background: transparent; color: var(--mr-ink-3); border-color: var(--mr-rule-strong); opacity: 1; }
 .mr-btn[disabled],
 .mr-btn[aria-disabled='true'] { opacity: 0.4; cursor: default; }
 .mr-btn[aria-disabled='true'] { pointer-events: none; }
@@ -386,8 +445,8 @@ html.mr-active ::-webkit-scrollbar-thumb {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font: 600 1rem / 1 var(--mr-font-sans);
-  letter-spacing: -0.01em;
+  font: 400 1.35rem / 1 var(--mr-font-serif);
+  letter-spacing: 0;
   color: var(--mr-ink);
   text-decoration: none;
   white-space: nowrap;
@@ -417,13 +476,41 @@ html.mr-active ::-webkit-scrollbar-thumb {
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
+/* the person on this phone as a compact labelled dot (phones) */
+.mr-person-dot { display: none; }
 @media (max-width: 480px) {
-  .mr-header-new-long { display: none; }
-  .mr-header-new-short { display: inline; }
+  .mr-header-new-long,
+  .mr-header-new-short { display: none; }
   .mr-outbox-label { display: none; }
-  /* a light action on phones, so it never outweighs the page under it */
-  .mr-header .mr-header-new { background: transparent; color: var(--mr-ink); border-color: var(--mr-rule); padding: 0 var(--mr-space-3); }
-  .mr-person .mr-label { letter-spacing: 0.04em; }
+  /* a lighter header on phones: the wordmark, a "+" and who's holding the phone */
+  .mr-header { border-bottom-color: transparent; }
+  .mr-header .mr-header-new {
+    min-width: var(--mr-tap);
+    min-height: var(--mr-tap);
+    padding: 0;
+    background: transparent;
+    color: var(--mr-ink);
+    border-color: var(--mr-rule);
+  }
+  .mr-person .mr-label,
+  .mr-person-name { display: none; }
+  .mr-person { min-width: var(--mr-tap); justify-content: center; }
+  .mr-person-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: 500 var(--mr-text-xs) / 1 var(--mr-font-mono);
+    letter-spacing: var(--mr-tracking-label);
+    text-transform: uppercase;
+    color: var(--mr-ink-2);
+  }
+  .mr-person-dot::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mr-ink);
+  }
 }
 
 .mr-outbox {
@@ -463,8 +550,8 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-gate-form { width: min(100%, 380px); display: flex; flex-direction: column; gap: var(--mr-space-4); }
 .mr-gate-title {
   margin-bottom: var(--mr-space-3);
-  font: 500 var(--mr-text-xl) / 1.12 var(--mr-font-sans);
-  letter-spacing: -0.02em;
+  font: 400 var(--mr-text-title) / 1 var(--mr-font-serif);
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 .mr-gate-note { font-size: var(--mr-text-s); color: var(--mr-ink-3); }
@@ -495,7 +582,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 384px;
+  grid-template-columns: minmax(0, 1fr) 440px;
 }
 .mr-mappage-map { position: relative; min-width: 0; min-height: 0; }
 .mr-mappage-side {
@@ -512,7 +599,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
   gap: var(--mr-space-3);
   padding: var(--mr-space-5) var(--mr-space-5) var(--mr-space-3);
 }
-.mr-side-title { font: 500 var(--mr-text-l) / 1.2 var(--mr-font-sans); letter-spacing: -0.01em; }
+.mr-side-title { font: 400 2rem / 1 var(--mr-font-serif); letter-spacing: -0.01em; }
 .mr-side-head .mr-label { color: var(--mr-ink-3); }
 
 .mr-filters {
@@ -527,15 +614,16 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-filters .mr-seg { flex-wrap: wrap; column-gap: var(--mr-space-4); row-gap: 0; }
 .mr-filters .mr-seg button { min-height: 36px; }
 
+/* The list as an archive's index: No. 004, the room's cut-out standing on the paper, serif title. */
 .mr-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .mr-list-rows { list-style: none; }
 .mr-row {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-columns: 52px 76px minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--mr-space-3);
   width: 100%;
-  padding: var(--mr-space-3) var(--mr-space-5);
+  padding: var(--mr-space-2) var(--mr-space-5);
   border: 0;
   border-bottom: var(--mr-hairline) solid var(--mr-rule);
   background: none;
@@ -546,18 +634,52 @@ html.mr-active ::-webkit-scrollbar-thumb {
 }
 .mr-row:hover { background: var(--mr-surface); }
 .mr-row[aria-pressed='true'] { background: var(--mr-surface-2); }
-.mr-row-thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--mr-radius-s);
-  overflow: hidden;
-  background: var(--mr-surface-2);
+.mr-row-no {
+  align-self: center;
+  font: 400 var(--mr-text-xs) / 1 var(--mr-font-mono);
+  letter-spacing: 0.04em;
+  color: var(--mr-ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.mr-row-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.mr-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mr-row[aria-pressed='true'] .mr-row-no { color: var(--mr-accent); }
+.mr-row-cut {
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+/* a rendered room stands on the paper (its marker cut-out, with a soft contact shadow) */
+.mr-row-cut[data-kind='marker'] img {
+  max-width: 76px;
+  max-height: 60px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 3px var(--mr-marker-shadow));
+  transition: transform var(--mr-dur) var(--mr-ease);
+}
+.mr-row:hover .mr-row-cut[data-kind='marker'] img,
+.mr-row[aria-pressed='true'] .mr-row-cut[data-kind='marker'] img { transform: translateY(-3px); }
+/* not built yet: a small print of its first photo, on a white border */
+.mr-row-cut[data-kind='print'] img {
+  width: 48px;
+  height: 56px;
+  object-fit: cover;
+  padding: 3px 3px 7px;
+  background: var(--mr-surface);
+  border: var(--mr-hairline) solid var(--mr-rule);
+  transform: rotate(-2deg);
+}
+.mr-row-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mr-row-title,
 .mr-row-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mr-row-title { font-weight: 500; }
+.mr-row-title {
+  font: 400 1.3rem / 1.05 var(--mr-font-serif);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.mr-row-sub .mr-dot { display: none; }
 .mr-row-sub { font-size: var(--mr-text-s); color: var(--mr-ink-2); }
 .mr-row-side {
   display: flex;
@@ -581,7 +703,48 @@ html.mr-active ::-webkit-scrollbar-thumb {
   gap: var(--mr-space-3);
   padding: var(--mr-space-6) var(--mr-space-5);
 }
-.mr-state-title { font: 500 var(--mr-text-l) / 1.25 var(--mr-font-sans); letter-spacing: -0.01em; }
+.mr-state-title { font: 400 1.7rem / 1.05 var(--mr-font-serif); letter-spacing: -0.005em; }
+
+/* the trip, day by day: 31 cells, inked where a spot was captured; tap or drag to pick a day */
+.mr-days {
+  padding: var(--mr-space-3) var(--mr-space-5) var(--mr-space-3);
+  border-bottom: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-days__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mr-space-3); min-height: 24px; }
+.mr-days__head .mr-label { color: var(--mr-ink-2); }
+.mr-days__head .mr-linkbtn { min-height: 24px; font-size: var(--mr-text-xs); }
+.mr-days__strip {
+  display: grid;
+  grid-template-columns: repeat(31, minmax(0, 1fr));
+  align-items: end;
+  height: 32px;
+  margin-top: var(--mr-space-1);
+  border-bottom: var(--mr-hairline) solid var(--mr-rule-strong);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+.mr-days__strip:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 3px; }
+/* one column per day: a tick on the baseline, a taller ink stroke where spots were captured */
+.mr-days__strip i {
+  position: relative;
+  height: 100%;
+}
+.mr-days__strip i::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 5px;
+  background: var(--mr-rule-strong);
+  opacity: 0.45;
+}
+.mr-days__strip i[data-first]::after { height: 10px; opacity: 0.8; }
+.mr-days__strip i[data-on]::after { width: 3px; margin-left: -1px; height: calc(8px + 4px * var(--n, 1)); max-height: 26px; background: var(--mr-ink); opacity: 1; }
+.mr-days__strip i[data-sel]::after { background: var(--mr-accent); opacity: 1; height: 26px; width: 3px; margin-left: -1px; }
+.mr-days__ends { display: flex; justify-content: space-between; margin-top: 2px; }
+.mr-days__ends .mr-label { color: var(--mr-ink-3); }
 .mr-state-body { color: var(--mr-ink-2); }
 
 @media (max-width: 819px) {
@@ -595,10 +758,20 @@ html.mr-active ::-webkit-scrollbar-thumb {
   .mr-mappage-side { border-left: 0; }
   .mr-mappage[data-card] .mr-list { padding-bottom: 200px; }
   .mr-side-head { padding: var(--mr-space-3) var(--mr-gutter) var(--mr-space-1); }
-  .mr-side-title { font-size: var(--mr-text-m); }
   .mr-filters { padding: 0 var(--mr-gutter) var(--mr-space-2); }
   .mr-filters .mr-seg button { min-height: 44px; }
-  .mr-row { padding: var(--mr-space-3) var(--mr-gutter); }
+  .mr-row { grid-template-columns: 44px 60px minmax(0, 1fr); padding: var(--mr-space-2) var(--mr-gutter); }
+  .mr-row-side { display: none; }
+  /* phones: the status dot moves onto the place line */
+  .mr-row-sub .mr-dot { display: inline-flex; margin-right: var(--mr-space-2); vertical-align: -1px; }
+  .mr-row-sub .mr-dot::before { width: 7px; height: 7px; }
+  .mr-row-cut { height: 48px; }
+  .mr-row-cut[data-kind='marker'] img { max-width: 60px; max-height: 48px; }
+  .mr-row-cut[data-kind='print'] img { width: 40px; height: 46px; }
+  .mr-row-title { font-size: 1.15rem; }
+  .mr-days { padding: var(--mr-space-2) var(--mr-gutter); }
+  .mr-days__strip { height: var(--mr-tap); }
+  .mr-side-title { font-size: 1.5rem; }
   .mr-list-group-title,
   .mr-state { padding-left: var(--mr-gutter); padding-right: var(--mr-gutter); }
 }
@@ -696,9 +869,13 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-mapspot-ring { fill: none; stroke: var(--mr-accent); stroke-width: 1.5px; }
 .mr-mapspot:focus-visible .mr-mapspot-halo,
 .mr-cluster:focus-visible .mr-cluster-disc { stroke: var(--mr-accent); stroke-width: 2px; }
-.mr-cluster-disc { fill: var(--mr-ink); stroke: var(--mr-map-land); stroke-width: 2px; transition: fill var(--mr-dur) var(--mr-ease); }
-.mr-cluster:hover .mr-cluster-disc { fill: var(--mr-ink-2); }
-.mr-cluster-n { fill: var(--mr-bg); font: 500 11px var(--mr-font-mono); pointer-events: none; }
+/* a cluster is a ringed count on the paper (never a filled pill) */
+.mr-cluster-disc { fill: var(--mr-map-land); stroke: var(--mr-ink); stroke-width: 1.25px; transition: stroke-width var(--mr-dur) var(--mr-ease); }
+.mr-cluster:hover .mr-cluster-disc,
+.mr-cluster[data-hover] .mr-cluster-disc { stroke-width: 2.25px; stroke: var(--mr-accent); }
+/* a list row under the mouse marks its dot on the map */
+.mr-mapspot:not(.mr-marker)[data-hover] .mr-mapspot-halo { stroke: var(--mr-accent); stroke-width: 2px; }
+.mr-cluster-n { fill: var(--mr-ink); font: 500 11px var(--mr-font-mono); pointer-events: none; }
 
 /* rendered spots stand on the map as their baked cut-out (map/markers.js), over a soft
    contact shadow; the ring on the ground marks the selected or focused one */
@@ -810,14 +987,19 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-card-body { display: flex; flex-direction: column; gap: var(--mr-space-2); padding: var(--mr-space-4); min-width: 0; }
 .mr-card-meta { display: flex; align-items: center; justify-content: space-between; gap: var(--mr-space-3); font-size: var(--mr-text-s); color: var(--mr-ink-2); }
 .mr-card-meta .mr-label { color: var(--mr-ink-3); }
-.mr-card-title { font: 500 1.125rem / 1.25 var(--mr-font-sans); letter-spacing: -0.01em; }
+.mr-card-title { font: 400 1.6rem / 1.02 var(--mr-font-serif); letter-spacing: -0.005em; }
+/* map -> spot: this cut-out grows into the spot's stage (lib/transition.js; reduced motion: a crossfade) */
+.mr-card-img { view-transition-name: mr-stage; }
+@media (prefers-reduced-motion: reduce) {
+  .mr-card-img { view-transition-name: none; }
+}
 .mr-card-note {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--mr-ink-2);
-  line-height: 1.4;
+  font: italic 400 1.08rem / 1.3 var(--mr-font-serif);
 }
 .mr-card-facts { font-size: var(--mr-text-s); color: var(--mr-ink-3); }
 .mr-card-actions { display: flex; gap: var(--mr-space-2); margin-top: var(--mr-space-2); }
@@ -849,7 +1031,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-card[data-compact] .mr-card-media { flex: none; width: 112px; aspect-ratio: auto; align-self: stretch; }
 .mr-card[data-compact] .mr-card-body { flex: 1; padding: var(--mr-space-3) var(--mr-space-3) var(--mr-space-3) var(--mr-space-4); gap: 6px; }
 .mr-card[data-compact] .mr-card-meta { padding-right: 36px; }
-.mr-card[data-compact] .mr-card-title { font-size: 1rem; }
+.mr-card[data-compact] .mr-card-title { font-size: 1.3rem; }
 .mr-card[data-compact] .mr-card-note { -webkit-line-clamp: 2; font-size: var(--mr-text-s); }
 .mr-card[data-compact] .mr-card-actions { margin-top: var(--mr-space-1); }
 .mr-card[data-compact] .mr-card-close { top: 4px; right: 4px; width: 44px; height: 44px; border-color: transparent; background: transparent; }
@@ -935,8 +1117,9 @@ html.mr-active ::-webkit-scrollbar-thumb {
   padding: var(--mr-space-5) var(--mr-gutter) var(--mr-space-6);
 }
 .mr-step-title {
-  font: 500 var(--mr-text-xl) / 1.12 var(--mr-font-sans);
-  letter-spacing: -0.02em;
+  margin-top: var(--mr-space-3);
+  font: 400 var(--mr-text-title) / 1 var(--mr-font-serif);
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 .mr-restored { padding: var(--mr-space-4) var(--mr-gutter) 0; font-size: var(--mr-text-s); color: var(--mr-ink-2); }
@@ -1205,7 +1388,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
 
 /* saved */
 .mr-saved-body { justify-content: center; min-height: 100%; gap: var(--mr-space-4); }
-.mr-saved-title { font: 500 var(--mr-text-xl) / 1.12 var(--mr-font-sans); letter-spacing: -0.02em; text-wrap: balance; }
+.mr-saved-title { font: 400 var(--mr-text-title) / 1 var(--mr-font-serif); letter-spacing: -0.01em; text-wrap: balance; }
 .mr-saved-thumbs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--mr-space-1); list-style: none; }
 .mr-saved-thumbs .mr-thumb-n { display: none; }
 .mr-saved-status { display: flex; align-items: center; justify-content: space-between; gap: var(--mr-space-3); }
@@ -1250,8 +1433,8 @@ html.mr-active ::-webkit-scrollbar-thumb {
 }
 .mr-edit-head { display: flex; flex-direction: column; gap: var(--mr-space-2); }
 .mr-edit-title {
-  font: 500 var(--mr-text-xl) / 1.12 var(--mr-font-sans);
-  letter-spacing: -0.02em;
+  font: 400 var(--mr-text-title) / 1 var(--mr-font-serif);
+  letter-spacing: -0.01em;
   text-wrap: balance;
   overflow-wrap: anywhere;
 }

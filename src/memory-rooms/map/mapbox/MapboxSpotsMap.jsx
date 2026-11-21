@@ -57,7 +57,7 @@ function homeCamera(map, trip, padding) {
   return cam && { ...cam, bearing: 0, pitch: 0 };
 }
 
-export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, onFail, fly = NO_FLY, flyStops = NO_POINTS, flyLegs = NO_POINTS, children }) {
+export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, onFail, fly = NO_FLY, flyStops = NO_POINTS, flyLegs = NO_POINTS, liftId = null, children }) {
   const [auto, setAuto] = useState(true); // the view follows homeCamera until the user moves it
   const [clusterIds, setClusterIds] = useState(null);
   const [cardEl, setCardEl] = useState(null);
@@ -304,7 +304,7 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
             onPick={pick}
             onCluster={openCluster}
             onFocusChange={setFocusedId}
-            hoverId={hoverId}
+            hoverId={hoverId ?? liftId}
             passThrough
           />
         </svg>

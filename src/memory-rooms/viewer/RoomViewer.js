@@ -24,16 +24,21 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { sceneBounds, verticalFov } from '../scene/geometry.js';
 import { COPY } from '../copy.js';
 import { applyBakedMaterials } from './bakedMaterials.js';
 import { buildLayoutPreview } from './layoutPreview.js';
-import { applyDollhouse, indexRoom, stepFades } from './dollhouse.js';
-import { aimCamera, buildCameraGlyphs, buildGroundDisc } from './helpers.js';
+import { applyDollhouse, hiddenAtView, indexRoom, stepFades } from './dollhouse.js';
+import { aimCamera, buildCameraGlyphs, buildDraftingGround } from './helpers.js';
+import { DISSOLVE_MS, MIN_RECALL_MS, ROOM_FADE_MS, buildRecall, roomMaterials, setRoomAlpha } from './recall.js';
+import { resolveShell } from '../scene/shell.js';
 import { loadScan } from './scan.js';
 import { disposeTree } from './dispose.js';
 
 const RAD = Math.PI / 180;
+const _north = new THREE.Vector3(0, 0, -1);
+const RECALL_WAIT_MS = 1200; // how long a room that arrived first waits for its cloud
 const ORBIT_FOV = 35; // vertical, degrees: long-ish lens = miniature feel
 const FLY_MS = 800;
 const RETURN_MS = 700;
@@ -238,6 +243,11 @@ export class RoomViewer {
 
   on(event, fn) {
     (this.handlers[event] ??= new Set()).add(fn);
+    if (event === 'view') {
+      // the title block mounts once the room is ready, after the last frame: draw one more for it
+      this.viewSnap = null;
+      this.requestRender();
+    }
     return () => this.handlers[event]?.delete(fn);
   }
 
@@ -261,7 +271,7 @@ export class RoomViewer {
   }
 
   setStatus(which, state, extra = {}) {
-    this.status[which] = { state, progress: extra.progress ?? (state === 'ready' ? 1 : 0), error: extra.error ?? null };
+    this.status[which] = { state, progress: extra.progress ?? (state === 'ready' ? 1 : 0), error: extra.error ?? null, recalling: Boolean(extra.recalling) };
     this.syncStatus();
   }
 
@@ -271,6 +281,7 @@ export class RoomViewer {
       state: s.state === 'idle' ? 'loading' : s.state,
       progress: s.progress,
       error: s.error,
+      recalling: s.recalling,
       mode: this.mode,
       baseMode: this.baseMode,
       hasScan: !!this.spec?.scanUrl,
@@ -280,7 +291,7 @@ export class RoomViewer {
     this.container.dataset.mode = this.mode;
     for (const img of [this.posterLow, this.poster]) {
       if (!img) continue;
-      const show = this.mode !== 'scan' && this.status.main.state === 'loading' && !!img.getAttribute('src');
+      const show = this.mode !== 'scan' && this.status.main.state === 'loading' && !this.recall && !!img.getAttribute('src');
       img.classList.toggle('is-hidden', !show);
     }
     this.emit('state', snap);
@@ -301,11 +312,12 @@ export class RoomViewer {
     this.requestRender();
   }
 
-  /** Load one spot. spec: { scene, glbUrl, posterUrl, photos, scanUrl }. */
+  /** Load one spot. spec: { scene, glbUrl, mapUrl, posterUrl, photos, scanUrl }. */
   async load(spec) {
     if (this.disposed) return;
     const token = ++this.loadToken;
     this.clearContent();
+    this.readTheme(); // the stage may have changed mood (a night spot opens on the dark stage)
     this.spec = spec;
     this.isGroup = false;
     this.baseMode = spec.glbUrl ? 'model' : 'preview';
@@ -314,18 +326,157 @@ export class RoomViewer {
     this.setStatus('scan', 'idle');
     this.setStatus('main', 'loading');
     if (!this.renderer) return this.setStatus('main', 'error', { error: new Error('webgl') });
+    // "Recall": the small map model loads first and condenses from points while room.glb arrives.
+    // Reduced motion skips it (the poster simply crossfades into the room).
+    const recalling = spec.glbUrl && spec.mapUrl && spec.scene && !this.reducedMotion ? this.startRecall(spec, token) : null;
     try {
       const root = await this.loadRoot({ glbUrl: spec.glbUrl, scene: spec.scene }, token, (p) => {
         if (token === this.loadToken) this.setStatus('main', 'loading', { progress: p });
       });
       if (!root) return;
+      // a cached room can beat its small map model: give the cloud a moment so the recall still plays
+      if (recalling && !this.recall) await Promise.race([recalling, new Promise((r) => setTimeout(r, RECALL_WAIT_MS))]);
+      // no map model (a spot rendered before them): the room recalls itself from its own surfaces
+      else if (!recalling && !spec.mapUrl && spec.glbUrl && spec.scene && !this.reducedMotion) await this.startRecall(spec, token, root);
+      if (token !== this.loadToken || this.disposed) {
+        disposeTree(root);
+        return;
+      }
       this.addRoom({ id: 'room', root, scene: spec.scene, frame: null });
-      this.finishLoad({ reveal: true });
+      if (this.recall && this.recall.token === token) this.finishRecall();
+      else this.finishLoad({ reveal: true });
     } catch (err) {
       if (token !== this.loadToken || this.disposed) return;
       console.info('[memory-rooms] viewer load failed:', err?.message || err);
+      this.failedToken = token;
+      this.endRecall();
       this.setStatus('main', 'error', { error: err });
     }
+  }
+
+  // ── recall (the signature load) ─────────────────────────────────────────
+
+  /** Load model/map, sample it into points, start condensing them (runs beside the room.glb load). */
+  async startRecall(spec, token, from = null) {
+    try {
+      await this.buildRecallCloud(spec, token, from);
+    } catch (err) {
+      // the cloud is decoration: whatever went wrong, the room still loads the plain way
+      console.info('[memory-rooms] recall skipped:', err?.message || err);
+      this.endRecall();
+    }
+  }
+
+  /**
+   * The cloud, from the small map model (it loads before room.glb), or with `from` from a root
+   * that's already here (a spot with no map model yet: its room.glb, sampled as it arrives).
+   */
+  async buildRecallCloud(spec, token, from = null) {
+    let mapRoot = from;
+    if (!mapRoot) {
+      try {
+        const gltf = await this.mapLoader().loadAsync(spec.mapUrl);
+        mapRoot = gltf.scene;
+      } catch (err) {
+        console.info('[memory-rooms] recall skipped (no map model):', err?.message || err);
+        return;
+      }
+    }
+    const own = !from; // only a map model loaded here is ours to dispose
+    // superseded, the room is already up (the map model took too long), or room.glb failed: no cloud
+    if (token !== this.loadToken || this.disposed || this.rooms.length || this.failedToken === token) {
+      if (own) disposeTree(mapRoot);
+      return;
+    }
+    const scene = spec.scene;
+    const box = boxToWorld(framingBox(scene), new THREE.Object3D());
+    const interior = scene.kind === 'interior';
+    const home = this.computeHome(box, interior);
+    const centre = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    // the opening view hides the near walls + the ceiling: leave them out of the cloud
+    const camAt = home.pose.pos;
+    const sh = interior ? resolveShell(scene) : null;
+    const ref = sh ? { x: (sh.box.min[0] + sh.box.max[0]) / 2, z: (sh.box.min[1] + sh.box.max[1]) / 2 } : centre;
+    const hiddenSet = interior ? hiddenAtView(mapRoot, scene, [camAt.x, camAt.z], [ref.x, ref.z]) : new Set();
+    const count = Math.round(Math.min(42000, Math.max(16000, (this.width * this.height) / 22)));
+    const cloud = buildRecall(mapRoot, { count, hidden: (m) => hiddenSet.has(m), centre, radius: Math.max(1, 0.5 * Math.hypot(size.x, size.z)), eye: home.pose.pos });
+    if (own) disposeTree(mapRoot);
+    if (token !== this.loadToken || this.disposed || this.rooms.length || this.failedToken === token) {
+      cloud.dispose();
+      return;
+    }
+    this.recall = { token, cloud, t0: performance.now(), revealAt: null, room: null, mats: null };
+    this.extras.add(cloud.points);
+    // the cloud takes over from the posters at once (they frame the room differently)
+    this.poster.classList.add('is-hidden', 'is-quick');
+    this.posterLow.classList.add('is-covered', 'is-quick');
+    this.container.dataset.recall = 'points';
+    // frame the room from the scene alone, and start the opening swing now
+    this.limits.main = home.limits;
+    this.poses.main = home.pose;
+    this.homePose = home.pose;
+    this.applyLimits(home.limits);
+    this.setOrbitPose(this.offsetPose(home.pose, -38, -10, 1.3));
+    this.tweenOrbit(home.pose, REVEAL_MS + 600, easeOut);
+    this.recallPosed = true;
+    this.requestRender();
+  }
+
+  /** room.glb is in: fade the solid room up under the points once the cloud has had its moment. */
+  finishRecall() {
+    const rc = this.recall;
+    this.finishLoad({ reveal: false, keepPose: true, ready: false });
+    rc.room = this.rooms[0];
+    rc.mats = roomMaterials(rc.room);
+    setRoomAlpha(rc.room, rc.mats, 0);
+    rc.room.holder.visible = false; // an invisible room would still write depth and punch its shape out of the cloud
+    rc.revealAt = Math.max(performance.now(), rc.t0 + MIN_RECALL_MS);
+    this.container.dataset.recall = 'room';
+    this.requestRender();
+  }
+
+  /** Advance the recall each frame. Returns true while it still needs frames. */
+  stepRecall(now) {
+    const rc = this.recall;
+    if (!rc) return false;
+    if (this.status.main.state === 'error') {
+      this.endRecall();
+      return false;
+    }
+    const elapsed = now - rc.t0;
+    let cloudAlpha = Math.min(1, elapsed / 350);
+    if (rc.revealAt != null && now >= rc.revealAt) {
+      rc.room.holder.visible = true;
+      const t = now - rc.revealAt;
+      const roomK = Math.min(1, t / ROOM_FADE_MS);
+      rc.k = roomK * roomK * (3 - 2 * roomK); // applied in renderNow, after the wall fades step
+      cloudAlpha *= 1 - Math.min(1, t / DISSOLVE_MS);
+      if (t >= Math.max(ROOM_FADE_MS, DISSOLVE_MS)) {
+        setRoomAlpha(rc.room, rc.mats, 1);
+        this.endRecall();
+        this.occlusionDirty = true;
+        this.setStatus('main', 'ready');
+        return false;
+      }
+    }
+    rc.cloud.update(elapsed, cloudAlpha);
+    return true;
+  }
+
+  endRecall() {
+    const rc = this.recall;
+    if (!rc) return;
+    if (rc.room && rc.mats) setRoomAlpha(rc.room, rc.mats, 1);
+    if (rc.room) rc.room.holder.visible = true;
+    rc.cloud.dispose();
+    this.recall = null;
+    if (this.container.dataset.recall) this.container.dataset.recall = 'done';
+  }
+
+  mapLoader() {
+    if (!this._mapLoader) this._mapLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return this._mapLoader;
   }
 
   /** Load a building: every room placed by its scene.frame. rooms: [{ id, scene, glbUrl }]. */
@@ -404,7 +555,7 @@ export class RoomViewer {
     this.rooms.push({ id, holder, root, scene, interior, ...index, box, centre, shell });
   }
 
-  finishLoad({ reveal }) {
+  finishLoad({ reveal, keepPose = false, ready = true }) {
     this.bounds = new THREE.Box3();
     for (const r of this.rooms) this.bounds.union(r.box);
     this.centre = this.bounds.getCenter(new THREE.Vector3());
@@ -414,21 +565,35 @@ export class RoomViewer {
     this.poses.main = home.pose;
     this.homePose = home.pose;
     this.applyLimits(home.limits);
-    if (reveal && !this.reducedMotion) {
+    if (keepPose && this.recallPosed) {
+      // the recall swung the camera toward a home framed from the scene alone; re-aim the swing at
+      // this one (they differ after a resize), unless the visitor has taken over
+      if (!this.userMoved) {
+        let swing = null;
+        for (const tw of this.tweens) if (tw.kind === 'orbit') swing = tw;
+        const left = swing ? Math.max(250, swing.ms - (performance.now() - swing.start)) : 350;
+        if (swing) this.tweens.delete(swing);
+        this.tweenOrbit(home.pose, left, easeOut);
+      }
+    } else if (reveal && !this.reducedMotion) {
       const start = this.offsetPose(home.pose, -38, -10, 1.3);
       this.setOrbitPose(start);
       this.tweenOrbit(home.pose, REVEAL_MS, easeOut);
     } else {
       this.setOrbitPose(home.pose);
     }
-    this.userMoved = false;
+    if (!keepPose) this.userMoved = false;
     this.occlusionDirty = true;
-    this.setStatus('main', 'ready');
+    // a recall stays "loading" (quietly) until the solid room has fully faded up
+    if (ready) this.setStatus('main', 'ready');
+    else this.setStatus('main', 'loading', { progress: 1, recalling: true });
     this.requestRender();
   }
 
   /** Hero render (url) over a quick low layer (lowUrl, e.g. the first photo thumb). */
   setPoster(url, lowUrl = null) {
+    this.poster.classList.remove('is-quick');
+    this.posterLow.classList.remove('is-quick');
     const set = (img, src) => {
       img.classList.remove('is-loaded');
       if (src) {
@@ -451,23 +616,29 @@ export class RoomViewer {
     set(this.posterLow, lowUrl);
   }
 
-  /** Disc, camera glyphs and pins for what's loaded. */
+  /** The drafting-table ground, camera glyphs and pins for what's loaded. */
   buildExtras() {
     const scene = !this.isGroup ? this.spec?.scene : null;
     const exterior = this.rooms.some((r) => !r.interior);
     const size = this.bounds.getSize(new THREE.Vector3());
     let radius;
     let centre;
+    let foot;
     if (scene?.site?.ground) {
       const [w, d] = scene.site.ground.size;
-      radius = 0.5 * Math.hypot(w, d) * 1.12;
+      radius = 0.5 * Math.hypot(w, d) * 1.3;
       centre = [0, 0];
+      foot = { min: [-w / 2, -d / 2], max: [w / 2, d / 2] };
     } else {
-      radius = 0.5 * Math.hypot(size.x, size.z) * (exterior ? 1.3 : 1.25);
+      radius = 0.5 * Math.hypot(size.x, size.z) * (exterior ? 1.5 : 1.55);
       centre = [this.centre.x, this.centre.z];
+      foot = { min: [this.bounds.min.x, this.bounds.min.z], max: [this.bounds.max.x, this.bounds.max.z] };
     }
-    this.disc = buildGroundDisc(radius, centre, exterior ? 1 : 0.55);
-    this.extras.add(this.disc);
+    // a 0.5 m grid with 1 m lines under a room; coarser under a big site or a building
+    const span = Math.max(size.x, size.z);
+    const cell = span > 40 ? 2 : span > 18 ? 1 : 0.25;
+    this.ground = buildDraftingGround({ radius, centre, box: foot, cell, major: cell >= 1 ? 5 : 4, shadow: exterior ? 0.6 : 1 });
+    this.extras.add(this.ground);
 
     if (scene?.cameras?.length) {
       const photos = this.spec.photos || [];
@@ -498,14 +669,24 @@ export class RoomViewer {
     };
     const stage = parse(read('--mr-stage', '#e9e6df'), '#e9e6df');
     const ink = parse(read('--mr-ink', '#1d1c1a'), '#1d1c1a');
-    // Mix in sRGB (as CSS would): in linear light a few % of a pale ink
-    // brightens a dark stage far too much.
     const a = stage.getRGB({}, THREE.SRGBColorSpace);
-    const b = ink.getRGB({}, THREE.SRGBColorSpace);
     const dark = a.r + a.g + a.b < 1.5;
-    const k = dark ? 0.045 : 0.06;
-    const disc = new THREE.Color().setRGB(lerp(a.r, b.r, k), lerp(a.g, b.g, k), lerp(a.b, b.b, k), THREE.SRGBColorSpace);
-    this.theme = { disc, accent: parse(read('--mr-accent', '#b5532f'), '#b5532f') };
+    // the drafting grid + frustums are ink on the paper; a dark (darkroom / night) stage takes
+    // fainter lines so the grid never glows
+    const gridInk = parse(read('--mr-grid-ink', dark ? '#ecebe6' : '#1d1c1a'), '#1d1c1a');
+    const gridShade = parse(read('--mr-grid-shade', dark ? '#000000' : '#1d1c1a'), '#1d1c1a');
+    const num = (name, fallback) => {
+      const v = parseFloat(read(name, ''));
+      return Number.isFinite(v) ? v : fallback;
+    };
+    this.theme = {
+      ink,
+      gridInk,
+      gridShade,
+      grid: { minor: num('--mr-grid-minor', dark ? 0.07 : 0.09), major: num('--mr-grid-major', dark ? 0.13 : 0.17), shadow: num('--mr-grid-shadow', dark ? 0.34 : 0.15) },
+      frustum: parse(read('--mr-frustum', '') || (dark ? '#ecebe6' : '#1d1c1a'), '#1d1c1a'),
+      accent: parse(read('--mr-accent', '#b5532f'), '#b5532f'),
+    };
     const px = (name, fallback) => {
       const v = parseFloat(read(name, ''));
       return Number.isFinite(v) ? v : fallback;
@@ -516,8 +697,8 @@ export class RoomViewer {
 
   applyTheme() {
     if (!this.theme) return;
-    if (this.disc) this.disc.material.color.copy(this.theme.disc);
-    this.glyphs?.setColor(this.theme.accent);
+    this.ground?.setColor(this.theme.gridInk, this.theme.grid, this.theme.gridShade);
+    this.glyphs?.setColor(this.theme.frustum);
   }
 
   // ── framing ─────────────────────────────────────────────────────────────
@@ -539,7 +720,7 @@ export class RoomViewer {
     const fwd = dir.clone().negate();
     const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
     const up = new THREE.Vector3().crossVectors(right, fwd);
-    const margin = this.width < 600 ? 0.9 : 0.84;
+    const margin = this.width < 600 ? 0.8 : 0.84;
     // usable part of the frame once the nav (top) and the bar (bottom) are laid over it
     const ins = this.currentInsets();
     const fT = Math.min(0.3, (ins.top * 0.5) / this.height);
@@ -725,6 +906,39 @@ export class RoomViewer {
   }
 
   /** Back to the orbit (from a viewpoint), or back to the opening view. */
+  /**
+   * "Walk in": the camera dives down into the room toward where you'll stand (the first photo
+   * camera, else the middle at eye height), then the page crossfades into the walk. Resolves
+   * when the dive ends (at once with reduced motion, or when there's nothing to dive into).
+   */
+  diveIn(ms = 560) {
+    if (this.reducedMotion || !this.rooms.length || this.view !== 'orbit' || this.mode === 'scan') return Promise.resolve();
+    const scene = this.spec?.scene;
+    const cam = (scene?.cameras || [])[0];
+    const c = this.centre || new THREE.Vector3();
+    const eye = cam ? new THREE.Vector3(...cam.pos) : new THREE.Vector3(c.x, 1.5, c.z);
+    eye.y = Math.max(1.2, Math.min(1.7, eye.y));
+    const look = cam ? new THREE.Vector3(...cam.look) : new THREE.Vector3(c.x, 1.0, c.z + 1);
+    // stop a little short of the eye point, looking along the photo's line
+    const dir = look.clone().sub(eye).normalize();
+    const to = { pos: eye.clone().addScaledVector(dir, -0.6).setY(eye.y + 0.35), target: look };
+    this.controls.enabled = false;
+    this.diving = true;
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        this.diving = false;
+        resolve();
+      };
+      for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
+      this.tweenOrbit(to, ms, (t) => t * t * t, finish);
+      setTimeout(finish, ms + 250); // a backstop: the walk always opens
+      this.requestRender();
+    });
+  }
+
   home() {
     if (this.disposed || !this.renderer) return;
     if (this.view === 'viewpoint') {
@@ -874,25 +1088,102 @@ export class RoomViewer {
 
   // ── pins ────────────────────────────────────────────────────────────────
 
+  /**
+   * Pins are drawn like a drawing's numbered annotations: a dot on the thing,
+   * a hairline leader out to the stage's margin, and the callout there
+   * ("01  The bed we didn't sleep in"). The callout is the button.
+   */
   buildPins(pins) {
     const copy = COPY.viewer;
+    const SVG = 'http://www.w3.org/2000/svg';
+    this.leaders = document.createElementNS(SVG, 'svg');
+    this.leaders.setAttribute('class', 'mr-leaders');
+    this.leaders.setAttribute('aria-hidden', 'true');
+    this.overlay.append(this.leaders);
     this.pins = pins.map((pin, i) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'mr-pin';
       btn.dataset.mr = 'pin';
       btn.dataset.index = String(i);
-      btn.textContent = String(i + 1);
+      const num = document.createElement('span');
+      num.className = 'mr-pin__n';
+      num.textContent = copy.pinNumber ? copy.pinNumber(i + 1) : String(i + 1).padStart(2, '0');
+      const txt = document.createElement('span');
+      txt.className = 'mr-pin__t';
+      txt.textContent = pin.text;
+      btn.append(num, txt);
       btn.setAttribute('aria-label', copy.pinLabel ? copy.pinLabel(i + 1, pin.text) : `Pin ${i + 1}`);
       btn.setAttribute('aria-expanded', 'false');
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.togglePin(i);
       });
-      this.overlay.append(btn);
-      return { pin, el: btn, pos: new THREE.Vector3(...pin.at), screen: null, occluded: false };
+      const dot = document.createElement('span');
+      dot.className = 'mr-pin-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      const line = document.createElementNS(SVG, 'polyline');
+      line.setAttribute('class', 'mr-leader');
+      this.leaders.append(line);
+      this.overlay.append(dot, btn);
+      return { pin, el: btn, dot, line, pos: new THREE.Vector3(...pin.at), screen: null, occluded: false, side: null };
     });
     this.overlay.append(this.note);
+  }
+
+  /** Lay the callouts out down the two margins (no overlaps, clear of the title block) and draw the leaders. */
+  layoutPins(r, showPins) {
+    const compact = this.width < 600;
+    const ins = this.currentInsets();
+    const margin = compact ? 10 : 20;
+    const labelW = compact ? 30 : Math.min(230, Math.max(150, r.w * 0.2));
+    const gap = compact ? 38 : 44;
+    const top = Math.max(r.y, ins.top) + (compact ? 44 : 56);
+    const bottomL = Math.min(r.y + r.h, this.height - ins.bottom) - 28;
+    const bottomR = bottomL - (compact ? 96 : 132); // the title block sits bottom-right
+    const v = new THREE.Vector3();
+    const shown = [];
+    for (const p of this.pins) {
+      v.copy(p.pos).applyMatrix4(this.camera.matrixWorldInverse);
+      const behind = v.z > -this.camera.near;
+      v.applyMatrix4(this.camera.projectionMatrix);
+      const x = r.x + ((v.x + 1) / 2) * r.w;
+      const y = r.y + ((1 - v.y) / 2) * r.h;
+      const inside = !behind && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+      const visible = showPins && inside && !this.flying;
+      p.screen = visible ? [x, y] : null;
+      p.el.hidden = !visible;
+      p.dot.hidden = !visible;
+      p.line.style.display = visible ? '' : 'none';
+      if (!visible) continue;
+      // which margin: the nearer one, with a little hysteresis so labels don't flick while orbiting
+      const mid = r.x + r.w / 2 + (p.side === 'left' ? 1 : p.side === 'right' ? -1 : 0) * r.w * 0.07;
+      p.side = x < mid ? 'left' : 'right';
+      shown.push({ p, x, y, ly: y - (compact ? 28 : 44) });
+    }
+    for (const side of ['left', 'right']) {
+      const list = shown.filter((s) => s.p.side === side).sort((a, b) => a.y - b.y);
+      const bottom = side === 'right' ? bottomR : bottomL;
+      let prev = -Infinity;
+      for (const s of list) {
+        s.ly = Math.max(s.ly, prev + gap, top);
+        prev = s.ly;
+      }
+      const over = list.length ? list[list.length - 1].ly - bottom : 0;
+      if (over > 0) for (const s of list) s.ly -= over;
+      for (const s of list) s.ly = Math.max(top, s.ly);
+    }
+    for (const { p, x, y, ly } of shown) {
+      const left = p.side === 'left';
+      const edge = left ? r.x + margin + labelW : r.x + r.w - margin - labelW; // where the leader meets the callout
+      const elbow = left ? Math.min(edge + 26, x - 6) : Math.max(edge - 26, x + 6);
+      p.line.setAttribute('points', `${x.toFixed(1)},${y.toFixed(1)} ${elbow.toFixed(1)},${ly.toFixed(1)} ${edge.toFixed(1)},${ly.toFixed(1)}`);
+      p.dot.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      p.el.dataset.side = p.side;
+      p.el.style.width = `${labelW}px`;
+      p.el.style.transform = `translate(${(left ? r.x + margin : edge).toFixed(1)}px, ${ly.toFixed(1)}px)`;
+      p.labelAt = [left ? r.x + margin : edge, ly];
+    }
   }
 
   togglePin(i) {
@@ -903,10 +1194,13 @@ export class RoomViewer {
     this.openPin = i;
     p.el.setAttribute('aria-expanded', 'true');
     this.note.replaceChildren();
-    const text = document.createElement('p');
-    text.className = 'mr-pin-note__text';
-    text.textContent = p.pin.text;
-    this.note.append(text);
+    // the callout already shows the words on a wide stage (expanded when open); a phone shows only its number
+    if (this.width < 600) {
+      const text = document.createElement('p');
+      text.className = 'mr-pin-note__text';
+      text.textContent = p.pin.text;
+      this.note.append(text);
+    }
     const cam = p.pin.photo && (this.spec?.scene?.cameras || []).find((c) => c.photo === p.pin.photo);
     if (cam && this.activePhoto !== cam.photo) {
       const go = document.createElement('button');
@@ -919,7 +1213,7 @@ export class RoomViewer {
       });
       this.note.append(go);
     }
-    this.note.hidden = false;
+    this.note.hidden = !this.note.childElementCount;
     this.emit('pin', { index: i, open: true });
     this.requestRender();
   }
@@ -1004,7 +1298,33 @@ export class RoomViewer {
   applyHighlight() {
     const n = this.hovered ?? this.stripHighlight ?? null;
     this.glyphs?.setHover(n);
+    if (n != null) this.loadThumb(n);
     this.requestRender();
+  }
+
+  /** The photo on a frustum's rectangle: its thumbnail, fetched the first time it's needed. */
+  loadThumb(n) {
+    const glyphs = this.glyphs;
+    if (!glyphs || glyphs.hasThumb(n)) return;
+    this.thumbLoading ??= new Set();
+    const key = `${this.loadToken}:${n}`;
+    if (this.thumbLoading.has(key)) return;
+    const photo = (this.spec?.photos || []).find((p) => p.photo === n);
+    const url = photo?.thumb || photo?.url;
+    if (!url) return;
+    this.thumbLoading.add(key);
+    new THREE.TextureLoader().load(
+      url,
+      (tex) => {
+        this.thumbLoading.delete(key);
+        if (this.disposed || this.glyphs !== glyphs) return tex.dispose();
+        tex.colorSpace = THREE.SRGBColorSpace;
+        glyphs.setThumb(n, tex);
+        this.requestRender();
+      },
+      undefined,
+      () => this.thumbLoading.delete(key),
+    );
   }
 
   /** Meshes that are actually drawn (traverseVisible skips hidden walls). */
@@ -1058,7 +1378,9 @@ export class RoomViewer {
 
   /** Re-frame the opening view (new size or insets) unless the visitor has moved it. */
   refitIfUntouched() {
-    if (this.userMoved || this.view !== 'orbit' || this.flying || this.mode === 'scan' || this.status.main.state !== 'ready' || !this.bounds) return;
+    if (this.diving) return; // "Walk in" owns the camera until the page changes
+    const settling = this.status.main.state === 'ready' || (this.status.main.recalling && this.rooms.length);
+    if (this.userMoved || this.view !== 'orbit' || this.flying || this.mode === 'scan' || !settling || !this.bounds) return;
     if (this.focused) return;
     const home = this.computeHome(this.bounds, this.rooms.some((r) => r.interior));
     this.homePose = home.pose;
@@ -1139,6 +1461,7 @@ export class RoomViewer {
       } else again = true;
     }
     if (this.controls.enabled && this.controls.update()) again = true;
+    if (this.recall && this.stepRecall(now)) again = true;
     this.renderNow(dt);
     if (again || this.tweens.size || this.fading) {
       this.requestRender();
@@ -1178,6 +1501,8 @@ export class RoomViewer {
       renderer.autoClear = false;
     } else {
       this.updateDollhouse(dt);
+      const rc = this.recall;
+      if (rc?.room && rc.mats && rc.revealAt != null) setRoomAlpha(rc.room, rc.mats, rc.k ?? 0);
       renderer.setScissorTest(false);
       renderer.setViewport(0, 0, this.width, this.height);
       renderer.clear();
@@ -1199,20 +1524,13 @@ export class RoomViewer {
       photo.style.width = `${r.w}px`;
       photo.style.height = `${r.h}px`;
     }
-    const showPins = this.mode !== 'scan' && this.status.main.state === 'ready';
-    const v = new THREE.Vector3();
-    for (const p of this.pins) {
-      v.copy(p.pos).applyMatrix4(this.camera.matrixWorldInverse);
-      const behind = v.z > -this.camera.near;
-      v.applyMatrix4(this.camera.projectionMatrix);
-      const x = r.x + ((v.x + 1) / 2) * r.w;
-      const y = r.y + ((1 - v.y) / 2) * r.h;
-      const inside = !behind && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
-      const visible = showPins && inside && !this.flying;
-      p.screen = visible ? [x, y] : null;
-      p.el.hidden = !visible;
-      if (visible) p.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    const showPins = this.mode !== 'scan' && this.status.main.state === 'ready' && !this.recall;
+    if (this.leaders) {
+      this.leaders.setAttribute('width', String(this.width));
+      this.leaders.setAttribute('height', String(this.height));
     }
+    this.layoutPins(r, showPins);
+    const v = new THREE.Vector3();
     const lit = this.hovered ?? this.stripHighlight ?? null;
     const glyphsShown = this.mode !== 'scan' && this.view === 'orbit' && !this.flying && this.status.main.state === 'ready';
     for (const t of this.camTags || []) {
@@ -1228,15 +1546,39 @@ export class RoomViewer {
       t.el.hidden = !show;
     }
     const open = this.openPin != null ? this.pins[this.openPin] : null;
-    if (open?.screen) {
-      const [x, y] = open.screen;
-      const left = x > this.width - 280;
+    if (open?.screen && open.labelAt && this.note.childElementCount) {
+      // the full note opens under its callout, on the callout's side of the stage
+      const [x, y] = open.labelAt;
+      const left = open.side === 'right';
       this.note.classList.toggle('is-left', left);
-      this.note.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      const ax = left ? x + open.el.offsetWidth : x;
+      // under the callout, never over it (so a second tap on the callout closes it)
+      const below = y + open.el.offsetHeight + (parseFloat(getComputedStyle(open.el).marginTop) || 0) + 6;
+      this.note.style.transform = `translate(${ax.toFixed(1)}px, ${below.toFixed(1)}px)`;
       this.note.hidden = false;
     } else if (open) {
       this.note.hidden = true;
     }
+    this.emitView(r);
+  }
+
+  /**
+   * The title block's live numbers: metres per CSS pixel at the orbit target (the scale bar)
+   * and where north points on screen (degrees clockwise from up). Emitted only on change.
+   */
+  emitView(r) {
+    if (!this.handlers.view?.size || this.status.main.state !== 'ready') return;
+    const cam = this.camera;
+    const target = this.controls.target;
+    const dist = cam.position.distanceTo(target);
+    const mpp = (2 * dist * Math.tan((cam.fov * RAD) / 2)) / Math.max(1, r.h);
+    const a = target.clone().project(cam);
+    const b = target.clone().add(_north).project(cam);
+    const north = Math.atan2((b.x - a.x) * r.w, (b.y - a.y) * r.h) / RAD;
+    const last = this.viewSnap;
+    if (last && Math.abs(last.mpp - mpp) / mpp < 0.003 && Math.abs(last.north - north) < 0.3) return;
+    this.viewSnap = { mpp, north };
+    this.emit('view', this.viewSnap);
   }
 
   /** Pins behind a wall or the bed go faint (checked when the view settles). */
@@ -1256,6 +1598,8 @@ export class RoomViewer {
       if (occluded !== p.occluded) {
         p.occluded = occluded;
         p.el.classList.toggle('is-occluded', occluded);
+        p.dot.classList.toggle('is-occluded', occluded);
+        p.line.classList.toggle('is-occluded', occluded);
       }
     }
     this.raycaster.far = Infinity;
@@ -1276,7 +1620,13 @@ export class RoomViewer {
     this.photoEl.style.opacity = '0';
     this.photoEl.removeAttribute('src');
     this.closePin();
-    for (const p of this.pins) p.el.remove();
+    for (const p of this.pins) {
+      p.el.remove();
+      p.dot?.remove();
+    }
+    this.leaders?.remove();
+    this.leaders = null;
+    this.viewSnap = null;
     for (const t of this.camTags || []) t.el.remove();
     this.camTags = [];
     this.stripHighlight = null;
@@ -1289,8 +1639,11 @@ export class RoomViewer {
       for (const child of [...this.extras.children]) disposeTree(child);
     }
     this.glyphs?.disposeMaterials();
-    this.disc = null;
+    this.ground = null;
     this.glyphs = null;
+    this.endRecall();
+    this.recallPosed = false;
+    if (this.container.dataset.recall) delete this.container.dataset.recall;
     this.hovered = null;
     if (this.scan) this.scan.dispose();
     this.scan = null;

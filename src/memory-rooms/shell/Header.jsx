@@ -10,7 +10,7 @@ export default function Header({ page, who, onChangeWho }) {
       </Link>
       <div className="mr-header-actions">
         {page !== 'new' && page !== 'edit' && page !== 'walk' && (
-          <Link to={paths.capture()} className="mr-btn mr-btn--primary mr-header-new" data-mr="new-spot">
+          <Link to={paths.capture()} className="mr-btn mr-btn--primary mr-header-new" aria-label={COPY.app.newSpot} data-mr="new-spot">
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
@@ -21,6 +21,10 @@ export default function Header({ page, who, onChangeWho }) {
         <button type="button" className="mr-person" onClick={onChangeWho} aria-label={COPY.app.changePerson} title={COPY.app.changePerson} data-mr="who">
           <span className="mr-label">{COPY.app.holding}</span>
           <span className="mr-person-name">{who ? COPY.app.people[who] : '—'}</span>
+          {/* phones: a compact labelled dot in the person's colour */}
+          <span className="mr-person-dot" style={who ? { '--mr-who': `var(--mr-person-${who})` } : undefined} aria-hidden="true">
+            {who ? COPY.app.initials[who] : '—'}
+          </span>
         </button>
       </div>
     </header>

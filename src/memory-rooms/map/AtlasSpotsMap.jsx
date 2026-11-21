@@ -39,7 +39,7 @@ function minDistance(members, from) {
   return d;
 }
 
-export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, engineReason = null, fly = NO_FLY, flyStops = NO_LEGS, flyLegs = NO_LEGS, children }) {
+export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, engineReason = null, fly = NO_FLY, flyStops = NO_LEGS, flyLegs = NO_LEGS, liftId = null, children }) {
   const [clusterIds, setClusterIds] = useState(null);
   const [cardEl, setCardEl] = useState(null);
   const [cardH, setCardH] = useState(320);
@@ -189,6 +189,7 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
           clusterBase={clusterBase}
           onPick={pick}
           onCluster={openCluster}
+          hoverId={liftId}
         />
       </AtlasMap>
 

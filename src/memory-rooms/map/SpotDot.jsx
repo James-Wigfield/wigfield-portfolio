@@ -29,7 +29,7 @@ export function StatusGlyph({ status, r = R }) {
 }
 
 /** r: glyph radius (bigger on phones). */
-export function SpotDot({ point, selected, onActivate, r = R }) {
+export function SpotDot({ point, selected, onActivate, r = R, hover = false }) {
   const { spot, x, y } = point;
   return (
     <g
@@ -38,6 +38,7 @@ export function SpotDot({ point, selected, onActivate, r = R }) {
       data-mr="spot-dot"
       data-id={spot.id}
       data-status={spot.status}
+      data-hover={hover ? '' : undefined}
       data-selected={selected ? '' : undefined}
       role="button"
       tabIndex={0}

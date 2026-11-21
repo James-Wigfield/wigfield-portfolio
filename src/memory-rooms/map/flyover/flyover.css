@@ -95,8 +95,8 @@ a.mr-fly__caption:hover .mr-fly__title { text-decoration: underline; text-underl
 .mr-fly__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .mr-fly__meta { color: var(--mr-ink-3); }
 .mr-fly__title {
-  font: 600 var(--mr-text-l) / 1.15 var(--mr-font-sans);
-  letter-spacing: -0.01em;
+  font: 400 1.6rem / 1.02 var(--mr-font-serif);
+  letter-spacing: -0.005em;
   text-wrap: balance;
 }
 .mr-fly__note {

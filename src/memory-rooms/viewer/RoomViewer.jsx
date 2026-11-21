@@ -2,14 +2,15 @@
    the component's lifetime, keeps it sized (ResizeObserver), loads `source`
    when it changes, and tears everything down on unmount.
 
-     <RoomViewer source={{ scene, glbUrl, posterUrl, posterLowUrl, photos, scanUrl }} onViewer={setViewer} bar={<StageBar …/>} />
+     <RoomViewer source={{ scene, glbUrl, mapUrl, posterUrl, posterLowUrl, photos, scanUrl }} onViewer={setViewer} bar={<StageBar …/>} stamp={<TitleBlock …/>} />
      <RoomViewer source={{ rooms: [...] }} />           // a group (building)
 
    `onViewer(instance | null)` hands the instance to the page, which drives it
    (viewpoints, blend, mode) and listens to its events. `bar` is page chrome
    docked to the bottom edge of the stage (viewpoints, blend slider); its
    height is reported to the viewer so the photo and the opening view sit
-   above it. Anything passed as children is drawn over the stage too. */
+   above it. `stamp` (the title block) sits bottom-right above the bar once the room is
+   in. Anything passed as children is drawn over the stage too. */
 
 import { useEffect, useRef, useState } from 'react';
 import { RoomViewer as Viewer } from './RoomViewer.js';
@@ -18,7 +19,7 @@ import './viewer.css';
 
 const isTouch = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
-export default function RoomViewer({ source, onViewer, label, bar, className = '', children }) {
+export default function RoomViewer({ source, onViewer, label, bar, stamp, className = '', children }) {
   const hostRef = useRef(null);
   const barRef = useRef(null);
   const viewerRef = useRef(null);
@@ -57,7 +58,9 @@ export default function RoomViewer({ source, onViewer, label, bar, className = '
   }, []);
 
   // the docked bar's height keeps the photo and the opening view clear of it
+  // (on a phone the title block sits right above the bar, across the room: frame above both)
   const hasBar = !!bar;
+  const bottomRef = useRef(null);
   useEffect(() => {
     const viewer = viewerRef.current;
     const el = barRef.current;
@@ -66,9 +69,15 @@ export default function RoomViewer({ source, onViewer, label, bar, className = '
       viewer.setInsets({ bottom: 0 });
       return undefined;
     }
-    const ro = new ResizeObserver(() => viewer.setInsets({ bottom: el.offsetHeight }));
+    const measure = () => {
+      const narrow = (hostRef.current?.clientWidth || 0) < 600;
+      const stamp = narrow ? bottomRef.current?.querySelector('.mr-viewer__stamp')?.offsetHeight || 0 : 0;
+      viewer.setInsets({ bottom: el.offsetHeight + (stamp ? stamp + 16 : 0) });
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    viewer.setInsets({ bottom: el.offsetHeight });
+    if (bottomRef.current) ro.observe(bottomRef.current);
+    measure();
     return () => ro.disconnect();
   }, [hasBar]);
 
@@ -98,23 +107,28 @@ export default function RoomViewer({ source, onViewer, label, bar, className = '
         </div>
       )}
 
-      <div className="mr-viewer__bottom">
-        {snap.state === 'loading' && (
-          <div className="mr-viewer__status" role="status">
-            <span className="mr-label">
-              {scan ? copy.loadingScan : copy.loading}
-              {snap.progress > 0 && snap.progress < 1 ? ` · ${copy.percent(snap.progress)}` : ''}
-            </span>
-            <span className="mr-viewer__bar" aria-hidden="true">
-              <span style={{ transform: `scaleX(${Math.max(0.04, snap.progress || 0)})` }} />
-            </span>
+      <div className="mr-viewer__bottom" ref={bottomRef}>
+        <div className="mr-viewer__row">
+          <div className="mr-viewer__left">
+            {snap.state === 'loading' && (
+              <div className="mr-viewer__status" role="status">
+                <span className="mr-label">
+                  {snap.recalling ? copy.recalling : scan ? copy.loadingScan : copy.loading}
+                  {!snap.recalling && snap.progress > 0 && snap.progress < 1 ? ` · ${copy.percent(snap.progress)}` : ''}
+                </span>
+                <span className="mr-viewer__bar" aria-hidden="true">
+                  <span style={{ transform: `scaleX(${Math.max(0.04, snap.progress || 0)})` }} />
+                </span>
+              </div>
+            )}
+            {showHint && (
+              <p className="mr-viewer__hint mr-label" aria-hidden="true">
+                {isTouch() ? copy.hintTouch : copy.hint}
+              </p>
+            )}
           </div>
-        )}
-        {showHint && (
-          <p className="mr-viewer__hint mr-label" aria-hidden="true">
-            {isTouch() ? copy.hintTouch : copy.hint}
-          </p>
-        )}
+          {stamp && snap.state === 'ready' && !scan && !inViewpoint && <div className="mr-viewer__stamp">{stamp}</div>}
+        </div>
         {bar && (
           <div className="mr-viewer__dock" ref={barRef}>
             {bar}

@@ -1,7 +1,7 @@
 /* What a spot page needs from a Spot row (CONTRACTS.md §2), in one place. */
 
 import { mediaNamed, mediaOf } from '../../lib/api.js';
-import { roomModelOf } from '../../lib/spots.js';
+import { mapModelOf, roomModelOf } from '../../lib/spots.js';
 
 /** Photos sorted by number: [{ photo, url, thumb, width, height }]. */
 export function spotPhotos(spot) {
@@ -37,14 +37,20 @@ export function viewerSource(spot) {
   const scan = mediaOf(spot, 'scan')[0];
   const hero = mediaNamed(spot, 'render', 'hero');
   const first = spotPhotos(spot)[0];
+  const small = kind === 'model' ? mapModelOf(spot) : null;
   return {
     id: spot.id,
     scene: spot.scene || null,
     glbUrl: kind === 'model' ? roomModelOf(spot).url : null,
+    // "Recall": the small map copy (model/map) loads first and condenses from points
+    mapUrl: small?.lod ? small.media.url : null,
     // while the GLB loads: the hero render, over the first photo (small, instant)
     posterUrl: kind === 'model' ? hero?.url || null : null,
     posterLowUrl: kind === 'model' ? first?.thumb || null : null,
-    photos: spotPhotos(spot).map(({ photo, url, width, height }) => ({ photo, url, width, height })),
+    photos: spotPhotos(spot).map(({ photo, url, thumb, width, height }) => ({ photo, url, thumb, width, height })),
     scanUrl: scan?.url || null,
   };
 }
+
+/** Spots captured at night open on the dark stage, even in light mode (scene.style.mood). */
+export const moodOf = (spot) => (spot?.scene?.style?.mood === 'night' ? 'night' : undefined);
