@@ -1,0 +1,299 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory-rooms/building.schema.json",
+  "title": "Memory Rooms building v1",
+  "description": "A whole place: levels, a wall graph per level (every wall once, shared walls included), rooms as polygons over the graph's nodes, openings on wall ids, stairs, a roof generated from the exterior outline, the site, and where it sits on Earth. Units are metres. Plan frame: x runs west -> east (plan right), z runs north -> south (plan down), y up; `plan north` = -z, and `geo.north` says where true north is. Each level's y = 0 is its finished floor at `elevation`. Rooms become furnishing layers: a scene.json v2 with `shell: { building, room }` carries a room's objects in the room's frame (CONTRACTS.md section 6). Validated by src/memory-rooms/building/validate.js (JS) and tools/memory-rooms/blender/building_io.py (Python), the same keyword subset as scene.schema.json.",
+  "type": "object",
+  "required": ["version", "title", "levels", "rooms"],
+  "additionalProperties": false,
+  "properties": {
+    "$comment": { "type": "string" },
+    "version": { "const": 1 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "notes": { "type": "string", "maxLength": 4000, "description": "Free text for the modeller (Claude). Not shown on the site." },
+    "source": { "enum": ["plan", "sketch", "photos", "mixed"], "description": "Where the walls came from: a traced floor plan image, the phone sketch, photos only, or a mix." },
+    "geo": { "$ref": "#/$defs/geo" },
+    "style": { "$ref": "#/$defs/style" },
+    "levels": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/level" } },
+    "rooms": { "type": "array", "maxItems": 80, "items": { "$ref": "#/$defs/room" } },
+    "openings": { "type": "array", "maxItems": 300, "items": { "$ref": "#/$defs/opening" } },
+    "stairs": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/stair" } },
+    "roof": { "$ref": "#/$defs/roof" },
+    "site": { "$ref": "#/$defs/site" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$", "description": "Lowercase letters, digits and dashes (no underscores: GLB node names use __ as the separator)." },
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "xz": {
+      "description": "[x, z] in the plan frame, metres.",
+      "type": "array",
+      "prefixItems": [{ "type": "number", "minimum": -500, "maximum": 500 }, { "type": "number", "minimum": -500, "maximum": 500 }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "polygon": { "type": "array", "minItems": 3, "maxItems": 128, "items": { "$ref": "#/$defs/xz" } },
+    "compass": { "enum": ["north", "south", "east", "west"] },
+    "geo": {
+      "description": "Where the plan frame sits on Earth: its origin [0, 0] is at lat/lng, and `north` is the compass bearing of plan north (-z, the plan's up), degrees clockwise from true north: 0 = the plan is drawn north-up, 90 = the plan's up points east.",
+      "type": "object",
+      "required": ["lat", "lng"],
+      "additionalProperties": false,
+      "properties": {
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lng": { "type": "number", "minimum": -180, "maximum": 180 },
+        "north": { "type": "number", "minimum": -360, "maximum": 360, "description": "Default 0." }
+      }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mood": { "enum": ["morning", "day", "golden", "evening", "night", "overcast"] },
+        "palette": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/hex" } },
+        "exposure": { "type": "number", "minimum": -4, "maximum": 4, "description": "Cycles exposure offset in stops." }
+      }
+    },
+    "level": {
+      "description": "One storey. Its wall graph: nodes (wall ends and junctions) and walls between them, each wall once. A wall whose line passes through a node must be split there.",
+      "type": "object",
+      "required": ["id", "elevation", "height", "nodes", "walls"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "elevation": { "type": "number", "minimum": -10, "maximum": 100, "description": "Its finished floor, metres above the site's ground (y)." },
+        "height": { "type": "number", "minimum": 1.8, "maximum": 15, "description": "Default wall and ceiling height on this level." },
+        "slab": { "type": "number", "minimum": 0.05, "maximum": 1.5, "description": "Floor structure under it (default 0.25; the ground level's plinth)." },
+        "nodes": {
+          "type": "array",
+          "maxItems": 600,
+          "items": {
+            "type": "object",
+            "required": ["id", "at"],
+            "additionalProperties": false,
+            "properties": { "id": { "$ref": "#/$defs/id" }, "at": { "$ref": "#/$defs/xz" } }
+          }
+        },
+        "walls": { "type": "array", "maxItems": 600, "items": { "$ref": "#/$defs/wall" } }
+      }
+    },
+    "wall": {
+      "description": "A wall's centreline from node a to node b. Its GLB node is `wall__<id>`. Ids are unique across the whole building.",
+      "type": "object",
+      "required": ["id", "a", "b"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "a": { "$ref": "#/$defs/id" },
+        "b": { "$ref": "#/$defs/id" },
+        "thickness": { "type": "number", "minimum": 0.04, "maximum": 1.2, "description": "Default 0.25 for exterior walls, 0.1 inside." },
+        "height": { "type": "number", "minimum": 0.3, "maximum": 30, "description": "Default: the level's height. A low wall (a balustrade, a kitchen bench wall) is shorter." },
+        "exterior": { "type": "boolean", "description": "Part of the building's outer skin. The exterior walls of a level form its outline loop(s): the roof follows the largest." },
+        "outside": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["render", "brick", "weatherboard", "stone", "concrete", "metal", "timber", "paint"] },
+            "color": { "$ref": "#/$defs/hex" }
+          }
+        }
+      }
+    },
+    "room": {
+      "description": "A room: a polygon over its level's nodes (wall centrelines), listed in order around it, either direction. Consecutive nodes joined by a wall have that wall on that side; without one the side is open (an arch, an open-plan edge). Its spots are the captures of it (scene.json v2 `shell: { building, room }`).",
+      "type": "object",
+      "required": ["id", "name", "level", "outline"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "level": { "$ref": "#/$defs/id" },
+        "outline": { "type": "array", "minItems": 3, "maxItems": 64, "items": { "$ref": "#/$defs/id" } },
+        "kind": { "enum": ["room", "hall", "wet", "garage", "outdoor", "void"], "description": "Default room. outdoor = a covered deck or porch (no ceiling finish); void = a stairwell or double-height space (no floor)." },
+        "floor": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["timber", "carpet", "tile", "concrete", "vinyl", "stone"] },
+            "color": { "$ref": "#/$defs/hex" }
+          }
+        },
+        "walls": {
+          "description": "This room's face of its walls (a shared wall has one face per room).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["paint", "plaster", "brick", "timber", "tile", "concrete", "wallpaper"] },
+            "color": { "$ref": "#/$defs/hex" },
+            "skirting": { "type": "boolean" }
+          }
+        },
+        "ceiling": { "$ref": "#/$defs/ceiling" },
+        "spotIds": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/uuid" }, "description": "The spots captured in this room." }
+      }
+    },
+    "ceiling": {
+      "description": "Like scene.json v2's ceiling, in the room's own frame (its wall-centreline bounding box starts at [0, 0]). `height` is the walls at the eaves (default the level height).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "height": { "type": "number", "minimum": 1.8, "maximum": 15 },
+        "show": { "type": "boolean" },
+        "color": { "$ref": "#/$defs/hex" },
+        "shape": { "enum": ["flat", "gable", "pyramid", "skillion"] },
+        "peak": { "type": "number", "minimum": 1.8, "maximum": 30 },
+        "axis": { "enum": ["x", "z"] },
+        "ridgeAt": { "type": "number", "minimum": 0, "maximum": 60 },
+        "eaves": {
+          "type": "array",
+          "prefixItems": [{ "type": "number", "minimum": 1.0, "maximum": 30 }, { "type": "number", "minimum": 1.0, "maximum": 30 }],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "apex": { "$ref": "#/$defs/xz" },
+        "low": { "$ref": "#/$defs/compass" }
+      },
+      "allOf": [
+        { "if": { "properties": { "shape": { "enum": ["gable", "pyramid", "skillion"] } }, "required": ["shape"] }, "then": { "required": ["peak"] } },
+        { "if": { "properties": { "shape": { "const": "skillion" } }, "required": ["shape"] }, "then": { "required": ["low"] } }
+      ]
+    },
+    "opening": {
+      "description": "A door, window or opening through one wall. offset runs along the wall's centreline from node a toward node b to the opening's near edge. `swing` = which side of the wall a door leaf opens into, looking from a to b; `hinge` = the end (a or b) its hinges are on.",
+      "type": "object",
+      "required": ["id", "wall", "type", "offset", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "wall": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["door", "window", "opening", "garage"] },
+        "offset": { "type": "number", "minimum": 0, "maximum": 200 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 30 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 15 },
+        "sill": { "type": "number", "minimum": 0, "maximum": 15, "description": "Bottom edge above the floor. Default 0 (doors, openings, garage doors), 0.9 (windows)." },
+        "swing": { "enum": ["left", "right"] },
+        "hinge": { "enum": ["a", "b"] },
+        "open": { "type": "number", "minimum": 0, "maximum": 1, "description": "Doors: 0 shut, 1 = 90 degrees. Default 0." },
+        "color": { "$ref": "#/$defs/hex" }
+      }
+    },
+    "stair": {
+      "description": "A straight flight from one level up to another. `start` = the middle of the bottom step's front edge; it climbs toward `dir` for `length` metres of going, `width` wide.",
+      "type": "object",
+      "required": ["id", "from", "to", "start", "dir", "width", "length"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "from": { "$ref": "#/$defs/id" },
+        "to": { "$ref": "#/$defs/id" },
+        "start": { "$ref": "#/$defs/xz" },
+        "dir": { "$ref": "#/$defs/compass" },
+        "width": { "type": "number", "minimum": 0.5, "maximum": 4 },
+        "length": { "type": "number", "minimum": 0.6, "maximum": 12 },
+        "steps": { "type": "integer", "minimum": 2, "maximum": 40, "description": "Default: the rise / 0.18 m, rounded." },
+        "color": { "$ref": "#/$defs/hex" }
+      }
+    },
+    "roof": {
+      "description": "Generated from a level's exterior outline (default the top level's largest loop): the outline is split into rectangles (or `parts` says them), each gets its own roof, and they merge (valleys where they meet). gable: ridge along `ridge` (default each part's longer side); hip: every side slopes; skillion: one slope falling to `low`; flat: a parapet slab. The eaves sit at `height` above that level's floor (default its height).",
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["gable", "hip", "skillion", "flat"] },
+        "pitch": { "type": "number", "minimum": 0, "maximum": 60, "description": "Degrees. Default 22.5 (gable, hip), 5 (skillion)." },
+        "overhang": { "type": "number", "minimum": 0, "maximum": 2, "description": "Eaves overhang past the walls' outer faces. Default 0.45 (flat: 0.05)." },
+        "ridge": { "enum": ["x", "z"] },
+        "low": { "$ref": "#/$defs/compass" },
+        "level": { "$ref": "#/$defs/id" },
+        "height": { "type": "number", "minimum": 1.0, "maximum": 30 },
+        "finish": { "enum": ["tile", "metal", "shingle", "slate", "membrane"] },
+        "color": { "$ref": "#/$defs/hex" },
+        "parts": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "required": ["outline"],
+            "additionalProperties": false,
+            "properties": {
+              "outline": { "$ref": "#/$defs/polygon" },
+              "type": { "enum": ["gable", "hip", "skillion", "flat"] },
+              "ridge": { "enum": ["x", "z"] },
+              "low": { "$ref": "#/$defs/compass" },
+              "pitch": { "type": "number", "minimum": 0, "maximum": 60 },
+              "level": { "$ref": "#/$defs/id", "description": "The level this part sits on (a single-storey wing of a two-storey house). Default: the roof's level." },
+              "height": { "type": "number", "minimum": 1.0, "maximum": 30, "description": "Eaves above that level's floor. Default: its height." }
+            }
+          }
+        }
+      }
+    },
+    "site": {
+      "description": "The lot around the building: the ground, hard and soft areas, fences and trees. Areas are drawn in order (later on top).",
+      "type": "object",
+      "required": ["lot"],
+      "additionalProperties": false,
+      "properties": {
+        "lot": { "$ref": "#/$defs/polygon" },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "finish": { "enum": ["grass", "dirt", "gravel", "sand", "paving", "concrete", "asphalt", "snow"] },
+            "color": { "$ref": "#/$defs/hex" }
+          }
+        },
+        "areas": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "outline"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "kind": { "enum": ["drive", "path", "paving", "deck", "lawn", "garden", "pool", "water"] },
+              "outline": { "$ref": "#/$defs/polygon" },
+              "color": { "$ref": "#/$defs/hex" },
+              "depth": { "type": "number", "minimum": 0, "maximum": 4, "description": "Pools: water depth (default 1.4)." }
+            }
+          }
+        },
+        "fences": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "type": "object",
+            "required": ["id", "line"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "line": { "type": "array", "minItems": 2, "maxItems": 64, "items": { "$ref": "#/$defs/xz" } },
+              "height": { "type": "number", "minimum": 0.2, "maximum": 4, "description": "Default 1.8." },
+              "kind": { "enum": ["timber", "picket", "metal", "masonry", "hedge", "glass"] },
+              "color": { "$ref": "#/$defs/hex" }
+            }
+          }
+        },
+        "trees": {
+          "type": "array",
+          "maxItems": 120,
+          "items": {
+            "type": "object",
+            "required": ["id", "at"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "at": { "$ref": "#/$defs/xz" },
+              "height": { "type": "number", "minimum": 0.3, "maximum": 60, "description": "Default 6." },
+              "spread": { "type": "number", "minimum": 0.2, "maximum": 40, "description": "Canopy diameter. Default height x 0.6." },
+              "kind": { "enum": ["tree", "palm", "pine", "shrub"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

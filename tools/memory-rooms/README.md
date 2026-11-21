@@ -16,7 +16,7 @@ pull.mjs <id> ─► palette.mjs ─► (Claude writes layout.md + scene.json) �
 |---|---|
 | `pull.mjs <id> \| --next \| --list` | downloads a spot to `memory-rooms-work/<id>/` (gitignored): photos, thumbs, `spot.json`, `photos.json`, scan, saved scene, a `layout.md` template, `bespoke/`; sets status `modelling` |
 | `palette.mjs <id>` | k-means (CIELAB) colours per photo → `palette.json` + `palette.png` |
-| `check-scene.mjs <scene.json \| id>` | schema + geometry: inside the shell, nothing floats or interpenetrates > 2 cm, openings fit, cameras inside and aimed at something |
+| `check-scene.mjs <scene.json \| id> [--building <file>]` | schema + geometry: inside the shell, nothing floats or interpenetrates > 2 cm, openings fit, cameras inside and aimed at something. v2 shells (polygon, sloped ceiling, a room of a building) are checked against the normalised shell; a room of a building needs its building.json (`--building`, or `building.json` next to the scene, or `memory-rooms-work/b-<buildingId>/`) |
 | `build.mjs <id> [--round N] [--samples 64] [--only cam1,top]` | check-scene → `blender/build_room.py` → `compare.mjs` |
 | `blender/build_room.py` | scene.json → `room.blend` + Cycles renders `renders/cam<n>.png`, `top.png`, `three-quarter.png`, `build-report.json` |
 | `compare.mjs <id> [--round N]` | `compare.png`: photo \| render \| 50/50 overlay per camera + top-down, with structure/tone/colour scores (`compare.json`) |
@@ -43,6 +43,7 @@ environment, falling back to `.dev.vars`. Blender path: `BLENDER` env, default
 
 | | |
 |---|---|
+| `check-contracts.mjs [--verbose]` | scene.json v2 + building.json + the sketch: the JS validators and their Python mirrors agree on every example and work scene, fail together at the same paths on 33 broken mutations, and agree on the geometry (normalised shells, ceilings, room frames, exterior loops, stairs, lng/lat) to 1e-6 |
 | `api-check.mjs` | every `/api/memories` route (73 checks: incl. the edit PATCH, `ifUpdatedAt` → 409, a re-POST never undoing an edit, the walk ticket / presence / socket door: 401, 400, 404, a tampered ticket 403, no upgrade 426), against any running Worker |
 | `pgrest-stub.mjs` | in-memory PostgREST stand-in to run api-check against the Supabase row store locally |
 | `page-check.mjs [--dark] [--swiftshader] [--mapstyle x]` | the screens in headless Edge (real GPU: Mapbox needs WebGL 2) at 1440 and 390 px: gate, the Mapbox map (tiles, clusters, card, elsewhere, reset, ONE map load), markers (never the hero; grow with zoom; card beside them; hero fallback; atlas too), 3D past zoom 15 (draws, cap, click/tap opens the card, a drag on a model pans, zooming out disposes + flattens, room.glb fallback, GPU counts back where they were after panning), the atlas fallback (`?map=atlas`, WebGL off), capture + pick map (pin, offline → atlas), viewer, the edit walk (`page-check-edit.mjs`: title, day, place by drag / GPS / typed → Save → spot page, reload, marker + 3D at the new place; 0 map loads until "Change location", then 1; offline; `?map=atlas`; a 409 from another phone; leaving asks; every spot it edits is put back), zero console errors; then runs `ar-check`, `fly-check`, `walk-check` and `walk-mp-check` as its own processes (`--no-extras` skips them, `--python` goes to ar-check; logs in `_page-check/<name>-<scheme>.log`); 123 checks, ~14 Mapbox loads a run; screenshots in `memory-rooms-work/_page-check/` |
@@ -60,7 +61,7 @@ environment, falling back to `.dev.vars`. Blender path: `BLENDER` env, default
 | `dev/model-soak.mjs` | fps + GPU texture/geometry counts while dragging the map with 3D models live (12 injected copies, cap 6 / 3), mouse at 1440, touch + CPU ÷4 at 390, 3D on vs off |
 | `dev/map-style-shots.mjs` | the Mapbox style candidates side by side (opening view, globe, region, street; light + dark) → `memory-rooms-work/_map-styles/` |
 | `dev/`, `dev-viewer/` | the UI agents' deeper headless suites (capture offline/outbox, map clusters on the atlas via `?map=atlas`, viewer alignment, disposal) |
-| `examples/` | `bedroom.scene.json` (interior) and `diner.scene.json` (exterior), fixtures for the kit and viewer |
+| `examples/` | `bedroom.scene.json` (interior) and `diner.scene.json` (exterior), fixtures for the kit and viewer; v2: `shed-octagon.v2.scene.json` (polygon + pyramid), `warehouse-gable.v2.scene.json` (box + off-centre gable), `house.building.json` (two levels, L-shaped ground floor, stairs, hip + skillion roof, site) and `house-living.v2.scene.json` (a room of it) |
 
 ## Run everything locally
 

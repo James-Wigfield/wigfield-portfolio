@@ -1,5 +1,5 @@
 /* ============================================================================
-   scene.json v1 validator: ONE implementation shared by the Worker (PATCH),
+   scene.json v1 + v2 validator: ONE implementation shared by the Worker (PATCH),
    the viewer and the Node scripts (check-scene, push). Python mirrors the same
    keyword subset in tools/memory-rooms/blender/scene_io.py.
 
@@ -13,9 +13,12 @@
    ========================================================================== */
 
 import schema from './scene.schema.json' with { type: 'json' };
+import { area, bbox, isSimple, pointInPolygon } from './polygon.js';
 
 export const SCENE_SCHEMA = schema;
-export const SCENE_VERSION = 1;
+/** The newest version; 1 stays valid (and renders unchanged). */
+export const SCENE_VERSION = 2;
+export const SCENE_VERSIONS = [1, 2];
 export const KITS = schema.$defs.kit.enum;
 export const MATERIALS = schema.$defs.material.enum;
 export const WALLS = schema.$defs.wall.enum;
@@ -183,7 +186,47 @@ export function validateScene(scene) {
     if (photos.has(c.photo)) errors.push({ path: `/cameras/${i}/photo`, message: `photo ${c.photo} already has a camera (/cameras/${photos.get(c.photo)})` });
     else photos.set(c.photo, i);
   });
+  if (scene.shell) shellChecks(scene.shell, errors);
   return { ok: errors.length === 0, errors };
+}
+
+/** v2 shell rules a schema can't say: the outline's shape and origin, edges vs walls, ceiling heights. */
+function shellChecks(sh, errors) {
+  if (sh.building) return; // the building's own validator owns its rooms
+  const polygon = Array.isArray(sh.outline);
+  if (polygon) {
+    const pts = sh.outline;
+    const box = bbox(pts);
+    if (!isSimple(pts, 0.05)) errors.push({ path: '/shell/outline', message: 'must be a simple polygon (no crossing or touching edges, no spikes, every edge at least 5 cm)' });
+    else if (area(pts) < 0.5) errors.push({ path: '/shell/outline', message: `encloses only ${area(pts).toFixed(2)} m² (at least 0.5)` });
+    if (Math.abs(box.min[0]) > 0.001 || Math.abs(box.min[1]) > 0.001) {
+      errors.push({ path: '/shell/outline', message: `its bounding box must start at [0, 0] (the room's north-west corner); it starts at [${box.min.map((v) => +v.toFixed(3))}]: subtract that from every corner` });
+    }
+  }
+  (sh.openings || []).forEach((op, i) => {
+    if (polygon && op.wall !== undefined) errors.push({ path: `/shell/openings/${i}/wall`, message: 'a polygon shell names its walls by edge ("edge": 0 = outline[0] -> outline[1]), not by compass side' });
+    if (!polygon && op.edge !== undefined) errors.push({ path: `/shell/openings/${i}/edge`, message: 'a box shell names its walls (north, south, east, west), not edges' });
+    if (polygon && op.edge !== undefined && op.edge >= sh.outline.length) {
+      errors.push({ path: `/shell/openings/${i}/edge`, message: `edge ${op.edge} doesn't exist (the outline has ${sh.outline.length} edges, 0–${sh.outline.length - 1})` });
+    }
+  });
+  const c = sh.ceiling || {};
+  if (c.shape && c.shape !== 'flat') {
+    const eaves = c.eaves || [sh.height, sh.height];
+    if (!(c.peak > Math.max(sh.height, ...eaves))) {
+      errors.push({ path: '/shell/ceiling/peak', message: `must be above the eaves (${Math.max(sh.height, ...eaves)} m), got ${c.peak}` });
+    }
+    const pts = polygon ? sh.outline : [[0, 0], [sh.width, 0], [sh.width, sh.depth], [0, sh.depth]];
+    const box = bbox(pts);
+    if (c.shape === 'gable' && c.ridgeAt !== undefined) {
+      const axis = c.axis || (box.max[0] - box.min[0] >= box.max[1] - box.min[1] ? 'x' : 'z');
+      const [lo, hi] = axis === 'x' ? [box.min[1], box.max[1]] : [box.min[0], box.max[0]];
+      if (!(c.ridgeAt > lo && c.ridgeAt < hi)) errors.push({ path: '/shell/ceiling/ridgeAt', message: `must lie inside the room across the ridge (${lo}–${hi} along ${axis === 'x' ? 'z' : 'x'}), got ${c.ridgeAt}` });
+    }
+    if (c.shape === 'pyramid' && c.apex && !pointInPolygon(c.apex, pts)) {
+      errors.push({ path: '/shell/ceiling/apex', message: `[${c.apex}] is outside the room` });
+    }
+  }
 }
 
 /** One line per error, for logs and API responses. */

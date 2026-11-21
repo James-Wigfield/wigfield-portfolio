@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* check-scene: is this scene.json buildable and believable?
 
-     node tools/memory-rooms/check-scene.mjs <scene.json | spotId> [--json] [--quiet]
+     node tools/memory-rooms/check-scene.mjs <scene.json | spotId> [--building <building.json>] [--json] [--quiet]
 
    1. Schema + cross-references (the shared validator, src/memory-rooms/scene/validate.js).
    2. Geometry, with a 2 cm tolerance:
@@ -12,6 +12,10 @@
       - each door and window fits inside its wall, openings don't collide, doors start at the floor,
       - every camera is inside the room (or near the site) and points at something,
       - pins and lights sit inside the room.
+   v2 shells (a polygon, a sloped ceiling, a room of a building) are checked against the
+   normalised shell (src/memory-rooms/scene/shell.js): inside the outline and under the
+   ceiling at every footprint corner, openings below their wall's top. A flat box (every v1
+   scene) keeps exactly the original checks and messages.
    Errors fail the check (exit 1). Warnings are advice. */
 
 import fs from 'node:fs';
@@ -19,13 +23,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateScene } from '../../src/memory-rooms/scene/validate.js';
 import { aabb, footprint, openingSpan, wallLength, verticalFov } from '../../src/memory-rooms/scene/geometry.js';
+import { ceilingAt, resolveShell, wallTopMin } from '../../src/memory-rooms/scene/shell.js';
+import { isConvex, segDist } from '../../src/memory-rooms/scene/polygon.js';
+import { validateBuilding } from '../../src/memory-rooms/building/validate.js';
 import { WORK } from './lib/api.mjs';
 
 const TOL = 0.02 + 1e-6; // 2 cm (+ epsilon for float sums like 0.07 - 0.05)
 const WALL_KITS = new Set(['frame', 'shelf', 'tv', 'curtain', 'sign', 'awning', 'cabinet', 'lamp', 'box', 'bespoke', 'glb']);
 const fmtM = (m) => (Math.abs(m) < 1 ? `${Math.round(m * 100)} cm` : `${m.toFixed(2)} m`);
 
-export function checkScene(scene) {
+export function checkScene(scene, { building = null } = {}) {
   const errors = [];
   const warnings = [];
   const { ok, errors: schemaErrors } = validateScene(scene);
@@ -38,6 +45,21 @@ export function checkScene(scene) {
   const boxes = new Map(objs.map((o) => [o.id, aabb(o)]));
   const interior = scene.kind === 'interior';
   const shell = scene.shell;
+  // v2: polygon shells, sloped ceilings and rooms of a building go through the normalised shell (shell.js);
+  // a flat box (every v1 scene) keeps the original checks and messages below.
+  const norm = interior ? resolveShell(scene, building) : null;
+  if (interior && !norm) {
+    errors.push(`shell: room "${shell.room}" of building ${shell.building}: give its building.json (--building <file>, or building.json in the work folder)`);
+    return { errors, warnings };
+  }
+  if (interior && shell.building) {
+    const { ok: bok, errors: berrs } = validateBuilding(building);
+    if (!bok) {
+      for (const e of berrs) errors.push(`building ${e.path || '/'} ${e.message}`);
+      return { errors, warnings };
+    }
+  }
+  if (interior && !(norm.kind === 'box' && norm.ceiling.shape === 'flat')) return checkGeneric(scene, norm, { errors, warnings, objs, boxes });
 
   // ── inside the shell / site ────────────────────────────────────────────
   for (const o of objs) {
@@ -57,40 +79,11 @@ export function checkScene(scene) {
     }
   }
 
-  // ── floating ───────────────────────────────────────────────────────────
-  for (const o of objs) {
-    if (o.mount === 'free') continue;
-    const b = boxes.get(o.id);
-    const y = o.at[1];
-    const onFloor = Math.abs(y) <= TOL;
-    const support = objs.find((p) => p.id !== o.id && Math.abs(p.at[1] + p.size[1] - y) <= TOL && pointInPoly([o.at[0], o.at[2]], footprint(p)));
-    const touchingWall = interior && (b.min[0] <= TOL || b.max[0] >= shell.width - TOL || b.min[2] <= TOL || b.max[2] >= shell.depth - TOL);
-    const touchingSide = objs.find((p) => p.id !== o.id && sideContact(b, boxes.get(p.id)));
-    const fromCeiling = interior && b.max[1] >= shell.height - TOL;
-    const mount = o.mount;
-    if (mount === 'floor' && !onFloor) errors.push(`${o.id}: mount "floor" but its base is at y = ${y}`);
-    else if (mount === 'on' && !support) errors.push(`${o.id}: mount "on" but nothing's top is at y = ${y} under its centre`);
-    else if (mount === 'wall' && !touchingWall && !touchingSide) errors.push(`${o.id}: mount "wall" but it touches no wall or object side (within 2 cm)`);
-    else if (mount === 'ceiling' && !fromCeiling) errors.push(`${o.id}: mount "ceiling" but its top is ${fmtM(shell ? shell.height - b.max[1] : 0)} below the ceiling`);
-    else if (!mount && !onFloor && !support && !fromCeiling && !((touchingWall || touchingSide) && WALL_KITS.has(o.kit))) {
-      const below = objs.filter((p) => p.id !== o.id && pointInPoly([o.at[0], o.at[2]], footprint(p)) && p.at[1] + p.size[1] <= y + TOL);
-      const top = below.length ? Math.max(...below.map((p) => p.at[1] + p.size[1])) : 0;
-      errors.push(`${o.id}: floats ${fmtM(y - top)} above ${below.length ? 'what is under it' : 'the floor'} (set mount if intended)`);
-    }
-  }
-
-  // ── interpenetration ───────────────────────────────────────────────────
-  for (let i = 0; i < objs.length; i++) {
-    for (let j = i + 1; j < objs.length; j++) {
-      const a = objs[i];
-      const c = objs[j];
-      if ((a.overlaps || []).includes(c.id) || (c.overlaps || []).includes(a.id)) continue;
-      const yOverlap = Math.min(a.at[1] + a.size[1], c.at[1] + c.size[1]) - Math.max(a.at[1], c.at[1]);
-      if (yOverlap <= TOL) continue;
-      const depth = Math.min(yOverlap, satDepth(footprint(a), footprint(c)));
-      if (depth > TOL) errors.push(`${a.id} and ${c.id} interpenetrate by ${fmtM(depth)} (add "overlaps" if intended, e.g. a chair tucked under a desk)`);
-    }
-  }
+  checkFloating(objs, boxes, errors, {
+    touchingWall: (b) => interior && (b.min[0] <= TOL || b.max[0] >= shell.width - TOL || b.min[2] <= TOL || b.max[2] >= shell.depth - TOL),
+    ceilingGap: (b) => (interior ? shell.height - b.max[1] : null),
+  });
+  checkInterpenetration(objs, errors);
 
   // ── openings ───────────────────────────────────────────────────────────
   if (interior) {
@@ -152,21 +145,7 @@ export function checkScene(scene) {
       if (Math.abs(px) > w * 1.5 || Math.abs(pz) > d * 1.5) warnings.push(`${label}: pos is far outside the site`);
       if (py < 0.1) errors.push(`${label}: pos is below the ground`);
     }
-    const dir = sub(cam.look, cam.pos);
-    const dist = len3(dir);
-    if (dist < 0.3) {
-      errors.push(`${label}: look is only ${fmtM(dist)} from pos`);
-      continue;
-    }
-    const aspect = cam.aspect ?? 0.75;
-    const vf = (verticalFov(cam, aspect) * Math.PI) / 180;
-    const hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
-    const seen = objs.filter((o) => {
-      const c = [o.at[0], o.at[1] + o.size[1] / 2, o.at[2]];
-      return inFrustum(cam.pos, dir, c, hf, vf);
-    });
-    if (!seen.length) warnings.push(`${label}: no object's centre is in view; check pos/look/fov`);
-    if (Math.abs(cam.pos[1] - 1.5) > 0.6 && interior) warnings.push(`${label}: eye height ${cam.pos[1]} m (phones are usually held at 1.2–1.7 m)`);
+    cameraView(cam, objs, interior, errors, warnings);
   }
 
   // ── pins + lights ──────────────────────────────────────────────────────
@@ -179,6 +158,179 @@ export function checkScene(scene) {
   if (!scene.cameras.length) warnings.push('no cameras: compare.mjs needs one camera per photo');
 
   return { errors, warnings };
+}
+
+/** Nothing floats: on the floor, on another object's top, against a wall / object side, or from the ceiling. */
+function checkFloating(objs, boxes, errors, { touchingWall, ceilingGap }) {
+  for (const o of objs) {
+    if (o.mount === 'free') continue;
+    const b = boxes.get(o.id);
+    const y = o.at[1];
+    const onFloor = Math.abs(y) <= TOL;
+    const support = objs.find((p) => p.id !== o.id && Math.abs(p.at[1] + p.size[1] - y) <= TOL && pointInPoly([o.at[0], o.at[2]], footprint(p)));
+    const touching = touchingWall(b, o);
+    const touchingSide = objs.find((p) => p.id !== o.id && sideContact(b, boxes.get(p.id)));
+    const gap = ceilingGap(b, o);
+    const fromCeiling = gap !== null && gap <= TOL;
+    const mount = o.mount;
+    if (mount === 'floor' && !onFloor) errors.push(`${o.id}: mount "floor" but its base is at y = ${y}`);
+    else if (mount === 'on' && !support) errors.push(`${o.id}: mount "on" but nothing's top is at y = ${y} under its centre`);
+    else if (mount === 'wall' && !touching && !touchingSide) errors.push(`${o.id}: mount "wall" but it touches no wall or object side (within 2 cm)`);
+    else if (mount === 'ceiling' && !fromCeiling) errors.push(`${o.id}: mount "ceiling" but its top is ${fmtM(gap ?? 0)} below the ceiling`);
+    else if (!mount && !onFloor && !support && !fromCeiling && !((touching || touchingSide) && WALL_KITS.has(o.kit))) {
+      const below = objs.filter((p) => p.id !== o.id && pointInPoly([o.at[0], o.at[2]], footprint(p)) && p.at[1] + p.size[1] <= y + TOL);
+      const top = below.length ? Math.max(...below.map((p) => p.at[1] + p.size[1])) : 0;
+      errors.push(`${o.id}: floats ${fmtM(y - top)} above ${below.length ? 'what is under it' : 'the floor'} (set mount if intended)`);
+    }
+  }
+}
+
+function checkInterpenetration(objs, errors) {
+  for (let i = 0; i < objs.length; i++) {
+    for (let j = i + 1; j < objs.length; j++) {
+      const a = objs[i];
+      const c = objs[j];
+      if ((a.overlaps || []).includes(c.id) || (c.overlaps || []).includes(a.id)) continue;
+      const yOverlap = Math.min(a.at[1] + a.size[1], c.at[1] + c.size[1]) - Math.max(a.at[1], c.at[1]);
+      if (yOverlap <= TOL) continue;
+      const depth = Math.min(yOverlap, satDepth(footprint(a), footprint(c)));
+      if (depth > TOL) errors.push(`${a.id} and ${c.id} interpenetrate by ${fmtM(depth)} (add "overlaps" if intended, e.g. a chair tucked under a desk)`);
+    }
+  }
+}
+
+/** A camera looks at something, from a believable height. */
+function cameraView(cam, objs, interior, errors, warnings) {
+  const label = `camera for photo ${cam.photo}`;
+  const dir = sub(cam.look, cam.pos);
+  const dist = len3(dir);
+  if (dist < 0.3) {
+    errors.push(`${label}: look is only ${fmtM(dist)} from pos`);
+    return;
+  }
+  const aspect = cam.aspect ?? 0.75;
+  const vf = (verticalFov(cam, aspect) * Math.PI) / 180;
+  const hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
+  const seen = objs.filter((o) => {
+    const c = [o.at[0], o.at[1] + o.size[1] / 2, o.at[2]];
+    return inFrustum(cam.pos, dir, c, hf, vf);
+  });
+  if (!seen.length) warnings.push(`${label}: no object's centre is in view; check pos/look/fov`);
+  if (Math.abs(cam.pos[1] - 1.5) > 0.6 && interior) warnings.push(`${label}: eye height ${cam.pos[1]} m (phones are usually held at 1.2–1.7 m)`);
+}
+
+/**
+ * v2 interiors (a polygon shell, a sloped ceiling, a room of a building), through the
+ * normalised shell: inside the outline and under the ceiling at every footprint corner,
+ * openings on their walls (below the wall's top, which a gable raises), cameras inside
+ * or in a doorway, pins and lights inside.
+ */
+function checkGeneric(scene, sh, { errors, warnings, objs, boxes }) {
+  const poly = sh.outline;
+  const where = (p) => {
+    // how far outside the outline a plan point is (0 inside), and the nearest wall
+    let best = { d: Infinity, wall: null };
+    for (const w of sh.walls) {
+      const { d } = segDistXZ(p, w.a, w.b);
+      if (d < best.d) best = { d, wall: w };
+    }
+    return { out: pointInPoly(p, poly) ? 0 : best.d, nearest: best.wall, edgeDist: best.d };
+  };
+  const wallName = (w) => (w?.legacy ? `${w.legacy} wall` : w?.open ? 'open side' : `wall ${w?.id}`);
+  const ceilingName = sh.ceiling.shape === 'flat' ? 'ceiling' : `${sh.ceiling.shape} ceiling`;
+
+  // ── inside the outline, under the ceiling ──────────────────────────────
+  for (const o of objs) {
+    const b = boxes.get(o.id);
+    const corners = footprint(o);
+    let worst = { out: 0, nearest: null };
+    for (const c of corners) {
+      const w = where(c);
+      if (w.out > worst.out) worst = w;
+    }
+    if (worst.out > TOL) errors.push(`${o.id}: pokes ${fmtM(worst.out)} through the ${wallName(worst.nearest)}`);
+    const over = Math.max(...[...corners, [o.at[0], o.at[2]]].map(([x, z]) => b.max[1] - ceilingAt(sh, x, z)));
+    if (over > TOL) errors.push(`${o.id}: pokes ${fmtM(over)} through the ${ceilingName}`);
+    if (-b.min[1] > TOL) errors.push(`${o.id}: pokes ${fmtM(-b.min[1])} through the floor`);
+  }
+  checkFloating(objs, boxes, errors, {
+    touchingWall: (b, o) => footprint(o).some((c) => where(c).edgeDist <= TOL),
+    ceilingGap: (b, o) => ceilingAt(sh, o.at[0], o.at[2]) - b.max[1],
+  });
+  checkInterpenetration(objs, errors);
+
+  // ── openings ───────────────────────────────────────────────────────────
+  const byWall = new Map();
+  const walls = new Map(sh.walls.map((w) => [w.id, w]));
+  for (const op of sh.openings) {
+    const w = walls.get(op.wall);
+    const label = `opening ${op.spec.id ?? op.index} (${op.type}, ${wallName(w)})`;
+    if (op.offset < -0.001) errors.push(`${label}: starts ${fmtM(-op.offset)} before the wall's inner face begins`);
+    if (op.offset + op.width > w.length + 0.001) errors.push(`${label}: runs ${fmtM(op.offset + op.width - w.length)} past the end of the ${fmtM(w.length)} wall`);
+    const top = wallTopMin(sh, w, Math.max(0, op.offset), Math.min(w.length, op.offset + op.width));
+    if (op.head > top + 0.001) errors.push(`${label}: its top (${op.head.toFixed(2)} m) is above the wall (${top.toFixed(2)} m there)`);
+    if (op.type === 'door' && op.sill > 0.001) warnings.push(`${label}: a door with a sill of ${fmtM(op.sill)}`);
+    if (op.type === 'window' && op.sill < 0.05) warnings.push(`${label}: a window at floor level; is it a door or a glass wall?`);
+    if (op.offset < 0.05 || w.length - (op.offset + op.width) < 0.05) warnings.push(`${label}: within 5 cm of a corner`);
+    if (!byWall.has(op.wall)) byWall.set(op.wall, []);
+    byWall.get(op.wall).push({ label, a: op.offset, b: op.offset + op.width, s: op.sill, h: op.head });
+    if (op.type === 'door') {
+      const inward = [-w.out[0], -w.out[1]];
+      const swing = [op.from, op.to, [op.to[0] + inward[0] * op.width, op.to[1] + inward[1] * op.width], [op.from[0] + inward[0] * op.width, op.from[1] + inward[1] * op.width]];
+      for (const o of objs) {
+        if (o.at[1] > 0.3 || o.size[1] < 0.03) continue;
+        if (satDepth(swing, footprint(o)) > 0.05) warnings.push(`${o.id}: sits in the swing of ${label}`);
+      }
+    }
+  }
+  for (const [id, list] of byWall) {
+    list.sort((x, y) => x.a - y.a);
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const p = list[i];
+        const q = list[j];
+        if (Math.min(p.b, q.b) - Math.max(p.a, q.a) > 0.001 && Math.min(p.h, q.h) - Math.max(p.s, q.s) > 0.001) errors.push(`${p.label} and ${q.label} overlap on wall ${id}`);
+      }
+    }
+  }
+
+  // ── cameras ────────────────────────────────────────────────────────────
+  const m = 0.05;
+  for (const cam of scene.cameras) {
+    const label = `camera for photo ${cam.photo}`;
+    const [px, py, pz] = cam.pos;
+    const w = where([px, pz]);
+    const inside = w.out === 0 && w.edgeDist >= m;
+    if (!inside || py < 0.1 || py > ceilingAt(sh, px, pz) - m) {
+      const inDoorway = sh.openings.some((op) => {
+        if (op.type === 'window') return false;
+        const wall = walls.get(op.wall);
+        const ux = (wall.b[0] - wall.a[0]) / (wall.length || 1);
+        const uz = (wall.b[1] - wall.a[1]) / (wall.length || 1);
+        const along = (px - wall.a[0]) * ux + (pz - wall.a[1]) * uz;
+        const out = (px - wall.a[0]) * wall.out[0] + (pz - wall.a[1]) * wall.out[1];
+        return along >= op.offset && along <= op.offset + op.width && out <= 0.6 && out > -m - 0.001 && py < op.head;
+      });
+      if (inDoorway) warnings.push(`${label}: pos [${cam.pos}] is in a doorway (fine for "wide from the door")`);
+      else errors.push(`${label}: pos [${cam.pos}] is outside the room`);
+    }
+    const [lx, ly, lz] = cam.look;
+    if (where([lx, lz]).out > 0.5 || ly < -0.5 || ly > sh.top + 0.5) errors.push(`${label}: look [${cam.look}] is outside the room`);
+    cameraView(cam, objs, true, errors, warnings);
+  }
+
+  // ── pins + lights ──────────────────────────────────────────────────────
+  const insideRoom = (p, tol) => where([p[0], p[2]]).out <= tol && p[1] >= -tol && p[1] <= ceilingAt(sh, p[0], p[2]) + tol;
+  (scene.pins || []).forEach((p, i) => insideRoom(p.at, 0.05) || errors.push(`pin ${i}: at [${p.at}] is outside the room`));
+  (scene.lights || []).forEach((l, i) => l.at && !insideRoom(l.at, 0.05) && errors.push(`light ${i} (${l.type}): at [${l.at}] is outside the room`));
+  if (!(scene.lights || []).length) warnings.push('no lights: the kit will use its default fill (fine, but a lamp or window light usually reads better)');
+  if (!scene.cameras.length) warnings.push('no cameras: compare.mjs needs one camera per photo');
+  if (sh.ceiling.shape === 'pyramid' && !isConvex(poly)) warnings.push('a pyramid ceiling over a room that is not convex: check the roof faces in the renders');
+  return { errors, warnings };
+}
+
+function segDistXZ(p, a, b) {
+  return segDist(p, a, b);
 }
 
 // ── geometry helpers ─────────────────────────────────────────────────────────
@@ -267,9 +419,10 @@ function resolveScenePath(arg) {
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const args = process.argv.slice(2);
-  const file = resolveScenePath(args.find((a) => !a.startsWith('--')));
+  const flagValues = new Set(args.filter((a, i) => args[i - 1] === '--building'));
+  const file = resolveScenePath(args.find((a) => !a.startsWith('--') && !flagValues.has(a)));
   if (!file || !fs.existsSync(file)) {
-    console.error('usage: node tools/memory-rooms/check-scene.mjs <scene.json | work dir | spotId> [--json]');
+    console.error('usage: node tools/memory-rooms/check-scene.mjs <scene.json | work dir | spotId> [--building <building.json>] [--json]');
     process.exit(2);
   }
   let scene;
@@ -279,7 +432,16 @@ if (isMain) {
     console.error(`✗ ${file} is not valid JSON: ${e.message}`);
     process.exit(1);
   }
-  const { errors, warnings } = checkScene(scene);
+  // a room of a building needs its building.json: --building <file>, else building.json next to the
+  // scene, else memory-rooms-work/b-<buildingId>/building.json
+  let building = null;
+  if (scene?.shell?.building) {
+    const flag = args.indexOf('--building');
+    const candidates = [flag >= 0 ? args[flag + 1] : null, path.join(path.dirname(file), 'building.json'), path.join(WORK, `b-${scene.shell.building}`, 'building.json')];
+    const found = candidates.find((p) => p && fs.existsSync(p));
+    if (found) building = JSON.parse(fs.readFileSync(found, 'utf8'));
+  }
+  const { errors, warnings } = checkScene(scene, { building });
   if (args.includes('--json')) {
     console.log(JSON.stringify({ file, ok: !errors.length, errors, warnings }, null, 2));
   } else {

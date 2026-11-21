@@ -1,0 +1,29 @@
+{
+  "$comment": "scene.json v2 worked example: a box shell with a gable ceiling whose ridge runs north-south (axis z) off-centre, with different eaves on each side: the shape of 'Lunch Room' (spot b1f26f03) as parameters instead of the bespoke gable_roof.py. The end walls (north, south) rise to the ridge.",
+  "version": 2,
+  "kind": "interior",
+  "title": "Gable warehouse (v2 example)",
+  "style": { "mood": "day", "exposure": -1 },
+  "shell": {
+    "width": 15.95,
+    "depth": 6.06,
+    "height": 3.46,
+    "floor": { "finish": "concrete", "color": "#7f7b75" },
+    "walls": { "finish": "paint", "color": "#e8e6e1", "thickness": 0.2, "skirting": false },
+    "ceiling": { "shape": "gable", "axis": "z", "ridgeAt": 7.67, "peak": 5.28, "eaves": [3.46, 3.4], "color": "#c6c6c4" },
+    "openings": [
+      { "wall": "north", "type": "window", "offset": 1.3, "width": 3.43, "sill": 0.02, "height": 2.5, "color": "#1b1c1e" },
+      { "wall": "north", "type": "window", "offset": 5.72, "width": 4.01, "sill": 0.02, "height": 2.5, "color": "#1b1c1e" },
+      { "wall": "north", "type": "window", "offset": 6.4, "width": 2.6, "sill": 2.78, "height": 1.6, "color": "#1b1c1e" },
+      { "wall": "south", "type": "window", "offset": 1.05, "width": 4.95, "sill": 0.02, "height": 2.61, "color": "#1b1c1e" },
+      { "wall": "south", "type": "opening", "offset": 6.0, "width": 1.55, "height": 2.45, "color": "#1b1c1e" }
+    ]
+  },
+  "objects": [
+    { "id": "table1", "kit": "table", "size": [2.4, 0.75, 0.9], "at": [4.0, 0, 3.0], "color": "#c8925f" },
+    { "id": "table2", "kit": "table", "size": [2.4, 0.75, 0.9], "at": [11.5, 0, 3.0], "color": "#c8925f" },
+    { "id": "fridge", "kit": "fridge", "size": [0.76, 1.78, 0.74], "at": [15.4, 0, 1.0], "rotY": 270 }
+  ],
+  "lights": [{ "type": "window" }, { "type": "area", "at": [7.67, 4.6, 3.03], "look": [7.67, 0, 3.03], "size": 3, "intensity": 0.8 }],
+  "cameras": [{ "photo": 1, "pos": [1.0, 1.6, 5.4], "look": [12, 1.4, 1.2], "fov": 69, "aspect": 1.333 }]
+}

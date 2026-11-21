@@ -1,0 +1,138 @@
+{
+  "$comment": "Worked example of building.json v1 (CONTRACTS.md section 6): an invented two-storey house with a single-storey garage wing, an L-shaped ground floor, shared walls once, T-junctions split, a stair in the hall, a hip roof over the upper floor and a skillion over the garage, a site with a drive, path, pool, fences and trees.",
+  "version": 1,
+  "title": "Example house",
+  "notes": "Fixture for the contracts, the viewer and the Blender building kit. Not a real place.",
+  "source": "plan",
+  "geo": { "lat": -31.9523, "lng": 115.8613, "north": 15 },
+  "style": { "mood": "day" },
+  "levels": [
+    {
+      "id": "ground",
+      "name": "Ground floor",
+      "elevation": 0,
+      "height": 2.7,
+      "slab": 0.3,
+      "nodes": [
+        { "id": "a1", "at": [0, 0] }, { "id": "a2", "at": [6, 0] }, { "id": "a3", "at": [11, 0] }, { "id": "a4", "at": [11, 2] },
+        { "id": "a5", "at": [15, 2] }, { "id": "a6", "at": [15, 8] }, { "id": "a7", "at": [11, 8] }, { "id": "a8", "at": [6, 8] },
+        { "id": "a9", "at": [3, 8] }, { "id": "a10", "at": [0, 8] }, { "id": "a11", "at": [0, 5] }, { "id": "a12", "at": [3, 5] },
+        { "id": "a13", "at": [6, 5] }, { "id": "a14", "at": [6, 3.5] }, { "id": "a15", "at": [11, 3.5] }
+      ],
+      "walls": [
+        { "id": "g-n1", "a": "a1", "b": "a2", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-n2", "a": "a2", "b": "a3", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-e1", "a": "a3", "b": "a4", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-n3", "a": "a4", "b": "a5", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-e2", "a": "a5", "b": "a6", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-s1", "a": "a6", "b": "a7", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-s2", "a": "a7", "b": "a8", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-s3", "a": "a8", "b": "a9", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-s4", "a": "a9", "b": "a10", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-w1", "a": "a10", "b": "a11", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-w2", "a": "a11", "b": "a1", "exterior": true, "outside": { "finish": "brick", "color": "#b8866b" } },
+        { "id": "g-i1", "a": "a2", "b": "a14" },
+        { "id": "g-i2", "a": "a14", "b": "a13" },
+        { "id": "g-i3", "a": "a14", "b": "a15" },
+        { "id": "g-i4", "a": "a4", "b": "a15", "thickness": 0.2 },
+        { "id": "g-i5", "a": "a15", "b": "a7", "thickness": 0.2 },
+        { "id": "g-i6", "a": "a11", "b": "a12" },
+        { "id": "g-i7", "a": "a12", "b": "a13" },
+        { "id": "g-i8", "a": "a13", "b": "a8" },
+        { "id": "g-i9", "a": "a12", "b": "a9" }
+      ]
+    },
+    {
+      "id": "upper",
+      "name": "Upstairs",
+      "elevation": 3.0,
+      "height": 2.5,
+      "nodes": [
+        { "id": "c1", "at": [0, 0] }, { "id": "c2", "at": [5.5, 0] }, { "id": "c3", "at": [11, 0] }, { "id": "c4", "at": [11, 3.5] },
+        { "id": "c5", "at": [11, 8] }, { "id": "c6", "at": [5.5, 8] }, { "id": "c7", "at": [0, 8] }, { "id": "c8", "at": [0, 4.8] },
+        { "id": "c9", "at": [5.5, 4.8] }, { "id": "c10", "at": [5.5, 3.5] }
+      ],
+      "walls": [
+        { "id": "u-n1", "a": "c1", "b": "c2", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-n2", "a": "c2", "b": "c3", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-e1", "a": "c3", "b": "c4", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-e2", "a": "c4", "b": "c5", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-s1", "a": "c5", "b": "c6", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-s2", "a": "c6", "b": "c7", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-w1", "a": "c7", "b": "c8", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-w2", "a": "c8", "b": "c1", "exterior": true, "outside": { "finish": "weatherboard", "color": "#e9e4da" } },
+        { "id": "u-i1", "a": "c2", "b": "c10" },
+        { "id": "u-i2", "a": "c10", "b": "c9" },
+        { "id": "u-i3", "a": "c9", "b": "c6" },
+        { "id": "u-i4", "a": "c10", "b": "c4" },
+        { "id": "u-i5", "a": "c8", "b": "c9" }
+      ]
+    }
+  ],
+  "rooms": [
+    { "id": "living", "name": "Living", "level": "ground", "outline": ["a1", "a2", "a14", "a13", "a12", "a11"], "floor": { "finish": "timber", "color": "#a77b55" }, "walls": { "color": "#efe9df" } },
+    { "id": "kitchen", "name": "Kitchen", "level": "ground", "outline": ["a2", "a3", "a4", "a15", "a14"], "floor": { "finish": "tile", "color": "#d9d4cb" } },
+    { "id": "hall", "name": "Hall", "level": "ground", "kind": "hall", "outline": ["a14", "a15", "a7", "a8", "a13"], "floor": { "finish": "timber", "color": "#a77b55" } },
+    { "id": "bath", "name": "Bathroom", "level": "ground", "kind": "wet", "outline": ["a11", "a12", "a9", "a10"], "floor": { "finish": "tile", "color": "#e6e3dd" }, "walls": { "finish": "tile", "color": "#f1efea" } },
+    { "id": "study", "name": "Study", "level": "ground", "outline": ["a12", "a13", "a8", "a9"], "floor": { "finish": "carpet", "color": "#8c8a83" } },
+    { "id": "garage", "name": "Garage", "level": "ground", "kind": "garage", "outline": ["a4", "a5", "a6", "a7", "a15"], "floor": { "finish": "concrete" }, "ceiling": { "height": 2.6 } },
+    { "id": "bed1", "name": "Bedroom 1", "level": "upper", "outline": ["c1", "c2", "c10", "c9", "c8"], "floor": { "finish": "carpet", "color": "#b9b0a2" } },
+    { "id": "bed2", "name": "Bedroom 2", "level": "upper", "outline": ["c2", "c3", "c4", "c10"], "floor": { "finish": "carpet", "color": "#b9b0a2" } },
+    { "id": "landing", "name": "Landing", "level": "upper", "kind": "hall", "outline": ["c10", "c4", "c5", "c6", "c9"], "floor": { "finish": "timber", "color": "#a77b55" } },
+    { "id": "bath2", "name": "Upstairs bathroom", "level": "upper", "kind": "wet", "outline": ["c8", "c9", "c6", "c7"], "floor": { "finish": "tile", "color": "#e6e3dd" } }
+  ],
+  "openings": [
+    { "id": "front-door", "wall": "g-s2", "type": "door", "offset": 2.0, "width": 0.9, "height": 2.1, "swing": "right", "color": "#2f4a5a" },
+    { "id": "garage-door", "wall": "g-s1", "type": "garage", "offset": 0.5, "width": 3.0, "height": 2.2, "color": "#d8d4cc" },
+    { "id": "living-n", "wall": "g-n1", "type": "window", "offset": 1.5, "width": 2.4, "height": 1.5 },
+    { "id": "living-w", "wall": "g-w2", "type": "window", "offset": 1.5, "width": 1.8, "height": 1.5 },
+    { "id": "kitchen-n", "wall": "g-n2", "type": "window", "offset": 1.5, "width": 1.8, "height": 1.0, "sill": 1.05 },
+    { "id": "bath-w", "wall": "g-w1", "type": "window", "offset": 1.0, "width": 0.8, "height": 0.6, "sill": 1.4 },
+    { "id": "study-s", "wall": "g-s3", "type": "window", "offset": 0.8, "width": 1.4, "height": 1.4 },
+    { "id": "kitchen-hall", "wall": "g-i3", "type": "opening", "offset": 1.5, "width": 1.2, "height": 2.1 },
+    { "id": "living-hall", "wall": "g-i2", "type": "opening", "offset": 0.15, "width": 1.2, "height": 2.1 },
+    { "id": "study-door", "wall": "g-i8", "type": "door", "offset": 1.0, "width": 0.82, "height": 2.04, "swing": "left" },
+    { "id": "bath-door", "wall": "g-i9", "type": "door", "offset": 1.8, "width": 0.72, "height": 2.04, "swing": "left" },
+    { "id": "garage-hall", "wall": "g-i5", "type": "door", "offset": 1.0, "width": 0.82, "height": 2.04, "swing": "right" },
+    { "id": "bed1-n", "wall": "u-n1", "type": "window", "offset": 1.5, "width": 2.0, "height": 1.3 },
+    { "id": "bed1-w", "wall": "u-w2", "type": "window", "offset": 1.4, "width": 1.6, "height": 1.3 },
+    { "id": "bed2-n", "wall": "u-n2", "type": "window", "offset": 1.8, "width": 2.0, "height": 1.3 },
+    { "id": "bath2-w", "wall": "u-w1", "type": "window", "offset": 1.2, "width": 0.8, "height": 0.6, "sill": 1.4 },
+    { "id": "landing-s", "wall": "u-s1", "type": "window", "offset": 2.0, "width": 1.6, "height": 1.3 },
+    { "id": "bed2-door", "wall": "u-i4", "type": "door", "offset": 0.4, "width": 0.82, "height": 2.04, "swing": "left" },
+    { "id": "bed1-door", "wall": "u-i2", "type": "door", "offset": 0.24, "width": 0.82, "height": 2.04, "swing": "right" },
+    { "id": "bath2-door", "wall": "u-i3", "type": "door", "offset": 0.3, "width": 0.72, "height": 2.04, "swing": "right" }
+  ],
+  "stairs": [{ "id": "main", "from": "ground", "to": "upper", "start": [10.4, 7.4], "dir": "north", "width": 0.9, "length": 3.6, "steps": 16 }],
+  "roof": {
+    "type": "hip",
+    "pitch": 22.5,
+    "overhang": 0.45,
+    "finish": "tile",
+    "color": "#8a5a44",
+    "parts": [
+      { "outline": [[0, 0], [11, 0], [11, 8], [0, 8]], "type": "hip" },
+      { "outline": [[11, 2], [15, 2], [15, 8], [11, 8]], "type": "skillion", "low": "east", "pitch": 8, "level": "ground" }
+    ]
+  },
+  "site": {
+    "lot": [[-6, -8], [21, -8], [21, 20], [-6, 20]],
+    "ground": { "finish": "grass", "color": "#7d9a58" },
+    "areas": [
+      { "id": "drive", "kind": "drive", "outline": [[11.2, 8.2], [14.8, 8.2], [14.8, 20], [11.2, 20]] },
+      { "id": "path", "kind": "path", "outline": [[8.4, 8.2], [9.4, 8.2], [9.4, 20], [8.4, 20]] },
+      { "id": "deck", "kind": "deck", "outline": [[0.5, -2.5], [6, -2.5], [6, -0.2], [0.5, -0.2]] },
+      { "id": "pool", "kind": "pool", "outline": [[1, -6.8], [8, -6.8], [8, -3.5], [1, -3.5]], "depth": 1.4 }
+    ],
+    "fences": [
+      { "id": "back", "line": [[-6, -8], [21, -8]], "height": 1.8, "kind": "timber" },
+      { "id": "west", "line": [[-6, -8], [-6, 20]], "height": 1.8, "kind": "timber" },
+      { "id": "front", "line": [[-6, 20], [8.2, 20]], "height": 0.9, "kind": "picket", "color": "#f2efe8" }
+    ],
+    "trees": [
+      { "id": "gum", "at": [-3, 12], "height": 8, "kind": "tree" },
+      { "id": "palm", "at": [18, -4], "height": 9, "kind": "palm" },
+      { "id": "hedge", "at": [19, 14], "height": 1.6, "spread": 2.2, "kind": "shrub" }
+    ]
+  }
+}

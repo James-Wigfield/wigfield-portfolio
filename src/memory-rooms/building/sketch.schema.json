@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory-rooms/sketch.schema.json",
+  "title": "Memory Rooms sketch plan v1",
+  "description": "What the phone knows about a whole place before anyone traces it: its levels and rooms. A room can be drawn on the sketch grid (`rect`, metres in the plan frame: x east, z south) and/or marked on a floor-plan photo (`mark`, u/v in 0..1 of photo `photo`). Room ids become building.json room ids, so a spot's roomId keeps pointing at its room after the render side traces the real plan. CONTRACTS.md section 6.4. Validated by src/memory-rooms/building/sketch.js (JS only: only the phone and the Worker write it).",
+  "type": "object",
+  "required": ["version", "levels", "rooms"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "grid": { "type": "number", "minimum": 0.1, "maximum": 2, "description": "Snap step in metres. Default 0.5." },
+    "north": { "type": "number", "minimum": -360, "maximum": 360, "description": "Compass bearing of the sketch's up, if known (building.json geo.north)." },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 40 }
+        }
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "level"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "level": { "$ref": "#/$defs/id" },
+          "rect": {
+            "description": "[x, z, w, d] in metres: the north-west corner, then the size along x and z.",
+            "type": "array",
+            "prefixItems": [
+              { "type": "number", "minimum": -200, "maximum": 200 },
+              { "type": "number", "minimum": -200, "maximum": 200 },
+              { "type": "number", "minimum": 0.5, "maximum": 60 },
+              { "type": "number", "minimum": 0.5, "maximum": 60 }
+            ],
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "mark": {
+            "type": "object",
+            "required": ["photo", "u", "v"],
+            "additionalProperties": false,
+            "properties": {
+              "photo": { "type": "integer", "minimum": 1, "maximum": 4 },
+              "u": { "type": "number", "minimum": 0, "maximum": 1 },
+              "v": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$" }
+  }
+}

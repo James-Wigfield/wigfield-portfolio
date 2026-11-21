@@ -1,0 +1,21 @@
+{
+  "$comment": "scene.json v2 worked example: a room inside a building. The walls, floor, ceiling and openings come from house.building.json (room 'living'); this file carries only what's in the room, in the room frame: the room's wall-CENTRELINE bounding box starts at [0, 0], so its inner faces start at half a wall thickness (0.125 m for the 0.25 m exterior walls).",
+  "version": 2,
+  "kind": "interior",
+  "title": "Living (in the example house)",
+  "style": { "mood": "golden" },
+  "shell": { "building": "00000000-0000-4000-8000-00000000b001", "room": "living" },
+  "objects": [
+    { "id": "rug", "kit": "rug", "size": [2.4, 0.012, 1.7], "at": [3.0, 0, 2.4], "color": "#b08d6f" },
+    { "id": "sofa", "kit": "sofa", "size": [2.1, 0.85, 0.92], "at": [3.0, 0, 3.9], "rotY": 180, "color": "#5d6b73", "overlaps": ["rug"] },
+    { "id": "coffee", "kit": "table", "size": [1.1, 0.45, 0.6], "at": [3.0, 0.012, 2.5], "color": "#7a5636", "mount": "on" },
+    { "id": "tv", "kit": "tv", "size": [1.23, 0.78, 0.25], "at": [3.0, 0, 0.3], "params": { "stand": true } },
+    { "id": "plant", "kit": "plant", "size": [0.45, 0.95, 0.45], "at": [0.5, 0, 0.5] }
+  ],
+  "lights": [{ "type": "window" }, { "type": "ceiling", "at": [3.0, 2.65, 2.5], "intensity": 0.6 }],
+  "pins": [{ "at": [3.0, 0.9, 3.9], "text": "Sunday afternoons, the whole family on one sofa." }],
+  "cameras": [
+    { "photo": 1, "pos": [5.6, 1.5, 4.6], "look": [1.0, 1.0, 0.6], "fov": 72, "aspect": 0.75 },
+    { "photo": 2, "pos": [0.6, 1.5, 0.6], "look": [4.5, 0.9, 4.0], "fov": 72, "aspect": 0.75 }
+  ]
+}

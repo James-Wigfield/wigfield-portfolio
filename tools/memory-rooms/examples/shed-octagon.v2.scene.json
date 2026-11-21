@@ -1,0 +1,32 @@
+{
+  "$comment": "scene.json v2 worked example: a regular octagon 4.36 m across the flats with a low pyramid roof, the shape of 'She'd' (spot 50ead10e) as parameters instead of the bespoke octagon.py. Outline order NW-ish clockwise on a north-up map; edge 1 = the north-east flat (its window), edge 4 = the south flat (the door).",
+  "version": 2,
+  "kind": "interior",
+  "title": "Octagonal shed (v2 example)",
+  "style": { "mood": "night", "exposure": -0.5 },
+  "shell": {
+    "outline": [[1.277, 0], [3.083, 0], [4.36, 1.277], [4.36, 3.083], [3.083, 4.36], [1.277, 4.36], [0, 3.083], [0, 1.277]],
+    "height": 2.25,
+    "floor": { "finish": "timber", "color": "#5f4b3c" },
+    "walls": { "finish": "paint", "color": "#cfdad2", "thickness": 0.1, "skirting": true },
+    "ceiling": { "shape": "pyramid", "peak": 2.68, "color": "#efede8" },
+    "openings": [
+      { "edge": 4, "type": "door", "offset": 0.433, "width": 0.94, "height": 2.08, "color": "#cbbda5" },
+      { "edge": 1, "type": "window", "offset": 0.63, "width": 0.67, "sill": 0.4, "height": 1.67, "color": "#d8ccb0" }
+    ]
+  },
+  "objects": [
+    { "id": "rug", "kit": "rug", "size": [1.6, 0.012, 1.1], "at": [2.18, 0, 2.3], "color": "#8b4719" },
+    { "id": "chair", "kit": "armchair", "size": [0.8, 0.85, 0.82], "at": [1.1, 0, 2.0], "rotY": 90, "color": "#6b5544" },
+    { "id": "lamp", "kit": "lamp", "size": [0.45, 1.6, 0.45], "at": [3.4, 0, 3.0], "color": "#d6ccb2" }
+  ],
+  "lights": [
+    { "type": "lamp", "at": [3.4, 1.45, 3.0], "object": "lamp" },
+    { "type": "ceiling", "at": [2.18, 2.2, 2.18], "intensity": 0.45, "size": 1.4 }
+  ],
+  "pins": [{ "at": [2.18, 0.9, 2.18], "text": "Where the band practised all winter." }],
+  "cameras": [
+    { "photo": 1, "pos": [2.18, 1.5, 3.9], "look": [2.18, 1.0, 0.5], "fov": 72, "aspect": 0.75 },
+    { "photo": 2, "pos": [0.8, 1.5, 1.2], "look": [3.5, 1.0, 3.2], "fov": 72, "aspect": 0.75 }
+  ]
+}

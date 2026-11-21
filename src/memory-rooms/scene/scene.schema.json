@@ -1,14 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "memory-rooms/scene.schema.json",
-  "title": "Memory Rooms scene v1",
-  "description": "The layout contract for one memory spot. Units are metres; the floor is y = 0; x runs west -> east, z runs north -> south. Interior origin = the room's north-west floor corner; exterior origin = the centre of the site. `at` is the centre of an object's footprint on its base. rotY is degrees about +y (0 = the object's front faces south/+z, 90 = east, 180 = north, 270 = west). Validated by src/memory-rooms/scene/validate.js (JS) and tools/memory-rooms/blender/scene_io.py (Python), which implement the same keyword subset.",
+  "title": "Memory Rooms scene v1 + v2",
+  "description": "The layout contract for one memory spot. Units are metres; the floor is y = 0; x runs west -> east, z runs north -> south. Interior origin = the room's north-west floor corner (v2 polygon: the outline's bounding box starts at [0, 0]; v2 room in a building: the north-west corner of the room's wall-centreline bounding box, on its level's floor); exterior origin = the centre of the site. `at` is the centre of an object's footprint on its base. rotY is degrees about +y (0 = the object's front faces south/+z, 90 = east, 180 = north, 270 = west). v1 = a box shell; v2 adds polygon shells (`shell.outline`), sloped ceilings (`shell.ceiling.shape`) and rooms inside a building (`shell: { building, room }`), CONTRACTS.md section 6. Validated by src/memory-rooms/scene/validate.js (JS) and tools/memory-rooms/blender/scene_io.py (Python), which implement the same keyword subset.",
   "type": "object",
   "required": ["version", "kind", "title", "objects", "cameras"],
   "additionalProperties": false,
   "properties": {
     "$comment": { "type": "string" },
-    "version": { "const": 1 },
+    "version": { "enum": [1, 2], "description": "1 = box shell only. 2 = also polygon shells, sloped ceilings and rooms inside a building." },
     "kind": { "enum": ["interior", "exterior"] },
     "title": { "type": "string", "minLength": 1, "maxLength": 120 },
     "notes": { "type": "string", "maxLength": 4000, "description": "Free text for the modeller (Claude). Not shown on the site." },
@@ -30,6 +30,14 @@
     {
       "if": { "properties": { "kind": { "const": "exterior" } }, "required": ["kind"] },
       "then": { "required": ["site"], "not": { "required": ["shell"] } }
+    },
+    {
+      "if": { "properties": { "version": { "const": 1 } }, "required": ["version"] },
+      "then": { "properties": { "shell": { "$ref": "#/$defs/shellV1Rules" } } }
+    },
+    {
+      "if": { "properties": { "shell": { "required": ["building"] } }, "required": ["shell"] },
+      "then": { "not": { "required": ["frame"] } }
     }
   ],
   "$defs": {
@@ -81,13 +89,31 @@
       }
     },
     "shell": {
+      "description": "The room. Three shapes: a box (width, depth, height; v1 and v2), a polygon (v2: outline + height) or a room of a building (v2: building + room; everything else comes from building.json).",
       "type": "object",
-      "required": ["width", "depth", "height"],
       "additionalProperties": false,
       "properties": {
-        "width": { "type": "number", "minimum": 0.8, "maximum": 60, "description": "Interior size along x (west -> east wall)." },
-        "depth": { "type": "number", "minimum": 0.8, "maximum": 60, "description": "Interior size along z (north -> south wall)." },
-        "height": { "type": "number", "minimum": 1.8, "maximum": 15, "description": "Floor to ceiling." },
+        "width": { "type": "number", "minimum": 0.8, "maximum": 60, "description": "Box: interior size along x (west -> east wall)." },
+        "depth": { "type": "number", "minimum": 0.8, "maximum": 60, "description": "Box: interior size along z (north -> south wall)." },
+        "height": { "type": "number", "minimum": 1.8, "maximum": 15, "description": "Floor to ceiling (a sloped ceiling: the walls at the eaves)." },
+        "outline": {
+          "description": "v2 polygon room: the inner faces of the walls, [x, z] corners in order (either direction). Its bounding box starts at [0, 0]. Edge i runs from outline[i] to outline[i + 1] (the last one back to the first); openings name it with `edge`, and its GLB wall is `wall__e<i>`.",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 64,
+          "items": {
+            "type": "array",
+            "prefixItems": [{ "type": "number", "minimum": -0.001, "maximum": 60 }, { "type": "number", "minimum": -0.001, "maximum": 60 }],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "building": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "v2 room inside a building: the building id (memory_buildings.id). Walls, floor, ceiling and openings come from its building.json."
+        },
+        "room": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$", "description": "v2 room inside a building: the room id in building.json." },
         "floor": {
           "type": "object",
           "additionalProperties": false,
@@ -106,24 +132,108 @@
             "skirting": { "type": "boolean", "description": "Skirting boards along the floor. Default true." }
           }
         },
-        "ceiling": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "show": { "type": "boolean", "description": "Default true. The viewer hides it in dollhouse view either way." },
-            "color": { "$ref": "#/$defs/hex" }
+        "ceiling": { "$ref": "#/$defs/ceiling" },
+        "openings": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/opening" } }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["building"] },
+          "then": {
+            "required": ["room"],
+            "allOf": [
+              { "not": { "required": ["width"] } }, { "not": { "required": ["depth"] } }, { "not": { "required": ["height"] } },
+              { "not": { "required": ["outline"] } }, { "not": { "required": ["floor"] } }, { "not": { "required": ["walls"] } },
+              { "not": { "required": ["ceiling"] } }, { "not": { "required": ["openings"] } }
+            ]
           }
         },
-        "openings": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/opening" } }
+        { "if": { "required": ["room"] }, "then": { "required": ["building"] } },
+        {
+          "if": { "required": ["outline"] },
+          "then": { "required": ["height"], "allOf": [{ "not": { "required": ["width"] } }, { "not": { "required": ["depth"] } }] }
+        },
+        {
+          "if": { "not": { "anyOf": [{ "required": ["outline"] }, { "required": ["building"] }, { "required": ["room"] }] } },
+          "then": { "required": ["width", "depth", "height"] }
+        }
+      ]
+    },
+    "ceiling": {
+      "description": "Flat by default. v2 sloped ceilings: the shell `height` is the walls at the eaves and `peak` the highest point. gable: a ridge running along `axis` at `ridgeAt` (measured across the other axis; default the middle of the bounding box); the walls under the ridge's ends rise to it; `eaves` = [low side, high side] heights when they differ. pyramid: every wall at the eaves, rising to `peak` at `apex` (default the outline's centroid). skillion: one plane, `height` on the `low` side and `peak` on the opposite side.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "show": { "type": "boolean", "description": "Default true. The viewer hides it in dollhouse view either way." },
+        "color": { "$ref": "#/$defs/hex" },
+        "shape": { "enum": ["flat", "gable", "pyramid", "skillion"], "description": "v2 only. Default flat." },
+        "peak": { "type": "number", "minimum": 1.8, "maximum": 30, "description": "v2: ridge (gable), apex (pyramid) or high side (skillion) height." },
+        "axis": { "enum": ["x", "z"], "description": "v2 gable: the direction the ridge runs (x = west-east, z = north-south). Default: along the longer side of the bounding box." },
+        "ridgeAt": { "type": "number", "minimum": 0, "maximum": 60, "description": "v2 gable: where the ridge sits across the other axis (axis x: a z value; axis z: an x value). Default: the middle." },
+        "eaves": {
+          "description": "v2 gable: [eave height on the low-coordinate side, on the high-coordinate side] when the two differ. Default: both = the shell height.",
+          "type": "array",
+          "prefixItems": [{ "type": "number", "minimum": 1.0, "maximum": 30 }, { "type": "number", "minimum": 1.0, "maximum": 30 }],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "apex": { "$ref": "#/$defs/vec2", "description": "v2 pyramid: [x, z] of the apex. Default: the outline's centroid." },
+        "low": { "$ref": "#/$defs/wall", "description": "v2 skillion: the side the ceiling falls to." }
+      },
+      "allOf": [
+        { "if": { "properties": { "shape": { "enum": ["gable", "pyramid", "skillion"] } }, "required": ["shape"] }, "then": { "required": ["peak"] } },
+        { "if": { "properties": { "shape": { "const": "skillion" } }, "required": ["shape"] }, "then": { "required": ["low"] } },
+        {
+          "if": { "anyOf": [{ "not": { "required": ["shape"] } }, { "properties": { "shape": { "const": "flat" } } }] },
+          "then": {
+            "allOf": [
+              { "not": { "required": ["peak"] } }, { "not": { "required": ["axis"] } }, { "not": { "required": ["ridgeAt"] } },
+              { "not": { "required": ["eaves"] } }, { "not": { "required": ["apex"] } }, { "not": { "required": ["low"] } }
+            ]
+          }
+        },
+        {
+          "if": { "properties": { "shape": { "const": "gable" } }, "required": ["shape"] },
+          "then": { "allOf": [{ "not": { "required": ["apex"] } }, { "not": { "required": ["low"] } }] }
+        },
+        {
+          "if": { "properties": { "shape": { "const": "pyramid" } }, "required": ["shape"] },
+          "then": {
+            "allOf": [{ "not": { "required": ["axis"] } }, { "not": { "required": ["ridgeAt"] } }, { "not": { "required": ["eaves"] } }, { "not": { "required": ["low"] } }]
+          }
+        },
+        {
+          "if": { "properties": { "shape": { "const": "skillion" } }, "required": ["shape"] },
+          "then": {
+            "allOf": [{ "not": { "required": ["axis"] } }, { "not": { "required": ["ridgeAt"] } }, { "not": { "required": ["eaves"] } }, { "not": { "required": ["apex"] } }]
+          }
+        }
+      ]
+    },
+    "shellV1Rules": {
+      "description": "What a version 1 scene may not use (the v2 additions).",
+      "allOf": [{ "not": { "required": ["outline"] } }, { "not": { "required": ["building"] } }, { "not": { "required": ["room"] } }],
+      "properties": {
+        "ceiling": {
+          "allOf": [
+            { "not": { "required": ["shape"] } }, { "not": { "required": ["peak"] } }, { "not": { "required": ["axis"] } }, { "not": { "required": ["ridgeAt"] } },
+            { "not": { "required": ["eaves"] } }, { "not": { "required": ["apex"] } }, { "not": { "required": ["low"] } }
+          ]
+        },
+        "openings": { "items": { "not": { "required": ["edge"] } } }
       }
     },
     "opening": {
-      "description": "A door, window or open gap in one wall. offset runs along the wall from its lower-x end (north/south walls) or lower-z end (east/west walls) to the opening's near edge.",
+      "description": "A door, window or open gap in one wall. Box shells name the wall (`wall`); v2 polygon shells name the edge (`edge`). offset runs along the wall from its lower-x end (north/south walls) or lower-z end (east/west walls), or along an edge from outline[edge] toward the next corner, to the opening's near edge.",
       "type": "object",
-      "required": ["wall", "type", "offset", "width", "height"],
+      "required": ["type", "offset", "width", "height"],
       "additionalProperties": false,
+      "allOf": [
+        { "if": { "not": { "required": ["edge"] } }, "then": { "required": ["wall"] } },
+        { "if": { "required": ["edge"] }, "then": { "not": { "required": ["wall"] } } }
+      ],
       "properties": {
         "wall": { "$ref": "#/$defs/wall" },
+        "edge": { "type": "integer", "minimum": 0, "maximum": 63, "description": "v2 polygon shells: the outline edge (0 = outline[0] -> outline[1])." },
         "type": { "enum": ["door", "window", "opening"] },
         "offset": { "type": "number", "minimum": 0 },
         "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 30 },
@@ -255,7 +365,7 @@
       }
     },
     "frame": {
-      "description": "Places this room in a shared building frame: the room's origin sits at `origin` = [x, z] in the group frame, rotated by rotY about +y, lifted by y (upper floors).",
+      "description": "Places this room in a shared building frame: the room's origin sits at `origin` = [x, z] in the group frame, rotated by rotY about +y, lifted by y (upper floors). The v1 way to assemble a house (still valid in v2); a v2 room inside a building uses shell.building instead and has no frame.",
       "type": "object",
       "required": ["group", "origin"],
       "additionalProperties": false,
