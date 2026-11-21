@@ -19,6 +19,7 @@
      back exactly where the viewer had it (viewer.exitXR). */
 
 import * as THREE from 'three';
+import { pointInPolygon } from '../scene/polygon.js';
 import { applyDollhouse, stepFades } from '../viewer/dollhouse.js';
 
 export const BASE_SCALE = { tabletop: 1 / 20, life: 1 };
@@ -222,7 +223,7 @@ export async function startAr(viewer, { mode = 'tabletop', overlay, onPhase, onS
         // life size: open the walls only while standing outside the footprint
         local.copy(camPos);
         room.holder.worldToLocal(local);
-        cutaway = local.x < 0 || local.z < 0 || local.x > shell.width || local.z > shell.depth;
+        cutaway = !pointInPolygon([local.x, local.z], shell.outline);
       }
       applyDollhouse(room, [camPos.x, camPos.z], [c.x, c.z], cutaway);
       stepFades(room, dt, false);

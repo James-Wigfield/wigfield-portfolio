@@ -27,6 +27,23 @@ export function ModeToggle({ mode, onChange, disabled }) {
   );
 }
 
+/** Room / Plan: the plan cut (everything above 1.2 m clipped away, cut walls inked). */
+export function PlanToggle({ on, onChange, disabled }) {
+  return (
+    <div className="mr-ctl">
+      <span className="mr-label">{copy.planLabel}</span>
+      <div className="mr-seg" role="group" aria-label={copy.planLabel}>
+        <button type="button" data-mr="plan-off" aria-pressed={!on} disabled={disabled} onClick={() => onChange(false)}>
+          {copy.planRoom}
+        </button>
+        <button type="button" data-mr="plan-on" aria-pressed={on} disabled={disabled} onClick={() => onChange(true)} title={copy.planHint}>
+          {copy.planCut}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function BlendSlider({ value, onChange }) {
   return (
     <label className="mr-blend">

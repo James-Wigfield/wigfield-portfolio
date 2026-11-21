@@ -4,7 +4,10 @@
    Worker as "(local copy)" spots, so the walk page, AR and the map's 3D can be tried on the real
    shapes: the octagon shed, the gable warehouse, the car on its ground plate, the Batcave.
 
-     node tools/memory-rooms/dev/seed-real-rooms.mjs [--base http://127.0.0.1:8788] [--only shed,car]
+     node tools/memory-rooms/dev/seed-real-rooms.mjs [--base http://127.0.0.1:8788] [--only shed,car] [--dirs _v2-shed,_v2-lunch]
+
+   --dirs also copies named work folders that are not spots of their own (e.g. the v2 proof copies
+   `_v2-shed`, `_v2-lunch`: a real spot rebuilt as scene.json v2), as "(<folder> local copy)".
 
    Local Workers only (refuses anything else). Ids are derived from the originals, so re-running
    updates the same copies. Nothing is written to the live site. */
@@ -29,17 +32,20 @@ const copyId = (id) => {
 };
 const NICK = { octagon: 'shed', gable: 'warehouse', mazda: 'car' };
 
-const dirs = fs.readdirSync(WORK).filter((d) => /^[0-9a-f]{8}-/.test(d) && fs.existsSync(path.join(WORK, d, 'room.glb')) && fs.existsSync(path.join(WORK, d, 'spot.json')));
+const extra = args.includes('--dirs') ? args[args.indexOf('--dirs') + 1].split(',') : [];
+const usable = (d) => fs.existsSync(path.join(WORK, d, 'room.glb')) && fs.existsSync(path.join(WORK, d, 'spot.json'));
+const dirs = [...fs.readdirSync(WORK).filter((d) => /^[0-9a-f]{8}-/.test(d) && usable(d) && (!extra.length || only)), ...extra.filter(usable)];
 let n = 0;
 for (const d of dirs) {
   const dir = path.join(WORK, d);
   const spot = JSON.parse(fs.readFileSync(path.join(dir, 'spot.json'), 'utf8'));
   const scene = JSON.parse(fs.readFileSync(path.join(dir, 'scene.json'), 'utf8'));
-  const tags = [spot.title.toLowerCase(), ...Object.entries(NICK).filter(([k]) => fs.readdirSync(path.join(dir, 'bespoke')).some((f) => f.includes(k))).map(([, v]) => v)];
-  if (only && !only.some((o) => tags.some((t) => t.includes(o)))) continue;
-  const id = copyId(spot.id);
+  const named = extra.includes(d);
+  const tags = [spot.title.toLowerCase(), ...Object.entries(NICK).filter(([k]) => fs.existsSync(path.join(dir, 'bespoke')) && fs.readdirSync(path.join(dir, 'bespoke')).some((f) => f.includes(k))).map(([, v]) => v)];
+  if (only && !named && !only.some((o) => tags.some((t) => t.includes(o)))) continue;
+  const id = named ? copyId(`${spot.id}:${d}`) : copyId(spot.id);
   const fields = {
-    title: `${spot.title} (local copy)`,
+    title: named ? `${spot.title} (${d.replace(/^_/, '')} local copy)` : `${spot.title} (local copy)`,
     note: spot.note || 'A local copy of a real spot.',
     kind: spot.kind,
     lat: spot.lat,

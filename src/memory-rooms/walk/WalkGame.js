@@ -36,6 +36,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { sceneBounds, verticalFov } from '../scene/geometry.js';
+import { resolveShell } from '../scene/shell.js';
 import { applyBakedMaterials } from '../viewer/bakedMaterials.js';
 import { disposeTree } from '../viewer/dispose.js';
 import { applyDollhouse, indexRoom, stepFades } from '../viewer/dollhouse.js';
@@ -250,8 +251,9 @@ export class WalkGame {
 
       // where you can walk: inside the shell (interiors) or on the ground plate (exteriors)
       let bounds;
-      const shell = scene?.shell;
-      if (interior && shell) bounds = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(shell.width, shell.height, shell.depth));
+      // any shell shape: its normalised box (a polygon's angled walls block cells in the grid itself)
+      const sh = interior && scene?.shell ? resolveShell(scene, this.building || null) : null;
+      if (sh) bounds = new THREE.Box3(new THREE.Vector3(sh.box.min[0], 0, sh.box.min[1]), new THREE.Vector3(sh.box.max[0], sh.top ?? sh.height, sh.box.max[1]));
       else {
         let ground = null;
         root.traverse((o) => {

@@ -246,7 +246,16 @@ function checkGeneric(scene, sh, { errors, warnings, objs, boxes }) {
   // ── inside the outline, under the ceiling ──────────────────────────────
   for (const o of objs) {
     const b = boxes.get(o.id);
-    const corners = footprint(o);
+    // a piece fitted to an angled wall may give its real plan outline (it must stay inside its box)
+    // (only a bespoke script or a glb draws that shape; a kit always draws the box, so its box is checked)
+    const ownShape = o.kit === 'bespoke' || o.kit === 'glb';
+    const corners = o.footprint && ownShape ? o.footprint : footprint(o);
+    if (o.footprint && !ownShape) errors.push(`${o.id}: footprint is only for bespoke or glb pieces (kit "${o.kit}" draws its box)`);
+    if (o.footprint) {
+      const box = footprint(o);
+      const outside = o.footprint.find((p) => !pointInPoly(p, box) && distToBoundary(p, box) > TOL);
+      if (outside) errors.push(`${o.id}: footprint corner [${outside.map((v) => +v.toFixed(2))}] is outside its box`);
+    }
     let worst = { out: 0, nearest: null };
     for (const c of corners) {
       const w = where(c);
@@ -288,7 +297,8 @@ function checkGeneric(scene, sh, { errors, warnings, objs, boxes }) {
       const swing = [op.from, op.to, [op.to[0] + inward[0] * op.width, op.to[1] + inward[1] * op.width], [op.from[0] + inward[0] * op.width, op.from[1] + inward[1] * op.width]];
       for (const o of objs) {
         if (o.at[1] > 0.3 || o.size[1] < 0.03) continue;
-        if (satDepth(swing, footprint(o)) > 0.05) warnings.push(`${o.id}: sits in the swing of ${label}`);
+        const plan = o.footprint && isConvex(o.footprint) ? o.footprint : footprint(o);
+        if (satDepth(swing, plan) > 0.05) warnings.push(`${o.id}: sits in the swing of ${label}`);
       }
     }
   }

@@ -208,8 +208,9 @@ export function insetEdges(pts, dists, sign = windingSign(pts)) {
     const L1 = lines[(i - 1 + n) % n];
     const L2 = lines[i];
     const hit = lineIntersect(L1.a, L1.b, L2.a, L2.b);
-    // nearly parallel neighbours with different offsets meet far away: treat them as parallel (a step)
-    const reach = 10 * Math.max(dists[(i - 1 + n) % n] || 0, dists[i] || 0) + 0.05;
+    // nearly parallel neighbours with different offsets meet far away: treat them as parallel (a step).
+    // By size: an OUTWARD offset (negative distances, a wall's outer face) mitres the same way.
+    const reach = 10 * Math.max(Math.abs(dists[(i - 1 + n) % n] || 0), Math.abs(dists[i] || 0)) + 0.05;
     if (hit && Math.hypot(hit[0] - pts[i][0], hit[1] - pts[i][1]) <= reach) return [hit, hit];
     return [L1.b, L2.a];
   };

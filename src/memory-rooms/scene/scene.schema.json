@@ -294,6 +294,13 @@
           "items": { "type": "string" },
           "description": "Ids this object may interpenetrate on purpose (a chair tucked under a desk, a rug under a bed)."
         },
+        "footprint": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/vec2" },
+          "description": "Optional plan outline, [x, z] corners in the scene frame, for a piece that is not a box in plan (a loft or bench fitted to an angled wall). check-scene tests the walls and the ceiling at these corners instead of the box's; it must lie inside the box's footprint, and only bespoke or glb pieces may have one (a kit draws its box). Blender ignores it."
+        },
         "script": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,47}$", "description": "bespoke only: memory-rooms-work/<spot>/bespoke/<script>.py, which defines build(ctx, spec)." },
         "src": { "type": "string", "pattern": "^[A-Za-z0-9_./-]{1,200}\\.glb$", "description": "glb only: path relative to the spot's work folder." },
         "params": { "type": "object", "description": "Kit-specific options (see tools/memory-rooms/blender/kit/README.md). Unknown keys are ignored by the kit." },

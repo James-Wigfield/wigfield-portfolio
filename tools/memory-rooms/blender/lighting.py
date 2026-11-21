@@ -196,7 +196,11 @@ def setup(scene: dict, bl_scene, info: dict, roots: dict, specs: dict) -> dict:
             sun_spec = lights[-1]
         if not info.get("windows"):
             W, D, H = info["W"], info["D"], info["H"]
-            lights.append({"type": "ceiling", "at": [W / 2, H - 0.02, D / 2], "size": max(0.6, min(W, D) * 0.4)})
+            if info.get("light_at"):  # v2: under the ceiling, inside the outline
+                lx, lz, ly = info["light_at"]
+                lights.append({"type": "ceiling", "at": [lx, ly - 0.02, lz], "size": max(0.6, min(W, D) * 0.4)})
+            else:
+                lights.append({"type": "ceiling", "at": [W / 2, H - 0.02, D / 2], "size": max(0.6, min(W, D) * 0.4)})
         rep["defaults"].append("no lights[]: window + mood sun (+ ceiling if windowless)")
     if kind == "exterior" and not sun_spec and M["sun_e"] > 0:
         lights.append({"type": "sun"})
@@ -240,7 +244,12 @@ def setup(scene: dict, bl_scene, info: dict, roots: dict, specs: dict) -> dict:
         elif typ == "ceiling":
             sz = float(L.get("size", 0.8))
             if kind == "interior":
-                pos.z = min(pos.z, info["H"] - 0.03)
+                lim = info["H"]
+                if info.get("shell"):  # v2: the ceiling right above it (a slope is lower than the top)
+                    import scene_io as _sio
+
+                    lim = _sio.ceiling_at(info["shell"], L["at"][0], L["at"][2])
+                pos.z = min(pos.z, lim - 0.03)
             energy = BASE["ceiling"] * inten * (sz / 0.8) ** 2 * M["lamp_k"]
             ob = _light(coll, name, "AREA", pos, energy, col, shape="SQUARE", size=sz)
             ob.rotation_euler = (0, 0, 0)
@@ -273,7 +282,8 @@ def setup(scene: dict, bl_scene, info: dict, roots: dict, specs: dict) -> dict:
     if kind == "interior":
         W, D, H = info["W"], info["D"], info["H"]
         energy = 9.0 * W * D * M["fill"] * (0.6 if has_interior else 1.0)
-        ob = _light(coll, "fill", "AREA", (W / 2, -D / 2, H - 0.06), energy, "#fff6ea", shape="RECTANGLE",
+        fh = info.get("fill_h", H)  # v2: under the lowest ceiling (a sloped one would block a fill at the top)
+        ob = _light(coll, "fill", "AREA", (W / 2, -D / 2, fh - 0.06), energy, "#fff6ea", shape="RECTANGLE",
                     size=W * 0.75, size_y=D * 0.75)
         ob.visible_camera = False
         ob.visible_glossy = False
@@ -369,37 +379,56 @@ def backed_parts(roots, W, D, side, gap=BACKED_GAP):
     return out
 
 
-def dollhouse_fill(hide_names, W, D, H, t, roots, measured_lum, mood):
+def _wall_plane(w):
+    """A v2 wall (scene frame: point / end on its inner face, out = outward normal) in Blender: (n, p0, p1)."""
+    n = Vector((w["out"][0], -w["out"][1], 0.0)).normalized()
+    p0 = Vector((w["point"][0], -w["point"][1], 0.0))
+    p1 = Vector((w["end"][0], -w["end"][1], 0.0))
+    return n, p0, p1
+
+
+def backed_parts_v2(roots, w, gap=BACKED_GAP):
+    """backed_parts for any wall (v2): faces facing its plane from within `gap`, alongside its segment."""
+    n, p0, p1 = _wall_plane(w)
+    along = p1 - p0
+    L = along.length or 1.0
+    along = along / L
+    out = []
+    for root in roots:
+        for ob in [root, *root.children_recursive]:
+            if ob.type != "MESH" or not ob.data.polygons:
+                continue
+            mw = ob.matrix_world
+            m3 = mw.to_3x3()
+            for p in ob.data.polygons:
+                c = mw @ p.center
+                c2 = Vector((c.x, c.y, 0.0))
+                if (m3 @ p.normal).normalized().dot(n) > 0.7 and -0.02 < (p0 - c2).dot(n) < gap and -gap <= (c2 - p0).dot(along) <= L + gap:
+                    out.append(ob)
+                    break
+    return out
+
+
+def dollhouse_fill(hide_names, W, D, H, t, roots, measured_lum, mood, walls=None):
     """For three-quarter / hero renders: furniture pressed against a cut-away wall would show a pitch-black
     back (the hidden wall still blocks its light). bake_export.py bakes those faces with walls hidden and a
     stand-in world; this adds the matching light for the stills: an area light outside each hidden wall that
     lights ONLY those parts and is shadowed ONLY by them (Cycles light + shadow linking).
+    `walls`: v2 walls by node name ({point, end, out}, scene frame) for `wall__<id>` names.
     Returns a cleanup function."""
     made, colls = [], []
     warm = mood in ("evening", "night", "golden")
     col = (1.0, 0.86, 0.7) if warm else (0.95, 0.95, 0.94)
     L = max(0.05, min(5.0, measured_lum * 2.2))
-    for name in hide_names:
-        if not name.startswith("wall_"):
-            continue
-        side = name[5:]
-        if side not in WALL_PLANES:
-            continue
-        parts = backed_parts(roots, W, D, side)
-        if not parts:
-            continue
-        coll = bpy.data.collections.new(f"_mr_dollhouse_{side}")
+
+    def add_light(key, parts, length, center, nrm):
+        coll = bpy.data.collections.new(f"_mr_dollhouse_{key}")
         for p in parts:
             coll.objects.link(p)
-        length = W if side in ("north", "south") else D
-        area = length * H
-        nrm = Vector(WALL_PLANES[side][0])
-        center = {"north": Vector((W / 2, t + 0.05, H / 2)), "south": Vector((W / 2, -D - t - 0.05, H / 2)),
-                  "west": Vector((-t - 0.05, -D / 2, H / 2)), "east": Vector((W + t + 0.05, -D / 2, H / 2))}[side]
-        ld = bpy.data.lights.new(f"_mr_dollhouse_{side}", "AREA")
+        ld = bpy.data.lights.new(f"_mr_dollhouse_{key}", "AREA")
         ld.shape = "RECTANGLE"
         ld.size, ld.size_y = length, H
-        ld.energy = area * math.pi * L
+        ld.energy = length * H * math.pi * L
         ld.color = col
         ob = bpy.data.objects.new(ld.name, ld)
         bpy.context.scene.collection.objects.link(ob)
@@ -411,6 +440,29 @@ def dollhouse_fill(hide_names, W, D, H, t, roots, measured_lum, mood):
         ob.light_linking.blocker_collection = coll
         made.append(ob)
         colls.append(coll)
+
+    for name in hide_names:
+        if walls and name in walls:
+            w = walls[name]
+            parts = backed_parts_v2(roots, w)
+            if not parts:
+                continue
+            n, p0, p1 = _wall_plane(w)
+            add_light(name[6:], parts, (p1 - p0).length, (p0 + p1) / 2 + n * (t + 0.05) + Vector((0, 0, H / 2)), n)
+            continue
+        if not name.startswith("wall_"):
+            continue
+        side = name[5:]
+        if side not in WALL_PLANES:
+            continue
+        parts = backed_parts(roots, W, D, side)
+        if not parts:
+            continue
+        length = W if side in ("north", "south") else D
+        nrm = Vector(WALL_PLANES[side][0])
+        center = {"north": Vector((W / 2, t + 0.05, H / 2)), "south": Vector((W / 2, -D - t - 0.05, H / 2)),
+                  "west": Vector((-t - 0.05, -D / 2, H / 2)), "east": Vector((W + t + 0.05, -D / 2, H / 2))}[side]
+        add_light(side, parts, length, center, nrm)
 
     def cleanup():
         for ob in made:

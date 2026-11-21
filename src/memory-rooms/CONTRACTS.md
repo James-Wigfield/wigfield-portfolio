@@ -219,6 +219,11 @@ mutations failing at the same paths, shells / frames / loops / ceilings to 1e-6)
   `parseWallNode` (either form), never by `node`, so a v1 room re-labelled v2 without a rebuild still works.
 - Winding: "positive" = shoelace over (x, z) > 0 = clockwise on a north-up map (NW → NE → SE → SW); the outward normal
   of a positive edge a → b is (dz, −dx)/|d|.
+- **Objects may give a `footprint`** (any version): their real plan outline, `[[x, z]…]` in the scene frame, for a piece
+  that is not a box in plan (a loft or a bench fitted to an angled wall). check-scene tests the walls and the ceiling
+  at its corners instead of the box's (and the door swing, when it is convex); it must lie inside the box's
+  footprint, and only `bespoke` or `glb` pieces may have one (a kit always draws its box). Blender ignores it (the
+  bespoke script / the GLB draws the real shape).
 
 ### 6.2 building.json v1
 
@@ -282,8 +287,12 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   `{ "mrWall": { "id", "normal": [nx, nz] } }` (three.js: `node.userData.mrWall`). For a room shell `normal` is the
   wall's **outward** normal from the room; for a building wall it is the left normal looking from a to b, plus
   `"rooms": { "left", "right" }` (room ids or null) and `"exterior"`.
-- The viewer hides walls **by normal** (`scene/shell.js` `wallNormalOf`): extras first, else the legacy name
-  (`wall_north` → [0, −1], `wall_south` → [0, 1], `wall_west` → [−1, 0], `wall_east` → [1, 0]).
+- The viewer hides walls **by normal** (`viewer/dollhouse.js`): the normalised shell's `out` for that wall id when the
+  scene is at hand, else the node's extras (`scene/shell.js` `wallNormalOf`), else the legacy name (`wall_north` →
+  [0, −1], `wall_south` → [0, 1], `wall_west` → [−1, 0], `wall_east` → [1, 0]). They agree by construction;
+  `tools/memory-rooms/shell-view-check.mjs --glb <room.glb> --scene <scene.json>` proves it on a bake.
+- Blender: every v2 interior (boxes too) is built by `blender/shell_v2.py` (any polygon, any ceiling shape, mitred
+  walls, gable ends cut to the ceiling with a section cap); v1 scenes still go through `shell.py` unchanged.
 - Ids: v2 box walls `north | south | east | west` (→ `wall__north`), polygon edges `e<i>` (→ `wall__e3`), building walls
   their building.json id (→ `wall__g-n1`). Building ids never contain `_`, so `__` splits a name unambiguously.
 - `bake_export.py` exports with `export_extras` on for v2 scenes and buildings (custom properties become extras; the

@@ -1,22 +1,37 @@
 /* Dollhouse cut-away: while orbiting an interior, hide the ceiling and every
    wall that stands between the camera and the room (or building) centre.
 
-   GLB contract (CONTRACTS.md §4): a wall is the node `wall_<side>`, its
-   children, or any node whose name starts with `wall_<side>` (e.g.
-   `wall_north__window0_frame`). Hiding by prefix takes its frames, glass and
-   door with it. The layout preview names its walls the same way.
+   GLB contract (CONTRACTS.md §4, §6.3): a wall is the node `wall_<side>` (v1)
+   or `wall__<id>` (v2 polygons, building rooms), its children, or any node
+   whose name starts with it (e.g. `wall_north__window0_frame`). Hiding by
+   prefix takes its frames, glass and door with it. A wall hides by its outward
+   normal: the normalised shell's (scene/shell.js), else the node's glTF extras
+   (`mrWall.normal`), else the v1 side's. The layout preview names its walls
+   the same way.
 
    Walls fade rather than pop: each side (and the ceiling) gets its own clone
    of the materials it uses (a baked GLB shares ONE atlas material across the
    whole room), so its opacity can move on its own. */
 
 import * as THREE from 'three';
-import { aabb } from '../scene/geometry.js';
+import { aabb, footprint } from '../scene/geometry.js';
+import { parseWallNode, resolveShell, wallNormalOf } from '../scene/shell.js';
 
-/** Outward normal (xz) of each interior wall, in the room's own frame. */
+/** Outward normal (xz) of each v1 interior wall, in the room's own frame. */
 export const WALL_OUT = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
 const SIDES = Object.keys(WALL_OUT);
-const WALL_RE = /^wall_(north|south|east|west)/;
+/** Fade keys: the ceiling's is 'ceiling', a wall's is its id (v1 sides keep their names). */
+const wallKey = (id) => (id === 'ceiling' ? 'wall:ceiling' : id);
+
+/** The normalised shell of a scene (null for exteriors, unknown shapes, or a building room without its building). */
+function shellOf(scene, building) {
+  if (scene?.kind !== 'interior') return null;
+  try {
+    return resolveShell(scene, building);
+  } catch {
+    return null;
+  }
+}
 
 /** A wall hides once the camera is this far round to its outside (cosine). */
 const HIDE_DOT = 0.18;
@@ -37,9 +52,10 @@ const FLOOR_STANDING_M = 0.05;
  * float once the wall hides.) A bookcase or TV stand standing on the floor
  * against a wall stays: hiding it would only reveal the dark floor it shades.
  */
-export function attachedWall(o, shell) {
+export function attachedWall(o, shell, sh = null) {
   if (o.mount !== 'wall' && (o.mount === 'floor' || o.at[1] < FLOOR_STANDING_M) && o.kit !== 'curtain') return null;
   if (!shell) return null;
+  if (shell.width === undefined) return sh ? attachedWallAny(o, sh) : null;
   const b = aabb(o);
   const dist = {
     north: Math.abs(b.min[2]),
@@ -53,16 +69,71 @@ export function attachedWall(o, shell) {
   return WALL_KITS.has(o.kit) && dist[best] <= FLUSH_M ? best : null;
 }
 
-/** What hides with each wall side and with the ceiling: { walls: { north: [Object3D]… }, ceilings }. */
-export function groupRoom(root, scene = null) {
-  const walls = { north: [], south: [], east: [], west: [] };
+/**
+ * attachedWall for any shell (v2 polygons, building rooms): the nearest closed wall
+ * the footprint runs alongside, measured from its inner face along the wall's normal.
+ * On a box it gives the same answer as the v1 code above.
+ */
+export function attachedWallAny(o, sh) {
+  const corners = footprint(o);
+  let best = null;
+  let bestD = Infinity;
+  for (const w of sh.walls) {
+    if (w.open || !(w.length > 0)) continue;
+    const ux = (w.b[0] - w.a[0]) / w.length;
+    const uz = (w.b[1] - w.a[1]) / w.length;
+    let reach = -Infinity;
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const [x, z] of corners) {
+      const rx = x - w.a[0];
+      const rz = z - w.a[1];
+      reach = Math.max(reach, rx * w.out[0] + rz * w.out[1]);
+      const t = rx * ux + rz * uz;
+      lo = Math.min(lo, t);
+      hi = Math.max(hi, t);
+    }
+    if (hi < -0.05 || lo > w.length + 0.05) continue; // not alongside this wall
+    const d = Math.abs(reach);
+    if (d < bestD) {
+      bestD = d;
+      best = w.id;
+    }
+  }
+  if (best === null) return null;
+  if (o.mount === 'wall') return bestD <= MOUNT_REACH_M ? best : null;
+  return WALL_KITS.has(o.kit) && bestD <= FLUSH_M ? best : null;
+}
+
+/**
+ * What hides with each wall and with the ceiling:
+ *   { walls: { <wall id>: [Object3D]… }, normals: { <wall id>: [x, z] }, ceilings }.
+ * v1 rooms keep their four sides (north/south/east/west) as ids.
+ */
+export function groupRoom(root, scene = null, building = null) {
+  // v1 rooms (and exteriors, which have no shell) keep the four side keys exactly as before
+  const v1Box = !scene?.shell || scene.shell.width !== undefined;
+  const sh = v1Box ? null : shellOf(scene, building);
+  const walls = v1Box ? { north: [], south: [], east: [], west: [] } : {};
+  const normals = v1Box ? { ...WALL_OUT } : {};
+  for (const w of sh?.walls || []) {
+    if (w.open) continue;
+    walls[wallKey(w.id)] = [];
+    normals[wallKey(w.id)] = w.out;
+  }
   const ceilings = [];
   const byName = new Map();
   root.traverse((obj) => {
     const name = obj.name || '';
-    const m = WALL_RE.exec(name);
-    if (m) walls[m[1]].push(obj);
-    else if (name.startsWith('ceiling')) ceilings.push(obj);
+    const wall = parseWallNode(name);
+    if (wall && (!v1Box || wall.legacy || !scene)) {
+      const key = wallKey(wall.id);
+      (walls[key] ||= []).push(obj);
+      if (!normals[key]) {
+        const n = wallNormalOf(obj);
+        if (n) normals[key] = n;
+      }
+    } else if (name.startsWith('ceiling')) ceilings.push(obj);
     if (name.startsWith('obj__') && !byName.has(name)) byName.set(name, obj);
   });
   for (const o of scene?.objects || []) {
@@ -72,19 +143,19 @@ export function groupRoom(root, scene = null) {
       if (node) ceilings.push(node);
       continue;
     }
-    const side = attachedWall(o, scene.shell);
+    const side = attachedWall(o, scene.shell, sh);
     const node = side && byName.get(`obj__${o.id}`);
-    if (node) walls[side].push(node);
+    if (node) (walls[wallKey(side)] ||= []).push(node);
   }
-  return { walls, ceilings };
+  return { walls, normals, ceilings };
 }
 
 /**
  * Every mesh a dollhouse view from camXZ hides (the walls on the camera's side, the
  * ceiling), without touching any material: what "Recall" leaves out of its cloud.
  */
-export function hiddenAtView(root, scene, camXZ, centreXZ) {
-  const { walls, ceilings } = groupRoom(root, scene);
+export function hiddenAtView(root, scene, camXZ, centreXZ, building = null) {
+  const { walls, normals, ceilings } = groupRoom(root, scene, building);
   const out = new Set();
   let dx = camXZ[0] - centreXZ[0];
   let dz = camXZ[1] - centreXZ[1];
@@ -92,7 +163,7 @@ export function hiddenAtView(root, scene, camXZ, centreXZ) {
   dx /= len;
   dz /= len;
   const take = (list) => list.forEach((o) => o.traverse((c) => out.add(c)));
-  for (const side of SIDES) if (WALL_OUT[side][0] * dx + WALL_OUT[side][1] * dz > HIDE_DOT) take(walls[side]);
+  for (const [key, n] of Object.entries(normals)) if (n[0] * dx + n[1] * dz > HIDE_DOT) take(walls[key] || []);
   take(ceilings);
   return out;
 }
@@ -102,8 +173,8 @@ export function hiddenAtView(root, scene, camXZ, centreXZ) {
  * prefixed parts, and the scene objects attached to it), the ceilings, and a
  * fade record per side + 'ceiling' ({ objs, mats, value, target }).
  */
-export function indexRoom(root, scene = null) {
-  const { walls, ceilings } = groupRoom(root, scene);
+export function indexRoom(root, scene = null, building = null) {
+  const { walls, normals, ceilings } = groupRoom(root, scene, building);
 
   const replaced = new Set();
   const fades = {};
@@ -139,7 +210,7 @@ export function indexRoom(root, scene = null) {
     });
     for (const m of replaced) if (!used.has(m)) m.dispose();
   }
-  return { walls, ceilings, fades, fresh: true };
+  return { walls, normals, ceilings, fades, fresh: true };
 }
 
 const _q = new THREE.Quaternion();
@@ -163,13 +234,16 @@ export function applyDollhouse(room, camXZ, centreXZ, cutaway) {
     dz /= len;
     room.root.getWorldQuaternion(_q);
   }
-  for (const side of SIDES) {
+  const normals = room.normals || WALL_OUT;
+  for (const key of Object.keys(fades)) {
+    if (key === 'ceiling') continue;
+    const n = normals[key];
     let show = true;
-    if (decide) {
-      _n.set(WALL_OUT[side][0], 0, WALL_OUT[side][1]).applyQuaternion(_q);
+    if (decide && n) {
+      _n.set(n[0], 0, n[1]).applyQuaternion(_q);
       show = _n.x * dx + _n.z * dz <= HIDE_DOT;
     }
-    fades[side].target = show ? 1 : 0;
+    fades[key].target = show ? 1 : 0;
   }
 }
 

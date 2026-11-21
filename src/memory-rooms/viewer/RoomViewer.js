@@ -30,6 +30,7 @@ import { COPY } from '../copy.js';
 import { applyBakedMaterials } from './bakedMaterials.js';
 import { buildLayoutPreview } from './layoutPreview.js';
 import { applyDollhouse, hiddenAtView, indexRoom, stepFades } from './dollhouse.js';
+import { CUT_Y, PlanCut } from './planCut.js';
 import { aimCamera, buildCameraGlyphs, buildDraftingGround } from './helpers.js';
 import { DISSOLVE_MS, MIN_RECALL_MS, ROOM_FADE_MS, buildRecall, roomMaterials, setRoomAlpha } from './recall.js';
 import { resolveShell } from '../scene/shell.js';
@@ -171,6 +172,9 @@ export class RoomViewer {
     this.canvas.className = 'mr-viewer__canvas';
     this.canvas.setAttribute('aria-hidden', 'true');
     container.append(this.canvas, this.photoEl, this.overlay);
+    // the floor-plan view: everything above 1.2 m clipped, cut walls in section ink (planCut.js)
+    this.planCut = new PlanCut(renderer);
+    this.plan = false;
 
     this.camera = new THREE.PerspectiveCamera(ORBIT_FOV, this.width / this.height, 0.05, 900);
     this.camera.position.set(6, 5, 8);
@@ -286,9 +290,12 @@ export class RoomViewer {
       baseMode: this.baseMode,
       hasScan: !!this.spec?.scanUrl,
       isGroup: this.isGroup,
+      plan: this.plan,
+      canPlan: this.mode !== 'scan' && this.rooms.some((r) => r.interior),
     });
     this.container.dataset.state = snap.state;
     this.container.dataset.mode = this.mode;
+    this.container.dataset.plan = this.plan ? 'on' : 'off';
     for (const img of [this.posterLow, this.poster]) {
       if (!img) continue;
       const show = this.mode !== 'scan' && this.status.main.state === 'loading' && !this.recall && !!img.getAttribute('src');
@@ -550,8 +557,11 @@ export class RoomViewer {
     const index = indexRoom(root, scene);
     const interior = scene ? scene.kind === 'interior' : Object.values(index.walls).some((w) => w.length);
     const box = scene ? boxToWorld(framingBox(scene), holder) : new THREE.Box3().setFromObject(holder);
-    const shell = scene?.shell;
-    const centre = shell ? holder.localToWorld(new THREE.Vector3(shell.width / 2, shell.height / 2, shell.depth / 2)) : box.getCenter(new THREE.Vector3());
+    // the normalised shell (any shape; null for exteriors): the dollhouse centre and AR's life-size footprint
+    const shell = interior && scene?.shell ? resolveShell(scene, this.buildings?.get?.(scene.shell.building) || null) : null;
+    const centre = shell
+      ? holder.localToWorld(new THREE.Vector3((shell.box.min[0] + shell.box.max[0]) / 2, shell.height / 2, (shell.box.min[1] + shell.box.max[1]) / 2))
+      : box.getCenter(new THREE.Vector3());
     this.rooms.push({ id, holder, root, scene, interior, ...index, box, centre, shell });
   }
 
@@ -698,6 +708,7 @@ export class RoomViewer {
   applyTheme() {
     if (!this.theme) return;
     this.ground?.setColor(this.theme.gridInk, this.theme.grid, this.theme.gridShade);
+    this.planCut?.setInk(this.theme.ink);
     this.glyphs?.setColor(this.theme.frustum);
   }
 
@@ -835,6 +846,7 @@ export class RoomViewer {
   flyToPhoto(n) {
     if (this.disposed || !this.renderer || this.isGroup || this.mode === 'scan') return false;
     if (this.status.main.state !== 'ready') return false;
+    if (this.plan) this.setPlan(false, { animate: false });
     const cam = (this.spec?.scene?.cameras || []).find((c) => c.photo === Number(n));
     if (!cam) return false;
     const photo = (this.spec.photos || []).find((p) => p.photo === cam.photo);
@@ -1020,6 +1032,7 @@ export class RoomViewer {
     const want = mode === 'scan' ? 'scan' : this.baseMode;
     if (want === this.mode) return;
     if (want === 'scan' && !this.spec?.scanUrl) return;
+    if (this.plan) this.setPlan(false, { animate: false });
     if (this.view !== 'orbit' || this.flying) this.exitViewpointNow();
     for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
     this.closePin();
@@ -1036,6 +1049,40 @@ export class RoomViewer {
     } else {
       this.applyLimits(this.limits.main);
       this.setOrbitPose(this.poses.main || this.homePose);
+    }
+    this.syncStatus();
+    this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  /**
+   * The plan cut on / off (interiors only): clip everything above CUT_Y, ink the cut walls,
+   * swing to a near top-down view with north up. Off swings back to where you were.
+   */
+  setPlan(on, { animate = true } = {}) {
+    if (this.disposed || !this.renderer) return;
+    const want = Boolean(on) && this.mode !== 'scan' && this.rooms.some((r) => r.interior);
+    if (want === this.plan) return;
+    if (this.view !== 'orbit' || this.flying) this.exitViewpointNow();
+    for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
+    this.closePin();
+    this.plan = want;
+    if (want) {
+      this.poses.beforePlan = this.captureOrbit();
+      for (const room of this.rooms) if (room.interior) this.planCut.apply(room, this.theme?.ink);
+      const box = this.bounds.clone();
+      box.max.y = Math.min(box.max.y, box.min.y + CUT_Y);
+      const plan = this.computeHome(box, true, { azimuth: 0, elevation: 82 });
+      this.applyLimits({ ...plan.limits, maxPolarAngle: 50 * RAD });
+      if (animate) this.tweenOrbit(plan.pose, 700);
+      else this.setOrbitPose(plan.pose);
+    } else {
+      this.planCut.removeAll();
+      this.applyLimits(this.limits.main);
+      const back = this.poses.beforePlan || this.homePose;
+      this.poses.beforePlan = null;
+      if (animate) this.tweenOrbit(back, 600);
+      else this.setOrbitPose(back);
     }
     this.syncStatus();
     this.occlusionDirty = true;
@@ -1379,6 +1426,7 @@ export class RoomViewer {
   /** Re-frame the opening view (new size or insets) unless the visitor has moved it. */
   refitIfUntouched() {
     if (this.diving) return; // "Walk in" owns the camera until the page changes
+    if (this.plan) return; // the plan view keeps its own top-down framing (and limits) through a resize
     const settling = this.status.main.state === 'ready' || (this.status.main.recalling && this.rooms.length);
     if (this.userMoved || this.view !== 'orbit' || this.flying || this.mode === 'scan' || !settling || !this.bounds) return;
     if (this.focused) return;
@@ -1418,7 +1466,19 @@ export class RoomViewer {
   // ── AR (ar/xr.js takes the renderer over for a WebXR session) ───────────
 
   /** Stop drawing our own frames and hide the page-only extras until exitXR(). */
+  /** The world height the plan cut clips at for the room holding `obj` (its floor + CUT_Y). */
+  planCutY(obj) {
+    const room = this.rooms.find((r) => {
+      let o = obj;
+      while (o && o !== r.holder) o = o.parent;
+      return Boolean(o);
+    });
+    return room ? room.holder.getWorldPosition(new THREE.Vector3()).y + CUT_Y : Infinity;
+  }
+
   enterXR(session) {
+    // AR moves and scales the world: a plan cut fixed in world space would slice it anywhere
+    if (this.plan) this.setPlan(false, { animate: false });
     if (this.view !== 'orbit' || this.flying) this.exitViewpointNow();
     this.closePin();
     this.xrSession = session;
@@ -1473,11 +1533,13 @@ export class RoomViewer {
 
   updateDollhouse(dt = 0) {
     const cam = this.camera.position;
-    const cutaway = this.view === 'orbit' || this.flying;
+    // the plan cut shows every wall (the clip plane opens the room instead)
+    const cutaway = (this.view === 'orbit' || this.flying) && !this.plan;
     let fading = false;
     for (const room of this.rooms) {
       const ref = this.isGroup ? this.centre : room.centre;
       applyDollhouse(room, [cam.x, cam.z], [ref.x, ref.z], cutaway);
+      if (this.plan) room.fades.ceiling.target = 0; // the plan has no ceiling (it would hide every pin from above)
       if (stepFades(room, dt, this.reducedMotion)) fading = true;
     }
     this.fading = fading;
@@ -1593,7 +1655,8 @@ export class RoomViewer {
       dir.normalize();
       this.raycaster.set(origin, dir);
       this.raycaster.far = dist;
-      const hit = this.raycaster.intersectObjects(meshes, false)[0];
+      // in the plan view everything above the cut is gone (clipped, but still there for a ray)
+      const hit = this.raycaster.intersectObjects(meshes, false).find((h) => !this.plan || h.point.y <= this.planCutY(h.object));
       const occluded = !!hit && hit.distance < dist - 0.12;
       if (occluded !== p.occluded) {
         p.occluded = occluded;
@@ -1608,6 +1671,8 @@ export class RoomViewer {
   // ── teardown ────────────────────────────────────────────────────────────
 
   clearContent() {
+    this.planCut?.removeAll();
+    this.plan = false;
     this.tweens.clear();
     this.view = 'orbit';
     this.flying = false;

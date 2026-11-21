@@ -304,13 +304,37 @@ def split_wall_backed(objs, info, log_fn):
     W, D, H = info.get("W"), info.get("D"), info.get("H")
     if not (W and D and H):
         return []
-    planes = [  # (outward normal toward the wall, signed distance fn)
-        (Vector((0, 1, 0)), lambda c: -c.y),          # north wall at y = 0
-        (Vector((0, -1, 0)), lambda c: c.y + D),      # south wall at y = -D
-        (Vector((-1, 0, 0)), lambda c: c.x),          # west wall at x = 0
-        (Vector((1, 0, 0)), lambda c: W - c.x),       # east wall at x = W
-        (Vector((0, 0, 1)), lambda c: H - c.z),       # ceiling
-    ]
+    if info.get("v2") and info.get("wall_planes"):
+        # v2 (any polygon): one plane per wall, from its inner face point and outward normal (scene xz -> Blender)
+        planes = []
+        for wp in info["wall_planes"]:
+            n = Vector((wp["out"][0], -wp["out"][1], 0.0))
+            p0 = Vector((wp["point"][0], -wp["point"][1], 0.0))
+            end = wp.get("end")
+            if end:
+                # only alongside the wall's own segment (on an L, a reflex wall's line runs on through the room)
+                p1 = Vector((end[0], -end[1], 0.0))
+                ax = p1 - p0
+                ln = ax.length or 1.0
+                ax = ax / ln
+
+                def dist(c, n=n, p0=p0, ax=ax, ln=ln):
+                    q = Vector((c.x, c.y, 0.0))
+                    u = (q - p0).dot(ax)
+                    return (p0 - q).dot(n) if -0.1 <= u <= ln + 0.1 else 99.0
+
+                planes.append((n, dist))
+            else:
+                planes.append((n, lambda c, n=n, p0=p0: (p0 - c).dot(n)))
+        planes.append((Vector((0, 0, 1)), lambda c: H - c.z))  # the highest ceiling point (exact when flat)
+    else:
+        planes = [  # (outward normal toward the wall, signed distance fn)
+            (Vector((0, 1, 0)), lambda c: -c.y),          # north wall at y = 0
+            (Vector((0, -1, 0)), lambda c: c.y + D),      # south wall at y = -D
+            (Vector((-1, 0, 0)), lambda c: c.x),          # west wall at x = 0
+            (Vector((1, 0, 0)), lambda c: W - c.x),       # east wall at x = W
+            (Vector((0, 0, 1)), lambda c: H - c.z),       # ceiling
+        ]
     made = []
     for ob in list(objs):
         if not top_root(ob).name.startswith("obj__"):
@@ -603,9 +627,10 @@ def main():
         if kind == "interior" and inf.get("W"):
             roots_now = [o for o in bpy.data.collections["room"].objects
                          if o.parent is None and o.name.startswith("obj__")]
+            v2walls = {wp["node"]: wp for wp in inf.get("wall_planes", []) if wp.get("node")} or None
             cleanup = lighting.dollhouse_fill(hide, inf["W"], inf["D"], inf["H"], inf.get("t", 0.12), roots_now,
                                               float((meta.get("exposure") or {}).get("measured", 0.2)),
-                                              meta.get("mood") or "")
+                                              meta.get("mood") or "", walls=v2walls)
         common.render_to(sc, tq, out / "renders" / "hero.png")
         if cleanup:
             cleanup()
@@ -659,6 +684,7 @@ def main():
         uvl = o.data.uv_layers.get("lightmap") or o.data.uv_layers.new(name="lightmap")
         o.data.uv_layers.active = uvl
     groups = {o.name: top_root(o).name for o in meshes}
+    wall_normals = (meta.get("info") or {}).get("wall_normals") or {}
     W = (meta.get("info") or {}).get("W", 0)
     D = (meta.get("info") or {}).get("D", 0)
 
@@ -668,6 +694,9 @@ def main():
         side = key[5:] if key.startswith("wall_") else None
         shell = key in ("floor", "ceiling", "ground") or side is not None
         inward = Vector(SIDE_INWARD[side]) if side in SIDE_INWARD else None
+        if inward is None and key in wall_normals:  # v2 wall__<id>: its outward normal (scene xz)
+            nx, nz = wall_normals[key]
+            inward = Vector((-nx, nz, 0.0))
 
         plantish = [bool(s.material and s.material.get("mr_material") == "plant") for s in ob.material_slots]
 
@@ -970,11 +999,13 @@ def main():
     # 8. export
     t = time.perf_counter()
     glb = out / "room.glb"
+    # v2 walls carry their outward normal as a custom property (mrWall): export it as glTF extras
+    v2 = bool((meta.get("info") or {}).get("v2"))
     bpy.ops.export_scene.gltf(
         filepath=str(glb), export_format="GLB", use_selection=False, export_cameras=False, export_lights=False,
         export_animations=False, export_apply=True, export_yup=True, export_image_format="WEBP",
         export_image_quality=args.webp_quality, export_texcoords=True, export_normals=bool(args.normals),
-        export_tangents=False, export_materials="EXPORT", export_extras=False, export_vertex_color="NONE")
+        export_tangents=False, export_materials="EXPORT", export_extras=v2, export_vertex_color="NONE")
     T["export"] = round(time.perf_counter() - t, 3)
     try:
         bpy.ops.wm.save_as_mainfile(filepath=str(out / "room-baked.blend"), compress=True)

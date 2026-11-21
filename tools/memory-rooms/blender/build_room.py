@@ -24,6 +24,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import common  # noqa: E402
+import polygon2d  # noqa: E402
 from common import log  # noqa: E402
 
 KIT_DIR = HERE / "kit"
@@ -114,6 +115,55 @@ def fit_perspective(points, az_deg, el_deg, fov_deg, aspect, margin=0.05):
     else:
         shift = (sx * aspect / 2, sy / 2)
     return cam, center, shift
+
+
+def walls_facing_v2(cam_pos, info):
+    """v2 shells: every wall whose outward normal faces the camera from the room's middle (any shape)."""
+    sh = info["shell"]
+    cx = (sh["box"]["min"][0] + sh["box"]["max"][0]) / 2
+    cz = (sh["box"]["min"][1] + sh["box"]["max"][1]) / 2
+    dx, dz = cam_pos[0] - cx, -cam_pos[1] - cz  # Blender (x, y) -> scene (x, z = -y)
+    ln = math.hypot(dx, dz) or 1.0
+    return [name for name, n in info["wall_normals"].items() if (n[0] * dx + n[1] * dz) / ln > 0.18]
+
+
+def choose_interior_corner_v2(scene, info):
+    """v2 shells: the same idea as choose_interior_corner, with walls known by their outward normals."""
+    sh = info["shell"]
+    cx = (sh["box"]["min"][0] + sh["box"]["max"][0]) / 2
+    cz = (sh["box"]["min"][1] + sh["box"]["max"][1]) / 2
+    walls = sh["walls"]
+    score = {w["id"]: 0.0 for w in walls}
+    block = {w["id"]: 0.0 for w in walls}
+    for o in sh["openings"]:
+        score[o["wall"]] += 2.0 if o["type"] == "window" else 1.0
+
+    def seg_d(p, a, b):
+        return polygon2d.seg_dist(p, a, b)[0]
+
+    for ob in scene.get("objects", []):
+        x, y, z = ob["at"]
+        w, h, d = ob["size"]
+        r = max(w, d) / 2 + 0.15
+        tall = (y + h) > 1.1 and h > 0.9 and ob.get("mount") not in ("wall", "ceiling")
+        hung = ob.get("mount") == "wall" or ob["kit"] in ("frame", "curtain")
+        for wl in walls:
+            if seg_d([x, z], wl["a"], wl["b"]) <= r:
+                score[wl["id"]] += 0.5
+                if tall:
+                    block[wl["id"]] += 3.0 + 2.0 * h * min(w, 1.5)
+                if hung:
+                    block[wl["id"]] += 8.0
+    best, best_s = 135, -1e9
+    for k, az in enumerate((135, 225, 45, 315)):
+        dx, dz = math.sin(math.radians(az)), -math.cos(math.radians(az))  # bearing -> scene direction
+        s = 0.0
+        for wl in walls:
+            through = wl["out"][0] * dx + wl["out"][1] * dz > 0.18
+            s += -block[wl["id"]] if through else score[wl["id"]]
+        if s > best_s + 1e-9:
+            best, best_s = az, s
+    return best
 
 
 def walls_facing(cam_pos, W, D):
@@ -246,7 +296,13 @@ def main():
     bl_scene.collection.children.link(cams)
 
     kind = scene["kind"]
-    if kind == "interior":
+    if kind == "interior" and scene["shell"].get("building"):
+        raise SystemExit("A room of a building is built by build_building.py (its walls come from building.json).")
+    if kind == "interior" and scene.get("version", 1) >= 2:
+        import shell_v2  # any polygon + sloped ceilings, walls named wall__<id> (CONTRACTS.md 6.1 / 6.3)
+
+        info = shell_v2.build_polygon(scene, room)
+    elif kind == "interior":
         info = shell.build_interior(scene, room)
     else:
         info = shell.build_site(scene, room)
@@ -340,7 +396,7 @@ def main():
         tq_how = "scene.hero"
     else:
         if kind == "interior":
-            az = choose_interior_corner(scene, info)
+            az = choose_interior_corner_v2(scene, info) if info.get("v2") else choose_interior_corner(scene, info)
         else:
             az = choose_exterior_azimuth(scene, light_rep.get("sun_az", 250))
             for L in light_rep["lights"]:
@@ -352,7 +408,7 @@ def main():
         tq_how = f"auto azimuth {az:.0f}"
     hide = ["ceiling"]
     if kind == "interior":
-        hide += walls_facing(tq.location, info["W"], info["D"])
+        hide += walls_facing_v2(tq.location, info) if info.get("v2") else walls_facing(tq.location, info["W"], info["D"])
     tq["mr_hide"] = ",".join(hide)
     tq["mr_res"] = [1600, 1200]
     render_jobs.append(("three-quarter", tq, res_for(tq_aspect, args.res), True, hide))
@@ -371,7 +427,7 @@ def main():
     txt = bpy.data.texts.get("scene.json") or bpy.data.texts.new("scene.json")
     txt.clear()
     txt.write(json.dumps(scene, indent=1))
-    meta = {"kind": kind, "info": {k: v for k, v in info.items() if k in ("W", "D", "H", "t", "bounds")},
+    meta = {"kind": kind, "info": {k: v for k, v in info.items() if k in ("W", "D", "H", "t", "bounds", "v2", "wall_planes", "wall_normals")},
             "three_quarter": {"hide": hide, "how": tq_how}, "exposure": exp_rep, "mood": light_rep.get("mood"),
             "look": agx_look}
     bl_scene["mr_meta"] = json.dumps(meta)
@@ -397,8 +453,10 @@ def main():
             set_hidden(hide_names, True)
             cleanup = None
             if kind == "interior" and name == "three-quarter":
+                v2walls = {wp["node"]: wp for wp in info.get("wall_planes", [])} if info.get("v2") else None
                 cleanup = lighting.dollhouse_fill(hide_names, info["W"], info["D"], info["H"], info["t"],
-                                                  list(roots.values()), exp_rep["measured"], light_rep["mood"])
+                                                  list(roots.values()), exp_rep["measured"], light_rep["mood"],
+                                                  walls=v2walls)
             if horizon is not None:
                 horizon.hide_render = name not in [f"cam{c['photo']}" for c in scene.get("cameras", [])]
             path = common.render_to(bl_scene, cam, out / "renders" / f"{name}.png")

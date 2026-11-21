@@ -12,7 +12,7 @@ import { tripDayOf } from '../../lib/trip.js';
 import { usePlaceTitle } from '../../lib/places.js';
 import { personName } from '../../lib/spots.js';
 import { useViewerState } from '../../viewer/useViewer.js';
-import { ModeToggle } from '../../viewer/ViewerControls.jsx';
+import { ModeToggle, PlanToggle } from '../../viewer/ViewerControls.jsx';
 import PhotoStrip from './PhotoStrip.jsx';
 
 // AR is its own chunk (and pulls the USDZ exporter / WebXR / QR code only on demand).
@@ -36,6 +36,8 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
   const line = statusLine(spot, stage);
   const has3d = stage === 'model' || stage === 'preview';
   const showControls = has3d && hasScan;
+  // the plan cut: any interior the viewer has drawn (not the scan)
+  const canPlan = has3d && vstate.state === 'ready' && vstate.canPlan;
   // "Saved" once, right after the edit page saved this spot (lib/flash.js).
   const [saved] = useState(() => ({ id: spot.id, on: peekFlash(`saved:${spot.id}`) }));
   useEffect(() => () => clearFlash(`saved:${spot.id}`), [spot.id]);
@@ -77,9 +79,10 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
         )}
       </header>
 
-      {showControls && (
+      {(showControls || canPlan || vstate.plan) && (
         <section className="mr-spot__controls">
-          <ModeToggle mode={vstate.mode} disabled={!viewer} onChange={(m) => viewer?.setMode(m)} />
+          {showControls && <ModeToggle mode={vstate.mode} disabled={!viewer} onChange={(m) => viewer?.setMode(m)} />}
+          {(canPlan || vstate.plan) && <PlanToggle on={Boolean(vstate.plan)} disabled={!viewer} onChange={(on) => viewer?.setPlan(on)} />}
         </section>
       )}
 

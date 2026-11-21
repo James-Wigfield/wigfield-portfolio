@@ -182,7 +182,8 @@ def inset_edges(pts, dists, sign=None):
     def corner(i):
         l1, l2 = lines[(i - 1) % n], lines[i]
         hit = line_intersect(l1[0], l1[1], l2[0], l2[1])
-        reach = 10 * max(dists[(i - 1) % n] or 0.0, dists[i] or 0.0) + 0.05
+        # by size: an outward offset (negative distances, a wall's outer face) mitres the same way
+        reach = 10 * max(abs(dists[(i - 1) % n] or 0.0), abs(dists[i] or 0.0)) + 0.05
         if hit and math.hypot(hit[0] - pts[i][0], hit[1] - pts[i][1]) <= reach:
             return (hit, hit)
         return (l1[1], l2[0])
