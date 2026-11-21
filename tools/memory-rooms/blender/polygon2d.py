@@ -182,7 +182,10 @@ def inset_edges(pts, dists, sign=None):
     def corner(i):
         l1, l2 = lines[(i - 1) % n], lines[i]
         hit = line_intersect(l1[0], l1[1], l2[0], l2[1])
-        return (hit, hit) if hit else (l1[1], l2[0])
+        reach = 10 * max(dists[(i - 1) % n] or 0.0, dists[i] or 0.0) + 0.05
+        if hit and math.hypot(hit[0] - pts[i][0], hit[1] - pts[i][1]) <= reach:
+            return (hit, hit)
+        return (l1[1], l2[0])
 
     corners = [corner(i) for i in range(n)]
     return [{"start": corners[i][1], "end": corners[(i + 1) % n][0]} for i in range(n)]

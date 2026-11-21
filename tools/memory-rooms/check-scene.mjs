@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { validateScene } from '../../src/memory-rooms/scene/validate.js';
 import { aabb, footprint, openingSpan, wallLength, verticalFov } from '../../src/memory-rooms/scene/geometry.js';
 import { ceilingAt, resolveShell, wallTopMin } from '../../src/memory-rooms/scene/shell.js';
-import { isConvex, segDist } from '../../src/memory-rooms/scene/polygon.js';
+import { distToBoundary, isConvex, segDist } from '../../src/memory-rooms/scene/polygon.js';
 import { validateBuilding } from '../../src/memory-rooms/building/validate.js';
 import { WORK } from './lib/api.mjs';
 
@@ -47,18 +47,22 @@ export function checkScene(scene, { building = null } = {}) {
   const shell = scene.shell;
   // v2: polygon shells, sloped ceilings and rooms of a building go through the normalised shell (shell.js);
   // a flat box (every v1 scene) keeps the original checks and messages below.
-  const norm = interior ? resolveShell(scene, building) : null;
-  if (interior && !norm) {
-    errors.push(`shell: room "${shell.room}" of building ${shell.building}: give its building.json (--building <file>, or building.json in the work folder)`);
-    return { errors, warnings };
-  }
   if (interior && shell.building) {
+    if (!building) {
+      errors.push(`shell: room "${shell.room}" of building ${shell.building}: give its building.json (--building <file>, or building.json in the work folder)`);
+      return { errors, warnings };
+    }
     const { ok: bok, errors: berrs } = validateBuilding(building);
     if (!bok) {
       for (const e of berrs) errors.push(`building ${e.path || '/'} ${e.message}`);
       return { errors, warnings };
     }
+    if (!(building.rooms || []).some((r) => r.id === shell.room)) {
+      errors.push(`shell/room: the building has no room "${shell.room}" (it has ${building.rooms.map((r) => r.id).join(', ') || 'none'})`);
+      return { errors, warnings };
+    }
   }
+  const norm = interior ? resolveShell(scene, building) : null;
   if (interior && !(norm.kind === 'box' && norm.ceiling.shape === 'flat')) return checkGeneric(scene, norm, { errors, warnings, objs, boxes });
 
   // ── inside the shell / site ────────────────────────────────────────────
@@ -249,6 +253,11 @@ function checkGeneric(scene, sh, { errors, warnings, objs, boxes }) {
       if (w.out > worst.out) worst = w;
     }
     if (worst.out > TOL) errors.push(`${o.id}: pokes ${fmtM(worst.out)} through the ${wallName(worst.nearest)}`);
+    else {
+      // a corner of the room (an L's inside corner) inside the object's footprint: the wall runs through it
+      const inner = poly.find((v) => pointInPoly(v, corners) && distToBoundary(v, corners) > TOL);
+      if (inner) errors.push(`${o.id}: the room's corner at [${inner.map((v) => +v.toFixed(2))}] runs ${fmtM(distToBoundary(inner, corners))} into it`);
+    }
     const over = Math.max(...[...corners, [o.at[0], o.at[2]]].map(([x, z]) => b.max[1] - ceilingAt(sh, x, z)));
     if (over > TOL) errors.push(`${o.id}: pokes ${fmtM(over)} through the ${ceilingName}`);
     if (-b.min[1] > TOL) errors.push(`${o.id}: pokes ${fmtM(-b.min[1])} through the floor`);
@@ -408,6 +417,17 @@ function inFrustum(pos, dir, p, hf, vf) {
   return Math.abs(dot(v, r) / z) <= Math.tan(hf / 2) && Math.abs(dot(v, u) / z) <= Math.tan(vf / 2);
 }
 
+/**
+ * The building.json a room-of-a-building scene needs: `explicit` (a path), else building.json next to
+ * the scene file, else memory-rooms-work/b-<buildingId>/building.json. null for any other scene.
+ */
+export function findBuilding(scene, sceneFile, explicit = null) {
+  if (!scene?.shell?.building) return null;
+  const candidates = [explicit, sceneFile ? path.join(path.dirname(sceneFile), 'building.json') : null, path.join(WORK, `b-${scene.shell.building}`, 'building.json')];
+  const found = candidates.find((p) => p && fs.existsSync(p));
+  return found ? JSON.parse(fs.readFileSync(found, 'utf8')) : null;
+}
+
 // ── CLI ──────────────────────────────────────────────────────────────────────
 function resolveScenePath(arg) {
   if (!arg) return null;
@@ -432,15 +452,8 @@ if (isMain) {
     console.error(`✗ ${file} is not valid JSON: ${e.message}`);
     process.exit(1);
   }
-  // a room of a building needs its building.json: --building <file>, else building.json next to the
-  // scene, else memory-rooms-work/b-<buildingId>/building.json
-  let building = null;
-  if (scene?.shell?.building) {
-    const flag = args.indexOf('--building');
-    const candidates = [flag >= 0 ? args[flag + 1] : null, path.join(path.dirname(file), 'building.json'), path.join(WORK, `b-${scene.shell.building}`, 'building.json')];
-    const found = candidates.find((p) => p && fs.existsSync(p));
-    if (found) building = JSON.parse(fs.readFileSync(found, 'utf8'));
-  }
+  const flag = args.indexOf('--building');
+  const building = findBuilding(scene, file, flag >= 0 ? args[flag + 1] : null);
   const { errors, warnings } = checkScene(scene, { building });
   if (args.includes('--json')) {
     console.log(JSON.stringify({ file, ok: !errors.length, errors, warnings }, null, 2));

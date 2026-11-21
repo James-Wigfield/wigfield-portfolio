@@ -110,6 +110,10 @@
         "name": { "type": "string", "minLength": 1, "maxLength": 60 },
         "level": { "$ref": "#/$defs/id" },
         "outline": { "type": "array", "minItems": 3, "maxItems": 64, "items": { "$ref": "#/$defs/id" } },
+        "origin": {
+          "$ref": "#/$defs/xz",
+          "description": "The room frame's origin in the plan frame, fixed. Default: the north-west corner of the room's wall-centreline bounding box. Set it once the room has a scene, so re-tracing the walls never moves its furniture, cameras or pins."
+        },
         "kind": { "enum": ["room", "hall", "wet", "garage", "outdoor", "void"], "description": "Default room. outdoor = a covered deck or porch (no ceiling finish); void = a stairwell or double-height space (no floor)." },
         "floor": {
           "type": "object",
@@ -134,7 +138,7 @@
       }
     },
     "ceiling": {
-      "description": "Like scene.json v2's ceiling, in the room's own frame (its wall-centreline bounding box starts at [0, 0]). `height` is the walls at the eaves (default the level height).",
+      "description": "Like scene.json v2's ceiling, in the room's own frame (see room.origin). `height` is the walls at the eaves (default the level height).",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -156,7 +160,16 @@
       },
       "allOf": [
         { "if": { "properties": { "shape": { "enum": ["gable", "pyramid", "skillion"] } }, "required": ["shape"] }, "then": { "required": ["peak"] } },
-        { "if": { "properties": { "shape": { "const": "skillion" } }, "required": ["shape"] }, "then": { "required": ["low"] } }
+        { "if": { "properties": { "shape": { "const": "skillion" } }, "required": ["shape"] }, "then": { "required": ["low"] } },
+        {
+          "if": { "anyOf": [{ "not": { "required": ["shape"] } }, { "properties": { "shape": { "const": "flat" } } }] },
+          "then": {
+            "allOf": [
+              { "not": { "required": ["peak"] } }, { "not": { "required": ["axis"] } }, { "not": { "required": ["ridgeAt"] } },
+              { "not": { "required": ["eaves"] } }, { "not": { "required": ["apex"] } }, { "not": { "required": ["low"] } }
+            ]
+          }
+        }
       ]
     },
     "opening": {
@@ -179,7 +192,7 @@
       }
     },
     "stair": {
-      "description": "A straight flight from one level up to another. `start` = the middle of the bottom step's front edge; it climbs toward `dir` for `length` metres of going, `width` wide.",
+      "description": "A straight flight from one level up to another. `start` = the middle of the first riser (the bottom step's front edge); it climbs toward `dir` (a plan direction) to the last riser `length` metres further on, `width` wide. `steps` = risers; the last one lands on the `to` floor, so the going per tread is length / (steps - 1).",
       "type": "object",
       "required": ["id", "from", "to", "start", "dir", "width", "length"],
       "additionalProperties": false,
@@ -196,7 +209,7 @@
       }
     },
     "roof": {
-      "description": "Generated from a level's exterior outline (default the top level's largest loop): the outline is split into rectangles (or `parts` says them), each gets its own roof, and they merge (valleys where they meet). gable: ridge along `ridge` (default each part's longer side); hip: every side slopes; skillion: one slope falling to `low`; flat: a parapet slab. The eaves sit at `height` above that level's floor (default its height).",
+      "description": "Generated from a level's exterior outline (default the top level's largest loop; a courtyard loop is ignored): the outline is split into rectangles (or `parts` says them, on the walls' centrelines like the outline), each gets its own roof, and they merge (valleys where they meet). gable: ridge along `ridge` (default each part's longer side); hip: every side slopes; skillion: one slope falling to `low`; flat: a parapet slab. Directions are plan directions. The eaves sit at `height` above that level's floor (default its height); the overhang is measured from the walls' outer faces.",
       "type": "object",
       "required": ["type"],
       "additionalProperties": false,

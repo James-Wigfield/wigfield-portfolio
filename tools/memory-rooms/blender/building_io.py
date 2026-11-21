@@ -85,9 +85,16 @@ def room_polygon(b, room):
 
 def room_frame(b, room):
     level = level_by_id(b, room["level"])
-    box = P.bbox(room_polygon(b, room))
-    return {"level": level["id"] if level else None,
-            "origin": [box["min"][0], level["elevation"] if level else 0.0, box["min"][1]]}
+    x0, z0 = room.get("origin") or P.bbox(room_polygon(b, room))["min"]
+    return {"level": level["id"] if level else None, "origin": [x0, level["elevation"] if level else 0.0, z0]}
+
+
+def node_clearance(lines, node_id, except_id):
+    c = 0.0
+    for w in lines:
+        if w["id"] != except_id and node_id in (w["a"], w["b"]):
+            c = max(c, w["thickness"] / 2)
+    return c
 
 
 def room_edges(b, room):
@@ -176,7 +183,7 @@ def stair_footprint(s):
 
 def stair_steps(b, s):
     rise = (level_by_id(b, s["to"]) or {}).get("elevation", 0) - (level_by_id(b, s["from"]) or {}).get("elevation", 0)
-    return {"rise": rise, "steps": s.get("steps", max(2, round(rise / STEP_RISE)))}
+    return {"rise": rise, "steps": s.get("steps", max(2, math.floor(rise / STEP_RISE + 0.5)))}  # Math.round, not banker's
 
 
 def plan_to_lnglat(geo, p):
@@ -224,7 +231,11 @@ def room_shell(b, room_id):
         for o in wall_openings(b, e["wall"]):
             u0 = o["u0"] if forward else line["length"] - o["u1"]
             op = {"type": o["type"], "offset": u0 - shift, "width": o["u1"] - o["u0"], "height": o["head"] - o["sill"],
-                  "sill": o["sill"], "id": o["id"]}
+                  "sill": o["sill"], "id": o["id"], "open": o["spec"].get("open")}
+            if o["spec"].get("swing"):
+                op["swing"] = o["spec"]["swing"] if forward else ("right" if o["spec"]["swing"] == "left" else "left")
+            if o["spec"].get("hinge"):
+                op["hinge"] = o["spec"]["hinge"] if forward else ("b" if o["spec"]["hinge"] == "a" else "a")
             openings.append(scene_io._place_opening(len(openings), w, op))
     outline = inner if P.winding_sign(inner) > 0 else list(reversed(inner))
     c = room.get("ceiling") or {}
@@ -348,10 +359,41 @@ def validate_building(b) -> list[tuple[str, str]]:
             continue
         if P.area(pts) < 0.5:
             err(f"{at}/outline", f"encloses only {P.area(pts):.2f} m2 (at least 0.5)")
+        lines = wall_lines(b, level["id"])
+        out = room["outline"]
+        for k, id_a in enumerate(out):
+            id_b = out[(k + 1) % len(out)]
+            if any((w["a"] == id_a and w["b"] == id_b) or (w["a"] == id_b and w["b"] == id_a) for w in lines):
+                continue
+            a, bb = pts[k], pts[(k + 1) % len(pts)]
+            skipped = None
+            for n in level["nodes"]:
+                if n["id"] in (id_a, id_b):
+                    continue
+                d, t = P.seg_dist(n["at"], a, bb)
+                if d <= TOL and 1e-6 < t < 1 - 1e-6:
+                    skipped = n
+                    break
+            if skipped:
+                err(f"{at}/outline/{k}", f'the side from "{id_a}" to "{id_b}" passes node "{skipped["id"]}"')
+            elif any(P.collinear_overlap(a, bb, w["pa"], w["pb"], TOL) > TOL for w in lines):
+                err(f"{at}/outline/{k}", f'the side from "{id_a}" to "{id_b}" runs along a wall without using its nodes')
         c = room.get("ceiling") or {}
         h = c.get("height", level["height"])
         if c.get("shape") and c["shape"] != "flat" and not c.get("peak", 0) > max(h, *(c.get("eaves") or [h])):
             err(f"{at}/ceiling/peak", f"must be above the eaves, got {c.get('peak')}")
+        if c.get("shape") in ("gable", "pyramid"):
+            box = P.bbox(pts)
+            local = [[x - box["min"][0], z - box["min"][1]] for x, z in pts]
+            w = box["max"][0] - box["min"][0]
+            d = box["max"][1] - box["min"][1]
+            if c["shape"] == "gable" and "ridgeAt" in c:
+                axis = c.get("axis") or ("x" if w >= d else "z")
+                hi = d if axis == "x" else w
+                if not 0 < c["ridgeAt"] < hi:
+                    err(f"{at}/ceiling/ridgeAt", f"must lie inside the room across the ridge (0-{hi:.3f}), got {c['ridgeAt']}")
+            if c["shape"] == "pyramid" and c.get("apex") and not P.point_in_polygon(c["apex"], local):
+                err(f"{at}/ceiling/apex", f"{c['apex']} is outside the room (room frame)")
         polys.append((room, ri, pts))
     for i in range(len(polys)):
         for j in range(i + 1, len(polys)):
@@ -370,6 +412,14 @@ def validate_building(b) -> list[tuple[str, str]]:
         sill = o.get("sill", 0.9 if o["type"] == "window" else 0.0)
         if o["offset"] + o["width"] > w["length"] + 0.001:
             err(at, f'runs past the end of wall "{w["id"]}"')
+        else:
+            lines = wall_lines(b, w["level"])
+            ca = node_clearance(lines, w["a"], w["id"])
+            cb = node_clearance(lines, w["b"], w["id"])
+            if o["offset"] < ca - 0.001:
+                err(at, f'starts inside the wall at node "{w["a"]}"')
+            elif o["offset"] + o["width"] > w["length"] - cb + 0.001:
+                err(at, f'ends inside the wall at node "{w["b"]}"')
         if sill + o["height"] > w["height"] + 0.001:
             err(at, f'its top is above wall "{w["id"]}"')
         by_wall.setdefault(o["wall"], []).append((oi, o["offset"], o["offset"] + o["width"], sill, sill + o["height"]))
@@ -379,6 +429,13 @@ def validate_building(b) -> list[tuple[str, str]]:
                 p, q = items[i], items[j]
                 if min(p[2], q[2]) - max(p[1], q[1]) > 0.001 and min(p[4], q[4]) - max(p[3], q[3]) > 0.001:
                     err(f"/openings/{q[0]}", f"overlaps opening {p[0]}")
+
+    stack = sorted(enumerate(b["levels"]), key=lambda t: t[1]["elevation"])
+    for k in range(1, len(stack)):
+        below = stack[k - 1][1]
+        li, lvl = stack[k]
+        if lvl["elevation"] - lvl.get("slab", SLAB) < below["elevation"] + below["height"] - 0.001:
+            err(f"/levels/{li}/elevation", f'its floor cuts into "{below["id"]}" below')
 
     for si, s in enumerate(b.get("stairs", [])):
         frm, to = level_by_id(b, s["from"]), level_by_id(b, s["to"])
@@ -435,7 +492,29 @@ def rooms_overlap(pa, pb):
 
     if any(inside(p, pb) for p in pa) or any(inside(q, pa) for q in pb):
         return True
-    return inside(interior_point(pa), pb) or inside(interior_point(pb), pa)
+    if inside(interior_point(pa), pb) or inside(interior_point(pb), pa):
+        return True
+    return any(inside(p, pb) for p in _nudged_pieces(pa, pb)) or any(inside(p, pa) for p in _nudged_pieces(pb, pa))
+
+
+def _nudged_pieces(poly, other):
+    """Points 5 cm inside poly, one per piece of its sides cut at other's corners on them (validate.js nudgedPieces)."""
+    sign = 1 if P.signed_area(poly) >= 0 else -1
+    out = []
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        ts = [0.0, 1.0]
+        for q in other:
+            d, t = P.seg_dist(q, a, b)
+            if d <= TOL and 1e-6 < t < 1 - 1e-6:
+                ts.append(t)
+        ts.sort()
+        length = math.hypot(b[0] - a[0], b[1] - a[1]) or 1
+        inward = (-sign * (b[1] - a[1]) / length, sign * (b[0] - a[0]) / length)
+        for k in range(len(ts) - 1):
+            t = (ts[k] + ts[k + 1]) / 2
+            out.append([a[0] + (b[0] - a[0]) * t + inward[0] * 0.05, a[1] + (b[1] - a[1]) * t + inward[1] * 0.05])
+    return out
 
 
 class BuildingError(ValueError):

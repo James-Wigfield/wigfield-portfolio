@@ -13,6 +13,8 @@ export const SKETCH_SCHEMA = schema;
 export const DEFAULT_GRID = 0.5;
 export const LEVEL_HEIGHT = 2.6;
 export const LEVEL_RISE = 3.0;
+const EPS = 0.001; // 1 mm: touching
+const NEAR = 0.05; // rooms closer than this without touching are an error
 
 /** Schema + cross-references: unique ids, rooms on real levels, drawn rooms not overlapping. */
 export function validateSketch(sketch) {
@@ -36,9 +38,17 @@ export function validateSketch(sketch) {
       const a = sketch.rooms[i];
       const b = sketch.rooms[j];
       if (a.level !== b.level || !a.rect || !b.rect) continue;
+      // overlap along x and z (negative = a gap). Rooms either share a side cleanly, or keep at
+      // least NEAR apart: a sliver overlap or gap, or touching at a corner only, makes walls a few
+      // cm long (the phone snaps to the grid, so only hand-made sketches get here)
       const ox = Math.min(a.rect[0] + a.rect[2], b.rect[0] + b.rect[2]) - Math.max(a.rect[0], b.rect[0]);
       const oz = Math.min(a.rect[1] + a.rect[3], b.rect[1] + b.rect[3]) - Math.max(a.rect[1], b.rect[1]);
-      if (ox > 0.02 && oz > 0.02) errors.push({ path: `/rooms/${j}/rect`, message: `overlaps "${a.name}"` });
+      const at = `/rooms/${j}/rect`;
+      if (ox > EPS && oz > EPS) errors.push({ path: at, message: `overlaps "${a.name}"` });
+      else if (Math.abs(ox) <= EPS && Math.abs(oz) <= EPS) errors.push({ path: at, message: `touches "${a.name}" only at a corner: share a side or move it ${NEAR * 100} cm away` });
+      else if ((ox < -EPS && ox > -NEAR && oz > -NEAR) || (oz < -EPS && oz > -NEAR && ox > -NEAR)) {
+        errors.push({ path: at, message: `is only ${Math.round(-Math.max(ox < 0 ? ox : -Infinity, oz < 0 ? oz : -Infinity) * 100)} cm from "${a.name}": snap them together or keep ${NEAR * 100} cm apart` });
+      }
     }
   }
   return { ok: errors.length === 0, errors };
@@ -148,7 +158,10 @@ export function sketchToBuilding(sketch, { title = 'Sketched place', geo = null 
     return { level: { id: l.id, name: l.name, elevation: i * LEVEL_RISE, height: LEVEL_HEIGHT, nodes: g.nodes, walls: g.walls }, rooms: g.rooms };
   });
   const names = new Map(sketch.rooms.map((r) => [r.id, r]));
-  const rooms = levels.flatMap(({ level, rooms: rs }) => rs.map((r) => ({ id: r.id, name: names.get(r.id).name, level: level.id, outline: r.outline })));
+  // each room's frame is pinned to its sketched corner, so tracing the real walls later can't move its furniture
+  const rooms = levels.flatMap(({ level, rooms: rs }) =>
+    rs.map((r) => ({ id: r.id, name: names.get(r.id).name, level: level.id, outline: r.outline, origin: names.get(r.id).rect.slice(0, 2) })),
+  );
   const undrawn = sketch.rooms.filter((r) => !r.rect).map((r) => r.name);
   const b = {
     version: 1,

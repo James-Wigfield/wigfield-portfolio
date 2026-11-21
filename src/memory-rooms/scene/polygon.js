@@ -208,7 +208,10 @@ export function insetEdges(pts, dists, sign = windingSign(pts)) {
     const L1 = lines[(i - 1 + n) % n];
     const L2 = lines[i];
     const hit = lineIntersect(L1.a, L1.b, L2.a, L2.b);
-    return hit ? [hit, hit] : [L1.b, L2.a];
+    // nearly parallel neighbours with different offsets meet far away: treat them as parallel (a step)
+    const reach = 10 * Math.max(dists[(i - 1 + n) % n] || 0, dists[i] || 0) + 0.05;
+    if (hit && Math.hypot(hit[0] - pts[i][0], hit[1] - pts[i][1]) <= reach) return [hit, hit];
+    return [L1.b, L2.a];
   };
   const corners = pts.map((_, i) => corner(i)); // [end of edge i-1, start of edge i]
   return lines.map((_, i) => {

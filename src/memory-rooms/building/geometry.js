@@ -76,11 +76,21 @@ export function roomPolygon(b, room) {
   return room.outline.map((id) => nodes.get(id)).filter(Boolean);
 }
 
-/** The room frame: { level, origin: [x, y, z] } in the building frame (centreline bbox min, the level's floor). */
+/**
+ * The room frame: { level, origin: [x, y, z] } in the building frame: `room.origin` when set, else the
+ * north-west corner of its wall-centreline bounding box; y = the level's floor.
+ */
 export function roomFrame(b, room) {
   const level = levelById(b, room.level);
-  const box = bbox(roomPolygon(b, room));
-  return { level: level?.id ?? null, origin: [box.min[0], level?.elevation ?? 0, box.min[1]] };
+  const [x0, z0] = room.origin || bbox(roomPolygon(b, room)).min;
+  return { level: level?.id ?? null, origin: [x0, level?.elevation ?? 0, z0] };
+}
+
+/** Half the thickest other wall meeting a node: how far a wall's faces stop short of it. */
+export function nodeClearance(lines, nodeId, exceptId) {
+  let c = 0;
+  for (const w of lines) if (w.id !== exceptId && (w.a === nodeId || w.b === nodeId)) c = Math.max(c, w.thickness / 2);
+  return c;
 }
 
 /** Building-frame point -> room frame, and back. */

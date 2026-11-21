@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { client, supportsMapModel, workDir } from './lib/api.mjs';
 import sharp from 'sharp';
-import { checkScene } from './check-scene.mjs';
+import { checkScene, findBuilding } from './check-scene.mjs';
 import { ensureMapModelFile } from './lib/mapModel.mjs';
 import { ensureMarkerFile } from './lib/marker.mjs';
 
@@ -25,7 +25,8 @@ if (!id) {
 }
 const dir = workDir(id);
 const scene = JSON.parse(fs.readFileSync(path.join(dir, 'scene.json'), 'utf8'));
-const { errors, warnings } = checkScene(scene);
+// a room of a building is checked against its building.json (CONTRACTS.md section 6)
+const { errors, warnings } = checkScene(scene, { building: findBuilding(scene, path.join(dir, 'scene.json')) });
 if (errors.length) {
   console.error(`check-scene failed:\n  ${errors.join('\n  ')}`);
   process.exit(1);

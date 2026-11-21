@@ -74,6 +74,23 @@ def _is_type(v, t):
     return a == t
 
 
+def _same(a, b):
+    """JSON equality as validate.js sees it (JSON.stringify): true is not 1, 1.0 is 1."""
+    na = isinstance(a, (int, float)) and not isinstance(a, bool)
+    nb = isinstance(b, (int, float)) and not isinstance(b, bool)
+    if na or nb:
+        return na and nb and a == b
+    if isinstance(a, bool) or isinstance(b, bool):
+        return isinstance(a, bool) and isinstance(b, bool) and a == b
+    return json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+
+
+def _matches(pattern, value):
+    """RegExp.test semantics: a trailing $ means the very end (Python's $ also matches before a final newline)."""
+    m = re.search(pattern, value)
+    return bool(m) and (not pattern.endswith("$") or m.end() == len(value))
+
+
 def _resolve(root, ref):
     if not ref.startswith("#/"):
         raise ValueError(f"Only local $ref is supported, got {ref}")
@@ -99,9 +116,9 @@ def _check(root, node, value, path, errors):
         if not any(_is_type(value, t) for t in types):
             errors.append((path, f"must be {' or '.join(types)} (got {_type_of(value)})"))
             return
-    if "const" in node and value != node["const"]:
+    if "const" in node and not _same(value, node["const"]):
         errors.append((path, f"must be {json.dumps(node['const'])}"))
-    if "enum" in node and value not in node["enum"]:
+    if "enum" in node and not any(_same(value, e) for e in node["enum"]):
         errors.append((path, f"{json.dumps(value)} is not one of: {', '.join(map(str, node['enum'][:12]))}"))
     if _type_of(value) in ("number", "integer"):
         if "minimum" in node and value < node["minimum"]:
@@ -117,7 +134,7 @@ def _check(root, node, value, path, errors):
             errors.append((path, f"must be at least {node['minLength']} characters"))
         if "maxLength" in node and len(value) > node["maxLength"]:
             errors.append((path, f"must be at most {node['maxLength']} characters"))
-        if "pattern" in node and not re.search(node["pattern"], value):
+        if "pattern" in node and not _matches(node["pattern"], value):
             errors.append((path, f"{value!r} does not match {node['pattern']}"))
     if isinstance(value, list):
         if "minItems" in node and len(value) < node["minItems"]:

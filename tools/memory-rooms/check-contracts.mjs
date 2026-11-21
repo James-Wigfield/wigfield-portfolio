@@ -18,6 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { validateScene } from '../../src/memory-rooms/scene/validate.js';
 import { validateBuilding } from '../../src/memory-rooms/building/validate.js';
+import { checkScene } from './check-scene.mjs';
 import { ceilingAt, resolveShell, buildingRoomShell } from '../../src/memory-rooms/scene/shell.js';
 import { exteriorLoops, planToLngLat, roomFrame, stairFootprint } from '../../src/memory-rooms/building/geometry.js';
 import { roomIdFor, sketchToBuilding, validateSketch } from '../../src/memory-rooms/building/sketch.js';
@@ -129,6 +130,41 @@ bMut('a spot in two rooms', (v) => {
   v.rooms[1].spotIds = ['00000000-0000-4000-8000-000000000001'];
 }, ['/rooms/1/spotIds/0']);
 bMut('roof on a missing level', (v) => (v.roof.level = 'attic'), ['/roof/level']);
+bMut('an opening may not start inside the wall it meets', (v) => v.openings.push({ id: 'tight', wall: 'g-i1', type: 'door', offset: 0, width: 0.8, height: 2 }), ['/openings/20']);
+bMut('an upper floor may not cut into the level below', (v) => (v.levels[1].elevation = 2.8), ['/levels/1/elevation']);
+bMut('a room side may not skip a junction node', (v) => (v.rooms[0].outline = ['a1', 'a2', 'a13', 'a12', 'a11']), ['/rooms/0/outline/1']);
+bMut('a gable ridge outside the room', (v) => (v.rooms[0].ceiling = { shape: 'gable', peak: 3.6, ridgeAt: 9 }), ['/rooms/0/ceiling/ridgeAt']);
+
+// two small buildings for the reviewer's edge cases (2026-11-21)
+const box = (id, nodes, walls, rooms) => ({
+  version: 1,
+  title: id,
+  levels: [{ id: 'g', elevation: 0, height: 2.6, nodes: nodes.map(([nid, x, z]) => ({ id: nid, at: [x, z] })), walls }],
+  rooms,
+});
+const loop = (ids, t) => ids.map((a, i) => ({ id: `w${i + 1}`, a, b: ids[(i + 1) % ids.length], exterior: true, ...(t?.[i] ? { thickness: t[i] } : {}) }));
+// every corner of each room on the other's sides, a 1 m strip shared: only the cut-side probe sees it
+// a fixed room origin moves the room frame (both sides), so re-tracing never shifts the furniture
+{
+  const v = clone(house);
+  v.rooms[0].origin = [-0.5, -0.25];
+  jobs.push({ label: 'valid room with a fixed origin', kind: 'building', value: v, expect: [] });
+}
+const strip = box(
+  'strip',
+  [['p1', 0, 0], ['p2', 3, 0], ['p3', 4, 0], ['p4', 6, 0], ['p5', 6, 4], ['p6', 4, 4], ['p7', 3, 4], ['p8', 0, 4]],
+  loop(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']),
+  [
+    { id: 'a', name: 'A', level: 'g', outline: ['p1', 'p2', 'p3', 'p6', 'p7', 'p8'] },
+    { id: 'b', name: 'B', level: 'g', outline: ['p2', 'p3', 'p4', 'p5', 'p6', 'p7'] },
+  ],
+);
+jobs.push({ label: 'building: a strip overlap (every corner on the other room)', kind: 'building', value: strip, expect: ['/rooms/1/outline'] });
+// nearly parallel neighbours of different thickness: the inset corner must stay a small step
+const skew = box('skew', [['a', 0, 0], ['b', 10, 0], ['c', 10, 4], ['j', 3, 4.01], ['d', 0, 4]], loop(['a', 'b', 'c', 'j', 'd'], [0, 0, 0, 0.1, 0]), [
+  { id: 'r', name: 'R', level: 'g', outline: ['a', 'b', 'c', 'j', 'd'] },
+]);
+jobs.push({ label: 'valid near-parallel walls of two thicknesses', kind: 'building', value: skew, expect: [] });
 
 // ── run both sides ───────────────────────────────────────────────────────────
 const py = process.env.PYTHON || 'python';
@@ -237,6 +273,41 @@ jobs.forEach((job, i) => {
   bad.rooms[2].level = 'attic';
   ok(validateSketch(bad).errors.some((e) => e.path === '/rooms/2/level'), 'sketch: a room on a missing level is refused');
   ok(roomIdFor('Bed 2', ['bed-2']) === 'bed-2-2' && roomIdFor('Kitchen') === 'kitchen' && roomIdFor('Ñandú Room') === 'nandu-room', 'sketch: room ids from names');
+  const two = (rect) => ({ version: 1, levels: [{ id: 'g', name: 'G' }], rooms: [{ id: 'a', name: 'A', level: 'g', rect: [0, 0, 4, 4] }, { id: 'b', name: 'B', level: 'g', rect }] });
+  ok(validateSketch(two([4, 4, 3, 3])).errors.some((e) => /corner/.test(e.message)), 'sketch: touching only at a corner is refused');
+  ok(validateSketch(two([4.01, 0, 3, 3])).errors.some((e) => /1 cm/.test(e.message)), 'sketch: a 1 cm gap is refused');
+  ok(validateSketch(two([3.99, 0, 3, 3])).errors.some((e) => /overlaps/.test(e.message)), 'sketch: a 1 cm overlap is refused');
+  ok(validateSketch(two([4, 1, 3, 2])).ok && validateBuilding(sketchToBuilding(two([4, 1, 3, 2]))).ok, 'sketch: rooms sharing part of a side are fine and build');
+  ok(validateSketch(two([4.5, 0, 3, 3])).ok, 'sketch: rooms 50 cm apart are fine');
+}
+
+// ── check-scene on v2 shells: the reviewer's cases ───────────────────────────
+{
+  const L = clone(shed);
+  L.shell.outline = [[0, 0], [6, 0], [6, 3], [3, 3], [3, 6], [0, 6]];
+  L.shell.ceiling = { color: '#efede8' };
+  L.shell.openings = [];
+  L.objects = [{ id: 'crate', kit: 'box', size: [4.2, 0.9, 1.3], at: [3, 0, 3], rotY: 45 }];
+  L.lights = [];
+  L.pins = [];
+  L.cameras = [{ photo: 1, pos: [1, 1.5, 1], look: [3, 0.5, 3], fov: 70, aspect: 0.75 }];
+  const r = checkScene(L);
+  ok(r.errors.some((e) => /corner at \[3,3\]/.test(e)), "check-scene: an L's inside corner running into an object is an error", r.errors.join(' | '));
+  const lv = clone(living);
+  lv.shell.room = 'nope';
+  const r2 = checkScene(lv, { building: house });
+  ok(r2.errors.some((e) => /no room "nope"/.test(e)), 'check-scene: a missing room says so (not "give its building.json")', r2.errors.join(' | '));
+  const broken = clone(house);
+  delete broken.rooms[0].outline;
+  let r3;
+  try {
+    r3 = checkScene(living, { building: broken });
+  } catch (e) {
+    r3 = { errors: [`threw ${e.message}`] };
+  }
+  ok(r3.errors.some((e) => e.startsWith('building /rooms/0')), 'check-scene: a broken building reports its errors (no crash)', r3.errors.join(' | '));
+  const sk = buildingRoomShell(skew, 'r');
+  ok(sk.outline.every(([x, z]) => x > -0.2 && x < 10.2 && z > -0.2 && z < 4.2), 'inset: near-parallel walls of two thicknesses stay inside the room', JSON.stringify(sk.outline));
 }
 
 console.log(fails.length ? `\n${fails.length} failed, ${pass} passed` : `\n${pass} passed`);

@@ -8,6 +8,8 @@
      rotating by +90 turns +z into +x (front faces east).
    ========================================================================== */
 
+import { resolveShell } from './shell.js';
+
 const RAD = Math.PI / 180;
 
 /** Rotate an (x, z) offset by rotY degrees about +y (the three.js / Blender sense). */
@@ -96,9 +98,17 @@ export function sceneBounds(scene) {
       max[i] = Math.max(max[i], p[i]);
     }
   };
-  if (scene.shell) {
+  if (scene.shell?.width !== undefined && (scene.shell.ceiling?.shape ?? 'flat') === 'flat') {
     grow([0, 0, 0]);
     grow([scene.shell.width, scene.shell.height, scene.shell.depth]);
+  } else if (scene.shell) {
+    // v2 polygon or sloped ceiling: the bounding box up to the ceiling's top (a room of a building without its
+    // building.json resolves to null: its objects frame it)
+    const sh = resolveShell(scene);
+    if (sh) {
+      grow([sh.box.min[0], 0, sh.box.min[1]]);
+      grow([sh.box.max[0], sh.top, sh.box.max[1]]);
+    }
   } else if (scene.site) {
     const [w, d] = scene.site.ground.size;
     grow([-w / 2, 0, -d / 2]);

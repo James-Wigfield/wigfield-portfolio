@@ -44,7 +44,8 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
   "capturedAt": "ISO (phone clock at save)",
   "status": "captured" | "modelling" | "rendered",
   "frameGroup": "home" | null,
-  "scene": { …scene.json v1… } | null,
+  "buildingId": "uuid" | null, "roomId": "kitchen" | null,   // a room of a whole place (section 6.4)
+  "scene": { …scene.json v1 or v2… } | null,
   "sceneVersion": 0,                               // bumped by every scene write
   "tripStopId": null,
   "media": [Media…]                                // sorted by type, then sort
@@ -209,11 +210,13 @@ mutations failing at the same paths, shells / frames / loops / ceilings to 1e-6)
   - `ceilingAt(shell, x, z)` (`scene/shell.js`, Python `scene_io.ceiling_at`) is the one definition, over the outline's
     bounding box. A wall's top follows it (`wallTopAt`).
 - **Openings**: a box names `wall` (north | south | east | west, offset from the lower-x / lower-z end, as v1); a
-  polygon names `edge` (0 = outline[0] → outline[1]; offset from outline[edge] toward the next corner).
+  polygon names `edge` (0 = outline[0] → outline[1]; offset from outline[edge] toward the next corner). Edge numbers
+  (and `wall__e<i>`) follow the outline **as written**, even when `resolveShell` reverses it to positive winding.
 - **The normalised shell** (`resolveShell(scene, building?)` → `{ kind, outline (positive winding), box, width, depth,
   height, top, ceiling, walls: [{ id, node, a, b, out, length, thickness, legacy }], openings: [{ wall, type, offset,
   width, height, sill, head, from, to }] }`) is what the viewer, check-scene, the walk grid and AR read. Don't branch
-  on the shell's shape anywhere else.
+  on the shell's shape anywhere else. `walls[].node` is the name a fresh bake would give; a GLB is always matched by
+  `parseWallNode` (either form), never by `node`, so a v1 room re-labelled v2 without a rebuild still works.
 - Winding: "positive" = shoelace over (x, z) > 0 = clockwise on a north-up map (NW → NE → SE → SW); the outward normal
   of a positive edge a → b is (dz, −dx)/|d|.
 
@@ -242,19 +245,35 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
 - **Rooms** are polygons over their level's nodes (centrelines), in order, either direction; simple, ≥ 0.5 m², no two
   overlapping on a level. Consecutive nodes joined by a wall have it on that side; otherwise the side is open (an
   arch, an open-plan edge). A spot belongs to at most one room.
-- **Room frame**: the building frame moved so the room's wall-CENTRELINE bounding box starts at [0, 0], on its level's
-  floor (`roomFrame` → `origin = [minX, elevation, minZ]`). A room's scene.json v2 (`shell: { building, room }`)
+- **Room frame**: the building frame moved to `room.origin` (plan [x, z], fixed once the room has a scene), else to the
+  north-west corner of the room's wall-CENTRELINE bounding box, on its level's floor (`roomFrame` →
+  `origin = [x0, elevation, z0]`). `sketchToBuilding` pins every room's origin to its sketched corner, so tracing the
+  real walls later never moves a room's furniture, cameras or pins. A room's scene.json v2 (`shell: { building, room }`)
   places its objects, lights, pins and cameras in this frame. Its floor is bounded by the inner faces (each side inset
   by half its wall's thickness; a step where two walls of different thickness meet in line): `buildingRoomShell`.
-- **Openings** run along their wall's centreline from node a toward b (`offset` to the near edge). `swing` = the side a
+- **Openings** run along their wall's centreline from node a toward b (`offset` to the near edge) and must clear the
+  walls they meet at each end (offset ≥ half the thickest other wall at node a; the same at b). `swing` = the side a
   door leaf opens into, looking from a to b; `hinge` = the end its hinges are on. In a room's normalised shell they
-  are re-measured along that room's inner face.
-- **Stairs** are straight flights: `start` = the middle of the bottom step's front edge, climbing toward `dir` for
-  `length` m of going, `width` wide (`stairFootprint`), `steps` default rise / 0.18 m. The `to` level's floor gets a
+  are re-measured along that room's inner face, with swing and hinge turned round for a room running b → a.
+- **Levels stack**: a level's floor structure (`elevation − slab`, slab default 0.25) may not cut into the level below
+  (its `elevation + height`); exterior walls run up to the next level's floor, so the facade has no gap.
+- **Stairs** are straight flights: `start` = the middle of the first riser, climbing toward `dir` to the last riser
+  `length` m further on, `width` wide (`stairFootprint`: corners in the climber's order, which winds the other way to
+  rooms). `steps` = risers (default rise / 0.18 m rounded half up, the same in JS and Python); the last lands on the
+  `to` floor, so a tread's going = length / (steps − 1). The `to` level's floor gets a
   hole over the footprint (no void room needed).
-- **Roof**: the outline is split into rectangles (or `parts` give them, each optionally on its own `level` with its own
-  type: a single-storey wing), each gets its own roof and they merge (valleys where they meet). Eaves at `height` above
-  the level's floor (default its height), overhang default 0.45 m, pitch default 22.5° (skillion 5°).
+- **Roof**: the outline is split into rectangles (or `parts` give them, on the walls' centrelines like everything else,
+  each optionally on its own `level` with its own type: a single-storey wing), each gets its own roof and they merge
+  (valleys where they meet). Eaves at `height` above the level's floor (default its height), the overhang (default
+  0.45 m) measured from the walls' outer faces, pitch default 22.5° (skillion 5°). v1 limits: ridges run along x or z,
+  a skillion falls to a plan side, an angled wing needs a `parts` rectangle in its own axes later, and a courtyard loop
+  gets no roof of its own.
+- **Directions** in a building (`stair.dir`, `roof.low`, `roof.ridge`) are **plan** directions; only `geo.north` knows
+  true north. The map turns a model by `rotation.y = −north` (radians), the opposite sense to `rotY`.
+- **Who's in which room**: the phone writes `spot.buildingId` + `spot.roomId` at capture (the truth for "captured");
+  the render side lists them in `rooms[].spotIds` when it traces the plan, and a room's scene says
+  `shell: { building, room }`. `push.mjs` refuses a scene whose `shell.room` differs from its spot's `roomId`, and
+  sets the spot's `buildingId` / `roomId` from building.json when they were missing.
 
 ### 6.3 GLB naming for v2 walls (the dollhouse works for any shape)
 
@@ -267,7 +286,8 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   (`wall_north` → [0, −1], `wall_south` → [0, 1], `wall_west` → [−1, 0], `wall_east` → [1, 0]).
 - Ids: v2 box walls `north | south | east | west` (→ `wall__north`), polygon edges `e<i>` (→ `wall__e3`), building walls
   their building.json id (→ `wall__g-n1`). Building ids never contain `_`, so `__` splits a name unambiguously.
-- `bake_export.py` exports with `export_extras` on (custom properties become extras; the viewer ignores the rest).
+- `bake_export.py` exports with `export_extras` on for v2 scenes and buildings (custom properties become extras; the
+  viewer ignores the rest). v1 bakes are unchanged.
 
 ### 6.4 Building rows, API and files
 
@@ -304,11 +324,13 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   + `thumbs/<n>.jpg` (1–12: the outside shots), `buildings/<id>/model/<name>.glb` (`exterior`, `level-<levelId>`, `map`),
   `buildings/<id>/renders/<name>.png`, `buildings/<id>/compare/<name>.png`. Local row store: `rows/buildings/<id>.json`,
   `rows/bmedia/<id>.json`. `/file/` serves `spots/…` and `buildings/…` keys.
-- **What the render side makes** (`build_building.py`): per level `level-<levelId>.glb` (its walls once, floors,
+- **What the render side makes** (`build_building.py`), every GLB in the **plan frame with absolute y** (a level's
+  GLB already sits at its elevation): per level `level-<levelId>.glb` (its walls once, floors,
   ceilings, stairs, every room's furnishing under `room__<roomId>`; one light solve per level with the sky and sun, so
   the exterior walls' outer faces are lit too), `exterior.glb` (roof + site), `renders/hero.png` + `marker.png`,
   `model/map` (the small copy), and for every spot in `rooms[].spotIds` its own `room.glb` (its slice of the level
   bake, moved into its room frame, so the spot page, walk and AR work as for any spot). Node names in a level GLB:
   `floor__<roomId>`, `ceiling__<roomId>`, `wall__<wallId>` (+ `__window0`, `__door0_leaf`…), `stair__<id>`,
-  `room__<roomId>` (furnishing root, children `obj__<id>`). `exterior.glb`: `roof` (+ `roof__<n>` parts), `ground`,
+  `room__<roomId>` (furnishing root, children `room__<roomId>__obj__<id>`: Blender names are global, and two rooms may
+  both have a `bed`). Floors are built facing up (a fan over a positive outline faces down: reverse it). `exterior.glb`: `roof` (+ `roof__<n>` parts), `ground`,
   `site__<areaId>`, `fence__<id>`, `tree__<id>`.

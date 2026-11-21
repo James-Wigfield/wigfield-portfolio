@@ -142,7 +142,10 @@ export function buildingRoomShell(building, roomId) {
     const shift = projectAlong(ia, a, b); // where the inner face starts, measured along the centreline from a
     for (const o of wallOpenings(building, e.wall)) {
       const u0 = forward ? o.u0 : line.length - o.u1;
-      const op = { type: o.type, offset: u0 - shift, width: o.u1 - o.u0, height: o.head - o.sill, sill: o.sill, id: o.id };
+      const op = { type: o.type, offset: u0 - shift, width: o.u1 - o.u0, height: o.head - o.sill, sill: o.sill, id: o.id, open: o.spec.open };
+      // a door's swing and hinge are said looking from the wall's a to b: turn them round for a room running b -> a
+      if (o.spec.swing) op.swing = forward ? o.spec.swing : o.spec.swing === 'left' ? 'right' : 'left';
+      if (o.spec.hinge) op.hinge = forward ? o.spec.hinge : o.spec.hinge === 'a' ? 'b' : 'a';
       openings.push(placeOpening(openings.length, w, op));
     }
   });

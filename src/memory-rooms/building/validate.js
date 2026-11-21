@@ -12,8 +12,8 @@
 
 import schema from './building.schema.json' with { type: 'json' };
 import { validateAgainst } from '../scene/validate.js';
-import { area, collinearOverlap, isSimple, pointInPolygon, properCrossing, segDist, signedArea } from '../scene/polygon.js';
-import { levelById, nodeMap, roomPolygon, wallLines } from './geometry.js';
+import { area, bbox, collinearOverlap, isSimple, pointInPolygon, properCrossing, segDist, signedArea } from '../scene/polygon.js';
+import { SLAB, levelById, nodeClearance, nodeMap, roomPolygon, wallLines } from './geometry.js';
 
 export const BUILDING_SCHEMA = schema;
 export const BUILDING_VERSION = 1;
@@ -131,9 +131,36 @@ export function validateBuilding(building) {
       return;
     }
     if (area(pts) < 0.5) err(`${at}/outline`, `encloses only ${area(pts).toFixed(2)} m² (at least 0.5)`);
+    // a side with no wall must not secretly run past a node or along a wall (the outline skipped a junction)
+    const lines = wallLines(building, level.id);
+    room.outline.forEach((idA, k) => {
+      const idB = room.outline[(k + 1) % room.outline.length];
+      if (lines.some((w) => (w.a === idA && w.b === idB) || (w.a === idB && w.b === idA))) return;
+      const a = pts[k];
+      const b = pts[(k + 1) % pts.length];
+      const skipped = level.nodes.find((n) => n.id !== idA && n.id !== idB && (({ d, t }) => d <= TOL && t > 1e-6 && t < 1 - 1e-6)(segDist(n.at, a, b)));
+      if (skipped) err(`${at}/outline/${k}`, `the side from "${idA}" to "${idB}" passes node "${skipped.id}": list it in the outline`);
+      else {
+        const along = lines.find((w) => collinearOverlap(a, b, w.pa, w.pb, TOL) > TOL);
+        if (along) err(`${at}/outline/${k}`, `the side from "${idA}" to "${idB}" runs along wall "${along.id}" without using its nodes`);
+      }
+    });
     const c = room.ceiling || {};
     const h = c.height ?? level.height;
     if (c.shape && c.shape !== 'flat' && !(c.peak > Math.max(h, ...(c.eaves || [h])))) err(`${at}/ceiling/peak`, `must be above the eaves (${Math.max(h, ...(c.eaves || [h]))} m), got ${c.peak}`);
+    if (c.shape === 'gable' || c.shape === 'pyramid') {
+      // in the room frame: the centreline bounding box starts at [0, 0]
+      const box = bbox(pts);
+      const local = pts.map(([x, z]) => [x - box.min[0], z - box.min[1]]);
+      const w = box.max[0] - box.min[0];
+      const d = box.max[1] - box.min[1];
+      if (c.shape === 'gable' && c.ridgeAt !== undefined) {
+        const axis = c.axis || (w >= d ? 'x' : 'z');
+        const hi = axis === 'x' ? d : w;
+        if (!(c.ridgeAt > 0 && c.ridgeAt < hi)) err(`${at}/ceiling/ridgeAt`, `must lie inside the room across the ridge (0–${+hi.toFixed(3)} in the room frame), got ${c.ridgeAt}`);
+      }
+      if (c.shape === 'pyramid' && c.apex && !pointInPolygon(c.apex, local)) err(`${at}/ceiling/apex`, `[${c.apex}] is outside the room (room frame)`);
+    }
     polys.push({ room, ri, pts });
   });
   // two rooms on one level must not overlap (a corner well inside the other, or sides crossing)
@@ -159,6 +186,14 @@ export function validateBuilding(building) {
     }
     const sill = o.sill ?? (o.type === 'window' ? 0.9 : 0);
     if (o.offset + o.width > w.length + 0.001) err(at, `runs ${(o.offset + o.width - w.length).toFixed(2)} m past the end of wall "${w.id}" (${w.length.toFixed(2)} m)`);
+    else {
+      // clear of the walls it meets at each end (the faces stop there; a door can't start inside a wall)
+      const lines = wallLines(building, w.level);
+      const ca = nodeClearance(lines, w.a, w.id);
+      const cb = nodeClearance(lines, w.b, w.id);
+      if (o.offset < ca - 0.001) err(at, `starts inside the wall at node "${w.a}": offset must be at least ${+ca.toFixed(3)}`);
+      else if (o.offset + o.width > w.length - cb + 0.001) err(at, `ends inside the wall at node "${w.b}": offset + width must be at most ${+(w.length - cb).toFixed(3)}`);
+    }
     if (sill + o.height > w.height + 0.001) err(at, `its top (${(sill + o.height).toFixed(2)} m) is above wall "${w.id}" (${w.height} m)`);
     if (!byWall.has(o.wall)) byWall.set(o.wall, []);
     byWall.get(o.wall).push({ oi, a: o.offset, b: o.offset + o.width, s: sill, h: sill + o.height });
@@ -172,6 +207,17 @@ export function validateBuilding(building) {
           err(`/openings/${q.oi}`, `overlaps opening ${p.oi} (${building.openings[p.oi].id}) on wall "${building.openings[q.oi].wall}"`);
         }
       }
+    }
+  }
+
+  // ── levels stack: a floor's structure may not cut into the rooms below ──
+  const stack = building.levels.map((l, li) => ({ l, li })).sort((p, q) => p.l.elevation - q.l.elevation);
+  for (let k = 1; k < stack.length; k++) {
+    const below = stack[k - 1].l;
+    const { l, li } = stack[k];
+    const underside = l.elevation - (l.slab ?? SLAB);
+    if (underside < below.elevation + below.height - 0.001) {
+      err(`/levels/${li}/elevation`, `its floor (${l.elevation} m, ${l.slab ?? SLAB} m thick) cuts into "${below.id}" below (its ceiling at ${+(below.elevation + below.height).toFixed(3)} m)`);
     }
   }
 
@@ -204,8 +250,33 @@ export function roomsOverlap(P, Q) {
   }
   const inside = (p, poly) => pointInPolygon(p, poly) && minDist(p, poly) > TOL;
   if (P.some((p) => inside(p, Q)) || Q.some((q) => inside(q, P))) return true;
-  // the same polygon twice (every corner on the other's sides): a point inside one is inside the other
-  return inside(interiorPoint(P), Q) || inside(interiorPoint(Q), P);
+  if (inside(interiorPoint(P), Q) || inside(interiorPoint(Q), P)) return true;
+  // every corner on the other's sides (a strip overlap, a room listed twice): cut each side at the
+  // other's corners and look just inside the middle of every piece
+  return nudgedPieces(P, Q).some((p) => inside(p, Q)) || nudgedPieces(Q, P).some((p) => inside(p, P));
+}
+
+/** Points 5 cm inside `poly`, one per piece of its sides cut at `other`'s corners that lie on them. */
+function nudgedPieces(poly, other) {
+  const sign = signedArea(poly) >= 0 ? 1 : -1;
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    const ts = [0, 1];
+    for (const q of other) {
+      const { d, t } = segDist(q, a, b);
+      if (d <= TOL && t > 1e-6 && t < 1 - 1e-6) ts.push(t);
+    }
+    ts.sort((x, y) => x - y);
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const inward = [(-sign * (b[1] - a[1])) / l, (sign * (b[0] - a[0])) / l];
+    for (let k = 0; k < ts.length - 1; k++) {
+      const t = (ts[k] + ts[k + 1]) / 2;
+      out.push([a[0] + (b[0] - a[0]) * t + inward[0] * 0.05, a[1] + (b[1] - a[1]) * t + inward[1] * 0.05]);
+    }
+  }
+  return out;
 }
 
 function minDist(p, poly) {
