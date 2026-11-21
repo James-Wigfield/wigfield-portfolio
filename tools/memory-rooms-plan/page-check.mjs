@@ -26,7 +26,7 @@ const OUT = path.resolve(process.argv[2] || path.join(HERE, 'out'));
 fs.mkdirSync(OUT, { recursive: true });
 
 const PROMPT = fs.readFileSync(path.join(REPO, 'src/components/portal/modules/memory-rooms-plan/build-prompt.md'), 'utf8').replace(/\r\n/g, '\n');
-const TABS = ['verdict', 'capture', 'framework', 'render', 'house', 'roadmap'];
+const TABS = ['verdict', 'capture', 'framework', 'render', 'house', 'roadmap', 'next'];
 const THEMES = ['jade', 'coral', 'arcade'];
 
 const fails = [];

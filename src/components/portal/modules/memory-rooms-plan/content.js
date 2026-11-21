@@ -8,6 +8,7 @@ export const TABS = [
   { id: 'render', label: 'Render loop' },
   { id: 'house', label: 'Your house' },
   { id: 'roadmap', label: 'Roadmap & questions' },
+  { id: 'next', label: 'Next level' },
 ];
 
 // ── 01 Verdict ──────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { usePortalRoute } from '../../portalRoute';
 import PromptBlock from './PromptBlock';
 import { TABS } from './content';
 import { Verdict, Capture, Framework, RenderLoop, House, Roadmap } from './tabs';
+import NextLevel from './NextLevel';
 import BUILD_PROMPT_RAW from './build-prompt.md?raw';
 import './memory-rooms-plan.css';
 
@@ -31,6 +32,7 @@ const VIEWS = {
   render: RenderLoop,
   house: House,
   roadmap: Roadmap,
+  next: NextLevel,
 };
 
 export default function MemoryRoomsPlan() {
