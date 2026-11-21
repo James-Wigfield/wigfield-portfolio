@@ -83,6 +83,7 @@ import BaristaGuide from './modules/barista/BaristaGuide';
 import MemoryRoomsPlan from './modules/memory-rooms-plan/MemoryRoomsPlan';
 import DevSetup from './modules/dev-setup/DevSetup';
 import Resume from './modules/resume/Resume';
+import SkippersForms from './modules/skippers/SkippersForms';
 import BackendSetup from './modules/BackendSetup';
 import GifBackend from './modules/GifBackend';
 import WorkersDeployPlaybook from './modules/WorkersDeployPlaybook';
@@ -417,6 +418,15 @@ export const MODULES = [
     icon: 'resume',
     group: 'Personal',
     component: Resume,
+  },
+  {
+    // WA DoT skipper's ticket forms (eyesight/medical + under-18 consent) filled as a worked example.
+    // Deep-linked: /portal/skippers/eyesight (default) · /portal/skippers/consent (id must not change).
+    id: 'skippers',
+    label: 'Skippers · Forms',
+    icon: 'anchor',
+    group: 'Personal',
+    component: SkippersForms,
   },
   {
     id: 'artificial-life',

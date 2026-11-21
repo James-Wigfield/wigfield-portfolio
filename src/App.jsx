@@ -57,6 +57,16 @@ const courtneySlides = (
   </Suspense>
 );
 
+// Skippers: a public, unlisted (noindex) WA Recreational Skipper's Ticket study
+// site (src/skippers/). One lazy chunk; deep links like /skippers/lights.
+const Skippers = lazy(() => import('./skippers/SkippersApp.jsx'));
+const skippersGround = <div style={{ position: 'fixed', inset: 0, background: '#f3efe4' }} />;
+const skippers = (
+  <Suspense fallback={skippersGround}>
+    <Skippers />
+  </Suspense>
+);
+
 function Portfolio() {
   // Tag <html> while the home route is mounted so home.css can override the
   // global cyberpunk scrollbar (index.css) for the Reading Room only.
@@ -90,6 +100,8 @@ export default function App() {
       {/* Public, unlisted (noindex) talk deck - see src/courtney-slides/CourtneySlides.jsx */}
       <Route path="/courtney-slides" element={courtneySlides} />
       <Route path="/courtneyslides" element={courtneySlides} />
+      {/* Public, unlisted (noindex) RST study site - see src/skippers/SkippersApp.jsx */}
+      <Route path="/skippers/*" element={skippers} />
       {/* Public party page — intentionally NOT behind the PinGate that protects /hub and /games */}
       <Route path="/olympics" element={<Olympics />} />
       <Route path="/hub" element={<Hub />} />

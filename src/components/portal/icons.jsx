@@ -397,6 +397,16 @@ const PATHS = {
       <path d="M7 12.5v3.5M17 12.5v3.5M4.5 18.5h5M14.5 18.5h5" />
     </>
   ),
+  // Anchor - ring, shank, stock and curved arms with flukes (Skippers forms)
+  anchor: (
+    <>
+      <circle cx="12" cy="4.8" r="1.8" />
+      <path d="M12 6.6v13.9" />
+      <path d="M8.5 10h7" />
+      <path d="M4.5 13.6c.4 3.9 3.6 6.9 7.5 6.9s7.1-3 7.5-6.9" />
+      <path d="M2.9 15.3l1.6-1.7 1.8 1.5M17.7 15.1l1.8-1.5 1.6 1.7" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 18, strokeWidth = 1.6, className, ...rest }) {
