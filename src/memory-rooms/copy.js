@@ -261,6 +261,15 @@ export const COPY = {
     outside: 'Outside',
   },
 
+  // ── /memories/b/:id once it's built: the 3D building ─────────────────────────
+  building: {
+    viewLabel: 'Look at it',
+    stages: { outside: 'Outside', inside: 'Inside', plan: 'Plan', levels: 'Levels' },
+    levelLabel: 'Level',
+    hint: 'Tap a room to go into it.',
+    notCaptured: (room) => `${room} has no photos yet: capture it from the list below.`,
+  },
+
   // ── /memories/b/:id/plan: the sketch plan ──────────────────────────────────
   sketch: {
     title: 'Sketch the plan',

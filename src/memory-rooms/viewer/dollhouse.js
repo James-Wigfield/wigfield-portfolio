@@ -129,9 +129,17 @@ export function groupRoom(root, scene = null, building = null) {
     if (wall && (!v1Box || wall.legacy || !scene)) {
       const key = wallKey(wall.id);
       (walls[key] ||= []).push(obj);
-      if (!normals[key]) {
-        const n = wallNormalOf(obj);
-        if (n) normals[key] = n;
+      if (!(key in normals)) {
+        const mw = obj.userData?.mrWall;
+        if (mw && 'exterior' in mw) {
+          // a building level's wall (CONTRACTS.md 6.4): its normal is the wall's LEFT normal. An exterior wall
+          // hides when its outside faces the camera (the side with no room); a partition never hides.
+          if (mw.exterior && Array.isArray(mw.normal)) normals[key] = mw.rooms?.left ? [-mw.normal[0], -mw.normal[1]] : mw.normal;
+          else if (!mw.exterior) normals[key] = null;
+        } else {
+          const n = wallNormalOf(obj);
+          if (n) normals[key] = n;
+        }
       }
     } else if (name.startsWith('ceiling')) ceilings.push(obj);
     if (name.startsWith('obj__') && !byName.has(name)) byName.set(name, obj);
@@ -163,7 +171,7 @@ export function hiddenAtView(root, scene, camXZ, centreXZ, building = null) {
   dx /= len;
   dz /= len;
   const take = (list) => list.forEach((o) => o.traverse((c) => out.add(c)));
-  for (const [key, n] of Object.entries(normals)) if (n[0] * dx + n[1] * dz > HIDE_DOT) take(walls[key] || []);
+  for (const [key, n] of Object.entries(normals)) if (n && n[0] * dx + n[1] * dz > HIDE_DOT) take(walls[key] || []);
   take(ceilings);
   return out;
 }

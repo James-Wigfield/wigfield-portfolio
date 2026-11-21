@@ -90,13 +90,17 @@ export class PlanCut {
     for (const c of this.cut.values()) for (const m of c.inks) m.color.copy(colour);
   }
 
-  apply(room, colour = null) {
+  /**
+   * opts.y: clip at this world height instead of the room's floor + CUT_Y (a building level sits at its
+   * elevation inside a holder at 0); opts.cap: the section cap's triangles, in the root's frame (a level's walls).
+   */
+  apply(room, colour = null, opts = {}) {
     if (this.cut.has(room)) return;
     if (colour) this.ink.color.copy(colour);
     this.renderer.localClippingEnabled = true;
     (room.holder || room.root).getWorldPosition(_p);
     // keep y <= floor + CUT_Y (three.js discards the plane's negative side)
-    const plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), _p.y + CUT_Y);
+    const plane = new THREE.Plane(new THREE.Vector3(0, -1, 0), opts.y ?? _p.y + CUT_Y);
     const saved = new Map();
     const clip = (mat) => {
       if (!mat || saved.has(mat)) return;
@@ -113,9 +117,9 @@ export class PlanCut {
     const inks = [];
     const sides = new Map();
     const shell = room.shell;
-    if (shell?.outline?.length >= 3 && shell.walls?.length) {
+    if (opts.cap || (shell?.outline?.length >= 3 && shell.walls?.length)) {
       // the section cap, a hair under the cut, in the room's own frame
-      const pos = sectionCap(shell, CUT_Y - 0.002);
+      const pos = opts.cap || sectionCap(shell, CUT_Y - 0.002);
       if (pos.length) {
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));

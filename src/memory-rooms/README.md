@@ -12,7 +12,7 @@ Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password)
 | `/memories/:spotId/edit` | fix its details after capture: the place (pin / GPS / typed, + its name), name, note, captured day, who saved it; kind + size until it has a 3D room. One PATCH with `ifUpdatedAt` (409 → reload theirs under yours); needs signal, the typed draft waits in sessionStorage |
 | `/memories/:spotId/walk` | walk the 3D room as your pixel character, together with whoever else is in it (a Durable Object per spot): WASD / joystick, photo marks that blend into the real photo, sit, wave, jump, chat |
 | `/memories/group/:group` | every room of one building, assembled in its shared frame |
-| `/memories/b/:buildingId` | a whole place: its plan (the sketch, or rooms marked on the floor-plan photo) and its room checklist (captured / waiting to upload / to capture); a room's Capture opens the normal capture prefilled (`?building=&room=&name=&of=`). Offline from IndexedDB `places` + the outbox |
+| `/memories/b/:buildingId` | a whole place: once built, the 3D building on top (Outside · Inside with the roof lifted · Plan per level · Levels pulled apart; tap a room to fly into its spot); its plan (the sketch, or rooms marked on the floor-plan photo) and its room checklist (captured / waiting to upload / to capture); a room's Capture opens the normal capture prefilled (`?building=&room=&name=&of=`). Offline from IndexedDB `places` + the outbox |
 | `/memories/b/:buildingId/plan` | the sketch plan: rooms as rectangles on a half-metre grid (drag, corner to size), levels, north, or marked on the floor-plan photo; overlapping rooms are kept on the phone until fixed |
 
 ## Where things are

@@ -4,7 +4,7 @@
    the room filled in. Works with no signal: the place, its sketch and its room
    captures may all still be in the outbox (lib/places.js). */
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
@@ -13,12 +13,17 @@ import { roomIdFor, uniqueRoomName } from '../building/sketch.js';
 import { emptySketch, roomStates, saveSketch, usePlace } from '../lib/places.js';
 import { formatDate } from '../lib/format.js';
 import PageMessage from './spot/PageMessage.jsx';
+import { useMedia } from '../lib/useMedia.js';
 import PlanView, { PhotoMarks } from './place/PlanView.jsx';
+
+// the 3D building (three.js) is its own chunk: it only loads once the place has been built
+const BuildingView = lazy(() => import('./place/BuildingView.jsx'));
 
 export default function PlacePage() {
   const { buildingId } = useParams();
   const p = usePlace(buildingId);
   const copy = COPY.place;
+  const narrow = useMedia('(max-width: 860px)');
   const navigate = useNavigate();
   const [pick, setPick] = useState(null);
   const [levelPick, setLevelPick] = useState(null);
@@ -47,6 +52,8 @@ export default function PlacePage() {
   const hasRects = onLevel.some((r) => r.room.rect);
   const hasMarks = planPhoto && onLevel.some((r) => r.room.mark);
   const chosen = rooms.find((r) => r.room.id === pick) || null;
+  // built in 3D (CONTRACTS.md 6.4): its traced plan and at least one level model on the server
+  const built = Boolean(p.server?.plan && mediaOf(p.server, 'model').some((m) => /^level-/.test(m.name || '')));
 
   const addRoom = async (e) => {
     e.preventDefault();
@@ -74,6 +81,12 @@ export default function PlacePage() {
           {[p.place?.placeLabel, formatDate(p.place?.capturedAt), copy.progress(done, rooms.length)].filter(Boolean).join(' · ')}
         </p>
       </header>
+
+      {built && (
+        <Suspense fallback={<div className="mr-building mr-building--loading" />}>
+          <BuildingView place={p.server} plan={p.server.plan} spots={p.spots} narrow={narrow} />
+        </Suspense>
+      )}
 
       <section className="mr-place__plan" aria-label={copy.checklist}>
         {levels.length > 1 && (

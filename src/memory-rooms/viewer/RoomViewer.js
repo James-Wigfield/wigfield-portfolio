@@ -241,6 +241,7 @@ export class RoomViewer {
 
     this.readTheme();
     if (import.meta.env.DEV) window.__mrViewer = this;
+    container.__viewer = this; // for the headless checks (as the walk's container.__walk)
   }
 
   // ── events ──────────────────────────────────────────────────────────────
@@ -1306,11 +1307,141 @@ export class RoomViewer {
       const ndc = this.ndcFromEvent(e);
       if (!ndc) return;
       this.raycaster.setFromCamera(ndc, this.camera);
-      const hit = this.raycaster.intersectObjects(this.visibleMeshes(), false)[0];
+      // a building's plan cut: what's above the cut is gone, so a tap goes through it
+      const hit = this.raycaster.intersectObjects(this.visibleMeshes(), false).find((h) => h.point.y <= this.cutYOf(h.object));
       let o = hit?.object;
       while (o && o.userData.roomId == null) o = o.parent;
+      // a building page picks rooms itself (its "rooms" here are whole levels): it gets the point
+      if (this.buildingMode) {
+        if (hit && o) this.emit('tap', { point: hit.point.clone().sub(o.position), roomId: o.userData.roomId });
+        return;
+      }
       if (o) this.focusRoom(o.userData.roomId);
     }
+  }
+
+  // ── buildings (viewer/buildingStage.js drives these; rooms = level-<id> + exterior) ──
+
+  roomById(id) {
+    return this.rooms.find((r) => r.id === id) || null;
+  }
+
+  setRoomVisible(id, on) {
+    const r = this.roomById(id);
+    if (!r || r.holder.visible === on) return;
+    r.holder.visible = on;
+    this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  /** Lift a whole room (a level) by y metres: the building's pulled-apart levels. */
+  setRoomOffset(id, y) {
+    const r = this.roomById(id);
+    if (!r) return;
+    r.holder.position.y = y;
+    r.holder.updateMatrixWorld(true);
+    this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  /** 'auto' (the dollhouse as usual), 'never' (every wall and ceiling up) or 'always'. */
+  setRoomCutaway(id, mode) {
+    const r = this.roomById(id);
+    if (!r) return;
+    r.cutawayMode = mode;
+    this.requestRender();
+  }
+
+  /** A building level's plan cut: clip at world height y, the walls' section cap given (plan frame triangles). */
+  setBuildingCut(id, { y, cap }) {
+    const r = this.roomById(id);
+    if (!r) return;
+    this.planCut.apply(r, this.theme?.ink, { y, cap });
+    this.cutLevels = (this.cutLevels || new Map()).set(r, y);
+    this.requestRender();
+  }
+
+  clearBuildingCuts() {
+    for (const r of this.cutLevels?.keys() || []) this.planCut.remove(r);
+    this.cutLevels = new Map();
+    this.requestRender();
+  }
+
+  /** World height above which a hit on `obj` doesn't count (a cut), else Infinity. */
+  cutYOf(obj) {
+    if (this.plan) return this.planCutY(obj);
+    if (!this.cutLevels?.size) return Infinity;
+    for (const [r, y] of this.cutLevels) {
+      let o = obj;
+      while (o && o !== r.holder) o = o.parent;
+      if (o) return y;
+    }
+    return Infinity;
+  }
+
+  /** Lift the nodes of a room whose names match `re` (the exterior's roof) by `lift` m, at `opacity`. */
+  setNodeLift(id, re, lift, opacity = 1) {
+    const r = this.roomById(id);
+    if (!r) return;
+    r.root.traverse((o) => {
+      if (!re.test(o.name || '') || !o.parent || re.test(o.parent.name || '')) return;
+      if (o.userData.baseY == null) o.userData.baseY = o.position.y;
+      o.position.y = o.userData.baseY + lift;
+      o.visible = opacity > 0.01;
+      o.traverse((c) => {
+        if (!c.isMesh) return;
+        for (const m of Array.isArray(c.material) ? c.material : [c.material]) {
+          if (m.userData.baseOpacity == null) {
+            m.userData.baseOpacity = m.opacity;
+            m.userData.baseTransparent = m.transparent;
+          }
+          m.opacity = m.userData.baseOpacity * opacity;
+          m.transparent = m.userData.baseTransparent || opacity < 1;
+          m.depthWrite = opacity >= 1;
+        }
+      });
+    });
+    this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  /** Frame what's visible for a building stage: from the house's south-east, or north-up for a plan. */
+  frameBuilding(stage, { elevation = 30, animate = true } = {}) {
+    const box = new THREE.Box3();
+    for (const r of this.rooms) if (r.holder.visible) box.expandByObject(r.holder);
+    if (box.isEmpty()) return;
+    const home = this.computeHome(box, stage !== 'outside', { azimuth: stage === 'plan' ? 0 : 38, elevation });
+    this.applyLimits(stage === 'plan' ? { ...home.limits, maxPolarAngle: 50 * RAD } : home.limits);
+    this.homePose = home.pose;
+    this.limits.main = home.limits;
+    for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
+    if (animate && !this.reducedMotion) this.tweenOrbit(home.pose, 650);
+    else this.setOrbitPose(home.pose);
+    this.userMoved = false;
+    this.requestRender();
+  }
+
+  /** Swoop toward a point (a room picked on a building) before the page changes. */
+  diveTo(point, ms = 520) {
+    if (this.reducedMotion) return Promise.resolve();
+    const target = point.clone();
+    const dir = this.camera.position.clone().sub(target).normalize();
+    const to = { pos: target.clone().addScaledVector(dir, 2.2).setY(target.y + 1.8), target };
+    this.controls.enabled = false;
+    this.diving = true;
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        this.diving = false;
+        resolve();
+      };
+      for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
+      this.tweenOrbit(to, ms, (t) => t * t * t, finish);
+      setTimeout(finish, ms + 250);
+      this.requestRender();
+    });
   }
 
   hover(e) {
@@ -1427,6 +1558,11 @@ export class RoomViewer {
   refitIfUntouched() {
     if (this.diving) return; // "Walk in" owns the camera until the page changes
     if (this.plan) return; // the plan view keeps its own top-down framing (and limits) through a resize
+    if (this.buildingRefit) {
+      // a building page frames its own stage (a level, the levels pulled apart, a plan)
+      if (!this.userMoved && this.view === 'orbit' && !this.flying) this.buildingRefit();
+      return;
+    }
     const settling = this.status.main.state === 'ready' || (this.status.main.recalling && this.rooms.length);
     if (this.userMoved || this.view !== 'orbit' || this.flying || this.mode === 'scan' || !settling || !this.bounds) return;
     if (this.focused) return;
@@ -1538,8 +1674,10 @@ export class RoomViewer {
     let fading = false;
     for (const room of this.rooms) {
       const ref = this.isGroup ? this.centre : room.centre;
-      applyDollhouse(room, [cam.x, cam.z], [ref.x, ref.z], cutaway);
-      if (this.plan) room.fades.ceiling.target = 0; // the plan has no ceiling (it would hide every pin from above)
+      // a building's level may be told to stay closed ('never') or opened ('always')
+      const mode = room.cutawayMode;
+      applyDollhouse(room, [cam.x, cam.z], [ref.x, ref.z], mode === 'never' ? false : mode === 'always' ? true : cutaway);
+      if (this.plan || this.cutLevels?.has(room)) room.fades.ceiling.target = 0; // a plan has no ceiling (it would hide every pin from above)
       if (stepFades(room, dt, this.reducedMotion)) fading = true;
     }
     this.fading = fading;
@@ -1655,8 +1793,8 @@ export class RoomViewer {
       dir.normalize();
       this.raycaster.set(origin, dir);
       this.raycaster.far = dist;
-      // in the plan view everything above the cut is gone (clipped, but still there for a ray)
-      const hit = this.raycaster.intersectObjects(meshes, false).find((h) => !this.plan || h.point.y <= this.planCutY(h.object));
+      // in a plan view everything above the cut is gone (clipped, but still there for a ray)
+      const hit = this.raycaster.intersectObjects(meshes, false).find((h) => h.point.y <= this.cutYOf(h.object));
       const occluded = !!hit && hit.distance < dist - 0.12;
       if (occluded !== p.occluded) {
         p.occluded = occluded;
@@ -1673,6 +1811,7 @@ export class RoomViewer {
   clearContent() {
     this.planCut?.removeAll();
     this.plan = false;
+    this.cutLevels = new Map();
     this.tweens.clear();
     this.view = 'orbit';
     this.flying = false;
@@ -1755,6 +1894,7 @@ export class RoomViewer {
     this.overlay.remove();
     this.handlers = {};
     if (import.meta.env.DEV && window.__mrViewer === this) window.__mrViewer = null;
+    if (this.container.__viewer === this) this.container.__viewer = null;
   }
 }
 
