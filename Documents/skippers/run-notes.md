@@ -19,7 +19,7 @@
 - **Question bank** (359, original): written by a background agent from the workbook against a fixed schema; it self-checked 25 answers, I spot-checked a further 20 rows (facts + questions) against the PDF text — all correct (`node tools/skippers/fact-check.mjs --sample 20`).
 - **Portal forms tab**: built by a background agent; details in `run-notes-forms.md`. Example dates are 16/11/2026 (before the assessment); red example values are left off the PDF export by default (checkbox to include).
 - **Sources not committed**: `Documents/skippers/source/` is git-ignored (17 MB DoT PDF + extracts). `fact-check.mjs` re-extracts text when the PDF is present.
-- **Deploy** was done from a clean `git worktree` of the new commit, so the uncommitted Memory Rooms work was not shipped.
+- **Deploy: not literal `HEAD`.** Local `main` was 8 commits ahead of `origin/main` with Memory Rooms phases that are committed but not deployed (they need `supabase/memory_buildings.sql` first). So the deploy worktree was `origin/main` (`2ba27d6`) + a cherry-pick of `dceba34` → `0343af1`, with `.env.local` copied in. Neither the uncommitted nor the committed-but-unshipped Memory Rooms work went live.
 
 ## Open questions for James
 
