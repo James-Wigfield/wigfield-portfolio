@@ -692,7 +692,9 @@ def main():
         key = groups[ob.name]
         kinds = [kind_of(s.material) for s in ob.material_slots]
         side = key[5:] if key.startswith("wall_") else None
-        shell = key in ("floor", "ceiling", "ground") or side is not None
+        # a building level names them per room: floor__kitchen, ceiling__kitchen (CONTRACTS.md 6.4)
+        base = key.split("__")[0]
+        shell = base in ("floor", "ceiling", "ground") or side is not None
         inward = Vector(SIDE_INWARD[side]) if side in SIDE_INWARD else None
         if inward is None and key in wall_normals:  # v2 wall__<id>: its outward normal (scene xz)
             nx, nz = wall_normals[key]
@@ -708,11 +710,11 @@ def main():
             if shell:
                 # shell faces: the ceiling is SEEN from below (its top almost never), window / door heads face
                 # down and are seen from inside, floor / ground bottoms are never seen
-                if key == "ceiling":
+                if base == "ceiling":
                     w *= 0.6 if n.z < -0.6 else 0.15
-                elif key in ("floor", "ground") and n.z < -0.6:
+                elif base in ("floor", "ground") and n.z < -0.6:
                     w *= 0.05
-                if key == "ground":
+                if base == "ground":
                     w *= 0.6
                 if inward is not None and n.dot(inward) < -0.5:
                     w *= 0.5
@@ -842,7 +844,7 @@ def main():
                                 use_clear=True, uv_layer="lightmap", target="IMAGE_TEXTURES")
         if back:  # dollhouse pass: walls + ceiling out of the way, same atlas, no clear, tiny margin
             cut = [o for o in bpy.data.objects
-                   if (top_root(o).name.startswith("wall_") or top_root(o).name == "ceiling") and not o.hide_render]
+                   if (top_root(o).name.startswith("wall_") or top_root(o).name.startswith("ceiling")) and not o.hide_render]
             for o in cut:
                 o.hide_render = True
             restore = stand_in_world(sc, meta)

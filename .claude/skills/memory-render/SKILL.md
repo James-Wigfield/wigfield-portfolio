@@ -1,6 +1,6 @@
 ---
 name: memory-render
-description: Turn a Memory Rooms trip spot (phone photos + one line) into a Blender-built, baked 3D room on /memories. Use for "render spot X", "render the next captured spots", "model the hostel room", "redo the bedroom render", or James handing over a floor plan for a house room.
+description: Turn a Memory Rooms trip spot (phone photos + one line) into a Blender-built, baked 3D room on /memories, or a whole captured place (a house, an apartment) into a building with levels, a roof and its rooms. Use for "render spot X", "render the next captured spots", "model the hostel room", "redo the bedroom render", "render building X" / "render the place X using the floor plan at <path>", or James handing over a floor plan.
 ---
 
 # memory-render
@@ -76,6 +76,19 @@ Uploads room.glb and map.glb (making map.glb and renders/marker.png first if the
 ## "Render the next captured spots"
 
 Loop: `pull.mjs --next` → steps 2–8 → repeat until `--next` says nothing is waiting. Do one spot fully before starting the next. At the end, report per spot: dimensions and their source, rounds used, final scores from `compare.json`, what's still off.
+
+## Whole places: "render building X"
+
+A whole place is a building row (`/memories/b/<id>`): the phone captured its name, location, a floor-plan photo, outside shots and its rooms one by one (each room is an ordinary spot with `buildingId` + `roomId`; the place's `sketch` lists the rooms, maybe as rough rectangles). Contracts: `CONTRACTS.md` 6.2 (building.json) and 6.4. Worked example: `tools/memory-rooms/examples/house.building.json` (+ `house-living.v2.scene.json`, a room of it).
+
+1. **Folder**: `memory-rooms-work/b-<buildingId>/` (the id is the row's; building.json has none). Get the row (`GET /buildings/<id>`): its `sketch` (room ids, names, levels, rough rects, north), its media (the floor-plan photo(s), the outside shots), and pull each room spot as usual (`pull.mjs <spotId>`).
+2. **Trace the plan** into `building.json`: per level a wall graph (nodes + walls, a shared wall ONCE, T-junctions split, thickness: exterior ~0.2, interior ~0.1), rooms as node outlines **with the sketch's room ids** (so the captured spots land in them) and their `spotIds`, openings on wall ids (offset from node a), stairs, the roof (`parts` for an L or a lean-to), the site, `geo` (lat/lng from the row, `north` = the bearing of plan north if the plan isn't north-up). Scale from a known dimension on the plan or the rooms' photos. Validate as you go: `node tools/memory-rooms/check-contracts.mjs` covers the examples; for this file `node -e` with `validateBuilding` from `src/memory-rooms/building/validate.js`, or just run plan-check (it validates first).
+3. **Check the tracing on the photo**: `node tools/memory-rooms/plan-check.mjs memory-rooms-work/b-<id> --photo <plan.jpg> --level ground --fit <node>=x,y <node>=x,y <node>=x,y` → `plan-check-ground.png` (the walls, openings and room names over the photo) + per-anchor residuals. Read the PNG; fix until every wall sits on the drawn wall.
+4. **Each room's scene** (`memory-rooms-work/<spotId>/scene.json`): `"version": 2`, `"shell": { "building": "<buildingId>", "room": "<roomId>" }` and nothing else in the shell (walls, floor, ceiling, openings come from building.json), objects / cameras / pins in the ROOM frame (the room's wall-centreline bbox min, or its pinned `origin`). `check-scene.mjs <spotId>` finds `../b-<id>/building.json` itself. Do the usual look → layout.md → compare loop per room (`build.mjs` can't build a building room on its own: use step 5 with `--only <level>` and compare by eye against the photos).
+5. **Build**: `node tools/memory-rooms/build-building.mjs <buildingId> [--samples 128] [--atlas 2048]` → `levels/<id>/` (blend, renders/three-quarter.png + top.png: READ them), `level-<id>.glb`, `exterior.glb`, and each furnished room's `room.glb` slice written into its spot folder (in the room frame, walls' normals pointing out of that room: the spot page, walk and AR need no building code). `--no-bake` for a quick look, `--only ground` to iterate on one level.
+6. **Push**: `node tools/memory-rooms/push-building.mjs <buildingId> --rooms` (level GLBs, exterior, renders, `plan` → planVersion +1, status rendered; `--rooms` runs push.mjs for each room spot). Needs a Worker with the building routes AND `supabase/memory_buildings.sql` run (it refuses otherwise).
+
+Self-test of the whole pipeline (no real data): `node tools/memory-rooms/building-selftest.mjs`.
 
 ## Quality bar
 

@@ -342,11 +342,14 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   `rows/bmedia/<id>.json`. `/file/` serves `spots/…` and `buildings/…` keys.
 - **What the render side makes** (`build_building.py`), every GLB in the **plan frame with absolute y** (a level's
   GLB already sits at its elevation): per level `level-<levelId>.glb` (its walls once, floors,
-  ceilings, stairs, every room's furnishing under `room__<roomId>`; one light solve per level with the sky and sun, so
+  ceilings, stairs, every room's furnishing; one light solve per level with the sky and sun, so
   the exterior walls' outer faces are lit too), `exterior.glb` (roof + site), `renders/hero.png` + `marker.png`,
   `model/map` (the small copy), and for every spot in `rooms[].spotIds` its own `room.glb` (its slice of the level
   bake, moved into its room frame, so the spot page, walk and AR work as for any spot). Node names in a level GLB:
-  `floor__<roomId>`, `ceiling__<roomId>`, `wall__<wallId>` (+ `__window0`, `__door0_leaf`…), `stair__<id>`,
-  `room__<roomId>` (furnishing root, children `room__<roomId>__obj__<id>`: Blender names are global, and two rooms may
-  both have a `bed`). Floors are built facing up (a fan over a positive outline faces down: reverse it). `exterior.glb`: `roof` (+ `roof__<n>` parts), `ground`,
+  `floor__<roomId>`, `ceiling__<roomId>`, `floor__band` (the section under the walls), `floor__slab`,
+  `wall__<wallId>` (+ `__window0`, `__door0_leaf`, `__hub<n>` at a T or a cross…; its extras `mrWall = {id, normal:
+  its left normal, exterior, rooms: {left, right}}`), `stair__<id>`, and each furnishing piece as its own top-level
+  node `room__<roomId>__obj__<id>` (Blender names are global, and two rooms may both have a `bed`; no shared parent:
+  the bake joins meshes per top-level node). A room's `room.glb` slice renames them back to `obj__<id>`, moves
+  everything into the room frame, and gives each of its walls `mrWall.normal` = the outward normal from that room. Floors are built facing up (a fan over a positive outline faces down: reverse it). `exterior.glb`: `roof` (+ `roof__<n>` parts), `ground`,
   `site__<areaId>`, `fence__<id>`, `tree__<id>`.
