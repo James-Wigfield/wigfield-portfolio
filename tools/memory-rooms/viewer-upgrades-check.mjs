@@ -110,7 +110,8 @@ const look = (page) =>
       root: mr?.dataset.theme,
       bg: mr ? getComputedStyle(mr).backgroundColor : null,
       pref: document.querySelector('[data-mr="theme-toggle"]')?.dataset.pref,
-      grid: v?.theme?.gridInk?.getHexString?.() || null,
+      // a night spot's stage is the darkroom in both themes (scene.style.mood): its ink never follows
+      grid: document.querySelector('[data-mr="viewer"]')?.closest('[data-mood="night"]') ? null : v?.theme?.gridInk?.getHexString?.() || null,
       walk: w?.clear?.getHexString?.() || null,
       land: land ? getComputedStyle(land).fill : null,
       overflow: document.documentElement.scrollWidth - innerWidth,
