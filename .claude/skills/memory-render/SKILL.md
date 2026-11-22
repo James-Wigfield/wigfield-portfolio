@@ -109,6 +109,16 @@ Learned on 12B Fletcher St (`memory-rooms-work/b-001c25b7…/`, reuse its helper
   white canopy slab, clipped shrubs), fence kind `sheet` (Colorbond). An upper level's outdoor room gets its own slab.
 - Elevations decide finishes: a plan chain says where a panel is, A.06 says how tall (the 990 panel only runs
   39c..63c). Check every cladding face against the elevations AND a photo; pass 1 had the box's west face reversed.
+- **Merging an already-rendered spot into its building** (pass 3, DECISIONS 189–191; the Batcave folder keeps the
+  scripts): back up the live row + model + renders first (`backup.mjs`), PATCH `buildingId` / `roomId`, pin
+  `room.origin` + `spotIds` + finishes in trace.py, then `merge.py` (anchor per group, never a global scale) →
+  `fit/fit_plan.py` (cameras re-solved with the room fixed; `diag_plan.py` frees one constraint at a time to say where
+  the photos disagree with the plan) → `roomcams.py` (the photo cameras rendered inside `levels/<id>/room.blend`, a
+  folder `compare.mjs` reads) → full build-building (the slice writes the spot's room.glb) → `herocut.py` (the spot's
+  hero from its slice, unlit, dollhouse cut, transparent) → push.mjs → push-building. Free-standing furniture follows
+  the photos by back-projection (old camera → pixel → new camera), not a wall rule. A door the photos show open
+  blinds a doorway camera: make it an `opening`. The building bake ignores the scene's lights / mood (day look).
+  Blender with `-b <blend>` resolves a relative output path against the drive root: pass absolute paths.
 - `compose.py <work> <round> <samples> [cam,cam]` takes a camera list; `x-*` cameras are inspection views (under the
   balcony, the stair head, inside the MP strip) that only render when named. Plants render pale in Cycles: pick
   shrub colours a notch darker than the photo (#4d5a47 grey-green, #2b3f26 leafy).
