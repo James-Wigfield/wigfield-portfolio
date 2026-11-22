@@ -249,7 +249,9 @@ export class WalkGame {
 
   /* ── loading ── */
 
-  async load({ glbUrl, scene, photos = [] }) {
+  async load({ glbUrl, scene, photos = [], building = null }) {
+    // a room of a whole place: its walls come from the building (scene.shell = { building, room })
+    if (building) this.building = building;
     try {
       const [gltf] = await Promise.all([this.loader.loadAsync(glbUrl), this.loadCharacters()]);
       if (this.disposed) {

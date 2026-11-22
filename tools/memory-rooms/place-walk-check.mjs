@@ -253,6 +253,38 @@ if (flight) {
   record('levels: back down, they see each other again', Boolean(down) && Boolean(again));
 }
 
+// ── a room of the place walked on its own (its spot's walk): the walls come from the building ──
+const roomSpot = spots.find((s) => s.scene?.shell?.building && s.media.some((m) => m.type === 'model' && m.name === 'room'));
+if (roomSpot) {
+  const { resolveShell } = await import('../../src/memory-rooms/scene/shell.js');
+  const box = resolveShell(roomSpot.scene, plan).box;
+  const solo = await person('james');
+  await solo.goto(`${base}/memories/${roomSpot.id}/walk`, { waitUntil: 'domcontentloaded' });
+  const ok = await ready(solo);
+  const b = ok ? await solo.evaluate(() => document.querySelector('[data-mr="walk"]').__walk.bounds) : null;
+  record(`room walk: ${roomSpot.title} walks inside its room's walls (from the building)`, ok && b && Math.abs(b.min.x - box.min[0]) < 1e-6 && Math.abs(b.max.z - box.max[1]) < 1e-6, b ? `bounds ${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)} × ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)}` : 'not ready');
+  if (ok) {
+    let out = 0;
+    for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      await solo.evaluate((y) => {
+        const g = document.querySelector('[data-mr="walk"]').__walk;
+        g.yaw = y;
+        g.lastLook = performance.now() + 60000;
+      }, yaw);
+      await solo.keyboard.down('KeyW');
+      for (let i = 0; i < 12; i++) {
+        await sleep(200);
+        const p = await solo.evaluate(() => document.querySelector('[data-mr="walk"]').__walk.me.pos.toArray());
+        if (p[0] < box.min[0] - 0.05 || p[0] > box.max[0] + 0.05 || p[2] < box.min[1] - 0.05 || p[2] > box.max[1] + 0.05) out++;
+      }
+      await solo.keyboard.up('KeyW');
+    }
+    record(`room walk: holding W four ways never leaves the room`, out === 0, `${out} samples outside`);
+  }
+  await solo.screenshot({ path: path.join(OUT, `place-walk-room-${scheme}.png`) });
+  james.problems.push(...solo.problems);
+}
+
 // ── the place page: Walk in + who is walking ──
 const viewer = await person('james');
 await viewer.goto(`${base}/memories/b/${place.id}`, { waitUntil: 'domcontentloaded' });

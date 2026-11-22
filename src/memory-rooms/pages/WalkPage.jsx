@@ -33,7 +33,11 @@ export default function WalkPage() {
   useEffect(() => {
     let alive = true;
     api.getSpot(spotId).then(
-      (spot) => alive && setRes({ key, kind: spot && !spot.deletedAt ? 'ok' : 'missing', spot }),
+      async (spot) => {
+        // a room of a whole place needs its building to know its walls (the walkable box)
+        const place = spot?.buildingId && spot.scene?.shell?.building ? await api.getBuilding(spot.buildingId).catch(() => null) : null;
+        if (alive) setRes({ key, kind: spot && !spot.deletedAt ? 'ok' : 'missing', spot, building: place?.plan || null });
+      },
       (error) => alive && setRes({ key, kind: error?.status === 404 || error?.status === 400 ? 'missing' : 'error', error }),
     );
     return () => {
@@ -65,7 +69,7 @@ export default function WalkPage() {
       title={spot.title}
       back={{ to: paths.spot(spot.id), text: c.back, label: c.backLabel }}
       net={{ spotId: spot.id }}
-      load={(game) => game.load({ glbUrl: model.url, scene: spot.scene, photos: spotPhotos(spot) })}
+      load={(game) => game.load({ glbUrl: model.url, scene: spot.scene, photos: spotPhotos(spot), building: current.building })}
     />
   );
 }

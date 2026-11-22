@@ -114,6 +114,13 @@ const roomModel = (s) => s.media.find((m) => m.type === 'model' && m.name === 'r
 const all = await api.listSpots();
 const ROOMS = all
   .filter((s) => !s.deletedAt && roomModel(s) && s.scene)
+  // a room of a whole place (shell { building, room }) is walked in place-walk-check: this check's walls and
+  // area are the v1 / v2 box and polygon rooms'
+  .filter((s) => {
+    const inBuilding = Boolean(s.scene?.shell?.building);
+    if (inBuilding) console.log(`  · ${s.title}: a room of a whole place, walked in place-walk-check (skipped here)`);
+    return !inBuilding;
+  })
   .map((s) => ({ spot: s, name: slug(s.title), kind: s.scene.kind }))
   .filter((r) => !only || only.some((o) => r.name.includes(o)));
 if (!ROOMS.length) {
