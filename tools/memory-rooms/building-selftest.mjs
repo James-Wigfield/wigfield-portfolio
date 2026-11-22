@@ -130,7 +130,15 @@ for (const lv of building.levels) {
   // glTF is y-up: the level's floors sit at its elevation
   const floorTop = Math.max(...nodes.filter((n) => /^floor__/.test(n.name || '') && n.name !== 'floor__slab').map((n) => n.translation?.[1] ?? 0));
   ok(Math.abs(floorTop - lv.elevation) < 0.01, `level ${lv.id}: sits at its elevation ${lv.elevation} m`, `floors at ${floorTop}`);
-  ok(bounds.min[1] > lv.elevation - 0.5 && bounds.max[1] < lv.elevation + lv.height + 0.5, `level ${lv.id}: nothing above or below the level`, `${bounds.min[1].toFixed(2)}..${bounds.max[1].toFixed(2)}`);
+  // walls under a skillion roof part on this level rise to its plane (wall__<id>__rake, DECISIONS 179): allow its rise
+  const over = building.roof?.overhang ?? 0.4;
+  const rake = Math.max(0, ...(building.roof?.parts || []).filter((p) => p.level === lv.id && (p.type || building.roof.type) === 'skillion').map((p) => {
+    const xs = p.outline.map((q) => q[0]), zs = p.outline.map((q) => q[1]);
+    const low = p.low || building.roof.low || 'south';
+    const span = (['east', 'west'].includes(low) ? Math.max(...xs) - Math.min(...xs) : Math.max(...zs) - Math.min(...zs)) + 2 * over;
+    return Math.tan(((p.pitch ?? building.roof.pitch ?? 25) * Math.PI) / 180) * span;
+  }));
+  ok(bounds.min[1] > lv.elevation - 0.5 && bounds.max[1] < lv.elevation + lv.height + rake + 0.5, `level ${lv.id}: nothing above or below the level`, `${bounds.min[1].toFixed(2)}..${bounds.max[1].toFixed(2)}`);
   const hubs = names.filter((n) => /^wall__[a-z0-9-]+__hub__[a-z0-9-]+$/.test(n));
   ok(hubs.length > 0, `level ${lv.id}: junction hubs are their own nodes (wall__<owner>__hub__<node>)`, `${hubs.length}`);
   // no see-through band between storeys: this level's slab reaches down to the walls of the level below

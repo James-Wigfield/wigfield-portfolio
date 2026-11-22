@@ -110,6 +110,266 @@ def wall_sides(b, level_id):
     return sides
 
 
+# a wall's `outside.finish` (building.json) -> the wall helper's finish for its outer face
+OUTSIDE_FINISH = {"render": "paint", "paint": "paint", "brick": "brick", "weatherboard": "timber", "timber": "timber",
+                  "stone": "plaster", "concrete": "concrete", "metal": "concrete"}
+FASCIA = 0.24          # depth of the dark band round each roof part's edge
+FASCIA_COLOUR = "#2a2b2d"
+
+
+def outside_mat(SH, spec):
+    """The outer-face material of a wall with `outside`, else None (the face keeps the wall colour)."""
+    o = spec.get("outside") or {}
+    if not o:
+        return None
+    return SH.wall_mat(OUTSIDE_FINISH.get(o.get("finish"), "paint"), o.get("color"))
+
+
+def is_outside(b, room_id):
+    """A wall face looks outside when no room is on that side or the room there is an outdoor one."""
+    if not room_id:
+        return True
+    r = next((r for r in b.get("rooms", []) if r["id"] == room_id), None)
+    return bool(r) and r.get("kind") == "outdoor"
+
+
+def roof_parts(b):
+    """The roof's parts exactly as roof_mesh builds them: [{part, typ, level, z0, pitch, over, x0, x1, q0, q1}]
+    (x0..x1, q0..q1 = the part's bbox grown by the overhang; z0 = its eaves, absolute)."""
+    roof = b.get("roof") or {}
+    lvl = B.roof_level(b)
+    if not lvl:
+        return []
+    parts = roof.get("parts")
+    if not parts:
+        loops = B.exterior_loops(b, lvl["id"])
+        if not loops:
+            return []
+        pts = [p for loop in loops for p in loop]
+        bb = P.bbox(pts)
+        parts = [{"outline": [[bb["min"][0], bb["min"][1]], [bb["max"][0], bb["min"][1]], [bb["max"][0], bb["max"][1]], [bb["min"][0], bb["max"][1]]], "type": roof.get("type", "gable")}]
+    over = float(roof.get("overhang", 0.4))
+    out = []
+    for part in parts:
+        pl = B.level_by_id(b, part["level"]) if part.get("level") else lvl
+        pl = pl or lvl
+        z0 = float(pl.get("elevation", 0.0)) + float(pl.get("height", 2.6))
+        bb = P.bbox(part["outline"])
+        out.append({"part": part, "typ": part.get("type", roof.get("type", "gable")), "level": pl["id"], "z0": z0,
+                    "low": part.get("low", roof.get("low", "south")),
+                    "pitch": math.radians(float(part.get("pitch", roof.get("pitch", 25)))), "over": over,
+                    "x0": bb["min"][0] - over, "x1": bb["max"][0] + over, "q0": bb["min"][1] - over, "q1": bb["max"][1] + over,
+                    "bb": bb})
+    return out
+
+
+def skillion_height(rp, x, q):
+    """Absolute height of a skillion part's plane over plan (x, q)."""
+    d = {"west": x - rp["x0"], "east": rp["x1"] - x, "north": q - rp["q0"], "south": rp["q1"] - q}[rp["low"]]
+    return rp["z0"] + math.tan(rp["pitch"]) * d
+
+
+def rake_part_for(rparts, level_id, line):
+    """The skillion part over a wall (its midpoint inside the part's outline bbox, a few cm of slack), else None."""
+    mx, mq = (line["pa"][0] + line["pb"][0]) / 2, (line["pa"][1] + line["pb"][1]) / 2
+    for rp in rparts:
+        if rp["typ"] != "skillion" or rp["level"] != level_id:
+            continue
+        bb = rp["bb"]
+        if bb["min"][0] - 0.05 <= mx <= bb["max"][0] + 0.05 and bb["min"][1] - 0.05 <= mq <= bb["max"][1] + 0.05:
+            return rp
+    return None
+
+
+def common_mix(a, b, t):
+    from mrgeo import mix
+
+    return mix(a, b, t)
+
+
+STAIR_WAIST = 0.15      # a solid flight's slab under the inner corners of its steps
+STAIR_WALL_T = 0.19     # raking side walls: thickness, and height above the nosings
+STAIR_WALL_H = 1.0
+STAIR_WALL_COLOUR = "#f2f1ec"
+
+
+def build_stair(b, s, level, coll, link, made, report):
+    """One straight flight on its `from` level (object `stair__<id>`, level-local heights; the caller's level sits at
+    its elevation). finish timber (default): stepped blocks down to the floor, as before. tile / concrete: a solid
+    flight with a sloping soffit (WAIST under the inner corners), treads and risers in `color`, the soffit and sides
+    rendered; steel: thin tread plates on two stringers. `walls` adds solid raking side walls (STAIR_WALL_T thick,
+    STAIR_WALL_H above the nosings, left / right looking up the flight): from the ground where they stand outside
+    the level's exterior loop, from the flight's underside where they pass over its rooms (a bulkhead inside). Walls (and ceilings) of this
+    level inside the flight's footprint are then cut down to its underside (a boolean inside the footprint only)."""
+    import bpy
+    from mathutils import Vector
+
+    import materials
+    import shell as SH
+    import shell_v2 as S2
+    from mrgeo import MB
+
+    lid = level["id"]
+    elev = float(level.get("elevation", 0.0))
+    info = B.stair_steps(b, s)
+    n, rise = int(info["steps"]), float(info["rise"])
+    d = B.DIRS[s["dir"]]
+    r = (-d[1], d[0])           # the climber's right
+    L = float(s["length"])
+    h = float(s["width"]) / 2
+    x0, z0 = s["start"]
+    finish = s.get("finish", "timber")
+
+    def P3(u, v, hh):
+        return bl((x0 + d[0] * u + r[0] * v, z0 + d[1] * u + r[1] * v), hh)
+
+    mb = MB()
+    rr = rise / n
+    if finish == "timber":
+        # unchanged look: n blocks of run L / n, each down to the floor
+        tm = SH.floor_mat("timber", s.get("color") or "#9a7652")
+        run = L / n
+        for i in range(n):
+            a0, a1, top = i * run, (i + 1) * run, (i + 1) * rr
+            cs = [(a0, -h), (a1, -h), (a1, h), (a0, h)]
+            mb.box8([P3(u, v, 0.0) for u, v in cs] + [P3(u, v, top) for u, v in cs], tm)
+        soffit = lambda u: 0.0  # noqa: E731  (blocks reach the floor: nothing passes under)
+        bevel_w = 0.003
+    else:
+        # the schema's flight: steps - 1 treads of going g between the first riser (u = 0) and the last (u = L)
+        g = L / max(1, n - 1)
+        slope = rr / g
+        wv = STAIR_WAIST * math.sqrt(1 + slope * slope)
+        soffit = lambda u: u * slope - wv  # noqa: E731  (level-local height of the underside)
+        col = s.get("color") or {"tile": "#5a5c5f", "concrete": "#a19d96", "steel": "#2a2b2d"}.get(finish, "#8a8a8a")
+        tread_mat = SH.floor_mat("tile" if finish == "tile" else "concrete", col) if finish != "steel" else materials.get("metal", col)
+        under_mat = SH.wall_mat("paint", s.get("wallColor") or STAIR_WALL_COLOUR)
+        if finish == "steel":
+            for k in range(n - 1):
+                top = (k + 1) * rr
+                cs = [(k * g, -h), ((k + 1) * g + 0.02, -h), ((k + 1) * g + 0.02, h), (k * g, h)]
+                mb.box8([P3(u, v, top - 0.04) for u, v in cs] + [P3(u, v, top) for u, v in cs], tread_mat)
+            for v0, v1 in ((-h, -h + 0.03), (h - 0.03, h)):
+                for (ua, ub) in ((0.0, L),):
+                    q = [P3(ua, v0, -0.0), P3(ub, v0, rise - rr - 0.25), P3(ub, v1, rise - rr - 0.25), P3(ua, v1, 0.0),
+                         P3(ua, v0, rr), P3(ub, v0, rise), P3(ub, v1, rise), P3(ua, v1, rr)]
+                    mb.box8(q, tread_mat)
+            soffit = lambda u: u * slope - 0.3  # noqa: E731
+        else:
+            # the profile in (u, height): up the steps, then down the soffit to the ground
+            prof = [(0.0, 0.0)]
+            for k in range(n - 1):
+                prof += [(k * g, (k + 1) * rr), ((k + 1) * g, (k + 1) * rr)]
+            prof.append((L, rise))
+            prof.append((L, max(0.0, soffit(L))))
+            u0 = min(L, max(0.0, wv / slope))
+            if u0 > 1e-4:
+                prof.append((u0, 0.0))
+            # clean consecutive duplicates
+            clean = []
+            for p in prof:
+                if not clean or abs(clean[-1][0] - p[0]) > 1e-6 or abs(clean[-1][1] - p[1]) > 1e-6:
+                    clean.append(p)
+            prof = clean
+            area2 = sum(prof[i][0] * prof[(i + 1) % len(prof)][1] - prof[(i + 1) % len(prof)][0] * prof[i][1] for i in range(len(prof)))
+            if area2 < 0:
+                prof = list(reversed(prof))
+            m = len(prof)
+            side_mat = under_mat
+            for v, sg in ((-h, -1), (h, 1)):
+                for tri in S2.triangulate(prof):
+                    mb.poly([P3(prof[i][0], v, prof[i][1]) for i in tri], side_mat, (sg * r[0], -sg * r[1], 0))
+            for i in range(m):
+                (ua, ha), (ub, hb) = prof[i], prof[(i + 1) % m]
+                horiz, vert = abs(hb - ha) < 1e-6, abs(ub - ua) < 1e-6
+                # treads (horizontal, above the ground) and risers (vertical, not the soffit's back end) are tiled
+                is_tread = horiz and ha > 1e-6
+                is_riser = vert and not (ua >= L - 1e-6 and min(ha, hb) < rise - rr - 1e-6)
+                mat = tread_mat if (is_tread or is_riser) else under_mat
+                du, dh = ub - ua, hb - ha  # CCW profile: outward normal (dh, -du) in (u, height)
+                mb.poly([P3(ua, -h, ha), P3(ub, -h, hb), P3(ub, h, hb), P3(ua, h, ha)], mat, (d[0] * dh, -d[1] * dh, -du))
+        bevel_w = 0.0
+    ob = link(mb, f"stair__{s['id']}", bevel_w=bevel_w)
+    if ob is None:
+        return None
+    ob.location.z = elev
+
+    # raking side walls
+    sides = {"left": [-1], "right": [1], "both": [-1, 1]}.get(s.get("walls", "none"), [])
+    if sides:
+        wm = SH.wall_mat("paint", s.get("wallColor") or STAIR_WALL_COLOUR)
+        loops = B.exterior_loops(b, lid)
+        top = lambda u: rr + u * (rise - rr) / L + STAIR_WALL_H  # noqa: E731  (the nosing line + the wall height)
+        wmb = MB()
+        for sg in sides:
+            vc = sg * (h + STAIR_WALL_T / 2)
+            inside = lambda u: any(P.point_in_polygon((x0 + d[0] * u + r[0] * vc, z0 + d[1] * u + r[1] * vc), lp) for lp in loops)  # noqa: E731
+            # cut u at every change of inside / outside (5 cm steps, then bisection)
+            cuts, step = [0.0], 0.05
+            u = step
+            while u < L - 1e-9:
+                if inside(u) != inside(u - step):
+                    lo, hi = u - step, u
+                    for _ in range(20):
+                        mid = (lo + hi) / 2
+                        if inside(mid) == inside(lo):
+                            lo = mid
+                        else:
+                            hi = mid
+                    cuts.append((lo + hi) / 2)
+                u += step
+            cuts.append(L)
+            for ua, ub in zip(cuts, cuts[1:]):
+                if ub - ua < 1e-3:
+                    continue
+                # outside: down to the ground; over a room: down to the flight's underside (a bulkhead inside it)
+                over = inside((ua + ub) / 2)
+                ba, bb = (max(0.0, soffit(ua)), max(0.0, soffit(ub))) if over else (0.0, 0.0)
+                v0, v1 = vc - STAIR_WALL_T / 2, vc + STAIR_WALL_T / 2
+                wmb.box8([P3(ua, v0, ba), P3(ub, v0, bb), P3(ub, v1, bb), P3(ua, v1, ba),
+                          P3(ua, v0, top(ua)), P3(ub, v0, top(ub)), P3(ub, v1, top(ub)), P3(ua, v1, top(ua))], wm)
+        wob = link(wmb, f"stair__{s['id']}__walls")
+        if wob is not None:
+            wob.location.z = elev
+
+    # cut this level's walls (and ceilings) inside the footprint down to the flight's underside
+    if finish != "timber":
+        cutter_mb = MB()
+        e = 0.002
+        bot0, bot1 = max(0.0, soffit(0.0)), soffit(L)
+        hi = 40.0
+        cutter_mb.box8([P3(-e, -h, bot0 - e), P3(L + e, -h, bot1), P3(L + e, h, bot1), P3(-e, h, bot0 - e),
+                        P3(-e, -h, hi), P3(L + e, -h, hi), P3(L + e, h, hi), P3(-e, h, hi)], None)
+        cutter = cutter_mb.obj(f"cutter__{s['id']}", coll, uv=False)
+        cutter.location.z = elev
+        bpy.context.view_layer.update()
+        fx = [x0 - r[0] * h, x0 + r[0] * h, x0 + d[0] * L - r[0] * h, x0 + d[0] * L + r[0] * h]
+        fz = [z0 - r[1] * h, z0 + r[1] * h, z0 + d[1] * L - r[1] * h, z0 + d[1] * L + r[1] * h]
+        xmin, xmax, ymin, ymax = min(fx), max(fx), -max(fz), -min(fz)
+        lowest = elev + min(bot0, bot1)
+        cut = []
+        for o2 in list(coll.objects):
+            if o2.type != "MESH" or o2 is cutter or not (o2.name.startswith("wall__") or o2.name.startswith("ceiling__")):
+                continue
+            bb = [o2.matrix_world @ Vector(c) for c in o2.bound_box]
+            if (min(p.x for p in bb) > xmax - 0.01 or max(p.x for p in bb) < xmin + 0.01 or min(p.y for p in bb) > ymax - 0.01
+                    or max(p.y for p in bb) < ymin + 0.01 or max(p.z for p in bb) < lowest + 0.01):
+                continue
+            mod = o2.modifiers.new("stair_cut", "BOOLEAN")
+            mod.operation, mod.object, mod.solver = "DIFFERENCE", cutter, "EXACT"
+            dg = bpy.context.evaluated_depsgraph_get()
+            me = bpy.data.meshes.new_from_object(o2.evaluated_get(dg))
+            o2.modifiers.clear()
+            old = o2.data
+            o2.data = me
+            if old.users == 0:
+                bpy.data.meshes.remove(old)
+            cut.append(o2.name)
+        bpy.data.objects.remove(cutter, do_unlink=True)
+        made.setdefault("stairCuts", {})[s["id"]] = cut
+    return ob
+
+
 def build_level(b, level, coll, scenes, report):
     """Walls, floors, ceilings, stairs and furnishing of one level. Returns info for cameras / bake meta."""
     import bpy
@@ -131,6 +391,7 @@ def build_level(b, level, coll, scenes, report):
     metal = materials.get("brass", "#b89a5e")
     J = BM.junctions(b, lid)
     sides = wall_sides(b, lid)
+    rparts = roof_parts(b)
     made = {"walls": [], "floors": [], "ceilings": [], "stairs": [], "rooms": [], "hubs": 0, "objects": 0}
     planes = []  # for bake_export's wall-backed split: each face a room looks at
 
@@ -169,10 +430,64 @@ def build_level(b, level, coll, scenes, report):
             h = max(s + 0.05, min(H, o["head"]))
             holes.append({"index": k, "type": o["type"], "a": a, "b": bb, "s": s, "h": h, "spec": o["spec"]})
         name = f"wall__{wid}"
-        wall = link(S2.wall_slab(F, H, holes, wmat, cmat), name)
+        # an exterior wall's outside finish goes on the face(s) that look outside (w = 0 is the right face)
+        omat_ext = outside_mat(SH, line0.get("spec") or {}) if line0["exterior"] or (line0.get("spec") or {}).get("outside") else None
+        f_in = omat_ext if omat_ext is not None and is_outside(b, rooms["right"]) else None
+        f_out = omat_ext if omat_ext is not None and is_outside(b, rooms["left"]) else None
+        # cladding panels (outside.panels): face-only bands on the faces that look outside
+        osp = (line0.get("spec") or {}).get("outside") or {}
+        bands = []
+        for pnl in osp.get("panels") or []:
+            p0, p1 = float(pnl["offset"]), float(pnl["offset"]) + float(pnl["width"])
+            at_a, at_b = p0 <= 1e-3, p1 >= line0["length"] - 1e-3
+            if flip:
+                p0, p1, at_a, at_b = line0["length"] - p1, line0["length"] - p0, at_b, at_a
+            a_ = 0.0 if at_a else max(0.0, min(L, p0 - fr["shift"]))
+            b_ = L if at_b else max(0.0, min(L, p1 - fr["shift"]))
+            s_ = max(0.0, min(H, float(pnl.get("sill", 0.0))))
+            h_ = min(H, s_ + float(pnl["height"])) if "height" in pnl else H
+            if b_ - a_ > 0.005 and h_ - s_ > 0.005 and (f_in is not None or f_out is not None):
+                pmat = SH.wall_mat(OUTSIDE_FINISH.get(pnl.get("finish"), "paint"), pnl.get("color"))
+                bands.append({"a": a_, "b": b_, "s": s_, "h": h_, "imat": pmat if f_in is not None else None,
+                              "omat": pmat if f_out is not None else None})
+        wall = link(S2.wall_slab(F, H, holes, wmat, cmat, imat=f_in, omat=f_out, bands=bands), name)
         if wall is None:
             continue
         wall.location.z = elev
+        # under a skillion part, a full-height wall rises to the roof plane (a raking top) instead of stopping at
+        # the level's height and leaving a wedge of sky under the roof
+        # (only walls on the building's skin: inside walls stop at the flat ceilings)
+        skin = line0["exterior"] or is_outside(b, rooms["left"]) or is_outside(b, rooms["right"])
+        rp = rake_part_for(rparts, lid, line0) if skin and H >= float(level.get("height", 2.6)) - 1e-6 else None
+        if rp is not None:
+            t2 = line0["thickness"] / 2
+            d, lf = line0["dir"], line0["left"]
+            ends = [(line0["pa"], -t2), (line0["pb"], t2)]  # each end grown by half a thickness to close corners
+            base_z = elev + H
+            ring = []  # absolute heights, then made wall-local (the wall object sits at z = elev)
+            for (p, grow), s in ((ends[0], 1), (ends[1], 1), (ends[1], -1), (ends[0], -1)):
+                x = p[0] + d[0] * grow + lf[0] * t2 * s
+                q = p[1] + d[1] * grow + lf[1] * t2 * s
+                ring.append((x, q, max(base_z, skillion_height(rp, x, q))))
+            if max(r[2] for r in ring) - base_z > 0.02:
+                rk = MB()
+                bot = [bl((x, q), H) for x, q, _ in ring]
+                top = [bl((x, q), z - elev) for x, q, z in ring]
+                left_mat = f_out if not flip else f_in   # ring[0..1] is on line0's left side
+                right_mat = f_in if not flip else f_out
+                rk_spec = osp.get("rake") or {}
+                if rk_spec:  # the raking band has its own finish on the faces that look outside
+                    rmat = SH.wall_mat(OUTSIDE_FINISH.get(rk_spec.get("finish", osp.get("finish")), "paint"),
+                                       rk_spec.get("color") or osp.get("color"))
+                    left_mat = rmat if left_mat is not None else None
+                    right_mat = rmat if right_mat is not None else None
+                rk.poly([bot[0], bot[1], top[1], top[0]], left_mat or wmat, (lf[0], -lf[1], 0))
+                rk.poly([bot[2], bot[3], top[3], top[2]], right_mat or wmat, (-lf[0], lf[1], 0))
+                rk.poly([bot[1], bot[2], top[2], top[1]], wmat, (d[0], -d[1], 0))
+                rk.poly([bot[3], bot[0], top[0], top[3]], wmat, (-d[0], d[1], 0))
+                rk.poly(top, cmat, (0, 0, 1))
+                if link(rk, f"{name}__rake", wall) is not None:
+                    made["rakes"] = made.get("rakes", 0) + 1
         # the extras always describe the wall as building.json has it (a to b), whichever way it was built
         wall["mrWall"] = {"id": wid, "normal": [round(line0["left"][0], 6), round(line0["left"][1], 6)],
                           "exterior": bool(line0["exterior"]), "rooms": {"left": sides[wid]["left"], "right": sides[wid]["right"]}}
@@ -220,11 +535,30 @@ def build_level(b, level, coll, scenes, report):
                     hinge_low = o["a"] <= L - o["b"]
                 leaf_mat = materials.get("plaster", col)
                 fr_mb, leaf, hw = SH._door(F, o, tm, leaf_mat, metal, hinge_low)
-                link(fr_mb, f"{name}__door{k}_frame", wall, bevel_w=0.004)
+                if o["type"] != "garage":  # a garage door sits in a plain rendered reveal (no frame)
+                    link(fr_mb, f"{name}__door{k}_frame", wall, bevel_w=0.004)
                 if leaf is not None:
                     for part in (link(leaf, f"{name}__door{k}_leaf", wall, bevel_w=0.004), link(hw, f"{name}__door{k}_handle", wall, bevel_w=0.003)):
                         if part is not None:
                             part.visible_shadow = False
+                if o["type"] == "garage":
+                    # a closed sectional door: one panel near-flush with the outside face (a few cm back in its
+                    # reveal), with fine horizontal ribs every ~0.17 m on the street side (a Colorbond panel)
+                    gd = MB()
+                    if f_out is not None:
+                        w0, w1, rib_w = t - 0.075, t - 0.035, (t - 0.035, t - 0.031)
+                    elif f_in is not None:
+                        w0, w1, rib_w = 0.035, 0.075, (0.031, 0.035)
+                    else:
+                        w0, w1, rib_w = t * 0.5 - 0.02, t * 0.5 + 0.02, (t * 0.5 + 0.02, t * 0.5 + 0.024)
+                    F.wbox(gd, o["a"] + 0.01, o["b"] - 0.01, 0.0, o["h"] - 0.01, w0, w1, leaf_mat)
+                    rib_mat = materials.get("plaster", common_mix(col, "#ffffff", 0.14))
+                    hh = o["h"] - 0.01
+                    nrib = max(1, int(round(hh / 0.17)))
+                    for r_ in range(1, nrib):
+                        v = hh * r_ / nrib
+                        F.wbox(gd, o["a"] + 0.02, o["b"] - 0.02, v - 0.006, v + 0.006, rib_w[0], rib_w[1], rib_mat)
+                    link(gd, f"{name}__door{k}_leaf", wall, bevel_w=0.002, segments=1)
         # the faces a room looks at, for the bake's wall-backed split
         right = [-line["left"][0], -line["left"][1]]
         if rooms["right"]:  # (the frame's w = 0 face)
@@ -304,6 +638,11 @@ def build_level(b, level, coll, scenes, report):
     if ob is not None:
         ob.location.z = elev
     pm = SH.plinth_mat()
+    # the slab's edge reads as part of the facade: give it the level's exterior walls' outside finish if they have one
+    for w in level.get("walls", []):
+        if w.get("exterior") and w.get("outside") and (w["outside"].get("finish") in (None, "render", "paint")):
+            pm = outside_mat(SH, w)
+            break
     below = [lv for lv in b.get("levels", []) if float(lv.get("elevation", 0.0)) < elev - 1e-6]
     if below:
         lb = max(below, key=lambda lv: float(lv.get("elevation", 0.0)))
@@ -326,29 +665,40 @@ def build_level(b, level, coll, scenes, report):
     ob = link(slab, "floor__slab")
     if ob is not None:
         ob.location.z = elev
+    # an upper level's rooms outside its exterior loop (a balcony, a deck) get their own slab, so nothing shows
+    # through between the walls below and the room: the room's outline grown under its own walls, but stopping at
+    # the faces of the level's exterior walls (the main slab covers those)
+    if below:
+        ext_t = max((J["lines"][w]["thickness"] for w in J["lines"] if J["lines"][w]["exterior"]), default=0.2)
+        loops = B.exterior_loops(b, lid)
+        oslab = MB()
+        for r in rooms_here:
+            pts_c = B.room_polygon(b, r)
+            if any(P.point_in_polygon(B.interior_point(pts_c), loop) for loop in loops):
+                continue
+            edges = B.room_edges(b, r)
+            dists = [0.0 if not e["wall"] else (ext_t / 2 if J["lines"][e["wall"]]["exterior"] else -e["thickness"] / 2)
+                     for e in edges]
+            ring = P.inset_polygon([e["a"] for e in edges], dists, P.winding_sign(pts_c))
+            if P.signed_area(ring) < 0:
+                ring = list(reversed(ring))
+            n = len(ring)
+            for i in range(n):
+                a, c = ring[i], ring[(i + 1) % n]
+                A, C = bl(a), bl(c)
+                oslab.poly([A + Vector((0, 0, -slab_t)), C + Vector((0, 0, -slab_t)), C, A], pm, (c[1] - a[1], c[0] - a[0], 0))
+            for tri in S2.triangulate(ring):
+                oslab.poly([bl(ring[i], -slab_t) for i in reversed(tri)], pm, (0, 0, -1))
+            made.setdefault("outdoorSlabs", []).append(r["id"])
+        ob = link(oslab, "floor__slab_outdoor")
+        if ob is not None:
+            ob.location.z = elev
 
     # stairs that start on this level
-    tm = SH.floor_mat("timber", "#9a7652")
     for s in b.get("stairs", []):
         if s.get("from") != lid:
             continue
-        info = B.stair_steps(b, s)
-        n, rise = info["steps"], info["rise"]
-        d = B.DIRS[s["dir"]]
-        r = (-d[1], d[0])
-        run = s["length"] / n
-        h = s["width"] / 2
-        mb = MB()
-        x0, z0 = s["start"]
-        for i in range(n):
-            a0, a1 = i * run, (i + 1) * run
-            top = (i + 1) * rise / n
-            cs = [(x0 + d[0] * u + r[0] * v, z0 + d[1] * u + r[1] * v) for u, v in ((a0, -h), (a1, -h), (a1, h), (a0, h))]
-            pts8 = [bl(p, 0.0) for p in cs] + [bl(p, top) for p in cs]
-            mb.box8([pts8[0], pts8[1], pts8[2], pts8[3], pts8[4], pts8[5], pts8[6], pts8[7]], tm)
-        ob = link(mb, f"stair__{s['id']}", bevel_w=0.003)
-        if ob is not None:
-            ob.location.z = elev
+        if build_stair(b, s, level, coll, link, made, report) is not None:
             made["stairs"].append(s["id"])
 
     # furnishing: each room's scene, in its room frame
@@ -410,51 +760,50 @@ def build_level(b, level, coll, scenes, report):
 
 
 def roof_mesh(b, coll):
-    """The roof: explicit parts, else the roof level's exterior outline's bounding box (rectangles only)."""
+    """The roof: explicit parts, else the roof level's exterior outline's bounding box (rectangles only), each part
+    edged with a dark fascia band (FASCIA deep) so the thin roof plane reads as a roof."""
     import materials
     from mrgeo import MB
 
     roof = b.get("roof") or {}
-    lvl = B.roof_level(b)
-    if not lvl:
+    rparts = roof_parts(b)
+    if not rparts:
         return None
-    base = float(lvl.get("elevation", 0.0)) + float(lvl.get("height", 2.6))
-    parts = roof.get("parts")
-    if not parts:
-        loops = B.exterior_loops(b, lvl["id"])
-        if not loops:
-            return None
-        pts = [p for loop in loops for p in loop]
-        bb = P.bbox(pts)
-        parts = [{"outline": [[bb["min"][0], bb["min"][1]], [bb["max"][0], bb["min"][1]], [bb["max"][0], bb["max"][1]], [bb["min"][0], bb["max"][1]]], "type": roof.get("type", "gable")}]
     mat = materials.get("tile" if roof.get("finish") == "tile" else "plaster", roof.get("color", "#8a5a44"))
+    fmat = materials.get("plaster", FASCIA_COLOUR)
     mb = MB()
-    over = float(roof.get("overhang", 0.4))
-    for part in parts:
-        typ = part.get("type", roof.get("type", "gable"))
-        pitch = math.radians(float(part.get("pitch", roof.get("pitch", 25))))
-        z0 = base
-        if part.get("level"):
-            pl = B.level_by_id(b, part["level"])
-            if pl:
-                z0 = float(pl.get("elevation", 0.0)) + float(pl.get("height", 2.6))
-        bb = P.bbox(part["outline"])
-        x0, x1 = bb["min"][0] - over, bb["max"][0] + over
-        q0, q1 = bb["min"][1] - over, bb["max"][1] + over
+
+    def fascia(ring):
+        """A band hanging FASCIA below each edge of a closed ring of roof-edge points (+ the soffit under it)."""
+        n = len(ring)
+        cx = sum(p.x for p in ring) / n
+        cy = sum(p.y for p in ring) / n
+        for k in range(n):
+            p0, p1 = ring[k], ring[(k + 1) % n]
+            q0, q1 = p0.copy(), p1.copy()
+            q0.z -= FASCIA
+            q1.z -= FASCIA
+            mx, my = (p0.x + p1.x) / 2 - cx, (p0.y + p1.y) / 2 - cy
+            mb.poly([p0, p1, q1, q0], fmat, (mx, my, 0))
+        low = [p.copy() for p in ring]
+        for p in low:
+            p.z -= FASCIA
+        mb.poly(list(reversed(low)), fmat, (0, 0, -1))
+
+    for rp in rparts:
+        typ, z0, pitch = rp["typ"], rp["z0"], rp["pitch"]
+        x0, x1, q0, q1 = rp["x0"], rp["x1"], rp["q0"], rp["q1"]
         w, d = x1 - x0, q1 - q0
         # corners in Blender (plan z -> -y)
         A, Bc, C, D = bl((x0, q0), z0), bl((x1, q0), z0), bl((x1, q1), z0), bl((x0, q1), z0)
         if typ == "flat":
             mb.poly([A, Bc, C, D], mat, (0, 0, 1))
+            fascia([A, Bc, C, D])
             continue
         if typ == "skillion":
-            low = part.get("low", "south")
-            rise = math.tan(pitch) * (d if low in ("north", "south") else w)
-            lift = {"north": (0, 0, rise, rise), "south": (rise, rise, 0, 0), "west": (0, rise, rise, 0), "east": (rise, 0, 0, rise)}[low]
-            pts = [p.copy() for p in (A, Bc, C, D)]
-            for p, dz in zip(pts, lift):
-                p.z += dz
+            pts = [bl((x, q), skillion_height(rp, x, q)) for x, q in ((x0, q0), (x1, q0), (x1, q1), (x0, q1))]
             mb.poly(pts, mat, (0, 0, 1))
+            fascia(pts)
             continue
         along_x = w >= d  # ridge along the longer side
         half = (d if along_x else w) / 2
@@ -483,6 +832,7 @@ def roof_mesh(b, coll):
             else:
                 mb.poly([A, Bc, R0], mat, (0, 1, 0))
                 mb.poly([C, D, R1], mat, (0, -1, 0))
+        fascia([A, Bc, C, D])
     return mb.obj("roof", coll, bevel_w=0.0) if mb.faces else None
 
 
@@ -502,15 +852,165 @@ def site_mesh(b, coll):
         for tri in __import__("shell_v2").triangulate(poly):
             mb.poly([bl(poly[i], -0.13) for i in tri], gm, (0, 0, 1))
         made.append(mb.obj("ground", coll))
-    for a in site.get("areas", []):
+    for k_area, a in enumerate(site.get("areas", [])):
         poly = a["outline"] if P.signed_area(a["outline"]) > 0 else list(reversed(a["outline"]))
-        finish = {"drive": "concrete", "path": "paving", "deck": "timber", "lawn": "grass", "pool": "concrete"}.get(a.get("kind"), "paving")
+        finish = {"drive": "concrete", "path": "paving", "deck": "timber", "lawn": "grass", "pool": "concrete",
+                  "garden": "dirt"}.get(a.get("kind"), "paving")
         mat = SH.ground_mat(finish, a.get("color"))
         mb = MB()
+        # areas draw in order, later on top: each a couple of millimetres above the one before (no z-fighting)
+        y_area = -0.12 + 0.002 * k_area if a.get("kind") != "deck" else 0.0
         for tri in __import__("shell_v2").triangulate(poly):
-            mb.poly([bl(poly[i], -0.12 if a.get("kind") != "deck" else 0.0) for i in tri], mat, (0, 0, 1))
+            mb.poly([bl(poly[i], y_area) for i in tri], mat, (0, 0, 1))
         made.append(mb.obj(f"site__{a['id']}", coll))
+    # fences: metal / timber / picket = upright slats on a pitch (+ a top rail); masonry / glass / hedge = one panel
+    for f in site.get("fences", []):
+        h = float(f.get("height", 1.8))
+        kind = f.get("kind", "timber")
+        col = f.get("color") or {"timber": "#8a6a4a", "picket": "#f2efe8", "metal": "#2a2b2d", "masonry": "#d8d2c6",
+                                 "hedge": "#4f7a4a", "glass": "#cfe3e8"}.get(kind, "#8a6a4a")
+        fm = materials.get({"timber": "pine", "picket": "plaster", "metal": "plaster", "masonry": "plaster",
+                            "hedge": "plant", "glass": "glass"}.get(kind, "plaster"), col)
+        mb = MB()
+        line = f["line"]
+        for k in range(len(line) - 1):
+            (ax, aq), (bx, bq) = line[k], line[k + 1]
+            L = math.hypot(bx - ax, bq - aq)
+            if L < 1e-6:
+                continue
+            ux, uq = (bx - ax) / L, (bq - aq) / L
+            ang = math.atan2(-uq, ux)  # Blender: plan z -> -y
+            from mathutils import Matrix
+            if kind in ("metal", "timber", "picket"):
+                pitch, sw = (0.10, 0.05) if kind == "metal" else (0.14, 0.09)
+                n = max(1, int(L / pitch))
+                for i in range(n + 1):
+                    s_ = min(L, i * pitch)
+                    c = (ax + ux * s_, aq + uq * s_)
+                    m = Matrix.Translation(bl(c, h / 2 - 0.13)) @ Matrix.Rotation(ang, 4, "Z")
+                    mb.tbox(m, (sw, 0.025, h), fm)
+                m = Matrix.Translation(bl(((ax + bx) / 2, (aq + bq) / 2), h - 0.13 - 0.02)) @ Matrix.Rotation(ang, 4, "Z")
+                mb.tbox(m, (L, 0.04, 0.04), fm)
+            elif kind == "sheet":
+                # sheet-metal panels (Colorbond): one thin panel with a vertical rib every ~0.19 m on both faces
+                m = Matrix.Translation(bl(((ax + bx) / 2, (aq + bq) / 2), h / 2 - 0.13)) @ Matrix.Rotation(ang, 4, "Z")
+                mb.tbox(m, (L, 0.025, h), fm)
+                rib = materials.get("plaster", common_mix(col, "#ffffff", 0.1))
+                n = max(1, int(L / 0.19))
+                for i in range(1, n):
+                    c = (ax + ux * L * i / n, aq + uq * L * i / n)
+                    for off in (-0.017, 0.017):
+                        mr = Matrix.Translation(bl(c, h / 2 - 0.13)) @ Matrix.Rotation(ang, 4, "Z") @ Matrix.Translation((0, off, 0))
+                        mb.tbox(mr, (0.022, 0.01, h - 0.02), rib)
+            else:
+                m = Matrix.Translation(bl(((ax + bx) / 2, (aq + bq) / 2), h / 2 - 0.13)) @ Matrix.Rotation(ang, 4, "Z")
+                mb.tbox(m, (L, 0.06 if kind != "hedge" else 0.6, h), fm)
+        if mb.faces:
+            made.append(mb.obj(f"site__{f['id']}", coll))
+    # trees: a trunk and a lumpy canopy (palm: a tall bare trunk + a small crown; shrub: canopy only, on the ground)
+    for t in site.get("trees", []):
+        h = float(t.get("height", 6.0))
+        kind = t.get("kind", "tree")
+        spread = float(t.get("spread", h * 0.6))
+        mb = MB()
+        bark = materials.get("walnut", "#5a4636")
+        leaf = materials.get("plant", "#44613a" if kind != "pine" else "#3f5a3a")
+        base = bl(t["at"], -0.13)
+        if kind == "shrub":
+            mb.blob((base.x, base.y, base.z + h / 2), (spread / 2, spread / 2, h / 2), leaf, seed=float(sum(map(ord, t["id"])) % 97))
+        else:
+            trunk_h = h * (0.85 if kind == "palm" else 0.45)
+            mb.cyl((base.x, base.y, base.z), max(0.06, h * 0.025), trunk_h, bark, n=10, r_top=max(0.04, h * 0.015))
+            cr = spread / 2 if kind != "palm" else max(0.8, spread / 3)
+            ch = (h - trunk_h) / 2 + 0.2 if kind != "pine" else (h - trunk_h)
+            mb.blob((base.x, base.y, base.z + trunk_h + ch * 0.8), (cr, cr, max(0.4, ch)), leaf, seed=float(sum(map(ord, t["id"])) % 97))
+        made.append(mb.obj(f"site__{t['id']}", coll))
+    for f in site.get("features", []):
+        ob = site_feature(f, coll)
+        if ob is not None:
+            made.append(ob)
     return made
+
+
+# a feature's `finish` -> (material, default colour)
+FEATURE_MATS = {"render": ("plaster", "#f2f1ec"), "concrete": ("concrete", "#d3cfc7"), "stone": ("stone", "#d8d0bd"),
+                "steel": ("plaster", "#1f2022"), "timber": ("pine", "#8a6a4a"), "plant": ("plant", "#5f7d4c"),
+                "paving": ("stone", "#bdb8ae")}
+FEATURE_DEFAULT_FINISH = {"shrub": "plant", "ring": "steel", "letterbox": "steel", "disc": "stone"}
+GROUND_Y = -0.13  # the site's ground plane (the lot sits there)
+
+
+def site_feature(f, coll):
+    """One `site.features` item -> `site__<id>` (built in world coordinates; a letterbox's label is a child
+    `site__<id>__label`). Local frame: w along x, d along y (its front faces local -y = plan +z at rotY 0), h up."""
+    import bpy
+    from mathutils import Matrix
+
+    import materials
+    from mrgeo import MB
+
+    kind = f["kind"]
+    w, hgt, dep = (float(v) for v in f["size"])
+    fin = f.get("finish") or FEATURE_DEFAULT_FINISH.get(kind, "concrete")
+    base, dcol = FEATURE_MATS.get(fin, FEATURE_MATS["concrete"])
+    col = f.get("color") or dcol
+    mat = materials.get(base, col)
+    seed = float(sum(map(ord, f["id"])) % 97)
+    m = Matrix.Translation(bl(f["at"], GROUND_Y + float(f.get("y", 0.0)))) @ Matrix.Rotation(math.radians(float(f.get("rotY", 0.0))), 4, "Z")
+    oval = m @ Matrix.Diagonal((w / 2, dep / 2, 1.0, 1.0))
+    mb = MB()
+    if kind == "box":
+        mb.tbox(m, (w, dep, hgt), mat, base=True)
+    elif kind in ("cylinder", "disc"):
+        mb.lathe([(1.0, 0.0), (1.0, hgt)], mat, n=28 if kind == "disc" else 20, m=oval, smooth=True)
+    elif kind == "ring":
+        th = min(0.04, w * 0.05)
+        ri = 1.0 - 2 * th / w
+        mb.lathe([(1.0, 0.0), (1.0, hgt), (ri, hgt), (ri, hgt - 0.07)], mat, n=40, m=oval, smooth=True)
+        soil = materials.get("dirt", "#4a3a2c")
+        mb.lathe([(ri, hgt - 0.075), (ri, hgt - 0.07)], soil, n=40, m=oval, smooth=True)
+    elif kind == "shrub":
+        c = (m @ Matrix.Translation((0, 0, hgt / 2))).to_translation()
+        mb.blob((c.x, c.y, c.z), (w / 2, dep / 2, hgt / 2), mat, subdiv=3, rough=0.08, freq=2.2, seed=seed)
+    elif kind == "letterbox":
+        # a long black block: a slot and a door near the right end of its front, succulents along the top
+        mb.tbox(m, (w, dep, hgt), mat, base=True)
+        slot = materials.get("plaster", common_mix(col, "#000000", 0.5))
+        mb.tbox(m @ Matrix.Translation((w * 0.36, -dep / 2 - 0.004, hgt * 0.8)), (0.3, 0.012, 0.035), slot)
+        mb.tbox(m @ Matrix.Translation((w * 0.36, -dep / 2 - 0.004, hgt * 0.42)), (0.26, 0.012, 0.4),
+                materials.get("plaster", common_mix(col, "#ffffff", 0.06)))
+        soil = materials.get("dirt", "#4a3a2c")
+        mb.tbox(m @ Matrix.Translation((0, 0, hgt - 0.03)), (w - 0.06, dep - 0.06, 0.04), soil)
+        leaf = materials.get("plant", "#b7c4bf")  # silver-leaf succulents
+        k = max(2, int(w / 0.32))
+        for i in range(k):
+            px = -w / 2 + 0.16 + (w - 0.32) * i / max(1, k - 1)
+            c = (m @ Matrix.Translation((px, 0.03 * math.sin(i * 2.1), hgt + 0.1))).to_translation()
+            mb.blob((c.x, c.y, c.z), (0.17, 0.15, 0.13), leaf, subdiv=2, rough=0.3, freq=3.0, seed=seed + i)
+    else:
+        return None
+    ob = mb.obj(f"site__{f['id']}", coll, bevel_w=0.004 if kind in ("box", "letterbox") else 0.0)
+    if kind == "letterbox" and f.get("label"):
+        cu = bpy.data.curves.new(f"label__{f['id']}", "FONT")
+        cu.body = f["label"]
+        cu.size = min(0.26, hgt * 0.3)
+        cu.align_x, cu.align_y = "CENTER", "CENTER"
+        cu.extrude = 0.004
+        tob = bpy.data.objects.new(f"label__{f['id']}", cu)
+        coll.objects.link(tob)
+        tob.matrix_world = m @ Matrix.Translation((w * 0.12, -dep / 2 - 0.006, hgt * 0.5)) @ Matrix.Rotation(math.radians(90), 4, "X")
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(tob.evaluated_get(dg))
+        mw = tob.matrix_world.copy()
+        bpy.data.objects.remove(tob, do_unlink=True)
+        me.materials.clear()
+        me.materials.append(materials.get("plaster", "#f4f4f2"))
+        lob = bpy.data.objects.new(f"site__{f['id']}__label", me)
+        coll.objects.link(lob)
+        lob.parent = ob
+        lob.matrix_world = mw
+    return ob
 
 
 def main():

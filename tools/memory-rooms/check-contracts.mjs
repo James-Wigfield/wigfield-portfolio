@@ -135,6 +135,44 @@ bMut('an upper floor may not cut into the level below', (v) => (v.levels[1].elev
 bMut('a room side may not skip a junction node', (v) => (v.rooms[0].outline = ['a1', 'a2', 'a13', 'a12', 'a11']), ['/rooms/0/outline/1']);
 bMut('a gable ridge outside the room', (v) => (v.rooms[0].ceiling = { shape: 'gable', peak: 3.6, ridgeAt: 9 }), ['/rooms/0/ceiling/ridgeAt']);
 
+// optional exterior detail (2026-11-22, 12B Fletcher pass 2): outside.rake / outside.panels, stair finish + walls,
+// sheet fences, site.features. A house using all of them is valid; each field has a broken case.
+const detailed = (v) => {
+  v.levels[0].walls[0].outside = {
+    finish: 'render',
+    color: '#f2f1ec',
+    rake: { finish: 'timber', color: '#74462b' },
+    panels: [{ offset: 0.5, width: 1.0, sill: 0.4, height: 2.0, finish: 'timber', color: '#74462b' }, { offset: 2.0, width: 0.6, finish: 'stone' }],
+  };
+  Object.assign(v.stairs[0], { finish: 'tile', walls: 'both', wallColor: '#f2f1ec' });
+  v.site.fences = [...(v.site.fences || []), { id: 'colorbond', line: [[0, 0], [2, 0]], kind: 'sheet', color: '#1d1e20' }];
+  v.site.features = [
+    { id: 'planter', kind: 'ring', at: [1, 1], size: [1.8, 0.45, 1.8], color: '#1d1e20', finish: 'steel' },
+    { id: 'stone-1', kind: 'disc', at: [2, 2], size: [0.6, 0.05, 0.6], finish: 'stone' },
+    { id: 'post', kind: 'cylinder', at: [3, 2], size: [0.1, 2.4, 0.1] },
+    { id: 'beam', kind: 'box', at: [3, 3], y: 2.4, size: [3, 0.2, 0.1], rotY: 90, finish: 'steel' },
+    { id: 'ball', kind: 'shrub', at: [4, 3], size: [0.6, 0.5, 0.6] },
+    { id: 'letterbox', kind: 'letterbox', at: [5, 3], size: [2, 0.9, 0.5], label: '12B', color: '#1f2022' },
+  ];
+};
+{
+  const v = clone(house);
+  detailed(v);
+  jobs.push({ label: 'valid house with every optional exterior detail', kind: 'building', value: v, expect: [] });
+}
+const dMut = (label, fn, expect) => bMut(label, (v) => (detailed(v), fn(v)), expect);
+dMut('a rake has a facade finish', (v) => (v.levels[0].walls[0].outside.rake.finish = 'glitter'), ['/levels/0/walls/0/outside/rake/finish']);
+dMut('a panel may not run past its wall', (v) => (v.levels[0].walls[0].outside.panels[0].offset = 40), ['/levels/0/walls/0/outside/panels/0']);
+dMut('a panel needs a finish', (v) => delete v.levels[0].walls[0].outside.panels[1].finish, ['/levels/0/walls/0/outside/panels/1']);
+dMut('a stair finish from the list', (v) => (v.stairs[0].finish = 'glass'), ['/stairs/0/finish']);
+dMut('stair walls from the list', (v) => (v.stairs[0].walls = 'front'), ['/stairs/0/walls']);
+dMut('a stair wall colour is a hex', (v) => (v.stairs[0].wallColor = 'white'), ['/stairs/0/wallColor']);
+dMut('a fence kind from the list', (v) => (v.site.fences.at(-1).kind = 'wattle'), [`/site/fences/${house.site.fences.length}/kind`]);
+dMut('feature ids are unique', (v) => (v.site.features[1].id = 'planter'), ['/site/features/1/id']);
+dMut('a feature kind from the list', (v) => (v.site.features[0].kind = 'statue'), ['/site/features/0/kind']);
+dMut('a feature size is [w, h, d]', (v) => (v.site.features[0].size = [1.8, 0.45]), ['/site/features/0/size']);
+dMut('a feature label is short', (v) => (v.site.features[5].label = 'TWELVE B ST'), ['/site/features/5/label']);
+
 // two small buildings for the reviewer's edge cases (2026-11-21)
 const box = (id, nodes, walls, rooms) => ({
   version: 1,

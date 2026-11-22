@@ -34,6 +34,7 @@
     },
     "polygon": { "type": "array", "minItems": 3, "maxItems": 128, "items": { "$ref": "#/$defs/xz" } },
     "compass": { "enum": ["north", "south", "east", "west"] },
+    "facadeFinish": { "enum": ["render", "brick", "weatherboard", "stone", "concrete", "metal", "timber", "paint"] },
     "geo": {
       "description": "Where the plan frame sits on Earth: its origin [0, 0] is at lat/lng, and `north` is the compass bearing of plan north (-z, the plan's up), degrees clockwise from true north: 0 = the plan is drawn north-up, 90 = the plan's up points east.",
       "type": "object",
@@ -91,11 +92,36 @@
         "height": { "type": "number", "minimum": 0.3, "maximum": 30, "description": "Default: the level's height. A low wall (a balustrade, a kitchen bench wall) is shorter." },
         "exterior": { "type": "boolean", "description": "Part of the building's outer skin. The exterior walls of a level form its outline loop(s): the roof follows the largest." },
         "outside": {
+          "description": "The finish of the wall's face(s) that look outside (no room on that side, or an outdoor room).",
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "finish": { "enum": ["render", "brick", "weatherboard", "stone", "concrete", "metal", "timber", "paint"] },
-            "color": { "$ref": "#/$defs/hex" }
+            "finish": { "$ref": "#/$defs/facadeFinish" },
+            "color": { "$ref": "#/$defs/hex" },
+            "rake": {
+              "description": "Optional: the finish of the raking band between this wall's top and a skillion roof above it (default: the wall's own outside finish).",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": { "finish": { "$ref": "#/$defs/facadeFinish" }, "color": { "$ref": "#/$defs/hex" } }
+            },
+            "panels": {
+              "description": "Optional: bands of another finish on the outside face (a cladding panel beside a window). Like an opening, `offset` runs from node a along the centreline to the panel's near edge; `sill` (default 0) and `height` (default up to the wall's top) say its vertical band. Face only: no hole, and a panel may run up to a wall's end.",
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "required": ["offset", "width", "finish"],
+                "additionalProperties": false,
+                "properties": {
+                  "offset": { "type": "number", "minimum": 0, "maximum": 200 },
+                  "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 30 },
+                  "sill": { "type": "number", "minimum": 0, "maximum": 15 },
+                  "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 15 },
+                  "finish": { "$ref": "#/$defs/facadeFinish" },
+                  "color": { "$ref": "#/$defs/hex" }
+                }
+              }
+            }
           }
         }
       }
@@ -205,7 +231,10 @@
         "width": { "type": "number", "minimum": 0.5, "maximum": 4 },
         "length": { "type": "number", "minimum": 0.6, "maximum": 12 },
         "steps": { "type": "integer", "minimum": 2, "maximum": 40, "description": "Default: the rise / 0.18 m, rounded." },
-        "color": { "$ref": "#/$defs/hex" }
+        "color": { "$ref": "#/$defs/hex" },
+        "finish": { "enum": ["timber", "tile", "concrete", "steel"], "description": "Default timber (stepped blocks). tile / concrete: a solid flight with a sloping soffit, treads and risers in `color`; steel: thin plates. Walls of the `from` level inside the flight's footprint are cut to its underside." },
+        "walls": { "enum": ["none", "left", "right", "both"], "description": "Solid raking side walls (0.19 thick, 1 m above the nosings), left / right looking up the flight. Default none." },
+        "wallColor": { "$ref": "#/$defs/hex" }
       }
     },
     "roof": {
@@ -244,7 +273,7 @@
       }
     },
     "site": {
-      "description": "The lot around the building: the ground, hard and soft areas, fences and trees. Areas are drawn in order (later on top).",
+      "description": "The lot around the building: the ground, hard and soft areas, fences, trees and small features. Areas are drawn in order (later on top); a garden is a mulched bed.",
       "type": "object",
       "required": ["lot"],
       "additionalProperties": false,
@@ -285,7 +314,7 @@
               "id": { "$ref": "#/$defs/id" },
               "line": { "type": "array", "minItems": 2, "maxItems": 64, "items": { "$ref": "#/$defs/xz" } },
               "height": { "type": "number", "minimum": 0.2, "maximum": 4, "description": "Default 1.8." },
-              "kind": { "enum": ["timber", "picket", "metal", "masonry", "hedge", "glass"] },
+              "kind": { "enum": ["timber", "picket", "metal", "masonry", "hedge", "glass", "sheet"], "description": "metal = slats; sheet = ribbed sheet-metal panels (Colorbond)." },
               "color": { "$ref": "#/$defs/hex" }
             }
           }
@@ -303,6 +332,36 @@
               "height": { "type": "number", "minimum": 0.3, "maximum": 60, "description": "Default 6." },
               "spread": { "type": "number", "minimum": 0.2, "maximum": 40, "description": "Canopy diameter. Default height x 0.6." },
               "kind": { "enum": ["tree", "palm", "pine", "shrub"] }
+            }
+          }
+        },
+        "features": {
+          "description": "Small site objects: a planter, a letterbox, stepping stones, a low wall, pergola beams, clipped shrubs. `at` = the footprint centre, `y` = its base above the ground (default 0), `size` = [w, h, d] in its own frame (cylinder / ring / disc / shrub: w and d are diameters), `rotY` degrees as in scenes (0 = its front faces +z). ring = a hollow round planter (filled with soil); letterbox = a block with `label` on its front and a slot; shrub = a clipped ball. Built into exterior.glb as `site__<id>`.",
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "at", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "kind": { "enum": ["box", "cylinder", "ring", "disc", "shrub", "letterbox"] },
+              "at": { "$ref": "#/$defs/xz" },
+              "y": { "type": "number", "minimum": -5, "maximum": 30 },
+              "size": {
+                "type": "array",
+                "prefixItems": [
+                  { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+                  { "type": "number", "exclusiveMinimum": 0, "maximum": 30 },
+                  { "type": "number", "exclusiveMinimum": 0, "maximum": 60 }
+                ],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotY": { "type": "number", "minimum": -360, "maximum": 360 },
+              "color": { "$ref": "#/$defs/hex" },
+              "finish": { "enum": ["render", "concrete", "stone", "steel", "timber", "plant", "paving"] },
+              "label": { "type": "string", "minLength": 1, "maxLength": 8 }
             }
           }
         }

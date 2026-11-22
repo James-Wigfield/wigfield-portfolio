@@ -42,6 +42,7 @@ export function validateBuilding(building) {
   uniq(building.site?.areas, '/site/areas', 'area');
   uniq(building.site?.fences, '/site/fences', 'fence');
   uniq(building.site?.trees, '/site/trees', 'tree');
+  uniq(building.site?.features, '/site/features', 'feature');
   const wallAt = new Map(); // wall id -> path, building-wide
   building.levels.forEach((level, li) => {
     uniq(level.nodes, `/levels/${li}/nodes`, 'node');
@@ -63,6 +64,15 @@ export function validateBuilding(building) {
     const lines = wallLines(building, level.id);
     const pathOf = new Map(level.walls.map((w, wi) => [w.id, `${at}/walls/${wi}`]));
     for (const w of lines) if (w.length < 0.05) err(pathOf.get(w.id), `is only ${(w.length * 100).toFixed(1)} cm long`);
+    // outside panels (face-only finish bands) fit on their wall
+    for (const w of lines) {
+      (w.spec?.outside?.panels || []).forEach((p, pi) => {
+        const at = `${pathOf.get(w.id)}/outside/panels/${pi}`;
+        const sill = p.sill ?? 0;
+        if (p.offset + p.width > w.length + 0.001) err(at, `runs ${(p.offset + p.width - w.length).toFixed(2)} m past the end of wall "${w.id}" (${w.length.toFixed(2)} m)`);
+        if (sill + (p.height ?? 0) > w.height + 0.001 || sill >= w.height) err(at, `its top (${(sill + (p.height ?? 0)).toFixed(2)} m) is above wall "${w.id}" (${w.height} m)`);
+      });
+    }
     for (let i = 0; i < lines.length; i++) {
       for (let j = i + 1; j < lines.length; j++) {
         const p = lines[i];

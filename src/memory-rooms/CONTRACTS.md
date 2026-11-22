@@ -233,9 +233,12 @@ geo?       { lat, lng, north }   plan origin [0, 0] on Earth; north = compass be
 levels[]   { id, name?, elevation, height, slab?, nodes: [{ id, at: [x, z] }], walls: [{ id, a, b, thickness?, height?, exterior?, outside? }] }
 rooms[]    { id, name, level, outline: [nodeId…], kind?, floor?, walls?, ceiling?, spotIds?: [spotId…] }
 openings[] { id, wall, type: door | window | opening | garage, offset, width, height, sill?, swing?, hinge?, open?, color? }
-stairs[]   { id, from, to, start: [x, z], dir: north | south | east | west, width, length, steps? }
+stairs[]   { id, from, to, start: [x, z], dir: north | south | east | west, width, length, steps?, color?,
+             finish?: timber | tile | concrete | steel, walls?: none | left | right | both, wallColor? }
 roof?      { type: gable | hip | skillion | flat, pitch?, overhang?, ridge?, low?, level?, height?, finish?, color?, parts?[] }
-site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | lawn | garden | pool | water), fences?[], trees?[] }
+site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | lawn | garden | pool | water), fences?[], trees?[],
+             features?[]: { id, kind: box | cylinder | ring | disc | shrub | letterbox, at: [x, z], y?, size: [w, h, d], rotY?, color?, finish?, label? } }
+wall.outside? { finish?, color?, rake?: { finish?, color? }, panels?: [{ offset, width, sill?, height?, finish, color? }] }
 ```
 
 - **Plan frame** = x east, z south, y up (the scene frame, building-wide). A level's floor is at y = `elevation`.
@@ -266,7 +269,21 @@ site?      { lot: polygon, ground?, areas?[] (drive | path | paving | deck | law
   `length` m further on, `width` wide (`stairFootprint`: corners in the climber's order, which winds the other way to
   rooms). `steps` = risers (default rise / 0.18 m rounded half up, the same in JS and Python); the last lands on the
   `to` floor, so a tread's going = length / (steps − 1). The `to` level's floor gets a
-  hole over the footprint (no void room needed).
+  hole over the footprint (no void room needed). Optional (2026-11-22): `finish` (default timber = stepped blocks;
+  tile / concrete = a solid flight with a sloping soffit, treads and risers in `color`; steel = plates), `walls`
+  (solid raking side walls 0.19 thick, 1 m above the nosings, left / right looking up the flight, in `wallColor`;
+  from the ground outside the `from` level's exterior loop, from the flight's underside over its rooms). Walls and
+  ceilings of the `from` level inside the footprint of a non-timber flight are cut down to its underside.
+- **Outside finishes** (`wall.outside`) go on the faces that look outside (no room on that side, or an outdoor room).
+  Optional (2026-11-22): `rake` = the finish of the raking band between the wall's top and a skillion roof above it;
+  `panels` = face-only bands of another finish (a cladding panel beside a window), placed like an opening (`offset`
+  from node a along the centreline, `width`, `sill` default 0, `height` default up to the top) but with no hole and
+  no clearance rule, so a panel may run to a wall's end and sit hard against a window. A panel must fit its wall.
+- **Site features** are small objects on the ground (`y` above it, default 0): `size` = [w, h, d] in the feature's
+  frame (round kinds: w and d are diameters), `rotY` as in scenes. ring = a hollow round planter with soil;
+  letterbox = a block with `label` (≤ 8 chars) and a slot on its front; shrub = a clipped ball. Built into
+  exterior.glb as `site__<id>`. Fences may also be `sheet` (ribbed sheet metal); a `garden` area is a mulched bed;
+  areas draw in order, each a few mm above the one before.
 - **Roof**: the outline is split into rectangles (or `parts` give them, on the walls' centrelines like everything else,
   each optionally on its own `level` with its own type: a single-storey wing), each gets its own roof and they merge
   (valleys where they meet). Eaves at `height` above the level's floor (default its height), the overhang (default

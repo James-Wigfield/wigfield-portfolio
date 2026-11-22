@@ -277,6 +277,7 @@ def validate_building(b) -> list[tuple[str, str]]:
     uniq(site.get("areas"), "/site/areas", "area")
     uniq(site.get("fences"), "/site/fences", "fence")
     uniq(site.get("trees"), "/site/trees", "tree")
+    uniq(site.get("features"), "/site/features", "feature")
     wall_at = {}
     for li, level in enumerate(b["levels"]):
         uniq(level["nodes"], f"/levels/{li}/nodes", "node")
@@ -298,6 +299,15 @@ def validate_building(b) -> list[tuple[str, str]]:
                 err(f"{at}/walls/{wi}", "a wall needs two different nodes")
         lines = wall_lines(b, level["id"])
         path_of = {w["id"]: f"{at}/walls/{wi}" for wi, w in enumerate(level["walls"])}
+        # outside panels (face-only finish bands) fit on their wall
+        for w in lines:
+            for pi, pnl in enumerate(((w["spec"].get("outside") or {}).get("panels") or [])):
+                pat = f"{path_of[w['id']]}/outside/panels/{pi}"
+                sill = pnl.get("sill", 0.0)
+                if pnl["offset"] + pnl["width"] > w["length"] + 0.001:
+                    err(pat, f'runs past the end of wall "{w["id"]}"')
+                if sill + pnl.get("height", 0.0) > w["height"] + 0.001 or sill >= w["height"]:
+                    err(pat, f'its top is above wall "{w["id"]}"')
         for w in lines:
             if w["length"] < 0.05:
                 err(path_of[w["id"]], f"is only {w['length'] * 100:.1f} cm long")

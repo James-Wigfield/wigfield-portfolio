@@ -90,6 +90,29 @@ A whole place is a building row (`/memories/b/<id>`): the phone captured its nam
 
 Self-test of the whole pipeline (no real data): `node tools/memory-rooms/building-selftest.mjs`.
 
+Learned on 12B Fletcher St (`memory-rooms-work/b-001c25b7…/`, reuse its helpers):
+- A **vector builder PDF** traces exactly: PyMuPDF (`pip install --target <scratchpad>/pylib pymupdf`) gives the red
+  dimension ticks and the labels, so each chain resolves to mm (`trace.py` there writes building.json from them).
+  WA window sizes are brick courses × width (28c = 2.408 m).
+- Nothing in the pipeline shows the whole house from the street: `compose.py` (both level blends + the exterior, Cycles,
+  cameras at the photo positions) + `sheet.py` is the compare loop; `glbview.py` shows the baked GLBs unlit as the viewer
+  does; `live-shot.mjs` screenshots the live page's four stages.
+- `wall.outside` finishes, raking walls under a skillion, fascias, garage doors, fences and trees are built (DECISIONS
+  178–181). Level bakes are exposed for the interiors, so a sun mood bakes shaded outer walls navy: use
+  `style.mood: "overcast"` until that's fixed (DECISIONS 182).
+- Pass 2 (DECISIONS 183–188) added optional contract fields; reach for them before hacking geometry:
+  `wall.outside.panels[]` (a cladding band beside a window: placed like an opening, no hole, no clearance rule, so it
+  can sit hard against the window; DON'T split the wall at a node for this, an opening must clear half the other
+  wall's thickness even at a straight joint), `wall.outside.rake` (the band under a skillion), stair `finish`
+  (tile / concrete = solid flight + soffit; the `from` level's walls inside its footprint are cut to the soffit) and
+  `walls` (raking side walls), `site.features[]` (planters, stepping stones, letterbox with a label, pergola beams, a
+  white canopy slab, clipped shrubs), fence kind `sheet` (Colorbond). An upper level's outdoor room gets its own slab.
+- Elevations decide finishes: a plan chain says where a panel is, A.06 says how tall (the 990 panel only runs
+  39c..63c). Check every cladding face against the elevations AND a photo; pass 1 had the box's west face reversed.
+- `compose.py <work> <round> <samples> [cam,cam]` takes a camera list; `x-*` cameras are inspection views (under the
+  balcony, the stair head, inside the MP strip) that only render when named. Plants render pale in Cycles: pick
+  shrub colours a notch darker than the photo (#4d5a47 grey-green, #2b3f26 leafy).
+
 ## Quality bar
 
 A polished, stylised miniature that is recognisably THAT place: right proportions, right furniture in the right spots, right colours, the memory's object pinned. Not photoreal. Every spot shares one look (the kit's materials and lighting); don't fight it with odd exposure settings unless the photos are clearly night or golden hour (`style.mood`).

@@ -77,11 +77,15 @@ class PolyWallFrame:
                  P_(u0, v1, w0), P_(u1, v1, w0), P_(u1, v1, w1), P_(u0, v1, w1)], mat)
 
 
-def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat):
-    """shell._wall_slab for a PolyWallFrame: a gridded slab with clean holes, mitred ends, section-coloured caps."""
+def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat, imat=None, omat=None, bands=None):
+    """shell._wall_slab for a PolyWallFrame: a gridded slab with clean holes, mitred ends, section-coloured caps.
+    imat / omat (optional) replace wmat on the w = 0 / w = t face (a building wall's outside finish).
+    bands (optional): [{a, b, s, h, imat?, omat?}] = rectangles of another material on a face (cladding panels);
+    the grid is cut at their edges so they sit exactly, and a band that reaches u = 0 / L runs to the mitred end."""
     L, t = F.L, F.t
-    U = sorted({0.0, L, *[o["a"] for o in holes], *[o["b"] for o in holes]})
-    V = sorted({0.0, H, *[o["s"] for o in holes], *[o["h"] for o in holes]})
+    bands = bands or []
+    U = sorted({0.0, L, *[o["a"] for o in holes], *[o["b"] for o in holes], *[x["a"] for x in bands], *[x["b"] for x in bands]})
+    V = sorted({0.0, H, *[o["s"] for o in holes], *[o["h"] for o in holes], *[x["s"] for x in bands], *[x["h"] for x in bands]})
     nU, nV = len(U), len(V)
 
     def solid(i, j):
@@ -89,6 +93,13 @@ def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat):
             return False
         uc, vc = (U[i] + U[i + 1]) / 2, (V[j] + V[j + 1]) / 2
         return not any(o["a"] < uc < o["b"] and o["s"] < vc < o["h"] for o in holes)
+
+    def band_mat(i, j, key):
+        uc, vc = (U[i] + U[i + 1]) / 2, (V[j] + V[j + 1]) / 2
+        for x in bands:
+            if x.get(key) is not None and x["a"] < uc < x["b"] and x["s"] < vc < x["h"]:
+                return x[key]
+        return None
 
     P_, uo = F.P, F.uo
     inn, out = F.N(0, 0, -1), F.N(0, 0, 1)
@@ -98,8 +109,8 @@ def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat):
             if not solid(i, j):
                 continue
             u0, u1, v0, v1 = U[i], U[i + 1], V[j], V[j + 1]
-            mb.poly([P_(u0, v0, 0), P_(u1, v0, 0), P_(u1, v1, 0), P_(u0, v1, 0)], wmat, inn)
-            mb.poly([P_(uo(u0), v0, t), P_(uo(u1), v0, t), P_(uo(u1), v1, t), P_(uo(u0), v1, t)], wmat, out)
+            mb.poly([P_(u0, v0, 0), P_(u1, v0, 0), P_(u1, v1, 0), P_(u0, v1, 0)], band_mat(i, j, "imat") or imat or wmat, inn)
+            mb.poly([P_(uo(u0), v0, t), P_(uo(u1), v0, t), P_(uo(u1), v1, t), P_(uo(u0), v1, t)], band_mat(i, j, "omat") or omat or wmat, out)
     for i in range(nU):
         for j in range(nV - 1):
             ls, rs = solid(i - 1, j), solid(i, j)
