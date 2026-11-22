@@ -73,6 +73,7 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
 | scan | `scan` (ignored) | `spots/<id>/scan.spz` |
 | model | `room` (any other name too) | `spots/<id>/model/room.glb`: the baked room the viewer shows |
 | model | `map` | `spots/<id>/model/map.glb`: its small copy for the map's 3D dioramas (§4) |
+| model | `empty` | `spots/<id>/model/empty.glb`: a building room's EMPTY bake, a texture-only GLB (§6.4). Uploaded only to a Worker whose ping lists `"empty"` in `models` (an older one stores every model name as room.glb) |
 | render | name `[a-z0-9-]+` | `spots/<id>/renders/<name>.png` (`hero`, `marker`, `top`, `three-quarter`, `cam1`…) |
 | compare | name `[a-z0-9-]+` | `spots/<id>/compare/<name>.png` (`compare`, `round1`…) |
 
@@ -90,7 +91,7 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 
 | Method & path | Body | Response |
 |---|---|---|
-| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map"] } }` (the gate's password check; scripts upload `model/map` only when `models` has `"map"`: an older Worker stores every model name as room.glb) |
+| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map", "empty"], features: ["buildings", "empty", "place-walk"] } }` (the gate's password check; scripts upload `model/map` / `model/empty` only when `models` has it: an older Worker stores every model name as room.glb. `features`: `buildings` once the building tables answer, `empty` = the empty / furnished bake (§6.4), `place-walk` = walking a whole place) |
 | `GET /api/memories/spots` | `?deleted=1` includes soft-deleted | `{ data: [Spot…] }` newest `capturedAt` first, media with signed urls |
 | `GET /api/memories/spots/:id` | – | `{ data: Spot }` (404 if missing) |
 | `POST /api/memories/spots` | Spot capture fields incl. client `id` | `{ data: Spot }` 201 new / 200 existing. **Create once**: a POST for an id that already exists changes nothing and returns the stored row, so a retry never duplicates and never resets anything, and a late outbox re-send can't undo an edit. Every later change goes through PATCH. |
@@ -101,7 +102,9 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 | `GET /api/memories/file/<r2Key>` | bearer or `?t=` | the bytes, with `content-type`, `etag`, `cache-control: private, max-age=3600` |
 | `POST /api/memories/spots/:id/walk` | `{ who: "james"\|"justin" }` | `{ data: { ticket, expiresAt, socket: "/api/memories/walk/ws?t=<ticket>" } }`: a signed ticket for walking this spot's room together, valid **120 s** (to connect; the socket then lives on). 404 if the spot doesn't exist, 400 for a bad `who`. |
 | `GET /api/memories/spots/:id/walk` | – | `{ data: { people: [{ who, since }] } }`: who is walking this room right now (one entry per person) |
-| `GET /api/memories/walk/ws?t=<ticket>` | WebSocket upgrade, **no bearer** (browsers can't send one on a WebSocket) | 101 into the spot's walk room (Durable Object `MemoryWalkRoom`, one per spot id). No ticket: 401; a bad or expired one: 403; not an upgrade: 426. Messages: `workers/memory-walk.js` header. Nothing is stored: the room keeps only who's connected. |
+| `GET /api/memories/walk/ws?t=<ticket>` | WebSocket upgrade, **no bearer** (browsers can't send one on a WebSocket) | 101 into the walk room (Durable Object `MemoryWalkRoom`, one per spot id, or per whole place keyed `b:<buildingId>`). No ticket: 401; a bad or expired one: 403; not an upgrade: 426. Messages: `workers/memory-walk.js` header (a state carries `l`, the walker's level id in a place). Nothing is stored: the room keeps only who's connected. |
+| `POST /api/memories/buildings/:id/walk` | `{ who }` | as the spot's, for walking the whole place: a ticket `b:<id>.<who>.<exp>.<sig>` (HMAC of `walk\|b:<id>\|<who>\|<exp>`), so a place's room can never be a spot's. 404 if the place doesn't exist |
+| `GET /api/memories/buildings/:id/walk` | – | `{ data: { people: [{ who, since, level? }] } }`: who is walking the place now, and on which level |
 
 PATCH checks (POST shares the location and date ones; each `details` entry starts with the field it's about,
 so a form can show it next to that field):
@@ -128,6 +131,11 @@ Clients: browser `src/memory-rooms/lib/api.js`, Node `tools/memory-rooms/lib/api
 - Exceptions, by **material name prefix**:
   - `glass…` → viewer draws `MeshBasicMaterial({ color: baseColorFactor, transparent, opacity: 0.18 })`.
   - `emit…` → viewer draws `MeshBasicMaterial({ color: emissive or baseColor })` (lamp shades, signs, screens).
+- **What a node is** (2026-11-22): every node a bake exports carries glTF extras `mrKind: "structure" | "furniture"`
+  (three.js `userData.mrKind`): walls, hubs, floors, ceilings, stairs, slabs, roof, site, ground = structure; every
+  scene object (`obj__<id>`, a building's `room__<room>__obj__<id>`) and its parts = furniture. The viewer reads the
+  nearest labelled ancestor; a GLB baked before the label falls back to the name rule (a node named `obj__…` or
+  `room__<room>__obj__…`, or under one, is furniture). `viewer/furnishing.js`.
 - **Node names** (Blender object names; avoid `.` `:` `/` `[` `]` and spaces, three.js strips them):
   - `floor`, `ceiling`, `ground` (exterior plate).
   - `wall_north`, `wall_south`, `wall_east`, `wall_west` — every mesh that belongs to a wall (wall slab, skirting,
@@ -373,3 +381,35 @@ wall.outside? { finish?, color?, rake?: { finish?, color? }, panels?: [{ offset,
   everything into the room frame, and gives each of its walls `mrWall.normal` = the outward normal from that room. Floors are built facing up (a fan over a positive outline faces down: reverse it). `exterior.glb`: `roof` (one mesh, every part), `ground`,
   `site__<areaId>` (fences and trees: not built yet). No `model/map` for a building yet (the map shows its marker).
   Several spots in one room's `spotIds` each get the same slice (the first room scene found furnishes it).
+
+### 6.5 Every level in one plan (2026-11-22, the standard for a multi-level place)
+
+`building/planLayout.js` `levelPlanLayout(building, aspect, { gap = 1.8, ids })` is the ONE arrangement every
+multi-level plan uses (pure; `building-selftest.mjs` checks it on 12B Fletcher and a synthetic 3-level case):
+
+- Levels lowest first: left → right when the view is wide (`aspect >= 1`, `direction: 'row'`), top → bottom when
+  it is portrait (`'column'`). Same scale, same plan north, nothing rotated: a level only ever MOVES by `offset`.
+- Cells: the union of every level's footprint (walls ± half their thickness), one per level at a fixed pitch (the
+  union's extent along the axis + `gap`). So each level sits where it sits on the plan, registered with the
+  levels beside it (aligned on the shared plan origin); a smaller level leaves its cell partly empty.
+- `levels[i] = { id, name, index, elevation, offset: [dx, dz], cell: { min, max }, box: { min, max } }`;
+  `bounds` = all of it. `levelAtLayoutPoint(lay, [x, z])` → `{ id, plan: [x, z] }` maps a layout point back.
+- The 3D plan (`viewer/buildingStage.js`): each level's holder moves to `[dx, −elevation, dz]` (every floor on the
+  drafting table, so one world cut plane at `CUT_Y` clips them all), its section cap from building.json, a label
+  (its name, Recall mono small caps) above its cell's north-west corner, the drafting table moved under the whole
+  layout without a contact shadow. A tap subtracts the hit level's holder position: the plan point on that level.
+
+### 6.6 Walking a whole place (2026-11-22)
+
+`/memories/b/:id/walk` (`pages/WalkPage.jsx` `PlaceWalkPage`, `walk/WalkGame.js` `loadPlace`):
+
+- Every level GLB is a floor (plan frame, absolute y) with its own walkable grid: the band (0.15–1.7 m) is
+  measured from the level's floor; every `door` / `opening` / `garage` of the level (sill ≤ 0.2) is cleared through
+  its wall (the bake shuts door leaves), and a flight's footprint is blocked on its `to` level (the hole).
+- A flight (`stairs[]`) is walked in one dimension: a step toward it within 0.75 m of its foot (on `from`) or its
+  head (on `to`), heading within ~60° of along it, puts you on it; y = lerp(from, to elevation, u / length); you
+  are on `from` for the lower half and `to` for the upper; stepping off either end lands you on that level's grid.
+- The floors above yours hide; the exterior's site shows, its roof does not. Photo marks and seats come from every
+  captured room's scene, moved by its room frame's origin (`roomFrame`).
+- The walk room is `MemoryWalkRoom` keyed `b:<buildingId>`; a state's `p` is plan-frame with absolute y and `l` is
+  the level id. You draw only the people whose `l` is yours; the others are listed ("Justin is upstairs").

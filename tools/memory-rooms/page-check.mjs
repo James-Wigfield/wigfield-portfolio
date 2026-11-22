@@ -22,8 +22,10 @@
                until "Change location", then 1; offline; ?map=atlas; two phones (409); leaving asks
                (page-check-edit.mjs; it puts every spot it edits back)
      console   zero console errors and zero page errors on every screen
-     extras    then ar-check, fly-check, walk-check and walk-mp-check as their own processes (logs in
-               _page-check/<name>-<scheme>.log); --no-extras skips them, --python goes to ar-check
+     extras    then ar-check, fly-check, walk-check, walk-mp-check, viewer-upgrades-check (theme, spin,
+               furnished) and place-walk-check (a whole place, two players, stairs) as their own processes (logs
+               in _page-check/<name>-<scheme>.log; exit 2 = nothing to check here, counted as skipped);
+               --no-extras skips them, --python goes to ar-check
    Screenshots → memory-rooms-work/_page-check/. Exit 1 if anything fails.
    Needs at least one rendered spot with a model (seed-dev.mjs --examples-only gives two). */
 
@@ -725,6 +727,8 @@ if (!args.includes('--no-extras')) {
     ['fly-check.mjs', []],
     ['walk-check.mjs', []],
     ['walk-mp-check.mjs', []],
+    ['viewer-upgrades-check.mjs', []],
+    ['place-walk-check.mjs', []],
   ];
   for (const [file, more] of extra) {
     const script = path.join(here, file);
@@ -737,6 +741,10 @@ if (!args.includes('--no-extras')) {
     const pass = (out.match(/^✓/gm) || []).length;
     const fails = out.split(/\r?\n/).filter((l) => l.startsWith('✗'));
     fs.writeFileSync(path.join(OUT, `${file.replace(/\.mjs$/, '')}-${scheme}.log`), out);
+    if (run.status === 2 && !pass && !fails.length) {
+      record(`${file}: skipped (nothing to check here)`, true, out.trim().split(String.fromCharCode(10)).pop());
+      continue;
+    }
     record(`${file}: ${pass} passed, ${fails.length} failed`, run.status === 0 && fails.length === 0, fails.slice(0, 3).join(' | ') || (run.status ? `exit ${run.status}` : ''));
   }
 }
