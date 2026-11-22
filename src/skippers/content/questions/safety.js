@@ -1077,4 +1077,30 @@ export default [
     why: 'Flares, EPIRBs, PLBs, EVDS, fire extinguishers and inflatable lifejackets all have expiry or service dates. Anchor rope is checked for wear but has no expiry date.',
     cover: ['maintenance-schedule', 'flares'],
   },
+  // ── Extinguisher colour bands (p.65) — gap found in the ABC course cross-check ──
+  {
+    id: 'safety-080',
+    topic: 'safety',
+    page: 65,
+    q: 'Your fire extinguisher is red with a white band. What is in it?',
+    options: ['Foam', 'Dry powder', 'Carbon dioxide', 'Water'],
+    answer: 1,
+    why: 'In the workbook’s extinguisher chart, dry powder has a white band, carbon dioxide a black band, foam a blue band and vaporising liquid a yellow band.',
+    cover: ['extinguishers'],
+  },
+  {
+    id: 'safety-081',
+    topic: 'safety',
+    page: 65,
+    q: 'A red extinguisher with a black band contains carbon dioxide. Which fire is it generally NOT suitable for?',
+    options: [
+      'A small fire in an enclosed space',
+      'An electrical fire',
+      'An outdoor fire on an open deck',
+      'A fire you can reach easily',
+    ],
+    answer: 2,
+    why: 'The workbook says carbon dioxide is generally not suitable for outdoor fires and suits only small fires, because the gas blows away.',
+    cover: ['extinguishers'],
+  },
 ]

@@ -870,4 +870,35 @@ export default [
     why: 'With the mast lowered, a yacht rolls more violently. Avoid passing near the bridges, stay well clear and reduce your wake. When overtaking you must keep out of its way anyway.',
     cover: ['collision-overtaking'],
   },
+  // ── Channels kept clear (p.12) — gap found in the ABC course cross-check ──
+  {
+    id: 'rules-066',
+    topic: 'rules',
+    page: 12,
+    q: 'Where are crab nets, cray pots and their floats NOT allowed without DTMI permission?',
+    options: [
+      'Within 400 m of shore',
+      'In any channel, fairway or passage',
+      'In water deeper than 20 m',
+      'Inside a marine park sanctuary zone only',
+    ],
+    answer: 1,
+    why: 'Nets, pots, marker buoys and any other buoyed object are not allowed in a channel, fairway or passage without DTMI permission. Anchoring and mooring there are banned too, unless you are in distress.',
+    cover: ['speed-8kn'],
+  },
+  {
+    id: 'rules-067',
+    topic: 'rules',
+    page: 12,
+    q: 'You want a quick break while fishing near a channel beacon. May you tie your boat to it?',
+    options: [
+      'Yes, if you stay aboard',
+      'Yes, during daylight only',
+      'No, you must never secure a vessel to a beacon or other navigation aid',
+      'Only if the beacon is unlit',
+    ],
+    answer: 2,
+    why: 'You must not secure a vessel to a beacon or any other navigation aid.',
+    cover: ['speed-8kn'],
+  },
 ]

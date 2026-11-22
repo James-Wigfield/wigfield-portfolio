@@ -497,4 +497,35 @@ export default [
     why: 'GPS is invaluable for reporting your position, but carry a chart and compass as back-up so you can still fix your position and find a course home.',
     cover: ['trip-planning'],
   },
+  // ── Weather (p.78–79) — gaps found in the ABC course cross-check ──
+  {
+    id: 'operations-038',
+    topic: 'operations',
+    page: 78,
+    q: 'Which three things decide how big wind waves get?',
+    options: [
+      'Air temperature, tide height and moon phase',
+      'Wind speed, how long it has blown (duration) and how far over open water it blows (fetch)',
+      'Wind direction only',
+      'Water depth, water temperature and salinity',
+    ],
+    answer: 1,
+    why: 'Wave height depends on wind speed, the length of time the wind blows (duration) and how far over the water it blows (fetch).',
+    cover: ['weather'],
+  },
+  {
+    id: 'operations-039',
+    topic: 'operations',
+    page: 79,
+    q: 'A cold front is about to pass over you. What weather does it usually bring?',
+    options: [
+      'Squalls and rain as it passes, then showers behind it, with a change in wind direction',
+      'Light winds and clear skies',
+      'Fog and glassy water',
+      'A steady sea breeze',
+    ],
+    answer: 0,
+    why: 'Cold fronts usually bring squalls and rain as they pass, followed by showers. The wind usually changes direction at the front.',
+    cover: ['weather'],
+  },
 ]
