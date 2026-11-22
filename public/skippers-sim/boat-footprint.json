@@ -1,0 +1,63 @@
+{
+ "frame": "boat frame: x = starboard, y = forward (bow), metres, origin midships on the centreline at the waterline; three.js: x = x, z = -y",
+ "length": 5.5,
+ "beam": 2.2,
+ "draftHull": 0.3,
+ "draftLegDown": 1.31,
+ "deckZ": 0.3,
+ "sheerZ": [
+  0.78,
+  1.02
+ ],
+ "outboardPivot": [
+  0.0,
+  -2.88,
+  0.62
+ ],
+ "poly": [
+  [
+   1.02,
+   -2.75
+  ],
+  [
+   1.08,
+   -1.75
+  ],
+  [
+   1.1,
+   -0.5
+  ],
+  [
+   0.88,
+   1.75
+  ],
+  [
+   0.55,
+   2.4
+  ],
+  [
+   0.0,
+   2.75
+  ],
+  [
+   -0.55,
+   2.4
+  ],
+  [
+   -0.88,
+   1.75
+  ],
+  [
+   -1.1,
+   -0.5
+  ],
+  [
+   -1.08,
+   -1.75
+  ],
+  [
+   -1.02,
+   -2.75
+  ]
+ ]
+}

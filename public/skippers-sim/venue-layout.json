@@ -1,0 +1,1271 @@
+{
+ "provisional": false,
+ "generatedBy": "tools/skippers-sim/layout.mjs",
+ "origin": {
+  "lat": -32.27532,
+  "lon": 115.71691,
+  "note": "jetty head (seaward end of the centre jetty), eastern Palm Beach ramp, Rockingham"
+ },
+ "rampHeadingDeg": 17,
+ "ramp": {
+  "width": 11.5,
+  "laneWidth": 4.9,
+  "toeS": -23,
+  "topS": -62,
+  "slope": 0.12,
+  "note": "s = metres along the axis (seaward +), t = across (east +): P(s,t) = s*[sin h, cos h] + t*[cos h, -sin h]. Concrete continues ~10 m below MWL past the toe.",
+  "lanes": [
+   {
+    "id": "west",
+    "poly": [
+     [
+      -23.63,
+      -57.61
+     ],
+     [
+      -18.94,
+      -59.04
+     ],
+     [
+      -4.61,
+      -12.18
+     ],
+     [
+      -9.3,
+      -10.75
+     ]
+    ]
+   },
+   {
+    "id": "east",
+    "poly": [
+     [
+      -17.31,
+      -59.54
+     ],
+     [
+      -12.63,
+      -60.97
+     ],
+     [
+      1.7,
+      -14.11
+     ],
+     [
+      -2.99,
+      -12.68
+     ]
+    ]
+   }
+  ]
+ },
+ "jetty": {
+  "length": 33,
+  "width": 1.7,
+  "deckHeight": 0.8,
+  "deckHeightRoot": 1.5,
+  "poly": [
+   [
+    -10.46,
+    -31.31
+   ],
+   [
+    -8.84,
+    -31.81
+   ],
+   [
+    0.81,
+    -0.25
+   ],
+   [
+    -0.81,
+    0.25
+   ]
+  ],
+  "cleats": [
+   {
+    "name": "cleat_e1",
+    "x": 0.11,
+    "y": -2.13,
+    "side": "east"
+   },
+   {
+    "name": "cleat_w1",
+    "x": -1.28,
+    "y": -1.7,
+    "side": "west"
+   },
+   {
+    "name": "cleat_e2",
+    "x": -1.64,
+    "y": -7.86,
+    "side": "east"
+   },
+   {
+    "name": "cleat_w2",
+    "x": -3.04,
+    "y": -7.44,
+    "side": "west"
+   },
+   {
+    "name": "cleat_e3",
+    "x": -3.4,
+    "y": -13.6,
+    "side": "east"
+   },
+   {
+    "name": "cleat_w3",
+    "x": -4.79,
+    "y": -13.17,
+    "side": "west"
+   },
+   {
+    "name": "cleat_e4",
+    "x": -5.15,
+    "y": -19.34,
+    "side": "east"
+   },
+   {
+    "name": "cleat_w4",
+    "x": -6.55,
+    "y": -18.91,
+    "side": "west"
+   }
+  ],
+  "lightPole": {
+   "x": -0.12,
+   "y": -0.38,
+   "h": 6
+  },
+  "note": "deck level at 0.8 m from the head to s = -23 (ramp toe), then rises with the ramp to the root at s = -33. Green FRP grating deck, black posts along the east edge."
+ },
+ "berths": [
+  {
+   "id": "east",
+   "edge": [
+    [
+     -5.62,
+     -21.29
+    ],
+    [
+     0.52,
+     -1.2
+    ]
+   ],
+   "outward": [
+    0.956,
+    -0.292
+   ],
+   "note": "east lane side"
+  },
+  {
+   "id": "west",
+   "edge": [
+    [
+     -7.25,
+     -20.79
+    ],
+    [
+     -1.11,
+     -0.71
+    ]
+   ],
+   "outward": [
+    -0.956,
+    0.292
+   ],
+   "note": "west lane side"
+  }
+ ],
+ "colliders": [
+  {
+   "name": "jetty_centre",
+   "kind": "jetty",
+   "poly": [
+    [
+     -10.46,
+     -31.31
+    ],
+    [
+     -8.84,
+     -31.81
+    ],
+    [
+     0.81,
+     -0.25
+    ],
+    [
+     -0.81,
+     0.25
+    ]
+   ]
+  },
+  {
+   "name": "rock_west",
+   "kind": "rock",
+   "poly": [
+    [
+     -24.52,
+     -18.64
+    ],
+    [
+     -24.45,
+     -40.63
+    ],
+    [
+     -18.95,
+     -42.31
+    ],
+    [
+     -12.66,
+     -21.75
+    ]
+   ]
+  },
+  {
+   "name": "rock_east",
+   "kind": "rock",
+   "poly": [
+    [
+     -8.62,
+     -47.87
+    ],
+    [
+     -3.6,
+     -49.41
+    ],
+    [
+     1.41,
+     -42.57
+    ],
+    [
+     3.26,
+     -23.9
+    ],
+    [
+     -0.93,
+     -22.72
+    ]
+   ]
+  },
+  {
+   "name": "ramp_lane_west",
+   "kind": "ramp",
+   "poly": [
+    [
+     -23.63,
+     -57.61
+    ],
+    [
+     -18.94,
+     -59.04
+    ],
+    [
+     -7.54,
+     -21.75
+    ],
+    [
+     -12.22,
+     -20.31
+    ]
+   ]
+  },
+  {
+   "name": "ramp_lane_east",
+   "kind": "ramp",
+   "poly": [
+    [
+     -17.31,
+     -59.54
+    ],
+    [
+     -12.63,
+     -60.97
+    ],
+    [
+     -1.23,
+     -23.68
+    ],
+    [
+     -5.91,
+     -22.24
+    ]
+   ]
+  },
+  {
+   "name": "shore_w_01",
+   "kind": "shore",
+   "poly": [
+    [
+     -460,
+     -25
+    ],
+    [
+     -250,
+     -36
+    ],
+    [
+     -250,
+     24
+    ],
+    [
+     -460,
+     35
+    ]
+   ]
+  },
+  {
+   "name": "shore_w_02",
+   "kind": "shore",
+   "poly": [
+    [
+     -250,
+     -36
+    ],
+    [
+     -112,
+     -41
+    ],
+    [
+     -112,
+     19
+    ],
+    [
+     -250,
+     24
+    ]
+   ]
+  },
+  {
+   "name": "shore_w_03",
+   "kind": "shore",
+   "poly": [
+    [
+     -112,
+     -41
+    ],
+    [
+     -78,
+     -62
+    ],
+    [
+     -78,
+     -2
+    ],
+    [
+     -112,
+     19
+    ]
+   ]
+  },
+  {
+   "name": "shore_w_04",
+   "kind": "shore",
+   "poly": [
+    [
+     -78,
+     -62
+    ],
+    [
+     -40,
+     -77
+    ],
+    [
+     -40,
+     -17
+    ],
+    [
+     -78,
+     -2
+    ]
+   ]
+  },
+  {
+   "name": "shore_w_05",
+   "kind": "shore",
+   "poly": [
+    [
+     -40,
+     -77
+    ],
+    [
+     -22,
+     -83
+    ],
+    [
+     -22,
+     -23
+    ],
+    [
+     -40,
+     -17
+    ]
+   ]
+  },
+  {
+   "name": "shore_e_01",
+   "kind": "shore",
+   "poly": [
+    [
+     3,
+     -100
+    ],
+    [
+     30,
+     -110
+    ],
+    [
+     30,
+     -50
+    ],
+    [
+     3,
+     -40
+    ]
+   ]
+  },
+  {
+   "name": "shore_e_02",
+   "kind": "shore",
+   "poly": [
+    [
+     30,
+     -110
+    ],
+    [
+     80,
+     -119
+    ],
+    [
+     80,
+     -59
+    ],
+    [
+     30,
+     -50
+    ]
+   ]
+  },
+  {
+   "name": "shore_e_03",
+   "kind": "shore",
+   "poly": [
+    [
+     80,
+     -119
+    ],
+    [
+     212,
+     -148
+    ],
+    [
+     212,
+     -88
+    ],
+    [
+     80,
+     -59
+    ]
+   ]
+  },
+  {
+   "name": "shore_e_04",
+   "kind": "shore",
+   "poly": [
+    [
+     212,
+     -148
+    ],
+    [
+     338,
+     -185
+    ],
+    [
+     338,
+     -125
+    ],
+    [
+     212,
+     -88
+    ]
+   ]
+  },
+  {
+   "name": "shore_e_05",
+   "kind": "shore",
+   "poly": [
+    [
+     338,
+     -185
+    ],
+    [
+     470,
+     -206
+    ],
+    [
+     470,
+     -146
+    ],
+    [
+     338,
+     -125
+    ]
+   ]
+  },
+  {
+   "name": "shore_w_rockjoin",
+   "kind": "shore",
+   "poly": [
+    [
+     -40,
+     -77
+    ],
+    [
+     -22,
+     -83
+    ],
+    [
+     -22,
+     -23
+    ],
+    [
+     -24.52,
+     -18.64
+    ],
+    [
+     -40,
+     -17
+    ]
+   ]
+  },
+  {
+   "name": "shore_e_rockjoin",
+   "kind": "shore",
+   "poly": [
+    [
+     -3.6,
+     -49.41
+    ],
+    [
+     3,
+     -100
+    ],
+    [
+     3.26,
+     -23.9
+    ]
+   ]
+  },
+  {
+   "name": "closed_groyne_west",
+   "kind": "closed_ramp",
+   "poly": [
+    [
+     -104,
+     -20
+    ],
+    [
+     -99.5,
+     -20
+    ],
+    [
+     -96.5,
+     16
+    ],
+    [
+     -101,
+     16
+    ]
+   ]
+  },
+  {
+   "name": "closed_ramp_west",
+   "kind": "closed_ramp",
+   "poly": [
+    [
+     -118,
+     -24
+    ],
+    [
+     -105,
+     -24
+    ],
+    [
+     -104,
+     2
+    ],
+    [
+     -117,
+     2
+    ]
+   ]
+  },
+  {
+   "name": "palm_beach_jetty",
+   "kind": "jetty",
+   "poly": [
+    [
+     337.3066179011727,
+     -156.85014317709494
+    ],
+    [
+     340.6933820988273,
+     -157.14985682290506
+    ],
+    [
+     350.6933820988273,
+     -44.14985682290507
+    ],
+    [
+     347.3066179011727,
+     -43.85014317709493
+    ]
+   ]
+  },
+  {
+   "name": "moored_01",
+   "kind": "moored",
+   "poly": [
+    [
+     36.85,
+     95.92
+    ],
+    [
+     37.61,
+     99.41
+    ],
+    [
+     35.81,
+     99.9
+    ],
+    [
+     34.72,
+     96.49
+    ],
+    [
+     35.29,
+     94.34
+    ]
+   ]
+  },
+  {
+   "name": "moored_02",
+   "kind": "moored",
+   "poly": [
+    [
+     17.68,
+     136.02
+    ],
+    [
+     20.48,
+     141.16
+    ],
+    [
+     18.15,
+     142.56
+    ],
+    [
+     14.93,
+     137.67
+    ],
+    [
+     14.68,
+     134.14
+    ]
+   ]
+  },
+  {
+   "name": "moored_03",
+   "kind": "moored",
+   "poly": [
+    [
+     87.85,
+     134.09
+    ],
+    [
+     90.2,
+     139.45
+    ],
+    [
+     87.75,
+     140.64
+    ],
+    [
+     84.97,
+     135.49
+    ],
+    [
+     85.03,
+     131.96
+    ]
+   ]
+  },
+  {
+   "name": "moored_04",
+   "kind": "moored",
+   "poly": [
+    [
+     155.01,
+     138.17
+    ],
+    [
+     156.88,
+     143.71
+    ],
+    [
+     154.34,
+     144.69
+    ],
+    [
+     152.02,
+     139.31
+    ],
+    [
+     152.39,
+     135.8
+    ]
+   ]
+  },
+  {
+   "name": "moored_05",
+   "kind": "moored",
+   "poly": [
+    [
+     172.83,
+     79.9
+    ],
+    [
+     173.66,
+     83.39
+    ],
+    [
+     171.86,
+     83.9
+    ],
+    [
+     170.72,
+     80.51
+    ],
+    [
+     171.24,
+     78.36
+    ]
+   ]
+  },
+  {
+   "name": "moored_06",
+   "kind": "moored",
+   "poly": [
+    [
+     140.5,
+     47.72
+    ],
+    [
+     142.25,
+     50.84
+    ],
+    [
+     140.66,
+     51.83
+    ],
+    [
+     138.63,
+     48.88
+    ],
+    [
+     138.54,
+     46.67
+    ]
+   ]
+  },
+  {
+   "name": "moored_07",
+   "kind": "moored",
+   "poly": [
+    [
+     204.81,
+     33.07
+    ],
+    [
+     207.25,
+     38.39
+    ],
+    [
+     204.83,
+     39.63
+    ],
+    [
+     201.96,
+     34.52
+    ],
+    [
+     201.96,
+     30.99
+    ]
+   ]
+  },
+  {
+   "name": "moored_08",
+   "kind": "moored",
+   "poly": [
+    [
+     246.98,
+     82.15
+    ],
+    [
+     248.95,
+     87.66
+    ],
+    [
+     246.42,
+     88.68
+    ],
+    [
+     244.01,
+     83.35
+    ],
+    [
+     244.31,
+     79.83
+    ]
+   ]
+  },
+  {
+   "name": "moored_09",
+   "kind": "moored",
+   "poly": [
+    [
+     69.14,
+     206.24
+    ],
+    [
+     70.62,
+     211.91
+    ],
+    [
+     68.02,
+     212.7
+    ],
+    [
+     66.08,
+     207.18
+    ],
+    [
+     66.68,
+     203.7
+    ]
+   ]
+  },
+  {
+   "name": "moored_10",
+   "kind": "moored",
+   "poly": [
+    [
+     134.61,
+     199
+    ],
+    [
+     137.59,
+     204.03
+    ],
+    [
+     135.31,
+     205.51
+    ],
+    [
+     131.92,
+     200.74
+    ],
+    [
+     131.55,
+     197.23
+    ]
+   ]
+  },
+  {
+   "name": "moored_11",
+   "kind": "moored",
+   "poly": [
+    [
+     212.78,
+     168.06
+    ],
+    [
+     215.31,
+     173.33
+    ],
+    [
+     212.91,
+     174.61
+    ],
+    [
+     209.95,
+     169.56
+    ],
+    [
+     209.89,
+     166.03
+    ]
+   ]
+  },
+  {
+   "name": "moored_12",
+   "kind": "moored",
+   "poly": [
+    [
+     316.95,
+     209.13
+    ],
+    [
+     319.01,
+     214.61
+    ],
+    [
+     316.51,
+     215.67
+    ],
+    [
+     314,
+     210.38
+    ],
+    [
+     314.24,
+     206.86
+    ]
+   ]
+  },
+  {
+   "name": "moored_13",
+   "kind": "moored",
+   "poly": [
+    [
+     -281.9,
+     166.22
+    ],
+    [
+     -280.32,
+     171.86
+    ],
+    [
+     -282.9,
+     172.7
+    ],
+    [
+     -284.94,
+     167.21
+    ],
+    [
+     -284.39,
+     163.72
+    ]
+   ]
+  },
+  {
+   "name": "moored_14",
+   "kind": "moored",
+   "poly": [
+    [
+     -288.43,
+     242.99
+    ],
+    [
+     -285.36,
+     247.97
+    ],
+    [
+     -287.61,
+     249.49
+    ],
+    [
+     -291.08,
+     244.78
+    ],
+    [
+     -291.52,
+     241.27
+    ]
+   ]
+  }
+ ],
+ "water": {
+  "poly": [
+   [
+    -300,
+    -160
+   ],
+   [
+    360,
+    -160
+   ],
+   [
+    360,
+    460
+   ],
+   [
+    -300,
+    460
+   ]
+  ],
+  "note": "playable box; land is cut out by the shore/rock/ramp colliders"
+ },
+ "moorings": [
+  {
+   "name": "mooring_01",
+   "x": 36,
+   "y": 97,
+   "len": 5.5,
+   "headingDeg": 195,
+   "kind": "runabout"
+  },
+  {
+   "name": "mooring_02",
+   "x": 17,
+   "y": 138,
+   "len": 9,
+   "headingDeg": 211,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_03",
+   "x": 87,
+   "y": 136,
+   "len": 9,
+   "headingDeg": 206,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_04",
+   "x": 154,
+   "y": 140,
+   "len": 9,
+   "headingDeg": 201,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_05",
+   "x": 172,
+   "y": 81,
+   "len": 5.5,
+   "headingDeg": 196,
+   "kind": "runabout"
+  },
+  {
+   "name": "mooring_06",
+   "x": 140,
+   "y": 49,
+   "len": 5.5,
+   "headingDeg": 212,
+   "kind": "runabout"
+  },
+  {
+   "name": "mooring_07",
+   "x": 204,
+   "y": 35,
+   "len": 9,
+   "headingDeg": 207,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_08",
+   "x": 246,
+   "y": 84,
+   "len": 9,
+   "headingDeg": 202,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_09",
+   "x": 68,
+   "y": 208,
+   "len": 9,
+   "headingDeg": 197,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_10",
+   "x": 134,
+   "y": 201,
+   "len": 9,
+   "headingDeg": 213,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_11",
+   "x": 212,
+   "y": 170,
+   "len": 9,
+   "headingDeg": 208,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_12",
+   "x": 316,
+   "y": 211,
+   "len": 9,
+   "headingDeg": 203,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_13",
+   "x": -283,
+   "y": 168,
+   "len": 9,
+   "headingDeg": 198,
+   "kind": "yacht"
+  },
+  {
+   "name": "mooring_14",
+   "x": -289,
+   "y": 245,
+   "len": 9,
+   "headingDeg": 214,
+   "kind": "yacht"
+  }
+ ],
+ "transits": [
+  {
+   "id": "t1",
+   "front": {
+    "name": "jetty_light_pole",
+    "x": -0.12,
+    "y": -0.38,
+    "h": 6
+   },
+   "back": {
+    "name": "big_tree_behind_ramp",
+    "x": -4.4,
+    "y": -96,
+    "h": 13
+   },
+   "bearingDeg": 182,
+   "sayAs": "the jetty light pole lined up with the big round tree in the park behind the ramp: run in from the moorings on about 182°"
+  },
+  {
+   "id": "t2",
+   "front": {
+    "name": "jetty_light_pole",
+    "x": -0.12,
+    "y": -0.38,
+    "h": 6
+   },
+   "back": {
+    "name": "norfolk_pine_a",
+    "x": 97,
+    "y": -117,
+    "h": 24
+   },
+   "bearingDeg": 140,
+   "sayAs": "the jetty light pole lined up with the tall Norfolk pine on the Esplanade (the cluster east of the ramp): run in from the north-west on about 140°"
+  },
+  {
+   "id": "t3",
+   "front": {
+    "name": "palm_beach_jetty_head_light",
+    "x": 349,
+    "y": -44,
+    "h": 4.5
+   },
+   "back": {
+    "name": "norfolk_pine_b",
+    "x": 380,
+    "y": -175,
+    "h": 22
+   },
+   "bearingDeg": 166,
+   "provisional": true,
+   "sayAs": "the Palm Beach jetty head light lined up with the Norfolk pine behind its root: run south toward the long jetty on about 166°"
+  }
+ ],
+ "landmarks": [
+  {
+   "name": "palm_beach_jetty",
+   "x": 344,
+   "y": -100,
+   "head": [
+    349,
+    -44
+   ],
+   "root": [
+    339,
+    -157
+   ],
+   "length": 114
+  },
+  {
+   "name": "closed_west_ramp",
+   "x": -108,
+   "y": -6,
+   "note": "CLOSED for renovation: fenced, do not use"
+  },
+  {
+   "name": "polo_beach",
+   "x": -60,
+   "y": -30
+  },
+  {
+   "name": "rotary_beach_front_toilets",
+   "x": -161,
+   "y": -21
+  },
+  {
+   "name": "garden_island",
+   "x": -3900,
+   "y": 7400,
+   "bearingDeg": 332,
+   "distanceM": 8400,
+   "note": "4–13 km NW; visual proxy in the GLB is bearing-true but pulled in to 2.5 km"
+  },
+  {
+   "name": "kwinana_industrial",
+   "x": 3500,
+   "y": 7000,
+   "bearingDeg": 27,
+   "note": "industrial shoreline far NE; visual proxy at 2.5 km"
+  },
+  {
+   "name": "pano_hkJyp6FInXYqglHZyQVZDA",
+   "x": -15.1,
+   "y": -41.2,
+   "note": "Street View (Jul 2024) on the ramp"
+  }
+ ],
+ "swimArea": null,
+ "pines": [
+  {
+   "name": "norfolk_pine_a",
+   "x": 97,
+   "y": -117,
+   "h": 24
+  },
+  {
+   "name": "norfolk_pine_c",
+   "x": 57,
+   "y": -108,
+   "h": 20
+  },
+  {
+   "name": "norfolk_pine_d",
+   "x": 116,
+   "y": -127,
+   "h": 23
+  },
+  {
+   "name": "norfolk_pine_e",
+   "x": 136,
+   "y": -129,
+   "h": 21
+  },
+  {
+   "name": "norfolk_pine_f",
+   "x": 194,
+   "y": -144,
+   "h": 22
+  },
+  {
+   "name": "norfolk_pine_b",
+   "x": 380,
+   "y": -175,
+   "h": 22
+  }
+ ]
+}

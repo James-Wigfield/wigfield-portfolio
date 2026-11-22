@@ -120,6 +120,7 @@ export const LEVELS = [
     steps: [
       { id: 'tasks', label: 'The 11 tasks', kind: 'custom', view: 'Tasks' },
       { id: 'say', label: 'Say it out loud', kind: 'custom', view: 'Scripts' },
+      { id: 'drive', label: 'Drive it', kind: 'custom', view: 'Drive' },
     ],
   },
   { id: 'exam', slug: 'exam', n: 10, title: 'Exam room', short: 'Exam room', steps: [] },

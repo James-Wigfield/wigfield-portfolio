@@ -9,10 +9,11 @@ import { LateralLab, CardinalLab, OtherMarksLab } from './MarksLabs';
 import { GearLab, FlareLab } from './GearLabs';
 import { FlotationLab, ScopeLab, StabilityLab, CallsLab } from './OpsLabs';
 import { Tasks, Scripts } from './Practical';
+import Drive from './Drive';
 
 export const LABS = {
   LightsLab, LightsChallenge, GiveWayLab, SoundLab, ScheduleLab, AgeLab, SpeedLab,
   LateralLab, CardinalLab, OtherMarksLab, GearLab, FlareLab, FlotationLab, ScopeLab, StabilityLab, CallsLab,
 };
 
-export const VIEWS = { Tasks, Scripts };
+export const VIEWS = { Tasks, Scripts, Drive };

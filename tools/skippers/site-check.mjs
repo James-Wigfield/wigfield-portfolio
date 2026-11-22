@@ -48,12 +48,13 @@ async function checkView(page, u, w, theme) {
   if (process.env.VERBOSE) console.log('→', u, w, theme);
   await page.goto(base + u, { waitUntil: 'load', timeout: 60000 });
   await page.waitForSelector('.sk-main article, .sk-main .sk-hero, .sk-main .sk-lhead', { timeout: 30000 }).catch(() => {});
+  if (u.endsWith('/drive')) await page.waitForSelector('.sim-menu', { timeout: 30000 }).catch(() => {}); // the sim is a lazy chunk
   await new Promise((r) => setTimeout(r, 350));
   const info = await page.evaluate(() => ({
     over: document.documentElement.scrollWidth - window.innerWidth,
     robots: document.querySelector('meta[name="robots"]')?.content ?? '',
     h1: document.querySelector('h1')?.textContent ?? '',
-    stage: !!document.querySelector('.sk-stage, .sk-facts, .sk-cards, .sk-quiz, .sk-task, .sk-plan, .sk-cram, .sk-modes, .sk-drillgrid, .sk-script'),
+    stage: !!document.querySelector('.sk-stage, .sk-facts, .sk-cards, .sk-quiz, .sk-task, .sk-plan, .sk-cram, .sk-modes, .sk-drillgrid, .sk-script, .sim-menu'),
   }));
   const tag = `${u} @${w} ${theme}`;
   if (info.over > 0) fails.push(`${tag}: horizontal overflow ${info.over}px`);
