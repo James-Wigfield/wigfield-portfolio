@@ -12,7 +12,7 @@ import { tripDayOf } from '../../lib/trip.js';
 import { usePlaceTitle } from '../../lib/places.js';
 import { personName } from '../../lib/spots.js';
 import { useViewerState } from '../../viewer/useViewer.js';
-import { ModeToggle, PlanToggle } from '../../viewer/ViewerControls.jsx';
+import { FurnishedToggle, ModeToggle, PlanToggle } from '../../viewer/ViewerControls.jsx';
 import PhotoStrip from './PhotoStrip.jsx';
 
 // AR is its own chunk (and pulls the USDZ exporter / WebXR / QR code only on demand).
@@ -79,10 +79,16 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
         )}
       </header>
 
-      {(showControls || canPlan || vstate.plan) && (
+      {(showControls || canPlan || vstate.plan || vstate.canEmpty) && (
         <section className="mr-spot__controls">
           {showControls && <ModeToggle mode={vstate.mode} disabled={!viewer} onChange={(m) => viewer?.setMode(m)} />}
           {(canPlan || vstate.plan) && <PlanToggle on={Boolean(vstate.plan)} disabled={!viewer} onChange={(on) => viewer?.setPlan(on)} />}
+          {vstate.canEmpty && (
+            <div className="mr-ctl">
+              <span className="mr-label">{COPY.viewer.furnishingLabel}</span>
+              <FurnishedToggle viewer={viewer} />
+            </div>
+          )}
         </section>
       )}
 

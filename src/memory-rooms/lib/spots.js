@@ -13,7 +13,7 @@ export function heroOf(spot) {
 
 /** The baked room GLB the viewer shows (model/room), never its small map copy (model/map). */
 export function roomModelOf(spot) {
-  return mediaNamed(spot, 'model', 'room') || mediaOf(spot, 'model').find((m) => m.name !== 'map') || null;
+  return mediaNamed(spot, 'model', 'room') || mediaOf(spot, 'model').find((m) => m.name !== 'map' && m.name !== 'empty') || null;
 }
 
 /** The GLB the map stands up close: model/map (512 px textures, compressed), else room.glb. */

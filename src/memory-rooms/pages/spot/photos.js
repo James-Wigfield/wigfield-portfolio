@@ -49,6 +49,8 @@ export function viewerSource(spot) {
     posterLowUrl: kind === 'model' ? first?.thumb || null : null,
     photos: spotPhotos(spot).map(({ photo, url, thumb, width, height }) => ({ photo, url, thumb, width, height })),
     scanUrl: scan?.url || null,
+    // a room of a whole place: its empty bake (furniture off), loaded on first use
+    emptyUrl: kind === 'model' && spot.buildingId ? mediaNamed(spot, 'model', 'empty')?.url || null : null,
   };
 }
 

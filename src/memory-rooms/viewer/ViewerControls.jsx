@@ -44,6 +44,55 @@ export function PlanToggle({ on, onChange, disabled }) {
   );
 }
 
+/**
+ * Spin: the slow turntable. A labelled dot (filled while it turns); it reads the viewer's state, so a drag or a
+ * viewpoint that stops the turn shows here at once.
+ */
+export function SpinToggle({ viewer, className = '' }) {
+  const vstate = useViewerState(viewer);
+  const ready = !!viewer && vstate.state === 'ready' && vstate.mode !== 'scan';
+  const on = Boolean(vstate.spin);
+  return (
+    <button
+      type="button"
+      className={`mr-btn mr-btn--quiet mr-spin ${className}`.trim()}
+      data-mr="spin"
+      aria-pressed={on}
+      disabled={!ready}
+      title={copy.spinHint}
+      onClick={() => viewer?.setSpin(!on)}
+    >
+      <span className="mr-spin__dot" aria-hidden="true" />
+      {copy.spin}
+    </button>
+  );
+}
+
+/**
+ * Furnished: the room (or the whole place) with or without its furniture, the walls and floors on their own clean
+ * bake. Shown only where an empty bake exists (state.canEmpty).
+ */
+export function FurnishedToggle({ viewer, className = '' }) {
+  const vstate = useViewerState(viewer);
+  if (!vstate.canEmpty) return null;
+  const ready = !!viewer && vstate.state === 'ready';
+  const on = vstate.furnished !== false;
+  return (
+    <button
+      type="button"
+      className={`mr-btn mr-btn--quiet mr-spin mr-furnished ${className}`.trim()}
+      data-mr="furnished"
+      aria-pressed={on}
+      disabled={!ready}
+      title={copy.furnishedHint}
+      onClick={() => viewer?.setFurnished(!on)}
+    >
+      <span className="mr-spin__dot" aria-hidden="true" />
+      {copy.furnished}
+    </button>
+  );
+}
+
 export function BlendSlider({ value, onChange }) {
   return (
     <label className="mr-blend">
@@ -111,9 +160,12 @@ export function StageBar({ viewer, cameras = [], thumbs = {}, homeLabel }) {
             </div>
           </div>
         )}
-        <button type="button" className="mr-btn mr-btn--quiet mr-stagebar__home" data-mr="home-view" disabled={!ready} onClick={() => viewer?.home()}>
-          {active != null ? copy.home : homeLabel || copy.reset}
-        </button>
+        <div className="mr-stagebar__end">
+          {active == null && <SpinToggle viewer={viewer} />}
+          <button type="button" className="mr-btn mr-btn--quiet mr-stagebar__home" data-mr="home-view" disabled={!ready} onClick={() => viewer?.home()}>
+            {active != null ? copy.home : homeLabel || copy.reset}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -205,12 +205,30 @@ export function buildDraftingGround({ radius, centre, box, cell = 0.5, major = 2
   mesh.position.set(centre[0], -0.012, centre[1]);
   mesh.renderOrder = -1;
   mesh.raycast = () => {};
+  let shadowOn = 1;
+  let shadowBase = 0.16;
   mesh.setColor = (ink, { minor = 0.1, major = 0.2, shadow: s = 0.16 } = {}, shade = ink) => {
     mat.uniforms.uInk.value.copy(ink);
     mat.uniforms.uShade.value.copy(shade);
     mat.uniforms.uMinor.value = minor;
     mat.uniforms.uMajor.value = major;
-    mat.uniforms.uShadow.value = s * shadow;
+    shadowBase = s;
+    mat.uniforms.uShadow.value = s * shadow * shadowOn;
+  };
+  /** Move the table under something else (a building's plan laid out side by side): centre, radius, the contact
+   * shadow's box (null = no shadow). With no argument it goes back to where it was built. */
+  const home = { centre: [...centre], radius, box: { min: [...box.min], max: [...box.max] } };
+  mesh.setFoot = ({ centre: c = home.centre, radius: r = home.radius, box: b = home.box } = home) => {
+    mesh.position.set(c[0], -0.012, c[1]);
+    mesh.scale.setScalar(r / radius);
+    mat.uniforms.uCentre.value.set(c[0], c[1]);
+    mat.uniforms.uRadius.value = r;
+    shadowOn = b ? 1 : 0;
+    if (b) {
+      mat.uniforms.uBoxMin.value.set(b.min[0], b.min[1]);
+      mat.uniforms.uBoxMax.value.set(b.max[0], b.max[1]);
+    }
+    mat.uniforms.uShadow.value = shadowBase * shadow * shadowOn;
   };
   return mesh;
 }

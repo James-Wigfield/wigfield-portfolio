@@ -270,6 +270,7 @@ export const COPY = {
     viewLabel: 'Look at it',
     stages: { outside: 'Outside', inside: 'Inside', plan: 'Plan', levels: 'Levels' },
     levelLabel: 'Level',
+    levelSlider: 'Open the house at a level',
     hint: 'Tap a room to go into it.',
     notCaptured: (room) => `${room} has no photos yet: capture it from the list below.`,
   },
@@ -477,6 +478,11 @@ export const COPY = {
     viewpoint: (n) => `View from photo ${n}`,
     home: 'Back to the room',
     reset: 'Reset view',
+    spin: 'Spin',
+    spinHint: 'A slow turn round the room. Drag to stop it.',
+    furnished: 'Furnished',
+    furnishingLabel: 'Furniture',
+    furnishedHint: 'Show the rooms with or without their furniture',
     blendLabel: 'Blend the model and the photo',
     blendModel: 'Model',
     blendPhoto: 'Photo',
@@ -517,6 +523,17 @@ export const COPY = {
     pageTitle: (title) => `Walk in · ${title}`,
     back: 'Spot',
     backLabel: 'Back to the spot',
+    backPlace: 'Place',
+    backPlaceLabel: 'Back to the place',
+    linkPlaceLabel: (title) => `Walk through ${title} as your character`,
+    herePlace: (names) => `${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} walking here`,
+    noPlace: 'This place gets its 3D levels after the trip. Walking in comes with them.',
+    loadingPlace: 'Opening the place…',
+    // who is on another level: "Justin is upstairs", "Justin is on the Ground floor"
+    away: (list) =>
+      list
+        .map((a) => `${a.name} is ${a.where === 'up' ? 'upstairs' : a.where === 'down' ? 'downstairs' : `on the ${a.level || 'other level'}`}`)
+        .join(' · '),
     loading: 'Opening the room…',
     noRoomTitle: 'Nothing to walk yet.',
     noRoom: 'This spot gets its 3D room after the trip. Walking in comes with it.',

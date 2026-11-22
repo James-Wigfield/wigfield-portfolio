@@ -7,6 +7,9 @@
      v.loadGroup({ rooms: [{ id, scene, glbUrl }] });
      v.setMode('model' | 'scan');   v.flyToPhoto(n);   v.setBlend(0..1);
      v.home();   v.focusRoom(id);   v.retry();   v.setSize(w, h);
+     v.setSpin(true | false);      // the slow turntable (state.spin); a drag, a viewpoint or a hidden tab stops it
+     v.setFurnished(true | false); // furniture on / off with the empty bake's atlases (state.furnished, state.canEmpty;
+                                   // spec.emptyUrl / rooms[].emptyUrl = the texture-only empty GLB, furnishing.js)
      const off = v.on('state' | 'viewpoint' | 'pin' | 'room' | 'interact', fn);
      v.dispose();
 
@@ -36,6 +39,7 @@ import { DISSOLVE_MS, MIN_RECALL_MS, ROOM_FADE_MS, buildRecall, roomMaterials, s
 import { resolveShell } from '../scene/shell.js';
 import { loadScan } from './scan.js';
 import { disposeTree } from './dispose.js';
+import { disposeFurnishing, emptyMapsFrom, indexFurnishing, setFurnitureShown, swapAtlases } from './furnishing.js';
 
 const RAD = Math.PI / 180;
 const _north = new THREE.Vector3(0, 0, -1);
@@ -48,6 +52,8 @@ const FOCUS_MS = 700;
 const PHOTO_FADE_MS = 420;
 const DEFAULT_BLEND = 1; // arriving at a viewpoint shows the real photo
 const TAP_PX = 6;
+const SPIN_TURN_S = 75; // one slow turn of the turntable, seconds
+const SPIN_RAMP_MS = 1800; // eased up to speed / down to a stop
 
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -115,10 +121,13 @@ export class RoomViewer {
     this.scanLoading = null;
     this.occlusionDirty = false;
     this.raf = 0;
+    this.spin = null; // { on, speed (rad/s) } while the turntable runs or eases out
+    this.furnished = true; // false = furniture hidden, structure on its empty bake (furnishing.js)
+    this.emptyLoads = 0; // how many empty texture sets were fetched (the checks: once per room)
     this.width = Math.max(1, container.clientWidth);
     this.height = Math.max(1, container.clientHeight);
 
-    this.stateSnap = { state: 'loading', progress: 0, error: null, mode: 'model', baseMode: 'model', hasScan: false, isGroup: false };
+    this.stateSnap = { state: 'loading', progress: 0, error: null, mode: 'model', baseMode: 'model', hasScan: false, isGroup: false, spin: false };
     this.vpSnap = { photo: null, blend: DEFAULT_BLEND, flying: false };
 
     container.dataset.mr = 'viewer';
@@ -201,6 +210,7 @@ export class RoomViewer {
     this.tick = this.tick.bind(this);
     this.onControlsStart = () => {
       this.userMoved = true;
+      this.stopSpin(true); // a drag, a pinch or the wheel takes the camera back
       for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
       this.emit('interact', {});
     };
@@ -299,7 +309,12 @@ export class RoomViewer {
       isGroup: this.isGroup,
       plan: this.plan,
       canPlan: this.mode !== 'scan' && this.rooms.some((r) => r.interior),
+      spin: Boolean(this.spin?.on),
+      furnished: this.furnished,
+      canEmpty: this.mode !== 'scan' && this.rooms.some((r) => r.emptyUrl),
     });
+    this.container.dataset.furnished = this.furnished ? 'on' : 'off';
+    this.container.dataset.spin = this.spin?.on ? 'on' : 'off';
     this.container.dataset.state = snap.state;
     this.container.dataset.mode = this.mode;
     this.container.dataset.plan = this.plan ? 'on' : 'off';
@@ -356,7 +371,7 @@ export class RoomViewer {
         disposeTree(root);
         return;
       }
-      this.addRoom({ id: 'room', root, scene: spec.scene, frame: null });
+      this.addRoom({ id: 'room', root, scene: spec.scene, frame: null, emptyUrl: spec.emptyUrl || null });
       if (this.recall && this.recall.token === token) this.finishRecall();
       else this.finishLoad({ reveal: true });
     } catch (err) {
@@ -526,7 +541,7 @@ export class RoomViewer {
       return;
     }
     for (const { r, root } of loaded) {
-      if (root) this.addRoom({ id: r.id, root, scene: r.scene, frame: r.scene?.frame || null });
+      if (root) this.addRoom({ id: r.id, root, scene: r.scene, frame: r.scene?.frame || null, emptyUrl: r.glbUrl ? r.emptyUrl || null : null });
     }
     if (!this.rooms.length) return this.setStatus('main', 'error', { error: new Error('empty group') });
     this.finishLoad({ reveal: true });
@@ -548,7 +563,7 @@ export class RoomViewer {
     throw new Error('nothing to show');
   }
 
-  addRoom({ id, root, scene, frame }) {
+  addRoom({ id, root, scene, frame, emptyUrl = null }) {
     const holder = new THREE.Group();
     holder.name = `room__${id}`;
     holder.userData.roomId = id;
@@ -569,7 +584,9 @@ export class RoomViewer {
     const centre = shell
       ? holder.localToWorld(new THREE.Vector3((shell.box.min[0] + shell.box.max[0]) / 2, shell.height / 2, (shell.box.min[1] + shell.box.max[1]) / 2))
       : box.getCenter(new THREE.Vector3());
-    this.rooms.push({ id, holder, root, scene, interior, ...index, box, centre, shell });
+    // structure vs furniture (glTF extras mrKind, else the name rules) and the empty bake to swap to
+    const furnishing = indexFurnishing(root);
+    this.rooms.push({ id, holder, root, scene, interior, ...index, box, centre, shell, furnishing, emptyUrl });
   }
 
   finishLoad({ reveal, keepPose = false, ready = true }) {
@@ -857,6 +874,7 @@ export class RoomViewer {
     if (this.plan) this.setPlan(false, { animate: false });
     const cam = (this.spec?.scene?.cameras || []).find((c) => c.photo === Number(n));
     if (!cam) return false;
+    this.stopSpin(true);
     const photo = (this.spec.photos || []).find((p) => p.photo === cam.photo);
     const aspect = photo?.width && photo?.height ? photo.width / photo.height : cam.aspect ?? 0.75;
 
@@ -942,6 +960,7 @@ export class RoomViewer {
     // stop a little short of the eye point, looking along the photo's line
     const dir = look.clone().sub(eye).normalize();
     const to = { pos: eye.clone().addScaledVector(dir, -0.6).setY(eye.y + 0.35), target: look };
+    this.stopSpin(true);
     this.controls.enabled = false;
     this.diving = true;
     return new Promise((resolve) => {
@@ -1044,6 +1063,7 @@ export class RoomViewer {
     const want = mode === 'scan' ? 'scan' : this.baseMode;
     if (want === this.mode) return;
     if (want === 'scan' && !this.spec?.scanUrl) return;
+    this.stopSpin(true);
     if (this.plan) this.setPlan(false, { animate: false });
     if (this.view !== 'orbit' || this.flying) this.exitViewpointNow();
     for (const tw of this.tweens) if (tw.kind === 'orbit') this.tweens.delete(tw);
@@ -1345,7 +1365,10 @@ export class RoomViewer {
 
   setRoomVisible(id, on) {
     const r = this.roomById(id);
-    if (!r || r.holder.visible === on) return;
+    if (!r) return;
+    r.shown = on;
+    on = on && (r.alpha ?? 1) > 0.01;
+    if (r.holder.visible === on) return;
     r.holder.visible = on;
     this.occlusionDirty = true;
     this.requestRender();
@@ -1358,6 +1381,51 @@ export class RoomViewer {
     r.holder.position.y = y;
     r.holder.updateMatrixWorld(true);
     this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  /** Move a whole room (a level) to [x, y, z] (world metres): the plan's side-by-side levels. */
+  setRoomPosition(id, [x, y, z]) {
+    const r = this.roomById(id);
+    if (!r) return;
+    r.holder.position.set(x, y, z);
+    r.holder.updateMatrixWorld(true);
+    this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  /** Fade a whole room (a level lifting away) to alpha a, on top of its dollhouse fades; ~0 hides it. */
+  setRoomFade(id, a) {
+    const r = this.roomById(id);
+    if (!r) return;
+    a = clamp01(a);
+    if (a === (r.alpha ?? 1)) return;
+    r.alpha = a;
+    r.holder.visible = a > 0.01 && r.shown !== false;
+    this.requestRender();
+  }
+
+  /** The drafting table under a building's plan layout ({ centre, radius, box | null }), or back home (no arg). */
+  setGround(foot) {
+    this.ground?.setFoot?.(foot);
+    this.requestRender();
+  }
+
+  /**
+   * Labels drawn over the stage at world points (a level's name above its plan): [{ id, text, at: [x, y, z] }].
+   * Mono small caps in the Recall style, placed every frame; [] clears them.
+   */
+  setLabels(list = []) {
+    for (const l of this.labels || []) l.el.remove();
+    this.labels = list.map(({ id, text, at }) => {
+      const el = document.createElement('span');
+      el.className = 'mr-stagelabel mr-label';
+      el.dataset.mr = 'stage-label';
+      el.dataset.id = id;
+      el.textContent = text;
+      this.overlay.append(el);
+      return { id, el, pos: new THREE.Vector3(...at) };
+    });
     this.requestRender();
   }
 
@@ -1430,9 +1498,10 @@ export class RoomViewer {
   }
 
   /** Frame what's visible for a building stage: from the house's south-east, or north-up for a plan. */
-  frameBuilding(stage, { elevation = 30, animate = true } = {}) {
-    const box = new THREE.Box3();
-    for (const r of this.rooms) if (r.holder.visible) box.expandByObject(r.holder);
+  frameBuilding(stage, { elevation = 30, animate = true, only = null, goal = null } = {}) {
+    // `goal`: where the levels are going ({ min, max } world box) when they are still easing there
+    const box = goal ? new THREE.Box3(new THREE.Vector3(...goal.min), new THREE.Vector3(...goal.max)) : new THREE.Box3();
+    if (!goal) for (const r of this.rooms) if (r.holder.visible && (!only || only.includes(r.id))) box.expandByObject(r.holder);
     if (box.isEmpty()) return;
     const home = this.computeHome(box, stage !== 'outside', { azimuth: stage === 'plan' ? 0 : 38, elevation });
     this.applyLimits(stage === 'plan' ? { ...home.limits, maxPolarAngle: 28 * RAD } : home.limits);
@@ -1451,6 +1520,7 @@ export class RoomViewer {
     const target = point.clone();
     const dir = this.camera.position.clone().sub(target).normalize();
     const to = { pos: target.clone().addScaledVector(dir, 2.2).setY(target.y + 1.8), target };
+    this.stopSpin(true);
     this.controls.enabled = false;
     this.diving = true;
     return new Promise((resolve) => {
@@ -1538,6 +1608,116 @@ export class RoomViewer {
     return out;
   }
 
+  // ── empty / furnished ───────────────────────────────────────────────────
+
+  /**
+   * Furniture on (the bake as is) or off: every furniture mesh hidden and the structure's atlases swapped to the
+   * empty bake, fetched once per room on first use (a texture-only GLB: no geometry reloaded). Rooms without an
+   * empty bake keep their furniture (no ghost shadows). Resolves once the switch is on screen.
+   */
+  async setFurnished(on) {
+    if (this.disposed || !this.renderer) return;
+    on = Boolean(on);
+    if (on === this.furnished) return;
+    this.furnished = on;
+    this.syncStatus();
+    const token = this.loadToken;
+    if (!on) {
+      this.container.dataset.furnishedLoading = 'on';
+      await Promise.all(this.rooms.filter((r) => r.emptyUrl).map((r) => this.loadEmpty(r, token)));
+      if (this.container.dataset.furnishedLoading) delete this.container.dataset.furnishedLoading;
+      if (token !== this.loadToken || this.disposed || this.furnished !== on) return; // superseded meanwhile
+    }
+    this.applyFurnished();
+  }
+
+  applyFurnished() {
+    for (const r of this.rooms) {
+      if (!r.furnishing?.emptyMaps) continue;
+      swapAtlases(r, !this.furnished);
+      setFurnitureShown(r, this.furnished);
+    }
+    this.syncStatus();
+    this.occlusionDirty = true;
+    this.requestRender();
+  }
+
+  loadEmpty(room, token) {
+    const f = room.furnishing;
+    if (f.emptyMaps) return Promise.resolve();
+    f.emptyLoading ||= (async () => {
+      this.emptyLoads++;
+      try {
+        const gltf = await this.loader.loadAsync(room.emptyUrl);
+        if (token !== this.loadToken || this.disposed || !this.rooms.includes(room)) {
+          disposeTree(gltf.scene);
+          return;
+        }
+        f.emptyMaps = emptyMapsFrom(gltf.scene, this.anisotropy);
+      } catch (err) {
+        console.info('[memory-rooms] empty bake failed to load:', err?.message || err);
+      } finally {
+        f.emptyLoading = null;
+      }
+    })();
+    return f.emptyLoading;
+  }
+
+  // ── the turntable ───────────────────────────────────────────────────────
+
+  /**
+   * A slow cinematic turn round the orbit target (one turn per SPIN_TURN_S), at constant elevation, eased up to
+   * speed and down to a stop. It runs inside the frame loop (no loop of its own: nothing at all when off) and
+   * waits while a swing or a flight owns the camera. Off by default; nothing ever turns it on by itself.
+   */
+  setSpin(on) {
+    if (this.disposed || !this.renderer) return;
+    on = Boolean(on) && this.mode !== 'scan' && this.status.main.state === 'ready';
+    if (on) {
+      if (this.view !== 'orbit') this.home(); // back out of a photo first, then turn
+      this.spin = { on: true, speed: this.spin?.speed || 0 };
+    } else if (this.spin) {
+      this.spin.on = false; // eases out in stepSpin
+    }
+    this.syncStatus();
+    this.requestRender();
+  }
+
+  /** Stop the turntable; `now` = at once (the visitor took the camera), else eased. */
+  stopSpin(now = false) {
+    if (!this.spin) return;
+    if (now) this.spin = null;
+    else this.spin.on = false;
+    if (this.container) this.syncStatus();
+  }
+
+  stepSpin(dt) {
+    const s = this.spin;
+    const max = (2 * Math.PI) / SPIN_TURN_S;
+    const step = (max * dt) / SPIN_RAMP_MS;
+    s.speed = s.on ? Math.min(max, s.speed + step) : Math.max(0, s.speed - step);
+    if (!s.on && s.speed <= 0) {
+      this.spin = null;
+      this.occlusionDirty = true;
+      return false;
+    }
+    // a swing (a stage change, Reset) or a flight owns the camera: wait it out, keep the clock running
+    for (const tw of this.tweens) if (tw.kind === 'orbit' || tw.kind === 'fly') return true;
+    if (this.view !== 'orbit' || this.diving) return true;
+    const target = this.controls.target;
+    const off = this.camera.position.clone().sub(target);
+    off.applyAxisAngle(this.camera.up, s.speed * (dt / 1000));
+    this.camera.position.copy(target).add(off);
+    this.camera.lookAt(target);
+    // pins behind a wall go faint as it turns (the idle check never runs while it moves)
+    s.acc = (s.acc || 0) + dt;
+    if (s.acc > 400) {
+      s.acc = 0;
+      this.updateOcclusion();
+    }
+    return true;
+  }
+
   // ── rendering ───────────────────────────────────────────────────────────
 
   setSize(w, h) {
@@ -1581,6 +1761,7 @@ export class RoomViewer {
   /** Re-frame the opening view (new size or insets) unless the visitor has moved it. */
   refitIfUntouched() {
     if (this.diving) return; // "Walk in" owns the camera until the page changes
+    if (this.spin) return; // the turntable is moving the camera: a re-frame would snap it
     if (this.plan) return; // the plan view keeps its own top-down framing (and limits) through a resize
     if (this.buildingRefit) {
       // a building page frames its own stage (a level, the levels pulled apart, a plan)
@@ -1680,6 +1861,7 @@ export class RoomViewer {
         tw.done?.();
       } else again = true;
     }
+    if (this.spin && this.stepSpin(dt)) again = true;
     if (this.controls.enabled && this.controls.update()) again = true;
     if (this.recall && this.stepRecall(now)) again = true;
     this.renderNow(dt);
@@ -1727,6 +1909,15 @@ export class RoomViewer {
       this.updateDollhouse(dt);
       const rc = this.recall;
       if (rc?.room && rc.mats && rc.revealAt != null) setRoomAlpha(rc.room, rc.mats, rc.k ?? 0);
+      // a building's levels lifting away fade as a whole (setRoomFade), on top of their dollhouse fades
+      for (const room of this.rooms) {
+        const a = room.alpha ?? 1;
+        if (a < 1 || room.alphaApplied < 1) {
+          room.alphaMats ||= roomMaterials(room);
+          setRoomAlpha(room, room.alphaMats, a);
+          room.alphaApplied = a;
+        }
+      }
       renderer.setScissorTest(false);
       renderer.setViewport(0, 0, this.width, this.height);
       renderer.clear();
@@ -1768,6 +1959,16 @@ export class RoomViewer {
         if (show) t.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
       }
       t.el.hidden = !show;
+    }
+    for (const l of this.labels || []) {
+      v.copy(l.pos).applyMatrix4(this.camera.matrixWorldInverse);
+      let show = v.z < -this.camera.near && this.view === 'orbit';
+      v.applyMatrix4(this.camera.projectionMatrix);
+      const x = r.x + ((v.x + 1) / 2) * r.w;
+      const y = r.y + ((1 - v.y) / 2) * r.h;
+      show = show && x > -40 && x < this.width + 40 && y > 0 && y < this.height;
+      if (show) l.el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      l.el.hidden = !show;
     }
     const open = this.openPin != null ? this.pins[this.openPin] : null;
     if (open?.screen && open.labelAt && this.note.childElementCount) {
@@ -1833,6 +2034,7 @@ export class RoomViewer {
   // ── teardown ────────────────────────────────────────────────────────────
 
   clearContent() {
+    this.stopSpin(true);
     this.planCut?.removeAll();
     this.plan = false;
     this.cutLevels = new Map();
@@ -1857,12 +2059,18 @@ export class RoomViewer {
     this.viewSnap = null;
     for (const t of this.camTags || []) t.el.remove();
     this.camTags = [];
+    for (const l of this.labels || []) l.el.remove();
+    this.labels = [];
     this.stripHighlight = null;
     this.pins = [];
     this.note.remove();
     if (this.controls) this.controls.enabled = true;
-    for (const room of this.rooms) disposeTree(room.holder);
+    for (const room of this.rooms) {
+      disposeFurnishing(room);
+      disposeTree(room.holder);
+    }
     this.rooms = [];
+    this.furnished = true;
     if (this.extras) {
       for (const child of [...this.extras.children]) disposeTree(child);
     }

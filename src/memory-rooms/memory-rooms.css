@@ -1748,8 +1748,74 @@ html:where([data-mr-theme='dark']) .mr-mbx .mapboxgl-ctrl-attrib-button { filter
 .mr-building__stage > .mr-viewer { position: absolute; inset: 0; }
 .mr-building__bar { display: flex; flex-wrap: wrap; gap: var(--mr-space-3) var(--mr-space-5); align-items: center; }
 .mr-building__hint { color: var(--mr-ink-3); margin: 0; }
+.mr-building__toggles { display: flex; align-items: center; gap: var(--mr-space-2); margin-left: auto; }
+.mr-place__walk { max-width: 420px; margin: 0 0 var(--mr-space-6); }
+.mr-walk__level { color: var(--mr-ink-3); font-weight: 400; }
 @media (pointer: coarse) {
   .mr-building__bar .mr-seg button { min-height: 44px; }
+  .mr-building__toggles .mr-btn { min-height: 44px; }
+}
+@media (max-width: 480px) {
+  .mr-building__toggles { margin-left: 0; }
+}
+
+/* the Inside level slider (pages/place/LevelSlider.jsx): a hairline track, one tick + name per level, top = top */
+.mr-levelslider {
+  position: absolute;
+  left: var(--mr-space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  pointer-events: none;
+}
+.mr-levelslider__title { color: var(--mr-ink-3); }
+.mr-levelslider__body { position: relative; display: flex; height: clamp(96px, 22vh, 180px); }
+.mr-levelslider__track {
+  position: relative;
+  width: 32px;
+  margin-left: -10px;
+  touch-action: none;
+  cursor: ns-resize;
+  pointer-events: auto;
+  outline-offset: 4px;
+}
+.mr-levelslider__rule { position: absolute; left: 15px; top: 0; bottom: 0; border-left: var(--mr-hairline) solid var(--mr-rule-strong); }
+.mr-levelslider__tick { position: absolute; left: 10px; width: 11px; border-top: var(--mr-hairline) solid var(--mr-rule-strong); }
+.mr-levelslider__thumb {
+  position: absolute;
+  left: 10px;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: var(--mr-accent);
+  box-shadow: 0 0 0 3px var(--mr-stage);
+}
+.mr-levelslider__names { position: relative; list-style: none; margin: 0; padding: 0; width: 9.5rem; }
+.mr-levelslider__names li { position: absolute; left: 0; transform: translateY(-50%); }
+.mr-levelslider__names button {
+  min-height: 32px;
+  padding: 0 var(--mr-space-1);
+  border: 0;
+  background: none;
+  font: 500 var(--mr-text-xs) / 1.2 var(--mr-font-mono);
+  letter-spacing: var(--mr-tracking-label);
+  text-transform: uppercase;
+  color: var(--mr-ink-3);
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.mr-levelslider__names button[aria-pressed='true'] { color: var(--mr-ink); }
+@media (pointer: coarse) {
+  .mr-levelslider__track { width: 44px; margin-left: -16px; }
+  .mr-levelslider__rule { left: 21px; }
+  .mr-levelslider__tick,
+  .mr-levelslider__thumb { left: 16px; }
+  .mr-levelslider__names button { min-height: 44px; }
 }
 /* the spot sheet's Show / View toggles: thumb-sized on touch */
 @media (pointer: coarse) {

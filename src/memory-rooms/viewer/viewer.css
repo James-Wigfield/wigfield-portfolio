@@ -366,6 +366,24 @@
 .mr-stagebar__vps { display: flex; align-items: center; gap: var(--mr-space-4); min-width: 0; }
 .mr-stagebar__home { margin-left: auto; padding: 0 var(--mr-space-1); color: var(--mr-ink-2); white-space: nowrap; }
 .mr-stagebar__home:hover { color: var(--mr-ink); background: none; }
+/* a label over the stage at a world point (a level's name above its plan): mono small caps, bottom-left anchored */
+.mr-stagelabel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin-top: -1.4em;
+  white-space: nowrap;
+  color: var(--mr-ink-2);
+  pointer-events: none;
+}
+.mr-stagebar__end { margin-left: auto; display: flex; align-items: center; gap: var(--mr-space-2); flex: none; }
+
+/* Spin: a labelled dot, ring when still, filled while the turntable runs */
+.mr-spin { gap: 6px; padding: 0 var(--mr-space-1); color: var(--mr-ink-2); white-space: nowrap; }
+.mr-spin:hover { color: var(--mr-ink); background: none; }
+.mr-spin__dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; box-sizing: border-box; }
+.mr-spin[aria-pressed='true'] { color: var(--mr-ink); }
+.mr-spin[aria-pressed='true'] .mr-spin__dot { background: var(--mr-accent); border-color: var(--mr-accent); }
 
 .mr-vpthumbs { display: flex; gap: var(--mr-space-3); overflow-x: auto; scrollbar-width: none; padding: 3px; margin: -3px; }
 .mr-vpthumbs::-webkit-scrollbar { display: none; }
@@ -812,6 +830,8 @@
   .mr-stagebar { padding: var(--mr-space-2) var(--mr-space-4) var(--mr-space-2); gap: var(--mr-space-1); }
   .mr-stagebar__label { display: none; }
   .mr-stagebar__home { min-height: var(--mr-tap); }
+  .mr-spin { min-height: var(--mr-tap); }
+  .mr-stagebar__end { gap: 0; }
   .mr-vpthumb__img { width: 40px; height: 50px; }
 
   .mr-strip {
