@@ -5,7 +5,8 @@
 
    From memory-rooms-work/b-<id>/ (after build-building.mjs): PATCHes `plan` (building.json, validated by the
    Worker; planVersion +1; with the row's updatedAt, so a change made meanwhile stops it BEFORE any upload), then
-   uploads level-<levelId>.glb (model/level-<id>), exterior.glb (model/exterior) and the renders (hero / marker /
+   uploads level-<levelId>.glb (model/level-<id>), level-<levelId>-empty.glb (model/level-<id>-empty: the level's
+   structure atlases baked without the furniture; only when ping features has 'empty'), exterior.glb (model/exterior) and the renders (hero / marker /
    per-level three-quarter + top), then sets the status to "rendered". (No `model/map` yet: the map shows the
    place's marker; a building model on the map is future work.) With --rooms it also runs push.mjs for every spot whose
    room.glb slice was written (rooms[].spotIds that have a work folder with room.glb).
@@ -17,7 +18,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { client, config, supportsBuildings, WORK } from './lib/api.mjs';
+import { client, config, supportsBuildings, supportsEmptyLevels, WORK } from './lib/api.mjs';
 import { validateBuilding } from '../../src/memory-rooms/building/validate.js';
 
 const args = process.argv.slice(2);
@@ -44,6 +45,8 @@ for (const lv of plan.levels) {
     process.exit(1);
   }
   uploads.push({ type: 'model', name: `level-${lv.id}`, file: f, contentType: 'model/gltf-binary' });
+  const fe = path.join(dir, `level-${lv.id}-empty.glb`);
+  if (fs.existsSync(fe)) uploads.push({ type: 'model', name: `level-${lv.id}-empty`, file: fe, contentType: 'model/gltf-binary', empty: true });
   for (const r of ['three-quarter', 'top']) {
     const p = path.join(dir, 'levels', lv.id, 'renders', `${r}.png`);
     if (fs.existsSync(p)) uploads.push({ type: 'render', name: `level-${lv.id}-${r}`, file: p, contentType: 'image/png' });
@@ -80,6 +83,11 @@ if (!local && !args.includes('--live')) {
 if (!(await supportsBuildings(api))) {
   console.error(`${cfg.base} has no building routes (or its database has no building tables yet): deploy the Worker and run supabase/memory_buildings.sql first.`);
   process.exit(1);
+}
+// the empty-state atlases (model/level-<id>-empty) only to a Worker that says it serves them (ping features 'empty')
+if (uploads.some((u) => u.empty) && !(await supportsEmptyLevels(api))) {
+  for (const u of uploads.filter((x) => x.empty)) console.log(`  ! skip ${u.type}/${u.name}: this Worker predates the empty state (ping features has no 'empty')`);
+  uploads.splice(0, uploads.length, ...uploads.filter((x) => !x.empty));
 }
 const row = await api.getBuilding(id).catch(() => null);
 if (!row) {

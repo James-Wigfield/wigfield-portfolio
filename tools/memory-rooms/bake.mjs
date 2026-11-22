@@ -3,7 +3,9 @@
    /memories map shows: renders/marker.png (the hero trimmed to its content, 240 px: lib/marker.mjs)
    and map.glb (room.glb with 512 px textures, meshopt-compressed: lib/mapModel.mjs).
 
-     node tools/memory-rooms/bake.mjs <spotId | work dir> [--atlas 2048] [--samples 256]
+     node tools/memory-rooms/bake.mjs <spotId | work dir> [--atlas 2048] [--samples 256] [--empty]
+
+   --empty (building levels): also bake the structure with the furniture hidden → room-empty.glb (texture only).
 
    Run after the last compare round (needs <work>/room.blend from build.mjs). */
 
@@ -16,7 +18,7 @@ import { ensureMarkerFile } from './lib/marker.mjs';
 
 const args = process.argv.slice(2);
 // the first argument that is neither a --flag nor a flag's value
-const target = args.find((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1].startsWith('--') && !['--dry-run'].includes(args[i - 1])));
+const target = args.find((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1].startsWith('--') && !['--dry-run', '--empty'].includes(args[i - 1])));
 const opt = (name, dflt) => (args.includes(name) ? args[args.indexOf(name) + 1] : dflt);
 if (!target) {
   console.error('usage: node tools/memory-rooms/bake.mjs <spotId | work dir> [--atlas 2048] [--samples 256]');
@@ -30,7 +32,7 @@ if (!fs.existsSync(path.join(dir, 'room.blend'))) {
 const t0 = Date.now();
 const res = spawnSync(
   BLENDER,
-  ['-b', '--factory-startup', '--python', path.join(REPO, 'tools/memory-rooms/blender/bake_export.py'), '--', '--blend', path.join(dir, 'room.blend'), '--out', dir, '--atlas', opt('--atlas', '2048'), '--samples', opt('--samples', '256')],
+  ['-b', '--factory-startup', '--python', path.join(REPO, 'tools/memory-rooms/blender/bake_export.py'), '--', '--blend', path.join(dir, 'room.blend'), '--out', dir, '--atlas', opt('--atlas', '2048'), '--samples', opt('--samples', '256'), ...(args.includes('--empty') ? ['--empty'] : [])],
   { cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
 );
 const out = `${res.stdout || ''}${res.stderr || ''}`;
@@ -53,3 +55,8 @@ const mapModel = await ensureMapModelFile(dir, { force: true }).catch((e) => {
   return null;
 });
 if (mapModel) console.log(`  map model: ${mapModel.path} (${(mapModel.bytes / 1024).toFixed(0)} KB)`);
+if (args.includes('--empty')) {
+  const ef = path.join(dir, 'room-empty.glb');
+  if (fs.existsSync(ef)) console.log(`  empty state: ${ef} (${(fs.statSync(ef).size / 1024).toFixed(0)} KB)`);
+  else console.error('  ! --empty: no room-empty.glb written (see logs/bake.log)');
+}

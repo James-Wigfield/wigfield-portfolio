@@ -25,6 +25,7 @@ import { insetEdges } from '../../src/memory-rooms/scene/polygon.js';
 import { buildLayoutPreview } from '../../src/memory-rooms/viewer/layoutPreview.js';
 import { applyDollhouse, attachedWall, attachedWallAny, groupRoom, indexRoom, WALL_OUT } from '../../src/memory-rooms/viewer/dollhouse.js';
 import { CUT_Y, PlanCut } from '../../src/memory-rooms/viewer/planCut.js';
+import { findBuilding } from './check-scene.mjs';
 
 const args = process.argv.slice(2);
 let pass = 0;
@@ -44,7 +45,7 @@ for (const f of fs.readdirSync(EX)) if (f.endsWith('.scene.json')) scenes.push({
 if (fs.existsSync(WORK)) {
   for (const d of fs.readdirSync(WORK)) {
     const p = path.join(WORK, d, 'scene.json');
-    if (fs.existsSync(p)) scenes.push({ name: `work/${d}`, scene: JSON.parse(fs.readFileSync(p, 'utf8')) });
+    if (fs.existsSync(p)) scenes.push({ name: `work/${d}`, scene: JSON.parse(fs.readFileSync(p, 'utf8')), file: p });
   }
 }
 
@@ -59,9 +60,13 @@ const nanFree = (root) => {
 
 const fakeRenderer = () => ({ localClippingEnabled: false });
 
-for (const { name, scene } of scenes) {
+// a room of a real building resolves against ITS building.json (memory-rooms-work/b-<id>/), the examples against
+// the example house
+const buildingOf = (scene, file) => (scene.shell?.building ? (file && findBuilding(scene, file)) || building : null);
+
+for (const { name, scene, file } of scenes) {
   if (scene.kind !== 'interior') continue;
-  const b = scene.shell?.building ? building : null;
+  const b = buildingOf(scene, file);
   const sh = resolveShell(scene, b);
   ok(sh, `${name}: the shell resolves`);
   if (!sh) continue;
@@ -259,7 +264,16 @@ for (let i = 0; i < args.length; i++) {
   const jsonLen = buf.readUInt32LE(12);
   const gltf = JSON.parse(buf.subarray(20, 20 + jsonLen).toString('utf8'));
   const scene = scenePath ? JSON.parse(fs.readFileSync(scenePath, 'utf8')) : null;
-  const sh = scene ? resolveShell(scene) : null;
+  const sh = scene ? resolveShell(scene, buildingOf(scene, scenePath)) : null;
+  if (scene?.shell?.building) ok(Boolean(sh), `${path.basename(path.dirname(glbPath))}: the building room's shell resolves (its building.json found)`);
+  // mrKind (CONTRACTS.md 4): every node of a bake made since says structure or furniture, furniture = obj__*
+  const nodes = gltf.nodes || [];
+  if (nodes.some((n) => n.extras?.mrKind)) {
+    const wrong = nodes.filter((n) => n.extras?.mrKind !== (/^obj__|__obj__/.test(n.name || '') ? 'furniture' : 'structure')).map((n) => n.name);
+    ok(wrong.length === 0, `${path.basename(path.dirname(glbPath))}: mrKind on every node, furniture exactly on obj__*`, wrong.slice(0, 6).join(', '));
+  } else {
+    console.log(`  (${path.basename(path.dirname(glbPath))}: no mrKind extras: baked before them, the viewer falls back to the names)`);
+  }
   const walls = (gltf.nodes || []).filter((n) => /^wall__[a-z0-9-]+$/.test(n.name || ''));
   ok(walls.length > 0, `${path.basename(path.dirname(glbPath))}: GLB has wall__<id> nodes`, `${walls.length}`);
   for (const n of walls) {

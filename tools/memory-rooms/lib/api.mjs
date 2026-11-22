@@ -52,6 +52,27 @@ export async function supportsMapModel(api) {
   }
 }
 
+/** True when the Worker stores a spot's model/empty (its empty-state atlases, room-empty.glb) apart from
+    model/room: ping `models` lists 'empty'. An older Worker stores EVERY model name as room.glb, so uploading
+    room-empty.glb to it would overwrite the room. Never upload it unless this says yes. */
+export async function supportsEmptyModel(api) {
+  try {
+    return (await api.ping())?.models?.includes('empty') === true;
+  } catch {
+    return false;
+  }
+}
+
+/** True when the Worker takes a building's model/level-<id>-empty (ping `features` lists 'empty'). */
+export async function supportsEmptyLevels(api) {
+  try {
+    const f = (await api.ping())?.features;
+    return Array.isArray(f) && f.includes('empty');
+  } catch {
+    return false;
+  }
+}
+
 export function client({ base, token } = config()) {
   async function call(p, { method = 'GET', body, headers = {} } = {}) {
     const init = { method, headers: { authorization: `Bearer ${token}`, ...headers } };

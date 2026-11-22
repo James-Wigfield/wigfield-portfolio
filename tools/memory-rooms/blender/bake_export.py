@@ -1,7 +1,7 @@
 """room.blend -> room.glb (baked, display-referred atlas) + renders/hero.png + export-report.json.
 
     blender.exe -b --factory-startup --python tools/memory-rooms/blender/bake_export.py -- \
-        --blend <work>/room.blend --out <work> [--atlas 2048] [--samples 256]
+        --blend <work>/room.blend --out <work> [--atlas 2048] [--samples 256] [--empty]
 
 GLB contract (src/memory-rooms/CONTRACTS.md section 4):
   * Every baked surface: material `baked_atlas` (KHR_materials_unlit) whose baseColorTexture is ONE atlas on
@@ -13,6 +13,15 @@ GLB contract (src/memory-rooms/CONTRACTS.md section 4):
     display colour the emitter has in the Cycles render.
   * Node names: floor, ceiling, ground, wall_<side> (wall meshes joined into that node), obj__<id> roots with
     one joined child obj__<id>__mesh. WebP textures, y-up, no cameras / lights / animation.
+  * Every node carries glTF extras `mrKind`: "furniture" (a scene object: `obj__<id>...`, a building's
+    `room__<room>__obj__<id>...`) or "structure" (everything else: walls, hubs, floors, ceilings, stairs, slabs,
+    roof, site, ground). The viewer's empty / furnished toggle hides the furniture.
+  * --empty (building levels with furniture; a level without any is skipped, no file): every atlas holding
+    structural meshes is baked a SECOND time with the furniture
+    hidden from the render (same lightmap UVs, pass, samples), into bake/atlas<i>-empty.png, and written as
+    room-empty.glb: texture only, one tiny triangle `empty__atlas<i>` per atlas carrying a material named exactly
+    `baked_atlas<i>` (the main GLB's name) whose baseColorTexture is the empty atlas. The viewer swaps the
+    structural materials' maps to it: walls and floors without the furniture's shadows.
 
 Order matters: meshes are baked BEFORE they are joined, because the procedural materials use Object
 coordinates; joining first would shift every wood grain and tile joint away from the Cycles stills.
@@ -61,6 +70,8 @@ def parse():
     p.add_argument("--margin", type=int, default=12, help="bake margin in pixels")
     p.add_argument("--webp-quality", type=int, default=90)
     p.add_argument("--normals", action="store_true", help="also export vertex normals (unused by the viewer)")
+    p.add_argument("--empty", action="store_true",
+                   help="also bake the structure with the furniture hidden -> room-empty.glb (texture only)")
     return common.script_args(p)
 
 
@@ -92,6 +103,16 @@ def top_root(ob):
     while ob.parent is not None:
         ob = ob.parent
     return ob
+
+
+def is_furniture_name(name: str) -> bool:
+    """A scene object (obj__<id>) or a building room's piece (room__<room>__obj__<id>); after a slice renames
+    them back, obj__<id> again. Everything else a bake exports is structure."""
+    return name.startswith("obj__") or "__obj__" in name
+
+
+def is_furniture(ob) -> bool:
+    return is_furniture_name(top_root(ob).name)
 
 
 def kind_of(mat) -> str:
@@ -830,6 +851,11 @@ def main():
     sc.render.image_settings.color_depth = "8"
     T["bake"] = 0.0
     T["atlas_save"] = 0.0
+    # a level with no furniture looks the same empty: no second bake, no room-empty.glb (the viewer then has
+    # nothing to swap for it)
+    want_empty = bool(args.empty) and any(is_furniture(o) for o in meshes)
+    if args.empty and not want_empty:
+        log("--empty: no furniture in this bake, so no empty state (room-empty.glb not written)")
     for A in atlases:
         tb = time.perf_counter()
         img = bpy.data.images.new(f"atlas{A['index']}_float", A["size"], A["size"], alpha=False, float_buffer=True)
@@ -858,10 +884,42 @@ def main():
             for o in cut:
                 o.hide_render = False
         A["deadFilled"] = fill_dead_texels(img, exposure, idimg)
-        bpy.data.images.remove(idimg)
         A["bake_s"] = round(time.perf_counter() - tb, 3)
         T["bake"] += A["bake_s"]
         log("baked atlas", A["index"], A["size"], btype, args.samples, "samples", A["bake_s"], "s")
+        structural = [o for o in A["objects"] if not is_furniture(o)] if want_empty else []
+        if structural:
+            # the empty room: the same atlas layout, baked again with every furniture object (and anything
+            # parented to one, e.g. a lamp's light) out of the render, so walls / floors get clean light
+            te = time.perf_counter()
+            img_e = bpy.data.images.new(f"atlas{A['index']}_empty_float", A["size"], A["size"], alpha=False,
+                                        float_buffer=True)
+            for m in {s.material for o in structural for s in o.material_slots if s.material}:
+                bake_nodes[m].image = img_e
+                m.node_tree.nodes.active = bake_nodes[m]
+            gone = [o for o in bpy.data.objects if is_furniture(o) and not o.hide_render]
+            for o in gone:
+                o.hide_render = True
+            try:
+                select_only(structural)
+                bpy.ops.object.bake(type=btype, pass_filter=pf, margin=args.margin, margin_type="EXTEND",
+                                    use_clear=True, uv_layer="lightmap", target="IMAGE_TEXTURES")
+            finally:
+                for o in gone:
+                    o.hide_render = False
+            fill_dead_texels(img_e, exposure, idimg)
+            A["empty_s"] = round(time.perf_counter() - te, 3)
+            T["bake_empty"] = round(T.get("bake_empty", 0.0) + A["empty_s"], 3)
+            log("baked empty atlas", A["index"], A["size"], len(structural), "structural meshes", A["empty_s"], "s")
+            png_e = bake_dir / f"atlas{A['index']}-empty.png"
+            img_e.save_render(str(png_e), scene=sc)
+            tex_e = bpy.data.images.load(str(png_e), check_existing=False)
+            tex_e.name = f"atlas{A['index']}-empty"
+            tex_e.colorspace_settings.name = "sRGB"
+            A["empty_png"] = png_e
+            A["empty_tex"] = tex_e
+            bpy.data.images.remove(img_e)
+        bpy.data.images.remove(idimg)
         # 5. write it through the view transform (display-referred sRGB)
         ts = time.perf_counter()
         png = bake_dir / f"atlas{A['index']}.png"
@@ -874,8 +932,9 @@ def main():
         T["atlas_save"] += time.perf_counter() - ts
     T["bake"] = round(T["bake"], 3)
     T["atlas_save"] = round(T["atlas_save"], 3)
+    keep_png = [A["png"] for A in atlases] + [A["empty_png"] for A in atlases if A.get("empty_png")]
     for old in bake_dir.glob("atlas*.png"):
-        if old not in [A["png"] for A in atlases]:
+        if old not in keep_png:
             old.unlink(missing_ok=True)
 
     # 6. export materials: one unlit baked material per atlas
@@ -909,6 +968,7 @@ def main():
     baked_for = {}
     for A in atlases:
         bm_ = baked_material(A)
+        A["mat"] = bm_
         for o in A["objects"]:
             baked_for[o.name] = bm_
 
@@ -1002,18 +1062,71 @@ def main():
     # 8. export
     t = time.perf_counter()
     glb = out / "room.glb"
-    # v2 walls carry their outward normal as a custom property (mrWall): export it as glTF extras
-    v2 = bool((meta.get("info") or {}).get("v2"))
+    # every node says what it is (mrKind, CONTRACTS.md 4); v2 walls also carry their outward normal (mrWall).
+    # Custom properties become glTF extras (three.js userData) for every bake now.
+    kinds = {"furniture": 0, "structure": 0}
+    for o in room.all_objects:
+        k = "furniture" if is_furniture(o) else "structure"
+        o["mrKind"] = k
+        kinds[k] += 1
     bpy.ops.export_scene.gltf(
         filepath=str(glb), export_format="GLB", use_selection=False, export_cameras=False, export_lights=False,
         export_animations=False, export_apply=True, export_yup=True, export_image_format="WEBP",
         export_image_quality=args.webp_quality, export_texcoords=True, export_normals=bool(args.normals),
-        export_tangents=False, export_materials="EXPORT", export_extras=v2, export_vertex_color="NONE")
+        export_tangents=False, export_materials="EXPORT", export_extras=True, export_vertex_color="NONE")
     T["export"] = round(time.perf_counter() - t, 3)
     try:
         bpy.ops.wm.save_as_mainfile(filepath=str(out / "room-baked.blend"), compress=True)
     except Exception as e:
         warnings.append(f"could not save room-baked.blend: {e}")
+
+    # 9. the empty state (after room-baked.blend is saved: this mutates the scene): a texture-only GLB, one
+    # tiny triangle per atlas wearing `baked_atlas<i>` with the empty atlas in place of the furnished one
+    empty_report = None
+    empties = [A for A in atlases if A.get("empty_tex")]
+    if args.empty:
+        te = time.perf_counter()
+        empty_glb = out / "room-empty.glb"
+        tris = []
+        for A in empties:
+            for n in A["mat"].node_tree.nodes:
+                if n.type == "TEX_IMAGE":
+                    n.image = A["empty_tex"]
+            me = bpy.data.meshes.new(f"empty__atlas{A['index']}")
+            me.from_pydata([(0, 0, 0), (0.01, 0, 0), (0, 0.01, 0)], [], [(0, 1, 2)])
+            uvl = me.uv_layers.new(name="lightmap")
+            for i, uv in enumerate([(0, 0), (1, 0), (0, 1)]):
+                uvl.data[i].uv = uv
+            me.materials.append(A["mat"])
+            ob = bpy.data.objects.new(f"empty__atlas{A['index']}", me)
+            ob["mrKind"] = "structure"
+            sc.collection.objects.link(ob)
+            tris.append(ob)
+        if tris:
+            bpy.context.view_layer.update()
+            select_only(tris)
+            bpy.ops.export_scene.gltf(
+                filepath=str(empty_glb), export_format="GLB", use_selection=True, export_cameras=False,
+                export_lights=False, export_animations=False, export_apply=True, export_yup=True,
+                export_image_format="WEBP", export_image_quality=args.webp_quality, export_texcoords=True,
+                export_normals=False, export_tangents=False, export_materials="EXPORT", export_extras=True,
+                export_vertex_color="NONE")
+            ei = inspect_glb(empty_glb)
+            want = {f"baked_atlas{A['index']}" for A in empties}
+            got = {m["name"] for m in ei["materials"] if m["baseColorTexture"]}
+            if want - got:
+                warnings.append(f"room-empty.glb is missing textured materials {sorted(want - got)}")
+            empty_report = {"glb": str(empty_glb), "mb": ei["mb"],
+                            "atlases": [{"index": A["index"], "size": A["size"], "png": str(A["empty_png"]),
+                                         "bakeSeconds": A["empty_s"]} for A in empties]}
+        else:
+            empty_glb.unlink(missing_ok=True)
+            if want_empty:
+                warnings.append("--empty: no atlas holds a structural mesh; no room-empty.glb")
+            else:
+                empty_report = {"glb": None, "skipped": "no furniture"}
+        T["export_empty"] = round(time.perf_counter() - te, 3)
+        log("empty glb", (empty_report or {}).get("mb"), "MB", (empty_report or {}).get("skipped", ""))
 
     info = inspect_glb(glb)
     T["total"] = round(time.perf_counter() - t_all, 3)
@@ -1045,6 +1158,7 @@ def main():
                                "bakeSeconds": A["bake_s"], "deadTexelsFilled": A["deadFilled"],
                                "nodes": sorted(A["roots"])} for A in atlases]},
         "meshesBaked": len(meshes), "facesBaked": nfaces, "emitDisplayColors": report_emit,
+        "kinds": kinds, "empty": empty_report,
         "threeQuarterView": view, "hero": str(out / "renders" / "hero.png") if "hero" in T else None,
         "devices": devices, "timings_s": T, "warnings": warnings, "glbInfo": info,
     }

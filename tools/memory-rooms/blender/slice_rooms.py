@@ -8,6 +8,8 @@ keep its walls (with their windows, doors, skirting, hubs), `floor__<room>`, `ce
 (`room__<room>__obj__<id>` -> renamed `obj__<id>`), move them into the room frame (the frame's origin to 0), give
 each wall `mrWall.normal` = the outward normal FROM THIS ROOM (the spot page has no building to ask), and export
 <scenes>/<spot>/room.glb (or <out>/<room>.glb). The spot page, the walk and AR then treat it like any baked room.
+Every node keeps its `mrKind` extras (furniture = the renamed `obj__<id>` pieces); the level's room-empty.glb
+(build-building.mjs copies it next to the slice) fits the slice as is: same `baked_atlas<i>` material names.
 Re-opens the level for each room, so one room's deletions never touch the next.
 """
 
@@ -86,6 +88,11 @@ def main():
         for o in list(bpy.data.objects):
             if o.name.startswith(prefix):
                 o.name = o.name[len(prefix):]
+        for o in bpy.data.objects:
+            # mrKind (CONTRACTS.md 4) rides along from the level bake; a level baked before it gets it here
+            if "mrKind" not in o:
+                root = top_root(o).name
+                o["mrKind"] = "furniture" if root.startswith("obj__") or "__obj__" in root else "structure"
             if o.name.startswith("wall__") and "__" not in o.name[6:] and o.get("mrWall"):
                 wid = o.name[6:]
                 mw = dict(o["mrWall"])

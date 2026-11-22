@@ -9,8 +9,10 @@
    with shell { building, room }), written like any spot's scene but in the room frame.
    1. building/validate.js (refuses an invalid plan)
    2. blender build_building.py → levels/<id>/room.blend (+ renders), exterior/room.blend
-   3. bake.mjs on each → room.glb; copied to level-<id>.glb / exterior.glb; renders/hero.png from the first level
+   3. bake.mjs on each → room.glb; copied to level-<id>.glb / exterior.glb; renders/hero.png from the first level.
+      Levels bake with --empty: level-<id>-empty.glb = the structure's atlases baked again without the furniture.
    4. blender slice_rooms.py on each baked level → memory-rooms-work/<spotId>/room.glb for every furnished room
+      (+ room-empty.glb beside it: the level's empty atlases, same material names)
    Then: push-building.mjs <id> (and push.mjs for each room spot). */
 
 import { spawnSync } from 'node:child_process';
@@ -59,11 +61,20 @@ const slice = path.join(REPO, 'tools/memory-rooms/blender/slice_rooms.py');
 const levels = plan.levels.filter((l) => !only || l.id === only);
 for (const lv of levels) {
   const ld = path.join(dir, 'levels', lv.id);
-  step(`bake level ${lv.id}`, process.execPath, [bake, ld, '--samples', opt('--samples', '128'), '--atlas', opt('--atlas', '2048')]);
+  // a level bakes twice: furnished, then its structure again with the furniture hidden (room-empty.glb)
+  step(`bake level ${lv.id}`, process.execPath, [bake, ld, '--samples', opt('--samples', '128'), '--atlas', opt('--atlas', '2048'), '--empty']);
   fs.copyFileSync(path.join(ld, 'room.glb'), path.join(dir, `level-${lv.id}.glb`));
+  const empty = path.join(ld, 'room-empty.glb');
+  fs.rmSync(path.join(dir, `level-${lv.id}-empty.glb`), { force: true }); // a stale one from an earlier bake
+  if (fs.existsSync(empty)) fs.copyFileSync(empty, path.join(dir, `level-${lv.id}-empty.glb`));
+  else console.log(`  level ${lv.id}: no furniture, so no empty state (no level-${lv.id}-empty.glb)`);
   const out = step(`slice level ${lv.id}`, BLENDER, ['-b', path.join(ld, 'room-baked.blend'), '--python', slice, '--', '--building', path.join(dir, 'building.json'), '--id', id, '--scenes', WORK]);
   const m = /SLICES (\[.*\])/.exec(out);
-  for (const s of m ? JSON.parse(m[1]) : []) console.log(`  room ${s.room} → ${s.glb}`);
+  for (const s of m ? JSON.parse(m[1]) : []) {
+    console.log(`  room ${s.room} → ${s.glb}`);
+    // the slice keeps the level's baked_atlas<i> materials, so the level's empty atlases fit it as they are
+    if (fs.existsSync(empty)) fs.copyFileSync(empty, path.join(path.dirname(s.glb), 'room-empty.glb'));
+  }
 }
 if (!only && fs.existsSync(path.join(dir, 'exterior', 'room.blend'))) {
   step('bake exterior', process.execPath, [bake, path.join(dir, 'exterior'), '--samples', opt('--samples', '128'), '--atlas', opt('--atlas', '2048')]);

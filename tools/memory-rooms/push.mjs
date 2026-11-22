@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-/* push: publish a finished spot. Uploads room.glb and its map copy map.glb, the renders
+/* push: publish a finished spot. Uploads room.glb and its map copy map.glb (+ room-empty.glb as model/empty for a
+   building room, when the Worker stores it apart), the renders
    (making map.glb and the map marker renders/marker.png first if missing or stale) and the compare
    sheets, saves scene.json (validated server-side, bumps sceneVersion) and sets
    the status to "rendered".
@@ -10,7 +11,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { client, supportsMapModel, workDir } from './lib/api.mjs';
+import { client, supportsEmptyModel, supportsMapModel, workDir } from './lib/api.mjs';
 import sharp from 'sharp';
 import { checkScene, findBuilding } from './check-scene.mjs';
 import { ensureMapModelFile } from './lib/mapModel.mjs';
@@ -51,6 +52,14 @@ if (mapModel?.made) console.log(`  + map.glb made from room.glb (${(mapModel.byt
 const mapOk = dry || (await supportsMapModel(client()));
 if (mapModel && mapOk) uploads.push({ type: 'model', name: 'map', file: mapModel.path, contentType: 'model/gltf-binary' });
 if (mapModel && !mapOk) console.log('  ! this Worker predates model/map (it would overwrite room.glb): map.glb NOT uploaded. Deploy, then run backfill-map-assets.mjs.');
+// a building room's empty state (room-empty.glb, its slice's structure atlases baked without the furniture):
+// only to a Worker that stores model/empty apart (ping models has 'empty'); an older one would overwrite room.glb
+const emptyPath = path.join(dir, 'room-empty.glb');
+if (fs.existsSync(emptyPath)) {
+  const emptyOk = dry || (await supportsEmptyModel(client()));
+  if (emptyOk) uploads.push({ type: 'model', name: 'empty', file: emptyPath, contentType: 'model/gltf-binary' });
+  else console.log('  ! this Worker predates model/empty (it would overwrite room.glb): room-empty.glb NOT uploaded (skip). Deploy, then push again.');
+}
 const renders = path.join(dir, 'renders');
 if (fs.existsSync(renders)) {
   const marker = await ensureMarkerFile(renders);

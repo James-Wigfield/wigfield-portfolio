@@ -413,3 +413,21 @@ multi-level plan uses (pure; `building-selftest.mjs` checks it on 12B Fletcher a
   captured room's scene, moved by its room frame's origin (`roomFrame`).
 - The walk room is `MemoryWalkRoom` keyed `b:<buildingId>`; a state's `p` is plan-frame with absolute y and `l` is
   the level id. You draw only the people whose `l` is yours; the others are listed ("Justin is upstairs").
+
+### 6.7 The empty / furnished bake (2026-11-22)
+
+- `bake_export.py --empty` (`build-building.mjs` passes it for every LEVEL, not the exterior): after the furnished
+  bake, every atlas that holds structural meshes is baked again with every furniture object hidden from the render
+  (same lightmap UVs, pass, samples, margin, dead-texel fill; no dollhouse "backed" pass), so walls and floors get
+  clean light with no furniture shadows. A bake with no furniture writes nothing (it would be the same picture).
+- `room-empty.glb` is texture-only: one tiny triangle `empty__atlas<i>` per atlas, wearing a material named
+  exactly `baked_atlas<i>` whose base-colour texture (WebP, same quality) is that atlas re-baked empty. Every GLB
+  names its materials `baked_atlas0…`, so a viewer swaps per loaded GLB, never by name across a page.
+- Files: `level-<levelId>-empty.glb` → building media `model/level-<levelId>-empty`
+  (`buildings/<id>/model/level-<levelId>-empty.glb`); a slice's copy `room-empty.glb` beside its `room.glb` → spot
+  media `model/empty` (`spots/<id>/model/empty.glb`). Scripts upload them only when ping says `empty` (features for
+  a building, models for a spot).
+- The viewer (`viewer/furnishing.js`): Furnished off hides every `mrKind: furniture` mesh (three.js layers) and puts
+  the GLB's own `baked_atlas<i>` materials on the empty maps, loaded once on first use; a GLB with no empty set keeps
+  its furniture. Shown on the place page (every stage, one state) and on a building room's spot page; never on a
+  plain spot.
