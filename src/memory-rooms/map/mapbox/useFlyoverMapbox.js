@@ -14,6 +14,7 @@
    The page's tilt rule (useTilt) is held while this runs and re-applies afterwards. */
 
 import { useEffect, useEffectEvent, useRef } from 'react';
+import { onThemeChange } from '../../lib/theme.js';
 import { distanceKm, LONG_HOP_KM, routeCoords, routeGeoJSON } from '../flyover/plan.js';
 import { FADE_MS, FLY_MS, LINGER_MS, LONG_FLY_MS } from '../flyover/useFlyover.js';
 import { MAX_PITCH } from './models.js';
@@ -152,10 +153,13 @@ export function useFlyoverMapbox(map, ready, fly, stops, legs, padding) {
     map.setMaxPitch(MAX_PITCH);
     const readd = () => addRoute(map);
     map.on('style.load', readd);
+    // the theme switch: the route takes the new accent
+    const offTheme = onThemeChange(() => safely(map, () => map.getLayer(LINE) && map.setPaintProperty(LINE, 'line-color', routeColor(map.getContainer()))));
     // A drag, pinch or wheel from the user pauses the flight where it is.
     const user = (e) => e.originalEvent && pause();
     map.on('movestart', user);
     return () => {
+      offTheme();
       safely(map, () => {
         map.off('style.load', readd);
         map.off('movestart', user);

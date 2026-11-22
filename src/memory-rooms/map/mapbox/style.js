@@ -9,6 +9,8 @@
    - standard  Mapbox Standard (the 3D-capable default) tinted through its config:
                richer at street level, heavier on a phone. */
 
+import { isDarkTheme } from '../../lib/theme.js';
+
 export const STYLES = {
   atlas: 'mapbox://styles/mapbox/light-v11',
   standard: 'mapbox://styles/mapbox/standard',
@@ -66,13 +68,8 @@ export function readTokens(el) {
   return out;
 }
 
-export const darkScheme = () => {
-  try {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  } catch {
-    return false;
-  }
-};
+/** The Memory Rooms theme on screen (lib/theme.js: the person's pick, else the device's). */
+export const darkScheme = () => isDarkTheme();
 
 const MONO = ['Roboto Mono Regular', 'Arial Unicode MS Regular'];
 const SETTLEMENTS = ['settlement-major-label', 'settlement-minor-label', 'settlement-subdivision-label'];

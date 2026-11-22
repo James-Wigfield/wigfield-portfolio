@@ -18,6 +18,10 @@ export const COPY = {
     loading: 'Loading…',
     pageError: 'This page hit a problem.',
     reload: 'Reload',
+    theme: {
+      names: { system: 'Auto', light: 'Light', dark: 'Dark' },
+      label: (now, next) => `Theme: ${now}${now === 'Auto' ? ' (follows this device)' : ''}. Switch to ${next}`,
+    },
   },
 
   // ── gate + who-picker (capture/map agent) ─────────────────────────────────

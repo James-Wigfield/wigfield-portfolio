@@ -1,7 +1,10 @@
 /* ============================================================================
    Memory Rooms: the one scoped stylesheet. Every class is .mr-* and every
    design token sits on the .mr root, so a "make it feel like X" pass edits the
-   token block first. Light + dark follow prefers-color-scheme.
+   token block first. Light + dark: lib/theme.js writes the resolved theme to
+   <html data-mr-theme> (the person's pick, else prefers-color-scheme), and the
+   ONE dark block below keys on it (html:where(): a build step scopes every
+   selector under html, so it must start with html, not :root).
    The look ("Recall", 2026-11-21): each spot is a sheet in an architect's
    archive of memories. Paper and ink, hairline rules, mono labels, a drafting
    grid under the rooms, numbered callouts, a title block; one display serif
@@ -14,6 +17,7 @@
 
 .mr,
 html.mr-active {
+  color-scheme: light;
   /* colour */
   --mr-bg: #f6f4ef;
   --mr-surface: #fbfaf7;
@@ -103,57 +107,56 @@ html.mr-active {
 }
 
 /* Darkroom: deep warm ink, prints pegged up under a safelight. */
-@media (prefers-color-scheme: dark) {
-  .mr,
-  html.mr-active {
-    --mr-bg: #121110;
-    --mr-surface: #191715;
-    --mr-surface-2: #221f1c;
-    --mr-ink: #ece7de;
-    --mr-ink-2: #b3ab9f;
-    --mr-ink-3: #938b80; /* 4.9:1 in the darkroom */
-    --mr-rule: rgba(236, 231, 222, 0.12);
-    --mr-rule-strong: rgba(236, 231, 222, 0.8);
-    --mr-field: rgba(236, 231, 222, 0.26);
-    --mr-accent: #e8653f; /* the safelight */
-    --mr-accent-ink: #121110;
-    --mr-status-captured: #b3ab9f;
-    --mr-status-modelling: #b3ab9f;
-    --mr-status-rendered: #ece7de;
-    --mr-danger: #f2766b;
-    --mr-stage: #0f0e0d;
-    --mr-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.45);
-    --mr-grid-ink: #ece7de;
-    --mr-grid-minor: 0.06;
-    --mr-grid-major: 0.11;
-    --mr-grid-shadow: 0.55;
-    --mr-grid-shade: #000000;
-    --mr-frustum: #ece7de;
-    --mr-leader: rgba(236, 231, 222, 0.55);
-    --mr-section: #b9ad9c;
-    --mr-paper-grid: rgba(236, 231, 222, 0.04);
+html:where([data-mr-theme='dark']) .mr,
+html.mr-active:where([data-mr-theme='dark']) {
+  color-scheme: dark;
+  --mr-bg: #121110;
+  --mr-surface: #191715;
+  --mr-surface-2: #221f1c;
+  --mr-ink: #ece7de;
+  --mr-ink-2: #b3ab9f;
+  --mr-ink-3: #938b80; /* 4.9:1 in the darkroom */
+  --mr-rule: rgba(236, 231, 222, 0.12);
+  --mr-rule-strong: rgba(236, 231, 222, 0.8);
+  --mr-field: rgba(236, 231, 222, 0.26);
+  --mr-accent: #e8653f; /* the safelight */
+  --mr-accent-ink: #121110;
+  --mr-status-captured: #b3ab9f;
+  --mr-status-modelling: #b3ab9f;
+  --mr-status-rendered: #ece7de;
+  --mr-danger: #f2766b;
+  --mr-stage: #0f0e0d;
+  --mr-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --mr-grid-ink: #ece7de;
+  --mr-grid-minor: 0.06;
+  --mr-grid-major: 0.11;
+  --mr-grid-shadow: 0.55;
+  --mr-grid-shade: #000000;
+  --mr-frustum: #ece7de;
+  --mr-leader: rgba(236, 231, 222, 0.55);
+  --mr-section: #b9ad9c;
+  --mr-paper-grid: rgba(236, 231, 222, 0.04);
 
-    --mr-map-water: #0d0d0c;
-    --mr-map-land: #2a2926;
-    --mr-map-canada: #252421;
-    --mr-map-mexico: #171716;
-    --mr-map-border: rgba(236, 235, 230, 0.16);
-    --mr-map-coast: rgba(236, 235, 230, 0.38);
-    --mr-map-label: #9a978f;
-    --mr-map-park: #2d2c28;
-    --mr-map-building: #33322e;
-    --mr-map-road: rgba(236, 235, 230, 0.08);
-    --mr-map-road-major: rgba(236, 235, 230, 0.17);
-    --mr-map-label-strong: #bdbab2;
-    --mr-map-space: var(--mr-bg);
-    --mr-map-glow: #262522;
-    --mr-marker-shadow: rgba(0, 0, 0, 0.62);
-    --mr-map-route: var(--mr-accent);
-    --mr-qr-ink: #141413;
-    --mr-qr-paper: #ecebe6;
-    --mr-person-james: #7aaae6;
-    --mr-person-justin: #ec9460;
-  }
+  --mr-map-water: #0d0d0c;
+  --mr-map-land: #2a2926;
+  --mr-map-canada: #252421;
+  --mr-map-mexico: #171716;
+  --mr-map-border: rgba(236, 235, 230, 0.16);
+  --mr-map-coast: rgba(236, 235, 230, 0.38);
+  --mr-map-label: #9a978f;
+  --mr-map-park: #2d2c28;
+  --mr-map-building: #33322e;
+  --mr-map-road: rgba(236, 235, 230, 0.08);
+  --mr-map-road-major: rgba(236, 235, 230, 0.17);
+  --mr-map-label-strong: #bdbab2;
+  --mr-map-space: var(--mr-bg);
+  --mr-map-glow: #262522;
+  --mr-marker-shadow: rgba(0, 0, 0, 0.62);
+  --mr-map-route: var(--mr-accent);
+  --mr-qr-ink: #141413;
+  --mr-qr-paper: #ecebe6;
+  --mr-person-james: #7aaae6;
+  --mr-person-justin: #ec9460;
 }
 
 @media (max-width: 480px) {
@@ -163,9 +166,7 @@ html.mr-active {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .mr .mr-seg button[aria-pressed='true'] { border-bottom-color: var(--mr-accent); }
-}
+html:where([data-mr-theme='dark']) .mr .mr-seg button[aria-pressed='true'] { border-bottom-color: var(--mr-accent); }
 
 /* A spot captured at night opens on the darkroom stage, even in light mode (scene.style.mood).
    Only the stage takes these; the page around it stays as it is. */
@@ -513,6 +514,36 @@ html.mr-active ::-webkit-scrollbar-thumb {
   }
 }
 
+/* the theme switch: a labelled dot (half = auto, ring = light, filled = dark); phones show the dot alone */
+.mr-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--mr-space-1);
+  border: 0;
+  background: none;
+  color: var(--mr-ink-2);
+  cursor: pointer;
+}
+.mr-theme__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+}
+.mr-theme[data-pref='dark'] .mr-theme__dot { background: currentColor; }
+.mr-theme[data-pref='system'] .mr-theme__dot { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.mr-theme .mr-theme__name { color: inherit; white-space: nowrap; }
+@media (hover: hover) {
+  .mr-theme:hover { color: var(--mr-ink); }
+}
+@media (max-width: 480px) {
+  .mr-theme { min-width: var(--mr-tap); min-height: var(--mr-tap); justify-content: center; padding: 0; }
+  .mr-theme .mr-theme__name { display: none; }
+}
+
 .mr-outbox {
   flex: none;
   display: flex;
@@ -844,9 +875,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-mbx .mapboxgl-ctrl-attrib.mapboxgl-compact-show { padding: 2px 28px 2px 8px; }
 .mr-mbx .mapboxgl-ctrl-attrib a { color: var(--mr-ink-2); }
 .mr-mbx .mapboxgl-ctrl-attrib-button { border-radius: var(--mr-radius-s); background-color: transparent; }
-@media (prefers-color-scheme: dark) {
-  .mr-mbx .mapboxgl-ctrl-attrib-button { filter: invert(1); }
-}
+html:where([data-mr-theme='dark']) .mr-mbx .mapboxgl-ctrl-attrib-button { filter: invert(1); }
 /* on the globe the corner note moves to the top, clear of the Mapbox logo */
 .mr-spotsmap[data-engine='mapbox'] .mr-map-note { top: var(--mr-space-4); bottom: auto; }
 .mr-spotsmap[data-engine='mapbox'][data-compact] .mr-map-note { top: var(--mr-space-3); bottom: auto; }
@@ -1453,7 +1482,7 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-edit-sec .mr-presets { margin-bottom: var(--mr-space-3); }
 .mr-edit-date {
   max-width: 260px;
-  color-scheme: light dark; /* the native calendar follows the theme */
+  /* the native calendar follows the theme: color-scheme is inherited from .mr */
   -webkit-appearance: none;
   appearance: none;
   text-align: left;

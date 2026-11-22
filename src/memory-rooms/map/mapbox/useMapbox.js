@@ -10,6 +10,7 @@
    overlay in the same frame as the map). */
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from 'react';
+import { onThemeChange } from '../../lib/theme.js';
 import { loadMapbox } from './engine.js';
 import { applyLook, onZoomEnd, styleChoice, styleOptions } from './style.js';
 
@@ -69,7 +70,7 @@ export function useMapbox(opts, onFail) {
       if (cancelled) return;
       cancelled = true;
       clearTimeout(timer);
-      scheme?.removeEventListener('change', look);
+      scheme?.();
       try {
         m?.remove();
       } catch {
@@ -137,12 +138,8 @@ export function useMapbox(opts, onFail) {
         });
         m.on('webglcontextlost', () => stop('webgl'));
         timer = setTimeout(() => stop('timeout'), timeout);
-        try {
-          scheme = window.matchMedia('(prefers-color-scheme: dark)');
-          scheme.addEventListener('change', look);
-        } catch {
-          scheme = null;
-        }
+        // the Memory Rooms theme (the person's pick, else the device's): repaint from the tokens live
+        scheme = onThemeChange(look);
       },
       (err) => stop('import', err),
     );
@@ -150,7 +147,7 @@ export function useMapbox(opts, onFail) {
     return () => {
       cancelled = true;
       clearTimeout(timer);
-      scheme?.removeEventListener('change', look);
+      scheme?.();
       delete el.__mrMap;
       if (m) m.remove();
       m = null;

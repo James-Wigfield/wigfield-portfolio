@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
+import ThemeToggle from './ThemeToggle.jsx';
 
 export default function Header({ page, who, onChangeWho }) {
   return (
@@ -18,6 +19,7 @@ export default function Header({ page, who, onChangeWho }) {
             <span className="mr-header-new-short">{COPY.app.newSpotShort}</span>
           </Link>
         )}
+        <ThemeToggle />
         <button type="button" className="mr-person" onClick={onChangeWho} aria-label={COPY.app.changePerson} title={COPY.app.changePerson} data-mr="who">
           <span className="mr-label">{COPY.app.holding}</span>
           <span className="mr-person-name">{who ? COPY.app.people[who] : '—'}</span>

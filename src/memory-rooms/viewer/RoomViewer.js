@@ -238,6 +238,12 @@ export class RoomViewer {
     this.canvas.addEventListener('pointermove', this.onPointerMove);
     this.themeQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
     this.themeQuery?.addEventListener('change', this.onTheme);
+    // the Memory Rooms theme switch (lib/theme.js) fires 'mr-theme' on window after <html data-mr-theme> changes
+    window.addEventListener('mr-theme', this.onTheme);
+    this.onHidden = () => {
+      if (document.visibilityState === 'hidden') this.stopSpin(true);
+    };
+    document.addEventListener('visibilitychange', this.onHidden);
 
     this.readTheme();
     if (import.meta.env.DEV) window.__mrViewer = this;
@@ -1890,6 +1896,8 @@ export class RoomViewer {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = 0;
     this.themeQuery?.removeEventListener('change', this.onTheme);
+    window.removeEventListener('mr-theme', this.onTheme);
+    document.removeEventListener('visibilitychange', this.onHidden);
     if (this.renderer) {
       this.controls.removeEventListener('change', this.requestRender);
       this.controls.removeEventListener('start', this.onControlsStart);

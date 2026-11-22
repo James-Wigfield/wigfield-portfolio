@@ -13,6 +13,7 @@ import { getToken, setToken } from './lib/api.js';
 import { onUnauthorized } from './lib/auth.js';
 import { resumeOutbox, startOutbox } from './lib/outbox.js';
 import { readWho, writeWho } from './lib/storage.js';
+import { initTheme, onThemeChange } from './lib/theme.js';
 import CapturePage from './pages/CapturePage.jsx';
 import EditPage from './pages/EditPage.jsx';
 import MapPage from './pages/MapPage.jsx';
@@ -26,6 +27,10 @@ import OutboxStatus from './shell/OutboxStatus.jsx';
 import PageBoundary from './shell/PageBoundary.jsx';
 import { ShellContext } from './shell/ShellContext.js';
 import WhoPicker from './shell/WhoPicker.jsx';
+import { useTheme } from './lib/useTheme.js';
+
+// The resolved theme lands on <html data-mr-theme> before React renders anything: no flash of the other theme.
+initTheme();
 
 // The 3D pages load on demand, so the map and the capture flow (often on a weak
 // phone signal) never wait for three.js, and a viewer problem can't take them down.
@@ -43,9 +48,14 @@ function usePageTakeover(page, authed) {
     html.classList.add('mr-active');
     const metas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
     const prev = metas.map((m) => m.content);
-    const bg = getComputedStyle(html).getPropertyValue('--mr-bg').trim();
-    if (bg) metas.forEach((m) => (m.content = bg));
+    const paintChrome = () => {
+      const bg = getComputedStyle(html).getPropertyValue('--mr-bg').trim();
+      if (bg) metas.forEach((m) => (m.content = bg));
+    };
+    paintChrome();
+    const offTheme = onThemeChange(paintChrome);
     return () => {
+      offTheme();
       html.classList.remove('mr-active');
       document.title = prevTitle;
       metas.forEach((m, i) => (m.content = prev[i] ?? m.content));
@@ -87,6 +97,7 @@ export default function MemoryRoomsApp({ page }) {
   const [choosing, setChoosing] = useState(false);
   usePageTakeover(page, authed);
   useOfflineShell();
+  const { theme } = useTheme();
 
   // A 401 anywhere: forget the password, show the gate. The outbox keeps everything.
   useEffect(
@@ -148,7 +159,7 @@ export default function MemoryRoomsApp({ page }) {
 
   return (
     <ShellContext.Provider value={{ who, changeWho }}>
-      <div className="mr" data-page={page} data-layout={fixed ? 'fixed' : 'flow'}>
+      <div className="mr" data-page={page} data-layout={fixed ? 'fixed' : 'flow'} data-theme={theme}>
         {body}
       </div>
     </ShellContext.Provider>

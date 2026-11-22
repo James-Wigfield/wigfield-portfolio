@@ -538,6 +538,7 @@ export class WalkGame {
     this.onTheme = () => requestAnimationFrame(() => !this.disposed && this.readTheme());
     this.themeQuery = matchMedia('(prefers-color-scheme: dark)');
     this.themeQuery.addEventListener('change', this.onTheme);
+    window.addEventListener('mr-theme', this.onTheme); // the Memory Rooms theme switch (lib/theme.js)
     this.onVisible = () => {
       if (document.visibilityState === 'visible' && this.ready && !this.raf) {
         this.last = performance.now();
@@ -1104,6 +1105,7 @@ export class WalkGame {
     document.removeEventListener('mousemove', this.onMoveLocked);
     document.removeEventListener('visibilitychange', this.onVisible);
     this.themeQuery?.removeEventListener('change', this.onTheme);
+    window.removeEventListener('mr-theme', this.onTheme);
     const c = this.canvas;
     c.removeEventListener('pointerdown', this.onDown);
     c.removeEventListener('pointermove', this.onMove);

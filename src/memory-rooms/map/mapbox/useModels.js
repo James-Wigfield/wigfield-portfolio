@@ -3,6 +3,7 @@
    arrives or goes. Plus the tilt that goes with it (useTilt). */
 
 import { useEffect, useEffectEvent, useReducer, useState } from 'react';
+import { onThemeChange } from '../../lib/theme.js';
 import { MAX_PITCH, MODEL_ZOOM, MODEL_ZOOM_OUT, REST_PITCH } from './models.js';
 
 /** True past MODEL_ZOOM, until the map zooms back out below MODEL_ZOOM_OUT. */
@@ -82,14 +83,7 @@ export function useModels(map, wanted, { compact, selectedId, focusedId }) {
     if (!layer || !map) return undefined;
     const paint = () => layer.setColors(readColors(map.getContainer()));
     paint();
-    let mq = null;
-    try {
-      mq = window.matchMedia('(prefers-color-scheme: dark)');
-      mq.addEventListener('change', paint);
-    } catch {
-      mq = null;
-    }
-    return () => mq?.removeEventListener('change', paint);
+    return onThemeChange(paint); // the Memory Rooms theme switch (lib/theme.js)
   }, [layer, map]);
 
   return layer;
