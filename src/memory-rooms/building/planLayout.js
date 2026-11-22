@@ -12,12 +12,12 @@
    level at a fixed pitch (the union's extent along the layout axis + `gap`). Lowest level first: on the left in a
    row, on top in a column. */
 
-import { wallLines } from './geometry.js';
+import { stairFootprint, wallLines } from './geometry.js';
 
 export const PLAN_GAP = 1.8; // metres between two levels' cells (room for the level's name above it)
 const PAD = 0.15; // metres round a level's walls
 
-/** A level's plan footprint: its wall centrelines grown by half their thickness (+ a hair), or its nodes. */
+/** A level's plan footprint: its wall centrelines grown by half their thickness (+ a hair) and its stair flights, or its nodes. */
 export function levelFootprint(b, levelId) {
   const min = [Infinity, Infinity];
   const max = [-Infinity, -Infinity];
@@ -31,6 +31,8 @@ export function levelFootprint(b, levelId) {
     grow(w.pa, w.thickness / 2 + PAD);
     grow(w.pb, w.thickness / 2 + PAD);
   }
+  // a flight from this level counts too (an external stair stands outside the walls)
+  for (const s of b.stairs || []) if (s.from === levelId) for (const p of stairFootprint(s)) grow(p, PAD);
   if (!Number.isFinite(min[0])) {
     const level = b.levels.find((l) => l.id === levelId);
     for (const n of level?.nodes || []) grow(n.at, PAD);

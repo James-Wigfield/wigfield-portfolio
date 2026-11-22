@@ -119,6 +119,15 @@ Learned on 12B Fletcher St (`memory-rooms-work/b-001c25b7…/`, reuse its helper
   the photos by back-projection (old camera → pixel → new camera), not a wall rule. A door the photos show open
   blinds a doorway camera: make it an `opening`. The building bake ignores the scene's lights / mood (day look).
   Blender with `-b <blend>` resolves a relative output path against the drive root: pass absolute paths.
+- **Two bakes per level (2026-11-22)**: build-building bakes every level with `--empty` (the structure again with
+  the furniture hidden: clean walls / floors, no ghost shadows) → `level-<id>-empty.glb` + a `room-empty.glb` beside
+  each slice; a level with no furniture gets none. push-building / push.mjs upload them as `model/level-<id>-empty`
+  and `model/empty` only when the Worker's ping says `empty` (an older Worker stores every spot model as room.glb):
+  deploy first, check ping, then push. Every node now carries glTF extras `mrKind` (structure / furniture by the
+  `obj__` / `__obj__` name rule), so name furniture that way and nothing else. Add ~40 % to a level's bake time
+  (12B ground: 592 s + 226 s at 128 samples). Check the empty look with `b-<id>/proof.py` (absolute paths).
+- An open curtain: the Batcave's `bespoke/wave_curtain.py` takes `open` (deep-folded stacks, ~11 % of the track a
+  side, clear of the glass); reuse it for any sheer the person wants drawn back.
 - `compose.py <work> <round> <samples> [cam,cam]` takes a camera list; `x-*` cameras are inspection views (under the
   balcony, the stair head, inside the MP strip) that only render when named. Plants render pale in Cycles: pick
   shrub colours a notch darker than the photo (#4d5a47 grey-green, #2b3f26 leafy).
