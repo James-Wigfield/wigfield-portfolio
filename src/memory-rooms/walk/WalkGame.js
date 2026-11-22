@@ -4,6 +4,8 @@
 
      const g = new WalkGame(container, { who });
      await g.load({ glbUrl, scene, photos });
+     await g.loadPlace({ building, levels: [{ id, name, elevation, height, glbUrl }], exteriorUrl, rooms: [{ id, level,
+                         origin: [x, y, z], scene, photos }] })      // a whole place: every level + the stairs
      g.on('local' | 'hint' | 'view' | 'emote' | 'ready' | 'error', fn)
      g.addPeer(person)  g.peerState(msg)  g.removePeer(id)  g.peerEmote(id, e)  g.say(id, text)
      g.setMove(x, y)  g.interact()  g.emote(e)  g.toggleView()  g.correct(p)
@@ -21,6 +23,13 @@
      photo fades in over the model (the spot viewer's viewpoint blend). Move off
      and it comes back.
    - Seats: chairs, stools, armchairs, sofas, beds and bunks from scene.json.
+   - A whole place (loadPlace): one "floor" per level, each with its own walkable grid (its band measured from
+     its floor) in the plan frame with absolute y; the exterior's site around it (its roof left off). A stair
+     flight (building.json stairs) is walked as a 1-D flight: step onto it from its foot (or its head, upstairs)
+     and you climb along it, y rising with the treads, until you step off at the other level. The levels above
+     yours hide (as the dollhouse lifts them); only the people on your level are drawn, the others are reported
+     ('levels' event: "Justin is upstairs"). Photo marks and seats come from every captured room, moved from its
+     room frame into the plan frame.
 
    Controls. Keyboard: WASD to walk (A/D step sideways), ↑/↓ walk, ←/→ turn,
    Shift runs, E sits / stands / looks at a photo, 1 wave, 2 jump, 3 sit, V first
@@ -43,6 +52,9 @@ import { applyDollhouse, indexRoom, stepFades } from '../viewer/dollhouse.js';
 import { aimCamera } from '../viewer/helpers.js';
 import { CHARACTERS, FPS } from './characters.js';
 import { buildGrid, findPath, nearestWalkable, slide } from './grid.js';
+import { stairFootprint, wallLines, wallOpenings } from '../building/geometry.js';
+import { levelFootprint } from '../building/planLayout.js';
+import { kindOf } from '../viewer/furnishing.js';
 
 const WALK_MS = 1.5; // m/s
 const RUN_MS = 3.4;
@@ -63,6 +75,9 @@ const FLY_MS = 700;
 const DIRS = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
 const MIRROR = { west: 'east', 'south-west': 'south-east', 'north-west': 'north-east' };
 const ONCE = { wave: 1.6, jump: 0.9 }; // seconds an emote lasts
+const STAIR_DIR = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+const FLIGHT_ZONE = 0.75; // m in front of a flight's foot (or beyond its head) where a step toward it takes it
+const FLIGHT_EDGE = 0.2; // m kept from a flight's sides
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -170,7 +185,10 @@ export class WalkGame {
     this.seats = [];
     this.textures = {};
     // armed: a photo mark may open its photo (not until you've stepped off the one you start on)
-    this.me = { id: 'me', who: this.who, pos: new THREE.Vector3(), heading: 0, anim: 'idle', sitting: null, emote: null, still: 0, armed: false };
+    this.me = { id: 'me', who: this.who, pos: new THREE.Vector3(), heading: 0, anim: 'idle', sitting: null, emote: null, still: 0, armed: false, flight: null };
+    this.floors = []; // a whole place: { id, name, elevation, height, holder, root, room, grid, blockers } per level
+    this.flights = []; // its stairs: { id, from, to, start, d, r, length, width, y0, y1 }
+    this.level = null; // the floor you're on (a place), null in a room
     this.sent = { at: 0, p: null, h: 0, a: '' };
     this.width = Math.max(1, container.clientWidth);
     this.height = Math.max(1, container.clientHeight);
@@ -278,27 +296,170 @@ export class WalkGame {
       this.buildMarks(cams);
       this.buildSeats(scene?.objects || []);
       this.buildBlockers(root);
-
-      const me = this.me;
-      me.pos.set(this.grid.start.x, 0, this.grid.start.z);
-      me.heading = Math.atan2(centre.x - me.pos.x, centre.z - me.pos.z);
-      this.yaw = me.heading + Math.PI;
-      me.sprite = this.makeSprite(this.who);
-      me.tag = this.makeTag(this.who, true);
-
-      this.ready = true;
-      this.container.dataset.state = 'ready';
-      this.container.dataset.grid = `${this.grid.nx}x${this.grid.nz}`;
-      this.emit('ready', { gridMs: this.gridMs, area: this.grid.area });
-      this.sendLocal(true);
-      this.last = performance.now();
-      this.raf = requestAnimationFrame(this.tick);
+      this.start({ x: this.grid.start.x, y: 0, z: this.grid.start.z }, centre);
     } catch (err) {
       if (this.disposed) return;
       console.info('[memory-rooms] walk load failed:', err?.message || err);
       this.container.dataset.state = 'error';
       this.emit('error', err);
     }
+  }
+
+  /** You appear at `at`, facing `centre`, and the loop starts. */
+  start(at, centre) {
+    const me = this.me;
+    me.pos.set(at.x, at.y || 0, at.z);
+    me.heading = Math.atan2(centre.x - me.pos.x, centre.z - me.pos.z);
+    this.yaw = me.heading + Math.PI;
+    me.sprite = this.makeSprite(this.who);
+    me.tag = this.makeTag(this.who, true);
+    this.ready = true;
+    this.container.dataset.state = 'ready';
+    this.container.dataset.grid = `${this.grid.nx}x${this.grid.nz}`;
+    this.emit('ready', { gridMs: this.gridMs, area: this.grid.area, levels: this.floors.length });
+    this.sendLocal(true);
+    this.last = performance.now();
+    this.raf = requestAnimationFrame(this.tick);
+  }
+
+  /**
+   * A whole place: every level's GLB (plan frame, absolute y) and the exterior's site, a grid per level, the
+   * stairs between them, and the photo marks + seats of every captured room (room frame → plan frame).
+   */
+  async loadPlace({ building, levels, exteriorUrl = null, rooms = [] }) {
+    try {
+      const aniso = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+      const [gltfs, ext] = await Promise.all([
+        Promise.all(levels.map((l) => this.loader.loadAsync(l.glbUrl))),
+        exteriorUrl ? this.loader.loadAsync(exteriorUrl).catch(() => null) : Promise.resolve(null),
+        this.loadCharacters(),
+      ]);
+      if (this.disposed) {
+        for (const g of gltfs) disposeTree(g.scene);
+        if (ext) disposeTree(ext.scene);
+        return;
+      }
+      this.building = building;
+      this.photos = [];
+      // the stairs: a flight from its foot (start) toward `dir`, `length` long
+      this.flights = (building.stairs || []).map((st) => {
+        const d = STAIR_DIR[st.dir] || [0, -1];
+        const from = levels.find((l) => l.id === st.from);
+        const to = levels.find((l) => l.id === st.to);
+        return { id: st.id, from: st.from, to: st.to, start: st.start, d, r: [-d[1], d[0]], length: st.length, width: st.width, y0: from?.elevation ?? 0, y1: to?.elevation ?? 0, foot: stairFootprint(st) };
+      }).filter((f) => levels.some((l) => l.id === f.from) && levels.some((l) => l.id === f.to));
+      const t0 = performance.now();
+      this.floors = levels.map((l, i) => {
+        const root = applyBakedMaterials(gltfs[i].scene, { anisotropy: aniso });
+        const holder = new THREE.Group();
+        holder.name = `floor__${l.id}`;
+        holder.add(root);
+        this.world.add(holder);
+        holder.updateMatrixWorld(true);
+        const index = indexRoom(root, null);
+        const room = { root, holder, interior: true, ...index };
+        // where you can walk: the level's walls' box, grown over the foot of every flight that starts here
+        const fp = levelFootprint(building, l.id) || { min: [-10, -10], max: [10, 10] };
+        const box = { min: [...fp.min], max: [...fp.max] };
+        for (const f of this.flights) {
+          if (f.from !== l.id && f.to !== l.id) continue;
+          for (const [x, z] of f.foot) {
+            box.min = [Math.min(box.min[0], x - 1), Math.min(box.min[1], z - 1)];
+            box.max = [Math.max(box.max[0], x + 1), Math.max(box.max[1], z + 1)];
+          }
+        }
+        const bounds = new THREE.Box3(new THREE.Vector3(box.min[0], l.elevation, box.min[1]), new THREE.Vector3(box.max[0], l.elevation + (l.height || 2.7), box.max[1]));
+        return { id: l.id, name: l.name || l.id, elevation: l.elevation, height: l.height || 2.7, holder, root, room, bounds };
+      });
+      // the site round the house (fences, trees, the ground); the roof stays off: you walk inside
+      if (ext) {
+        const root = applyBakedMaterials(ext.scene, { anisotropy: aniso });
+        root.traverse((o) => {
+          if (/^roof/.test(o.name || '')) o.visible = false;
+        });
+        this.exterior = new THREE.Group();
+        this.exterior.add(root);
+        this.world.add(this.exterior);
+      }
+      // the captured rooms: their photo cameras and seats, from each room frame into the plan frame
+      const cams = [];
+      const objects = [];
+      for (const r of rooms) {
+        const [ox, oy, oz] = r.origin;
+        const add = (p) => [p[0] + ox, p[1] + oy, p[2] + oz];
+        for (const c of r.scene?.cameras || []) cams.push({ ...c, pos: add(c.pos), look: add(c.look), level: r.level, photos: r.photos || [], room: r.id });
+        for (const o of r.scene?.objects || []) objects.push({ ...o, at: add(o.at), level: r.level });
+      }
+      // the start: the first photo camera of the lowest captured level, else the lowest level's middle
+      const sorted = [...this.floors].sort((a, b) => a.elevation - b.elevation);
+      const cam0 = sorted.map((f) => cams.find((c) => c.level === f.id)).find(Boolean);
+      const startFloor = (cam0 && this.floors.find((f) => f.id === cam0.level)) || sorted[0];
+      for (const f of this.floors) {
+        const c = f === startFloor && cam0 ? { x: cam0.pos[0], z: cam0.pos[2] } : f.bounds.getCenter(new THREE.Vector3());
+        // a flight's hole in this floor (it arrives here): nothing to stand on
+        const block = this.flights.filter((fl) => fl.to === f.id).map((fl) => fl.foot);
+        // every door and opening of this level walks through (the bake shuts the leaves)
+        const open = [];
+        for (const w of wallLines(building, f.id)) {
+          const h = w.thickness / 2 + 0.08;
+          for (const o of wallOpenings(building, w.id)) {
+            if (o.type === 'window' || o.sill > 0.2) continue;
+            const a = [w.pa[0] + w.dir[0] * o.u0, w.pa[1] + w.dir[1] * o.u0];
+            const b = [w.pa[0] + w.dir[0] * o.u1, w.pa[1] + w.dir[1] * o.u1];
+            open.push([
+              [a[0] + w.left[0] * h, a[1] + w.left[1] * h],
+              [b[0] + w.left[0] * h, b[1] + w.left[1] * h],
+              [b[0] - w.left[0] * h, b[1] - w.left[1] * h],
+              [a[0] - w.left[0] * h, a[1] - w.left[1] * h],
+            ]);
+          }
+        }
+        f.grid = buildGrid(f.root, { bounds: f.bounds, start: { x: c.x, z: c.z }, floor: f.elevation, block, open });
+        f.blockers = this.blockersOf(f.root, f.room);
+      }
+      this.gridMs = Math.round(performance.now() - t0);
+      this.buildMarks(cams);
+      this.buildSeats(objects);
+      this.setLevel(startFloor.id);
+      this.container.dataset.place = String(this.floors.length);
+      const centre = startFloor.bounds.getCenter(new THREE.Vector3());
+      this.start({ x: this.grid.start.x, y: startFloor.elevation, z: this.grid.start.z }, centre);
+    } catch (err) {
+      if (this.disposed) return;
+      console.info('[memory-rooms] place walk load failed:', err?.message || err);
+      this.container.dataset.state = 'error';
+      this.emit('error', err);
+    }
+  }
+
+  /** You're on floor `id` now: its grid, dollhouse and blockers; the floors above it hide. */
+  setLevel(id) {
+    const f = this.floors.find((x) => x.id === id);
+    if (!f || this.level === id) return;
+    this.level = id;
+    this.room = f.room;
+    this.grid = f.grid;
+    this.blockers = f.blockers;
+    this.wallMeshes = null;
+    for (const other of this.floors) {
+      other.holder.visible = other.elevation <= f.elevation + 0.01;
+      // a floor you left keeps its walls and ceilings up
+      if (other !== f) for (const fade of Object.values(other.room.fades)) fade.target = 1;
+      if (other !== f) stepFades(other.room, 0, true);
+    }
+    for (const m of this.marks) m.mesh.visible = !m.level || m.level === id;
+    this.container.dataset.level = id;
+    this.levelsChanged = true;
+  }
+
+  floorOf(id) {
+    return this.floors.find((x) => x.id === id) || null;
+  }
+
+  /** The floor height under you (a flight's slope while you're on one). */
+  floorY() {
+    if (this.me.flight) return this.me.pos.y;
+    return this.floorOf(this.level)?.elevation ?? 0;
   }
 
   async loadCharacters() {
@@ -344,19 +505,34 @@ export class WalkGame {
     const dot = new THREE.CircleGeometry(0.06, 20).rotateX(-Math.PI / 2);
     for (const cam of cams) {
       const pos = cam.pos;
-      if (!this.grid || !pos) continue;
-      // a camera held over furniture still gets a mark: at the nearest place you can stand
-      const at = this.grid.walkable(pos[0], pos[2]) ? { x: pos[0], z: pos[2] } : nearestWalkable(this.grid, pos[0], pos[2]);
+      if (!(this.grid || this.floors.length) || !pos) continue;
+      // a camera held over furniture still gets a mark: at the nearest place you can stand (on its own level)
+      const grid = (cam.level && this.floorOf(cam.level)?.grid) || this.grid;
+      const at = grid.walkable(pos[0], pos[2]) ? { x: pos[0], z: pos[2] } : nearestWalkable(grid, pos[0], pos[2]);
       const mat = new THREE.MeshBasicMaterial({ color: this.accent, transparent: true, opacity: 0.9, depthWrite: false });
       const mesh = new THREE.Group();
       mesh.add(new THREE.Mesh(geo, mat), new THREE.Mesh(dot, mat));
-      mesh.position.set(at.x, 0.012, at.z);
+      mesh.position.set(at.x, (this.floorOf(cam.level)?.elevation ?? 0) + 0.012, at.z);
       mesh.renderOrder = 1;
       mesh.material = mat;
       this.scene.add(mesh);
-      this.marks.push({ photo: cam.photo, cam, x: at.x, z: at.z, mesh });
+      this.marks.push({ photo: cam.photo, cam, x: at.x, z: at.z, mesh, level: cam.level || null, photos: cam.photos || null });
     }
     this.markGeo = [geo, dot];
+  }
+
+  /** A level's furniture that can stand between the camera and you (labelled furniture, tall enough). */
+  blockersOf(root, room) {
+    const onWalls = new Set(Object.values(room.walls).flat());
+    const out = [];
+    for (const node of root.children) {
+      // furniture, and a flight's raking walls (an external stair can stand right in front of the camera)
+      if ((kindOf(node, root) !== 'furniture' && !/^stair__/.test(node.name || '')) || onWalls.has(node)) continue;
+      const box = new THREE.Box3().setFromObject(node);
+      if (box.isEmpty() || box.max.y - box.min.y < 0.5) continue;
+      out.push({ node, box, hidden: false });
+    }
+    return out;
   }
 
   /** Furniture that can stand between the camera and you (anything tall enough that isn't part of a wall). */
@@ -377,7 +553,7 @@ export class WalkGame {
     const third = this.view === 'third' && !this.photoView;
     const cam = this.camera.position;
     // chest and the top of the head: a high cupboard or a ceiling vent can hide just the head
-    const targets = (this.me.sitting ? [0.7, 1.25] : [1.0, 1.8]).map((y) => new THREE.Vector3(this.me.pos.x, y, this.me.pos.z));
+    const targets = (this.me.sitting ? [0.7, 1.25] : [1.0, 1.8]).map((y) => new THREE.Vector3(this.me.pos.x, this.me.pos.y + y, this.me.pos.z));
     const rays = targets.map((t) => {
       const dir = t.clone().sub(cam);
       const len = dir.length();
@@ -418,7 +594,7 @@ export class WalkGame {
     if (!this.wallMeshes.length) return;
     const cam = this.camera.position;
     for (const y of this.me.sitting ? [0.7, 1.25] : [1.0, 1.8]) {
-      const from = new THREE.Vector3(this.me.pos.x, y, this.me.pos.z);
+      const from = new THREE.Vector3(this.me.pos.x, this.me.pos.y + y, this.me.pos.z);
       const dir = cam.clone().sub(from);
       const far = dir.length();
       this.raycaster.set(from, dir.normalize());
@@ -439,7 +615,7 @@ export class WalkGame {
       const half = o.size[2] / 2;
       // where you sit: just in front of the seat, on the floor (the sprite draws the sitting pose over its edge)
       const edge = { x: o.at[0] + front.x * (half + 0.1), z: o.at[2] + front.z * (half + 0.1) };
-      this.seats.push({ id: o.id, kit: o.kit, at: o.at, size: o.size, rotY: r, front, edge, heading: Math.atan2(front.x, front.z) });
+      this.seats.push({ id: o.id, kit: o.kit, at: o.at, size: o.size, rotY: r, front, edge, heading: Math.atan2(front.x, front.z), level: o.level || null });
     }
   }
 
@@ -586,7 +762,8 @@ export class WalkGame {
     const ndc = new THREE.Vector2(((clientX - rect.left - r.x) / r.w) * 2 - 1, -((clientY - rect.top - r.y) / r.h) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
     const hit = new THREE.Vector3();
-    if (!this.raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return false;
+    if (this.me.flight) return false;
+    if (!this.raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -this.floorY()), hit)) return false;
     return this.walkTo(hit.x, hit.z);
   }
 
@@ -605,7 +782,9 @@ export class WalkGame {
   nearestSeat() {
     let best = null;
     let bd = SEAT_REACH;
+    if (this.me.flight) return null;
     for (const s of this.seats) {
+      if (s.level && s.level !== this.level) continue;
       const dx = this.me.pos.x - s.at[0];
       const dz = this.me.pos.z - s.at[2];
       // into the seat's own frame (rotY about +y)
@@ -623,7 +802,9 @@ export class WalkGame {
   nearestMark() {
     let best = null;
     let bd = MARK_R;
+    if (this.me.flight) return null;
     for (const m of this.marks) {
+      if (m.level && m.level !== this.level) continue;
       const d = Math.hypot(this.me.pos.x - m.x, this.me.pos.z - m.z);
       if (d < bd) {
         bd = d;
@@ -650,7 +831,7 @@ export class WalkGame {
     me.sitting = seat || { floor: true };
     this.path = null;
     if (seat) {
-      me.pos.set(seat.edge.x, 0, seat.edge.z);
+      me.pos.set(seat.edge.x, this.floorY(), seat.edge.z);
       me.heading = seat.heading;
     }
     me.anim = 'sit';
@@ -663,7 +844,7 @@ export class WalkGame {
     const me = this.me;
     if (!me.sitting) return;
     const back = me.sitting.floor ? { x: me.pos.x, z: me.pos.z } : nearestWalkable(this.grid, me.standFrom?.x ?? me.pos.x, me.standFrom?.z ?? me.pos.z);
-    me.pos.set(back.x, 0, back.z);
+    me.pos.set(back.x, this.floorY(), back.z);
     me.sitting = null;
     me.anim = 'idle';
     delete this.container.dataset.sitting;
@@ -696,15 +877,19 @@ export class WalkGame {
   correct(p) {
     if (!Array.isArray(p) || !this.grid) return;
     // never off the walkable area: the clamped point can sit in a wall or a bed
+    if (this.me.flight) {
+      // clamped mid-flight: back to its foot or head, whichever level you were last on
+      this.me.flight = null;
+    }
     const at = this.grid.walkable(p[0], p[2]) ? { x: p[0], z: p[2] } : nearestWalkable(this.grid, p[0], p[2]);
-    this.me.pos.set(at.x, 0, at.z);
+    this.me.pos.set(at.x, this.floorY(), at.z);
     this.path = null;
     this.sendLocal(true);
   }
 
   /** Put yourself somewhere (the headless check's spoof test uses it, through the socket). */
   teleport(x, z) {
-    this.me.pos.set(x, 0, z);
+    this.me.pos.set(x, this.floorY(), z);
     this.sendLocal(true);
   }
 
@@ -712,7 +897,7 @@ export class WalkGame {
 
   enterPhoto(mark) {
     const cam = mark.cam;
-    const photo = this.photos?.find((p) => p.photo === cam.photo);
+    const photo = (mark.photos || this.photos)?.find((p) => p.photo === cam.photo);
     const aspect = photo?.width && photo?.height ? photo.width / photo.height : cam.aspect ?? 0.75;
     const goal = new THREE.PerspectiveCamera();
     aimCamera(goal, cam.pos, cam.look, cam.roll || 0, true);
@@ -754,20 +939,25 @@ export class WalkGame {
   addPeer(person) {
     // only someone whose position is known (the room announces you with your first state)
     if (!person?.id || this.peers.has(person.id) || !Array.isArray(person.p)) return;
-    const peer = { id: person.id, who: person.who, buf: [], pos: new THREE.Vector3(), heading: person.h || 0, anim: person.a || 'idle', emote: null };
-    if (Array.isArray(person.p)) peer.pos.set(person.p[0], 0, person.p[2]);
+    const peer = { id: person.id, who: person.who, buf: [], pos: new THREE.Vector3(), heading: person.h || 0, anim: person.a || 'idle', emote: null, level: person.l ?? null };
+    if (Array.isArray(person.p)) peer.pos.set(person.p[0], this.floors.length ? person.p[1] || 0 : 0, person.p[2]);
     peer.buf.push({ t: performance.now(), p: peer.pos.clone(), h: peer.heading, a: peer.anim });
     peer.sprite = this.ready ? this.makeSprite(person.who) : null;
     peer.sprite?.mesh.position.copy(peer.pos); // never drawn at the origin, even before its first frame
     peer.tag = this.makeTag(person.who);
     this.peers.set(person.id, peer);
     this.container.dataset.peers = String(this.peers.size);
+    this.levelsChanged = true;
   }
 
-  peerState({ id, p, h, a }) {
+  peerState({ id, p, h, a, l }) {
     const peer = this.peers.get(id);
     if (!peer || !Array.isArray(p)) return;
-    const pos = new THREE.Vector3(p[0], 0, p[2]);
+    if ((l ?? null) !== peer.level) {
+      peer.level = l ?? null;
+      this.levelsChanged = true;
+    }
+    const pos = new THREE.Vector3(p[0], this.floors.length ? p[1] || 0 : 0, p[2]);
     const last = peer.buf[peer.buf.length - 1];
     const now = performance.now();
     if (last && last.p.distanceTo(pos) > SNAP_M) peer.buf = []; // a big jump: snap, don't glide through walls
@@ -788,6 +978,27 @@ export class WalkGame {
     peer.tag?.remove();
     this.peers.delete(id);
     this.container.dataset.peers = String(this.peers.size);
+    this.levelsChanged = true;
+  }
+
+  /** Is a peer drawn? In a place only the people on your level are. */
+  onMyLevel(peer) {
+    return !this.floors.length || (peer.level ?? null) === this.level;
+  }
+
+  /** Who is on which other level, for the page ("Justin is upstairs"): emitted when it changes. */
+  emitLevels() {
+    if (!this.levelsChanged || !this.floors.length) return;
+    this.levelsChanged = false;
+    const mine = this.floorOf(this.level);
+    const away = [];
+    for (const peer of this.peers.values()) {
+      if (this.onMyLevel(peer)) continue;
+      const f = this.floorOf(peer.level);
+      away.push({ who: peer.who, level: peer.level, name: f?.name || null, where: f && mine ? (f.elevation > mine.elevation ? 'up' : 'down') : null });
+    }
+    this.container.dataset.away = away.map((a) => `${a.who}:${a.level}`).join(',');
+    this.emit('levels', { level: this.level, name: mine?.name || null, away });
   }
 
   /** A short chat line over someone's head ('me' for you). Never stored. */
@@ -809,12 +1020,13 @@ export class WalkGame {
     if (!this.ready) return; // no position until the room (and so the spawn point) is known
     const me = this.me;
     const now = performance.now();
-    const p = [Math.round(me.pos.x * 1000) / 1000, 0, Math.round(me.pos.z * 1000) / 1000];
+    const p = [Math.round(me.pos.x * 1000) / 1000, this.floors.length ? Math.round(me.pos.y * 1000) / 1000 : 0, Math.round(me.pos.z * 1000) / 1000];
     const anim = this.animOf(me);
-    const changed = !this.sent.p || this.sent.p[0] !== p[0] || this.sent.p[2] !== p[2] || this.sent.a !== anim || Math.abs(wrap(this.sent.h - me.heading)) > 0.05;
+    const changed =
+      !this.sent.p || this.sent.p[0] !== p[0] || this.sent.p[1] !== p[1] || this.sent.p[2] !== p[2] || this.sent.a !== anim || this.sent.l !== this.level || Math.abs(wrap(this.sent.h - me.heading)) > 0.05;
     if (!force && (!changed || now - this.sent.at < SEND_MS)) return;
-    this.sent = { at: now, p, h: me.heading, a: anim };
-    this.emit('local', { p, h: Math.round(me.heading * 1000) / 1000, a: anim });
+    this.sent = { at: now, p, h: me.heading, a: anim, l: this.level };
+    this.emit('local', { p, h: Math.round(me.heading * 1000) / 1000, a: anim, ...(this.floors.length ? { l: this.level } : {}) });
   }
 
   animOf(who) {
@@ -885,12 +1097,20 @@ export class WalkGame {
     }
 
     let moving = false;
-    if (vx || vz) {
+    if ((vx || vz) && me.flight) {
+      moving = this.stepFlight(vx * dt, vz * dt);
+      if (moving || input) {
+        const target = Math.atan2(vx, vz);
+        me.heading += wrap(target - me.heading) * Math.min(1, dt * 12);
+      }
+    } else if (vx || vz) {
       const next = slide(this.grid, { x: me.pos.x, z: me.pos.z }, vx * dt, vz * dt);
       const moved = Math.hypot(next.x - me.pos.x, next.z - me.pos.z);
       me.pos.x = next.x;
       me.pos.z = next.z;
       moving = moved > 1e-4;
+      // a step toward a flight's foot (or, upstairs, its head) takes it
+      if (this.flights.length && !me.sitting) this.maybeTakeFlight(vx, vz);
       if (moving || input) {
         const target = Math.atan2(vx, vz);
         me.heading += wrap(target - me.heading) * Math.min(1, dt * 12);
@@ -917,11 +1137,69 @@ export class WalkGame {
     } else me.still = 0;
 
     this.sendLocal();
+    this.emitLevels();
     this.container.dataset.x = me.pos.x.toFixed(2);
     this.container.dataset.z = me.pos.z.toFixed(2);
+    this.container.dataset.y = me.pos.y.toFixed(2);
+    this.container.dataset.flight = me.flight ? me.flight.f.id : '';
     this.container.dataset.anim = this.animOf(me);
     if (!this.container.dataset.view) this.container.dataset.view = this.view;
     this.emitHint();
+  }
+
+  /** Where you stand on a flight: u along it from its foot, v across it (to the climber's right). */
+  flightCoords(f, x, z) {
+    const dx = x - f.start[0];
+    const dz = z - f.start[1];
+    return { u: dx * f.d[0] + dz * f.d[1], v: dx * f.r[0] + dz * f.r[1] };
+  }
+
+  maybeTakeFlight(vx, vz) {
+    const me = this.me;
+    for (const f of this.flights) {
+      const { u, v } = this.flightCoords(f, me.pos.x, me.pos.z);
+      if (Math.abs(v) > f.width / 2 - FLIGHT_EDGE / 2) continue;
+      // heading at the flight (within ~60° of straight up it, or straight down it upstairs)
+      const along = (vx * f.d[0] + vz * f.d[1]) / (Math.hypot(vx, vz) || 1);
+      let at = null;
+      if (this.level === f.from && u > -FLIGHT_ZONE && u < 0.05 && along > 0.5) at = Math.max(0, u);
+      else if (this.level === f.to && u < f.length + FLIGHT_ZONE && u > f.length - 0.05 && along < -0.5) at = Math.min(f.length, u);
+      if (at == null) continue;
+      me.flight = { f, u: at, v: Math.max(-(f.width / 2 - FLIGHT_EDGE), Math.min(f.width / 2 - FLIGHT_EDGE, v)) };
+      this.path = null;
+      this.placeOnFlight();
+      return true;
+    }
+    return false;
+  }
+
+  placeOnFlight() {
+    const { f, u, v } = this.me.flight;
+    const t = clamp(u / f.length, 0, 1);
+    this.me.pos.set(f.start[0] + f.d[0] * u + f.r[0] * v, f.y0 + (f.y1 - f.y0) * t, f.start[1] + f.d[1] * u + f.r[1] * v);
+    // you're on the level whose half of the flight you're on (who sees you, which floors show)
+    this.setLevel(u < f.length / 2 ? f.from : f.to);
+  }
+
+  /** Move along the flight you're on; step off its foot or its head onto that level. → moved? */
+  stepFlight(dx, dz) {
+    const me = this.me;
+    const fl = me.flight;
+    const { f } = fl;
+    fl.u += dx * f.d[0] + dz * f.d[1];
+    fl.v = clamp(fl.v + dx * f.r[0] + dz * f.r[1], -(f.width / 2 - FLIGHT_EDGE), f.width / 2 - FLIGHT_EDGE);
+    if (fl.u < -0.02 || fl.u > f.length + 0.02) {
+      const level = fl.u < 0 ? f.from : f.to;
+      me.flight = null;
+      this.setLevel(level);
+      const x = f.start[0] + f.d[0] * fl.u + f.r[0] * fl.v;
+      const z = f.start[1] + f.d[1] * fl.u + f.r[1] * fl.v;
+      const at = this.grid.walkable(x, z) ? { x, z } : nearestWalkable(this.grid, x, z);
+      me.pos.set(at.x, this.floorOf(level).elevation, at.z);
+      return true;
+    }
+    this.placeOnFlight();
+    return Math.hypot(dx, dz) > 1e-4;
   }
 
   emitHint() {
@@ -960,15 +1238,15 @@ export class WalkGame {
     const pv = this.photoView;
     const third = () => {
       const h = me.sitting ? 0.95 : 1.15;
-      const target = new THREE.Vector3(me.pos.x, h, me.pos.z);
+      const target = new THREE.Vector3(me.pos.x, me.pos.y + h, me.pos.z);
       const d = this.dist;
       const pos = new THREE.Vector3(target.x + Math.sin(this.yaw) * Math.cos(this.pitch) * d, target.y + Math.sin(this.pitch) * d, target.z + Math.cos(this.yaw) * Math.cos(this.pitch) * d);
-      pos.y = Math.max(0.3, pos.y);
+      pos.y = Math.max(me.pos.y + 0.3, pos.y);
       return { pos, target };
     };
     const pose = (view) => {
       if (view === 'first') {
-        const eye = new THREE.Vector3(me.pos.x, me.sitting ? 1.1 : EYE, me.pos.z);
+        const eye = new THREE.Vector3(me.pos.x, me.pos.y + (me.sitting ? 1.1 : EYE), me.pos.z);
         const dir = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.fpPitch), Math.sin(this.fpPitch), Math.cos(this.yaw) * Math.cos(this.fpPitch));
         return { pos: eye, target: eye.clone().add(dir), fov: 70 };
       }
@@ -1046,8 +1324,9 @@ export class WalkGame {
       }
       if (peer.emote && now > peer.emote.until) peer.emote = null;
       peer.sprite.update(dt, { pos: peer.pos, heading: peer.heading, anim: peer.emote ? peer.emote.e : peer.anim, camera });
+      peer.sprite.mesh.visible = this.onMyLevel(peer);
     }
-    for (const m of this.marks) m.mesh.visible = this.view !== 'photo' || !this.photoView;
+    for (const m of this.marks) m.mesh.visible = (this.view !== 'photo' || !this.photoView) && (!m.level || m.level === this.level);
 
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, this.width, this.height);
@@ -1085,7 +1364,7 @@ export class WalkGame {
     };
     const inPhoto = Boolean(this.photoView);
     place(this.me, this.me.pos, this.me.sitting ? this.me.sprite.top * 0.7 : this.me.sprite.top, this.me.tag, inPhoto || this.view === 'first');
-    for (const peer of this.peers.values()) place(peer, peer.pos, peer.sprite ? peer.sprite.top : 1.75, peer.tag, inPhoto);
+    for (const peer of this.peers.values()) place(peer, peer.pos, peer.sprite ? peer.sprite.top : 1.75, peer.tag, inPhoto || !this.onMyLevel(peer));
   }
 
   setSize(w, h) {
@@ -1118,7 +1397,9 @@ export class WalkGame {
     for (const m of this.marks) m.mesh.material.dispose();
     for (const g of this.markGeo || []) g.dispose();
     for (const t of Object.values(this.textures)) t.dispose();
-    if (this.room) disposeTree(this.room.holder);
+    if (this.floors.length) for (const f of this.floors) disposeTree(f.holder);
+    else if (this.room) disposeTree(this.room.holder);
+    if (this.exterior) disposeTree(this.exterior);
     this.renderer.renderLists.dispose();
     this.renderer.dispose();
     this.renderer.forceContextLoss();

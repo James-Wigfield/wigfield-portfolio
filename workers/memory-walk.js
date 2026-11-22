@@ -1,5 +1,6 @@
 /* ============================================================================
-   MEMORY ROOMS — "Walk in together": one Durable Object per spot
+   MEMORY ROOMS — "Walk in together": one Durable Object per spot (key = its uuid)
+   or per whole place (key = `b:<buildingId>`, its levels joined by stairs)
    ----------------------------------------------------------------------------
    Everyone walking the same spot's room at the same time shares it live: where
    each person is, which way they face, what they're doing (walk / run / sit /
@@ -17,17 +18,20 @@
    with it. This DO only ever sees requests the Worker already checked.
 
    Messages (JSON, `t` = type)
-     client → room   state { p:[x,y,z], h, a }    position (m), heading (rad), animation
+     client → room   state { p:[x,y,z], h, a, l }  position (m), heading (rad), animation, level (a place:
+                                                   its building.json level id; a room: absent / null)
                      emote { e: 'wave'|'jump'|'sit' }
                      chat  { text }                ≤ 80 characters, never stored
                      ping
      room → client   hello { id, who, people:[Person] }   you + everyone already here
                      join  { person }                       someone arrived
                      leave { id, who }
-                     state { id, p, h, a }                  someone moved
+                     state { id, p, h, a, l }               someone moved
                      correct { p }                          your move was clamped (a teleport)
                      emote { id, e }   chat { id, who, text }   pong { now }
-     Person = { id, who, p, h, a, since }
+     Person = { id, who, p, h, a, l, since }
+   In a place, p is in the plan frame with absolute y (a level's floor at its elevation, a flight in between), so
+   the speed check covers climbing a stair too; clients draw only the people on their own level.
    You're announced (join) with your FIRST state, never before: until then you're in the
    presence count (the spot page) but nobody draws you. Pings get an auto-response (the room
    isn't woken) and an alarm closes sockets quiet for 75 s, so a phone that vanished mid-walk
@@ -44,6 +48,7 @@ const CHAT_MAX = 80;
 const ANIMS = new Set(['idle', 'walk', 'run', 'sit', 'wave', 'jump']);
 const EMOTES = new Set(['wave', 'jump', 'sit']);
 const PEOPLE = new Set(['james', 'justin']);
+const LEVEL = /^[a-z0-9][a-z0-9-]{0,31}$/; // a building.json level id
 const SAVE_EVERY_MS = 1000; // last position into the socket attachment (survives hibernation)
 const SWEEP_MS = 60000; // an alarm this often closes sockets that went quiet (a phone that vanished mid-walk)
 const IDLE_MS = 75000; // clients ping every 20 s (answered by the auto-response, without waking the room)
@@ -80,14 +85,14 @@ export class MemoryWalkRoom {
     for (const ws of this.ctx.getWebSockets()) {
       if (ws === except) continue;
       const s = this.info(ws);
-      if (s && (s.placed || !placedOnly)) out.push({ id: s.id, who: s.who, p: s.p, h: s.h, a: s.a, since: s.since });
+      if (s && (s.placed || !placedOnly)) out.push({ id: s.id, who: s.who, p: s.p, h: s.h, a: s.a, l: s.l ?? null, since: s.since });
     }
     return out;
   }
 
   attach(ws, s, now = Date.now()) {
     s.saved = now;
-    ws.serializeAttachment({ id: s.id, who: s.who, p: s.p, h: s.h, a: s.a, since: s.since, placed: s.placed, t: now });
+    ws.serializeAttachment({ id: s.id, who: s.who, p: s.p, h: s.h, a: s.a, l: s.l ?? null, since: s.since, placed: s.placed, t: now });
   }
 
   send(ws, msg) {
@@ -114,8 +119,8 @@ export class MemoryWalkRoom {
     const url = new URL(request.url);
     if (url.pathname.endsWith('/presence')) {
       const seen = new Map();
-      for (const p of this.people()) if (!seen.has(p.who) || p.since < seen.get(p.who)) seen.set(p.who, p.since);
-      return Response.json({ data: { people: [...seen].map(([who, since]) => ({ who, since })) } });
+      for (const p of this.people()) if (!seen.has(p.who) || p.since < seen.get(p.who).since) seen.set(p.who, p);
+      return Response.json({ data: { people: [...seen].map(([who, p]) => ({ who, since: p.since, ...(p.l ? { level: p.l } : {}) })) } });
     }
     if (request.headers.get('upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
     const who = request.headers.get('x-walk-who');
@@ -157,6 +162,7 @@ export class MemoryWalkRoom {
       if (p.length !== 3 || p.some((v) => v === null) || p.some((v) => Math.abs(v) > 500)) return;
       const h = num(msg.h) ?? s.h;
       const a = ANIMS.has(msg.a) ? msg.a : 'idle';
+      const l = typeof msg.l === 'string' && LEVEL.test(msg.l) ? msg.l : null;
       // plausibility: no faster than MAX_SPEED since the last accepted state (the first one sets the start)
       let next = p;
       let clamped = false;
@@ -179,13 +185,14 @@ export class MemoryWalkRoom {
       s.p = next.map(round);
       s.h = round(h);
       s.a = a;
+      s.l = l;
       s.last = now;
       if (clamped) this.send(ws, { t: 'correct', p: s.p });
       if (first) {
         this.attach(ws, s, now);
-        this.broadcast({ t: 'join', person: { id: s.id, who: s.who, p: s.p, h: s.h, a: s.a, since: s.since } }, ws);
+        this.broadcast({ t: 'join', person: { id: s.id, who: s.who, p: s.p, h: s.h, a: s.a, l: s.l, since: s.since } }, ws);
       } else {
-        this.broadcast({ t: 'state', id: s.id, p: s.p, h: s.h, a: s.a }, ws);
+        this.broadcast({ t: 'state', id: s.id, p: s.p, h: s.h, a: s.a, l: s.l }, ws);
         if (now - s.saved > SAVE_EVERY_MS) this.attach(ws, s, now);
       }
       return;

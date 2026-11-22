@@ -1,6 +1,7 @@
 /* The spot page's "Walk in" (a lazy chunk): the link to /memories/:id/walk, and who's
    walking this room right now ("Justin is in this room"), from the room's Durable Object.
-   Asked again every 15 s while the page is visible. */
+   Asked again every 15 s while the page is visible. With `place` instead of `spot` it is the place page's
+   "Walk in" (/memories/b/:id/walk) and who's walking the whole place. */
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,7 +13,9 @@ import { paths } from '../routes.js';
 
 const EVERY_MS = 15000;
 
-export default function WalkEntry({ spot, dive = null }) {
+export default function WalkEntry({ spot = null, place = null, dive = null }) {
+  const placeId = place?.id || null;
+  const spotId = spot?.id || null;
   const c = COPY.walk;
   const [people, setPeople] = useState([]);
   const navigate = useNavigate();
@@ -20,7 +23,7 @@ export default function WalkEntry({ spot, dive = null }) {
   const onWalk = (e) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    const go = () => goWithTransition(navigate, paths.walk(spot.id));
+    const go = () => goWithTransition(navigate, place ? paths.placeWalk(place.id) : paths.walk(spot.id));
     if (dive) dive().then(go, go);
     else go();
   };
@@ -37,7 +40,7 @@ export default function WalkEntry({ spot, dive = null }) {
       if (document.visibilityState === 'visible') {
         ctl = new AbortController();
         try {
-          const res = await api.walkPresence(spot.id, { signal: ctl.signal });
+          const res = placeId ? await api.placeWalkPresence(placeId, { signal: ctl.signal }) : await api.walkPresence(spotId, { signal: ctl.signal });
           if (alive) setPeople(res?.people || []);
         } catch {
           /* offline / no room yet: just no line */
@@ -55,16 +58,16 @@ export default function WalkEntry({ spot, dive = null }) {
       ctl?.abort();
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [spot.id]);
+  }, [placeId, spotId]);
 
   const names = [...new Set(people.map((p) => personName(p.who)))];
   return (
     <section className="mr-walkentry" data-mr="walk-entry">
       <Link
-        to={paths.walk(spot.id)}
+        to={place ? paths.placeWalk(place.id) : paths.walk(spot.id)}
         onClick={onWalk}
         className="mr-btn mr-btn--primary mr-btn--lg mr-btn--block mr-walkentry__link"
-        aria-label={c.linkLabel(spot.title)}
+        aria-label={place ? c.linkPlaceLabel(place.title) : c.linkLabel(spot.title)}
         data-mr="walk-link"
       >
         <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
@@ -75,7 +78,7 @@ export default function WalkEntry({ spot, dive = null }) {
       </Link>
       {names.length > 0 && (
         <p className="mr-msg" data-tone="busy" data-mr="walk-here">
-          {c.here(names)}
+          {place ? c.herePlace(names) : c.here(names)}
         </p>
       )}
     </section>

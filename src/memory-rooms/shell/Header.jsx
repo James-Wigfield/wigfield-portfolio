@@ -10,7 +10,7 @@ export default function Header({ page, who, onChangeWho }) {
         {COPY.app.name}
       </Link>
       <div className="mr-header-actions">
-        {page !== 'new' && page !== 'edit' && page !== 'walk' && (
+        {page !== 'new' && page !== 'edit' && page !== 'walk' && page !== 'place-walk' && (
           <Link to={paths.capture()} className="mr-btn mr-btn--primary mr-header-new" aria-label={COPY.app.newSpot} data-mr="new-spot">
             <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
               <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

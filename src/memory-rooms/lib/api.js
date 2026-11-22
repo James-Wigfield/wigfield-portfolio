@@ -88,6 +88,9 @@ export const api = {
   walkTicket: (id, who) => call(`/spots/${encodeURIComponent(id)}/walk`, { method: 'POST', body: { who } }),
   /** Who's walking a spot's room right now → { people: [{ who, since }] }. */
   walkPresence: (id, { signal } = {}) => call(`/spots/${encodeURIComponent(id)}/walk`, { signal }),
+  /** Walking a whole place together: the same tickets and presence, keyed by the building. */
+  placeWalkTicket: (id, who) => call(`/buildings/${encodeURIComponent(id)}/walk`, { method: 'POST', body: { who } }),
+  placeWalkPresence: (id, { signal } = {}) => call(`/buildings/${encodeURIComponent(id)}/walk`, { signal }),
 
   // ── whole places (CONTRACTS.md 6.4) ──
   listBuildings: ({ deleted = false } = {}) => call(`/buildings${deleted ? '?deleted=1' : ''}`),

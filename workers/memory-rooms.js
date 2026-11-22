@@ -17,6 +17,8 @@
      GET    /api/memories/spots/:id/walk               → who's walking it now
      GET    /api/memories/walk/ws?t=<ticket>           → WebSocket into the spot's walk room
                                                          (Durable Object MemoryWalkRoom, workers/memory-walk.js)
+     POST   /api/memories/buildings/:id/walk           → { ticket } for walking a whole place (its room is
+     GET    /api/memories/buildings/:id/walk             keyed `b:<id>`, so it can never be a spot's)
      GET    /api/memories/buildings[?deleted=1]        → { data: [Building…] }  (a whole place, CONTRACTS.md 6.4)
      GET    /api/memories/buildings/:id                → { data: Building }
      POST   /api/memories/buildings                    → create once by client uuid
@@ -42,6 +44,8 @@ import { validateSketch } from '../src/memory-rooms/building/sketch.js';
 
 const PREFIX = '/api/memories/';
 const MEDIA_TYPES = ['photo', 'thumb', 'scan', 'model', 'render', 'compare'];
+// a spot's model names (anything else is stored as room.glb, as before); a script uploads one only when ping lists it
+const SPOT_MODELS = ['room', 'map', 'empty'];
 const PEOPLE = ['james', 'justin'];
 const STATUSES = ['captured', 'modelling', 'rendered'];
 const KINDS = ['interior', 'exterior'];
@@ -74,8 +78,10 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
       // map.glb: an older Worker stores every model as room.glb and would overwrite the real one.
       // `features`: what this Worker AND its database can do beyond spots ('buildings' = the routes below,
       // CONTRACTS.md 6.4: listed only once supabase/memory_buildings.sql has run)
-      const features = (await store.hasBuildings()) ? ['buildings'] : [];
-      return json({ data: { ok: true, rowStore: store.kind, models: ['room', 'map'], features } });
+      // 'empty' = the empty / furnished bake: model/empty on a spot, model/level-<id>-empty on a building
+      // 'place-walk' = walking a whole place (POST /buildings/:id/walk, tickets keyed b:<id>)
+      const features = (await store.hasBuildings()) ? ['buildings', 'empty', 'place-walk'] : ['empty'];
+      return json({ data: { ok: true, rowStore: store.kind, models: SPOT_MODELS, features } });
     }
     if (section === 'buildings') return await buildingsRoute(ctx, request, id, sub, type, n);
     if (section !== 'spots') return json({ error: 'Not found' }, 404);
@@ -93,7 +99,7 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
       if (request.method !== 'PUT') return json({ error: 'Method not allowed' }, 405);
       return await putMedia(ctx, request, id, type, n);
     }
-    if (sub === 'walk') return await walkRoute(ctx, request, id);
+    if (sub === 'walk') return await walkRoute(ctx, request, id, async () => Boolean(await ctx.store.getSpot(id)));
     if (sub === 'restore') {
       if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       return await setDeleted(ctx, id, null);
@@ -359,7 +365,10 @@ async function serveFile(request, env, url, json) {
 
 const WALK_TICKET_S = 120;
 
-async function walkRoute(ctx, request, id) {
+/** A walk room's key: a spot's uuid, or `b:<uuid>` for a whole place. */
+const isWalkKey = (k) => isUuid(k) || (k.startsWith('b:') && isUuid(k.slice(2)));
+
+async function walkRoute(ctx, request, id, exists) {
   const { env, json } = ctx;
   if (!env.MEMORY_WALK) return json({ error: 'Durable Object binding MEMORY_WALK is missing (wrangler.jsonc).' }, 503);
   if (request.method === 'GET') {
@@ -374,7 +383,7 @@ async function walkRoute(ctx, request, id) {
     body = {};
   }
   if (!PEOPLE.includes(body.who)) return json({ error: 'who must be james or justin', details: [`who must be one of ${PEOPLE.join(', ')}`] }, 400);
-  if (!(await ctx.store.getSpot(id))) return json({ error: 'Spot not found' }, 404);
+  if (!(await exists())) return json({ error: id.startsWith('b:') ? 'Building not found' : 'Spot not found' }, 404);
   const exp = Math.floor(Date.now() / 1000) + WALK_TICKET_S;
   const sig = await hmac(env, `walk|${id}|${body.who}|${exp}`);
   const ticket = `${id}.${body.who}.${exp}.${sig}`;
@@ -388,7 +397,7 @@ async function walkSocket(request, env, url, json) {
   const [spotId, who, expStr, sig] = ticket.split('.');
   const exp = Number(expStr);
   const valid =
-    isUuid(spotId || '') && PEOPLE.includes(who) && Number.isFinite(exp) && exp * 1000 > Date.now() && Boolean(sig) && (await hmac(env, `walk|${spotId}|${who}|${exp}`)) === sig;
+    isWalkKey(spotId || '') && PEOPLE.includes(who) && Number.isFinite(exp) && exp * 1000 > Date.now() && Boolean(sig) && (await hmac(env, `walk|${spotId}|${who}|${exp}`)) === sig;
   if (!valid) return json({ error: 'Ticket expired or invalid' }, 403);
   if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return json({ error: 'Expected a WebSocket upgrade' }, 426);
   if (!env.MEMORY_WALK) return json({ error: 'Durable Object binding MEMORY_WALK is missing (wrangler.jsonc).' }, 503);
@@ -419,6 +428,8 @@ async function buildingsRoute(ctx, request, id, sub, type, n) {
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
     return await setBuildingDeleted(ctx, id, null);
   }
+  // walking the whole place together: the same Durable Object class, keyed `b:<id>` (a spot's key is its bare uuid)
+  if (sub === 'walk') return await walkRoute(ctx, request, `b:${id}`, async () => Boolean(await ctx.store.getBuilding(id)));
   if (sub) return json({ error: 'Not found' }, 404);
   if (request.method === 'GET') {
     const b = await ctx.store.getBuilding(id);
@@ -618,8 +629,9 @@ export function mediaKey(spotId, type, n) {
     return `${base}/${type === 'photo' ? 'photos' : 'thumbs'}/${Number(n)}.jpg`;
   }
   if (type === 'scan') return `${base}/scan.spz`;
-  // model: the baked room (`room`, any other name too, as before) or its small map copy (`map`)
-  if (type === 'model') return `${base}/model/${n === 'map' ? 'map' : 'room'}.glb`;
+  // model: the baked room (`room`, any other name too, as before), its small map copy (`map`) or, for a room of a
+  // building, its empty bake's atlases (`empty`: a texture-only GLB, CONTRACTS.md 6.4)
+  if (type === 'model') return `${base}/model/${SPOT_MODELS.includes(n) ? n : 'room'}.glb`;
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(n || '')) return null;
   return type === 'render' ? `${base}/renders/${n}.png` : `${base}/compare/${n}.png`;
 }
@@ -627,7 +639,7 @@ export function mediaKey(spotId, type, n) {
 function mediaName(type, n) {
   if (type === 'photo' || type === 'thumb') return String(Number(n));
   if (type === 'scan') return 'scan';
-  if (type === 'model') return n === 'map' ? 'map' : 'room';
+  if (type === 'model') return SPOT_MODELS.includes(n) ? n : 'room';
   return n;
 }
 

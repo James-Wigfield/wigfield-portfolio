@@ -1,6 +1,7 @@
 /* Walk in together: the room's WebSocket (server: workers/memory-walk.js).
 
      const net = new WalkNet({ spotId, who, on: { hello, join, leave, state, emote, chat, correct, status } });
+     const net = new WalkNet({ placeId, who, on })      // a whole place (its room is keyed by the building)
      net.start();   net.send({ t: 'state', p, h, a });   net.stop();
 
    A fresh ticket for every connection (POST /spots/:id/walk with the password; the
@@ -15,8 +16,9 @@ const BACKOFF = [1000, 2000, 4000, 8000, 15000];
 const PING_MS = 20000;
 
 export class WalkNet {
-  constructor({ spotId, who, on = {} }) {
+  constructor({ spotId = null, placeId = null, who, on = {} }) {
     this.spotId = spotId;
+    this.placeId = placeId;
     this.who = who;
     this.on = on;
     this.ws = null;
@@ -67,7 +69,7 @@ export class WalkNet {
     this.setStatus(this.tries ? 'retrying' : 'connecting');
     let ticket;
     try {
-      ticket = await api.walkTicket(this.spotId, this.who);
+      ticket = this.placeId ? await api.placeWalkTicket(this.placeId, this.who) : await api.walkTicket(this.spotId, this.who);
     } catch {
       if (this.stopped) return;
       // the browser offline → "walking alone"; online but the server unreachable → "reconnecting"

@@ -1,6 +1,8 @@
 /* /memories/:spotId/walk: walk around a spot's 3D room as your character, together
    with whoever else is in it right now (walk/WalkGame.js draws and moves; walk/net.js
    is the room's socket; the Durable Object is workers/memory-walk.js).
+   /memories/b/:buildingId/walk (PlaceWalkPage): the same game through a whole place, every level and the
+   stairs between them; you see the people on your level, and a line says who is up or down the stairs.
 
    You're the person picked at the gate (mr:who). Offline (or the socket lost), you keep
    walking alone and one line says so; others reappear when the connection is back. */
@@ -9,7 +11,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { COPY } from '../copy.js';
 import { api } from '../lib/api.js';
+import { mediaNamed } from '../lib/api.js';
 import { personName, roomModelOf } from '../lib/spots.js';
+import { roomFrame } from '../building/geometry.js';
 import { readWho } from '../lib/storage.js';
 import { paths } from '../routes.js';
 import PageMessage from './spot/PageMessage.jsx';
@@ -54,10 +58,77 @@ export default function WalkPage() {
     );
   const model = roomModelOf(current.spot);
   if (!model?.url) return <PageMessage dataState="noroom" label={COPY.walk.back} title={c.noRoomTitle} body={c.noRoom} />;
-  return <Walk key={current.spot.id} spot={current.spot} glbUrl={model.url} />;
+  const spot = current.spot;
+  return (
+    <Walk
+      key={spot.id}
+      title={spot.title}
+      back={{ to: paths.spot(spot.id), text: c.back, label: c.backLabel }}
+      net={{ spotId: spot.id }}
+      load={(game) => game.load({ glbUrl: model.url, scene: spot.scene, photos: spotPhotos(spot) })}
+    />
+  );
 }
 
-function Walk({ spot, glbUrl }) {
+/** /memories/b/:buildingId/walk: the whole place, once it has been built (its plan + level models). */
+export function PlaceWalkPage() {
+  const { buildingId } = useParams();
+  const [attempt, setAttempt] = useState(0);
+  const [res, setRes] = useState(null);
+  const key = `${buildingId}#${attempt}`;
+  useEffect(() => {
+    let alive = true;
+    Promise.all([api.getBuilding(buildingId), api.listSpots()]).then(
+      ([place, spots]) => alive && setRes({ key, kind: place && !place.deletedAt ? 'ok' : 'missing', place, spots: (spots || []).filter((s) => s.buildingId === buildingId && !s.deletedAt) }),
+      (error) => alive && setRes({ key, kind: error?.status === 404 || error?.status === 400 ? 'missing' : 'error', error }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [buildingId, key]);
+
+  const c = COPY.walk;
+  const current = res?.key === key ? res : null;
+  if (!current) return <div className="mr-walk" data-state="loading" role="status" aria-label={c.loadingPlace} />;
+  if (current.kind === 'missing') return <PageMessage dataState="missing" label={COPY.place.label} title={COPY.place.missingTitle} body={COPY.place.missingBody} />;
+  if (current.kind === 'error')
+    return (
+      <PageMessage
+        dataState="error"
+        label={COPY.place.label}
+        title={COPY.place.errorTitle}
+        body={current.error?.message === 'offline' ? COPY.place.offline : null}
+        retryLabel={COPY.place.retry}
+        onRetry={() => setAttempt((a) => a + 1)}
+      />
+    );
+  const { place, spots } = current;
+  const plan = place.plan;
+  const url = (name) => mediaNamed(place, 'model', name)?.url || null;
+  const levels = (plan?.levels || [])
+    .map((l) => ({ id: l.id, name: l.name || l.id, elevation: l.elevation, height: l.height, glbUrl: url(`level-${l.id}`) }))
+    .filter((l) => l.glbUrl)
+    .sort((a, b) => a.elevation - b.elevation);
+  if (!levels.length) return <PageMessage dataState="noroom" label={c.backPlace} title={c.noRoomTitle} body={c.noPlace} />;
+  // every captured room: its scene (photo cameras, seats) and photos, with its room frame's origin in the plan
+  const rooms = plan.rooms
+    .map((r) => {
+      const spot = spots.find((s) => s.roomId === r.id && s.scene);
+      return spot ? { id: r.id, level: r.level, origin: roomFrame(plan, r).origin, scene: spot.scene, photos: spotPhotos(spot) } : null;
+    })
+    .filter(Boolean);
+  return (
+    <Walk
+      key={place.id}
+      title={place.title}
+      back={{ to: paths.place(place.id), text: c.backPlace, label: c.backPlaceLabel }}
+      net={{ placeId: place.id }}
+      load={(game) => game.loadPlace({ building: plan, levels, exteriorUrl: url('exterior'), rooms })}
+    />
+  );
+}
+
+function Walk({ title, back, net: netOpts, load }) {
   const c = COPY.walk;
   const stageRef = useRef(null);
   const gameRef = useRef(null);
@@ -74,9 +145,12 @@ function Walk({ spot, glbUrl }) {
   const [text, setText] = useState('');
   const [touch] = useState(isTouch);
 
+  const [levels, setLevels] = useState(null); // a place: { name, away: [{ who, where, name }] }
   useEffect(() => {
-    document.title = `${c.pageTitle(spot.title)} · ${COPY.app.name}`;
-  }, [spot.title, c]);
+    document.title = `${c.pageTitle(title)} · ${COPY.app.name}`;
+  }, [title, c]);
+  const loadRef = useRef(load);
+  const netKey = netOpts.spotId || `b:${netOpts.placeId}`;
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -86,7 +160,7 @@ function Walk({ spot, glbUrl }) {
     let myId = null;
     const say = (text) => setNote((n) => ({ text, n: (n?.n || 0) + 1 }));
     const net = new WalkNet({
-      spotId: spot.id,
+      ...(netOpts.placeId ? { placeId: netOpts.placeId } : { spotId: netOpts.spotId }),
       who,
       on: {
         hello: (m) => {
@@ -130,10 +204,11 @@ function Walk({ spot, glbUrl }) {
       game.on('emote', ({ e }) => net.send({ t: 'emote', e })),
       game.on('hint', setHint),
       game.on('view', (v) => setView(v.view)),
+      game.on('levels', setLevels),
     ];
     const ro = new ResizeObserver(([e]) => game.setSize(e.contentRect.width, e.contentRect.height));
     ro.observe(stage);
-    game.load({ glbUrl, scene: spot.scene, photos: spotPhotos(spot) });
+    loadRef.current(game);
     net.start();
     return () => {
       ro.disconnect();
@@ -144,7 +219,9 @@ function Walk({ spot, glbUrl }) {
       gameRef.current = null;
       netRef.current = null;
     };
-  }, [spot, glbUrl, who, c]);
+    // the walk is made once per place / spot (its key); `load` and `netOpts` are fixed for it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [netKey, who, c]);
 
   // Enter opens the chat line (when not already typing); Escape closes it.
   useEffect(() => {
@@ -195,14 +272,22 @@ function Walk({ spot, glbUrl }) {
       <div className="mr-walk__stage" ref={stageRef} />
 
       <header className="mr-walk__top">
-        <Link to={paths.spot(spot.id)} className="mr-btn mr-walk__back" aria-label={c.backLabel} data-mr="walk-back">
+        <Link to={back.to} className="mr-btn mr-walk__back" aria-label={back.label} data-mr="walk-back">
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
             <path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          {c.back}
+          {back.text}
         </Link>
         <div className="mr-walk__where">
-          <span className="mr-walk__title">{spot.title}</span>
+          <span className="mr-walk__title">
+            {title}
+            {levels?.name && (
+              <span className="mr-label mr-walk__level" data-mr="walk-level">
+                {' · '}
+                {levels.name}
+              </span>
+            )}
+          </span>
           <span className="mr-dot mr-label" data-tone={status === 'live' ? 'ok' : status === 'offline' ? 'danger' : 'busy'} data-mr="walk-status">
             {line}
           </span>
@@ -213,6 +298,11 @@ function Walk({ spot, glbUrl }) {
         {note && (
           <p key={note.n} className="mr-walk__note" data-mr="walk-note">
             {note.text}
+          </p>
+        )}
+        {levels?.away?.length > 0 && (
+          <p className="mr-walk__note" data-mr="walk-away">
+            {c.away(levels.away.map((a) => ({ name: personName(a.who), where: a.where, level: a.name })))}
           </p>
         )}
         {state === 'ready' && hintText && !(touch && hint?.kind === 'seat') && (

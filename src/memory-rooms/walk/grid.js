@@ -3,6 +3,12 @@
    shed's angled walls, the gable warehouse, round a car on its ground plate).
 
      const grid = buildGrid(root, { bounds, start });   // root: the GLB scene, in room metres
+     buildGrid(levelRoot, { bounds, start, floor: 3.1, block: [[[x, z]…]…], open: [[[x, z]…]…] })
+                                                        // a whole place's level: its floor height (the band is
+                                                        // measured from it) and convex polygons that block
+                                                        // whatever is there (the stairwell hole of a flight),
+                                                        // and convex polygons cleared before that (a doorway:
+                                                        // a building's door leaves are baked shut)
      grid.walkable(x, z)                                // can the walker's centre be here?
      slide(grid, from, dx, dz) → { x, z }               // move, sliding along whatever is in the way
      findPath(grid, from, to) → [{ x, z }…] | null      // tap-to-walk: A*, then straightened
@@ -47,7 +53,9 @@ function clipBand(poly, lo, hi) {
   return p;
 }
 
-export function buildGrid(root, { bounds, start }) {
+export function buildGrid(root, { bounds, start, floor = 0, block = [], open: doors = [] }) {
+  const lo = floor + BAND[0];
+  const hi = floor + BAND[1];
   const x0 = bounds.min.x;
   const z0 = bounds.min.z;
   const nx = Math.max(1, Math.ceil((bounds.max.x - x0) / CELL));
@@ -68,7 +76,7 @@ export function buildGrid(root, { bounds, start }) {
     }
   };
   // a convex polygon's inside: test the centres of the cells under its box
-  const fill = (pts) => {
+  const fill = (pts, value = 1) => {
     let minx = Infinity;
     let maxx = -Infinity;
     let minz = Infinity;
@@ -103,7 +111,7 @@ export function buildGrid(root, { bounds, start }) {
           const b = pts[(k + 1) % pts.length];
           if (sign * ((b[0] - a[0]) * (z - a[2]) - (b[2] - a[2]) * (x - a[0])) < 0) inside = false;
         }
-        if (inside) blocked[j * nx + i] = 1;
+        if (inside) blocked[j * nx + i] = value;
       }
     }
   };
@@ -130,8 +138,8 @@ export function buildGrid(root, { bounds, start }) {
       const ya = world[a * 3 + 1];
       const yb = world[b * 3 + 1];
       const yc = world[c * 3 + 1];
-      if ((ya < BAND[0] && yb < BAND[0] && yc < BAND[0]) || (ya > BAND[1] && yb > BAND[1] && yc > BAND[1])) continue;
-      const poly = clipBand([v(a), v(b), v(c)], BAND[0], BAND[1]);
+      if ((ya < lo && yb < lo && yc < lo) || (ya > hi && yb > hi && yc > hi)) continue;
+      const poly = clipBand([v(a), v(b), v(c)], lo, hi);
       if (poly.length < 2) continue;
       for (let k = 0; k < poly.length; k++) {
         const p = poly[k];
@@ -141,6 +149,14 @@ export function buildGrid(root, { bounds, start }) {
       if (poly.length >= 3) fill(poly);
     }
   });
+
+  // doorways cleared (a door leaf baked shut, its frame), then forced blocks (a flight's hole: nothing to stand on)
+  for (const pts of doors) fill(pts.map(([x, z]) => [x, 0, z]), 0);
+  for (const pts of block) {
+    const p3 = pts.map(([x, z]) => [x, 0, z]);
+    for (let k = 0; k < p3.length; k++) line(p3[k][0], p3[k][2], p3[(k + 1) % p3.length][0], p3[(k + 1) % p3.length][2]);
+    fill(p3);
+  }
 
   // distance (in cells, chamfer 3-4) to the nearest blocked cell or the edge
   const INF = 1e9;

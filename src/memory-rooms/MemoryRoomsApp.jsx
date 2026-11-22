@@ -1,5 +1,5 @@
 /* Memory Rooms entry (lazy-loaded from src/App.jsx). `page` picks the screen:
-   map | new | spot | edit | walk | group | new-place | place | place-plan.
+   map | new | spot | edit | walk | group | new-place | place | place-plan | place-walk.
 
    The shell: password gate (once per device) → who-picker (once per device, for
    the map and capture pages) → slim header + outbox line + the page. The viewer
@@ -38,6 +38,7 @@ const SpotPage = lazy(() => import('./pages/SpotPage.jsx'));
 const GroupPage = lazy(() => import('./pages/GroupPage.jsx'));
 // Walking a room together: its own chunk (three.js, the characters, the socket).
 const WalkPage = lazy(() => import('./pages/WalkPage.jsx'));
+const PlaceWalkPage = lazy(() => import('./pages/WalkPage.jsx').then((m) => ({ default: m.PlaceWalkPage })));
 
 /** Theme background on <body>, the tab title, and the browser chrome colour while mounted. */
 function usePageTakeover(page, authed) {
@@ -125,8 +126,8 @@ export default function MemoryRoomsApp({ page }) {
   const changeWho = () => setChoosing(true);
 
   // walking: you're your character; a place's rooms and sketch are signed by whoever holds the phone
-  const needsWho = page === 'map' || page === 'new' || page === 'walk' || page === 'new-place' || page === 'place' || page === 'place-plan';
-  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit' || page === 'walk' || page === 'new-place' || page === 'place-plan');
+  const needsWho = page === 'map' || page === 'new' || page === 'walk' || page === 'place-walk' || page === 'new-place' || page === 'place' || page === 'place-plan';
+  const fixed = authed && !choosing && (page === 'map' || page === 'new' || page === 'edit' || page === 'walk' || page === 'place-walk' || page === 'new-place' || page === 'place-plan');
 
   let body;
   if (!authed) {
@@ -146,9 +147,9 @@ export default function MemoryRoomsApp({ page }) {
             {page === 'new-place' && <PlaceCapturePage />}
             {page === 'place' && <PlacePage />}
             {page === 'place-plan' && <PlanSketchPage />}
-            {(page === 'spot' || page === 'group' || page === 'walk') && (
+            {(page === 'spot' || page === 'group' || page === 'walk' || page === 'place-walk') && (
               <Suspense fallback={<p className="mr-state mr-state-body">{COPY.app.loading}</p>}>
-                {page === 'spot' ? <SpotPage /> : page === 'walk' ? <WalkPage /> : <GroupPage />}
+                {page === 'spot' ? <SpotPage /> : page === 'walk' ? <WalkPage /> : page === 'place-walk' ? <PlaceWalkPage /> : <GroupPage />}
               </Suspense>
             )}
           </PageBoundary>

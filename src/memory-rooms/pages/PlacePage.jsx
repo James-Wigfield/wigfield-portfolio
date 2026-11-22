@@ -18,6 +18,8 @@ import PlanView, { PhotoMarks } from './place/PlanView.jsx';
 
 // the 3D building (three.js) is its own chunk: it only loads once the place has been built
 const BuildingView = lazy(() => import('./place/BuildingView.jsx'));
+// "Walk in" + who's walking the place now (the place walk, /memories/b/:id/walk)
+const WalkEntry = lazy(() => import('../walk/WalkEntry.jsx'));
 
 export default function PlacePage() {
   const { buildingId } = useParams();
@@ -85,6 +87,9 @@ export default function PlacePage() {
       {built && (
         <Suspense fallback={<div className="mr-building mr-building--loading" />}>
           <BuildingView place={p.server} plan={p.server.plan} spots={p.spots} narrow={narrow} />
+          <div className="mr-place__walk">
+            <WalkEntry place={p.server} />
+          </div>
         </Suspense>
       )}
 

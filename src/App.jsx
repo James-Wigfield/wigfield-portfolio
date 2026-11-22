@@ -127,6 +127,7 @@ export default function App() {
       <Route path="/memories/new/place" element={memories('new-place')} />
       <Route path="/memories/b/:buildingId" element={memories('place')} />
       <Route path="/memories/b/:buildingId/plan" element={memories('place-plan')} />
+      <Route path="/memories/b/:buildingId/walk" element={memories('place-walk')} />
       <Route path="/memories/group/:group" element={memories('group')} />
       <Route path="/memories/:spotId" element={memories('spot')} />
       <Route path="/memories/:spotId/edit" element={memories('edit')} />
