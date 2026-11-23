@@ -25,6 +25,16 @@
      PATCH  /api/memories/buildings/:id                → edit; sketch + plan (building.json) validated
      DELETE /api/memories/buildings/:id                → soft delete (POST …/restore undoes it)
      PUT    /api/memories/buildings/:id/media/:type/:n → floor-plan photos, outside shots, level GLBs…
+     GET    /api/memories/shares[?kind=&id=]           → { data: [Share…] }  private share links
+     POST   /api/memories/shares                       → { kind: 'building'|'spot', id, label? } → Share
+     DELETE /api/memories/shares/:token                → switch a link off (it 404s from then on)
+     GET    /api/memories/shared/:token                → NO password: that one place / room, read-only,
+                                                         trimmed (no location, note, sketch, plan photos or
+                                                         compare sheets), files signed as usual
+
+   Share links: a Share is { token, kind, id, label, createdAt } stored as R2 `shares/<token>.json` (both row
+   stores, no SQL). The token is 24 random bytes, so it can't be guessed; whoever holds it sees that one thing
+   and nothing else: every other route still needs the password, and a signed file url opens only its own file.
 
    Auth: Bearer MEMORIES_PASSWORD (shared with Justin) or PORTAL_PASSWORD. Fails
    closed when neither is set. Files live in R2 (binding MEMORIES). Rows live
@@ -61,6 +71,8 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
   try {
     // Files accept a signed token instead of the bearer, so <img>, GLTFLoader and Spark can load them.
     if (section === 'file') return await serveFile(request, env, url, json);
+    // A private share link (/memories/s/<token>): its ONE place or room, read-only, no password.
+    if (section === 'shared') return await sharedRoute(request, env, id, sub, json);
     // The walk room's WebSocket: browsers can't send the bearer on one, so it carries a signed ticket instead.
     if (section === 'walk') return await walkSocket(request, env, url, json);
 
@@ -84,6 +96,7 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
       return json({ data: { ok: true, rowStore: store.kind, models: SPOT_MODELS, features } });
     }
     if (section === 'buildings') return await buildingsRoute(ctx, request, id, sub, type, n);
+    if (section === 'shares') return await sharesRoute(ctx, request, url, id, sub);
     if (section !== 'spots') return json({ error: 'Not found' }, 404);
 
     // ── collection ─────────────────────────────────────────────────────────
@@ -617,6 +630,105 @@ async function putBuildingMedia(ctx, request, buildingId, type, n) {
 
 async function withBuildingMedia(ctx, b) {
   return attachMedia(ctx, b, await ctx.store.listBuildingMedia(b.id));
+}
+
+// ── private share links (/memories/s/<token>) ────────────────────────────────
+
+const SHARE_KINDS = ['building', 'spot'];
+const SHARE_TOKEN = /^[A-Za-z0-9_-]{32}$/;
+const shareKey = (token) => `shares/${token}.json`;
+// what a shared place / room shows: the 3D (and a room's own photos, its viewpoints); never the location, the
+// note, the sketch, the floor-plan photos, the compare sheets or who captured it
+const SHARED_MEDIA = { building: ['model', 'render'], spot: ['photo', 'thumb', 'model', 'scan', 'render'] };
+const SHARED_FIELDS = {
+  building: ['id', 'title', 'status', 'placeLabel', 'capturedAt', 'plan', 'planVersion'],
+  spot: ['id', 'kind', 'title', 'status', 'placeLabel', 'capturedAt', 'scene', 'sceneVersion', 'buildingId', 'roomId'],
+};
+
+function newShareToken() {
+  const b = crypto.getRandomValues(new Uint8Array(24));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function listShareRows(bucket) {
+  const rows = [];
+  let cursor;
+  do {
+    const page = await bucket.list({ prefix: 'shares/', cursor });
+    rows.push(...(await Promise.all(page.objects.map(async (o) => (await bucket.get(o.key))?.json() ?? null))));
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return rows.filter(Boolean);
+}
+
+/** The thing a share opens, or null when it has gone (deleted, or never there). */
+async function shareTarget(store, kind, id) {
+  const row = kind === 'building' ? await store.getBuilding(id) : await store.getSpot(id);
+  return row && !row.deletedAt ? row : null;
+}
+
+/** Behind the password: list, make and switch off share links. */
+async function sharesRoute(ctx, request, url, token, sub) {
+  const { json, env } = ctx;
+  if (sub) return json({ error: 'Not found' }, 404);
+  if (token) {
+    if (request.method !== 'DELETE') return json({ error: 'Method not allowed' }, 405);
+    if (!SHARE_TOKEN.test(token)) return json({ error: 'Not a share link' }, 400);
+    await env.MEMORIES.delete(shareKey(token));
+    return json({ data: { token, deleted: true } });
+  }
+  if (request.method === 'GET') {
+    const kind = url.searchParams.get('kind');
+    const id = url.searchParams.get('id');
+    const rows = (await listShareRows(env.MEMORIES)).filter((s) => (!kind || s.kind === kind) && (!id || s.id === id));
+    rows.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return json({ data: rows });
+  }
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const body = await ctx.readJson(request);
+  const problems = [];
+  if (!SHARE_KINDS.includes(body?.kind)) problems.push(`kind must be one of ${SHARE_KINDS.join(', ')}`);
+  if (!isUuid(body?.id)) problems.push('id must be a uuid');
+  if (body?.label != null && body.label !== '' && !str(body.label, 1, 60)) problems.push('label must be ≤ 60 characters');
+  if (problems.length) return json({ error: 'Invalid share', details: problems }, 400);
+  if (!(await shareTarget(ctx.store, body.kind, body.id))) return json({ error: body.kind === 'building' ? 'Building not found' : 'Spot not found' }, 404);
+  const share = { token: newShareToken(), kind: body.kind, id: body.id, label: body.label ? String(body.label).trim() : null, createdAt: ctx.now };
+  await env.MEMORIES.put(shareKey(share.token), JSON.stringify(share), { httpMetadata: { contentType: 'application/json' } });
+  return json({ data: share }, 201);
+}
+
+/** NO password: GET /shared/:token → { kind, item } for that one place or room, trimmed, files signed. */
+async function sharedRoute(request, env, token, sub, json) {
+  const send = (body, status) => {
+    const res = json(body, status);
+    res.headers.set('cache-control', 'no-store');
+    res.headers.set('x-robots-tag', 'noindex, nofollow');
+    return res;
+  };
+  if (request.method !== 'GET') return send({ error: 'Method not allowed' }, 405);
+  // one answer for every link that doesn't open: a bad token, a switched-off one, a deleted place
+  const gone = () => send({ error: 'This link is switched off or does not exist' }, 404);
+  if (sub || !token || !SHARE_TOKEN.test(token)) return gone();
+  if (!env.MEMORIES) return send({ error: 'R2 binding MEMORIES is missing.' }, 503);
+  const share = await (await env.MEMORIES.get(shareKey(token)))?.json();
+  if (!share || !SHARE_KINDS.includes(share.kind)) return gone();
+  const store = makeStore(env);
+  if (store.error) return send({ error: store.error }, 503);
+  const row = await shareTarget(store, share.kind, share.id);
+  if (!row) return gone();
+  const media = share.kind === 'building' ? await store.listBuildingMedia(row.id) : await store.listMedia(row.id);
+  const item = Object.fromEntries(SHARED_FIELDS[share.kind].map((k) => [k, row[k] ?? null]));
+  // the plan's geo is the house's exact lat/lng: the viewer doesn't need it
+  if (item.plan?.geo) {
+    item.plan = { ...item.plan };
+    delete item.plan.geo;
+  }
+  const shown = media.filter((m) => SHARED_MEDIA[share.kind].includes(m.type));
+  const ctx = { env };
+  const withFiles = await attachMedia(ctx, item, shown);
+  // a signed file row carries only what the viewer reads
+  withFiles.media = withFiles.media.map(({ type, name, url: u, width, height, sort }) => ({ type, name, url: u, width, height, sort }));
+  return send({ data: { kind: share.kind, item: withFiles } }, 200);
 }
 
 // ── media helpers ────────────────────────────────────────────────────────────

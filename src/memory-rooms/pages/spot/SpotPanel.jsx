@@ -14,6 +14,7 @@ import { personName } from '../../lib/spots.js';
 import { useViewerState } from '../../viewer/useViewer.js';
 import { FurnishedToggle, ModeToggle, PlanToggle } from '../../viewer/ViewerControls.jsx';
 import PhotoStrip from './PhotoStrip.jsx';
+import SharePanel from '../../shell/SharePanel.jsx';
 
 // AR is its own chunk (and pulls the USDZ exporter / WebXR / QR code only on demand).
 const ArEntry = lazy(() => import('../../ar/ArEntry.jsx'));
@@ -129,6 +130,8 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
       </dl>
 
       <PhotoStrip photos={photos} title={spot.title} active={activePhoto} onOpen={onOpenPhoto} />
+
+      <SharePanel kind="spot" id={spot.id} />
     </aside>
   );
 }

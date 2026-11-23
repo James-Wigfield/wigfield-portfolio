@@ -1821,3 +1821,44 @@ html:where([data-mr-theme='dark']) .mr-mbx .mapboxgl-ctrl-attrib-button { filter
 @media (pointer: coarse) {
   .mr-spot__controls .mr-seg button { min-height: 44px; min-width: 44px; }
 }
+
+/* ── private share links: the owner's "Share privately" panel (place + spot pages) ── */
+.mr-share { display: flex; flex-direction: column; gap: var(--mr-space-3); padding-top: var(--mr-space-4); border-top: var(--mr-hairline) solid var(--mr-rule); }
+.mr-share h2 { margin: 0; }
+.mr-share__intro { margin: 0; font-size: var(--mr-text-s); color: var(--mr-ink-2); max-width: 46ch; }
+.mr-share__list { list-style: none; margin: 0; padding: 0; }
+.mr-share__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'name date' 'url url' 'actions actions';
+  align-items: center;
+  gap: var(--mr-space-2) var(--mr-space-4);
+  padding: var(--mr-space-3) 0;
+  border-bottom: var(--mr-hairline) solid var(--mr-rule);
+}
+.mr-share__row > .mr-dot { grid-area: name; }
+.mr-share__name { font: 400 1.15rem / 1.1 var(--mr-font-serif); color: var(--mr-ink); }
+.mr-share__date { grid-area: date; color: var(--mr-ink-3); }
+.mr-share__url { grid-area: url; min-width: 0; font: 400 var(--mr-text-xs) / 1.2 var(--mr-font-mono); color: var(--mr-ink-2); }
+.mr-share__actions { grid-area: actions; display: flex; gap: var(--mr-space-4); }
+.mr-share__actions .mr-linkbtn[data-tone='danger'] { color: var(--mr-danger, var(--mr-ink)); }
+.mr-share__none { margin: 0; color: var(--mr-ink-3); }
+
+/* ── a share link's page (/memories/s/:token): the place or room alone, no header ── */
+.mr-shared {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--mr-space-6) var(--mr-gutter) var(--mr-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-4);
+  min-height: 100dvh;
+  background: var(--mr-bg);
+}
+.mr-shared__eyebrow { display: flex; align-items: center; justify-content: space-between; gap: var(--mr-space-4); }
+.mr-shared__loading { margin: 0; color: var(--mr-ink-3); }
+.mr-shared__note { margin: 0; color: var(--mr-ink-2); }
+.mr-shared .mr-building { margin: 0; }
+.mr-shared .mr-building__stage { height: clamp(360px, 68vh, 760px); }
+.mr-shared__photos { display: flex; flex-direction: column; gap: var(--mr-space-3); }
+.mr-shared__photos img { width: 100%; height: auto; border: var(--mr-hairline) solid var(--mr-rule); }

@@ -15,6 +15,7 @@ import { formatDate } from '../lib/format.js';
 import PageMessage from './spot/PageMessage.jsx';
 import { useMedia } from '../lib/useMedia.js';
 import PlanView, { PhotoMarks } from './place/PlanView.jsx';
+import SharePanel from '../shell/SharePanel.jsx';
 
 // the 3D building (three.js) is its own chunk: it only loads once the place has been built
 const BuildingView = lazy(() => import('./place/BuildingView.jsx'));
@@ -200,6 +201,9 @@ export default function PlacePage() {
           </div>
         </section>
       )}
+
+      {/* a private link to this place alone (once it's on the server) */}
+      {p.server && <SharePanel kind="building" id={buildingId} />}
     </div>
   );
 }

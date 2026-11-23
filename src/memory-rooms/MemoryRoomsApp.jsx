@@ -1,5 +1,7 @@
 /* Memory Rooms entry (lazy-loaded from src/App.jsx). `page` picks the screen:
-   map | new | spot | edit | walk | group | new-place | place | place-plan | place-walk.
+   map | new | spot | edit | walk | group | new-place | place | place-plan | place-walk | shared.
+   `shared` (/memories/s/:token, a private share link) skips the whole shell: no gate, no who-picker, no header,
+   no outbox, no offline service worker. Its page shows one place or room and links nowhere else.
 
    The shell: password gate (once per device) → who-picker (once per device, for
    the map and capture pages) → slim header + outbox line + the page. The viewer
@@ -39,6 +41,8 @@ const GroupPage = lazy(() => import('./pages/GroupPage.jsx'));
 // Walking a room together: its own chunk (three.js, the characters, the socket).
 const WalkPage = lazy(() => import('./pages/WalkPage.jsx'));
 const PlaceWalkPage = lazy(() => import('./pages/WalkPage.jsx').then((m) => ({ default: m.PlaceWalkPage })));
+// A private share link's page: its own chunk (a guest never loads the rest of the pages' 3D code).
+const SharedPage = lazy(() => import('./pages/SharedPage.jsx'));
 
 /** Theme background on <body>, the tab title, and the browser chrome colour while mounted. */
 function usePageTakeover(page, authed) {
@@ -92,6 +96,25 @@ function useOfflineShell() {
 }
 
 export default function MemoryRoomsApp({ page }) {
+  return page === 'shared' ? <SharedApp /> : <PrivateApp page={page} />;
+}
+
+/** A share link: the page alone, inside the same .mr theme scope. */
+function SharedApp() {
+  usePageTakeover('shared', true); // (the page sets its own title)
+  const { theme } = useTheme();
+  return (
+    <div className="mr" data-page="shared" data-layout="flow" data-theme={theme}>
+      <PageBoundary key="shared">
+        <Suspense fallback={<p className="mr-state mr-state-body">{COPY.app.loading}</p>}>
+          <SharedPage />
+        </Suspense>
+      </PageBoundary>
+    </div>
+  );
+}
+
+function PrivateApp({ page }) {
   const [authed, setAuthed] = useState(() => Boolean(getToken()));
   const [expired, setExpired] = useState(false);
   const [who, setWho] = useState(() => readWho());

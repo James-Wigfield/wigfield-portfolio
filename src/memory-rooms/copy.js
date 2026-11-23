@@ -275,6 +275,36 @@ export const COPY = {
     notCaptured: (room) => `${room} has no photos yet: capture it from the list below.`,
   },
 
+  // ── private share links: the owner's panel (place + spot pages) and the guest's page (/memories/s/:token) ──
+  share: {
+    title: 'Share privately',
+    intro: (what) => `A link that opens this ${what} and nothing else: no password, and no way into the rest of Memory Rooms.`,
+    what: { building: 'place', spot: 'room' },
+    labelLabel: 'Who is it for?',
+    labelPlaceholder: 'Joe',
+    make: 'Make a link',
+    making: 'Making…',
+    copy: 'Copy',
+    copied: 'Copied',
+    off: 'Switch off',
+    confirmOff: 'Sure? It stops working',
+    noLabel: 'Link',
+    made: (date) => `Made ${date}`,
+    none: 'No links yet.',
+    error: "Couldn't reach the server. Try again.",
+    // the guest's page
+    eyebrow: 'Shared with you',
+    loading: 'Opening…',
+    goneTitle: 'This link does not open anything.',
+    goneBody: 'It may have been switched off. Ask whoever sent it for a new one.',
+    errorTitle: "Couldn't open this link.",
+    offline: "You're offline. It will open when there's signal.",
+    retry: 'Try again',
+    buildingHint: 'Drag to turn it. Inside lifts the roof off; Plan lays the floors side by side.',
+    roomHint: 'Drag to look around. The photo dots fly to where each photo was taken.',
+    noModel: 'This one has not been built in 3D yet.',
+  },
+
   // ── /memories/b/:id/plan: the sketch plan ──────────────────────────────────
   sketch: {
     title: 'Sketch the plan',

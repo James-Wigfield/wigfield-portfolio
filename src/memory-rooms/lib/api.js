@@ -92,6 +92,14 @@ export const api = {
   placeWalkTicket: (id, who) => call(`/buildings/${encodeURIComponent(id)}/walk`, { method: 'POST', body: { who } }),
   placeWalkPresence: (id, { signal } = {}) => call(`/buildings/${encodeURIComponent(id)}/walk`, { signal }),
 
+  // ── private share links (/memories/s/<token>) ──
+  /** Share links for one place / room (or all of them) → [{ token, kind, id, label, createdAt }]. */
+  listShares: ({ kind, id } = {}) => call(`/shares?${new URLSearchParams({ ...(kind ? { kind } : {}), ...(id ? { id } : {}) })}`),
+  createShare: (kind, id, label) => call('/shares', { method: 'POST', body: { kind, id, label: label || null } }),
+  deleteShare: (token) => call(`/shares/${encodeURIComponent(token)}`, { method: 'DELETE' }),
+  /** NO password (the token is the key): → { kind: 'building'|'spot', item }. Never sends this phone's password. */
+  getShared: (token) => call(`/shared/${encodeURIComponent(token)}`, { token: '' }),
+
   // ── whole places (CONTRACTS.md 6.4) ──
   listBuildings: ({ deleted = false } = {}) => call(`/buildings${deleted ? '?deleted=1' : ''}`),
   getBuilding: (id) => call(`/buildings/${encodeURIComponent(id)}`),

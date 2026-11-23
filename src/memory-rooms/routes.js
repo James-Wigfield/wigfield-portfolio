@@ -15,6 +15,8 @@ export const paths = {
   placePlan: (id) => `${BASE}/b/${encodeURIComponent(id)}/plan`,
   placeWalk: (id) => `${BASE}/b/${encodeURIComponent(id)}/walk`,
   capturePlace: () => `${BASE}/new/place`,
+  // a private share link: one place or room, no password, no way to the rest
+  shared: (token) => `${BASE}/s/${encodeURIComponent(token)}`,
   captureRoom: (buildingId, roomId, name, of) => {
     const q = new URLSearchParams({ building: buildingId, room: roomId });
     if (name) q.set('name', name);

@@ -4,6 +4,8 @@
      Plan (every level side by side, each cut at 1.2 m) · Levels (pulled apart)
    Spin (a slow turntable) and Furnished (the rooms with or without their furniture, on the empty bake) work on
    every stage and keep their state across them. Tapping a room flies into it and opens its spot (when it has one).
+   `hint` set (a private share link's page): rooms don't open (a guest sees this place and nothing else), the hint
+   line says it instead.
    Its own chunk: three.js loads only here. */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -21,7 +23,7 @@ import TitleBlock from '../spot/TitleBlock.jsx';
 import LevelSlider from './LevelSlider.jsx';
 import '../../viewer/viewer.css';
 
-export default function BuildingView({ place, plan, spots, narrow = false }) {
+export default function BuildingView({ place, plan, spots, narrow = false, hint = null }) {
   const copy = COPY.building;
   const navigate = useNavigate();
   const [viewer, setViewer] = useState(null);
@@ -87,7 +89,7 @@ export default function BuildingView({ place, plan, spots, narrow = false }) {
 
   // tap a room: fly into it, then open its spot
   useEffect(() => {
-    if (!ready) return undefined;
+    if (!ready || hint) return undefined;
     return viewer.on('tap', ({ point, world, roomId }) => {
       const s = stageRef.current;
       if (!s || !point || leaving.current || !roomId?.startsWith('level-')) return;
@@ -105,7 +107,7 @@ export default function BuildingView({ place, plan, spots, narrow = false }) {
         if (document.contains(viewer.container)) goWithTransition(navigate, paths.spot(spot.id));
       });
     });
-  }, [ready, viewer, spots, navigate, copy]);
+  }, [ready, viewer, spots, navigate, copy, hint]);
 
   if (!source) return null;
   const pickStage = (s) => {
@@ -146,7 +148,7 @@ export default function BuildingView({ place, plan, spots, narrow = false }) {
         </div>
       </div>
       <p className="mr-building__hint mr-label" aria-live="polite">
-        {note || copy.hint}
+        {note || hint || copy.hint}
       </p>
     </section>
   );
