@@ -224,3 +224,22 @@ def ray_scale(c, p, poly):
         if t > EPS and -1e-9 <= u <= 1 + 1e-9 and t < best:
             best = t
     return 1 / best if math.isfinite(best) else math.inf
+
+
+def polygons_overlap(a, b, tol=0.01):
+    """True when two simple polygons share some AREA (edges crossing, or one's vertex / centroid well inside the
+    other). Touching along an edge, or within `tol` of it, is not overlap: two site areas laid side by side."""
+    ba, bb = bbox(a), bbox(b)
+    (ax0, az0), (ax1, az1) = ba["min"], ba["max"]
+    (bx0, bz0), (bx1, bz1) = bb["min"], bb["max"]
+    if ax1 <= bx0 + tol or bx1 <= ax0 + tol or az1 <= bz0 + tol or bz1 <= az0 + tol:
+        return False
+    for i in range(len(a)):
+        for j in range(len(b)):
+            if proper_crossing(a[i], a[(i + 1) % len(a)], b[j], b[(j + 1) % len(b)]):
+                return True
+
+    def deep_inside(p, poly):
+        return point_in_polygon(p, poly) and dist_to_boundary(p, poly) > tol
+
+    return any(deep_inside(p, b) for p in [*a, centroid(a)]) or any(deep_inside(p, a) for p in [*b, centroid(b)])

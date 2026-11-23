@@ -107,6 +107,16 @@ Learned on 12B Fletcher St (`memory-rooms-work/b-001c25b7…/`, reuse its helper
   (tile / concrete = solid flight + soffit; the `from` level's walls inside its footprint are cut to the soffit) and
   `walls` (raking side walls), `site.features[]` (planters, stepping stones, letterbox with a label, pergola beams, a
   white canopy slab, clipped shrubs), fence kind `sheet` (Colorbond). An upper level's outdoor room gets its own slab.
+- **Site areas are slabs, never sheets a few mm apart (2026-11-24).** Two surfaces closer than ~1 cm z-fight in the
+  viewer: they flicker and swap as the view spins (34 Jollytail's grass sawtoothed through its drive). The builder
+  sets every `site.areas` top by kind above the lot (lawn 1.5 cm, garden / water 2, path / paving / pool 3, drive
+  4; `AREA_RISE` in build_building.py), with edges down into the lot. An area that OVERLAPS an earlier one sits
+  ≥ 1.2 cm above it (later = on top), and the build FAILS if two overlapping areas end up < 8 mm apart. So: list
+  areas bottom-up (lawn, then beds, then paths, then the drive), don't stack more than you need, and never model
+  ground cover as a bespoke flat plane at the lot's height (or a spot exterior's ground: verge, bays). Check a spin of the outside after every
+  bake: `node tools/memory-rooms/dev/zfight-shots.mjs --building <id>` (8 far views + a flicker % per 0.3°;
+  `--old-near` shows it as the old viewer did). The viewer also scales its near plane to the orbit distance
+  (RoomViewer `nearFor`), which hides most of it on older bakes, but the builder rule is what fixes it.
 - Elevations decide finishes: a plan chain says where a panel is, A.06 says how tall (the 990 panel only runs
   39c..63c). Check every cladding face against the elevations AND a photo; pass 1 had the box's west face reversed.
 - **Merging an already-rendered spot into its building** (pass 3, DECISIONS 189–191; the Batcave folder keeps the
@@ -131,6 +141,17 @@ Learned on 12B Fletcher St (`memory-rooms-work/b-001c25b7…/`, reuse its helper
 - `compose.py <work> <round> <samples> [cam,cam]` takes a camera list; `x-*` cameras are inspection views (under the
   balcony, the stair head, inside the MP strip) that only render when named. Plants render pale in Cycles: pick
   shrub colours a notch darker than the photo (#4d5a47 grey-green, #2b3f26 leafy).
+
+Learned on 34 Jollytail St (`memory-rooms-work/b-fa81b29a…/`, a plans-only new build, reuse its helpers):
+- A 1:100 A2 vector sheet: 1 pt = 35.28 mm; the 0.96 pt black slashes are the dimension ticks, each drawn as two
+  half-strokes (merge centres < 3.5 pt). `chains.py` prints every chain with its labels; trace from chain SUMS.
+- No photos: furnished rooms still need spots. Create them through the API (POST /spots with `buildingId` + `roomId`,
+  no media), write their scenes in plan coords and move them to the room frame (`gen_scenes.py`), pin each room's
+  `origin` + `spotIds` in trace.py. Pendants under a raking ceiling: `fit_pendants.mjs` (shell.js `ceilingAt`).
+- Building room scenes are `kind: "interior"` even for an outdoor room (an exterior scene can't have a shell).
+- Roof step where two skillions meet over a room with no wall on the step line: a white site `box` feature closes it.
+- A room spot's hero: `herocut.py <spot dir> <w> <d>` (unlit dollhouse cut; wall pieces matched by ancestor node).
+- Live pushes need `--live` (push-building passes it on to `--rooms` since 2026-11-23).
 
 ## Quality bar
 

@@ -191,13 +191,19 @@ STAIR_WAIST = 0.15      # a solid flight's slab under the inner corners of its s
 STAIR_WALL_T = 0.19     # raking side walls: thickness, and height above the nosings
 STAIR_WALL_H = 1.0
 STAIR_WALL_COLOUR = "#f2f1ec"
+STEEL_SPINE = "#1c1d20"     # finish steel: the floating stair's centre spine + brackets
+STEEL_SPINE_W = 0.14
+STEEL_SPINE_D = 0.24        # its depth square to the pitch
+STEEL_TREAD_T = 0.085       # timber treads (a colour given); plates are 0.04
+STEEL_GAP = 0.05            # the spine's top under the treads
 
 
 def build_stair(b, s, level, coll, link, made, report):
     """One straight flight on its `from` level (object `stair__<id>`, level-local heights; the caller's level sits at
     its elevation). finish timber (default): stepped blocks down to the floor, as before. tile / concrete: a solid
     flight with a sloping soffit (WAIST under the inner corners), treads and risers in `color`, the soffit and sides
-    rendered; steel: thin tread plates on two stringers. `walls` adds solid raking side walls (STAIR_WALL_T thick,
+    rendered; steel: a floating stair (treads in `color`, timber, on one charcoal centre spine with a bracket per tread;
+    charcoal plates when no colour), open underneath. `walls` adds solid raking side walls (STAIR_WALL_T thick,
     STAIR_WALL_H above the nosings, left / right looking up the flight): from the ground where they stand outside
     the level's exterior loop, from the flight's underside where they pass over its rooms (a bulkhead inside). Walls (and ceilings) of this
     level inside the flight's footprint are then cut down to its underside (a boolean inside the footprint only)."""
@@ -245,16 +251,35 @@ def build_stair(b, s, level, coll, link, made, report):
         tread_mat = SH.floor_mat("tile" if finish == "tile" else "concrete", col) if finish != "steel" else materials.get("metal", col)
         under_mat = SH.wall_mat("paint", s.get("wallColor") or STAIR_WALL_COLOUR)
         if finish == "steel":
+            # a floating stair (2026-11-23, 12B Fletcher's foyer): thick treads (timber in `color`; charcoal steel
+            # plates when no colour is given) on ONE centre spine (a charcoal box section along the pitch) with a
+            # winged bracket under each tread. Open underneath: nothing is cut (see below).
+            spine_mat = materials.get("metal", STEEL_SPINE)
+            if s.get("color"):
+                tread_mat = SH.floor_mat("timber", s["color"])
+            tt = STEEL_TREAD_T if s.get("color") else 0.04
             for k in range(n - 1):
                 top = (k + 1) * rr
-                cs = [(k * g, -h), ((k + 1) * g + 0.02, -h), ((k + 1) * g + 0.02, h), (k * g, h)]
-                mb.box8([P3(u, v, top - 0.04) for u, v in cs] + [P3(u, v, top) for u, v in cs], tread_mat)
-            for v0, v1 in ((-h, -h + 0.03), (h - 0.03, h)):
-                for (ua, ub) in ((0.0, L),):
-                    q = [P3(ua, v0, -0.0), P3(ub, v0, rise - rr - 0.25), P3(ub, v1, rise - rr - 0.25), P3(ua, v1, 0.0),
-                         P3(ua, v0, rr), P3(ub, v0, rise), P3(ub, v1, rise), P3(ua, v1, rr)]
-                    mb.box8(q, tread_mat)
-            soffit = lambda u: u * slope - 0.3  # noqa: E731
+                cs = [(k * g - 0.02, -h), ((k + 1) * g + 0.02, -h), ((k + 1) * g + 0.02, h), (k * g - 0.02, h)]
+                mb.box8([P3(u, v, top - tt) for u, v in cs] + [P3(u, v, top) for u, v in cs], tread_mat)
+            # the spine: its top runs STEEL_GAP under the treads' undersides (the nosing line - tt - gap)
+            sw, sd = STEEL_SPINE_W / 2, STEEL_SPINE_D * math.sqrt(1 + slope * slope)
+            stop = lambda u: rr + u * slope - tt - STEEL_GAP  # noqa: E731
+            ua = max(-0.3, (tt + STEEL_GAP - rr) / slope)          # where its top meets the floor
+            u1 = min(L, ua + sd / slope)                          # where its underside leaves the floor
+            prof = [(ua, 0.0), (u1, 0.0), (L, stop(L) - sd), (L, stop(L))]
+            mb.box8([P3(u, -sw, z) for u, z in prof] + [P3(u, sw, z) for u, z in prof], spine_mat)
+            # a bracket under each tread: narrow on the spine, winging out to ~70 % of the width under the tread
+            for k in range(n - 1):
+                ub0, ub1 = k * g + 0.06, (k + 1) * g - 0.04
+                if ub1 <= ub0:
+                    continue
+                zt = (k + 1) * rr - tt
+                bw = h * 0.7
+                lo = [(ub0, -sw, stop(ub0)), (ub1, -sw, stop(ub1)), (ub1, sw, stop(ub1)), (ub0, sw, stop(ub0))]
+                hi_ = [(ub0, -bw, zt), (ub1, -bw, zt), (ub1, bw, zt), (ub0, bw, zt)]
+                mb.box8([P3(u, v, z) for u, v, z in lo] + [P3(u, v, z) for u, v, z in hi_], spine_mat)
+            soffit = lambda u: max(0.0, stop(u) - sd)  # noqa: E731
         else:
             # the profile in (u, height): up the steps, then down the soffit to the ground
             prof = [(0.0, 0.0)]
@@ -333,7 +358,7 @@ def build_stair(b, s, level, coll, link, made, report):
             wob.location.z = elev
 
     # cut this level's walls (and ceilings) inside the footprint down to the flight's underside
-    if finish != "timber":
+    if finish not in ("timber", "steel"):  # a floating (steel) flight is open underneath
         cutter_mb = MB()
         e = 0.002
         bot0, bot1 = max(0.0, soffit(0.0)), soffit(L)
@@ -462,30 +487,76 @@ def build_level(b, level, coll, scenes, report):
         if rp is not None:
             t2 = line0["thickness"] / 2
             d, lf = line0["dir"], line0["left"]
-            ends = [(line0["pa"], -t2), (line0["pb"], t2)]  # each end grown by half a thickness to close corners
+            # each end grown by half a thickness to close corners, but not where another wall carries straight on
+            # (2026-11-23, 34 Jollytail St: two grown bands overlapped at a straight joint and their coplanar faces
+            # rendered as black slits up the gable)
+            def _straight_on(nid):
+                for w2 in J["lines"].values():
+                    if w2["id"] == wid or nid not in (w2["a"], w2["b"]):
+                        continue
+                    if abs(w2["dir"][0] * line0["dir"][1] - w2["dir"][1] * line0["dir"][0]) < 1e-3:
+                        return True
+                return False
+
+            ends = [(line0["pa"], 0.0 if _straight_on(line0["a"]) else -t2),
+                    (line0["pb"], 0.0 if _straight_on(line0["b"]) else t2)]
             base_z = elev + H
-            ring = []  # absolute heights, then made wall-local (the wall object sits at z = elev)
-            for (p, grow), s in ((ends[0], 1), (ends[1], 1), (ends[1], -1), (ends[0], -1)):
-                x = p[0] + d[0] * grow + lf[0] * t2 * s
-                q = p[1] + d[1] * grow + lf[1] * t2 * s
-                ring.append((x, q, max(base_z, skillion_height(rp, x, q))))
-            if max(r[2] for r in ring) - base_z > 0.02:
-                rk = MB()
+            # the band follows whichever skillion part is over each stretch of the wall (2026-11-23: a wall that
+            # runs under two parts, e.g. under a 10 deg roof then a higher 15 deg one, steps up where they meet
+            # instead of following the first part and leaving a wedge of sky under the higher one)
+            pa0 = line0["pa"]
+            u_lo, u_hi = ends[0][1], line0["length"] + ends[1][1]
+            cuts = {u_lo, u_hi}
+            for rp2 in rparts:
+                if rp2["typ"] != "skillion" or rp2["level"] != lid:
+                    continue
+                for ax in (0, 1):
+                    if abs(d[ax]) < 1e-9:
+                        continue
+                    for edge in (rp2["bb"]["min"][ax], rp2["bb"]["max"][ax]):
+                        u = (edge - pa0[ax]) / d[ax]
+                        if u_lo + 0.01 < u < u_hi - 0.01:
+                            cuts.add(u)
+            cuts = sorted(cuts)
+
+            def _part_at(x, q):
+                for rp2 in rparts:
+                    if rp2["typ"] != "skillion" or rp2["level"] != lid:
+                        continue
+                    bb2 = rp2["bb"]
+                    if bb2["min"][0] - 0.05 <= x <= bb2["max"][0] + 0.05 and bb2["min"][1] - 0.05 <= q <= bb2["max"][1] + 0.05:
+                        return rp2
+                return None
+
+            left_mat = f_out if not flip else f_in   # the corners at +lf are on line0's left side
+            right_mat = f_in if not flip else f_out
+            rk_spec = osp.get("rake") or {}
+            if rk_spec:  # the raking band has its own finish on the faces that look outside
+                rmat = SH.wall_mat(OUTSIDE_FINISH.get(rk_spec.get("finish", osp.get("finish")), "paint"),
+                                   rk_spec.get("color") or osp.get("color"))
+                left_mat = rmat if left_mat is not None else None
+                right_mat = rmat if right_mat is not None else None
+            rk = MB()
+            n_seg = 0
+            for u0, u1 in zip(cuts, cuts[1:]):
+                um = (u0 + u1) / 2
+                rps = _part_at(pa0[0] + d[0] * um, pa0[1] + d[1] * um) or rp
+                ring = []  # absolute heights, then made wall-local (the wall object sits at z = elev)
+                for u, s in ((u0, 1), (u1, 1), (u1, -1), (u0, -1)):
+                    x = pa0[0] + d[0] * u + lf[0] * t2 * s
+                    q = pa0[1] + d[1] * u + lf[1] * t2 * s
+                    ring.append((x, q, max(base_z, skillion_height(rps, x, q))))
+                if max(r[2] for r in ring) - base_z <= 0.02:
+                    continue
                 bot = [bl((x, q), H) for x, q, _ in ring]
                 top = [bl((x, q), z - elev) for x, q, z in ring]
-                left_mat = f_out if not flip else f_in   # ring[0..1] is on line0's left side
-                right_mat = f_in if not flip else f_out
-                rk_spec = osp.get("rake") or {}
-                if rk_spec:  # the raking band has its own finish on the faces that look outside
-                    rmat = SH.wall_mat(OUTSIDE_FINISH.get(rk_spec.get("finish", osp.get("finish")), "paint"),
-                                       rk_spec.get("color") or osp.get("color"))
-                    left_mat = rmat if left_mat is not None else None
-                    right_mat = rmat if right_mat is not None else None
                 rk.poly([bot[0], bot[1], top[1], top[0]], left_mat or wmat, (lf[0], -lf[1], 0))
                 rk.poly([bot[2], bot[3], top[3], top[2]], right_mat or wmat, (-lf[0], lf[1], 0))
                 rk.poly([bot[1], bot[2], top[2], top[1]], wmat, (d[0], -d[1], 0))
                 rk.poly([bot[3], bot[0], top[0], top[3]], wmat, (-d[0], d[1], 0))
                 rk.poly(top, cmat, (0, 0, 1))
+                n_seg += 1
+            if n_seg:
                 if link(rk, f"{name}__rake", wall) is not None:
                     made["rakes"] = made.get("rakes", 0) + 1
         # the extras always describe the wall as building.json has it (a to b), whichever way it was built
@@ -604,14 +675,18 @@ def build_level(b, level, coll, scenes, report):
         fl = r.get("floor") or {}
         fmat = SH.floor_mat(fl.get("finish", "timber"), fl.get("color"))
         mb = MB()
-        for tri in S2.triangulate(poly):
-            mb.poly([bl(poly[i], 0.0) for i in tri], fmat, up)
+        if r.get("kind") != "void":  # a void (the upper half of a double-height room below) has no floor
+            for tri in S2.triangulate(poly):
+                mb.poly([bl(poly[i], 0.0) for i in tri], fmat, up)
         ob = link(mb, f"floor__{r['id']}")
         if ob is not None:
             ob.location.z = elev
             made["floors"].append(r["id"])
-        # its ceiling: flat, seen from below, and a slab's thickness of top
+        # its ceiling: flat, seen from below, and a slab's thickness of top (none when `ceiling.show` is false:
+        # the room is open to the level above through a void)
         c = r.get("ceiling") or {}
+        if c.get("show", True) is False:
+            continue
         ch = float(c.get("height", level.get("height", 2.6)))
         cm = materials.get("plaster", c.get("color", "#f3efe6"))
         mb = MB()
@@ -623,6 +698,8 @@ def build_level(b, level, coll, scenes, report):
         if ob is not None:
             ob.location.z = elev
             made["ceilings"].append(r["id"])
+    # voids on this level: holes in its slab (their inner outlines)
+    void_holes = [room_polys[r["id"]] for r in rooms_here if r.get("kind") == "void" and r["id"] in room_polys]
     band = MB()
     for wid in made["walls"]:
         ends = J["walls"][wid]
@@ -660,8 +737,32 @@ def build_level(b, level, coll, scenes, report):
             A, C = bl(a), bl(c)
             nrm = (c[1] - a[1], c[0] - a[0], 0)
             slab.poly([A + Vector((0, 0, -slab_t)), C + Vector((0, 0, -slab_t)), C, A], pm, nrm)
-        for tri in S2.triangulate(ring):
-            slab.poly([bl(ring[i], -slab_t) for i in reversed(tri)], pm, (0, 0, -1))
+        holes_in = [h for h in void_holes if all(P.point_in_polygon(p, ring) for p in h)]
+        if not holes_in:
+            for tri in S2.triangulate(ring):
+                slab.poly([bl(ring[i], -slab_t) for i in reversed(tri)], pm, (0, 0, -1))
+            continue
+        # a void room over this ring (2026-11-23): the underside with its hole(s) (scanfill), and the hole's sides =
+        # the landing fascia seen from the double-height room below
+        import bmesh
+        tb = bmesh.new()
+        edges = []
+        for pts in [ring, *holes_in]:
+            vs = [tb.verts.new((x, z, 0.0)) for x, z in pts]
+            edges += [tb.edges.new((vs[i], vs[(i + 1) % len(vs)])) for i in range(len(vs))]
+        bmesh.ops.triangle_fill(tb, use_beauty=True, use_dissolve=False, edges=edges)
+        for f in tb.faces:
+            slab.poly([bl((v.co.x, v.co.y), -slab_t) for v in f.verts], pm, (0, 0, -1))
+        tb.free()
+        for h in holes_in:
+            cx, cz = sum(p[0] for p in h) / len(h), sum(p[1] for p in h) / len(h)
+            for i in range(len(h)):
+                a, c = h[i], h[(i + 1) % len(h)]
+                nx, nz = -(c[1] - a[1]), c[0] - a[0]
+                if nx * (cx - (a[0] + c[0]) / 2) + nz * (cz - (a[1] + c[1]) / 2) < 0:
+                    nx, nz = -nx, -nz
+                A, C = bl(a), bl(c)
+                slab.poly([A + Vector((0, 0, -slab_t)), C + Vector((0, 0, -slab_t)), C, A], pm, (nx, -nz, 0))
     ob = link(slab, "floor__slab")
     if ob is not None:
         ob.location.z = elev
@@ -852,16 +953,24 @@ def site_mesh(b, coll):
         for tri in __import__("shell_v2").triangulate(poly):
             mb.poly([bl(poly[i], -0.13) for i in tri], gm, (0, 0, 1))
         made.append(mb.obj("ground", coll))
-    for k_area, a in enumerate(site.get("areas", [])):
+    for a, top in zip(site.get("areas", []), area_tops(site.get("areas", []))):
         poly = a["outline"] if P.signed_area(a["outline"]) > 0 else list(reversed(a["outline"]))
         finish = {"drive": "concrete", "path": "paving", "deck": "timber", "lawn": "grass", "pool": "concrete",
                   "garden": "dirt"}.get(a.get("kind"), "paving")
         mat = SH.ground_mat(finish, a.get("color"))
         mb = MB()
-        # areas draw in order, later on top: each a couple of millimetres above the one before (no z-fighting)
-        y_area = -0.12 + 0.002 * k_area if a.get("kind") != "deck" else 0.0
+        # a slab, not a sheet: its top at `top`, its edges down into the lot (no bottom face)
         for tri in __import__("shell_v2").triangulate(poly):
-            mb.poly([bl(poly[i], y_area) for i in tri], mat, (0, 0, 1))
+            mb.poly([bl(poly[i], top) for i in tri], mat, (0, 0, 1))
+        if a.get("kind") != "deck":
+            bot = GROUND_Y - AREA_SINK
+            for i in range(len(poly)):
+                p, q = poly[i], poly[(i + 1) % len(poly)]
+                ox, oz = q[1] - p[1], -(q[0] - p[0])
+                mid = ((p[0] + q[0]) / 2 + ox * 1e-3, (p[1] + q[1]) / 2 + oz * 1e-3)
+                if P.point_in_polygon(mid, poly):  # that way is inward: face the other way
+                    ox, oz = -ox, -oz
+                mb.poly([bl(p, top), bl(q, top), bl(q, bot), bl(p, bot)], mat, tuple(bl((ox, oz), 0)))
         made.append(mb.obj(f"site__{a['id']}", coll))
     # fences: metal / timber / picket = upright slats on a pitch (+ a top rail); masonry / glass / hedge = one panel
     for f in site.get("fences", []):
@@ -938,6 +1047,38 @@ FEATURE_MATS = {"render": ("plaster", "#f2f1ec"), "concrete": ("concrete", "#d3c
                 "paving": ("stone", "#bdb8ae")}
 FEATURE_DEFAULT_FINISH = {"shrub": "plant", "ring": "steel", "letterbox": "steel", "disc": "stone"}
 GROUND_Y = -0.13  # the site's ground plane (the lot sits there)
+
+# Site areas are slabs standing proud of the lot, each kind at its own height above it (m). Never two surfaces a
+# few mm apart: the viewer can't tell which is in front, and they swap as the view turns (z-fighting). An area
+# that overlaps an earlier one sits at least AREA_STEP above it, so later areas always read on top.
+AREA_RISE = {"lawn": 0.015, "garden": 0.02, "water": 0.02, "path": 0.03, "paving": 0.03, "pool": 0.03, "drive": 0.04}
+AREA_STEP = 0.012
+AREA_SINK = 0.02  # an area's edges run this far below the lot, so no gap shows at a low angle
+AREA_MIN_GAP = 0.008  # the build fails below this (between overlapping areas, or an area and the lot)
+
+
+def area_tops(areas):
+    """Each site area's top height (world y), in order. A deck stays at floor level (0). Raises when two
+    overlapping areas would end up closer than AREA_MIN_GAP (the z-fighting guard)."""
+    tops, polys = [], []
+    for a in areas:
+        poly = a["outline"]
+        if a.get("kind") == "deck":
+            top = 0.0
+        else:
+            top = GROUND_Y + AREA_RISE.get(a.get("kind"), 0.03)
+            for prev, ptop in zip(polys, tops):
+                if ptop != 0.0 and P.polygons_overlap(poly, prev):
+                    top = max(top, ptop + AREA_STEP)
+        tops.append(round(top, 4))
+        polys.append(poly)
+    for i, (a, t) in enumerate(zip(areas, tops)):
+        if t - GROUND_Y < AREA_MIN_GAP:
+            raise ValueError(f"site area {a['id']} sits {t - GROUND_Y:.4f} m above the lot (< {AREA_MIN_GAP})")
+        for j in range(i):
+            if abs(t - tops[j]) < AREA_MIN_GAP and P.polygons_overlap(a["outline"], areas[j]["outline"]):
+                raise ValueError(f"site areas {areas[j]['id']} and {a['id']} overlap {abs(t - tops[j]):.4f} m apart (z-fighting)")
+    return tops
 
 
 def site_feature(f, coll):

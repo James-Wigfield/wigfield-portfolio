@@ -45,6 +45,10 @@ const RAD = Math.PI / 180;
 const _north = new THREE.Vector3(0, 0, -1);
 const RECALL_WAIT_MS = 1200; // how long a room that arrived first waits for its cloud
 const ORBIT_FOV = 35; // vertical, degrees: long-ish lens = miniature feel
+// the near plane (nearFor): 1 % of the orbit distance, between 5 cm and 1 m
+const NEAR_MIN = 0.05;
+const NEAR_MAX = 1;
+const NEAR_PER_M = 0.01;
 const FLY_MS = 800;
 const RETURN_MS = 700;
 const REVEAL_MS = 1900;
@@ -1890,11 +1894,25 @@ export class RoomViewer {
     if (this.glyphs) this.glyphs.group.visible = this.view === 'orbit' && !this.flying;
   }
 
+  /**
+   * The near plane, scaled to the orbit distance. Depth precision falls with near / distance², so a fixed
+   * 0.05 m near could only tell surfaces ~2 mm apart at 40 m (~8 mm at 80 m): a site's lawn, drive and paths,
+   * baked a few mm apart, swapped places as the view turned (z-fighting). 1 % of the distance to the target
+   * keeps that under half a millimetre and stays well inside anything an orbit can see. Inside a room (a photo
+   * viewpoint, a dive, the walk-in) it stays 0.05 m: the camera can be right up against a wall there.
+   */
+  nearFor() {
+    if (this.view !== 'orbit' || this.flying || !this.controls) return NEAR_MIN;
+    const d = this.camera.position.distanceTo(this.controls.target);
+    return Math.min(NEAR_MAX, Math.max(NEAR_MIN, d * NEAR_PER_M));
+  }
+
   renderNow(dt = 0) {
     const { renderer, camera } = this;
     const scan = this.mode === 'scan';
     const r = this.viewRect();
     camera.aspect = r.w / r.h;
+    camera.near = this.nearFor();
     camera.updateProjectionMatrix();
 
     if (scan) {
