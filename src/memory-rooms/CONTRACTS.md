@@ -278,10 +278,12 @@ wall.outside? { finish?, color?, rake?: { finish?, color? }, panels?: [{ offset,
   rooms). `steps` = risers (default rise / 0.18 m rounded half up, the same in JS and Python); the last lands on the
   `to` floor, so a tread's going = length / (steps − 1). The `to` level's floor gets a
   hole over the footprint (no void room needed). Optional (2026-11-22): `finish` (default timber = stepped blocks;
-  tile / concrete = a solid flight with a sloping soffit, treads and risers in `color`; steel = plates), `walls`
+  tile / concrete = a solid flight with a sloping soffit, treads and risers in `color`; steel (2026-11-23) = a
+  floating stair: 85 mm timber treads in `color` (charcoal plates without one) on one charcoal centre spine, open
+  underneath), `walls`
   (solid raking side walls 0.19 thick, 1 m above the nosings, left / right looking up the flight, in `wallColor`;
   from the ground outside the `from` level's exterior loop, from the flight's underside over its rooms). Walls and
-  ceilings of the `from` level inside the footprint of a non-timber flight are cut down to its underside.
+  ceilings of the `from` level inside the footprint of a tile / concrete flight are cut down to its underside.
 - **Outside finishes** (`wall.outside`) go on the faces that look outside (no room on that side, or an outdoor room).
   Optional (2026-11-22): `rake` = the finish of the raking band between the wall's top and a skillion roof above it;
   `panels` = face-only bands of another finish (a cladding panel beside a window), placed like an opening (`offset`

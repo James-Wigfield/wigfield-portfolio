@@ -11,7 +11,7 @@
    2. blender build_building.py → levels/<id>/room.blend (+ renders), exterior/room.blend
    3. bake.mjs on each → room.glb; copied to level-<id>.glb / exterior.glb; renders/hero.png from the first level.
       Levels bake with --empty: level-<id>-empty.glb = the structure's atlases baked again without the furniture.
-   4. blender slice_rooms.py on each baked level → memory-rooms-work/<spotId>/room.glb for every furnished room
+   4. blender slice_rooms.py on each baked level (after all levels bake: a double-height room takes the level above) → memory-rooms-work/<spotId>/room.glb for every furnished room
       (+ room-empty.glb beside it: the level's empty atlases, same material names)
    Then: push-building.mjs <id> (and push.mjs for each room spot). */
 
@@ -68,6 +68,11 @@ for (const lv of levels) {
   fs.rmSync(path.join(dir, `level-${lv.id}-empty.glb`), { force: true }); // a stale one from an earlier bake
   if (fs.existsSync(empty)) fs.copyFileSync(empty, path.join(dir, `level-${lv.id}-empty.glb`));
   else console.log(`  level ${lv.id}: no furniture, so no empty state (no level-${lv.id}-empty.glb)`);
+}
+// slice after EVERY level is baked: a double-height room's slice takes the level above's structure from its bake
+for (const lv of levels) {
+  const ld = path.join(dir, 'levels', lv.id);
+  const empty = path.join(ld, 'room-empty.glb');
   const out = step(`slice level ${lv.id}`, BLENDER, ['-b', path.join(ld, 'room-baked.blend'), '--python', slice, '--', '--building', path.join(dir, 'building.json'), '--id', id, '--scenes', WORK]);
   const m = /SLICES (\[.*\])/.exec(out);
   for (const s of m ? JSON.parse(m[1]) : []) {

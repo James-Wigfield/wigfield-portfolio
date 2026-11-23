@@ -232,7 +232,7 @@
         "length": { "type": "number", "minimum": 0.6, "maximum": 12 },
         "steps": { "type": "integer", "minimum": 2, "maximum": 40, "description": "Default: the rise / 0.18 m, rounded." },
         "color": { "$ref": "#/$defs/hex" },
-        "finish": { "enum": ["timber", "tile", "concrete", "steel"], "description": "Default timber (stepped blocks). tile / concrete: a solid flight with a sloping soffit, treads and risers in `color`; steel: thin plates. Walls of the `from` level inside the flight's footprint are cut to its underside." },
+        "finish": { "enum": ["timber", "tile", "concrete", "steel"], "description": "Default timber (stepped blocks). tile / concrete: a solid flight with a sloping soffit, treads and risers in `color`; steel: a floating stair (timber treads in `color`, charcoal plates without one, on one centre spine, open underneath). Walls of the `from` level inside a tile / concrete flight's footprint are cut to its underside." },
         "walls": { "enum": ["none", "left", "right", "both"], "description": "Solid raking side walls (0.19 thick, 1 m above the nosings), left / right looking up the flight. Default none." },
         "wallColor": { "$ref": "#/$defs/hex" }
       }

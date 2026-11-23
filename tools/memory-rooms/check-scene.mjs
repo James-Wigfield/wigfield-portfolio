@@ -286,7 +286,11 @@ function checkGeneric(scene, sh, { errors, warnings, objs, boxes }) {
     if (op.offset < -0.001) errors.push(`${label}: starts ${fmtM(-op.offset)} before the wall's inner face begins`);
     if (op.offset + op.width > w.length + 0.001) errors.push(`${label}: runs ${fmtM(op.offset + op.width - w.length)} past the end of the ${fmtM(w.length)} wall`);
     const top = wallTopMin(sh, w, Math.max(0, op.offset), Math.min(w.length, op.offset + op.width));
-    if (op.head > top + 0.001) errors.push(`${label}: its top (${op.head.toFixed(2)} m) is above the wall (${top.toFixed(2)} m there)`);
+    // a window wholly above this room's ceiling (a clerestory over an outdoor room's roof, on a building wall that
+    // rises past it: 34 Jollytail St's alfresco) is not seen from this room: a warning, not an error
+    if (op.head > top + 0.001 && op.type === 'window' && op.sill >= top - 0.001 && sh.kind === 'building')
+      warnings.push(`${label}: above this room's ceiling (${top.toFixed(2)} m), a clerestory seen from outside`);
+    else if (op.head > top + 0.001) errors.push(`${label}: its top (${op.head.toFixed(2)} m) is above the wall (${top.toFixed(2)} m there)`);
     if (op.type === 'door' && op.sill > 0.001) warnings.push(`${label}: a door with a sill of ${fmtM(op.sill)}`);
     if (op.type === 'window' && op.sill < 0.05) warnings.push(`${label}: a window at floor level; is it a door or a glass wall?`);
     if (op.offset < 0.05 || w.length - (op.offset + op.width) < 0.05) warnings.push(`${label}: within 5 cm of a corner`);

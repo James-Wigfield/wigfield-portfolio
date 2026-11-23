@@ -110,7 +110,7 @@ if (args.includes('--rooms')) {
   for (const r of plan.rooms) {
     for (const sid of r.spotIds || []) {
       if (!fs.existsSync(path.join(WORK, sid, 'room.glb'))) continue;
-      const res = spawnSync(process.execPath, [path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), 'push.mjs'), sid], { stdio: 'inherit', env: { ...process.env, MEMORIES_API: cfg.base } });
+      const res = spawnSync(process.execPath, [path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), 'push.mjs'), sid, ...(args.includes('--live') ? ['--live'] : [])], { stdio: 'inherit', env: { ...process.env, MEMORIES_API: cfg.base } });
       if (res.status !== 0) process.exitCode = 1;
     }
   }
