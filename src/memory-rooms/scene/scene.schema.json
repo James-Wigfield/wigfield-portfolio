@@ -266,6 +266,34 @@
             },
             "color": { "$ref": "#/$defs/hex" }
           }
+        },
+        "terrain": {
+          "type": "object",
+          "required": ["size", "heights"],
+          "additionalProperties": false,
+          "description": "A real-world landscape diorama built from elevation data (tools/memory-rooms/landscape/): [w, d] centred on the origin, heights [base, top] in metres. The viewer frames this box, sets the drafting table under the base and offers no walk-in or AR.",
+          "properties": {
+            "size": {
+              "type": "array",
+              "prefixItems": [
+                { "type": "number", "minimum": 10, "maximum": 20000 },
+                { "type": "number", "minimum": 10, "maximum": 20000 }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "heights": {
+              "type": "array",
+              "prefixItems": [
+                { "type": "number", "minimum": -500, "maximum": 0 },
+                { "type": "number", "minimum": 0, "maximum": 3000 }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "vexag": { "type": "number", "minimum": 1, "maximum": 5, "description": "Vertical exaggeration baked into the GLB (1 = true scale)." },
+            "sources": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+          }
         }
       }
     },

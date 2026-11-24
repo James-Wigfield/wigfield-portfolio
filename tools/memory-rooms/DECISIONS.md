@@ -292,3 +292,18 @@ Brief: `Documents/temp/prompt-dumping/memory-rooms-next-level.md`; spec: the vau
 202. **A raking band follows every roof part over its wall, and butts at straight joints** (`build_building.py`, 34 Jollytail St, 2026-11-23): the band is cut wherever a skillion part's outline edge crosses the wall and each stretch rises to the part over its middle, so a wall running under a 10° roof and then a higher 15° one steps up where they meet (the clerestory end walls) instead of following the first part and leaving a wedge of sky. Its ends grow by half a thickness only at a corner: where another wall carries straight on (an exterior wall split at a T), two grown bands overlapped and their coplanar faces rendered as black slits up the gable.
 203. **A window wholly above a building room's ceiling is a clerestory, not an error** (`check-scene.mjs`): an outdoor room under a low roof against a wall that rises past it (the alfresco under the 10° roof, the clerestory band under the 15° one) sees no part of it; a warning names it. Any window that straddles the ceiling is still an error.
 204. **Site areas are slabs at a height per kind, and the viewer's near plane follows the orbit distance** (2026-11-24, 34 Jollytail St's grass z-fought through its drive): areas used to be flat sheets 2 mm apart and 1 cm above the lot, below what a 24-bit depth buffer with a 0.05 m near plane separates at 40–80 m (2–8 mm). `build_building.py` `area_tops`: top = lot + `AREA_RISE[kind]` (lawn 1.5 cm … drive 4 cm), an area overlapping an earlier one ≥ `AREA_STEP` 1.2 cm above it, edges 2 cm into the lot, and the build raises when two overlapping areas end < 8 mm apart. `RoomViewer.nearFor()`: 1 % of the camera-to-target distance in orbit (5 cm–1 m), 5 cm in a viewpoint / dive. Measured with `dev/zfight-shots.mjs`: max flicker per 0.3° turn 0.87 % → 0.22 %. Both live houses had their exterior rebuilt + re-baked (levels untouched); `backup-pre-slabs/` in each work folder.
+205. **Landscapes are exteriors with `site.terrain`, not a new kind** (2026-11-24, Point Peron): a new `kind` touches
+   the Worker's KINDS, the schema enum and every `kind === 'interior'` branch; an optional `site.terrain` block only
+   needs the bounds, the viewer's planes / zoom floor and the walk / AR entries. The ground is NOT baked by
+   `bake_export.py` (its 6 m island chunking and 110 texel/m density are room-scale): it is four top-down ortho
+   renders of the lit scene (shrubs, shadows and roofs included) on a decimated, tile-cut, planar-UV mesh.
+206. **Open data only, nothing ordered or scraped** (Point Peron): heights from the AWS Terrarium tiles (Mapbox
+   Terrain-RGB answered 429 on this token; Geoscience Australia's 1 m LiDAR needs an emailed order, which James
+   declined), coastline / roads / paths / buildings from the OSM API (`map.json` bbox call: the Overpass mirrors
+   were down), colour from Sentinel-2 L2A (Element 84 Earth Search, no key). Google Maps / Images were looked at
+   for reference only (cliffs vs beaches, the battery, the lookout); nothing from them is in the model.
+207. **True vertical scale, cliffs from photos** (Point Peron): the 30 m-masked DEM steps along the coast, so land
+   within ~70 m of the sea blends to a smoothed copy; where the aerial photos show limestone (north tip, NW shore,
+   Cape Peron to the lookout, the islets) the height found 20–40 m inland is carried to a 0.8 m rock platform
+   instead of easing down like a beach. The sea floor is modelled (distance offshore + satellite brightness),
+   not surveyed, and the scene notes say so.

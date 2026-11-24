@@ -43,6 +43,7 @@ import { disposeFurnishing, emptyMapsFrom, indexFurnishing, setFurnitureShown, s
 
 const RAD = Math.PI / 180;
 const _north = new THREE.Vector3(0, 0, -1);
+const _tmpFar = new THREE.Vector3();
 const RECALL_WAIT_MS = 1200; // how long a room that arrived first waits for its cloud
 const ORBIT_FOV = 35; // vertical, degrees: long-ish lens = miniature feel
 // the near plane (nearFor): 1 % of the orbit distance, between 5 cm and 1 m
@@ -424,6 +425,7 @@ export class RoomViewer {
     const scene = spec.scene;
     const box = boxToWorld(framingBox(scene), new THREE.Object3D());
     const interior = scene.kind === 'interior';
+    this.landscape = Boolean(scene.site?.terrain);
     const home = this.computeHome(box, interior);
     const centre = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -596,6 +598,7 @@ export class RoomViewer {
   finishLoad({ reveal, keepPose = false, ready = true }) {
     this.bounds = new THREE.Box3();
     for (const r of this.rooms) this.bounds.union(r.box);
+    this.landscape = this.rooms.some((r) => r.scene?.site?.terrain);
     this.centre = this.bounds.getCenter(new THREE.Vector3());
     this.buildExtras();
     const home = this.computeHome(this.bounds, this.rooms.some((r) => r.interior));
@@ -662,7 +665,13 @@ export class RoomViewer {
     let radius;
     let centre;
     let foot;
-    if (scene?.site?.ground) {
+    const terrain = scene?.site?.terrain || null;
+    if (terrain) {
+      const [w, d] = terrain.size;
+      radius = 0.5 * Math.hypot(w, d) * 1.15;
+      centre = [0, 0];
+      foot = { min: [-w / 2, -d / 2], max: [w / 2, d / 2] };
+    } else if (scene?.site?.ground) {
       const [w, d] = scene.site.ground.size;
       radius = 0.5 * Math.hypot(w, d) * 1.3;
       centre = [0, 0];
@@ -674,8 +683,10 @@ export class RoomViewer {
     }
     // a 0.5 m grid with 1 m lines under a room; coarser under a big site or a building
     const span = Math.max(size.x, size.z);
-    const cell = span > 40 ? 2 : span > 18 ? 1 : 0.25;
+    const cell = span > 1000 ? 50 : span > 40 ? 2 : span > 18 ? 1 : 0.25;
     this.ground = buildDraftingGround({ radius, centre, box: foot, cell, major: cell >= 1 ? 5 : 4, shadow: exterior ? 0.6 : 1 });
+    // a landscape stands on the table: the table is at the diorama's base, not at sea level
+    if (terrain) this.ground.position.y = terrain.heights[0];
     this.extras.add(this.ground);
 
     if (scene?.cameras?.length) {
@@ -801,7 +812,8 @@ export class RoomViewer {
     return {
       pose: { pos, target },
       limits: {
-        minDistance: dist * 0.3,
+        // a landscape is worth getting close to: down to a few hundred metres above a km-wide block
+        minDistance: dist * (this.landscape ? 0.04 : 0.3),
         maxDistance: dist * 2.2,
         minPolarAngle: 0.12,
         maxPolarAngle: (interior ? 82 : 85) * RAD,
@@ -1904,7 +1916,17 @@ export class RoomViewer {
   nearFor() {
     if (this.view !== 'orbit' || this.flying || !this.controls) return NEAR_MIN;
     const d = this.camera.position.distanceTo(this.controls.target);
-    return Math.min(NEAR_MAX, Math.max(NEAR_MIN, d * NEAR_PER_M));
+    // a landscape is seen from kilometres away: let the near plane follow further out
+    const max = this.landscape ? 40 : NEAR_MAX;
+    return Math.min(max, Math.max(NEAR_MIN, d * NEAR_PER_M));
+  }
+
+  /** The far plane: 900 m covers any room or site; a landscape needs its whole block from where the camera is. */
+  farFor() {
+    if (!this.landscape) return 900;
+    if (!this.bounds) return 30000;
+    const reach = this.camera.position.distanceTo(this.bounds.getCenter(_tmpFar)) + this.bounds.getSize(_tmpFar).length();
+    return Math.max(900, reach * 1.05);
   }
 
   renderNow(dt = 0) {
@@ -1913,6 +1935,7 @@ export class RoomViewer {
     const r = this.viewRect();
     camera.aspect = r.w / r.h;
     camera.near = this.nearFor();
+    camera.far = this.farFor();
     camera.updateProjectionMatrix();
 
     if (scan) {

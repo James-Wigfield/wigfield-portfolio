@@ -93,7 +93,8 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
         </section>
       )}
 
-      {stage === 'model' && (
+      {/* a landscape diorama is kilometres across: no walking in, no AR */}
+      {stage === 'model' && !spot.scene?.site?.terrain && (
         <Suspense fallback={null}>
           <WalkEntry key={`walk-${spot.id}`} spot={spot} dive={viewer ? () => viewer.diveIn() : null} />
           <ArEntry key={spot.id} spot={spot} viewer={viewer} startOpen={arOpen} />

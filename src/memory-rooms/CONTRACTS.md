@@ -433,3 +433,17 @@ multi-level plan uses (pure; `building-selftest.mjs` checks it on 12B Fletcher a
   the GLB's own `baked_atlas<i>` materials on the empty maps, loaded once on first use; a GLB with no empty set keeps
   its furniture. Shown on the place page (every stage, one state) and on a building room's spot page; never on a
   plain spot.
+
+### 6.8 Landscapes: `site.terrain` (2026-11-24)
+
+- An exterior whose `site.terrain` is set is a real-world **landscape diorama** (first one: Point Peron), built by
+  `tools/memory-rooms/landscape/` (not `build_room.py`): `{ size: [w, d], heights: [base, top], vexag?, sources? }`,
+  the block centred on the origin (= the spot's lat/lng), base at `heights[0]` (negative: the sea floor sits under
+  0 = sea level), x east, z south, as every scene. `site.ground` is still required and ignored (`[2, 2]`).
+- `sceneBounds` frames the terrain block instead of the ground plate. The viewer puts the drafting table at the
+  base, lets the near/far planes follow a km-scale orbit (far from the camera's reach, near up to 40 m), lets the
+  orbit come in to 4 % of the home distance, and the spot page offers no walk-in or AR.
+- The GLB: 2 × 2 ground tiles (`ground_t<row><col>`, unlit, each an ortho bake of its quarter, planar UVs), one
+  `structures` mesh (baked atlas), the diorama sides (`side_skirt_*`, a strata strip; `side_waterside_*`, translucent
+  water band) and `side_base`. Every node `mrKind: structure` (Furnished/empty never applies).
+- A contract addition: the live Worker validates `scene` with its bundled schema, so deploy before pushing one.
