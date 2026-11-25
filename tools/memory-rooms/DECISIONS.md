@@ -395,3 +395,88 @@ Brief: `Documents/memory-rooms/prompt-dumping/freeform-capture-prompt.md` (Part 
    1.55 the body is an adult's width and the crown is three quarters up the door (screenshots:
    `memory-rooms-work/_dev/sprite-size.mjs`, first person, Justin beside the door). The eye sits 10 cm under the
    sprite's crown (it was 1.58, above a 1.55 m head), seated 1.0 m (was 1.1).
+
+### Freeform "old photos" spots + the viewpoint editor (2026-11-25)
+
+Brief: `Documents/memory-rooms/prompt-dumping/freeform-capture-prompt.md` (Part 2). CONTRACTS.md 8.
+
+219. **Old photos are a `capture` on the spot, not a new kind** (`capture/capture.schema.json`, `capture/freeform.js`,
+   `supabase/memory_freeform.sql` written NOT run): `{ mode: guided | freeform, era?, captions?, layout?, views? }`,
+   validated by the same module on the phone and in the Worker (POST + PATCH, ifUpdatedAt / 409 as ever). A spot
+   without it is guided and unchanged. "Viewpoints" everywhere ("pins" are scene.json's memory notes). `yaw` is
+   rotY's convention (0 = looking south, 90 = east). **Captions are per photo** (`captions: { "<n>": text }`), not
+   in `views`: they are typed on the photo step, before (and without) any viewpoint. The phone keeps captions and
+   viewpoints by photo id until it saves (removing a photo then never shifts them) and numbers them by order then.
+220. **1 to 40 photos.** The minimum is ONE (a guessed room from the one photo of a childhood bedroom beats refusing
+   it; the render marks what it guessed); guided keeps 4–12. The Worker's photo / thumb `:n` is 1–40 only when the
+   spot's `capture.mode` is freeform (`maxPhotosOf`), so a guided spot still stops at 12. The outbox needed no
+   change for 40 (80 files, each uploaded, retried and counted on its own; "uploading i of n" already counts
+   files); IndexedDB holds the ~40 × 0.5 MB without trouble.
+221. **EXIF, hand-rolled** (`lib/exif.js`, ~200 lines, no dependency): JPEG APP1 and HEIC's `meta` → `iinf` (the
+   item typed `Exif`) → `iloc` (its bytes), then the TIFF IFD0 + Exif IFD for make, model, orientation, FocalLength,
+   FocalLengthIn35mmFilm, DateTimeOriginal (+ OffsetTimeOriginal). Read from the ORIGINAL file in
+   `processPhoto` before the canvas resize (which drops it), with the decoded image's upright size. Verified on
+   James's iPhone 15 Pro Max HEICs (24 mm main, 14 mm for the 0.5× ultrawide) and on JPEG. It travels as
+   `x-exif` (URI-encoded JSON) beside the photo, so the media row is written once by the same PUT; the Worker
+   checks and trims it and never fails an upload over it. Before the SQL the Supabase store saves the photo without
+   it (and says so in the response) rather than holding guided captures.
+222. **The capture flow**: "These are old photos (I can't retake them)" under the name on step 1 (any kind but a whole
+   place; rooms of a place too) turns the 4 steps into 5: Place → Photos (no shot guide, "Add from library" first,
+   a caption under each, "n of 40") → **Layout** (optional: "Skip, let Claude work it out" is the default, or
+   "Sketch it": the editor) → Memory (+ "When was this?", the era) → Location. A room of a place whose sketch has a
+   `rect` is offered that rectangle as the starting outline. Guided capture is untouched (same steps, same checks).
+223. **The layout + viewpoint editor** (`capture/layout/LayoutEditor.jsx` + `geometry.js` + `layout.css`, a lazy
+   chunk): one SVG plan on a drafting grid. Outline: tap corners (0.25 m snap, live edge lengths), tap the first to
+   close, drag corners, drag an edge's "+" to add one, tap an edge for a door / window, or type "about 4 × 3".
+   Viewpoints: drag a thumbnail onto the plan (or tap it, then the plan), drag the body to move, the tip (or a
+   two-finger twist) to aim, the spread = the photo's horizontal fov (EXIF, else a 26 mm phone), exact / rough,
+   remove, undo / redo (80 steps). Feel: pointer events with capture on the stage (`touch-action: none`), the dragged
+   piece's SVG attributes written straight to the DOM per move and committed on release (no React render per
+   frame; freeform-check sees no long task while dragging), pan / pinch / wheel as a CSS transform on the plan
+   layer during the gesture. Keyboard: arrows nudge 5 cm (Shift 25 cm), R / Shift+R turn 5°, Delete, Ctrl+Z /
+   Ctrl+Shift+Z, Esc, Enter closes an outline. Touch handles are 44 px circles. **The photo strip sits BESIDE the plan
+   on a desktop** (under it on a phone): the first build put it under the plan, and at 1440 × 900 it was below the
+   fold, so the plan and the strip were never in view together and a drag between them was impossible.
+224. **The edit page** gets "Photos and layout" (`pages/edit/EditLayout.jsx`): the old-photos switch, the era, and the
+   same editor (photos from the spot's media, EXIF from their rows). It is part of the edit FORM: the capture goes
+   in the one PATCH with `ifUpdatedAt` (409 on a stale form) and in the sessionStorage draft. While the spot has a
+   rendered room, `resolveShell(scene).outline` is drawn dashed under the editor (a room of a building has none
+   here: its shell needs the building). So viewpoints can be added after a first render, and an existing spot can be
+   turned freeform.
+225. **The render side**: `pull.mjs` writes `capture.json` + `contact.jpg` (> 12 photos); `build.mjs` / `compare.mjs`
+   take `--cams` (6–8 compare cameras + top + three-quarter per round; a warning past 8 cameras without it); the
+   skill's "Freeform spots" section (sort, frame, group, fit, coverage, era, compare cameras). The helper
+   `tools/memory-rooms/freeform/fit.py` (numpy only, no scipy): pixel marks on named points and LINE marks, named
+   params + parametric points (a bulkhead at `W - bE`), anchors (known lengths), shared lenses; Levenberg–Marquardt
+   on a numerical Jacobian with Huber weights, in stages: cameras that see ≥ 6 structure rows found by a grid search
+   (positions × yaws) against the structure alone (free points are still guesses then: fitting cameras to them sent
+   the first runs metres off), cameras + room + params on the structure, free points triangulated, the weak cameras
+   (a close-up of a lamp sees 3 corners) by a finer grid search that also looks down, everything together; a camera
+   still 4× worse than the rest is searched again, else reported `placed: false` and left out so it can't bend the
+   room. **Viewpoints never set the room's scale**: on a sketch whose size he didn't type their metres are
+   proportions, so they carry their own scale (or the outline's), fitted in closed form between solves and held
+   inside them (free inside a solve it traded off against the room's scale: the Batcave came out 16 % too wide);
+   rough is loose (1.5 m / 60°: a starting place more than a constraint), exact tight (0.15 m / 8°).
+226. **The viewer** (`viewer/helpers.js`, `ViewerControls.jsx`): a camera with `fit: "rough"` draws fainter and
+   dashed, and its viewpoint button reads "Photo n · roughly here" (it still flies there); past 12 cameras every
+   frustum rests faint and only the hovered / picked one draws in full. Hover-to-reveal beat clustering: the
+   viewpoint buttons already list every photo, and a cluster would hide where each photo was taken, which is the
+   point of them. Discarded photos have no camera, so they never show. scene.schema.json: camera `photo` 1–40 and
+   the optional `fit` (both validators read the same JSON: check-contracts 344/344).
+227. **The known answer, and rough viewpoints never steer the search alone** (`freeform/known_answer.py`, README
+   "Freeform known-answer test"). Shuffled, EXIF stripped, no viewpoints: the synthetic room within 0.1 / 0.6 / 0.3 %,
+   cameras 2.3 cm / 0.25°; The Batcave's real marks within 1.2 / 4.1 / 2.5 % of the plan (the guided fit of the same
+   marks: 8.7 % wide), cameras ~0.7 m / 4° (the two references disagree by about that much). With 3 ROUGH
+   viewpoints the first version made the Batcave 9.7 × 6.0 × 3.1 m (32 % wide) at a WORSE pixel rms. Its scale hangs
+   on one assumed 0.88 m benchtop, and a camera started only from its viewpoint let the first joint solve slide down
+   that valley. Two changes: a rough viewpoint is one more start beside the grid search, not the only one (that alone
+   did not fix it), and when any rough viewpoint exists fit.py runs the whole search again WITHOUT them, polishes that
+   answer with them back in, and keeps whichever ends with the lower objective (output `chose`). The cost is double
+   the fit time, only for rough viewpoints. Exact viewpoints are still trusted as the start. Both rooms now come out
+   the same with or without viewpoints. A room where the photos alone leave a mirror ambiguity, which is what
+   viewpoints are for, isn't in the test yet. **Where VGGT / MASt3R would plug in** (out of scope): fit.py's stage 1.
+   A feed-forward multi-view model gives every photo a pose and a point map in one pass, so its poses (aligned to the
+   outline by a similarity, its scale replaced by the anchors) would go in as each camera's `init` in place of the
+   grid search, and its matched points as extra `marks`. The rest (room model, anchors, Huber LM, the viewer's
+   `fit` flag) stays. It needs a GPU and a Python env (the WSL `tf-2.20-gpu` pattern), so it would be a separate
+   `freeform/pose_init.py` writing fit-input.json, never a Worker or phone dependency.

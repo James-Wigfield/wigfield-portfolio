@@ -14,12 +14,14 @@ pull.mjs <id> ─► palette.mjs ─► (Claude writes layout.md + scene.json) �
 
 | Script | Does |
 |---|---|
-| `pull.mjs <id> \| --next \| --list` | downloads a spot to `memory-rooms-work/<id>/` (gitignored): photos, thumbs, `spot.json`, `photos.json`, scan, saved scene, a `layout.md` template, `bespoke/`; sets status `modelling` |
+| `pull.mjs <id> \| --next \| --list` | downloads a spot to `memory-rooms-work/<id>/` (gitignored): photos, thumbs, `spot.json`, `photos.json` (+ each photo's EXIF), `capture.json` (guided / freeform: era, layout, viewpoints, captions, per-photo EXIF), `contact.jpg` (every photo numbered, past 12), scan, saved scene, a `layout.md` template (a "Freeform" block for old photos), `bespoke/`; sets status `modelling` |
 | `palette.mjs <id>` | k-means (CIELAB) colours per photo → `palette.json` + `palette.png` |
 | `check-scene.mjs <scene.json \| id> [--building <file>]` | schema + geometry: inside the shell, nothing floats or interpenetrates > 2 cm, openings fit, cameras inside and aimed at something. v2 shells (polygon, sloped ceiling, a room of a building) are checked against the normalised shell; a room of a building needs its building.json (`--building`, or `building.json` next to the scene, or `memory-rooms-work/b-<buildingId>/`) |
-| `build.mjs <id> [--round N] [--samples 64] [--only cam1,top]` | check-scene → `blender/build_room.py` → `compare.mjs` |
+| `build.mjs <id> [--round N] [--samples 64] [--only cam1,top] [--cams 2,5,7]` | check-scene → `blender/build_room.py` → `compare.mjs`; `--cams`: render + compare only these photo cameras (+ top, three-quarter): a freeform spot keeps up to 40 cameras but compares 6–8 a round |
 | `blender/build_room.py` | scene.json → `room.blend` + Cycles renders `renders/cam<n>.png`, `top.png`, `three-quarter.png`, `build-report.json` |
-| `compare.mjs <id> [--round N]` | `compare.png`: photo \| render \| 50/50 overlay per camera + top-down, with structure/tone/colour scores (`compare.json`) |
+| `compare.mjs <id> [--round N] [--cams 2,5,7]` | `compare.png`: photo \| render \| 50/50 overlay per camera + top-down, with structure/tone/colour scores (`compare.json`) |
+| `freeform/fit.py <fit-input.json> [--out …]` | old photos (CONTRACTS.md 8, skill "Freeform spots"): cameras + room size + marked points from pixel marks and line marks, viewpoints as starting places / soft priors, EXIF fov, anchors; numpy only. Its header documents the input. Known answer below |
+| `freeform/known_answer.py` | the freeform fit against a known answer (the synthetic self-test room + The Batcave's real marks), shuffled, no EXIF, with and without rough viewpoints → `freeform/known-answer.json` |
 | `bake.mjs <id>` | `blender/bake_export.py`: bakes the lighting into one atlas, exports `room.glb` (WebP, ≤ 8 MB target), `renders/hero.png`; then what the map shows: `renders/marker.png` (`lib/marker.mjs`) and `map.glb` (`lib/mapModel.mjs`) |
 | `push.mjs <id> [--dry-run]` | uploads `room.glb` + `map.glb` + renders + compare sheets (making `map.glb` / `marker.png` if missing or stale), saves the scene (validated, version +1), status `rendered` |
 | `plan-check.mjs <work dir \| building.json> --photo <plan.jpg> --fit a1=x,y a5=x,y [--level id]` | a traced building.json over its floor-plan photo (least-squares fit from node ↔ pixel anchors, residual per anchor): walls, openings, node ids, room names → `plan-check-<level>.png`. Validates first |
@@ -57,6 +59,7 @@ environment, falling back to `.dev.vars`. Blender path: `BLENDER` env, default
 | `recall-check.mjs [--base url] [--dark]` | the "Recall" look, no Mapbox loads: the recall's phases (points → room → done, then ready), reduced motion, the title block's live scale bar and north arrow, callouts with leaders, the serif title + signed pull-quote, the phone's bottom sheet, the index's `No. 001`, the day strip (filter, clear), a row lifting its spot on the map, view transitions on Open and Walk in, no sideways scroll; 1440 + 390 |
 | `place-check.mjs [--base url] [--dark]` | capturing a whole place on the phone, no Mapbox loads: "A whole place" → name, location, floor plan, outside → saved OFFLINE (the place page opens from the phone alone), rooms added and sketched offline (drag, size, overlap flagged and kept), back online the outbox sends it, a room captured from the checklist lands as a spot of the place; 390 + 1440 |
 | `shell-view-check.mjs [--glb room.glb --scene scene.json]…` | the viewer side of any shell shape, in Node: layout previews of every example + work scene (v1, polygons, sloped ceilings, a building room), the dollhouse hiding exactly the walls facing the camera (v1 unchanged), attachedWall parity, the plan cut (clip at 1.2 m, inked walls, restore); with `--glb` a bake's wall extras match the scene |
+| `freeform-check.mjs [--base url] [--dark] [--keep]` | old photos in headless Edge (no Mapbox loads): capture end to end (14 photos with EXIF, a caption, the layout step), the layout + viewpoint editor with a mouse at 1440 (outline, a door, drag a thumbnail on, move + aim a wedge, Undo / Redo, R / Delete / Ctrl+Z, no long task while dragging) and with touch at 390 on the edit page (tap thumbnail + plan, a finger drag that never scrolls the page, 44 px handles), the API's capture + EXIF after the outbox; 26 checks, run by page-check |
 | `v2-view-check.mjs [--base url] [--dark] [--spot id]` | a v2 room in the real pages, no Mapbox loads: Room / Plan on the spot page (1440 + 390), a photo turns the plan off, a v1 interior has it too, the walk keeps you inside the outline and knows every wall's normal |
 | `building-selftest.mjs [--samples 24] [--check-only]` | the building pipeline end to end on the synthetic two-level house: build, bake, slice, then every GLB checked against building.json (walls exactly once, extras, per-room nodes, elevations, roof, the slice's frame and normals) |
 | `building-view-check.mjs [--base url] [--dark]` | a built place on its page (seed one with `dev/seed-building.mjs`): the four stages, the level picker, tap a room → its spot, no Mapbox loads; 1440 + 390 |
@@ -141,3 +144,44 @@ doorway; solve the room and cameras together from corner photos; a doorway camer
 
 Local artefacts (gitignored): `memory-rooms-work/59b48bb5-…/` (layout.md, scene.json, compare-round1–3.png,
 renders/hero.png, room.glb) and `memory-rooms-work/_selftest-truth/` (truth renders, photos, spot-page screenshots).
+
+## Freeform known-answer test: old photos (2026-11-25)
+
+The camera fit for old photos (`freeform/fit.py`, CONTRACTS.md 8, skill "Freeform spots") against rooms with a
+known answer, the way an old-photo spot arrives: photos **shuffled** and renumbered, **EXIF stripped** (one shared,
+free field of view), **no viewpoints** (run A), then **3 rough viewpoints** (run B: the true spot moved 0.4 m in a
+random direction, the yaw off by up to ±20°, as James would drop them on the plan).
+
+```
+python tools/memory-rooms/freeform/known_answer.py        # → freeform/known-answer.json (~15 min; --only synthetic|batcave)
+```
+
+| | synthetic self-test room, A | synthetic, B | The Batcave, A | The Batcave, B |
+|---|---|---|---|---|
+| marks (points + line pixels) | 116 (projected truth + 2 px noise) | 116 | 188 (real marks from its guided render) | 188 |
+| pixel rms | 1.26 px | 1.26 px | 3.74 px | 3.74 px |
+| room W × D × H | 4.405 × 3.421 × 2.759 | 4.399 × 3.417 × 2.755 | 7.242 × 5.215 × 2.674 | 7.242 × 5.215 × 2.674 |
+| answer | 4.40 × 3.40 × 2.75 | | plan 7.33 × 5.01 × 2.743 | |
+| room error | 0.1 / 0.6 / 0.3 % | 0.0 / 0.5 / 0.2 % | 1.2 / 4.1 / 2.5 % | 1.2 / 4.1 / 2.5 % |
+| camera position | mean 2.3 cm (max 3.5) | 2.2 cm (max 3.5) | 0.71 m (max 2.07) vs the guided solve; 0.72 m vs the plan solve (similarity-aligned) | the same |
+| camera aim | mean 0.25° (max 0.4°) | 0.24° (max 0.37°) | 4.2° (max 6.2°) vs guided; 4.6° vs plan | the same |
+| objects (seen ≥ 2×) | median 1.5 cm, mean 4.6 cm, max 18 cm (8) | median 1.4 cm, mean 4.5 cm | the six downlights + the TV's edge, in plan vs the guided solve: median 0.29 m, max 0.44 m (0.28 m mean vs the plan solve) | the same |
+
+Read it this way:
+
+- **Synthetic** is the ceiling: perfect geometry, honest 2 px noise, no occlusion, a 2.04 m door as the scale.
+  Every shuffled photo found its corner by the grid search alone. Five objects were seen in only one photo
+  (bunk-east, lockers, shelf, plant, pendant): one view gives a ray, not a place, so the skill sizes those from the
+  kit and the photo instead of the fit.
+- **The Batcave** is the real case: phone photos, hand-made marks, a room model without the guided session's radial
+  distortion and vertical segments, and the only scale a benchtop assumed at 0.88 m. The room lands within 4 % of
+  the builder's plan (the guided fit from the same marks made it 7.97 × 5.26, so the freeform fit is closer). The
+  cameras sit about 0.7 m and 4° from either reference, and the two references disagree with each other by about as
+  much (the plan solve's west wall is 0.9 m from where the marks put it, DECISIONS 189). One camera (photo 5)
+  carries most of that at 2.1 m; the other five are 0.3–0.5 m off.
+- **Rough viewpoints did not change either room.** That was a FIX, not luck. The first version started each such
+  camera only from its viewpoint, and the Batcave came out 9.7 × 6.0 × 3.1 m (32 % too wide) at a worse pixel rms
+  than with no viewpoints at all. The room's scale is held weakly (one 0.88 m benchtop), so the first joint solve
+  slid down that valley. Now fit.py runs the search both ways and keeps the lower objective (DECISIONS 227). On a
+  real old-photo room with less structure in each photo, the viewpoints are what tell a mirrored corner from the
+  right one, and that case isn't covered by these two rooms.

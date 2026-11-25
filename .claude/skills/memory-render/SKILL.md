@@ -36,7 +36,7 @@ Read EVERY photo (Read tool) and the floor plan if any. Then fill in `layout.md`
 - **Sizing a room from corner photos (no plan).** Each corner photo sees two walls, so solve the room and the cameras together: (1) in every photo, mark the pixel positions of the room's vertical corners and where walls meet floor and ceiling; (2) find things visible from two or more corners (rug corners, curtain-rod ends, the window, a bunk post) to tie opposite walls together; (3) fit width, depth, height and each camera's pos/look/fov to those marks by least squares (a short numpy script in the work folder is worth it; numpy is in system Python and Blender's Python), with one shared fov for all main-camera photos; (4) fix the absolute scale with the anchors above. Note the fit's residual in layout.md. The self-test room (README) came out within 2.5 % this way.
 - **Openings** per wall with offsets (from the wall's lower-x / lower-z end).
 - **Objects**: id · kit · size · position · which photos show it. Prefer kit pieces; set `params` (see kit/README.md); set `material`/`accentMaterial` from what you see; colours from palette.json.
-- **Cameras**: for each photo, where it was taken from and what it looks at. Interior: 1–4 corners (NW, NE, SE, SW, but check against what each photo shows), 5 = the detail, 6 = wide from the door (a camera standing IN the doorway, up to 0.6 m outside the wall line, is allowed); exterior 1–4 = four angles, 5 = wide with context, 6 = detail. Phones: eye height 1.4–1.6 m, main camera fov ≈ 69–72° across the LONG edge (0.5× ultrawide ≈ 105–120°, 2× ≈ 40°). `aspect` = width / height from photos.json (portrait 0.75). Pin the look direction with the room's vertical corners and where walls meet the floor in the frame.
+- **Cameras**: for each photo, where it was taken from and what it looks at. (Old photos, `capture.json` mode freeform: see "Freeform spots" below instead.) Interior: 1–4 corners (NW, NE, SE, SW, but check against what each photo shows), 5 = the detail, 6 = wide from the door (a camera standing IN the doorway, up to 0.6 m outside the wall line, is allowed); exterior 1–4 = four angles, 5 = wide with context, 6 = detail. Phones: eye height 1.4–1.6 m, main camera fov ≈ 69–72° across the LONG edge (0.5× ultrawide ≈ 105–120°, 2× ≈ 40°). `aspect` = width / height from photos.json (portrait 0.75). Pin the look direction with the room's vertical corners and where walls meet the floor in the frame.
 
 Then write `scene.json` (schema v1). Rules that keep it checkable:
 - `at` = footprint centre on the object's BASE; `size` = [w, h, d] in the object's own frame; `rotY` 0 = front faces south (+z), 90 east, 180 north, 270 west. A desk on the north wall: rotY 0; a bed with its head on the west wall: rotY 90.
@@ -76,6 +76,50 @@ Uploads room.glb and map.glb (making map.glb and renders/marker.png first if the
 ## "Render the next captured spots"
 
 Loop: `pull.mjs --next` → steps 2–8 → repeat until `--next` says nothing is waiting. Do one spot fully before starting the next. At the end, report per spot: dimensions and their source, rounds used, final scores from `compare.json`, what's still off.
+
+## Freeform spots: old photos (`capture.mode: "freeform"`)
+
+Photos of a place James can't go back to: up to 40, any order, no shot guide (CONTRACTS.md 8). `pull.mjs` writes
+`capture.json` (mode, era, his layout + viewpoints, a caption per photo, each photo's EXIF: `focal35`, `focal`,
+make / model, `takenAt`, the original's size) and, past 12 photos, `contact.jpg` (every photo numbered: read it
+first). **None of section 3's corner assumptions hold**: photo 1 is not the NW corner, there may be no doorway shot,
+and two photos can be years apart. Work through these, writing each into layout.md's "Freeform" block:
+
+1. **Sort the photos.** List every one as *used*, *reference only* (shows a detail or a colour, not geometry you can
+   fit) or *discarded*, each with its reason: blur, people filling the frame, a heavy filter, cropped (a crop breaks
+   the EXIF field of view), a different room, a duplicate. Discarded photos get no camera; reference-only ones may.
+2. **Frame.** With James's outline (`capture.layout`): that is the frame (its x / z are the scene's; `sizeKnown`
+   false = proportions only, scale it from an anchor). Without one: pick a frame and say why (the longest straight
+   wall as north, the window wall, the wall most photos face). The doorway rule ("north = the wall you face from the
+   door") applies only when a photo was taken from the doorway.
+3. **Group the photos** by which walls and landmarks each one sees (a window, the bed head, a radiator, a cornice
+   return, the light fitting) and list the landmarks seen in two or more photos: those tie the groups together.
+   In a symmetric room the groups can't be told apart without a cross-group landmark (DECISIONS: the She'd).
+4. **Camera fit** (the least-squares approach of section 3): mark pixels on room corners, wall–floor / wall–ceiling
+   lines (line marks: a pixel on a known 3D line, much better constrained than points) and shared landmarks, then
+   run `python tools/memory-rooms/freeform/fit.py <work>/fit-input.json` (numpy only; its header documents the
+   input). It searches positions × yaws for every camera without an EXACT viewpoint, so a shuffled set needs no
+   corner guess. James's viewpoints go in as `prior` (conf exact = tight 0.15 m / 8°, the camera starts there; rough
+   = loose 1.5 m / 60°, one more start beside the search, never the only one); on a sketch whose size he didn't type they fix where photos stand relative to each other, never
+   the room's scale (`viewpointScale` "free", the default). EXIF `focal35` → a fov guess (2·atan(18 / f35) across the
+   long edge, `fovSigma` ~3°) when it's consistent with the photo; leave the fov free (`fovSigma: null`) for a photo
+   that looks cropped. Cameras with the same lens share one fov (`lens`). Captions break ties ("from the bed": the
+   camera is at the bed). Absolute scale comes from an anchor (`anchors`: a door 2.04 m, a benchtop 0.9 m, a bed).
+   fit-output.json gives each camera's pose, rms and `fit` (good ≤ 6 px over ≥ 6 marks, else rough; a camera it
+   can't place is `placed: false` and left out of the solve). Copy pos / look / fov / aspect / fit into scene.json.
+   Known answer (tools/memory-rooms/README.md, "Freeform known-answer test"): read its numbers before trusting a fit.
+5. **Coverage.** List the walls no photo shows. They get plain, generic treatment (the room's wall colour, a
+   skirting, no openings or furniture you didn't see) and are marked as guessed in layout.md and the scene `notes`.
+   Nothing invented.
+6. **Era.** Model the room as it was in `capture.era`. Where photos disagree (furniture moved, a repaint), follow the
+   majority and the era, and note which photos you overruled.
+7. **Compare cameras.** Keep EVERY used photo as a scene camera (the viewer flies to each; `fit: "rough"` ones are
+   drawn fainter), but compare only 6–8 per round: the best-fitting ones that between them cover the most walls.
+   `node tools/memory-rooms/build.mjs <id> --round 1 --cams 2,5,7,11,14,20` renders and compares just those (+ top
+   and three-quarter). The 3-round limit stays.
+
+Then bake and push as usual. Out of scope here: a learned photo-position model (VGGT / MASt3R in WSL); DECISIONS
+says where it would plug in if the fit proves weak on real old photos.
 
 ## Whole places: "render building X"
 

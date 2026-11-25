@@ -3,7 +3,10 @@
    (photo edges red, render edges blue), plus the top-down, in one sheet the modeller
    reads to find the biggest mismatches.
 
-     node tools/memory-rooms/compare.mjs <spotId | work dir> [--round N]
+     node tools/memory-rooms/compare.mjs <spotId | work dir> [--round N] [--cams 2,5,7]
+
+   --cams: only these photos' cameras (a freeform spot keeps every used photo as a camera, up to 40, but
+   compares 6–8 of them per round: the best-fitting, best-covering ones; memory-render skill, "Freeform spots").
 
    Needs photos/<n>.jpg (pull.mjs) and renders/cam<n>.png + renders/top.png
    (build_room.py). Writes compare.png + compare.json; with --round N also keeps
@@ -22,8 +25,9 @@ import sharp from 'sharp';
 import { workDir } from './lib/api.mjs';
 
 const args = process.argv.slice(2);
-const target = args.find((a) => !a.startsWith('--'));
+const target = args.find((a, i) => !a.startsWith('--') && !(i > 0 && ['--round', '--cams'].includes(args[i - 1])));
 const round = args.includes('--round') ? Number(args[args.indexOf('--round') + 1]) : null;
+const only = args.includes('--cams') ? new Set(String(args[args.indexOf('--cams') + 1]).split(',').map((s) => Number(s.trim().replace(/^cam/, ''))).filter(Number.isFinite)) : null;
 if (!target) {
   console.error('usage: node tools/memory-rooms/compare.mjs <spotId | work dir> [--round N]');
   process.exit(2);
@@ -131,7 +135,7 @@ const text = (x, y, s, size = 15, fill = '#2a2a28', weight = 400) =>
 
 const rows = [];
 const results = [];
-for (const cam of scene.cameras) {
+for (const cam of scene.cameras.filter((c) => !only || only.has(c.photo))) {
   const photo = ['jpg', 'jpeg', 'png'].map((e) => path.join(dir, 'photos', `${cam.photo}.${e}`)).find((p) => fs.existsSync(p));
   const render = path.join(dir, 'renders', `cam${cam.photo}.png`);
   if (!photo || !fs.existsSync(render)) {

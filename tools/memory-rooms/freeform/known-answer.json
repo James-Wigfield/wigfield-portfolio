@@ -1,0 +1,400 @@
+[
+ {
+  "room": "synthetic self-test room",
+  "run": "A: no viewpoints",
+  "observations": 116,
+  "rms_px": 1.26,
+  "starts": 1128,
+  "chose": null,
+  "size": {
+   "W": 4.405,
+   "D": 3.421,
+   "H": 2.759
+  },
+  "truth": {
+   "W": 4.4,
+   "D": 3.4,
+   "H": 2.75
+  },
+  "size_error_m": {
+   "W": 0.005,
+   "D": 0.021,
+   "H": 0.009
+  },
+  "size_error_pct": {
+   "W": 0.1,
+   "D": 0.6,
+   "H": 0.3
+  },
+  "cameras": {
+   "pos_mean_m": 0.023,
+   "pos_max_m": 0.035,
+   "aim_mean_deg": 0.25,
+   "aim_max_deg": 0.4,
+   "fov": 70.3
+  },
+  "per_camera": [
+   {
+    "photo": 1,
+    "shown_as": 5,
+    "pos": 0.025,
+    "aim": 0.1,
+    "fit": "good"
+   },
+   {
+    "photo": 2,
+    "shown_as": 1,
+    "pos": 0.035,
+    "aim": 0.37,
+    "fit": "good"
+   },
+   {
+    "photo": 3,
+    "shown_as": 6,
+    "pos": 0.027,
+    "aim": 0.4,
+    "fit": "good"
+   },
+   {
+    "photo": 4,
+    "shown_as": 4,
+    "pos": 0.019,
+    "aim": 0.18,
+    "fit": "good"
+   },
+   {
+    "photo": 5,
+    "shown_as": 2,
+    "pos": 0.006,
+    "aim": 0.04,
+    "fit": "good"
+   },
+   {
+    "photo": 6,
+    "shown_as": 3,
+    "pos": 0.023,
+    "aim": 0.4,
+    "fit": "good"
+   }
+  ],
+  "objects": {
+   "n": 8,
+   "mean_m": 0.046,
+   "median_m": 0.015,
+   "max_m": 0.179,
+   "single_view": [
+    "bunk-east",
+    "lockers",
+    "shelf",
+    "plant",
+    "pendant"
+   ]
+  }
+ },
+ {
+  "room": "synthetic self-test room",
+  "run": "B: 3 rough viewpoints",
+  "observations": 116,
+  "rms_px": 1.26,
+  "starts": 1875,
+  "chose": "search without the rough viewpoints, then polished with them",
+  "size": {
+   "W": 4.399,
+   "D": 3.417,
+   "H": 2.755
+  },
+  "truth": {
+   "W": 4.4,
+   "D": 3.4,
+   "H": 2.75
+  },
+  "size_error_m": {
+   "W": 0.001,
+   "D": 0.017,
+   "H": 0.005
+  },
+  "size_error_pct": {
+   "W": 0.0,
+   "D": 0.5,
+   "H": 0.2
+  },
+  "cameras": {
+   "pos_mean_m": 0.022,
+   "pos_max_m": 0.035,
+   "aim_mean_deg": 0.24,
+   "aim_max_deg": 0.37,
+   "fov": 70.3
+  },
+  "per_camera": [
+   {
+    "photo": 1,
+    "shown_as": 5,
+    "pos": 0.024,
+    "aim": 0.1,
+    "fit": "good"
+   },
+   {
+    "photo": 2,
+    "shown_as": 1,
+    "pos": 0.035,
+    "aim": 0.36,
+    "fit": "good"
+   },
+   {
+    "photo": 3,
+    "shown_as": 6,
+    "pos": 0.029,
+    "aim": 0.37,
+    "fit": "good"
+   },
+   {
+    "photo": 4,
+    "shown_as": 4,
+    "pos": 0.017,
+    "aim": 0.16,
+    "fit": "good"
+   },
+   {
+    "photo": 5,
+    "shown_as": 2,
+    "pos": 0.005,
+    "aim": 0.1,
+    "fit": "good"
+   },
+   {
+    "photo": 6,
+    "shown_as": 3,
+    "pos": 0.025,
+    "aim": 0.34,
+    "fit": "good"
+   }
+  ],
+  "objects": {
+   "n": 8,
+   "mean_m": 0.045,
+   "median_m": 0.014,
+   "max_m": 0.177,
+   "single_view": [
+    "bunk-east",
+    "lockers",
+    "shelf",
+    "plant",
+    "pendant"
+   ]
+  }
+ },
+ {
+  "room": "The Batcave (real photos, real marks)",
+  "run": "A: no viewpoints",
+  "observations": 188,
+  "rms_px": 3.74,
+  "starts": 432,
+  "chose": null,
+  "size": {
+   "W": 7.242,
+   "D": 5.215,
+   "H": 2.674
+  },
+  "truth": {
+   "W": 7.33,
+   "D": 5.01,
+   "H": 2.743
+  },
+  "size_error_m": {
+   "W": 0.088,
+   "D": 0.205,
+   "H": 0.069
+  },
+  "size_error_pct": {
+   "W": 1.2,
+   "D": 4.1,
+   "H": 2.5
+  },
+  "cameras": {
+   "pos_mean_m": 0.707,
+   "pos_max_m": 2.072,
+   "aim_mean_deg": 4.15,
+   "aim_max_deg": 6.23,
+   "fov": 70.6
+  },
+  "per_camera": [
+   {
+    "photo": 1,
+    "shown_as": 5,
+    "pos": 0.514,
+    "aim": 4.61,
+    "fit": "good"
+   },
+   {
+    "photo": 2,
+    "shown_as": 1,
+    "pos": 0.326,
+    "aim": 0.65,
+    "fit": "good"
+   },
+   {
+    "photo": 3,
+    "shown_as": 6,
+    "pos": 0.507,
+    "aim": 6.23,
+    "fit": "good"
+   },
+   {
+    "photo": 4,
+    "shown_as": 4,
+    "pos": 0.406,
+    "aim": 4.1,
+    "fit": "good"
+   },
+   {
+    "photo": 5,
+    "shown_as": 2,
+    "pos": 2.072,
+    "aim": 5.73,
+    "fit": "good"
+   },
+   {
+    "photo": 6,
+    "shown_as": 3,
+    "pos": 0.415,
+    "aim": 3.6,
+    "fit": "good"
+   }
+  ],
+  "objects": {
+   "n": 7,
+   "mean_m": 0.284,
+   "median_m": 0.29,
+   "max_m": 0.444
+  },
+  "cameras_vs": "the guided solve of the same marks (same frame)",
+  "objects_vs": "the six downlights + the TV's south edge, vs the guided solve",
+  "vs_plan_aligned": {
+   "cameras": {
+    "pos_mean_m": 0.724,
+    "pos_max_m": 1.773,
+    "aim_mean_deg": 4.59,
+    "aim_max_deg": 10.65
+   },
+   "objects": {
+    "mean_m": 0.278,
+    "median_m": 0.256,
+    "max_m": 0.535
+   },
+   "rotation_deg": 2.68,
+   "scale": 0.8697
+  },
+  "guided_room": {
+   "W": 7.965,
+   "D": 5.255,
+   "H": 2.757
+  }
+ },
+ {
+  "room": "The Batcave (real photos, real marks)",
+  "run": "B: 3 rough viewpoints",
+  "observations": 188,
+  "rms_px": 3.74,
+  "starts": 867,
+  "chose": "search without the rough viewpoints, then polished with them",
+  "size": {
+   "W": 7.242,
+   "D": 5.215,
+   "H": 2.674
+  },
+  "truth": {
+   "W": 7.33,
+   "D": 5.01,
+   "H": 2.743
+  },
+  "size_error_m": {
+   "W": 0.088,
+   "D": 0.205,
+   "H": 0.069
+  },
+  "size_error_pct": {
+   "W": 1.2,
+   "D": 4.1,
+   "H": 2.5
+  },
+  "cameras": {
+   "pos_mean_m": 0.707,
+   "pos_max_m": 2.072,
+   "aim_mean_deg": 4.15,
+   "aim_max_deg": 6.23,
+   "fov": 70.6
+  },
+  "per_camera": [
+   {
+    "photo": 1,
+    "shown_as": 5,
+    "pos": 0.514,
+    "aim": 4.61,
+    "fit": "good"
+   },
+   {
+    "photo": 2,
+    "shown_as": 1,
+    "pos": 0.326,
+    "aim": 0.65,
+    "fit": "good"
+   },
+   {
+    "photo": 3,
+    "shown_as": 6,
+    "pos": 0.507,
+    "aim": 6.23,
+    "fit": "good"
+   },
+   {
+    "photo": 4,
+    "shown_as": 4,
+    "pos": 0.406,
+    "aim": 4.1,
+    "fit": "good"
+   },
+   {
+    "photo": 5,
+    "shown_as": 2,
+    "pos": 2.072,
+    "aim": 5.73,
+    "fit": "good"
+   },
+   {
+    "photo": 6,
+    "shown_as": 3,
+    "pos": 0.415,
+    "aim": 3.6,
+    "fit": "good"
+   }
+  ],
+  "objects": {
+   "n": 7,
+   "mean_m": 0.284,
+   "median_m": 0.29,
+   "max_m": 0.444
+  },
+  "cameras_vs": "the guided solve of the same marks (same frame)",
+  "objects_vs": "the six downlights + the TV's south edge, vs the guided solve",
+  "vs_plan_aligned": {
+   "cameras": {
+    "pos_mean_m": 0.724,
+    "pos_max_m": 1.773,
+    "aim_mean_deg": 4.59,
+    "aim_max_deg": 10.65
+   },
+   "objects": {
+    "mean_m": 0.278,
+    "median_m": 0.256,
+    "max_m": 0.535
+   },
+   "rotation_deg": 2.68,
+   "scale": 0.8697
+  },
+  "guided_room": {
+   "W": 7.965,
+   "D": 5.255,
+   "H": 2.757
+  }
+ }
+]
