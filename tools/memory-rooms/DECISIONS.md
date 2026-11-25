@@ -307,3 +307,16 @@ Brief: `Documents/temp/prompt-dumping/memory-rooms-next-level.md`; spec: the vau
    Cape Peron to the lookout, the islets) the height found 20–40 m inland is carried to a 0.8 m rock platform
    instead of easing down like a beach. The sea floor is modelled (distance offshore + satellite brightness),
    not surveyed, and the scene notes say so.
+208. **Skillion room ceilings are built raking** (`build_building.py`, Upstairs Living at 12B Fletcher St,
+   2026-11-25): a room `ceiling` with `shape: "skillion"` and a `peak` is triangulated with each vertex at
+   `height + (peak - height) * f`, f measured across the room's inner bbox from its `low` side (the formula of
+   shell.js `ceilingAt`, so the viewer, check-scene and the bake agree). Until now every building ceiling was flat at
+   `height`: the Upstairs Living's 2.657 -> 3.66 ceiling read flat and hid its hi-lites. 34 Jollytail's skillion
+   rooms (kitchen, dining, living, master, WIR) will rake on their next rebuild.
+209. **A wall taller than its level is cut to the roof plane** (`clip_to_skillion`, same pass): when a wall's
+   `height` exceeds the level's and a skillion part is over it, the wall mesh is bisected by the part's plane
+   (the part above removed, the cut capped with the section material). This lets a skin wall carry clerestory
+   windows above the level height (the raking hi-lites over the stacker: one rectangular window per pane, each as
+   tall as the ceiling allows at its low end) and lets an inside wall (`h`) close the wedge under a raking ceiling
+   without poking through the roof at the low end. Builder only: `wall.height` already existed, no contract change,
+   no Worker deploy.

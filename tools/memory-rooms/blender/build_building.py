@@ -169,6 +169,47 @@ def skillion_height(rp, x, q):
     return rp["z0"] + math.tan(rp["pitch"]) * d
 
 
+def clip_to_skillion(ob, rp, elev, cap_mat):
+    """Cut a wall object (mesh in plan-world X = x, Y = -q, z relative to elev) to a skillion part's plane: the part
+    above it is removed and the cut capped with cap_mat. No-op when the plane is above the whole wall."""
+    import bmesh
+    from mathutils import Vector
+
+    k = math.tan(rp["pitch"])
+    # z_local = c + gx * X + gy * Y  (Y = -q)
+    c = rp["z0"] - elev
+    gx = gy = 0.0
+    if rp["low"] == "west":
+        c, gx = c - k * rp["x0"], k
+    elif rp["low"] == "east":
+        c, gx = c + k * rp["x1"], -k
+    elif rp["low"] == "north":
+        c, gy = c - k * rp["q0"], -k
+    else:  # south
+        c, gy = c + k * rp["q1"], k
+    me = ob.data
+    if all(v.co.z <= c + gx * v.co.x + gy * v.co.y + 1e-4 for v in me.vertices):
+        return False
+    if cap_mat.name not in [m.name for m in me.materials if m]:
+        me.materials.append(cap_mat)
+    cap_idx = [m.name if m else "" for m in me.materials].index(cap_mat.name)
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    co = Vector((0.0, 0.0, c))
+    no = Vector((-gx, -gy, 1.0)).normalized()
+    res = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=co, plane_no=no,
+                                 clear_outer=True)
+    cut = [e for e in res["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+    if cut:
+        filled = bmesh.ops.holes_fill(bm, edges=cut, sides=0)
+        for f in filled["faces"]:
+            f.material_index = cap_idx
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    return True
+
+
 def rake_part_for(rparts, level_id, line):
     """The skillion part over a wall (its midpoint inside the part's outline bbox, a few cm of slack), else None."""
     mx, mq = (line["pa"][0] + line["pb"][0]) / 2, (line["pa"][1] + line["pb"][1]) / 2
@@ -484,6 +525,13 @@ def build_level(b, level, coll, scenes, report):
         # (only walls on the building's skin: inside walls stop at the flat ceilings)
         skin = line0["exterior"] or is_outside(b, rooms["left"]) or is_outside(b, rooms["right"])
         rp = rake_part_for(rparts, lid, line0) if skin and H >= float(level.get("height", 2.6)) - 1e-6 else None
+        if H > float(level.get("height", 2.6)) + 1e-6:
+            # a wall TALLER than its level (a clerestory band over a stacker; an inside wall that closes the wedge
+            # under a raking ceiling; 12B Fletcher St 2026-11-25) is cut to the roof plane wherever the plane drops
+            # below its top, so it never pokes through the roof at the low end
+            rp_clip = rake_part_for(rparts, lid, line0)
+            if rp_clip is not None:
+                clip_to_skillion(wall, rp_clip, elev, cmat)
         if rp is not None:
             t2 = line0["thickness"] / 2
             d, lf = line0["dir"], line0["left"]
@@ -690,8 +738,21 @@ def build_level(b, level, coll, scenes, report):
         ch = float(c.get("height", level.get("height", 2.6)))
         cm = materials.get("plaster", c.get("color", "#f3efe6"))
         mb = MB()
+        # a skillion ceiling slopes from `height` on its low side to `peak` on the far side of the room's inner
+        # bbox (shell.js ceilingAt); before 2026-11-25 every ceiling was built flat at `height`, which hid the
+        # Upstairs Living's raking ceiling and the hi-lites above 2.657
+        cz = lambda p: ch  # noqa: E731
+        if c.get("shape") == "skillion" and c.get("peak") is not None:
+            bx = P.bbox(poly)
+            (x0, q0), (x1, q1) = bx["min"], bx["max"]
+            pk, low = float(c["peak"]), c.get("low", "south")
+
+            def cz(p, x0=x0, x1=x1, q0=q0, q1=q1, pk=pk, low=low):
+                f = {"west": (p[0] - x0) / ((x1 - x0) or 1), "east": (x1 - p[0]) / ((x1 - x0) or 1),
+                     "north": (p[1] - q0) / ((q1 - q0) or 1), "south": (q1 - p[1]) / ((q1 - q0) or 1)}[low]
+                return ch + (pk - ch) * max(0.0, min(1.0, f))
         for tri in S2.triangulate(poly):
-            lo = [bl(poly[i], ch) for i in tri]
+            lo = [bl(poly[i], cz(poly[i])) for i in tri]
             mb.poly(list(reversed(lo)), cm, (0, 0, -1))
             mb.poly([p + Vector((0, 0, SH.CEIL_T)) for p in lo], cm, up)
         ob = link(mb, f"ceiling__{r['id']}")
