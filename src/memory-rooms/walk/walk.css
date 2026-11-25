@@ -45,6 +45,9 @@
   border-bottom: 2px solid var(--mr-person, var(--mr-ink));
 }
 .mr-walk__tag[data-who='james'] { --mr-person: var(--mr-person-james); }
+/* first person: your own line as a subtitle (no name: it's you) */
+.mr-walk__tag[data-subtitle] .mr-walk__name { display: none; }
+.mr-walk__tag[data-subtitle] > .mr-walk__bubble { transform: translate(-50%, -100%); max-width: min(320px, 80vw); }
 .mr-walk__tag[data-who='justin'] { --mr-person: var(--mr-person-justin); }
 .mr-walk__bubble {
   max-width: 220px;

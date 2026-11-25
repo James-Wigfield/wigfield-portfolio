@@ -20,6 +20,7 @@ import PageMessage from './spot/PageMessage.jsx';
 import { spotPhotos } from './spot/photos.js';
 import { WalkGame } from '../walk/WalkGame.js';
 import { WalkNet } from '../walk/net.js';
+import { THIRD_PERSON_ENABLED } from '../walk/flags.js';
 import '../walk/walk.css';
 
 const isTouch = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
@@ -144,7 +145,7 @@ function Walk({ title, back, net: netOpts, load }) {
   const [others, setOthers] = useState({}); // id → who
   const [note, setNote] = useState(null); // { text, n }
   const [hint, setHint] = useState(null);
-  const [view, setView] = useState('third');
+  const [view, setView] = useState(THIRD_PERSON_ENABLED ? 'third' : 'first');
   const [chatOpen, setChatOpen] = useState(false);
   const [text, setText] = useState('');
   const [touch] = useState(isTouch);
@@ -344,7 +345,7 @@ function Walk({ title, back, net: netOpts, load }) {
           </form>
         ) : (
           <>
-            {!touch && <p className="mr-walk__keys mr-label">{c.keys}</p>}
+            {!touch && <p className="mr-walk__keys mr-label">{THIRD_PERSON_ENABLED ? c.keysThird : c.keys}</p>}
             {touch && <p className="mr-walk__keys mr-label">{c.touch}</p>}
             <div className="mr-walk__buttons" role="group" aria-label={c.emotesLabel}>
               {act && (
@@ -352,17 +353,22 @@ function Walk({ title, back, net: netOpts, load }) {
                   {act}
                 </button>
               )}
-              {['wave', 'jump', 'sit'].map((e) => (
-                <button key={e} type="button" className="mr-btn" onClick={() => g()?.emote(e)} data-mr={`walk-emote-${e}`}>
-                  {c.emotes[e]}
-                </button>
-              ))}
+              {/* first person (flags.js): you can't see your own wave, jump or floor-sit, so the buttons show only
+                  while someone else is in the room to see them (the keys 1 2 3 still work, harmlessly) */}
+              {(THIRD_PERSON_ENABLED || Object.keys(others).length > 0) &&
+                ['wave', 'jump', 'sit'].map((e) => (
+                  <button key={e} type="button" className="mr-btn" onClick={() => g()?.emote(e)} data-mr={`walk-emote-${e}`}>
+                    {c.emotes[e]}
+                  </button>
+                ))}
               <button type="button" className="mr-btn" onClick={() => setChatOpen(true)} data-mr="walk-chat">
                 {c.chat}
               </button>
-              <button type="button" className="mr-btn" onClick={() => g()?.toggleView()} aria-pressed={view === 'first'} data-mr="walk-view">
-                {view === 'first' ? c.view.third : c.view.first}
-              </button>
+              {THIRD_PERSON_ENABLED && (
+                <button type="button" className="mr-btn" onClick={() => g()?.toggleView()} aria-pressed={view === 'first'} data-mr="walk-view">
+                  {view === 'first' ? c.view.third : c.view.first}
+                </button>
+              )}
             </div>
           </>
         )}

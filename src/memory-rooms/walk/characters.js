@@ -11,10 +11,12 @@ import blueSheet from './characters/traveller-blue.png';
 import blueLayout from './characters/traveller-blue.json';
 import orangeSheet from './characters/traveller-orange.png';
 import orangeLayout from './characters/traveller-orange.json';
+import { HEIGHT_M } from './scale.js';
 
 export const CHARACTERS = {
-  james: { sheet: blueSheet, layout: blueLayout, heightM: 1.75, color: '--mr-person-james' },
-  justin: { sheet: orangeSheet, layout: orangeLayout, heightM: 1.75, color: '--mr-person-justin' },
+  // heightM: feet to the top of the head (scale.js: 1.55 m reads as an adult beside a door; 1.75 read as a giant)
+  james: { sheet: blueSheet, layout: blueLayout, heightM: HEIGHT_M, color: '--mr-person-james' },
+  justin: { sheet: orangeSheet, layout: orangeLayout, heightM: HEIGHT_M, color: '--mr-person-justin' },
 };
 
 /** Frames per second of each animation. */

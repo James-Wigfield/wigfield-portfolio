@@ -51,6 +51,8 @@ import { disposeTree } from '../viewer/dispose.js';
 import { applyDollhouse, indexRoom, stepFades } from '../viewer/dollhouse.js';
 import { aimCamera } from '../viewer/helpers.js';
 import { CHARACTERS, FPS } from './characters.js';
+import { THIRD_PERSON_ENABLED } from './flags.js';
+import { EYE_M, SIT_EYE_M } from './scale.js';
 import { buildGrid, findPath, nearestWalkable, slide } from './grid.js';
 import { stairFootprint, wallLines, wallOpenings } from '../building/geometry.js';
 import { levelFootprint } from '../building/planLayout.js';
@@ -63,7 +65,9 @@ const SEND_MS = 1000 / 12;
 const INTERP_MS = 100;
 const SNAP_M = 2;
 const CAM = { dist: 3.6, min: 1.3, max: 9, pitch: 0.55, minPitch: 0.12, maxPitch: 1.25 };
-const EYE = 1.58;
+/** First-person eye height, m: ~10 cm under the sprite's crown (scale.js), so your camera is in the head the
+    others see. Sitting: SIT_EYE_M. */
+const EYE = EYE_M;
 const MARK_R = 0.38;
 const MARK_HOLD_S = 0.35;
 const SEAT_KITS = new Set(['chair', 'stool', 'armchair', 'sofa', 'bed', 'bunk']);
@@ -174,7 +178,7 @@ export class WalkGame {
     this.keys = new Set();
     this.joy = { x: 0, y: 0 };
     this.path = null;
-    this.view = 'third'; // third | first | photo
+    this.view = THIRD_PERSON_ENABLED ? 'third' : 'first'; // third | first | photo (third is behind flags.js)
     this.yaw = Math.PI; // camera yaw: the camera sits at yaw, looking back at you
     this.pitch = CAM.pitch;
     this.fpPitch = 0;
@@ -312,7 +316,8 @@ export class WalkGame {
     const me = this.me;
     me.pos.set(at.x, at.y || 0, at.z);
     me.heading = Math.atan2(centre.x - me.pos.x, centre.z - me.pos.z);
-    this.yaw = me.heading + Math.PI;
+    // third person: the camera sits at yaw, looking back at you; first person looks along yaw
+    this.yaw = this.view === 'first' ? me.heading : me.heading + Math.PI;
     me.sprite = this.makeSprite(this.who);
     me.tag = this.makeTag(this.who, true);
     this.ready = true;
@@ -640,7 +645,7 @@ export class WalkGame {
       else if (k === 'Digit1') this.emote('wave');
       else if (k === 'Digit2') this.emote('jump');
       else if (k === 'Digit3') this.emote('sit');
-      else if (k === 'KeyV') this.toggleView();
+      else if (k === 'KeyV' && THIRD_PERSON_ENABLED) this.toggleView();
       else if (k === 'Escape' && this.view === 'photo') this.leavePhoto();
     };
     this.onKeyUp = (e) => this.keys.delete(e.code);
@@ -867,6 +872,7 @@ export class WalkGame {
   }
 
   toggleView() {
+    if (!THIRD_PERSON_ENABLED) return; // first person only for now (flags.js)
     if (this.view === 'photo') this.leavePhoto();
     this.view = this.view === 'first' ? 'third' : 'first';
     this.yaw += Math.PI; // third person sits at yaw looking back; first person looks along yaw
@@ -929,7 +935,7 @@ export class WalkGame {
     this.photoView.t0 = performance.now();
     this.photoView.from = { pos: this.camera.position.clone(), quat: this.camera.quaternion.clone(), fov: this.camera.fov };
     this.photoEl.style.opacity = '0';
-    this.view = this.photoView.back || 'third';
+    this.view = THIRD_PERSON_ENABLED ? this.photoView.back || 'third' : 'first';
     this.me.armed = false; // don't fly straight back in while still on the mark
     this.container.dataset.view = this.view;
     delete this.container.dataset.photo;
@@ -1134,7 +1140,7 @@ export class WalkGame {
         me.still = 0;
         this.photoBack = this.view;
         this.enterPhoto(mark);
-        this.photoView.back = this.photoBack === 'first' ? 'first' : 'third';
+        this.photoView.back = this.photoBack === 'first' || !THIRD_PERSON_ENABLED ? 'first' : 'third';
       }
     } else me.still = 0;
 
@@ -1248,7 +1254,7 @@ export class WalkGame {
     };
     const pose = (view) => {
       if (view === 'first') {
-        const eye = new THREE.Vector3(me.pos.x, me.pos.y + (me.sitting ? 1.1 : EYE), me.pos.z);
+        const eye = new THREE.Vector3(me.pos.x, me.pos.y + (me.sitting ? SIT_EYE_M : EYE), me.pos.z);
         const dir = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.fpPitch), Math.sin(this.fpPitch), Math.cos(this.yaw) * Math.cos(this.fpPitch));
         return { pos: eye, target: eye.clone().add(dir), fov: 70 };
       }
@@ -1256,7 +1262,7 @@ export class WalkGame {
     };
     if (pv) {
       const t = this.flyT(pv);
-      const back = pose(pv.back || 'third');
+      const back = pose(pv.back || (THIRD_PERSON_ENABLED ? 'third' : 'first'));
       if (pv.leaving) {
         const q = new THREE.Quaternion();
         const tmp = new THREE.PerspectiveCamera();
@@ -1365,7 +1371,18 @@ export class WalkGame {
       el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     };
     const inPhoto = Boolean(this.photoView);
-    place(this.me, this.me.pos, this.me.sitting ? this.me.sprite.top * 0.7 : this.me.sprite.top, this.me.tag, inPhoto || this.view === 'first');
+    const tag = this.me.tag;
+    if (this.view === 'first' && !inPhoto && tag) {
+      // first person: your head is the camera, so your own line shows as a subtitle low on the stage while it's up
+      const b = tag.firstChild;
+      const speaking = Boolean(b && !b.hidden);
+      tag.hidden = !speaking;
+      tag.toggleAttribute('data-subtitle', speaking);
+      if (speaking) tag.style.transform = `translate(${(r.x + r.w / 2).toFixed(1)}px, ${(r.y + r.h - 120).toFixed(1)}px)`;
+    } else {
+      tag?.removeAttribute('data-subtitle');
+      place(this.me, this.me.pos, this.me.sitting ? this.me.sprite.top * 0.7 : this.me.sprite.top, tag, inPhoto || this.view === 'first');
+    }
     for (const peer of this.peers.values()) place(peer, peer.pos, peer.sprite ? peer.sprite.top : 1.75, peer.tag, inPhoto || !this.onMyLevel(peer));
   }
 

@@ -209,7 +209,8 @@ if (flight) {
   // face up the flight and climb
   await james.evaluate((d) => {
     const g = document.querySelector('[data-mr="walk"]').__walk;
-    g.yaw = Math.atan2(d[0], d[1]) + Math.PI; // third person: the camera sits behind, looking along d
+    // first person looks along yaw; third person's camera sits behind you, at yaw + π (walk/flags.js)
+    g.yaw = Math.atan2(d[0], d[1]) + (g.view === 'first' ? 0 : Math.PI);
     g.lastLook = performance.now() + 60000;
   }, flight.d);
   await james.bringToFront();
@@ -239,7 +240,7 @@ if (flight) {
   // and back down
   await james.evaluate((d) => {
     const g = document.querySelector('[data-mr="walk"]').__walk;
-    g.yaw = Math.atan2(-d[0], -d[1]) + Math.PI;
+    g.yaw = Math.atan2(-d[0], -d[1]) + (g.view === 'first' ? 0 : Math.PI);
     g.lastLook = performance.now() + 60000;
   }, flight.d);
   await james.keyboard.down('KeyW');

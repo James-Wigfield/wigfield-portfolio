@@ -26,6 +26,10 @@
                far as the way was clear and then stopped next to real geometry (or the box / plate
                edge), never inside it or under it; pushing at ±29° from each stop slides along;
                holding W against something while on a photo mark doesn't pop the photo; rugs don't block
+     first     third person is OFF (src/memory-rooms/walk/flags.js, DECISIONS 217): the walk starts in first
+               person at eye height with your sprite and tag hidden, V does nothing, there is no First / Third
+               button, a photo returns to first person, the keys line has no "V". With the flag on, the third-
+               person checks below run instead:
      view      third person: nothing visible hides your chest/head line (walls fade the dollhouse way,
                furniture hides), swept over 16 camera yaws at the wall stops + low camera angles
                (legs-only occlusion is listed, not failed); spinning the camera (mouse) to the outside
@@ -39,7 +43,7 @@
                a move (set-up jumps go in paced hops under its 7 m/s-over-1 s limit; the last states sent are shown)
      photo     walk onto a photo mark (keyboard at 1440, a tap at 390): data-view=photo, the right
                photo over a letterboxed view, the camera at that exact scene camera; moving off (or
-               Esc) returns to third person; E opens it again while standing on it
+               Esc) returns to first person (third with the flag on); E opens it again while standing on it
      touch     390 portrait (touch emulation): tap-to-walk to a far corner round furniture (A* on the
                same grid, path never crosses geometry, arrives), joystick, right-half look, pinch,
                interact + emote buttons, tap targets ≥ 44 px, controls in thumb reach, inputs ≥ 16 px,
@@ -53,6 +57,8 @@
    Screenshots → memory-rooms-work/_page-check/walk-<room>-<w>-<scheme>.png (+ a few evidence shots).
    Exit 1 if anything fails. */
 
+import { THIRD_PERSON_ENABLED as THIRD } from '../../src/memory-rooms/walk/flags.js';
+import { EYE_M } from '../../src/memory-rooms/walk/scale.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
@@ -240,12 +246,12 @@ function INSTALL(area) {
     while (d < 40 && g.grid.walkable(x + dx * (d + 0.01), z + dz * (d + 0.01))) d += 0.01;
     return d;
   };
-  /** Scenario reset between tests: standing, third person, no path, no emote. */
+  /** Scenario reset between tests: standing, third person (first while it's off), no path, no emote. */
   W.reset = () => {
     g.path = null;
     if (g.me.sitting) g.standUp();
     g.me.emote = null;
-    if (g.view === 'first') g.toggleView();
+    if (g.view === 'first') g.toggleView(); // a no-op while third person is off (flags.js)
   };
   /* The room's server (workers/memory-walk.js) clamps any move faster than 7 m/s since your last
      state and sends a `correct` back, so a set-up jump waits until it is a plausible one. */
@@ -600,6 +606,24 @@ function INSTALL(area) {
   /** Find a camera (scenario set-up) that draws floor point (x, z) somewhere a thumb can tap it. */
   W.frameTarget = async (x, z, safe) => {
     const me = g.me.pos;
+    if (g.view === 'first') {
+      // first person: face the target and look down until it's drawn where a thumb can tap it
+      const toward = Math.atan2(x - me.x, z - me.z);
+      for (const pitch of [-0.15, -0.3, -0.45, -0.6, -0.8, -1.0]) {
+        for (const off of [0, 0.25, -0.25, 0.5, -0.5]) {
+          g.yaw = toward + off;
+          g.fpPitch = pitch;
+          g.lastLook = performance.now();
+          await W.settle();
+          const p = W.project(x, 0, z);
+          if (p.z <= -1 || p.z >= 1) continue;
+          if (p.x < safe.x0 || p.x > safe.x1 || p.y < safe.y0 || p.y > safe.y1) continue;
+          if (document.elementFromPoint(p.x, p.y) !== g.canvas) continue;
+          return { x: Math.round(p.x), y: Math.round(p.y), yaw: g.yaw, pitch, dist: 0 };
+        }
+      }
+      return null;
+    }
     const away = Math.atan2(me.x - x, me.z - z); // the camera sits on the far side of you from the target
     for (const dist of [3.6, 5.5, 7.5, 9]) {
       for (const pitch of [0.55, 0.8, 1.05, 1.25]) {
@@ -810,7 +834,8 @@ for (const room of ROOMS) {
       const t = document.querySelector('.mr-walk__tag[data-self]');
       return t ? { text: t.querySelector('.mr-walk__name').textContent, hidden: t.hidden } : null;
     });
-    record(`${label}: your name tag shows "${COPY.app.people.james}" over your character`, tag?.text === COPY.app.people.james && !tag.hidden && G.who === 'james', JSON.stringify(tag));
+    if (THIRD) record(`${label}: your name tag shows "${COPY.app.people.james}" over your character`, tag?.text === COPY.app.people.james && !tag.hidden && G.who === 'james', JSON.stringify(tag));
+    else record(`${label}: first person: your name tag is "${COPY.app.people.james}" and hidden (your head is the camera)`, tag?.text === COPY.app.people.james && tag.hidden && G.who === 'james', JSON.stringify(tag));
     await wait(600);
     await shot(page, `walk-${name}-1440`);
   });
@@ -899,6 +924,33 @@ for (const room of ROOMS) {
   });
 
   // view: nothing visible between the camera and you (walls fade, furniture hides)
+  if (!THIRD)
+    await section(`${label} first person`, async () => {
+      await page.evaluate(() => window.__wc.settle());
+      await page.evaluate(() => window.__wc.frames(3));
+      const fp = await page.evaluate(() => {
+        const g = window.__wc.g;
+        const t = document.querySelector('.mr-walk__tag[data-self]');
+        return { view: window.__wc.el.dataset.view, gview: g.view, cam: g.camera.position.toArray(), me: [g.me.pos.x, g.me.pos.y, g.me.pos.z], sprite: g.me.sprite.mesh.visible, tag: t?.hidden ?? true, btn: Boolean(document.querySelector('[data-mr="walk-view"]')), keys: document.querySelector('.mr-walk__keys')?.textContent || '', fades: window.__wc.fades() };
+      });
+      record(
+        `${label}: walking in starts in first person (eye height, your sprite + tag hidden, walls all drawn)`,
+        fp.view === 'first' && fp.gview === 'first' && Math.abs(fp.cam[1] - fp.me[1] - EYE_M) < 0.01 && Math.hypot(fp.cam[0] - fp.me[0], fp.cam[2] - fp.me[2]) < 0.01 && !fp.sprite && fp.tag && Object.values(fp.fades || {}).every((v) => v >= 0.99),
+        `view ${fp.view}, eye ${f2(fp.cam[1] - fp.me[1])} m, sprite ${fp.sprite ? 'DRAWN' : 'hidden'}, tag ${fp.tag ? 'hidden' : 'SHOWN'}`,
+      );
+      await page.keyboard.press('KeyV');
+      await page.evaluate(() => window.__wc.frames(3));
+      const afterV = await page.evaluate(() => ({ view: window.__wc.el.dataset.view, gview: window.__wc.g.view }));
+      await page.evaluate(() => window.__wc.g.toggleView()); // the method itself is off too
+      await page.evaluate(() => window.__wc.frames(3));
+      const afterCall = await page.evaluate(() => window.__wc.g.view);
+      record(
+        `${label}: no way into third person: V does nothing, no First / Third button, toggleView() is off, the keys line has no "V"`,
+        afterV.view === 'first' && afterV.gview === 'first' && afterCall === 'first' && !fp.btn && !/\bV\b/.test(fp.keys),
+        `after V: ${afterV.view}; after toggleView(): ${afterCall}; button ${fp.btn ? 'PRESENT' : 'none'}; keys "${fp.keys}"`,
+      );
+    });
+  if (THIRD)
   await section(`${label} view`, async () => {
     // a real spin: walk into each wall, drag the camera round to its far side
     for (const stop of stops) {
@@ -1034,7 +1086,8 @@ for (const room of ROOMS) {
     const lines = [];
     for (const [key, yawOff] of [['KeyS', 0], ['KeyD', -Math.PI / 2], ['KeyA', Math.PI / 2]]) {
       await page.evaluate((x, z) => window.__wc.put(x, z), startA.x, startA.z);
-      await page.evaluate((y) => window.__wc.aim(y, 0.55, 3.6), best.a + yawOff); // the key then walks along best.a
+      // the key then walks along best.a (first person looks ALONG yaw, third looks back at you from it)
+      await page.evaluate((y) => window.__wc.aim(y, 0.55, 3.6), best.a + yawOff + (THIRD ? 0 : Math.PI));
       await wait(1900); // longer than the follow delay
       const y0 = (await st(page)).yaw;
       await page.evaluate(() => window.__wc.startRec());
@@ -1062,7 +1115,8 @@ for (const room of ROOMS) {
     s1 = await st(page);
     record(`${label}: a mouse drag turns the camera`, Math.abs(s1.yaw - s0.yaw + 0.72) < 0.03, `120 px → yaw ${f2(s1.yaw - s0.yaw)} rad`);
 
-    // wheel: camera distance, clamped
+    // wheel: camera distance, clamped (third person only: first person has no camera distance)
+    if (THIRD) {
     await page.mouse.move(CX, CY);
     s0 = await st(page);
     await page.mouse.wheel({ deltaY: 300 });
@@ -1099,7 +1153,7 @@ for (const room of ROOMS) {
     });
     record(
       `${label}: V → first person (eye height, your sprite + tag hidden, walls all drawn)`,
-      fp.view === 'first' && Math.abs(fp.cam[1] - 1.58) < 0.01 && Math.hypot(fp.cam[0] - fp.me[0], fp.cam[2] - fp.me[1]) < 0.01 && !fp.sprite && fp.tag && fp.btn === W_COPY.view.third && fp.pressed === 'true',
+      fp.view === 'first' && Math.abs(fp.cam[1] - EYE_M) < 0.01 && Math.hypot(fp.cam[0] - fp.me[0], fp.cam[2] - fp.me[1]) < 0.01 && !fp.sprite && fp.tag && fp.btn === W_COPY.view.third && fp.pressed === 'true',
       `view ${fp.view}, eye ${f2(fp.cam[1])} m, sprite ${fp.sprite ? 'drawn' : 'hidden'}, tag ${fp.tag ? 'hidden' : 'shown'}, button "${fp.btn}" pressed=${fp.pressed}`,
     );
     // first person: W walks where you look
@@ -1134,6 +1188,28 @@ for (const room of ROOMS) {
       tp.view === 'third' && tp.sprite && behind < -0.9 && tp.cam[1] > 1.6 && Math.abs(horiz - tp.dist * Math.cos(tp.pitch)) < 0.05,
       `view ${tp.view}, sprite ${tp.sprite ? 'drawn' : 'HIDDEN'}, camera ${f2(horiz)} m back (cos to your heading ${f2(behind)}; dist ${f2(tp.dist)}, pitch ${f2(tp.pitch)}), ${f2(tp.cam[1])} m up`,
     );
+    } else {
+      // first person (the only view): W walks where you look
+      await page.evaluate((x, z) => window.__wc.put(x, z), startA.x, startA.z);
+      await page.evaluate(() => window.__wc.settle());
+      const look = await page.evaluate((x, z) => {
+        let b = null;
+        for (let k = 0; k < 16; k++) {
+          const a = (k / 16) * Math.PI * 2;
+          const d = window.__wc.freeRun(x, z, Math.sin(a), Math.cos(a));
+          if (!b || d > b.d) b = { a, d };
+        }
+        return b;
+      }, startA.x, startA.z);
+      await faceBy(page, look.a);
+      s0 = await st(page);
+      await hold(page, ['KeyW'], 400);
+      s1 = await st(page);
+      const fwd = [Math.sin(s1.yaw), Math.cos(s1.yaw)];
+      const mv = [s1.x - s0.x, s1.z - s0.z];
+      const mlen = Math.hypot(...mv);
+      record(`${label}: first person, W walks where you look`, mlen > 0.2 && (mv[0] * fwd[0] + mv[1] * fwd[1]) / mlen > 0.95, `moved ${f2(mlen)} m, cos to the view ${f2((mv[0] * fwd[0] + mv[1] * fwd[1]) / (mlen || 1))}`);
+    }
 
     // emotes: 1 wave, 2 jump, 3 sit (floor, away from seats) / 3 again stands
     const away = await page.evaluate(() => {
@@ -1170,16 +1246,22 @@ for (const room of ROOMS) {
     const stand = await st(page);
     const expectSit = away ? 'floor' : sit.sitting;
     record(`${label}: 3 sits (on the floor away from seats), 3 again stands`, sit.ds.sitting === expectSit && sit.anim === 'sit' && !stand.ds.sitting && stand.anim === 'idle', `sitting=${sit.ds.sitting} anim ${sit.anim} → sitting=${stand.ds.sitting ?? '–'} anim ${stand.anim}`);
-    // the buttons do the same
-    await page.click(sel('walk-emote-wave'));
-    await page.evaluate(() => window.__wc.frames(3));
-    const bw = await st(page);
-    await page.evaluate(() => document.activeElement?.blur());
-    record(`${label}: the Wave button waves`, bw.anim === 'wave', bw.anim);
-    await wait(1700);
+    // the buttons do the same (first person: they show only while someone else is in the room to see them)
+    if (THIRD) {
+      await page.click(sel('walk-emote-wave'));
+      await page.evaluate(() => window.__wc.frames(3));
+      const bw = await st(page);
+      await page.evaluate(() => document.activeElement?.blur());
+      record(`${label}: the Wave button waves`, bw.anim === 'wave', bw.anim);
+      await wait(1700);
+    } else {
+      record(`${label}: first person, alone: no Wave / Jump / Sit buttons (you can't see yourself; the keys still work)`, !(await page.$(sel('walk-emote-wave'))) && !(await page.$(sel('walk-emote-jump'))) && !(await page.$(sel('walk-emote-sit'))));
+      await wait(1700);
+    }
 
-    // 8-direction frames: the frame follows your heading against the camera's angle
-    if (!framesDone) {
+    // 8-direction frames: the frame follows your heading against the camera's angle (your own sprite: third person
+    // only; the others' sprites, which first person still shows, are walk-mp-check's)
+    if (!framesDone && THIRD) {
       framesDone = true;
       const seen = await page.evaluate(async () => {
         const W = window.__wc;
@@ -1284,8 +1366,9 @@ for (const room of ROOMS) {
       const bubble = await page.evaluate(() => {
         const b = document.querySelector('.mr-walk__tag[data-self] .mr-walk__bubble');
         const r = b?.getBoundingClientRect();
-        return b ? { text: b.textContent, hidden: b.hidden, w: r.width, h: r.height } : null;
+        return b ? { text: b.textContent, hidden: b.hidden, w: r.width, h: r.height, subtitle: b.parentElement.hasAttribute('data-subtitle'), y: r.top / innerHeight } : null;
       });
+      if (!THIRD) record(`${label}: first person: your own line shows as a subtitle low on the stage`, Boolean(bubble?.subtitle) && bubble.y > 0.5, bubble ? `subtitle ${bubble.subtitle}, at ${Math.round(bubble.y * 100)}% down` : 'no bubble');
       record(`${label}: the line takes at most 80 characters; Enter shows it in a bubble over you`, value.length === 80 && bubble && !bubble.hidden && bubble.text === value.trim() && bubble.text.length <= 80 && bubble.h > 0, `input ${value.length} chars, bubble ${bubble?.text.length} chars, ${bubble?.hidden ? 'hidden' : 'shown'}`);
       await shot(page, `walk-${name}-1440-chat`);
       const stored = await page.evaluate(async (marker) => {
@@ -1388,13 +1471,15 @@ for (const room of ROOMS) {
           const g = window.__wc.g;
           return { view: window.__wc.el.dataset.view, photo: window.__wc.el.dataset.photo ?? null, hidden: g.photoEl.hidden, pv: Boolean(g.photoView), d: Math.hypot(g.camera.position.x - g.me.pos.x, g.camera.position.z - g.me.pos.z), sprite: g.me.sprite.mesh.visible };
         });
-      const isBack = (b) => b.view === 'third' && b.photo === null && b.hidden && !b.pv && b.sprite && b.d > 1;
+      // back from a photo: third person (camera behind you, your sprite drawn), or first person while third is off
+      const BACK = THIRD ? 'third' : 'first';
+      const isBack = (b) => b.view === BACK && b.photo === null && b.hidden && !b.pv && (THIRD ? b.sprite && b.d > 1 : !b.sprite && b.d < 0.05);
       const backNote = (b) => `view ${b.view}, photo ${b.hidden ? 'hidden' : 'SHOWN'}, camera ${f2(b.d)} m from you`;
       // Esc returns to third person (you stay on the mark)
       await page.keyboard.press('Escape');
       await wait(1000);
       let back = await backState();
-      record(`${label}: photo ${mark.photo}: Esc returns to third person`, isBack(back), backNote(back));
+      record(`${label}: photo ${mark.photo}: Esc returns to ${BACK} person`, isBack(back), backNote(back));
       // on the mark again (disarmed): E opens the photo when no seat is in reach; else step off and back on
       const hintNow = await page.$eval(sel('walk-hint'), (e) => e.textContent).catch(() => null);
       let open = false;
@@ -1425,7 +1510,7 @@ for (const room of ROOMS) {
         await page.keyboard.up('KeyS');
         await wait(900);
         back = await backState();
-        record(`${label}: photo ${mark.photo}: moving off returns to third person`, leaving.view === 'third' && leaving.photo === null && isBack(back), `as you move: view ${leaving.view}; after: ${backNote(back)}`);
+        record(`${label}: photo ${mark.photo}: moving off returns to ${BACK} person`, leaving.view === BACK && leaving.photo === null && isBack(back), `as you move: view ${leaving.view}; after: ${backNote(back)}`);
       }
     }
     if (!eDone) info(`E on a photo mark: not tried (every tested mark has a seat in reach, and E sits first, as its hint says)`);
@@ -1549,7 +1634,7 @@ for (const room of ROOMS) {
     });
     const out = ui.reach.filter((r) => r.y < 0.6);
     record(`${label} 390: every button/link ≥ 44 px`, ui.small.length === 0, ui.small.join(', ') || `${ui.n} controls`);
-    record(`${label} 390: emote/interact/chat/view buttons in thumb reach (lower 40%)`, out.length === 0 && ui.reach.length >= 5, out.map((r) => `${r.m} at ${Math.round(r.y * 100)}%`).join(', ') || ui.reach.map((r) => `${r.m.replace('walk-', '')} ${Math.round(r.y * 100)}%`).join(' '));
+    record(`${label} 390: emote/interact/chat/view buttons in thumb reach (lower 40%)`, out.length === 0 && ui.reach.length >= (THIRD ? 5 : 1), out.map((r) => `${r.m} at ${Math.round(r.y * 100)}%`).join(', ') || ui.reach.map((r) => `${r.m.replace('walk-', '')} ${Math.round(r.y * 100)}%`).join(' '));
     record(`${label} 390: no horizontal overflow`, ui.overflow <= 1, `${ui.overflow}px`);
 
     // tap-to-walk to a far corner round furniture (a real touch tap where it's drawn)
@@ -1628,7 +1713,7 @@ for (const room of ROOMS) {
       await phone.touchscreen.touchEnd();
       await wait(1000);
       const v = await st(phone);
-      record(`${label} 390: moving the joystick leaves the photo`, v.view === 'third' && !v.ds.photo, v.view);
+      record(`${label} 390: moving the joystick leaves the photo (back to ${THIRD ? 'third' : 'first'} person)`, v.view === (THIRD ? 'third' : 'first') && !v.ds.photo, v.view);
     }
 
     // joystick (left half), look (right half), pinch
@@ -1643,7 +1728,7 @@ for (const room of ROOMS) {
       }
       return b;
     }, startP.x, startP.z);
-    await phone.evaluate((a) => window.__wc.aim(a - Math.PI, 0.55, 3.6), dirFree.a);
+    await phone.evaluate((a, third) => window.__wc.aim(third ? a - Math.PI : a, 0.55, 3.6), dirFree.a, THIRD);
     let s0 = await st(phone);
     await phone.touchscreen.touchStart(90, 640);
     await phone.touchscreen.touchMove(90, 610);
