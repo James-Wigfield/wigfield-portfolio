@@ -5,11 +5,14 @@
    thumb, every photo, then the optional scan; each file is flagged `uploaded`
    as it lands. Done entries stay ~24 h, then are pruned. Unsent ones never are.
 
-   Three kinds of entry (CONTRACTS.md 6.4), uploaded oldest first:
+   Four kinds of entry (CONTRACTS.md 6.4, 7), uploaded oldest first:
      spot             (kind absent) a capture: saveSpot + its photos / thumbs / scan
      building         a whole place: saveBuilding + its floor-plan photos and outside shots
-     building-patch   a later change to a place (the sketch plan): one PATCH, the newest
-                      edit replacing an older one still waiting (id `patch:<buildingId>`)
+     building-patch   a later change to a place (the sketch plan, its collection): one PATCH, the
+                      newest edit replacing an older one still waiting (id `patch:<buildingId>`)
+     collection       a collection made on this phone (capture's "New collection…"): one POST,
+                      create once by its uuid (id `collection:<uuid>`), queued BEFORE the capture
+                      that uses it, so it goes up first
 
    Triggers: right after a save, on `online`, when the tab becomes visible, on
    app load, and a backoff timer (5 s → 5 min) while anything is pending.
@@ -56,7 +59,7 @@ export const subscribeOutbox = (l) => {
 export const getOutboxSnapshot = () => state;
 
 const kindOf = (e) => e.kind || 'spot';
-const entryTitle = (e) => e.spot?.title || e.building?.title || e.title || '';
+const entryTitle = (e) => e.spot?.title || e.building?.title || e.collection?.name || e.title || '';
 
 function summarize(e) {
   const failed = e.files.filter((f) => f.error).length;
@@ -204,6 +207,36 @@ export async function addBuildingPatch(buildingId, patch, title = '') {
   return id;
 }
 
+/**
+ * A collection made on this phone (it may have no signal) into the outbox: POSTed once, before the capture that
+ * names it (entries go up oldest first). Its row is what the pickers show until the server has it.
+ */
+export async function addCollection(collection) {
+  const entry = {
+    id: `collection:${collection.id}`,
+    kind: 'collection',
+    collection,
+    files: [],
+    spotSaved: false,
+    state: 'pending',
+    error: null,
+    attempts: 0,
+    createdAt: Date.now(),
+    doneAt: null,
+  };
+  await write('outbox', (w) => w.put('outbox', entry));
+  persistOnce();
+  await refresh();
+  kickOutbox();
+  return entry.id;
+}
+
+/** Collections still waiting in the outbox (made on this phone, not on the server yet). */
+export async function pendingCollections() {
+  const rows = await getAll('outbox');
+  return rows.filter((e) => e.kind === 'collection' && e.state !== 'done').map((e) => e.collection);
+}
+
 /** Pending changes to one place, newest merged (what the place page shows before the server has it). */
 export async function pendingPlace(buildingId) {
   const rows = await getAll('outbox');
@@ -322,6 +355,7 @@ async function sendPatch(entry) {
 function heldReason(kind, err) {
   if (err?.code === 'needs-sql') return 'needs-sql';
   if (kind === 'building' && err?.status === 404) return 'needs-sql'; // a Worker without the building routes
+  if (kind === 'collection' && err?.status === 404) return 'needs-sql'; // a Worker without the collection routes
   if (kind === 'building-patch' && (err?.status === 404 || err?.status === 409)) return 'place-first';
   return null;
 }
@@ -336,6 +370,7 @@ async function uploadEntry(entry) {
     if (!entry.spotSaved) {
       set({ current: { id: entry.id, index: 0, total } });
       if (kind === 'building') await api.saveBuilding(entry.building);
+      else if (kind === 'collection') await api.saveCollection(entry.collection);
       else if (kind === 'building-patch') {
         const sent = JSON.stringify(entry.patch);
         await sendPatch(entry);

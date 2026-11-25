@@ -100,6 +100,14 @@ export const api = {
   /** NO password (the token is the key): → { kind: 'building'|'spot', item }. Never sends this phone's password. */
   getShared: (token) => call(`/shared/${encodeURIComponent(token)}`, { token: '' }),
 
+  // ── collections (CONTRACTS.md 7): groups of spots and places ──
+  listCollections: () => call('/collections'),
+  /** Create once by client uuid { id, name, sort?, bounds? }: safe to retry. */
+  saveCollection: (c) => call('/collections', { method: 'POST', body: c }),
+  patchCollection: (id, patch) => call(`/collections/${encodeURIComponent(id)}`, { method: 'PATCH', body: patch }),
+  /** Its spots and places stay, ungrouped → { id, deleted, ungrouped: { spots, buildings } }. */
+  deleteCollection: (id) => call(`/collections/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
   // ── whole places (CONTRACTS.md 6.4) ──
   listBuildings: ({ deleted = false } = {}) => call(`/buildings${deleted ? '?deleted=1' : ''}`),
   getBuilding: (id) => call(`/buildings/${encodeURIComponent(id)}`),

@@ -10,7 +10,11 @@
    then soft-deletes it again. Then a whole place: a building (create once, sketch,
    409, building.json validation + version, its files, a spot as one of its rooms,
    a v2 room scene, soft delete). `--no-buildings` (or PGREST_NO_BUILDINGS=1) checks
-   instead that spots still save where the building SQL hasn't run.
+   instead that spots still save where the building SQL hasn't run. Then collections
+   (CONTRACTS.md 7): create once, rename, 409, bounds, a spot and a place in one, a
+   delete that leaves them ungrouped, a share link that never shows it; with
+   `--no-collections` (or PGREST_NO_COLLECTIONS=1) that spots still save before
+   supabase/memory_collections.sql has run.
    Exits 1 on the first failure. */
 
 import fs from 'node:fs';
@@ -309,6 +313,87 @@ if (noBuildings) {
   await api.restoreBuilding(bid);
   ok((await api.listBuildings()).some((b) => b.id === bid), 'restore brings the building back');
   await api.deleteBuilding(bid);
+}
+
+// ── collections (CONTRACTS.md 7) ─────────────────────────────────────────────
+const noCollections = noBuildings || process.env.PGREST_NO_COLLECTIONS === '1' || args.includes('--no-collections');
+{
+  const auth = { authorization: `Bearer ${cfg.token}`, 'content-type': 'application/json' };
+  if (noCollections) {
+    ok(Array.isArray(ping.features) && !ping.features.includes('collections'), 'ping does not claim collections before the SQL', JSON.stringify(ping.features));
+    const rl = await raw('/api/memories/collections', { headers: auth });
+    const jl = await rl.json().catch(() => ({}));
+    ok(rl.status === 503 && jl.code === 'needs-sql', 'the collection list before the SQL is 503 needs-sql', `${rl.status} ${JSON.stringify(jl)}`);
+    const grouped = { ...capture, id: crypto.randomUUID(), title: 'api-check grouped (no SQL)', collectionId: crypto.randomUUID() };
+    const rg = await raw('/api/memories/spots', { method: 'POST', headers: auth, body: JSON.stringify(grouped) });
+    const jg = await rg.json().catch(() => ({}));
+    ok(rg.status === 503 && jg.code === 'needs-sql', 'a spot with a collection before the SQL is 503 needs-sql (held on the phone)', `${rg.status} ${JSON.stringify(jg)}`);
+    const plain = await api.saveSpot({ ...capture, id: crypto.randomUUID(), title: 'api-check plain spot (no collections SQL)' });
+    ok(plain.collectionId == null, 'and a plain spot still saves, ungrouped');
+    const edited = await api.patchSpot(plain.id, { title: 'api-check plain spot, edited (no collections SQL)' });
+    ok(edited.title.endsWith('edited (no collections SQL)'), 'and still edits');
+    await api.deleteSpot(plain.id).catch(() => {});
+  } else {
+    ok(Array.isArray(ping.features) && ping.features.includes('collections'), 'ping lists the collections feature');
+    const badC = await expectStatus(api.saveCollection({ id: 'nope', name: '' }), 400, 'a bad collection is 400');
+    ok(Array.isArray(badC.details) && badC.details.length >= 2, 'the 400 lists every problem (id, name)');
+    await expectStatus(api.saveCollection({ id: crypto.randomUUID(), name: 'x'.repeat(61) }), 400, 'a 61-character name is 400');
+    const cid = crypto.randomUUID();
+    const made = await api.saveCollection({ id: cid, name: '  api-check collection  ' });
+    ok(made.id === cid && made.name === 'api-check collection' && made.sort === null && made.bounds === null, 'POST creates a collection (name trimmed, no sort, no bounds)');
+    const again = await api.saveCollection({ id: cid, name: 'a different name' });
+    ok(again.name === 'api-check collection', 'a re-POST of the same id changes nothing (create once)');
+    ok((await api.listCollections()).some((c) => c.id === cid), 'the list holds it');
+    const renamed = await api.patchCollection(cid, { name: 'api-check renamed', ifUpdatedAt: made.updatedAt });
+    ok(renamed.name === 'api-check renamed', 'PATCH renames it');
+    await expectStatus(api.patchCollection(cid, { name: 'stale', ifUpdatedAt: made.updatedAt }), 409, 'a stale rename (ifUpdatedAt) is 409');
+    await expectStatus(api.patchCollection(cid, { bounds: [[120, -30], [110, -40]] }), 400, 'bounds the wrong way round are 400');
+    const framed = await api.patchCollection(cid, { bounds: [[115.6, -32.4], [116.1, -31.7]], sort: 2 });
+    ok(framed.sort === 2 && framed.bounds?.[1]?.[0] === 116.1, 'PATCH sets its sort and map bounds');
+
+    // a spot and a place in it
+    const sid = crypto.randomUUID();
+    const inColl = await api.saveSpot({ ...capture, id: sid, title: 'api-check spot in a collection', collectionId: cid });
+    ok(inColl.collectionId === cid, 'POST a spot straight into a collection (capture)');
+    await expectStatus(api.patchSpot(sid, { collectionId: 'not-a-uuid' }), 400, 'a collectionId that is not a uuid is 400');
+    const ahead = crypto.randomUUID();
+    const early = await api.patchSpot(sid, { collectionId: ahead });
+    ok(early.collectionId === ahead, 'a spot may name a collection that has not arrived yet (the outbox sends it first)');
+    const back = await api.patchSpot(sid, { collectionId: cid, ifUpdatedAt: early.updatedAt });
+    ok(back.collectionId === cid, 'PATCH moves it (with ifUpdatedAt)');
+    await expectStatus(api.patchSpot(sid, { collectionId: null, ifUpdatedAt: early.updatedAt }), 409, 'a stale move is 409');
+    let pid = null;
+    if (!noBuildings) {
+      pid = crypto.randomUUID();
+      const place = await api.saveBuilding({ id: pid, createdBy: 'james', title: 'api-check place in a collection', collectionId: cid, capturedAt: '2026-12-18T09:00:00.000Z' });
+      ok(place.collectionId === cid, 'POST a whole place straight into a collection');
+      const moved = await api.patchBuilding(pid, { collectionId: null });
+      ok(moved.collectionId === null, 'PATCH takes a place out of it');
+      const moved2 = await api.patchBuilding(pid, { collectionId: cid });
+      ok(moved2.collectionId === cid, 'and puts it back');
+    }
+
+    // a share link never shows the collection
+    const tokenRes = (await (await raw('/api/memories/shares', { method: 'POST', headers: auth, body: JSON.stringify({ kind: 'spot', id: sid }) })).json()).data;
+    const sharedRes = await raw(`/api/memories/shared/${tokenRes.token}`);
+    const sharedText = await sharedRes.text();
+    ok(sharedRes.status === 200 && !/collectionId|api-check renamed/.test(sharedText), 'a share link shows neither the collectionId nor the collection name');
+    await raw(`/api/memories/shares/${tokenRes.token}`, { method: 'DELETE', headers: auth });
+
+    // delete: the collection goes, its spot and place stay, ungrouped
+    const gone = await api.deleteCollection(cid);
+    ok(gone.deleted === true && gone.ungrouped?.spots >= 1 && gone.ungrouped?.buildings === (pid ? 1 : 0), 'DELETE removes it and says how many it ungrouped', JSON.stringify(gone));
+    ok(!(await api.listCollections()).some((c) => c.id === cid), 'it leaves the list');
+    const after = await api.getSpot(sid);
+    ok(after && !after.deletedAt && after.collectionId === null, 'its spot stays, ungrouped (never deleted)');
+    if (pid) {
+      const afterPlace = await api.getBuilding(pid);
+      ok(afterPlace && !afterPlace.deletedAt && afterPlace.collectionId === null, 'its place stays, ungrouped');
+      await api.deleteBuilding(pid);
+    }
+    await expectStatus(api.deleteCollection(cid), 404, 'deleting it again is 404');
+    await api.deleteSpot(sid);
+  }
 }
 
 await api.deleteSpot(id);

@@ -1,14 +1,23 @@
-/* The base map: water, Mexico (faint context), Canada + the lower 48 as land with
-   hairline borders, and (when zoomed in) quiet labels for the trip's places.
-   Overlays are passed as children and drawn in screen pixels (dots never scale). */
+/* The base map: water, the world's land (the home view's coast finer), hairline country
+   and US state borders, and (zoomed in past a continent) quiet labels for the gazetteer's
+   places. Overlays are passed as children and drawn in screen pixels (dots never scale). */
 
 import { useCallback } from 'react';
 import PlaceLabels from './PlaceLabels.jsx';
-import { mapLayers, onMap, project } from './geo.js';
+import { invert, mapLayers, onMap, project } from './geo.js';
+import { atlasZoom } from './markers.js';
+import { zoomForSpan } from './mapbox/project.js';
 
-const LABEL_MIN_K = 2.2;
+/** Place labels show once less than this much longitude is in view (as on the globe). */
+const LABEL_SPAN_DEG = 28;
 
 const NO_AVOID = [];
+
+/** "lat,lng" at the middle of the view (for checks and debugging). */
+function centerOf(t, size) {
+  const ll = invert((size.w / 2 - t.tx) / t.s, (size.h / 2 - t.ty) / t.s);
+  return ll ? `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}` : undefined;
+}
 
 /**
  * vp: the useMapViewport() object. onBackgroundTap({ x, y }) fires for taps on land or water.
@@ -44,6 +53,7 @@ export default function AtlasMap({ vp, dataMr, label, onBackgroundTap, labels = 
           viewBox={`0 0 ${size.w} ${size.h}`}
           data-mr={dataMr}
           data-zoom={t.k.toFixed(2)}
+          data-center={centerOf(t, size)}
           role="group"
           aria-label={label}
           onClick={onClick}
@@ -51,13 +61,12 @@ export default function AtlasMap({ vp, dataMr, label, onBackgroundTap, labels = 
         >
           <rect className="mr-atlas-water" width={size.w} height={size.h} data-bg="" />
           <g data-bg="" transform={`translate(${t.tx} ${t.ty}) scale(${t.s})`}>
-            <path className="mr-atlas-mexico" d={layers.mexico} />
-            <path className="mr-atlas-canada" d={layers.canada} />
             <path className="mr-atlas-land" d={layers.land} />
-            <path className="mr-atlas-borders" d={layers.stateBorders} />
-            <path className="mr-atlas-coast" d={layers.usOutline} />
+            <path className="mr-atlas-land" d={layers.detail} />
+            <path className="mr-atlas-states" d={layers.states} />
+            <path className="mr-atlas-borders" d={layers.borders} />
           </g>
-          {labels && <PlaceLabels toScreen={toScreen} size={size} avoid={avoid} show={t.k >= LABEL_MIN_K} />}
+          {labels && <PlaceLabels toScreen={toScreen} size={size} avoid={avoid} show={atlasZoom(t.s) >= zoomForSpan(size.w, LABEL_SPAN_DEG)} />}
           {children}
         </svg>
       )}

@@ -110,6 +110,11 @@ export function client({ base, token } = config()) {
       if (height) headers['x-height'] = String(height);
       return call(`/spots/${id}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: buf, headers });
     },
+    // collections (CONTRACTS.md 7)
+    listCollections: () => call('/collections'),
+    saveCollection: (c) => call('/collections', { method: 'POST', body: c }),
+    patchCollection: (id, patch) => call(`/collections/${id}`, { method: 'PATCH', body: patch }),
+    deleteCollection: (id) => call(`/collections/${id}`, { method: 'DELETE' }),
     // whole places (CONTRACTS.md 6.4)
     listBuildings: ({ deleted = false } = {}) => call(`/buildings${deleted ? '?deleted=1' : ''}`),
     getBuilding: (id) => call(`/buildings/${id}`),

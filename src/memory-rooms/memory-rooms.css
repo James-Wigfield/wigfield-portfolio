@@ -645,8 +645,104 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-filters .mr-seg { flex-wrap: wrap; column-gap: var(--mr-space-4); row-gap: 0; }
 .mr-filters .mr-seg button { min-height: 36px; }
 
-/* The list as an archive's index: No. 004, the room's cut-out standing on the paper, serif title. */
-.mr-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* The list as an archive's index: No. 004, the room's cut-out standing on the paper, serif title.
+   It is the side column's ONE scroll container (collections, their places and spots all inside it):
+   a block after it would be pushed off a phone's screen with nothing to scroll it back. */
+.mr-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* a collection: a ruled section, its name in the serif, how many it holds in mono; collapsible */
+.mr-coll { border-bottom: var(--mr-hairline) solid var(--mr-rule); }
+.mr-coll-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  min-height: var(--mr-tap);
+  padding: var(--mr-space-2) var(--mr-space-5) var(--mr-space-2) var(--mr-space-3);
+  border-top: var(--mr-hairline) solid var(--mr-rule-strong);
+  background: var(--mr-bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.mr-coll:first-child .mr-coll-head { border-top-color: var(--mr-rule); }
+.mr-coll-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mr-ink-2);
+  cursor: pointer;
+}
+.mr-coll-toggle svg { transition: transform var(--mr-dur) var(--mr-ease); }
+.mr-coll[data-open] .mr-coll-toggle svg { transform: rotate(90deg); }
+.mr-coll-name {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--mr-space-3);
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mr-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.mr-coll-name--plain { cursor: default; }
+.mr-coll-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 1.35rem / 1.1 var(--mr-font-serif);
+  letter-spacing: -0.005em;
+}
+.mr-coll-name:not(.mr-coll-name--plain):hover .mr-coll-title { text-decoration: underline; text-decoration-color: var(--mr-ink-3); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.mr-coll-name--plain .mr-coll-title { color: var(--mr-ink-2); }
+.mr-coll-name .mr-dot { flex: none; font-size: var(--mr-text-xs); color: var(--mr-ink-2); }
+.mr-coll-count { flex: none; color: var(--mr-ink-3); white-space: nowrap; }
+.mr-coll-edit { flex: none; font-size: var(--mr-text-xs); color: var(--mr-ink-2); }
+.mr-coll-empty { padding: var(--mr-space-3) var(--mr-space-5) var(--mr-space-4) 52px; color: var(--mr-ink-3); font-size: var(--mr-text-s); }
+.mr-coll .mr-list-rows { border-top: var(--mr-hairline) solid var(--mr-rule); }
+.mr-coll .mr-list-rows > li:last-child .mr-row { border-bottom: 0; }
+.mr-coll-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  padding: var(--mr-space-3) var(--mr-space-5);
+  border-top: var(--mr-hairline) solid var(--mr-rule-strong);
+}
+.mr-coll-form-row { display: flex; align-items: center; gap: var(--mr-space-4); flex-wrap: wrap; }
+.mr-coll-delete { margin-left: auto; color: var(--mr-danger); text-decoration-color: currentColor; }
+.mr-coll-new { padding: var(--mr-space-3) var(--mr-space-5) var(--mr-space-6); }
+.mr-coll-new .mr-coll-form { padding: 0; border-top: 0; }
+
+/* the collection picker (capture, edit, place page): a native select, a new one named inline */
+.mr-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: calc(var(--mr-space-3) + 20px);
+  background-image: linear-gradient(45deg, transparent 50%, var(--mr-ink-2) 50%), linear-gradient(135deg, var(--mr-ink-2) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.mr-collpick-new { display: flex; align-items: center; gap: var(--mr-space-3); flex-wrap: wrap; }
+.mr-collpick-new .mr-input { flex: 1 1 12rem; }
+.mr-field-error { font-size: var(--mr-text-s); color: var(--mr-danger); }
 .mr-list-rows { list-style: none; }
 .mr-row {
   display: grid;
@@ -736,46 +832,6 @@ html.mr-active ::-webkit-scrollbar-thumb {
 }
 .mr-state-title { font: 400 1.7rem / 1.05 var(--mr-font-serif); letter-spacing: -0.005em; }
 
-/* the trip, day by day: 31 cells, inked where a spot was captured; tap or drag to pick a day */
-.mr-days {
-  padding: var(--mr-space-3) var(--mr-space-5) var(--mr-space-3);
-  border-bottom: var(--mr-hairline) solid var(--mr-rule);
-}
-.mr-days__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mr-space-3); min-height: 24px; }
-.mr-days__head .mr-label { color: var(--mr-ink-2); }
-.mr-days__head .mr-linkbtn { min-height: 24px; font-size: var(--mr-text-xs); }
-.mr-days__strip {
-  display: grid;
-  grid-template-columns: repeat(31, minmax(0, 1fr));
-  align-items: end;
-  height: 32px;
-  margin-top: var(--mr-space-1);
-  border-bottom: var(--mr-hairline) solid var(--mr-rule-strong);
-  cursor: pointer;
-  touch-action: none;
-  user-select: none;
-}
-.mr-days__strip:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 3px; }
-/* one column per day: a tick on the baseline, a taller ink stroke where spots were captured */
-.mr-days__strip i {
-  position: relative;
-  height: 100%;
-}
-.mr-days__strip i::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 1px;
-  height: 5px;
-  background: var(--mr-rule-strong);
-  opacity: 0.45;
-}
-.mr-days__strip i[data-first]::after { height: 10px; opacity: 0.8; }
-.mr-days__strip i[data-on]::after { width: 3px; margin-left: -1px; height: calc(8px + 4px * var(--n, 1)); max-height: 26px; background: var(--mr-ink); opacity: 1; }
-.mr-days__strip i[data-sel]::after { background: var(--mr-accent); opacity: 1; height: 26px; width: 3px; margin-left: -1px; }
-.mr-days__ends { display: flex; justify-content: space-between; margin-top: 2px; }
-.mr-days__ends .mr-label { color: var(--mr-ink-3); }
 .mr-state-body { color: var(--mr-ink-2); }
 
 @media (max-width: 819px) {
@@ -800,11 +856,18 @@ html.mr-active ::-webkit-scrollbar-thumb {
   .mr-row-cut[data-kind='marker'] img { max-width: 60px; max-height: 48px; }
   .mr-row-cut[data-kind='print'] img { width: 40px; height: 46px; }
   .mr-row-title { font-size: 1.15rem; }
-  .mr-days { padding: var(--mr-space-2) var(--mr-gutter); }
-  .mr-days__strip { height: var(--mr-tap); }
   .mr-side-title { font-size: 1.5rem; }
   .mr-list-group-title,
   .mr-state { padding-left: var(--mr-gutter); padding-right: var(--mr-gutter); }
+  /* every row in the list is a full-width target of at least 48 px on a phone */
+  .mr-row { min-height: var(--mr-tap); }
+  .mr-coll-head { padding: var(--mr-space-1) var(--mr-gutter) var(--mr-space-1) var(--mr-space-2); }
+  .mr-coll-toggle { width: 44px; height: 44px; }
+  .mr-coll-name { min-height: 44px; }
+  .mr-coll-edit { min-height: 44px; }
+  .mr-coll-form,
+  .mr-coll-new { padding-left: var(--mr-gutter); padding-right: var(--mr-gutter); }
+  .mr-coll-empty { padding-left: var(--mr-gutter); }
 }
 
 /* ── the map itself ───────────────────────────────────────────────────────── */
@@ -822,18 +885,16 @@ html.mr-active ::-webkit-scrollbar-thumb {
 .mr-atlas-svg:active { cursor: grabbing; }
 .mr-atlas-water { fill: var(--mr-map-water); }
 .mr-atlas-land { fill: var(--mr-map-land); }
-.mr-atlas-canada,
-.mr-atlas-mexico,
+/* the world's land and the home view's finer coast are fills only: their shared box edge must not draw */
 .mr-atlas-borders,
-.mr-atlas-coast {
+.mr-atlas-states {
+  fill: none;
   vector-effect: non-scaling-stroke;
   stroke-width: 0.75px;
   stroke-linejoin: round;
 }
-.mr-atlas-canada { fill: var(--mr-map-canada); stroke: var(--mr-map-coast); }
-.mr-atlas-mexico { fill: var(--mr-map-mexico); stroke: var(--mr-map-border); }
-.mr-atlas-borders { fill: none; stroke: var(--mr-map-border); }
-.mr-atlas-coast { fill: none; stroke: var(--mr-map-coast); }
+.mr-atlas-borders { stroke: var(--mr-map-coast); }
+.mr-atlas-states { stroke: var(--mr-map-border); }
 .mr-atlas-places { pointer-events: none; }
 .mr-atlas-places circle { fill: var(--mr-map-label); }
 .mr-atlas-places text {
@@ -1567,6 +1628,8 @@ html:where([data-mr-theme='dark']) .mr-mbx .mapboxgl-ctrl-attrib-button { filter
   border-top: var(--mr-hairline) solid var(--mr-sheet-line);
 }
 .mr-place__planlinks { display: flex; justify-content: flex-end; }
+.mr-place__collection { max-width: 420px; padding-top: var(--mr-space-4); border-top: var(--mr-hairline) solid var(--mr-rule); }
+.mr-edit-sec[data-mr='edit-collection'] .mr-field { max-width: 420px; }
 .mr-place__noplan { margin: 0; color: var(--mr-ink-2); font-size: var(--mr-text-s); }
 
 /* the plan: rooms on squared paper, inked once captured */

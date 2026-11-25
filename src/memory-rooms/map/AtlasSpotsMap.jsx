@@ -1,10 +1,11 @@
 /* The /memories map on the SVG atlas (the fallback when Mapbox can't run, see
    SpotsMap.jsx): spots as status dots, clusters that zoom in when clicked,
    zoom controls, and the preview card beside the selected spot (docked at the
-   bottom of the screen on a phone). Opens framed on the spots. Layout-free: the
+   bottom of the screen on a phone). Opens on the home view (start.js, as the globe)
+   and flies to a collection's spots when the page asks (`focus`). Layout-free: the
    page decides how big it is. */
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { COPY } from '../copy.js';
 import AtlasMap from './AtlasMap.jsx';
 import { anchorOf, cardPosition } from './cardPlace.js';
@@ -15,6 +16,7 @@ import { atlasZoom, avoidOf, markerPx, withMarkers } from './markers.js';
 import { ClusterCard, SpotCard } from './SpotCard.jsx';
 import { CLUSTER_PX, clusterPoints, worldBox } from './clusters.js';
 import { onMap, project } from './geo.js';
+import { START } from './start.js';
 import { useMapViewport } from './useMapViewport.js';
 import { HOME, baseScale, fitBox, transformOf } from './zoom.js';
 import FlyoverOverlay from './flyover/FlyoverOverlay.jsx';
@@ -23,9 +25,9 @@ import { atlasRoutePath, useFlyoverAtlas } from './flyover/useFlyoverAtlas.js';
 
 const NO_LEGS = [];
 
-/* Opening view: the spots, never closer than about a region. Padding keeps markers
+/* A collection's spots are framed no closer than a few streets. Padding keeps markers
    clear of the controls (a row along the bottom on a phone, a stack bottom-right). */
-const AUTO_MAX_K = 5;
+const FOCUS_MAX_K = 8;
 const PAD_COMPACT = { t: 28, r: 24, b: 76, l: 24 };
 const PAD_WIDE = { t: 56, r: 104, b: 56, l: 56 };
 const DOT_R = { compact: 7, wide: 5.5 };
@@ -39,7 +41,7 @@ function minDistance(members, from) {
   return d;
 }
 
-export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, engineReason = null, fly = NO_FLY, flyStops = NO_LEGS, flyLegs = NO_LEGS, liftId = null, children }) {
+export default function AtlasSpotsMap({ spots, selectedId, onSelect, compact = false, engineReason = null, fly = NO_FLY, flyStops = NO_LEGS, flyLegs = NO_LEGS, liftId = null, focus = null, children }) {
   const [clusterIds, setClusterIds] = useState(null);
   const [cardEl, setCardEl] = useState(null);
   const [cardH, setCardH] = useState(320);
@@ -56,11 +58,7 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
     [spots],
   );
 
-  const auto = useCallback(
-    (sz) => (points.length ? fitBox(worldBox(points), sz, { pad: compact ? PAD_COMPACT : PAD_WIDE, maxK: AUTO_MAX_K }) : HOME),
-    [points, compact],
-  );
-  const vp = useMapViewport({ auto });
+  const vp = useMapViewport({ auto: HOME });
   const { t, size } = vp;
   const maxK = vp.maxK;
   // "Play the trip" on the atlas: pan/zoom from stop to stop, the route as an SVG path (no 3D).
@@ -121,6 +119,20 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
   useEffect(() => {
     if (selectedId) reveal(selectedId);
   }, [selectedId]);
+
+  // The page asks for a collection's spots (its header was picked): fly there.
+  const goFocus = useEffectEvent(() => {
+    const sz = vp.size;
+    if (!focus?.bounds || !sz?.w || !sz?.h) return;
+    const [[w, s], [e, n]] = focus.bounds;
+    const [x0, y0] = project(n, w);
+    const [x1, y1] = project(s, e);
+    vp.animateTo(fitBox({ x0, y0, x1, y1 }, sz, { pad: compact ? PAD_COMPACT : PAD_WIDE, maxK: FOCUS_MAX_K }));
+  });
+  const sized = Boolean(size?.w && size?.h);
+  useEffect(() => {
+    if (focus?.key) goFocus();
+  }, [focus?.key, sized]);
 
   useEffect(() => {
     if (size?.w && size?.h && pendingReveal.current) {
@@ -193,13 +205,7 @@ export default function AtlasSpotsMap({ spots, selectedId, onSelect, elsewhereCo
         />
       </AtlasMap>
 
-      <MapControls onIn={() => vp.zoomBy(2)} onOut={() => vp.zoomBy(0.5)} onReset={() => vp.reset()} canIn={vp.view.k < maxK - 0.01} canReset={!vp.isAuto} />
-
-      {elsewhereCount > 0 && (
-        <button type="button" className="mr-map-note" onClick={onElsewhere} data-mr="elsewhere-note">
-          {COPY.map.elsewhere(elsewhereCount)}
-        </button>
-      )}
+      <MapControls onIn={() => vp.zoomBy(2)} onOut={() => vp.zoomBy(0.5)} onReset={() => vp.reset()} canIn={vp.view.k < maxK - 0.01} canReset={!vp.isAuto} resetLabel={COPY.map.zoomHome(START.name)} />
 
       {children}
       {flyOn && <FlyoverOverlay fly={fly} engine="atlas" />}

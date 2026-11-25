@@ -320,3 +320,78 @@ Brief: `Documents/temp/prompt-dumping/memory-rooms-next-level.md`; spec: the vau
    tall as the ceiling allows at its low end) and lets an inside wall (`h`) close the wedge under a raking ceiling
    without poking through the roof at the low end. Builder only: `wall.height` already existed, no contract change,
    no Worker deploy.
+
+### Collections, the map for any place, the phone list (2026-11-25)
+
+Brief: `Documents/memory-rooms/prompt-dumping/freeform-capture-prompt.md` (Part 1).
+
+210. **The map opens on Perth, one constant for both engines** (`map/start.js` `START = { name, bounds }`). The
+   Mapbox globe fits `START.bounds` on load and on "Back to Perth" (it no longer fits the spots or the USA trip
+   area); the SVG atlas makes the same box its k = 1 view (`geo.js` `WORLD`). "n elsewhere" is gone: there is no
+   "trip area" any more, and a collection's header does what it did (fly to some spots).
+211. **The SVG atlas is a world map now** (`build-atlas.mjs` rewritten): Web Mercator with the world 1000 units wide,
+   the same projection as the globe at a zoom, so `atlasZoom(s) = log2(1000 s / 512)` is exact (markers keep their
+   sizes) and START works unchanged. `atlas.json` = two topologies: `world` (Natural Earth 50m land without
+   Antarctica's interior, the country borders and the lower 48's state borders as meshes: lines only, no polygons)
+   and `detail` (the 10m coast of south-west WA, quantized over its own box so it keeps ~7 m steps: the home view is
+   ~1/400 of the world). 388 KB (was 200 KB for North America). polygon-clipping writes counter-clockwise rings,
+   which d3-geo reads as "everything except": `geo.js` flips them (as the old atlas did). The coast is still
+   1:10M at metro zoom: fine for a fallback with no tiles anyway.
+212. **Trip-only wording and features went** (the map is for any place now): the day-of-the-trip slider
+   (`map/DayStrip.jsx`) is deleted; "Day n of the trip" on the spot page is gone (its date row was already there,
+   now `data-mr="spot-date"`); `lib/trip.js` → `lib/sheets.js` (spot dates + sheet numbers; the trip calendar
+   `TRIP` / `tripDays` / `tripDayOf` deleted); the index's dates gained the year; "after the trip" → "later";
+   "Somewhere on the trip" → "No place given"; the tagline is "Places worth remembering, rebuilt room by room."
+   **Play** now plays the picked collection ("Play Joe's House"), in capture order, and is hidden while none is
+   picked; `?play=1` needs `?c=<collectionId>`. The PixelLab walk and the offline gazetteer (`map/places.js`, mostly
+   US towns + Perth) were left as they are.
+213. **Collections, not groups** (CONTRACTS.md 7, `supabase/memory_collections.sql`): `group` was taken (`frameGroup`,
+   `/memories/group/:group`). The UI says "Collection" (the group page says "Building" / "Whole building", so no
+   clash). A collection = `{ id, name, createdAt, updatedAt, sort?, bounds? }`; a spot and a place each have at most
+   one (`collectionId`); a room of a place shows under its place's collection unless it sets its own. No foreign
+   keys (a capture must never fail because its collection's row is late, as with buildings, DECISIONS 108); a
+   DELETE ungroups the members first, then removes the row. The SQL is additive (one table, two nullable columns)
+   and NOT run: until it is, the Supabase store answers `needs-sql` for the collection routes and for a write that
+   carries a `collectionId`, and never sends `collection_id` for a row that has none (spots save as ever).
+214. **A new collection made during capture goes through the outbox** (kind `collection`, queued ahead of the
+   capture that names it): capture must work with no signal. The edit page and the list's Edit / New collection
+   talk to the server directly (they need signal anyway). The pickers read the server's list + the outbox's +
+   a localStorage copy (`mr:collections`). Capture starts in the collection used last on this phone
+   (`mr:lastCollection`); a deleted one falls back to none once the list loads. A room captured from a place's
+   checklist has no picker (it goes with its place); the edit page offers "Same as its place" instead of "None".
+   The place page moves a place through the outbox too (`savePlaceCollection` → a building PATCH).
+215. **The list is grouped by collection** (`map/SpotList.jsx`): one ruled section per collection (sorted by
+   `sort`, then oldest first), its name in the serif and "n places · n spots" in mono, places first then spots;
+   "Ungrouped" last; empty collections still show (so a new one is visible). The chevron collapses a section
+   (remembered per viewer in localStorage `mr:collapsed`, try/catch); the name picks the collection (the map flies
+   to its `bounds`, else its spots + places, and Play appears); "Edit" renames / deletes it inline (the delete asks
+   once, inline, and says its members stay); "+ New collection" at the bottom. The selected collection is a
+   labelled dot ("On the map"), not a pill. The section holding the selected spot opens while it is selected.
+   Section headers are sticky inside the list.
+216. **The phone bug: places below the first could not be reached** (reproduced at 390 × 844 with touch on the old
+   code, `memory-rooms-work/_dev/repro-list-tap.mjs`): `PlaceIndex` was a SIBLING after `.mr-list`, the side
+   column's only scroll container, in a fixed-height flex column with no overflow, under `.mr[data-layout=fixed]
+   { overflow: hidden }`. The places block kept its full height and was pushed past the bottom of the screen,
+   clipped, with nothing to scroll it back (the 4th place sat at y 856 of 844; `elementFromPoint` found nothing
+   there and a finger swipe scrolled nothing); only the top of the first place showed above the fold. Fix: places
+   live INSIDE the one scroll container (in their collection's section); `.mr-list` has `touch-action: pan-y`;
+   every row ≥ 44 px (48 with `--mr-tap`) on a phone. `page-check-list.mjs` swipes the list with a finger (short
+   slow swipes: a fling overshoots under the sticky section header) until the LAST place is fully in view and
+   hit-tests, taps it, and checks it opened (3 injected places; nothing written), plus that the map still pans.
+
+217. **Walking in is first person only, behind ONE flag** (`walk/flags.js` `THIRD_PERSON_ENABLED = false`; James
+   doesn't like the pixel character and may bring third person back). With it off: the spot walk and the place walk
+   start in first person (`view = 'first'`, yaw = your heading, so you look into the room as you arrive), V and the
+   First / Third button are gone (`toggleView()` returns at once), leaving a photo always comes back to first person,
+   and the keys line drops "1 2 3 wave, jump, sit · V first person" (`COPY.walk.keysThird` keeps it for later).
+   Emotes: you can't see your own wave / jump / floor-sit, but the others can, so their buttons show only while
+   someone else is in the room (the 1 2 3 keys still work, harmlessly); sitting on a seat stays (it drops your eye
+   to seat height, which you do see). Every line of the third-person code stays: flip the flag and it all comes back.
+   walk-check reads the flag: off, it checks the first-person start, that V / the button / `toggleView()` / a photo
+   never lead to third person, and runs the third-person sweeps only when the flag is on.
+218. **Walkers are 1.55 m, the first-person eye 1.45 m** (`walk/scale.js`, one place for the sprites, the camera
+   and the checks). The PixelLab travellers are chibi (a head a third of the body, 0.55 m wide at 1.75 m), so at
+   1.75 m feet-to-crown they read as giants beside the example bedroom's 2.04 m door; 1.35 reads as a child; at
+   1.55 the body is an adult's width and the crown is three quarters up the door (screenshots:
+   `memory-rooms-work/_dev/sprite-size.mjs`, first person, Justin beside the door). The eye sits 10 cm under the
+   sprite's crown (it was 1.58, above a 1.55 m head), seated 1.0 m (was 1.1).

@@ -1,7 +1,7 @@
 /* The flyover on the SVG atlas (the fallback map): the simpler version. The atlas pans and
    zooms to each stop (no 3D, no orbit), the route is an SVG path in its overlay, and a stop
-   off the atlas (it only draws North America, so the Perth spots) shows its caption over the
-   whole trip. Same state machine as the globe (useFlyover.js), same controls. */
+   off the atlas (past 80° of latitude) shows its caption over the whole route. Same state
+   machine as the globe (useFlyover.js), same controls. */
 
 import { useEffect, useEffectEvent } from 'react';
 import { worldBox } from '../clusters.js';
@@ -10,7 +10,7 @@ import { viewTween } from '../zoom.js';
 import { FADE_MS } from './useFlyover.js';
 import { routeCoords } from './plan.js';
 
-const STOP_K = 6;
+const STOP_K = 2; // a suburb (k = 1 is the home view, a city)
 const PAD = { compact: { t: 40, r: 32, b: 200, l: 32 }, wide: { t: 64, r: 104, b: 140, l: 64 } };
 
 function worldPoints(stops) {
@@ -87,10 +87,14 @@ export function atlasRoutePath(legs, index, phase, t) {
   let d = '';
   for (const line of routeCoords(legs, upTo, 1)) {
     let pen = false;
+    let prev = null;
     for (const [lng, lat] of line) {
       const wrapped = ((lng + 540) % 360) - 180;
-      // the atlas only draws North America: a leg leaves the map where it leaves that
+      // a leg leaves the map where it crosses 80° of latitude, and lifts the pen where it crosses the
+      // antimeridian (the world's left and right edges are the same meridian)
       const p = onMap({ lat, lng: wrapped }) ? project(lat, wrapped) : null;
+      if (prev !== null && Math.abs(wrapped - prev) > 180) pen = false;
+      prev = wrapped;
       if (!p) {
         pen = false;
         continue;

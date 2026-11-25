@@ -14,6 +14,8 @@ import StepLocation from '../capture/StepLocation.jsx';
 import StepMemory from '../capture/StepMemory.jsx';
 import StepPhotos from '../capture/StepPhotos.jsx';
 import { MIN_PHOTOS, useDraft } from '../capture/useDraft.js';
+import CollectionPicker from '../capture/CollectionPicker.jsx';
+import { createCollectionQueued, useCollections } from '../lib/collections.js';
 import { usePhotoQueue } from '../capture/usePhotoQueue.js';
 import { useShell } from '../shell/ShellContext.js';
 
@@ -29,6 +31,13 @@ export default function CapturePage() {
   const [saveError, setSaveError] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const thumbUrls = useRef([]); // object URLs for the Saved screen's thumbnails
+  const { collections, status: collectionsStatus } = useCollections();
+
+  // the collection used last may have been deleted since: once the list is known, fall back to none
+  useEffect(() => {
+    if (!draft.loaded || !draft.collectionId || collectionsStatus !== 'ok') return;
+    if (!collections.some((x) => x.id === draft.collectionId)) d.set({ collectionId: null });
+  }, [draft.loaded, draft.collectionId, collections, collectionsStatus, d]);
 
   // A room of a whole place (?building=&room=&name=&of=): the place's checklist sends the room in.
   // It fills a fresh draft only, so a draft in progress is never overwritten.
@@ -142,6 +151,15 @@ export default function CapturePage() {
             onTitle={(title) => d.set({ title })}
             onSubmit={() => (draft.kind === 'place' ? toPlace() : valid[0] && go(1))}
           />
+          {!draft.buildingId && draft.kind !== 'place' && (
+            <CollectionPicker
+              value={draft.collectionId}
+              collections={collections}
+              onChange={(collectionId) => d.set({ collectionId })}
+              onCreate={createCollectionQueued}
+              hint={c.collectionHint}
+            />
+          )}
           {dirty && (
             <div className="mr-startover">
               <button

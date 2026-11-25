@@ -18,6 +18,8 @@ import { readWho } from '../lib/storage.js';
 import { useOnline } from '../lib/useOnline.js';
 import { paths } from '../routes.js';
 import EditPlace from './edit/EditPlace.jsx';
+import CollectionPicker from '../capture/CollectionPicker.jsx';
+import { createCollectionNow, useCollections } from '../lib/collections.js';
 import { clearDraft, readDraft, writeDraft } from './edit/draft.js';
 import { baseOf, fieldErrors, formOf, patchOf, presetOf, rebase, sameDetails, withDay } from './edit/form.js';
 import PageMessage from './spot/PageMessage.jsx';
@@ -109,6 +111,7 @@ function EditForm({ spotId, spot }) {
   const [leaving, setLeaving] = useState(false);
   const [placeOpen, setPlaceOpen] = useState(false);
   const [done, setDone] = useState(false); // saved or discarded: stop keeping a draft
+  const { collections } = useCollections();
 
   const patch = useMemo(() => patchOf(base, form), [base, form]);
   const dirty = Object.keys(patch).length > 0;
@@ -335,6 +338,18 @@ function EditForm({ spotId, spot }) {
               </div>
             </fieldset>
             <FieldError name="by" text={errors.by} />
+          </section>
+
+          <section className="mr-edit-sec" data-mr="edit-collection">
+            <CollectionPicker
+              value={form.collectionId}
+              collections={collections}
+              onChange={(id) => set('collectionId', id, 'collection')}
+              onCreate={createCollectionNow}
+              noneLabel={base.buildingId ? COPY.collections.withPlace : COPY.collections.none}
+              hint={base.buildingId ? COPY.collections.roomHint : null}
+            />
+            <FieldError name="collection" text={errors.collection} />
           </section>
 
           <section className="mr-edit-sec" data-mr="edit-kind" data-locked={locked ? '' : undefined}>

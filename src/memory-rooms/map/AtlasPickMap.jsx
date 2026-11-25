@@ -1,7 +1,7 @@
 /* The location picker on the SVG atlas (the fallback when Mapbox can't run, e.g.
    offline at a spot; see PickMap.jsx), capture step 4: tap to drop a pin, drag the pin to
    adjust it (also after GPS), and a faint accuracy ring around a GPS fix.
-   Opens on the current location, else near the last saved spot, else the trip area;
+   Opens on the current location, else near the last saved spot, else the home view (start.js);
    follows GPS fixes and chosen places. Zooms closer than the spots map (pins need it). */
 
 import { useEffect, useEffectEvent, useState } from 'react';
@@ -12,9 +12,9 @@ import { invert, onMap, project } from './geo.js';
 import { useMapViewport } from './useMapViewport.js';
 import { HOME } from './zoom.js';
 
-const PICK_MAX_K = 64;
-const CLOSE_K = 24; // a town and its surroundings
-const NEAR_K = 8; // a region around the last spot
+const PICK_MAX_K = 64; // a street (k = 1 is the home view, a city)
+const CLOSE_K = 4; // a town and its surroundings
+const NEAR_K = 0.15; // a region around the last spot
 
 function viewAt(ll, k) {
   if (!ll || !onMap(ll)) return null;

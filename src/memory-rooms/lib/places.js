@@ -73,7 +73,9 @@ async function readPlace(id) {
     // offline: the rooms this phone last saw captured still count (never "to capture" again)
     spots = Object.entries(local?.rooms || {}).map(([roomId, spotId]) => ({ id: spotId, roomId, buildingId: id }));
   }
-  const place = server || pending.create || local?.building || null;
+  let place = server || pending.create || local?.building || null;
+  // a collection change still waiting in the outbox shows at once
+  if (place && pending.patch && 'collectionId' in pending.patch) place = { ...place, collectionId: pending.patch.collectionId };
   // the sketch: an invalid one kept on this phone > this phone's waiting edit on top of the server's >
   // the server's > the last one this phone saw
   let sketch;
@@ -161,6 +163,11 @@ export function usePlaces() {
     };
   }, [completed]);
   return places;
+}
+
+/** Move a place to another collection (or none): through the outbox, so it works with no signal. */
+export async function savePlaceCollection(id, collectionId, title = '') {
+  await addBuildingPatch(id, { collectionId: collectionId || null }, title);
 }
 
 /** A place's name for a room's spot page ("Part of …"): the server's, else this phone's, else null. */

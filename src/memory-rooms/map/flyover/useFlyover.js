@@ -1,7 +1,7 @@
-/* "Play the trip": the flyover's state machine (engine-free; each map drives its own
+/* "Play" a collection: the flyover's state machine (engine-free; each map drives its own
    camera from it: mapbox/useFlyoverMapbox.js, the atlas in useFlyoverAtlas.js).
 
-     const fly = useFlyover(stops, { autoplay, onExit });
+     const fly = useFlyover(stops, { autoplay, onExit, title });   // title: what's played (the end card)
      fly.start()  fly.exit()  fly.toggle()  fly.pause()  fly.next()  fly.prev()  fly.toggleSpeed()
      fly.arrived(index)   // the engine says the camera reached stops[index]
 
@@ -28,7 +28,7 @@ const noop = () => {};
 export const NO_FLY = { ...IDLE, count: 0, stop: null, reduced: false, start: noop, exit: noop, toggle: noop, pause: noop, next: noop, prev: noop, toggleSpeed: noop, arrived: noop };
 const RUNNING = { active: true, index: 0, phase: 'flying', playing: true };
 
-export function useFlyover(stops, { autoplay = false, onExit } = {}) {
+export function useFlyover(stops, { autoplay = false, onExit, title = '' } = {}) {
   const [s, setS] = useState(() => (autoplay ? { ...IDLE, ...RUNNING } : IDLE));
   const [reduced] = useState(reducedMotion);
   const count = stops.length;
@@ -122,5 +122,5 @@ export function useFlyover(stops, { autoplay = false, onExit } = {}) {
   }, [s.active, count]);
 
   const stop = s.active && count ? stops[index] : null;
-  return { ...s, index, count, stop, reduced, start, exit, toggle, pause, next, prev, toggleSpeed, arrived };
+  return { ...s, index, count, stop, reduced, title, start, exit, toggle, pause, next, prev, toggleSpeed, arrived };
 }

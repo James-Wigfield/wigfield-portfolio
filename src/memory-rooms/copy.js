@@ -1,11 +1,12 @@
 /* ALL user-facing text for Memory Rooms lives here (one file, so a tone pass
    touches nothing else). Components import COPY and never hard-code strings.
-   Sections: app, gate, map, list, capture, outbox, spot, edit, viewer, fly, walk, ar, group. */
+   Sections: app, gate, map, list, collections, capture, freeform, layout, outbox, spot, edit, viewer, fly, walk, ar,
+   group. */
 
 export const COPY = {
   app: {
     name: 'Memory Rooms',
-    tagline: 'Places from the trip, rebuilt room by room.',
+    tagline: 'Places worth remembering, rebuilt room by room.',
     people: { james: 'James', justin: 'Justin' },
     initials: { james: 'J', justin: 'Ju' },
     status: { captured: 'Captured', modelling: 'Modelling', rendered: 'Rendered' },
@@ -27,7 +28,7 @@ export const COPY = {
   // ── gate + who-picker (capture/map agent) ─────────────────────────────────
   gate: {
     eyebrow: 'Memory Rooms',
-    title: 'Places from the trip, rebuilt room by room.',
+    title: 'Places worth remembering, rebuilt room by room.',
     passwordLabel: 'Password',
     submit: 'Enter',
     checking: 'Checking…',
@@ -47,15 +48,14 @@ export const COPY = {
     title: 'Spots',
     count: (n) => `${n} ${n === 1 ? 'spot' : 'spots'}`,
     countOf: (n, total) => `${n} of ${total}`,
-    mapLabel: 'Map of the USA and western Canada',
-    globeLabel: 'Map of the world, opening on the trip',
+    mapLabel: 'Map of the world',
+    globeLabel: (home) => `Map of the world, opening on ${home}`,
     spotsLabel: 'Spots on the map',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     zoomReset: 'Show everything',
-    zoomHome: 'Back to the trip',
+    zoomHome: (home) => `Back to ${home}`,
     northUp: 'Turn north up',
-    elsewhere: (n) => `${n} elsewhere`,
     cluster: (n) => `${n} spots, zoom in`,
     clusterHere: (n) => `${n} spots in one place`,
     open: 'Open',
@@ -75,28 +75,54 @@ export const COPY = {
   },
   list: {
     no: (n) => `No. ${String(n).padStart(3, '0')}`,
-    // the index's date: day and month of a YYYY-MM-DD (the number and the day strip carry the rest)
-    day: (ymd) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : ''),
+    // the index's date: day, month and year of a YYYY-MM-DD
+    day: (ymd) => (ymd ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : ''),
     person: 'Person',
     status: 'Status',
     all: 'All',
-    elsewhere: 'Elsewhere',
-    places: 'Whole places',
     noLocation: 'No location',
     none: 'No spots match these filters.',
     clear: 'Clear filters',
   },
 
-  // the trip, day by day (under the filters)
-  days: {
-    label: 'The trip, day by day',
-    slider: 'Day of the trip: tap or drag to show one day',
-    all: 'Every day of the trip',
-    clear: 'All days',
-    short: (d) => d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' }),
-    selected: (n, d, count) =>
-      `Day ${n} · ${d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })} · ${count === 0 ? 'nothing yet' : `${count} ${count === 1 ? 'spot' : 'spots'}`}`,
-    cell: (n, d, count) => `Day ${n}, ${d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' })}: ${count} ${count === 1 ? 'spot' : 'spots'}`,
+  // collections: groups of spots and whole places (the list's sections, the pickers)
+  collections: {
+    label: 'Collection',
+    none: 'None',
+    newOption: 'New collection…',
+    newLabel: 'Name of the new collection',
+    renameLabel: 'Collection name',
+    newPlaceholder: "Joe's House, USA 2026…",
+    nameNeeded: 'Give it a name.',
+    add: 'Add',
+    adding: 'Adding…',
+    save: 'Save',
+    saving: 'Saving…',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    delete: 'Delete',
+    deleteConfirm: (n) => (n ? `Delete it? Its ${n} ${n === 1 ? 'item stays' : 'items stay'}, ungrouped` : 'Delete it?'),
+    unknown: 'A new collection',
+    ungrouped: 'Ungrouped',
+    newLink: '+ New collection',
+    empty: 'Nothing in it yet.',
+    count: (places, spots) =>
+      [places ? `${places} ${places === 1 ? 'place' : 'places'}` : null, `${spots} ${spots === 1 ? 'spot' : 'spots'}`].filter(Boolean).join(' · '),
+    picked: 'On the map',
+    pickLabel: (name) => `Show ${name} on the map`,
+    unpickLabel: (name) => `Stop showing ${name}`,
+    expand: (name) => `Open ${name}`,
+    collapse: (name) => `Close ${name}`,
+    offline: "No signal, so this can't save yet.",
+    needsSql: 'The site needs its database update for collections first.',
+    saveFailed: "Couldn't save. Try again.",
+    createFailed: "Couldn't make it. Try again.",
+    conflict: 'Someone changed it meanwhile. Close this and try again.',
+    // a whole place's own page, and a room of one on the edit page
+    placeHint: 'Its rooms show under it too, unless a room has its own.',
+    withPlace: 'Same as its place',
+    roomHint: 'A room of a whole place shows with its place unless it has its own.',
+    saved: 'Saved.',
   },
 
   // ── /memories/new (capture/map agent) ─────────────────────────────────────
@@ -124,6 +150,7 @@ export const COPY = {
     },
     nameLabel: 'Name it',
     namePlaceholder: { interior: 'Hostel common room', exterior: 'Corner diner', place: 'The Brooklyn apartment', none: 'Hostel common room' },
+    collectionHint: 'Groups it on the map with others, like a trip or a house.',
     // a room sent in from a place's checklist
     roomOf: (place, room) => `A room of ${place || 'a whole place'}${room ? `: ${room}` : ''}. Its photos go to that room.`,
     backToPlace: (place) => (place ? `Back to ${place}` : 'Back to the place'),
@@ -226,6 +253,83 @@ export const COPY = {
     seeMap: 'See the map',
   },
 
+  // ── freeform capture: old photos in any order (capture/, CONTRACTS.md 8) ──────
+  freeform: {
+    toggle: "These are old photos (I can't retake them)",
+    toggleHint: 'Up to 40, in any order. No shot guide: the render works out where each was taken.',
+    steps: ['Place', 'Photos', 'Layout', 'Memory', 'Location'],
+    photosTitle: 'The old photos',
+    photosLede: "Every photo you have of it, in any order. Blurry is fine; Claude sorts out which ones help.",
+    full: 'That is the maximum of 40.',
+    trimmed: (n) => `Only 40 photos fit, so ${n} ${n === 1 ? 'was' : 'were'} left out.`,
+    need: 'Add at least one photo.',
+    count: (n) => `${n} of 40 ${n === 1 ? 'photo' : 'photos'}`,
+    captionLabel: (n) => `Caption for photo ${n} (optional)`,
+    captionPlaceholder: 'from the bed',
+    eraLabel: 'When was this? (optional)',
+    eraPlaceholder: 'lived here 2019–2021',
+    layoutTitle: 'Help Claude place your photos',
+    layoutLede: 'Optional. A rough outline of the room and where you stood for a few photos makes the rebuild closer. Skip it and Claude works it out from the photos alone; you can add it later from the spot page.',
+    skip: "Skip, let Claude work it out",
+    sketch: 'Sketch it',
+    sketched: (views, outline) => [outline ? 'Outline drawn' : null, views ? `${views} ${views === 1 ? 'photo' : 'photos'} placed` : null].filter(Boolean).join(' · ') || 'Nothing sketched yet',
+    startFromPlace: "This room's rectangle from the place's sketch is ready as a starting outline.",
+    mode: 'Old photos',
+  },
+
+  // ── the layout + viewpoint editor (capture/layout/LayoutEditor.jsx) ───────────
+  layout: {
+    modeLabel: 'What to draw',
+    modeOutline: 'Outline',
+    modeViews: 'Viewpoints',
+    undo: 'Undo',
+    redo: 'Redo',
+    fit: 'Fit',
+    stageLabel: 'The plan of the room: draw its outline and place where each photo was taken',
+    keys: 'Keyboard: the arrow keys nudge the picked corner or viewpoint (Shift for a quarter metre), R and Shift+R turn a viewpoint, Delete removes it, Ctrl+Z undoes, Escape lets go.',
+    hintStart: 'Tap to drop the corners of the room, going round it. Tap the first corner to close it. Or type its size.',
+    hintDrawing: 'Keep going round the room. Tap the first corner (the accent one) to close it.',
+    hintClosed: 'Drag a corner to move it, the + on an edge to add a corner. Tap an edge to put a door or window on it.',
+    hintFirstView: 'Drag a photo from the strip onto the plan where you stood, or tap a photo, then the plan.',
+    hintViews: 'Drag a wedge to move it, its tip to aim it (or twist two fingers). Pick one to see its photo.',
+    hintPlace: (n) => `Now tap the plan where you stood for photo ${n}.`,
+    useStart: "Start from the place's sketch",
+    sizeLabel: 'Size (optional)',
+    sizePlaceholder: 'about 4 × 3',
+    sizeApply: 'Set size',
+    sizeBad: 'Type it like "4 × 3" (metres).',
+    sizeKnown: 'Size set: the metres are real.',
+    sizeRough: 'Proportions only: type a size if you know it.',
+    edgeLabel: (len) => `This wall · ${len}`,
+    door: 'Door here',
+    window: 'Window here',
+    removeOpening: (type) => `Remove the ${type === 'window' ? 'window' : 'door'}`,
+    removeCorner: 'Remove this corner',
+    clearOutline: 'Clear the outline',
+    pickOne: 'Pick a viewpoint (or a photo below) to see it large here.',
+    noPhotos: 'No photos yet.',
+    photoAlt: (n) => `Photo ${n}`,
+    photoN: (n) => `Photo ${n}`,
+    confLabel: 'How sure',
+    conf: { exact: 'Exact', rough: 'Roughly here' },
+    facing: (yaw) => `Facing ${yaw}° (0 = down the plan)`,
+    removeView: 'Remove this viewpoint',
+    stripLabel: 'Photos: drag one onto the plan',
+    thumb: (n) => `Photo ${n}: drag it onto the plan, or tap it, then the plan`,
+    thumbPlaced: (n) => `Photo ${n}, placed: tap to pick its viewpoint`,
+    placed: 'Placed',
+    // the edit page
+    editTitle: 'Photos and layout',
+    editLede: 'Where each old photo was taken, and the rough shape of the room: hints for the next rebuild.',
+    editOpen: 'Place the photos',
+    editMakeFreeform: 'These are old photos: let me place them',
+    editSave: 'Save the layout',
+    editSaved: 'Layout saved.',
+    editDraft: "Picked up the layout you hadn't saved yet.",
+    guideNote: 'The dashed outline is the room as it was rebuilt.',
+    eraLabel: 'When was this? (optional)',
+  },
+
   // ── whole places: the place page (its room checklist on the plan) ──────────
   place: {
     label: 'A whole place',
@@ -249,7 +353,7 @@ export const COPY = {
     roomState: (name, state) => `${name}: ${{ captured: 'captured', queued: 'waiting to upload', todo: 'to capture' }[state]}`,
     stateShort: { captured: 'Captured', queued: 'Waiting to upload', todo: 'To capture' },
     stateLong: {
-      captured: 'Captured. Its 3D room comes after the trip.',
+      captured: 'Captured. Its 3D room comes later.',
       queued: 'Captured on this phone; it uploads when there is signal.',
       todo: 'Not captured yet. Take its photos with the usual shot guide.',
     },
@@ -366,7 +470,7 @@ export const COPY = {
     toUpload: (n) => `${n} to upload`,
     // an entry the server can't take yet: it stays on this phone and uploads by itself later
     held: {
-      'needs-sql': 'kept on this phone: the site needs its update for whole places first',
+      'needs-sql': 'kept on this phone: the site needs a database update first',
       'place-first': 'waits for its place to upload first',
     },
     state: {
@@ -401,11 +505,10 @@ export const COPY = {
     groupLink: 'Whole building',
     groupLabel: (name) => `See every room of ${name}`,
     loading: 'Opening the spot…',
-    meta: { by: 'By', place: 'Place', date: 'Captured', kind: 'Kind', status: 'Status', day: 'Trip', building: 'Building', partOf: 'Part of' },
+    meta: { by: 'By', place: 'Place', date: 'Captured', kind: 'Kind', status: 'Status', building: 'Building', partOf: 'Part of' },
     // the note as a pull-quote, signed by who saved it
     quote: (note) => `“${note}”`,
     quoteBy: (name) => (name ? `— ${name}` : ''),
-    tripDay: (n) => `Day ${n} of the trip`,
     // phone: the panel is a bottom sheet
     sheetMore: 'More',
     sheetLess: 'Less',
@@ -413,11 +516,11 @@ export const COPY = {
       const d = iso ? new Date(iso) : null;
       return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     },
-    noPlace: 'Somewhere on the trip',
+    noPlace: 'No place given',
     lines: {
       modelling: 'Being modelled. This is the rough layout for now.',
       captured: 'Layout drafted. The finished room comes later.',
-      noScene: 'The 3D room gets built after the trip. For now, the photos.',
+      noScene: 'The 3D room gets built later. For now, the photos.',
     },
     photos: 'Photos',
     photoCount: (n) => `${n} ${n === 1 ? 'photo' : 'photos'}`,
@@ -523,11 +626,11 @@ export const COPY = {
     camTag: (n) => `Photo ${n}`,
     thumbCaption: (n) => `Photo ${n}`,
   },
-  // ── /memories "Play the trip": the flyover (map/flyover/) ─────────────────
+  // ── /memories "Play": the flyover through a collection (map/flyover/) ──────
   fly: {
-    play: 'Play the trip',
-    playLabel: 'Play the trip: fly through every spot in the order it was captured',
-    label: 'Trip flyover',
+    play: (name) => `Play ${name}`,
+    playLabel: (name) => `Play ${name}: fly through its spots in the order they were captured`,
+    label: 'Flyover',
     pause: 'Pause',
     resume: 'Play',
     again: 'Play again',
@@ -540,7 +643,7 @@ export const COPY = {
     counter: (i, n) => `${i} / ${n}`,
     open: (title) => `Open ${title}`,
     meta: (date, who) => [date, who].filter(Boolean).join(' · '),
-    endTitle: 'The whole trip',
+    endTitle: 'The whole collection',
     endBody: (n) => `${n} ${n === 1 ? 'spot' : 'spots'}, in the order they were captured.`,
     offMap: 'Off this map',
   },
@@ -557,7 +660,7 @@ export const COPY = {
     backPlaceLabel: 'Back to the place',
     linkPlaceLabel: (title) => `Walk through ${title} as your character`,
     herePlace: (names) => `${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} walking here`,
-    noPlace: 'This place gets its 3D levels after the trip. Walking in comes with them.',
+    noPlace: 'This place gets its 3D levels once it is rendered. Walking in comes with them.',
     loadingPlace: 'Opening the place…',
     // who is on another level: "Justin is upstairs", "Justin is on the Ground floor"
     away: (list) =>
@@ -566,7 +669,7 @@ export const COPY = {
         .join(' · '),
     loading: 'Opening the room…',
     noRoomTitle: 'Nothing to walk yet.',
-    noRoom: 'This spot gets its 3D room after the trip. Walking in comes with it.',
+    noRoom: 'This spot gets its 3D room once it is rendered. Walking in comes with it.',
     error: "The room didn't load.",
     retry: 'Try again',
     live: (others) => (others.length ? `Live · ${others.join(', ')} here` : 'Live · just you'),
@@ -591,7 +694,9 @@ export const COPY = {
     chatLabel: 'Say something',
     chatPlaceholder: 'Say something (80 characters)',
     send: 'Send',
-    keys: 'WASD walk · ←/→ turn · Shift run · drag to look · E sit · 1 2 3 wave, jump, sit · V first person · Enter to talk',
+    keys: 'WASD walk · ←/→ turn · Shift run · drag to look · E sit · Enter to talk',
+    // with third person back on (walk/flags.js)
+    keysThird: 'WASD walk · ←/→ turn · Shift run · drag to look · E sit · 1 2 3 wave, jump, sit · V first person · Enter to talk',
     touch: 'Left thumb walks · drag right to look · tap the floor to walk there',
   },
 

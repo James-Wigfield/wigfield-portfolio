@@ -11,7 +11,8 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { COPY } from '../../copy.js';
 import { hasCoords } from '../geo.js';
 import MapControls from '../MapControls.jsx';
-import { TRIP_BOUNDS, toScreen, zoomForPx } from './project.js';
+import { toScreen, zoomForPx } from './project.js';
+import { START } from '../start.js';
 import { useMapbox } from './useMapbox.js';
 
 const MIN_ZOOM = 0.6;
@@ -40,7 +41,7 @@ const local = (e) => {
  * onPick({ lat, lng }) when the user taps or drags. onFail(reason): swap to the atlas.
  */
 export default function MapboxPickMap({ value, near, focusKey = 0, onPick, onFail }) {
-  const [initial] = useState(() => cameraAt(value, FIX_ZOOM) || cameraAt(near, NEAR_ZOOM) || { bounds: TRIP_BOUNDS, padding: 16 });
+  const [initial] = useState(() => cameraAt(value, FIX_ZOOM) || cameraAt(near, NEAR_ZOOM) || { bounds: START.bounds, padding: 16 });
   const { setContainer, map, size, option } = useMapbox({ camera: initial, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, timeout: 8000 }, onFail);
   const [auto, setAuto] = useState(true);
   const [drag, setDrag] = useState(null);

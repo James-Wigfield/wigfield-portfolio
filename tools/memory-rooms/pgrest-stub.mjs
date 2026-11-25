@@ -18,13 +18,19 @@
    Buildings (supabase/memory_buildings.sql) are in by default. PGREST_NO_BUILDINGS=1 plays a
    project where that SQL hasn't run yet: no building tables, and memory_spots has no
    building_id / room_id (sending either is PostgREST error PGRST204), so api-check can prove spots
-   still save on it. */
+   still save on it.
+
+   Collections (supabase/memory_collections.sql) are in by default too: the memory_collections table, PATCH
+   (update with eq filters, rows back when asked) and DELETE. PGREST_NO_COLLECTIONS=1 plays a project where that
+   SQL hasn't run: no memory_collections table, and sending collection_id is PGRST204. */
 
 import http from 'node:http';
 
 const PORT = Number(process.env.PGREST_PORT || 8797);
 const NO_BUILDINGS = process.env.PGREST_NO_BUILDINGS === '1';
+const NO_COLLECTIONS = NO_BUILDINGS || process.env.PGREST_NO_COLLECTIONS === '1';
 const tables = NO_BUILDINGS ? { memory_spots: [], memory_media: [] } : { memory_spots: [], memory_media: [], memory_buildings: [], memory_building_media: [] };
+if (!NO_COLLECTIONS) tables.memory_collections = [];
 const now = () => new Date().toISOString();
 
 const DEFAULTS = {
@@ -32,7 +38,10 @@ const DEFAULTS = {
   memory_media: () => ({ created_at: now(), sort: 0, width: null, height: null, bytes: null, content_type: null }),
   memory_buildings: () => ({ created_at: now(), updated_at: now(), status: 'captured', plan_version: 0, captured_at: now(), note: null, lat: null, lng: null, loc_accuracy_m: null, loc_source: null, place_label: null, sketch: null, plan: null, trip_stop_id: null, deleted_at: null }),
   memory_building_media: () => ({ created_at: now(), sort: 0, width: null, height: null, bytes: null, content_type: null }),
+  memory_collections: () => ({ created_at: now(), updated_at: now(), sort: null, bounds: null }),
 };
+// collection_id exists on these once memory_collections.sql has run
+const COLLECTION_COLUMN = new Set(['memory_spots', 'memory_buildings']);
 const CHECKS = {
   memory_spots: (r) =>
     (!['james', 'justin'].includes(r.created_by) && 'memory_spots_created_by_check') ||
@@ -50,7 +59,9 @@ const CHECKS = {
     (!r.title && 'title not null') ||
     null,
   memory_building_media: (r) => (!['plan', 'photo', 'thumb', 'model', 'render', 'compare'].includes(r.type) && 'memory_building_media_type_check') || null,
+  memory_collections: (r) => (!(typeof r.name === 'string' && r.name.trim().length >= 1 && r.name.trim().length <= 60) && 'memory_collections_name_check') || null,
 };
+const noColumn = (res, table) => pgError(res, 400, 'PGRST204', `Could not find the 'collection_id' column of '${table}' in the schema cache`);
 
 function pgError(res, status, code, message) {
   res.writeHead(status, { 'content-type': 'application/json' });
@@ -81,15 +92,45 @@ http
     const table = m[1];
     const rows = tables[table];
 
-    if (req.method === 'GET') {
+    const matching = () => {
       let out = rows;
       for (const [k, v] of url.searchParams) {
-        if (k === 'select' || k === 'order' || k === 'limit') continue;
+        if (k === 'select' || k === 'order' || k === 'limit' || k === 'on_conflict') continue;
         const f = /^eq\.(.*)$/.exec(v);
         if (f) out = out.filter((r) => String(r[k]) === f[1]);
       }
+      return out;
+    };
+    const filtersCollection = () => [...url.searchParams.keys()].includes('collection_id');
+    const wantsRows = /return=representation/.test(String(req.headers.prefer || ''));
+
+    if (req.method === 'GET') {
+      if (NO_COLLECTIONS && COLLECTION_COLUMN.has(table) && filtersCollection()) return pgError(res, 400, '42703', 'column collection_id does not exist');
       res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify(out));
+      return res.end(JSON.stringify(matching()));
+    }
+
+    if (req.method === 'PATCH') {
+      const body = await readBody(req);
+      if (!body) return pgError(res, 400, 'PGRST102', 'Empty or invalid json');
+      if (NO_COLLECTIONS && COLLECTION_COLUMN.has(table) && ('collection_id' in body || filtersCollection())) return noColumn(res, table);
+      const hit = matching();
+      for (const r of hit) {
+        const next = { ...r, ...body };
+        if (table === 'memory_spots' || table === 'memory_buildings' || table === 'memory_collections') next.updated_at = now(); // trigger
+        const bad = CHECKS[table](next);
+        if (bad) return pgError(res, 400, '23514', `new row violates check constraint "${bad}"`);
+        Object.assign(r, next);
+      }
+      res.writeHead(wantsRows ? 200 : 204, { 'content-type': 'application/json' });
+      return res.end(wantsRows ? JSON.stringify(hit) : undefined);
+    }
+
+    if (req.method === 'DELETE') {
+      const hit = new Set(matching());
+      tables[table] = rows.filter((r) => !hit.has(r));
+      res.writeHead(wantsRows ? 200 : 204, { 'content-type': 'application/json' });
+      return res.end(wantsRows ? JSON.stringify([...hit]) : undefined);
     }
 
     if (req.method === 'POST') {
@@ -98,6 +139,7 @@ http
       const conflict = url.searchParams.get('on_conflict');
       const merge = /resolution=merge-duplicates/.test(String(req.headers.prefer || ''));
       for (const input of Array.isArray(body) ? body : [body]) {
+        if (NO_COLLECTIONS && COLLECTION_COLUMN.has(table) && 'collection_id' in input) return noColumn(res, table);
         if (NO_BUILDINGS && table === 'memory_spots' && ('building_id' in input || 'room_id' in input)) {
           return pgError(res, 400, 'PGRST204', `Could not find the '${'building_id' in input ? 'building_id' : 'room_id'}' column of 'memory_spots' in the schema cache`);
         }
@@ -106,7 +148,7 @@ http
         }
         const existing = conflict && merge ? rows.find((r) => String(r[conflict]) === String(input[conflict])) : null;
         const next = existing ? { ...existing, ...input } : { ...DEFAULTS[table](), ...input };
-        if (existing && (table === 'memory_spots' || table === 'memory_buildings')) next.updated_at = now(); // trigger
+        if (existing && (table === 'memory_spots' || table === 'memory_buildings' || table === 'memory_collections')) next.updated_at = now(); // trigger
         const bad = CHECKS[table](next);
         if (bad) return pgError(res, 400, '23514', `new row violates check constraint "${bad}"`);
         if (table === 'memory_media') {

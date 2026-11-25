@@ -4,7 +4,8 @@
   position: absolute;
   z-index: 2;
   top: var(--mr-space-4);
-  right: var(--mr-space-4); /* the top-left corner is the globe's "n elsewhere" note */
+  right: var(--mr-space-4);
+  max-width: calc(100% - 2 * var(--mr-space-4));
   display: inline-flex;
   align-items: center;
   gap: var(--mr-space-2);
@@ -17,7 +18,8 @@
   font: 500 var(--mr-text-s) / 1 var(--mr-font-sans);
   cursor: pointer;
 }
-.mr-fly-play svg { width: 16px; height: 16px; }
+.mr-fly-play svg { flex: none; width: 16px; height: 16px; }
+.mr-fly-play__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mr-fly-play:hover { background: var(--mr-surface-2); }
 .mr-fly-play:disabled { opacity: 0.45; cursor: default; }
 .mr-fly-play:focus-visible { outline: 2px solid var(--mr-accent); outline-offset: 2px; }

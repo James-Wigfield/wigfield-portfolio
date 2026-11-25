@@ -15,6 +15,8 @@ import { pad2 } from '../lib/format.js';
 import { processPhoto } from '../lib/images.js';
 import { get, getByPrefix, put, write } from '../lib/idb.js';
 import { addBuilding } from '../lib/outbox.js';
+import { NONE, createCollectionQueued, lastCollection, rememberCollection, useCollections } from '../lib/collections.js';
+import CollectionPicker from '../capture/CollectionPicker.jsx';
 import { emptySketch, savePlaceLocal } from '../lib/places.js';
 import { writeLastLoc } from '../lib/storage.js';
 import { newId } from '../lib/uuid.js';
@@ -29,7 +31,11 @@ const MAX_OUTSIDE = 12;
 // a photo in the draft row is only its numbers; its blobs are in their own row (PHOTO_KEY + id)
 const meta = ({ id, width, height, thumbWidth, thumbHeight }) => ({ id, width, height, thumbWidth, thumbHeight });
 
-const fresh = (title = '') => ({ id: newId(), step: 0, title, note: '', loc: null, plan: [], outside: [] });
+const startCollection = () => {
+  const last = lastCollection();
+  return last && last !== NONE ? last : null;
+};
+const fresh = (title = '') => ({ id: newId(), step: 0, title, note: '', loc: null, plan: [], outside: [], collectionId: startCollection() });
 
 export default function PlaceCapturePage() {
   const c = COPY.placeCapture;
@@ -40,6 +46,7 @@ export default function PlaceCapturePage() {
   const [busy, setBusy] = useState(null); // { i, n } while photos are prepared
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const { collections, status: collectionsStatus } = useCollections();
   const urls = useRef(new Map()); // photo id -> object URL of its thumb
   const blobs = useRef(new Map()); // photo id -> { photo, thumb }
 
@@ -131,6 +138,7 @@ export default function PlaceCapturePage() {
         locSource: hasXY || loc.label ? loc.source || 'typed' : null,
         capturedAt: new Date().toISOString(),
         sketch,
+        collectionId: d.collectionId || null,
       };
       const b = (p) => blobs.current.get(p.id) || {};
       const files = [
@@ -139,6 +147,7 @@ export default function PlaceCapturePage() {
         ...d.outside.map((p, i) => ({ type: 'photo', n: i + 1, blob: b(p).photo, width: p.width, height: p.height, contentType: 'image/jpeg' })),
       ].filter((f) => f.blob);
       await addBuilding(building, files);
+      rememberCollection(building.collectionId);
       await savePlaceLocal({ id: d.id, building, sketch, files: files.map((f) => ({ type: f.type, n: f.n })) });
       writeLastLoc(building.lat, building.lng);
       // the draft and its photo rows go (the outbox holds the files now)
@@ -205,6 +214,13 @@ export default function PlaceCapturePage() {
               <span className="mr-label">{c.noteLabel}</span>
               <input className="mr-input" value={d.note} maxLength={600} placeholder={c.notePlaceholder} onChange={(e) => update({ note: e.target.value })} data-mr="place-note" />
             </label>
+            <CollectionPicker
+              value={d.collectionId && (collectionsStatus !== 'ok' || collections.some((x) => x.id === d.collectionId)) ? d.collectionId : null}
+              collections={collections}
+              onChange={(collectionId) => update({ collectionId })}
+              onCreate={createCollectionQueued}
+              hint={COPY.capture.collectionHint}
+            />
           </div>
         )}
         {step === 1 && (

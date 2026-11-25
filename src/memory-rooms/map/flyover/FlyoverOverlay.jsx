@@ -65,7 +65,7 @@ export default function FlyoverOverlay({ fly, engine }) {
       {ended && (
         <div className="mr-fly__caption mr-fly__caption--end" data-mr="fly-end">
           <span className="mr-fly__text">
-            <span className="mr-fly__title">{c.endTitle}</span>
+            <span className="mr-fly__title">{fly.title || c.endTitle}</span>
             <span className="mr-fly__note">{c.endBody(count)}</span>
           </span>
         </div>
@@ -102,13 +102,13 @@ export default function FlyoverOverlay({ fly, engine }) {
   );
 }
 
-/** The "Play the trip" button over the map (top left). */
-export function PlayButton({ onPlay, disabled }) {
+/** "Play" the selected collection, over the map (top left). Only shown while a collection is picked. */
+export function PlayButton({ onPlay, disabled, name }) {
   const c = COPY.fly;
   return (
-    <button type="button" className="mr-fly-play" onClick={onPlay} disabled={disabled} aria-label={c.playLabel} data-mr="fly-play">
+    <button type="button" className="mr-fly-play" onClick={onPlay} disabled={disabled} aria-label={c.playLabel(name)} data-mr="fly-play">
       <Icon d={PLAY} fill />
-      {c.play}
+      <span className="mr-fly-play__name">{c.play(name)}</span>
     </button>
   );
 }

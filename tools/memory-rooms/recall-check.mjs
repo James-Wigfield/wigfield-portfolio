@@ -9,9 +9,9 @@
    - the title block: sheet MR-###, place, date, a scale label that changes when zooming, a north
      arrow that turns when the view is dragged;
    - pins: every visible callout has a leader line; clicking one opens it;
-   - the panel: serif title, the note as a pull-quote signed "— <name>", the trip day when it has one;
+   - the panel: serif title, the note as a pull-quote signed "— <name>", the captured date;
    - the phone: a bottom sheet that peeks (title + Walk in) and opens with its handle;
-   - the map's index: "No. 001"…, a day strip of 31 days that filters to one day and clears;
+   - the map's index: "No. 001"…, no day strip (DECISIONS 212), dates with the year;
      a row under the mouse marks its spot on the map;
    - "Open" on the card and "Walk in" go through document.startViewTransition; Walk in lands on the walk;
    - no console errors, no sideways scroll at 390.
@@ -167,7 +167,7 @@ try {
       return {
         serif: t ? getComputedStyle(t).fontFamily : '',
         quote: document.querySelector('.mr-quote cite')?.textContent || '',
-        day: document.querySelector('[data-mr="trip-day"]')?.textContent || null,
+        date: document.querySelector('[data-mr="spot-date"]')?.textContent || null,
       };
     });
     record(`panel ${L}: serif title, the note signed`, /Instrument Serif/.test(panel.serif) && /^— \S/.test(panel.quote), JSON.stringify(panel));
@@ -220,32 +220,19 @@ try {
     noErrors(rm, `reduced motion ${L}`);
     await rm.browserContext().close();
 
-    // ── the map's index + day strip ───────────────────────────────────────
+    // ── the map's index ───────────────────────────────────────────────────
     const map = await open(width);
     await map.goto(`${BASE}/memories?map=atlas`, { waitUntil: 'networkidle0' });
     await map.waitForSelector(sel('spot-row'), { timeout: 20000 });
     const nos = await map.$$eval(`${sel('row-no')}`, (els) => els.map((e) => e.textContent));
     record(`index ${L}: rows numbered "No. 001"…`, nos.length > 0 && nos.every((t) => /^No\. \d{3}$/.test(t)), nos.slice(0, 3).join(', '));
-    const days = await map.$$eval(`${sel('day-strip')} [data-mr="day"]`, (els) => ({ n: els.length, on: els.filter((e) => e.hasAttribute('data-on')).map((e) => e.dataset.date) }));
-    record(`day strip ${L}: 31 days, inked where spots were captured`, days.n === 31, `${days.on.length} inked`);
-    if (days.on.length) {
-      const before = await map.$$eval(sel('spot-row'), (els) => els.length);
-      const cell = await map.$(`${sel('day')}[data-date="${days.on[0]}"]`);
-      const cb = await cell.boundingBox();
-      if (width < 600) await map.touchscreen.tap(cb.x + cb.width / 2, cb.y + cb.height / 2);
-      else await map.mouse.click(cb.x + cb.width / 2, cb.y + cb.height / 2);
-      await sleep(300);
-      const after = await map.$$eval(sel('spot-row'), (els) => els.length);
-      record(`day strip ${L}: a day filters the list`, after > 0 && after <= before, `${before} -> ${after} rows`);
-      await shot(map, width, 'map-day');
-      const clear = await map.$(sel('day-clear'));
-      if (clear) {
-        if (width < 600) await clear.tap();
-        else await clear.click();
-      }
-      await sleep(300);
-      record(`day strip ${L}: "All days" brings every row back`, (await map.$$eval(sel('spot-row'), (els) => els.length)) === before);
-    }
+    // the map is for any place now: no trip day strip, and the index's dates carry the year (DECISIONS 212)
+    const strip = await map.$('.mr-days');
+    const dated = await map.$$eval('.mr-row-sub', (els) => els.map((e) => e.textContent).filter((t) => /(19|20)\d\d/.test(t)).length);
+    record(`index ${L}: no day-of-the-trip strip; rows dated with the year`, !strip && dated > 0, `${dated} dated rows`);
+    // the map opens on Perth: zoom the atlas out to the world so every spot is on screen for the hover check
+    for (let i = 0; i < 12; i++) await map.click(sel('zoom-out')).catch(() => {});
+    await sleep(900);
     if (width >= 600) {
       // a row under the mouse marks its spot on the map
       const row = await map.$(sel('spot-row'));

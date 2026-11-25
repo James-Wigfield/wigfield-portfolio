@@ -8,7 +8,6 @@ import { COPY } from '../../copy.js';
 import { mediaOf } from '../../lib/api.js';
 import { clearFlash, peekFlash } from '../../lib/flash.js';
 import { paths } from '../../routes.js';
-import { tripDayOf } from '../../lib/trip.js';
 import { usePlaceTitle } from '../../lib/places.js';
 import { personName } from '../../lib/spots.js';
 import { useViewerState } from '../../viewer/useViewer.js';
@@ -45,7 +44,6 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
   // ?ar=1 (the desktop's QR code) opens "See it in your space" straight away.
   const [params] = useSearchParams();
   const arOpen = params.get('ar') === '1';
-  const day = tripDayOf(spot);
 
   return (
     <aside className="mr-spot__panel" data-mr="spot-panel" ref={panelRef}>
@@ -120,14 +118,8 @@ export default function SpotPanel({ spot, stage, photos, viewer, activePhoto, on
         )}
         <div>
           <dt className="mr-label">{copy.meta.date}</dt>
-          <dd>{copy.date(spot.capturedAt) || '–'}</dd>
+          <dd data-mr="spot-date">{copy.date(spot.capturedAt) || '–'}</dd>
         </div>
-        {day && (
-          <div>
-            <dt className="mr-label">{copy.meta.day}</dt>
-            <dd data-mr="trip-day">{copy.tripDay(day)}</dd>
-          </div>
-        )}
       </dl>
 
       <PhotoStrip photos={photos} title={spot.title} active={activePhoto} onOpen={onOpenPhoto} />

@@ -1,7 +1,7 @@
-/* The /memories map on Mapbox: a globe that opens on the trip (the USA + western
-   Canada, or the trip's spots once there are some), spots as status dots, clusters
-   that zoom in when clicked, zoom controls, the trip's place labels, and the preview
-   card beside the selected spot (docked at the bottom on a phone).
+/* The /memories map on Mapbox: a globe that opens on the home view (start.js: Perth),
+   spots as status dots, clusters that zoom in when clicked, zoom controls, the
+   gazetteer's place labels, the preview card beside the selected spot (docked at the
+   bottom on a phone), and a flight to a collection's spots when the page asks (`focus`).
 
    The map is made once per mount (useMapbox). Everything that changes with filters,
    clusters or cards is an SVG overlay redrawn from map.project() on every camera
@@ -16,7 +16,8 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { COPY } from '../../copy.js';
 import { anchorOf, cardPosition } from '../cardPlace.js';
 import { CLUSTER_PX, clusterPoints, clusterRadius } from '../clusters.js';
-import { hasCoords, onMap } from '../geo.js';
+import { hasCoords } from '../geo.js';
+import { START } from '../start.js';
 import MapControls from '../MapControls.jsx';
 import MapSpots from '../MapSpots.jsx';
 import { useMarkerImages } from '../markerImages.js';
@@ -24,7 +25,7 @@ import { avoidOf, fanBox, markerBox, markerPx, withMarkers } from '../markers.js
 import PlaceLabels from '../PlaceLabels.jsx';
 import { ClusterCard, SpotCard } from '../SpotCard.jsx';
 import { wantedModels } from './models.js';
-import { TRIP_BOUNDS, boundsOf, nearestM, pxPerMetre, spanM, toScreen, zoomForPx, zoomForSpan } from './project.js';
+import { boundsOf, nearestM, pxPerMetre, spanM, toScreen, zoomForPx, zoomForSpan } from './project.js';
 import { useMapbox } from './useMapbox.js';
 import { useModels, useNear, useTilt } from './useModels.js';
 import FlyoverOverlay from '../flyover/FlyoverOverlay.jsx';
@@ -34,14 +35,14 @@ import { useFlyoverMapbox } from './useFlyoverMapbox.js';
 const MIN_ZOOM = 0.6;
 /** Closer than a neighbourhood the spots map has nothing more to say (the pick map goes further). */
 const MAX_ZOOM = 17;
-/** Opening view: the trip's spots, never closer than about a region. */
-const AUTO_MAX_ZOOM = 6;
+/** A collection's spots are framed no closer than a few streets. */
+const FOCUS_MAX_ZOOM = 14;
 /** Padding keeps markers clear of the controls (a row along the bottom on a phone, a stack bottom-right). */
 const PAD_COMPACT = { top: 28, right: 24, bottom: 76, left: 24 };
 const PAD_WIDE = { top: 56, right: 104, bottom: 56, left: 56 };
 const DOT_R = { compact: 7, wide: 5.5 };
 const CLUSTER_BASE = { compact: 13, wide: 11 };
-/** The trip's place labels show once less than this much longitude is in view... */
+/** The gazetteer's place labels show once less than this much longitude is in view... */
 const LABEL_SPAN_DEG = 28;
 /** ...until the base map's own town labels take over. */
 const TOWN_LABELS_FROM = 7.5;
@@ -51,13 +52,13 @@ const NO_MODELS = [];
 const FLY_PAD_COMPACT = { top: 48, right: 24, bottom: 250, left: 24 };
 const FLY_PAD_WIDE = { top: 64, right: 64, bottom: 96, left: 440 };
 
-/** The opening view: the trip's spots (or the trip area), flat and north up. */
-function homeCamera(map, trip, padding) {
-  const cam = trip.length ? map.cameraForBounds(boundsOf(trip), { padding, maxZoom: AUTO_MAX_ZOOM, bearing: 0 }) : map.cameraForBounds(TRIP_BOUNDS, { padding, bearing: 0 });
+/** The opening view (and "home"): start.js START, flat and north up. */
+function homeCamera(map, padding) {
+  const cam = map.cameraForBounds(START.bounds, { padding, bearing: 0 });
   return cam && { ...cam, bearing: 0, pitch: 0 };
 }
 
-export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereCount = 0, onElsewhere, compact = false, onFail, fly = NO_FLY, flyStops = NO_POINTS, flyLegs = NO_POINTS, liftId = null, children }) {
+export default function MapboxSpotsMap({ spots, selectedId, onSelect, compact = false, onFail, fly = NO_FLY, flyStops = NO_POINTS, flyLegs = NO_POINTS, liftId = null, focus = null, children }) {
   const [auto, setAuto] = useState(true); // the view follows homeCamera until the user moves it
   const [clusterIds, setClusterIds] = useState(null);
   const [cardEl, setCardEl] = useState(null);
@@ -71,28 +72,26 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
   const pad = compact ? PAD_COMPACT : PAD_WIDE;
 
   const { setContainer, map, size, option } = useMapbox(
-    { camera: { bounds: TRIP_BOUNDS, padding: compact ? 24 : 56 }, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, placeLabelsFrom: TOWN_LABELS_FROM, timeout: 12000, antialias: true },
+    { camera: { bounds: START.bounds, padding: compact ? 24 : 56 }, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, placeLabelsFrom: TOWN_LABELS_FROM, timeout: 12000, antialias: true },
     onFail,
   );
   const ready = Boolean(map && size?.w && size?.h);
   const flyOn = fly.active && fly.count > 0;
 
   const points = useMemo(() => spots.filter(hasCoords).map((spot) => ({ id: spot.id, lat: spot.lat, lng: spot.lng, spot })), [spots]);
-  const trip = useMemo(() => points.filter((p) => onMap(p)), [points]);
-  const away = useMemo(() => (points.length === trip.length ? NO_POINTS : points.filter((p) => !onMap(p))), [points, trip]);
 
   /* ── the view ───────────────────────────────────────────────────────────── */
 
   // Follow the home view while auto: jump on the first fit and on resizes, fly otherwise.
   useEffect(() => {
     if (!ready || !auto || flyOn) return; // the flyover owns the camera (and puts it back)
-    const cam = homeCamera(map, trip, pad);
+    const cam = homeCamera(map, pad);
     if (!cam) return;
     const prev = homeFor.current;
     homeFor.current = size;
     if (!prev || prev.w !== size.w || prev.h !== size.h) map.jumpTo(cam);
     else map.flyTo({ ...cam, maxDuration: 1600 });
-  }, [ready, map, size, auto, trip, pad, flyOn]);
+  }, [ready, map, size, auto, pad, flyOn]);
 
   // Any drag, pinch, wheel or key the user makes ends auto (not during the flyover: a drag there only
   // pauses it, and exit puts the view back exactly, auto included).
@@ -266,13 +265,15 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
     if (map) map.getCanvas().style.cursor = hoverId ? 'pointer' : '';
   }, [map, hoverId]);
 
-  // The note under the map: spots outside the trip area. The globe turns to them.
-  const showAway = () => {
-    onElsewhere?.();
-    if (!ready || !away.length) return;
-    const cam = map.cameraForBounds(boundsOf(away), { padding: pad, maxZoom: AUTO_MAX_ZOOM });
-    if (cam) moveTo(cam);
-  };
+  // The page asks for a collection's spots (its header was picked): fly there.
+  const goFocus = useEffectEvent(() => {
+    if (!ready || !focus?.bounds || flyOn) return;
+    const cam = map.cameraForBounds(focus.bounds, { padding: pad, maxZoom: FOCUS_MAX_ZOOM });
+    if (cam) moveTo({ ...cam, bearing: 0, pitch: 0 });
+  });
+  useEffect(() => {
+    if (focus?.key) goFocus();
+  }, [focus?.key, ready]);
 
   const cardStyle = !compact && size && (selected || clusterSpots) ? cardPosition(anchor, size, cardH) : undefined;
 
@@ -289,7 +290,7 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
         data-pitch={ready ? map.getPitch().toFixed(0) : undefined}
         data-near={near ? '' : undefined}
         data-auto={auto ? '' : undefined}
-        aria-label={COPY.map.globeLabel}
+        aria-label={COPY.map.globeLabel(START.name)}
         role="region"
       />
       {ready && (
@@ -316,16 +317,10 @@ export default function MapboxSpotsMap({ spots, selectedId, onSelect, elsewhereC
         onReset={() => setAuto(true)}
         canIn={!ready || zoom < MAX_ZOOM - 0.01}
         canReset={!auto}
-        resetLabel={COPY.map.zoomHome}
+        resetLabel={COPY.map.zoomHome(START.name)}
         bearing={ready ? map.getBearing() : 0}
         onNorth={northUp}
       />
-
-      {elsewhereCount > 0 && (
-        <button type="button" className="mr-map-note" onClick={showAway} data-mr="elsewhere-note">
-          {COPY.map.elsewhere(elsewhereCount)}
-        </button>
-      )}
 
       {children}
       {flyOn && <FlyoverOverlay fly={fly} engine="mapbox" />}

@@ -10,7 +10,9 @@ import { COPY } from '../copy.js';
 import { paths } from '../routes.js';
 import { mediaOf } from '../lib/api.js';
 import { roomIdFor, uniqueRoomName } from '../building/sketch.js';
-import { emptySketch, roomStates, saveSketch, usePlace } from '../lib/places.js';
+import { emptySketch, roomStates, saveSketch, savePlaceCollection, usePlace } from '../lib/places.js';
+import { createCollectionQueued, rememberCollection, useCollections } from '../lib/collections.js';
+import CollectionPicker from '../capture/CollectionPicker.jsx';
 import { formatDate } from '../lib/format.js';
 import PageMessage from './spot/PageMessage.jsx';
 import { useMedia } from '../lib/useMedia.js';
@@ -31,6 +33,8 @@ export default function PlacePage() {
   const [pick, setPick] = useState(null);
   const [levelPick, setLevelPick] = useState(null);
   const [adding, setAdding] = useState('');
+  const { collections } = useCollections();
+  const [movedTo, setMovedTo] = useState(undefined); // the collection just picked here (until the place reloads)
 
   const sketch = p.sketch || emptySketch();
   const rooms = useMemo(() => roomStates(sketch, p.spots, p.queued), [sketch, p.spots, p.queued]);
@@ -203,6 +207,21 @@ export default function PlacePage() {
       )}
 
       {/* a private link to this place alone (once it's on the server) */}
+      <section className="mr-place__collection" data-mr="place-collection">
+        <CollectionPicker
+          value={movedTo !== undefined ? movedTo : p.place?.collectionId || null}
+          collections={collections}
+          onChange={async (id) => {
+            setMovedTo(id);
+            rememberCollection(id);
+            await savePlaceCollection(buildingId, id, title);
+            p.reload();
+          }}
+          onCreate={createCollectionQueued}
+          hint={COPY.collections.placeHint}
+        />
+      </section>
+
       {p.server && <SharePanel kind="building" id={buildingId} />}
     </div>
   );

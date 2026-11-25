@@ -9,6 +9,7 @@
 
 import { markerImage } from './markerImages.js';
 import { clusterRadius } from './clusters.js';
+import { WORLD_UNITS } from './geo.js';
 
 /** Long edge in CSS px at a zoom, linear in zoom between (z0, s0) and (z1, s1). */
 const SIZE = {
@@ -29,10 +30,9 @@ export function markerPx(zoom, compact = false) {
   return s.s0 + t * (s.s1 - s.s0);
 }
 
-/** The atlas drawn at `s` px per world unit, as the Mapbox zoom showing as much longitude.
-    (geo.js fits the 60° of FIT_EXTENT into 1000 world units.) */
-const DEG_PER_UNIT = 60 / 1000;
-export const atlasZoom = (s) => Math.log2((s * 360) / (512 * DEG_PER_UNIT));
+/** The atlas drawn at `s` px per world unit, as the Mapbox zoom at the same scale (geo.js: the same
+    Web Mercator, the world WORLD_UNITS wide; Mapbox's world is 512 px at zoom 0). */
+export const atlasZoom = (s) => Math.log2((s * WORLD_UNITS) / 512);
 
 const fit = (img, px) => {
   const k = px / Math.max(img.w, img.h, 1);

@@ -68,10 +68,12 @@ export function baseOf(spot) {
     capturedAt: spot.capturedAt,
     day: dayOf(spot.capturedAt),
     loc: locOf(spot),
+    collectionId: spot.collectionId || null,
+    buildingId: spot.buildingId || null, // a room of a whole place: "none" means its place's collection
   };
 }
 
-const FIELDS = ['title', 'note', 'kind', 'scaleHint', 'createdBy', 'day', 'loc'];
+const FIELDS = ['title', 'note', 'kind', 'scaleHint', 'createdBy', 'day', 'loc', 'collectionId'];
 export const formOf = (base) => Object.fromEntries(FIELDS.map((k) => [k, base[k]]));
 
 const PRESETS = COPY.capture.scalePresets.map((p) => p.value);
@@ -93,6 +95,7 @@ export function patchOf(base, form) {
   if (changed(base, form, 'scaleHint')) p.scaleHint = form.scaleHint.trim() || null;
   if (changed(base, form, 'createdBy')) p.createdBy = form.createdBy;
   if (changed(base, form, 'day')) p.capturedAt = withDay(base.capturedAt, form.day);
+  if (changed(base, form, 'collectionId')) p.collectionId = form.collectionId || null;
   const a = locFields(base.loc);
   const b = locFields(form.loc);
   if (a.lat !== b.lat || a.lng !== b.lng) Object.assign(p, { lat: b.lat, lng: b.lng });
@@ -103,6 +106,7 @@ export function patchOf(base, form) {
 /** Did someone change the details (not just the render side: status, scene, photos) between a and b? */
 export function sameDetails(a, b) {
   if (['title', 'note', 'kind', 'scaleHint', 'createdBy'].some((k) => a[k] !== b[k])) return false;
+  if ((a.collectionId || null) !== (b.collectionId || null)) return false;
   return Date.parse(a.capturedAt) === Date.parse(b.capturedAt) && sameLoc(a.loc, b.loc);
 }
 
@@ -127,6 +131,7 @@ const FIELD_OF = {
   locAccuracyM: 'place',
   locSource: 'place',
   placeLabel: 'place',
+  collectionId: 'collection',
 };
 export function fieldErrors(details) {
   const out = {};

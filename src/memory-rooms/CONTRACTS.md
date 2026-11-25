@@ -45,6 +45,7 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
   "status": "captured" | "modelling" | "rendered",
   "frameGroup": "home" | null,
   "buildingId": "uuid" | null, "roomId": "kitchen" | null,   // a room of a whole place (section 6.4)
+  "collectionId": "uuid" | null,                   // its collection (section 7); a room of a place: null = the place's
   "scene": { …scene.json v1 or v2… } | null,
   "sceneVersion": 0,                               // bumped by every scene write
   "tripStopId": null,
@@ -91,12 +92,12 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 
 | Method & path | Body | Response |
 |---|---|---|
-| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map", "empty"], features: ["buildings", "empty", "place-walk"] } }` (the gate's password check; scripts upload `model/map` / `model/empty` only when `models` has it: an older Worker stores every model name as room.glb. `features`: `buildings` once the building tables answer, `empty` = the empty / furnished bake (§6.4), `place-walk` = walking a whole place) |
+| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map", "empty"], features: ["buildings", "empty", "place-walk", "collections"] } }` (the gate's password check; scripts upload `model/map` / `model/empty` only when `models` has it: an older Worker stores every model name as room.glb. `features`: `buildings` once the building tables answer, `empty` = the empty / furnished bake (§6.4), `place-walk` = walking a whole place, `collections` once the collections table answers (§7)) |
 | `GET /api/memories/spots` | `?deleted=1` includes soft-deleted | `{ data: [Spot…] }` newest `capturedAt` first, media with signed urls |
 | `GET /api/memories/spots/:id` | – | `{ data: Spot }` (404 if missing) |
 | `POST /api/memories/spots` | Spot capture fields incl. client `id` | `{ data: Spot }` 201 new / 200 existing. **Create once**: a POST for an id that already exists changes nothing and returns the stored row, so a retry never duplicates and never resets anything, and a late outbox re-send can't undo an edit. Every later change goes through PATCH. |
 | `PUT /api/memories/spots/:id/media/:type/:n` | raw bytes; headers `content-type`, optional `x-width`, `x-height` | `{ data: Media }` (upserts the media row; the spot must exist) |
-| `PATCH /api/memories/spots/:id` | any of `title, note, kind, lat, lng, locAccuracyM, placeLabel, locSource, scaleHint, capturedAt, createdBy, status, frameGroup, tripStopId, scene`, plus optional `ifUpdatedAt` | `{ data: Spot }`, its `updatedAt` the stored one (send it back as the next `ifUpdatedAt`). A `scene` is validated with `validateScene` (400 + `details: errors[]` if invalid), bumps `sceneVersion`, and sets `frameGroup` from `scene.frame.group`. Other fields are checked as listed below (400, every problem in `details`); unknown fields are ignored. |
+| `PATCH /api/memories/spots/:id` | any of `title, note, kind, lat, lng, locAccuracyM, placeLabel, locSource, scaleHint, capturedAt, createdBy, status, frameGroup, tripStopId, collectionId, scene`, plus optional `ifUpdatedAt` | `{ data: Spot }`, its `updatedAt` the stored one (send it back as the next `ifUpdatedAt`). A `scene` is validated with `validateScene` (400 + `details: errors[]` if invalid), bumps `sceneVersion`, and sets `frameGroup` from `scene.frame.group`. Other fields are checked as listed below (400, every problem in `details`); unknown fields are ignored. |
 | `DELETE /api/memories/spots/:id` | – | soft delete → `{ data: { id, deletedAt } }` |
 | `POST /api/memories/spots/:id/restore` | – | clears `deletedAt` |
 | `GET /api/memories/file/<r2Key>` | bearer or `?t=` | the bytes, with `content-type`, `etag`, `cache-control: private, max-age=3600` |
@@ -113,6 +114,7 @@ so a form can show it next to that field):
 - `lat` and `lng` go together (send both, or neither), each a number in range or both `null` (no location).
 - `locSource` gps | pin | typed | `null`; `createdBy` james | justin.
 - `capturedAt` an ISO 8601 date-time with a zone (`2026-12-20T19:30:00.000Z`).
+- `collectionId` a uuid or `null` (POST and PATCH; the collection need not exist yet, §7).
 - `kind` can't change while the spot has a scene (the 3D room was built as that kind): 400.
 - `ifUpdatedAt`: when present and not the spot's current `updatedAt`, nothing is saved and the answer is
   **409** (someone else changed the spot since the form opened). The edit page sends it; scripts don't.
@@ -338,6 +340,7 @@ wall.outside? { finish?, color?, rake?: { finish?, color? }, panels?: [{ offset,
   "sketch": { …sketch v1… } | null,     // the phone's room checklist / sketch plan (building/sketch.schema.json)
   "plan": { …building.json v1… } | null, // the render side's building (validated); planVersion +1 per write
   "planVersion": 0, "tripStopId": null,
+  "collectionId": "uuid" | null,        // its collection (section 7); its rooms show under it unless they set their own
   "media": [Media…]                     // as a spot's, with buildingId instead of spotId
 }
 // Spot gains: "buildingId": uuid | null, "roomId": "kitchen" | null   (frameGroup stays, legacy)
@@ -351,7 +354,7 @@ wall.outside? { finish?, color?, rake?: { finish?, color? }, panels?: [{ offset,
 - **Routes** (same auth and `{ data }` / `{ error, details }` shapes as spots): `GET /buildings[?deleted=1]`,
   `GET /buildings/:id`, `POST /buildings` (create once by client uuid; a re-send changes nothing),
   `PATCH /buildings/:id` (any of `title, note, lat, lng, locAccuracyM, placeLabel, locSource, capturedAt, createdBy,
-  status, tripStopId, sketch, plan` + `ifUpdatedAt` → 409; `sketch` → `validateSketch`, `plan` → `validateBuilding`,
+  status, tripStopId, collectionId, sketch, plan` + `ifUpdatedAt` → 409; `sketch` → `validateSketch`, `plan` → `validateBuilding`,
   both 400 with `details`), `DELETE /buildings/:id` (soft), `POST /buildings/:id/restore`,
   `PUT /buildings/:id/media/:type/:n`. Spots: POST and PATCH take `buildingId` (uuid or null) and `roomId` (building
   id pattern or null; needs a `buildingId`). The building need not exist yet (the outbox sends it first, but a spot
@@ -447,3 +450,52 @@ multi-level plan uses (pure; `building-selftest.mjs` checks it on 12B Fletcher a
   `structures` mesh (baked atlas), the diorama sides (`side_skirt_*`, a strata strip; `side_waterside_*`, translucent
   water band) and `side_base`. Every node `mrKind: structure` (Furnished/empty never applies).
 - A contract addition: the live Worker validates `scene` with its bundled schema, so deploy before pushing one.
+
+## 7. Collections (2026-11-25)
+
+A collection groups spots and whole places ("Joe's House", "USA 2026"), in the list and on the map. In code,
+contracts and SQL they are **collections**; `group` was already taken (`/memories/group/:group` and `frameGroup`, the
+shared building frame of §3–6). The UI says "Collection".
+
+```jsonc
+// Collection (API camelCase; SQL memory_collections, snake_case: supabase/memory_collections.sql)
+{
+  "id": "uuid (client-generated)",
+  "name": "Joe's House",                  // 1–60 characters
+  "createdAt": "ISO", "updatedAt": "ISO",
+  "sort": 3 | null,                       // optional order in the list: by sort (nulls last), then oldest first
+  "bounds": [[west, south], [east, north]] | null   // optional map frame (degrees); null = frame its spots + places
+}
+// Spot and Building each gain: "collectionId": uuid | null   (at most ONE collection each)
+```
+
+- **Membership.** A spot or a whole place belongs to at most one collection (`collectionId`). A room of a place
+  (`buildingId` set) with no `collectionId` of its own shows under its **place's** collection; one with its own shows
+  under that (`lib/collections.js` `effectiveCollection`). An id naming no collection (deleted elsewhere, not loaded
+  yet) shows as Ungrouped.
+- **Routes** (same auth and `{ data }` / `{ error, details }` shapes as spots):
+
+| Method & path | Body | Response |
+|---|---|---|
+| `GET /api/memories/collections` | – | `{ data: [Collection…] }` in list order (sort, nulls last; then oldest first) |
+| `POST /api/memories/collections` | `{ id, name, sort?, bounds? }` | 201 new / 200 existing: **create once** by the client's uuid (the outbox may send it again; that changes nothing) |
+| `GET /api/memories/collections/:id` | – | `{ data: Collection }` (404 if missing) |
+| `PATCH /api/memories/collections/:id` | any of `name, sort, bounds` + optional `ifUpdatedAt` (→ 409) | `{ data: Collection }` |
+| `DELETE /api/memories/collections/:id` | – | the row goes; **every spot and place that had it becomes ungrouped** (`collectionId = null`), never deleted: `{ data: { id, deleted: true, ungrouped: { spots, buildings } } }` |
+
+- Spots and places take `collectionId` on POST and PATCH (`uuid` or `null`, else 400). Like a room's building, the
+  collection **need not exist yet**: capture's "New collection…" queues the collection in the outbox ahead of the spot
+  (outbox kind `collection`, id `collection:<uuid>`), but a spot never fails on it.
+- **Before `supabase/memory_collections.sql` has run** (Supabase row store): the collection routes and a spot / place
+  write that carries a `collectionId` answer `503 { error, code: 'needs-sql' }` (the outbox holds such an entry on the
+  phone and retries); spots and places without one save as ever (`collection_id` is only sent once a row has, or had,
+  one). `GET /ping` lists `features: ['collections']` only once the table answers. The local row store needs nothing:
+  `rows/collections/<id>.json`.
+- **Share links never show collections** (`/shared/:token` carries a fixed list of fields without `collectionId`; the
+  shared page has no list).
+- **On the phone**: `useCollections()` = the server's list + collections still in the outbox + the last list cached in
+  localStorage (`mr:collections`), so capture's picker works offline. Capture starts in the collection used last
+  (`mr:lastCollection`, an id or `none`); the list remembers which sections a viewer closed (`mr:collapsed`).
+- **The map** opens on `map/start.js` `START` (Perth), not on the spots. Picking a collection's name in the list flies
+  the map to its `bounds` (or its spots and places) and offers **Play <name>**: the flyover through its spots in
+  capture order. `/memories?c=<id>` opens with it picked, `&play=1` plays it.

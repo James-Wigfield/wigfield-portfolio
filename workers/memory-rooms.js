@@ -28,6 +28,10 @@
      GET    /api/memories/shares[?kind=&id=]           → { data: [Share…] }  private share links
      POST   /api/memories/shares                       → { kind: 'building'|'spot', id, label? } → Share
      DELETE /api/memories/shares/:token                → switch a link off (it 404s from then on)
+     GET    /api/memories/collections                  → { data: [Collection…] }  (groups of spots + places)
+     POST   /api/memories/collections                  → create once by client uuid { id, name, sort?, bounds? }
+     PATCH  /api/memories/collections/:id              → rename / reorder / set its map bounds (+ ifUpdatedAt)
+     DELETE /api/memories/collections/:id              → gone; its spots and places become ungrouped (never deleted)
      GET    /api/memories/shared/:token                → NO password: that one place / room, read-only,
                                                          trimmed (no location, note, sketch, plan photos or
                                                          compare sheets), files signed as usual
@@ -92,11 +96,14 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
       // CONTRACTS.md 6.4: listed only once supabase/memory_buildings.sql has run)
       // 'empty' = the empty / furnished bake: model/empty on a spot, model/level-<id>-empty on a building
       // 'place-walk' = walking a whole place (POST /buildings/:id/walk, tickets keyed b:<id>)
+      // 'collections' = the collection routes + spot / place collectionId (once supabase/memory_collections.sql has run)
       const features = (await store.hasBuildings()) ? ['buildings', 'empty', 'place-walk'] : ['empty'];
+      if (await store.hasCollections()) features.push('collections');
       return json({ data: { ok: true, rowStore: store.kind, models: SPOT_MODELS, features } });
     }
     if (section === 'buildings') return await buildingsRoute(ctx, request, id, sub, type, n);
     if (section === 'shares') return await sharesRoute(ctx, request, url, id, sub);
+    if (section === 'collections') return await collectionsRoute(ctx, request, id, sub);
     if (section !== 'spots') return json({ error: 'Not found' }, 404);
 
     // ── collection ─────────────────────────────────────────────────────────
@@ -158,6 +165,7 @@ async function upsertSpot(ctx, body) {
   if (!str(body.note, 1, 600)) problems.push('note is required (≤ 600 characters)');
   const capture = captureFields(body, problems);
   const place = buildingLink(body, problems);
+  const grouped = collectionLink(body, problems);
   if (place.roomId && !place.buildingId) problems.push('roomId needs a buildingId');
   if (problems.length) return ctx.json({ error: 'Invalid spot', details: problems }, 400);
 
@@ -176,6 +184,7 @@ async function upsertSpot(ctx, body) {
     tripStopId: null,
     ...capture,
     ...place,
+    ...grouped,
   };
   await ctx.store.putSpot(spot);
   return ctx.json({ data: await withMedia(ctx, spot) }, 201);
@@ -207,6 +216,15 @@ function buildingLink(body, problems) {
     else problems.push('roomId must look like "kitchen" or "bed-2" (or null)');
   }
   return out;
+}
+
+/** A spot's or place's collection: { collectionId } (uuid or null). The collection need not exist yet: the outbox
+    sends it first, but a capture never fails on it (as a room's building). */
+function collectionLink(body, problems) {
+  if (!('collectionId' in body)) return {};
+  if (body.collectionId === null || isUuid(body.collectionId)) return { collectionId: body.collectionId };
+  problems.push('collectionId must be a uuid (or null)');
+  return {};
 }
 
 /** A location as stored: both numbers in range, or both null (no location). POST and PATCH share it. */
@@ -261,9 +279,10 @@ async function patchSpot(ctx, id, body) {
     if (body.frameGroup === null || /^[a-z0-9][a-z0-9-]{0,47}$/.test(body.frameGroup)) next.frameGroup = body.frameGroup;
     else problems.push('frameGroup must look like "home" or "nyc-hostel"');
   }
-  Object.assign(next, buildingLink(body, problems));
-  // Supabase: clearing a link must reach the row (putSpot only sends building_id / room_id when there is one)
+  Object.assign(next, buildingLink(body, problems), collectionLink(body, problems));
+  // Supabase: clearing a link must reach the row (putSpot only sends building_id / room_id / collection_id when there is one)
   if (spot.buildingId != null || spot.roomId != null) Object.defineProperty(next, 'hadBuilding', { value: true, enumerable: false });
+  if (spot.collectionId != null) Object.defineProperty(next, 'hadCollection', { value: true, enumerable: false });
   if ('scene' in body) {
     if (body.scene === null) {
       next.scene = null;
@@ -479,6 +498,7 @@ async function createBuilding(ctx, body) {
   if (body.note != null && body.note !== '' && !str(body.note, 1, 600)) problems.push('note must be ≤ 600 characters');
   if (body.sketch !== undefined) problems.push(...sketchProblems(body.sketch));
   const loc = latLng(body.lat, body.lng, problems);
+  const grouped = collectionLink(body, problems);
   if (problems.length) return ctx.json({ error: 'Invalid building', details: problems }, 400);
 
   const existing = await ctx.store.getBuilding(body.id);
@@ -501,6 +521,7 @@ async function createBuilding(ctx, body) {
     plan: null,
     planVersion: 0,
     tripStopId: null,
+    ...grouped,
   };
   await ctx.store.putBuilding(b);
   return ctx.json({ data: await withBuildingMedia(ctx, b) }, 201);
@@ -537,6 +558,8 @@ async function patchBuilding(ctx, id, body) {
     else problems.push('capturedAt must be an ISO 8601 date-time with a zone, like 2026-12-20T19:30:00.000Z');
   }
   for (const k of ['placeLabel', 'tripStopId']) if (k in body) next[k] = body[k] == null ? null : String(body[k]).slice(0, 120);
+  Object.assign(next, collectionLink(body, problems));
+  if (b.collectionId != null) Object.defineProperty(next, 'hadCollection', { value: true, enumerable: false });
   if ('sketch' in body) {
     const p = sketchProblems(body.sketch);
     if (p.length) problems.push(...p);
@@ -630,6 +653,80 @@ async function putBuildingMedia(ctx, request, buildingId, type, n) {
 
 async function withBuildingMedia(ctx, b) {
   return attachMedia(ctx, b, await ctx.store.listBuildingMedia(b.id));
+}
+
+// ── collections: groups of spots and places (CONTRACTS.md section 7) ─────────
+
+/** A collection's map frame: [[west, south], [east, north]] in degrees, or null (frame its spots). */
+function boundsProblems(v) {
+  if (v === null) return [];
+  const ok =
+    Array.isArray(v) && v.length === 2 && v.every((p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)) &&
+    v[0][0] >= -180 && v[1][0] <= 180 && v[0][1] >= -90 && v[1][1] <= 90 && v[0][0] <= v[1][0] && v[0][1] <= v[1][1];
+  return ok ? [] : ['bounds must be [[west, south], [east, north]] in degrees (or null)'];
+}
+
+function collectionFields(body, problems, { partial = false } = {}) {
+  const out = {};
+  if (!partial || 'name' in body) {
+    if (str(body.name, 1, 60)) out.name = body.name.trim();
+    else problems.push('name must be 1–60 characters');
+  }
+  if ('sort' in body) {
+    if (body.sort === null || Number.isInteger(body.sort)) out.sort = body.sort;
+    else problems.push('sort must be a whole number (or null)');
+  }
+  if ('bounds' in body) {
+    const p = boundsProblems(body.bounds);
+    if (p.length) problems.push(...p);
+    else out.bounds = body.bounds;
+  }
+  return out;
+}
+
+const bySort = (a, b) =>
+  (a.sort ?? Infinity) - (b.sort ?? Infinity) || String(a.createdAt).localeCompare(String(b.createdAt)) || a.id.localeCompare(b.id);
+
+async function collectionsRoute(ctx, request, id, sub) {
+  const { json, store } = ctx;
+  if (sub) return json({ error: 'Not found' }, 404);
+  if (!id) {
+    if (request.method === 'GET') return json({ data: (await store.listCollections()).sort(bySort) });
+    if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+    const body = await ctx.readJson(request);
+    if (!body || typeof body !== 'object') return json({ error: 'JSON body required' }, 400);
+    const problems = [];
+    if (!isUuid(body.id)) problems.push('id must be a uuid (the client generates it)');
+    const fields = collectionFields(body, problems);
+    if (problems.length) return json({ error: 'Invalid collection', details: problems }, 400);
+    // create once: the outbox may send it again (that changes nothing)
+    const existing = await store.getCollection(body.id);
+    if (existing) return json({ data: existing }, 200);
+    const c = { id: body.id, createdAt: ctx.now, updatedAt: ctx.now, sort: null, bounds: null, ...fields };
+    await store.putCollection(c);
+    return json({ data: (await store.getCollection(c.id)) || c }, 201);
+  }
+  if (!isUuid(id)) return json({ error: 'Not a collection id' }, 400);
+  const c = await store.getCollection(id);
+  if (!c) return json({ error: 'Collection not found' }, 404);
+  if (request.method === 'GET') return json({ data: c });
+  if (request.method === 'DELETE') {
+    // the collection goes; its spots and places stay, ungrouped
+    const ungrouped = await store.deleteCollection(id);
+    return json({ data: { id, deleted: true, ungrouped } });
+  }
+  if (request.method !== 'PATCH') return json({ error: 'Method not allowed' }, 405);
+  const body = await ctx.readJson(request);
+  if (!body || typeof body !== 'object') return json({ error: 'JSON body required' }, 400);
+  if ('ifUpdatedAt' in body && !sameInstant(body.ifUpdatedAt, c.updatedAt)) {
+    return json({ error: 'This collection changed since the form opened', details: [`updatedAt is now ${c.updatedAt}`] }, 409);
+  }
+  const problems = [];
+  const fields = collectionFields(body, problems, { partial: true });
+  if (problems.length) return json({ error: 'Invalid change', details: problems }, 400);
+  const next = { ...c, ...fields, updatedAt: ctx.now };
+  await store.putCollection(next);
+  return json({ data: (await store.getCollection(id)) || next });
 }
 
 // ── private share links (/memories/s/<token>) ────────────────────────────────
@@ -844,6 +941,7 @@ function localStore(bucket) {
   const mediaRowKey = (id) => `rows/media/${id}.json`;
   const buildingKey = (id) => `rows/buildings/${id}.json`;
   const bmediaKey = (id) => `rows/bmedia/${id}.json`;
+  const collectionKey = (id) => `rows/collections/${id}.json`;
 
   async function listKeys(prefix, filter) {
     const keys = [];
@@ -862,6 +960,23 @@ function localStore(bucket) {
   return {
     kind: 'local',
     hasBuildings: async () => true,
+    hasCollections: async () => true,
+    listCollections: async () => readAll(await listKeys('rows/collections/')),
+    getCollection: async (id) => (await bucket.get(collectionKey(id)))?.json() ?? null,
+    putCollection: (c) => put(collectionKey(c.id), c),
+    /** Deletes the collection and ungroups its spots and places: → { spots, buildings } (how many). */
+    deleteCollection: async (id) => {
+      const counts = { spots: 0, buildings: 0 };
+      for (const [prefix, which] of [['rows/spots/', 'spots'], ['rows/buildings/', 'buildings']]) {
+        for (const row of await readAll(await listKeys(prefix))) {
+          if (row.collectionId !== id) continue;
+          await put(`${prefix}${row.id}.json`, { ...row, collectionId: null, updatedAt: new Date().toISOString() });
+          counts[which] += 1;
+        }
+      }
+      await bucket.delete(collectionKey(id));
+      return counts;
+    },
     listSpots: async () => readAll(await listKeys('rows/spots/')),
     getSpot: async (id) => (await bucket.get(spotKey(id)))?.json() ?? null,
     putSpot: (spot) => put(spotKey(spot.id), spot),
@@ -893,13 +1008,14 @@ const SPOT_COLS = {
   title: 'title', note: 'note', kind: 'kind', lat: 'lat', lng: 'lng', locAccuracyM: 'loc_accuracy_m',
   placeLabel: 'place_label', locSource: 'loc_source', scaleHint: 'scale_hint', capturedAt: 'captured_at',
   status: 'status', frameGroup: 'frame_group', scene: 'scene', sceneVersion: 'scene_version', tripStopId: 'trip_stop_id',
-  buildingId: 'building_id', roomId: 'room_id',
+  buildingId: 'building_id', roomId: 'room_id', collectionId: 'collection_id',
 };
+const COLLECTION_COLS = { id: 'id', name: 'name', createdAt: 'created_at', updatedAt: 'updated_at', sort: 'sort', bounds: 'bounds' };
 const BUILDING_COLS = {
   id: 'id', createdAt: 'created_at', updatedAt: 'updated_at', deletedAt: 'deleted_at', createdBy: 'created_by',
   title: 'title', note: 'note', lat: 'lat', lng: 'lng', locAccuracyM: 'loc_accuracy_m', placeLabel: 'place_label',
   locSource: 'loc_source', capturedAt: 'captured_at', status: 'status', sketch: 'sketch', plan: 'plan',
-  planVersion: 'plan_version', tripStopId: 'trip_stop_id',
+  planVersion: 'plan_version', tripStopId: 'trip_stop_id', collectionId: 'collection_id',
 };
 const BMEDIA_COLS = {
   id: 'id', buildingId: 'building_id', type: 'type', name: 'name', r2Key: 'r2_key', width: 'width', height: 'height',
@@ -916,16 +1032,22 @@ const fromRow = (row, cols) => Object.fromEntries(Object.entries(cols).map(([k, 
 // PostgREST / Postgres codes for a table or a column that isn't there (memory_buildings.sql not run yet)
 const NEEDS_SQL = new Set(['42P01', '42703', 'PGRST204', 'PGRST205']);
 const NEEDS_SQL_MESSAGE = 'Whole places need the database update first (supabase/memory_buildings.sql).';
+const NEEDS_COLLECTIONS_MESSAGE = 'Collections need the database update first (supabase/memory_collections.sql).';
 let buildingsProbe = { at: 0, ok: false };
+let collectionsProbe = { at: 0, ok: false };
 
 function supabaseStore(db) {
-  const check = ({ data, error }) => {
+  const failWith = (message) => ({ data, error }) => {
     if (error) {
-      if (NEEDS_SQL.has(error.code)) throw Object.assign(new Error(NEEDS_SQL_MESSAGE), { status: 503, code: 'needs-sql' });
+      if (NEEDS_SQL.has(error.code)) throw Object.assign(new Error(message), { status: 503, code: 'needs-sql' });
       throw Object.assign(new Error(error.message), { status: 500 });
     }
     return data;
   };
+  const check = failWith(NEEDS_SQL_MESSAGE);
+  // a write that names collection_id (or a collections table call) before memory_collections.sql has run
+  const checkC = failWith(NEEDS_COLLECTIONS_MESSAGE);
+  const wantsCollection = (row) => row.collectionId != null || row.hadCollection;
   return {
     kind: 'supabase',
     /** Have the building tables been made? (asked at most once a minute per isolate) */
@@ -945,7 +1067,10 @@ function supabaseStore(db) {
     putSpot: async (spot) => {
       const skip = ['updatedAt'];
       if (spot.buildingId == null && spot.roomId == null && !spot.hadBuilding) skip.push('buildingId', 'roomId');
-      return check(await db.from('memory_spots').upsert(toRow(spot, SPOT_COLS, skip), { onConflict: 'id' }));
+      // collection_id is only sent once a spot has one (or had one): spots save as ever before the SQL has run
+      if (!wantsCollection(spot)) skip.push('collectionId');
+      const res = await db.from('memory_spots').upsert(toRow(spot, SPOT_COLS, skip), { onConflict: 'id' });
+      return (wantsCollection(spot) ? checkC : check)(res);
     },
     listMedia: async (spotId) => {
       let q = db.from('memory_media').select('*');
@@ -958,7 +1083,31 @@ function supabaseStore(db) {
       const data = check(await db.from('memory_buildings').select('*').eq('id', id).maybeSingle());
       return data ? fromRow(data, BUILDING_COLS) : null;
     },
-    putBuilding: async (b) => check(await db.from('memory_buildings').upsert(toRow(b, BUILDING_COLS, ['updatedAt']), { onConflict: 'id' })),
+    putBuilding: async (b) => {
+      const skip = ['updatedAt'];
+      if (!wantsCollection(b)) skip.push('collectionId');
+      const res = await db.from('memory_buildings').upsert(toRow(b, BUILDING_COLS, skip), { onConflict: 'id' });
+      return (wantsCollection(b) ? checkC : check)(res);
+    },
+    hasCollections: async () => {
+      if (Date.now() - collectionsProbe.at < 60_000) return collectionsProbe.ok;
+      const { error } = await db.from('memory_collections').select('id').limit(1);
+      collectionsProbe = { at: Date.now(), ok: !error };
+      return collectionsProbe.ok;
+    },
+    listCollections: async () => checkC(await db.from('memory_collections').select('*')).map((r) => fromRow(r, COLLECTION_COLS)),
+    getCollection: async (id) => {
+      const data = checkC(await db.from('memory_collections').select('*').eq('id', id).maybeSingle());
+      return data ? fromRow(data, COLLECTION_COLS) : null;
+    },
+    putCollection: async (c) => checkC(await db.from('memory_collections').upsert(toRow(c, COLLECTION_COLS, ['updatedAt']), { onConflict: 'id' })),
+    deleteCollection: async (id) => {
+      // ungroup first, then delete: a failure half-way leaves a collection with fewer members, never a dangling id
+      const spots = checkC(await db.from('memory_spots').update({ collection_id: null }).eq('collection_id', id).select('id'));
+      const buildings = checkC(await db.from('memory_buildings').update({ collection_id: null }).eq('collection_id', id).select('id'));
+      checkC(await db.from('memory_collections').delete().eq('id', id));
+      return { spots: spots?.length || 0, buildings: buildings?.length || 0 };
+    },
     listBuildingMedia: async (buildingId) => {
       let q = db.from('memory_building_media').select('*');
       if (buildingId) q = q.eq('building_id', buildingId);

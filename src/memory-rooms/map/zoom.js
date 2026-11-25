@@ -1,11 +1,12 @@
 /* Pure view maths for the map. A view is { k, cx, cy }: zoom over the home fit
-   (the trip area, see geo.js WORLD), and the world point at the container centre. */
+   (map/start.js START, see geo.js WORLD), and the world point at the container centre. */
 
 import { PAN, WORLD } from './geo.js';
 
 export const HOME = { k: 1, cx: WORLD.x + WORLD.w / 2, cy: WORLD.y + WORLD.h / 2 };
-export const MIN_K = 0.6;
-/** Roughly state level: closer than this the atlas has nothing left to show. */
+/** The whole world: the home view is a city, the world is ~1/450 of its scale. */
+export const MIN_K = 0.002;
+/** A suburb (~Mapbox zoom 13–14): closer than this the atlas has nothing left to show. */
 export const MAX_K = 16;
 const PAD = 16;
 

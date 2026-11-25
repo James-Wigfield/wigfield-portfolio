@@ -1,12 +1,13 @@
 # Memory Rooms (`/memories`)
 
-Trip spots captured on a phone, turned into Blender-built 3D rooms, on a Mapbox globe that opens on the USA and western Canada.
+Places worth remembering (trips, old homes, a mate's new build), captured on a phone and turned into Blender-built 3D rooms,
+on a Mapbox globe that opens on Perth (`map/start.js`), grouped into collections.
 Password-gated (`MEMORIES_PASSWORD`, shared with Justin, or the portal password).
 
 | Route | Screen |
 |---|---|
-| `/memories` | map + the index of spots (`No. 001`, each room's cut-out), filter by person, status and day of the trip (the day strip), outbox status; **Play the trip** (`?play=1`): the globe flies through every spot in capture order, drawing the route, standing rendered rooms up in 3D |
-| `/memories/new` | capture, phone first: kind + name → photos (shot guide) → the memory → location → save to the outbox |
+| `/memories` | map (opens on Perth) + the index, grouped by **collection** (collapsible ruled sections, whole places inside them, "Ungrouped" last; `No. 001`, each room's cut-out), filter by person and status, outbox status. Picking a collection flies the map to it and offers **Play &lt;name&gt;** (`?c=<id>&play=1`): the globe flies through its spots in capture order, drawing the route, standing rendered rooms up in 3D |
+| `/memories/new` | capture, phone first: kind + name + collection → photos (shot guide) → the memory → location → save to the outbox |
 | `/memories/new/place` | capture **a whole place** (the third kind on `/memories/new`): name + note → location → a floor-plan photo (optional) → outside shots (optional) → saved on the phone, uploaded by the outbox; works offline |
 | `/memories/:spotId` | the spot as a drawing sheet: the room **recalls itself** from a cloud of points, a drafting grid under it, a title block (sheet MR-###, place, date, live scale bar, north arrow), numbered callouts for its pins, thin ink photo frustums; 3D viewer (Model ⇄ Scan), photo strip, the note as a pull-quote, photo viewpoints with a photo/model blend; **Walk in** (+ who's in the room now) and **See it in your space** (AR: Quick Look on iPhone, WebXR on Android, a QR code on a desktop; `?ar=1` opens it). On a phone the panel is a bottom sheet |
 | `/memories/:spotId/edit` | fix its details after capture: the place (pin / GPS / typed, + its name), name, note, captured day, who saved it; kind + size until it has a 3D room. One PATCH with `ifUpdatedAt` (409 → reload theirs under yours); needs signal, the typed draft waits in sessionStorage |
@@ -32,8 +33,10 @@ src/memory-rooms/
                          style.js = the look from the --mr-map-* tokens, project.js screen maths)
                          models.js / useModels.js / models3d.js: past zoom 15 the rendered spots on screen
                          stand as live 3D dioramas, one three.js custom layer in the map's own context (lazy)
-    Atlas*.jsx, geo.js   the SVG atlas fallback (d3-geo + topojson, atlas.json built by tools/memory-rooms/build-atlas.mjs)
-    flyover/             "Play the trip": plan.js (stops + great-circle route), useFlyover.js (the state machine),
+    Atlas*.jsx, geo.js   the SVG atlas fallback: a world Web Mercator (d3-geo + topojson; atlas.json = world land + south-west
+                         WA's finer coast + country / US state borders, built by tools/memory-rooms/build-atlas.mjs)
+    SpotList.jsx         the list: collection sections (CollectionEdit.jsx renames / deletes one), places + spots in them
+    flyover/             "Play" a collection: plan.js (stops + great-circle route), useFlyover.js (the state machine),
                          FlyoverOverlay.jsx (caption + bar), useFlyoverAtlas.js; the globe's driver is
                          mapbox/useFlyoverMapbox.js (a line layer on the same map)
   capture/               the capture flow, photo resizing, IndexedDB outbox, geolocation
@@ -41,7 +44,9 @@ src/memory-rooms/
   viewer/                plain three.js viewer (GLTFLoader, OrbitControls, Spark) + its thin React wrapper
                          recall.js: the "Recall" load (points condensing into the room); helpers.js: the drafting
                          grid ground + ink frustums; dollhouse.js: the cut-away (and what the opening view hides)
-  lib/trip.js            the trip's days, a spot's day (where it was captured), sheet numbers (MR-004 / No. 004)
+  lib/sheets.js          a spot's date (where it was captured), sheet numbers (MR-004 / No. 004) (was lib/trip.js)
+  lib/collections.js     collections on the phone: the list (+ outbox + cache), the last one used, a spot's collection
+  map/start.js           START: where the map opens (both engines) and what "home" goes back to. Change it there
   lib/transition.js      View Transitions around a navigation (the router can't, it's a <BrowserRouter>)
   ar/                    "See it in your space": ArEntry.jsx (lazy), usdz.js (Quick Look file made in the browser),
                          xr.js (WebXR inside the viewer), qr.js (the desktop's QR code)
@@ -52,7 +57,7 @@ src/memory-rooms/
     edit/                the edit page's parts: form.js (diff → PATCH, merge on reload), draft.js, EditPlace.jsx
 workers/memory-rooms.js  the /api/memories routes, R2 files, local or Supabase row store
 workers/memory-walk.js   MemoryWalkRoom, the Durable Object behind walking in together (one per spot)
-supabase/memory_rooms.sql
+supabase/memory_rooms.sql, memory_buildings.sql, memory_collections.sql
 tools/memory-rooms/      render workflow scripts, Blender kit, checks, self-test (see its README)
 .claude/skills/memory-render/SKILL.md   "render spot X"
 ```

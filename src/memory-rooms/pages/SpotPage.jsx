@@ -19,7 +19,7 @@ import StageNav from './spot/StageNav.jsx';
 import TitleBlock from './spot/TitleBlock.jsx';
 import { moodOf, spotPhotos, stageKind, viewerSource } from './spot/photos.js';
 import { placeOf } from '../lib/spots.js';
-import { sheetLabel, useSheetNumber } from '../lib/trip.js';
+import { sheetLabel, useSheetNumber } from '../lib/sheets.js';
 import { useMedia } from '../lib/useMedia.js';
 import '../viewer/viewer.css';
 

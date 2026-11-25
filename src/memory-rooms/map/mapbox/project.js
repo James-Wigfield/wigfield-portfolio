@@ -1,18 +1,11 @@
 /* Screen maths for the Mapbox maps: lng/lat → container pixels (null on the far side
    of the globe), metres ↔ pixels at a zoom, and bounds. Pure, apart from map.project(). */
 
-import { FIT_EXTENT } from '../geo.js';
 import { distanceM } from '../places.js';
 
 const RAD = Math.PI / 180;
 const EARTH_M = 2 * Math.PI * 6371008.8;
 const WORLD_PX = 512; // Mapbox GL's world size at zoom 0
-
-/** The trip area (the lower 48 + southern BC and Alberta), [[w, s], [e, n]]. */
-export const TRIP_BOUNDS = [
-  [FIT_EXTENT.west, FIT_EXTENT.south],
-  [FIT_EXTENT.east, FIT_EXTENT.north],
-];
 
 /** Angle between two { lat, lng } points at the centre of the earth, in degrees. */
 export function centralAngle(a, b) {

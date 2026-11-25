@@ -10,9 +10,13 @@
 
    Checks
      gate      fresh device → password gate → wrong password refused → right one → who picker
-     map       the Mapbox globe loads and draws tiles at 1440 and 390; spots placed; a dot opens its card;
-               a cluster splits (or lists); "n elsewhere" turns the globe to those spots; "Back to the
-               trip" returns to the opening view; filters + clusters + cards + zooms keep ONE map load
+     map       the Mapbox globe loads and draws tiles at 1440 and 390, opening on Perth (map/start.js); spots
+               placed; a dot opens its card; a cluster splits (or lists); "Back to Perth" returns to the
+               opening view; filters + clusters + cards + zooms keep ONE map load
+     list      (page-check-list.mjs, on the atlas: no Mapbox loads) no day slider; opens on Perth; sections per
+               collection that collapse and stay collapsed after a reload; picking one flies there and offers
+               Play; on a phone the whole list scrolls with a finger, rows ≥ 44 px, the LAST place opens on a
+               tap, the map still pans
      fallback  ?map=atlas draws the SVG atlas; with WebGL off the atlas takes over by itself
      capture   /memories/new: every step reachable at 390 (4 photos uploaded), nothing saved; the pick
                map loads at 390 and 1440 and a tap drops the pin; going offline swaps it to the atlas
@@ -35,6 +39,8 @@ import puppeteer from 'puppeteer-core';
 import sharp from 'sharp';
 import { client, config, WORK } from './lib/api.mjs';
 import { editWalk } from './page-check-edit.mjs';
+import { listWalk } from './page-check-list.mjs';
+import { START } from '../../src/memory-rooms/map/start.js';
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const args = process.argv.slice(2);
@@ -268,10 +274,24 @@ const boxOf = (handle) => handle.evaluate((el) => {
   return { x0: r.left, x1: r.right, y0: r.top, y1: r.bottom };
 });
 
-const ON_MAP = { west: -141, east: -52, south: 18, north: 60.5 }; // the trip area, src/memory-rooms/map/geo.js
-const awayIds = spots
-  .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && !(s.lat >= ON_MAP.south && s.lat <= ON_MAP.north && s.lng >= ON_MAP.west && s.lng <= ON_MAP.east))
-  .map((s) => s.id);
+/** Fit every spot with a location (the map opens on Perth; the spots may be anywhere). */
+const fitAll = (page) =>
+  page.evaluate(
+    (pts) =>
+      new Promise((done) => {
+        const map = document.querySelector('[data-mr="map"]').__mrMap;
+        if (!pts.length) return done();
+        const lng = pts.map((p) => p[0]);
+        const lat = pts.map((p) => p[1]);
+        const cam = map.cameraForBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: 80, maxZoom: 6 });
+        map.jumpTo({ ...cam, bearing: 0, pitch: 0 });
+        map.once('idle', () => done());
+        map.triggerRepaint();
+        setTimeout(done, 15000);
+      }),
+    spots.filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng)).map((s) => [s.lng, s.lat]),
+  );
+const [[START_W, START_S], [START_E, START_N]] = START.bounds;
 
 for (const width of [1440, 390]) {
   const page = await open(width);
@@ -285,6 +305,13 @@ for (const width of [1440, 390]) {
     await page.close();
     continue;
   }
+  await idle(page);
+  // the globe opens on the home view (map/start.js), whatever the spots are, flat and north up
+  const home = await cameraOf(page);
+  const atHome = home.center[0] >= START_W && home.center[0] <= START_E && home.center[1] >= START_S && home.center[1] <= START_N && home.zoom >= 7.5 && home.zoom <= 12;
+  record(`map ${width}: the globe opens on ${START.name}`, atHome && (await pitchOf(page)) === 0, `centre ${home.center[1].toFixed(3)}, ${home.center[0].toFixed(3)}, zoom ${home.zoom.toFixed(2)}`);
+  await shot(page, `map-${width}-home`);
+  await fitAll(page);
   await idle(page);
   const spread = await tileSpread(page, sel('map'));
   await page.waitForSelector(`${sel('spot-dot')}, ${sel('cluster')}`, { timeout: 15000 }).catch(() => null);
@@ -436,22 +463,16 @@ for (const width of [1440, 390]) {
   const z1 = await zoomOf(page);
   record(`map ${width}: zoom in`, z1 > z0 + 0.5, `${z0.toFixed(2)} → ${z1.toFixed(2)}`);
 
-  // "n elsewhere" turns the globe to the spots outside the trip
-  if (awayIds.length && (await page.$(sel('elsewhere-note')))) {
-    await page.click(sel('elsewhere-note'));
-    await wait(400);
-    await idle(page);
-    await wait(300);
-    const shown = (await markerIds(page)).filter((id) => awayIds.includes(id)).length;
-    record(`map ${width}: "elsewhere" turns the globe to them`, shown > 0, `${shown}/${awayIds.length} on screen`);
-    await shot(page, `map-${width}-elsewhere`);
-  }
   const resetOn = await page.$eval(sel('zoom-reset'), (el) => !el.disabled);
+  const resetLabel = await page.$eval(sel('zoom-reset'), (el) => el.getAttribute('aria-label'));
   await page.click(sel('zoom-reset'));
   await wait(400);
   await idle(page);
+  await wait(1800);
   const auto = await page.$eval(sel('map'), (el) => el.hasAttribute('data-auto'));
-  record(`map ${width}: "Back to the trip" returns to the opening view`, resetOn && auto);
+  const back = await cameraOf(page);
+  const backHome = back.center[0] >= START_W && back.center[0] <= START_E && back.center[1] >= START_S && back.center[1] <= START_N;
+  record(`map ${width}: "${resetLabel}" returns to the opening view`, resetOn && auto && backHome, `centre ${back.center[1].toFixed(3)}, ${back.center[0].toFixed(3)}`);
   const n = await loads(page);
   record(`map ${width}: filters, clusters, cards and zooms keep one map load`, n === 1, `${n} load(s)`);
   noErrors(page, `map ${width}`);
@@ -462,15 +483,19 @@ for (const width of [1440, 390]) {
 
 async function atlasDrawn(page, root = sel('map')) {
   const ok = await page.waitForSelector(`${root} .mr-atlas-borders`, { timeout: 20000 }).then(() => true).catch(() => false);
-  const geometry = ok ? await page.$$eval(`${root} .mr-atlas-land, ${root} .mr-atlas-borders, ${root} .mr-atlas-canada`, (els) => els.map((e) => (e.getAttribute('d') || '').length)) : [];
-  return { ok: geometry.length === 3 && geometry.every((len) => len > 2000), geometry };
+  // the world's land, the home view's finer coast, US state borders, country borders
+  const geometry = ok ? await page.$$eval(`${root} .mr-atlas-land, ${root} .mr-atlas-states, ${root} .mr-atlas-borders`, (els) => els.map((e) => (e.getAttribute('d') || '').length)) : [];
+  return { ok: geometry.length === 4 && geometry.every((len) => len > 2000), geometry };
 }
 {
   const page = await open(1440);
   await page.goto(`${base}/memories?map=atlas`, { waitUntil: 'networkidle2' });
   const { ok, geometry } = await atlasDrawn(page);
+  // zoomed out to the whole world, every spot with a location is on it
+  for (let i = 0; i < 12; i++) await page.click(sel('zoom-out')).catch(() => {});
+  await wait(900);
   const dots = await page.$$eval(`${sel('spot-dot')}, ${sel('cluster')}`, (els) => els.length);
-  record('fallback: ?map=atlas draws the SVG atlas with spots', ok && dots > 0, `land/borders/canada ${geometry.join('/')}, ${dots} dots/clusters`);
+  record('fallback: ?map=atlas draws the SVG atlas (the world) with spots', ok && dots > 0, `land/detail/states/borders ${geometry.join('/')}, ${dots} dots/clusters`);
   const shown = await markersShown(page, RENDERED.map((s) => s.id));
   const st = await markerState(page);
   record(
@@ -496,6 +521,8 @@ async function atlasDrawn(page, root = sel('map')) {
   });
   await page.goto(`${base}/memories?map=atlas`, { waitUntil: 'networkidle2' });
   await atlasDrawn(page);
+  for (let i = 0; i < 12; i++) await page.click(sel('zoom-out')).catch(() => {});
+  await wait(900);
   const shown = await markersShown(page, RENDERED.map((s) => s.id));
   const st = await markerState(page);
   const heroMarkers = st.filter((d) => d.marker === 'hero');
@@ -709,6 +736,9 @@ for (const width of [1440, 390]) {
   noErrors(page, `viewer ${width}`);
   await page.close();
 }
+
+// ── the list (collections, the phone's scroll + tap) ─────────────────────────
+await listWalk({ base, api, open, record, shot, sel, wait, noErrors });
 
 // ── edit (/memories/:id/edit) ────────────────────────────────────────────────
 await editWalk({ browser, base, api, open, record, shot, sel, wait, noErrors, idle, loads, atlasDrawn, jump, modelsSettled, OUT, scheme });

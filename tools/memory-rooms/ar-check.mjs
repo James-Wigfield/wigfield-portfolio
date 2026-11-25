@@ -183,7 +183,8 @@ const closure = (start) => {
     !cssHits.length && !jsxHits.length && !undefinedTokens.length,
     `${used.length} tokens used${cssHits.length ? `; literals in ar.css: ${cssHits.map((l) => l.trim()).join(' | ')}` : ''}${jsxHits.length ? `; in ArEntry.jsx: ${jsxHits.map((l) => l.trim()).join(' | ')}` : ''}${undefinedTokens.length ? `; undefined: ${undefinedTokens.join(', ')}` : ''}`,
   );
-  const darkBlock = fs.readFileSync(path.join(REPO, 'src/memory-rooms/memory-rooms.css'), 'utf8').match(/prefers-color-scheme:\s*dark[\s\S]*?\n\}/)?.[0] || '';
+  // the ONE dark token block, keyed on <html data-mr-theme="dark"> since the theme switch (DECISIONS 192)
+  const darkBlock = fs.readFileSync(path.join(REPO, 'src/memory-rooms/memory-rooms.css'), 'utf8').match(/data-mr-theme='dark'\]\) \.mr,[\s\S]*?\n\}/)?.[0] || '';
   const qrDark = ['--mr-qr-ink', '--mr-qr-paper'].filter((t) => darkBlock.includes(`${t}:`));
   record('tokens: the QR code tokens have dark values too', qrDark.length === 2, qrDark.join(', ') || 'none in the dark block');
   const reticle = (arSrc['xr.js'] || '').split('\n').findIndex((l) => /color:\s*0x[0-9a-f]{6}/i.test(l));

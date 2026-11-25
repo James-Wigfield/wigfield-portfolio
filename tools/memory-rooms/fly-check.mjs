@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* fly-check: "Play the trip", the /memories flyover (src/memory-rooms/map/flyover/), in headless
+/* fly-check: "Play <collection>", the /memories flyover (src/memory-rooms/map/flyover/), in headless
    Edge on the real GPU (ANGLE d3d11: Mapbox needs WebGL 2), at 1440 and 390 px (390 = touch,
    mobile viewport, CPU throttled while it measures).
 
@@ -13,6 +13,9 @@
    never against a non-local base): Perth (captured, with a photo), Brooklyn, Calgary, Venice
    (captured, with photos) and one with no location, around the two rendered examples, so the
    route has long hops (WA → the USA) and short ones, both people, and a spot it must skip.
+   Play plays the picked collection (DECISIONS 212): it makes a "Fly check" collection holding EVERY
+   spot, opens /memories?c=<it> (the collection picked), and at the end puts each spot's own
+   collection back and deletes it.
 
    Mapbox loads: 3 per run (the globe at 1440, the globe at 390 via ?play=1, reduced motion at
    1440). The atlas pages (?map=atlas) make none. Every page asserts window.__mrMapLoads.
@@ -37,7 +40,8 @@
                  exit restore; a tap on the caption
      reduced     prefers-reduced-motion: cuts behind a fade, no orbit, no flights
      atlas       ?map=atlas at 1440 and 390: the simpler version completes in order with 0 map loads,
-                 Perth captioned "Off this map", route path, end caption, exit restores the view
+                 the world atlas draws every stop (nothing "Off this map" now), route path, end caption,
+                 exit restores the view
      static      flyover.css has no colour literals (tokens only) and no left-rule callouts
      console     zero console errors and page errors on every page
    Screenshots → memory-rooms-work/_page-check/fly-*-<scheme>.png. Exit 1 if anything fails. */
@@ -118,6 +122,35 @@ async function seedFlySpots() {
 }
 await seedFlySpots();
 
+/* ── the collection it plays (Play needs a picked collection) ───────────── */
+
+const FLY_COLL = uuidFor('collection');
+const FLY_NAME = 'Fly check';
+const ownCollection = new Map(); // spot id → its collectionId before the run (put back at the end)
+{
+  const ping = await api.ping();
+  if (!(ping.features || []).includes('collections')) {
+    console.error('This Worker has no collections (ping): Play needs one. Deploy / run memory_collections.sql first.');
+    process.exit(1);
+  }
+  if (!LOCAL) {
+    console.error('fly-check moves every spot into a test collection: local Workers only.');
+    process.exit(2);
+  }
+  const have = await api.listCollections();
+  if (!have.some((c) => c.id === FLY_COLL)) await api.saveCollection({ id: FLY_COLL, name: FLY_NAME });
+  for (const spot of await api.listSpots()) {
+    if (spot.collectionId === FLY_COLL) continue; // left over from an aborted run: already in
+    ownCollection.set(spot.id, spot.collectionId ?? null);
+    await api.patchSpot(spot.id, { collectionId: FLY_COLL });
+  }
+}
+const C = `c=${FLY_COLL}`;
+async function restoreCollections() {
+  for (const [id, was] of ownCollection) await api.patchSpot(id, { collectionId: was }).catch(() => {});
+  await api.deleteCollection(FLY_COLL).catch(() => {});
+}
+
 /* ── what the flyover should do with the spots on the Worker ─────────────── */
 
 const SPOTS = await api.listSpots();
@@ -148,8 +181,8 @@ function endStops(list) {
 }
 const isRendered = (s) => s.status === 'rendered' && s.media.some((m) => m.type === 'model' && m.name !== 'map');
 const hasThumb = (s) => s.media.some((m) => m.type === 'thumb');
-const ON_MAP = { west: -141, east: -52, south: 18, north: 60.5 }; // src/memory-rooms/map/geo.js
-const onAtlas = (s) => located(s) && s.lat >= ON_MAP.south && s.lat <= ON_MAP.north && s.lng >= ON_MAP.west && s.lng <= ON_MAP.east;
+// the atlas is a world map (DECISIONS 211): every stop short of ±80° latitude is on it
+const onAtlas = (s) => located(s) && Math.abs(s.lat) <= 80;
 const titleOf = (id) => byId.get(id)?.title || id;
 const RAD = Math.PI / 180;
 const km = (a, b) => {
@@ -608,7 +641,8 @@ function analyse(label, rec, { expect, engine, cap = 0, speed = 1, reduced = fal
 
 if (only.has('static')) {
   const css = fs.readFileSync(path.join(REPO, 'src/memory-rooms/map/flyover/flyover.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  const literals = css.match(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b/gi) || [];
+  // (white / black as colour words, not the white-space property)
+  const literals = css.match(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\b(white|black)\b(?!-)/gi) || [];
   record('static: flyover.css colours are .mr tokens only (no literals)', literals.length === 0, literals.slice(0, 5).join(' '));
   const leftRule = css.match(/border-left\s*:[^;]*/gi) || [];
   record('static: no left-rule callouts in flyover.css', leftRule.length === 0, leftRule.join(' | '));
@@ -623,13 +657,13 @@ const nums = (t) => (t || '').match(/-?[\d.]+(e-?\d+)?/g)?.map(Number) || [];
 for (const W of only.has('atlas') ? [1440, 390] : []) {
   const label = `atlas ${W}`;
   const page = await open(W);
-  await page.goto(`${base}/memories?map=atlas`, { waitUntil: 'networkidle2' });
+  await page.goto(`${base}/memories?map=atlas&${C}`, { waitUntil: 'networkidle2' });
   const drawn = await page.waitForSelector(`${sel('map')} .mr-atlas-borders`, { timeout: 20000 }).then(() => true).catch(() => false);
   await wait(800);
   const v0 = await atlasView(page);
   const btn = await page.$(sel('fly-play'));
   const btnOn = btn ? await btn.evaluate((el) => !el.disabled && el.offsetParent !== null) : false;
-  record(`${label}: the atlas has a working "Play the trip" button (not a broken one)`, drawn && btnOn);
+  record(`${label}: the atlas has a working "${COPY.fly.play(FLY_NAME)}" button (not a broken one)`, drawn && btnOn);
   await playClearOfNote(page, label);
   if (!btnOn) {
     noErrors(page, label);
@@ -665,8 +699,8 @@ for (const W of only.has('atlas') ? [1440, 390] : []) {
   const endCap = await page.$eval(sel('fly-end'), (el) => el.textContent).catch(() => '');
   const offMap = STOPS.filter((s) => !onAtlas(s)).map((s) => s.title);
   record(
-    `${label}: ends on the whole trip with the route drawn (stops off the atlas captioned "${COPY.fly.offMap}")`,
-    done && route > 50 && endCap.includes(COPY.fly.endTitle),
+    `${label}: ends on the whole collection with the route drawn (stops off the atlas captioned "${COPY.fly.offMap}")`,
+    done && route > 50 && endCap.includes(FLY_NAME),
     `route path ${route} chars, end caption "${endCap.slice(0, 40)}", off the atlas: ${offMap.join(', ') || 'none'}`,
   );
   // controls: play again, pause, ← →, then exit (Escape at 1440, the button at 390)
@@ -740,7 +774,7 @@ if (only.has('globe-1440')) {
   const W = 1440;
   const label = `globe ${W}`;
   const page = await open(W);
-  await page.goto(`${base}/memories`, { waitUntil: 'networkidle2' });
+  await page.goto(`${base}/memories?${C}`, { waitUntil: 'networkidle2' });
   const ready = await page.waitForSelector(MAPBOX_READY, { timeout: 30000 }).then(() => true).catch(() => false);
   record(`${label}: the Mapbox globe loads`, ready, await page.$eval('.mr-spotsmap', (el) => `engine ${el.dataset.engine}${el.dataset.engineReason ? ` (${el.dataset.engineReason})` : ''}`).catch(() => 'no map'));
   if (ready) {
@@ -751,7 +785,7 @@ if (only.has('globe-1440')) {
     await idle(page);
     const before = await camFull(page);
     const playBtn = await page.$eval(sel('fly-play'), (el) => ({ on: !el.disabled, text: el.textContent, label: el.getAttribute('aria-label') })).catch(() => null);
-    record(`${label}: "Play the trip" is on the map`, Boolean(playBtn?.on) && playBtn.text.includes(COPY.fly.play), playBtn ? `"${playBtn.text}"` : 'missing');
+    record(`${label}: "${COPY.fly.play(FLY_NAME)}" is on the map (the picked collection)`, Boolean(playBtn?.on) && playBtn.text.includes(COPY.fly.play(FLY_NAME)), playBtn ? `"${playBtn.text}"` : 'missing');
     await playClearOfNote(page, label);
 
     await recReset(page);
@@ -815,8 +849,8 @@ if (only.has('globe-1440')) {
         `${vis.filter(Boolean).length}/${STOPS.length} stops in view${missing.length ? ` (not: ${missing.join(', ')})` : ''}, centre ${cam.lng.toFixed(1)},${cam.lat.toFixed(1)} z${cam.zoom.toFixed(2)}, pitch ${cam.pitch.toFixed(1)}°`,
       );
       record(
-        `${label}: the end shows the full route (${STOPS.length - 1} legs) and "${COPY.fly.endTitle}"`,
-        r?.features === STOPS.length - 1 && endCap.includes(COPY.fly.endTitle) && endCap.includes(COPY.fly.endBody(STOPS.length)),
+        `${label}: the end shows the full route (${STOPS.length - 1} legs) and "${FLY_NAME}"`,
+        r?.features === STOPS.length - 1 && endCap.includes(FLY_NAME) && endCap.includes(COPY.fly.endBody(STOPS.length)),
         `${r?.features} line(s), ${r?.coords} points; "${endCap}"`,
       );
       await shot(page, `fly-end-${W}`);
@@ -1022,7 +1056,7 @@ if (only.has('globe-390')) {
   const W = 390;
   const label = `globe ${W}`;
   const page = await open(W);
-  await page.goto(`${base}/memories?play=1`, { waitUntil: 'networkidle2' });
+  await page.goto(`${base}/memories?${C}&play=1`, { waitUntil: 'networkidle2' });
   const ready = await page.waitForSelector(MAPBOX_READY, { timeout: 45000 }).then(() => true).catch(() => false);
   // throttle once the map is up (a throttled load can trip useMapbox's 12 s fallback to the atlas)
   await page.emulateCPUThrottling(THROTTLE);
@@ -1178,7 +1212,7 @@ if (only.has('reduced')) {
   const W = 1440;
   const label = `reduced ${W}`;
   const page = await open(W, { reduced: true });
-  await page.goto(`${base}/memories`, { waitUntil: 'networkidle2' });
+  await page.goto(`${base}/memories?${C}`, { waitUntil: 'networkidle2' });
   const ready = await page.waitForSelector(MAPBOX_READY, { timeout: 30000 }).then(() => true).catch(() => false);
   record(`${label}: the Mapbox globe loads`, ready);
   if (ready) {
@@ -1210,6 +1244,7 @@ if (only.has('reduced')) {
 }
 
 await browser.close();
+await restoreCollections();
 if (seeded) for (const s of FLY_SPOTS) await api.deleteSpot(uuidFor(s.title)).catch(() => {});
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed (${scheme}). Mapbox loads this run: ${mapLoads}. Screenshots: ${OUT}`);

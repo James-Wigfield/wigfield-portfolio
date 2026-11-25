@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { get, getAll, put, del, write } from '../lib/idb.js';
 import { addCapture } from '../lib/outbox.js';
+import { NONE, lastCollection, rememberCollection } from '../lib/collections.js';
 import { writeLastLoc } from '../lib/storage.js';
 import { newId } from '../lib/uuid.js';
 
@@ -29,14 +30,21 @@ const fresh = () => ({
   roomId: null, //   and the room on its checklist
   roomOf: null, //   the place's name, for the Saved screen's way back
   roomName: null, //  the room's name on the checklist (the title may be renamed; the room stays)
+  collectionId: startCollection(), // CONTRACTS.md 7: the collection picked last on this phone, else none
 });
+
+/** A fresh capture starts in the collection used last (or none). */
+function startCollection() {
+  const last = lastCollection();
+  return last && last !== NONE ? last : null;
+}
 
 /** A plain in-memory copy of a Blob (one read out of IndexedDB is backed by the database's own file). */
 async function inMemory(blob) {
   return new Blob([await blob.arrayBuffer()], { type: blob.type || 'image/jpeg' });
 }
 
-const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan', 'buildingId', 'roomId', 'roomOf', 'roomName'];
+const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan', 'buildingId', 'roomId', 'roomOf', 'roomName', 'collectionId'];
 const metaOf = (s) => Object.fromEntries(META_KEYS.map((k) => [k, s[k]]));
 const isDirty = (s) => Boolean(s.kind || s.title || s.note || s.photos.length || s.scan || s.loc);
 
@@ -247,7 +255,10 @@ export function useDraft() {
           spot.buildingId = state.buildingId;
           spot.roomId = state.roomId || null;
         }
+        // a room of a whole place files under its place's collection (no collectionId of its own)
+        if (!state.buildingId) spot.collectionId = state.collectionId || null;
         await addCapture(spot, files);
+        if (!state.buildingId) rememberCollection(state.collectionId);
         writeLastLoc(spot.lat, spot.lng);
         const thumbs = files.filter((f) => f.type === 'thumb').map((f) => f.blob);
         forgetFiles();
