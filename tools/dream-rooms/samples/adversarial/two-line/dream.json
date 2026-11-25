@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "title": "One chair",
+  "mood": {
+    "felt": [
+      "still"
+    ],
+    "intensity": 0.3,
+    "valence": 0,
+    "quote": [
+      "that's all I remember"
+    ],
+    "src": [
+      [
+        35,
+        56
+      ]
+    ]
+  },
+  "places": [
+    {
+      "id": "p1",
+      "is": [
+        "a white room"
+      ],
+      "archetype": "room",
+      "quote": [
+        "a white room with one chair in it"
+      ],
+      "src": [
+        [
+          0,
+          33
+        ]
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "o1",
+      "what": "one chair",
+      "at": "p1",
+      "salience": 1,
+      "quote": [
+        "one chair"
+      ],
+      "src": [
+        [
+          18,
+          27
+        ]
+      ]
+    }
+  ],
+  "vague": [
+    {
+      "id": "v1",
+      "what": "everything else",
+      "quote": [
+        "that's all I remember"
+      ],
+      "src": [
+        [
+          35,
+          56
+        ]
+      ]
+    }
+  ],
+  "motifs": [
+    "white-room",
+    "chair"
+  ]
+}

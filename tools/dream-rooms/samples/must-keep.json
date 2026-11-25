@@ -1,0 +1,14 @@
+{
+  "$comment": "What has to survive the self-test's fictional sample dream (build-prompt.md, Self-test). Each item names words of the sample; check-world.mjs --must-keep finds the dream.json entity that quotes them and checks a world mechanism covers it (not dropped).",
+  "items": [
+    { "id": "school-and-airport", "what": "school and airport at once", "quote": "back at school but it was also the airport" },
+    { "id": "door-back", "what": "the door back to the same corridor", "quote": "back at the start of the same corridor" },
+    { "id": "endless", "what": "the endless corridor", "quote": "it just kept going" },
+    { "id": "mum", "what": "Mum, or someone who was Mum, kept uncertain and far", "quote": "someone who was mum" },
+    { "id": "time", "what": "late afternoon and dark at once", "quote": "late afternoon but also dark outside" },
+    { "id": "lockers-gone", "what": "the lockers gone when he turns round", "quote": "the lockers were gone" },
+    { "id": "became-pool", "what": "the corridor becoming the pool", "quote": "then the corridor was the indoor pool" },
+    { "id": "not-allowed", "what": "the pool he isn't allowed into", "quote": "I knew I wasn't allowed in" },
+    { "id": "forgotten-end", "what": "the forgotten ending", "quote": "can't remember the end" }
+  ]
+}

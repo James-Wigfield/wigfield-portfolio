@@ -1,0 +1,107 @@
+/* Dream Rooms · the viewer's stage. Scoped under .dr-stage. No HUD: the only
+   screen text is the wake line, on white; the stills fallback is the only other
+   overlay. */
+
+.dr-stage {
+  --dr-stage-ink: #3a332c;
+  --dr-stage-white: #f4f2eb;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dr-stage__canvas,
+.dr-stage__canvas canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+}
+
+.dr-stage__canvas canvas {
+  cursor: default;
+}
+
+.dr-stage__line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  width: min(34rem, calc(100% - 3rem));
+  transform: translate(-50%, -50%);
+  font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+  font-style: italic;
+  font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: var(--dr-stage-ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.6s ease;
+}
+
+.dr-stage__line.is-on {
+  opacity: 0.86;
+}
+
+.dr-stage__stills {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 2s ease;
+}
+
+.dr-stage__stills.is-on {
+  opacity: 1;
+}
+
+.dr-stage__still {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 3s ease;
+}
+
+.dr-stage__still.is-on {
+  opacity: 1;
+}
+
+.dr-stage__still img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(0.6px) saturate(0.85);
+}
+
+.dr-stage__still figcaption {
+  position: absolute;
+  left: 8%;
+  bottom: 12%;
+  max-width: 70%;
+  font-family: Georgia, 'Iowan Old Style', serif;
+  font-style: italic;
+  font-size: clamp(0.95rem, 2vw, 1.3rem);
+  color: rgba(236, 230, 214, 0.62);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dr-stage__line,
+  .dr-stage__stills,
+  .dr-stage__still {
+    transition-duration: 0.01s;
+  }
+}

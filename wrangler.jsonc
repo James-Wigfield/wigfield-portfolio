@@ -93,6 +93,15 @@
 		{
 			"binding": "MEMORIES",
 			"bucket_name": "memory-rooms"
+		},
+		// ── Dream Rooms (/dreams) ─────────────────────────────────────────────────
+		// Rows (rows/dreams/<id>.json) AND files (dreams/<id>/…), private only. Create the
+		// bucket once before the next deploy (a deploy fails while it doesn't exist):
+		//   npx wrangler r2 bucket create dream-rooms
+		// `wrangler dev` simulates it locally (.wrangler/state), no setup needed.
+		{
+			"binding": "DREAMS",
+			"bucket_name": "dream-rooms"
 		}
 	],
 	"observability": {

@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "title": "Over the roofs",
+  "mood": {
+    "felt": [
+      "free",
+      "careful"
+    ],
+    "intensity": 0.7,
+    "valence": 0.8,
+    "quote": [
+      "it felt amazing"
+    ],
+    "src": [
+      [
+        245,
+        260
+      ]
+    ]
+  },
+  "time": {
+    "id": "time",
+    "said": [
+      "night"
+    ],
+    "quote": [
+      "flying over the city at night"
+    ],
+    "src": [
+      [
+        6,
+        35
+      ]
+    ]
+  },
+  "places": [
+    {
+      "id": "p1",
+      "is": [
+        "the city at night, just above the roofs"
+      ],
+      "archetype": "other",
+      "rule": "don't look down or you fall",
+      "quote": [
+        "I was flying over the city at night, not high, just above the roofs",
+        "I knew if I looked down I'd fall"
+      ],
+      "src": [
+        [
+          0,
+          67
+        ],
+        [
+          129,
+          161
+        ]
+      ]
+    }
+  ],
+  "figures": [
+    {
+      "id": "f1",
+      "who": "other people flying",
+      "presence": "always-far",
+      "at": "p1",
+      "quote": [
+        "there were other people flying too but far away"
+      ],
+      "src": [
+        [
+          196,
+          243
+        ]
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "o1",
+      "what": "the river full of lights",
+      "at": "p1",
+      "salience": 0.8,
+      "quote": [
+        "the river was full of lights"
+      ],
+      "src": [
+        [
+          99,
+          127
+        ]
+      ]
+    }
+  ],
+  "motifs": [
+    "flying",
+    "city",
+    "night",
+    "river",
+    "lights"
+  ]
+}

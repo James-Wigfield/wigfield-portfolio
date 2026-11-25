@@ -44,3 +44,7 @@ __pycache__/
 
 # Dream Rooms plan: generated renders, screenshots and bench output (tools/dream-rooms-plan/*.mjs rebuild them)
 tools/dream-rooms-plan/out/
+
+# Dream Rooms: per-dream work folders (pull.mjs / build.mjs / bake.mjs write them); local only
+dream-rooms-work/
+tools/dream-rooms/out/

@@ -1,0 +1,24 @@
+{
+  "$comment": "Shared geometry for Dream Rooms. Read by the viewer (layout.js, corridorWorld.js) AND the Blender kit (tools/dream-rooms/blender/common.py). Change a number here and both sides follow. Metres. See src/dream-rooms/CONTRACTS.md §5.",
+  "moduleSpacing": 200,
+  "door": { "w": 1.0, "h": 2.1 },
+  "stub": { "width": 1.1, "height": 2.25, "leg1": 0.9, "leg2": 1.6, "leg3": 0.9, "wall": 0.1 },
+  "walker": { "eye": 1.55, "radius": 0.2, "speedMin": 0.9, "speedMax": 1.3, "fov": 62 },
+  "unseen": { "frustumScale": 1.3, "far": 15, "seconds": 1.5 },
+  "budget": { "glbBytes": 6291456, "drawCalls": 150, "triangles": 300000, "atlasesPerModule": 4, "atlasPx": 2048, "texelsPerMetre": 100 },
+  "corridor": {
+    "width": 2.0,
+    "height": 2.75,
+    "segment": 4.0,
+    "doorZ": 2.0,
+    "signY": 2.32,
+    "signW": 0.62,
+    "signH": 0.3,
+    "leafAjarDeg": 24,
+    "break": { "length": 6.0, "width": 3.4, "windowW": 1.4, "windowH": 1.6, "windowSill": 0.9, "stencilY": 1.55 },
+    "entrance": { "length": 4.0 },
+    "end": { "length": 8.0 },
+    "gap": { "perLog2Days": 1, "maxPlain": 3 },
+    "stream": 12
+  }
+}

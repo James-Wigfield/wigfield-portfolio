@@ -20,6 +20,7 @@ import { handleArcadeApi } from './arcade/room.js';
 import { handleDeckRemoteApi } from './deck-remote.js';
 import { handlePapersApi } from './papers.js';
 import { handleMemoriesApi } from './memory-rooms.js';
+import { handleDreamsApi } from './dream-rooms.js';
 
 // The arcade's Durable Object. One class serves every arcade game — see
 // workers/arcade/room.js and ADR-005. Must be re-exported from the Worker entry
@@ -68,6 +69,11 @@ async function handleApi(request, env, url) {
   // also accept a signed ?t= token. See workers/memory-rooms.js.
   if (url.pathname.startsWith('/api/memories/')) {
     return handleMemoriesApi(request, env, url, { json, readJson });
+  }
+
+  // Dream Rooms — James's private dreams (R2 rows + files, DREAMS_PASSWORD or PORTAL_PASSWORD, never MEMORIES_PASSWORD). See workers/dream-rooms.js.
+  if (url.pathname === '/api/dreams' || url.pathname.startsWith('/api/dreams/')) {
+    return handleDreamsApi(request, env, url);
   }
 
   // Health check — confirms the Worker is live and whether Supabase is wired up.

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "dream",
+  "dream_version": 1,
+  "fallback": "still",
+  "look": { "light": "night", "warmth": 0.25, "fog": { "color": "#141823", "density": 0.04 }, "invented": true, "why": "dark around the one thing kept" },
+  "sound": { "bed": "wind", "reverb": "big", "invented": true, "why": "the air of the still" },
+  "modules": [
+    { "id": "river", "kit": "bespoke", "bespoke": "lights_below", "origin": [0, 0, 0], "size": [30, 12, 30], "for": ["o1"] }
+  ],
+  "stills": [ { "name": "still-1", "module": "river", "at": [15, 8, 28], "facing": "n", "pitch": -25 } ],
+  "words": [ { "text": "the river was full of lights", "on": "river/floor", "for": ["o1"] } ],
+  "wake": { "after": "river", "line": "it felt amazing", "invented": true, "why": "his last words end it" },
+  "dropped": [
+    { "id": "p1", "reason": "flying over an open city: the kit has no outdoor or flying modules yet (phase 2)" },
+    { "id": "f1", "reason": "people flying far off outdoors: nothing to stand them in" },
+    { "id": "time", "reason": "night over a city has no room to be night in; the still is dark instead" }
+  ]
+}

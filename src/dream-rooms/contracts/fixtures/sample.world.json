@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "kind": "dream",
+  "dream_version": 1,
+  "look": { "light": "late-afternoon", "windows": "dark", "warmth": 0.3, "fog": { "color": "#a59b80", "density": 0.085 }, "for": ["time"] },
+  "sound": { "bed": "hum-100", "reverb": "too-big", "for": ["s1"] },
+  "modules": [
+    {
+      "id": "hall", "kit": "hall", "origin": [0, 0, 0], "size": [24, 5.2, 16], "scale": 1.3,
+      "finishes": {
+        "floor": { "is": "carpet", "color": "#4f6b4a", "for": ["p1"] },
+        "walls": { "is": "plain", "invented": true, "why": "walls to close p1" },
+        "ceiling": { "is": "plain", "invented": true, "why": "a ceiling to close p1" }
+      },
+      "ceiling": { "is": "plain", "invented": true, "why": "a ceiling to close p1" },
+      "lights": { "is": "glow", "for": ["time"] },
+      "props": [
+        { "id": "lockers", "kit": "locker-bank", "wall": "n", "at": 12, "length": 14, "for": ["o1"] },
+        { "id": "board", "kit": "board", "wall": "e", "at": 3, "text": "", "for": ["p1", "v2"] },
+        { "id": "windows", "kit": "window-dark", "wall": "s", "at": 12, "count": 4, "for": ["time"] }
+      ],
+      "for": ["p1"]
+    },
+    {
+      "id": "corridor", "kit": "corridor", "origin": [200, 0, 0], "size": [2.2, 2.6, 8], "repeat": true,
+      "finishes": {
+        "floor": { "is": "carpet", "color": "#4f6b4a", "for": ["p1"] },
+        "walls": { "is": "plain", "invented": true, "why": "walls to close p2" }
+      },
+      "ceiling": { "is": "drop-tiles", "for": ["s1"] },
+      "lights": { "is": "panels", "for": ["s1"] },
+      "doors": { "count": 3, "sign": "14", "sides": "both", "for": ["p2"] },
+      "for": ["p2"]
+    },
+    {
+      "id": "pool", "kit": "pool", "origin": [400, 0, 0], "size": [12, 4, 25], "walkable": "edge-only",
+      "finishes": {
+        "water": { "is": "water", "for": ["p3"] },
+        "floor": { "is": "tile", "color": "#9fb3b0", "for": ["p3"] },
+        "walls": { "is": "tile", "color": "#b9c6c0", "for": ["p3"] }
+      },
+      "lights": { "is": "glow", "invented": true, "why": "light to see p3 by" },
+      "props": [
+        { "id": "lockers", "kit": "locker-bank", "wall": "e", "at": 8, "length": 8, "for": ["o1", "c1"] }
+      ],
+      "for": ["p3"]
+    }
+  ],
+  "doorways": [
+    { "id": "d1", "module": "hall", "wall": "e", "at": 8, "invented": true, "why": "the door the route needs from p1 to p2" },
+    { "id": "d2", "module": "corridor", "wall": "w", "at": 2, "invented": true, "why": "where p2 starts" },
+    { "id": "d3", "module": "corridor", "wall": "e", "at": 6, "for": ["l1"] }
+  ],
+  "links": [
+    { "kind": "teleport", "a": "d1", "b": "d2", "invented": true, "why": "joins p1 to p2" },
+    { "kind": "teleport", "a": "d3", "b": "d2", "oneway": true, "for": ["l1"] },
+    { "kind": "dissolve", "from": "corridor", "to": "pool", "after": 24, "at": [0.8, 0, 2], "facing": "s", "for": ["l2"] }
+  ],
+  "swaps": [
+    { "target": "pool/lockers", "action": "hide", "when": "unseen", "after": "time:6", "for": ["c1"] },
+    { "target": "corridor/doors-sign", "action": "relabel", "to": "41", "when": "unseen", "for": ["p2"] }
+  ],
+  "figures": [ { "as": "silhouette", "module": "corridor", "keep": "fog-distance", "for": ["f1"] } ],
+  "words": [
+    { "text": "I was meant to be catching a flight", "on": "hall/board", "for": ["v2"] },
+    { "text": "it just kept going", "on": "corridor/wall-w", "for": ["p2"] },
+    { "text": "I knew I wasn't allowed in", "on": "pool/water", "for": ["p3"] }
+  ],
+  "route": ["hall", "corridor", "pool"],
+  "spawn": { "module": "hall", "at": [3, 0, 8], "facing": "e" },
+  "wake": { "after": "pool", "delay": 16, "line": "I think I just stood there.", "for": ["v1"] },
+  "dropped": []
+}

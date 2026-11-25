@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "kind": "dream",
+  "dream_version": 1,
+  "look": { "light": "flat-white", "warmth": 0.4, "fog": { "color": "#d9d6cf", "density": 0.12 }, "for": ["v1"] },
+  "sound": { "bed": "room-tone", "reverb": "room", "invented": true, "why": "a room needs its quiet" },
+  "modules": [
+    {
+      "id": "room", "kit": "room", "origin": [0, 0, 0], "size": [5, 3.2, 5], "scale": 1.2,
+      "finishes": {
+        "floor": { "is": "painted-block", "color": "#e9e7e1", "for": ["p1"] },
+        "walls": { "is": "painted-block", "color": "#ecebe6", "for": ["p1"] }
+      },
+      "ceiling": { "is": "plain", "invented": true, "why": "a ceiling to close p1" },
+      "lights": { "is": "glow", "invented": true, "why": "light to see p1 by" },
+      "props": [ { "id": "chair", "kit": "chair", "pos": [2.5, 0, 2.2], "rotY": 20, "for": ["o1"] } ],
+      "for": ["p1"]
+    }
+  ],
+  "route": ["room"],
+  "spawn": { "module": "room", "at": [1.0, 0, 4.3], "facing": "n" },
+  "wake": { "after": "room", "delay": 12, "line": "that's all I remember", "for": ["v1"] },
+  "dropped": []
+}

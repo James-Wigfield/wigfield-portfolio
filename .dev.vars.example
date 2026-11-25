@@ -20,3 +20,11 @@ MEMORIES_ROW_STORE=local
 # Optional: the HMAC key for signed file links. Unset = derived from the passwords
 # (changing a password then expires every link, which is fine).
 # MEMORIES_SIGNING_KEY=
+
+# ── Dream Rooms (/dreams) ──────────────────────────────────────────────────
+# James only. Dreams open with this or PORTAL_PASSWORD; MEMORIES_PASSWORD never
+# opens dreams (Justin has it). Production: wrangler secret put DREAMS_PASSWORD
+DREAMS_PASSWORD=
+# Optional: the HMAC key for signed dream file links (≤ 1 h). Unset = derived from
+# DREAMS_PASSWORD + PORTAL_PASSWORD. Production: wrangler secret put DREAMS_SIGNING_KEY
+# DREAMS_SIGNING_KEY=

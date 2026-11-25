@@ -1,0 +1,357 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "world.schema.json",
+  "title": "world.json v1: one build of a dream (the kit's input and the viewer's runtime)",
+  "description": "Metres, y up. Every mechanism cites dream ids in `for`, or is `invented` with a `why`. kind 'corridor' is the Dream Corridor, made at runtime by contracts/corridorWorld.js. See src/dream-rooms/CONTRACTS.md sections 4-7.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "look", "sound", "modules"],
+  "properties": {
+    "version": { "const": 1 },
+    "kind": { "enum": ["dream", "corridor"] },
+    "dream_version": { "type": "integer", "minimum": 0 },
+    "fallback": { "enum": ["still"] },
+    "look": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["light", "warmth", "fog"],
+      "properties": {
+        "light": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "windows": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "warmth": { "type": "number", "minimum": 0, "maximum": 1 },
+        "fog": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color", "density"],
+          "properties": {
+            "color": { "$ref": "#/$defs/hex" },
+            "density": { "type": "number", "minimum": 0.005, "maximum": 0.25 }
+          }
+        },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "sound": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bed", "reverb"],
+      "properties": {
+        "bed": { "enum": ["hum-100", "room-tone", "water", "wind", "none"] },
+        "reverb": { "enum": ["dry", "room", "big", "too-big"] },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "modules": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/module" } },
+    "doorways": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/doorway" } },
+    "links": { "type": "array", "maxItems": 1200, "items": { "$ref": "#/$defs/link" } },
+    "swaps": { "type": "array", "maxItems": 400, "items": { "$ref": "#/$defs/swap" } },
+    "figures": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/figure" } },
+    "words": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/word" } },
+    "route": { "type": "array", "minItems": 1, "maxItems": 12, "items": { "$ref": "#/$defs/id" } },
+    "spawn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "at", "facing"],
+      "properties": {
+        "module": { "$ref": "#/$defs/id" },
+        "at": { "$ref": "#/$defs/vec3" },
+        "facing": { "$ref": "#/$defs/side" }
+      }
+    },
+    "wake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["after", "line"],
+      "properties": {
+        "after": { "$ref": "#/$defs/id" },
+        "delay": { "type": "number", "minimum": 2, "maximum": 120 },
+        "line": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "dropped": {
+      "type": "array",
+      "maxItems": 48,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reason"],
+        "properties": {
+          "id": { "$ref": "#/$defs/dreamId" },
+          "reason": { "type": "string", "minLength": 3, "maxLength": 240 }
+        }
+      }
+    },
+    "stills": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "module", "at", "facing"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9_-]{1,40}$" },
+          "module": { "$ref": "#/$defs/id" },
+          "at": { "$ref": "#/$defs/vec3" },
+          "facing": { "$ref": "#/$defs/side" },
+          "pitch": { "type": "number", "minimum": -60, "maximum": 60 }
+        }
+      }
+    },
+    "pieces": { "type": "array", "maxItems": 4000, "items": { "$ref": "#/$defs/piece" } },
+    "doors": { "type": "array", "maxItems": 1200, "items": { "$ref": "#/$defs/corridorDoor" } },
+    "breaks": {
+      "type": "array",
+      "maxItems": 1200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["night", "z", "label"],
+        "properties": {
+          "night": { "$ref": "#/$defs/date" },
+          "z": { "type": "number" },
+          "label": { "type": "string", "maxLength": 60 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,39}$" },
+    "dreamId": { "type": "string", "pattern": "^([plfocvs][0-9]+|time)$" },
+    "for": { "type": "array", "maxItems": 12, "uniqueItems": true, "items": { "$ref": "#/$defs/dreamId" } },
+    "why": { "type": "string", "minLength": 3, "maxLength": 160 },
+    "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "vec3": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+    "side": { "enum": ["n", "s", "e", "w"] },
+    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "finish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["is"],
+      "properties": {
+        "is": { "enum": ["carpet", "tile", "terrazzo", "painted-block", "wallpaper", "timber", "linoleum", "water", "plain"] },
+        "color": { "$ref": "#/$defs/hex" },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kit", "origin", "size"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kit": { "enum": ["room", "hall", "corridor", "pool", "bespoke", "dream-corridor"] },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "size": { "$ref": "#/$defs/vec3" },
+        "scale": { "type": "number", "minimum": 0.6, "maximum": 1.6 },
+        "repeat": { "type": "boolean" },
+        "walkable": { "enum": ["all", "edge-only"] },
+        "bespoke": { "type": "string", "pattern": "^[a-z0-9_]{1,40}$" },
+        "finishes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "floor": { "$ref": "#/$defs/finish" },
+            "walls": { "$ref": "#/$defs/finish" },
+            "ceiling": { "$ref": "#/$defs/finish" },
+            "water": { "$ref": "#/$defs/finish" }
+          }
+        },
+        "ceiling": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["is"],
+          "properties": {
+            "is": { "enum": ["drop-tiles", "plain", "none", "high-dark"] },
+            "for": { "$ref": "#/$defs/for" },
+            "invented": { "const": true },
+            "why": { "$ref": "#/$defs/why" }
+          }
+        },
+        "lights": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["is"],
+          "properties": {
+            "is": { "enum": ["panels", "glow", "windows", "none"] },
+            "for": { "$ref": "#/$defs/for" },
+            "invented": { "const": true },
+            "why": { "$ref": "#/$defs/why" }
+          }
+        },
+        "doors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count"],
+          "properties": {
+            "count": { "type": "integer", "minimum": 0, "maximum": 8 },
+            "sign": { "type": "string", "maxLength": 24 },
+            "sides": { "enum": ["both", "e", "w"] },
+            "for": { "$ref": "#/$defs/for" },
+            "invented": { "const": true },
+            "why": { "$ref": "#/$defs/why" }
+          }
+        },
+        "props": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/prop" } },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "prop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kit"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kit": { "enum": ["door", "locker-bank", "sign", "board", "light-panel", "window-dark", "chair", "coat"] },
+        "wall": { "$ref": "#/$defs/side" },
+        "at": { "type": "number", "minimum": 0, "maximum": 60 },
+        "pos": { "$ref": "#/$defs/vec3" },
+        "length": { "type": "number", "minimum": 0.2, "maximum": 60 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "rotY": { "type": "number", "minimum": -360, "maximum": 360 },
+        "text": { "type": "string", "maxLength": 120 },
+        "color": { "$ref": "#/$defs/hex" },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "doorway": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "module", "wall", "at"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "module": { "$ref": "#/$defs/id" },
+        "wall": { "$ref": "#/$defs/side" },
+        "at": { "type": "number", "minimum": 0 },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "link": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "a", "b"],
+          "properties": {
+            "kind": { "enum": ["walk", "teleport"] },
+            "a": { "$ref": "#/$defs/id" },
+            "b": { "$ref": "#/$defs/id" },
+            "oneway": { "type": "boolean" },
+            "for": { "$ref": "#/$defs/for" },
+            "invented": { "const": true },
+            "why": { "$ref": "#/$defs/why" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "from", "to", "after"],
+          "properties": {
+            "kind": { "const": "dissolve" },
+            "from": { "$ref": "#/$defs/id" },
+            "to": { "$ref": "#/$defs/id" },
+            "after": { "type": "number", "minimum": 2, "maximum": 300 },
+            "at": { "$ref": "#/$defs/vec3" },
+            "facing": { "$ref": "#/$defs/side" },
+            "for": { "$ref": "#/$defs/for" },
+            "invented": { "const": true },
+            "why": { "$ref": "#/$defs/why" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "door", "dream"],
+          "properties": {
+            "kind": { "const": "enter" },
+            "door": { "$ref": "#/$defs/id" },
+            "dream": { "$ref": "#/$defs/uuid" }
+          }
+        }
+      ]
+    },
+    "swap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "action", "when"],
+      "properties": {
+        "target": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,39}/[a-z0-9:_-]{1,60}$" },
+        "action": { "enum": ["show", "hide", "move", "retint", "relabel"] },
+        "to": { "type": ["string", "array"], "maxLength": 60, "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+        "when": { "const": "unseen" },
+        "after": { "type": "string", "pattern": "^(visited:[a-z][a-z0-9_-]{0,39}|time:[0-9]+(\\.[0-9]+)?)$" },
+        "revert": { "type": "number", "minimum": 1, "maximum": 600 },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "figure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["as", "module", "keep"],
+      "properties": {
+        "as": { "enum": ["silhouette", "voice", "coat", "chair-coat"] },
+        "module": { "$ref": "#/$defs/id" },
+        "keep": { "enum": ["fog-distance", "other-room"] },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "word": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "on"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "on": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,39}/[a-z0-9:_-]{1,60}$" },
+        "for": { "$ref": "#/$defs/for" },
+        "invented": { "const": true },
+        "why": { "$ref": "#/$defs/why" }
+      }
+    },
+    "piece": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["piece", "z"],
+      "properties": {
+        "piece": { "enum": ["entrance", "plain", "door_l", "door_r", "door_lr", "break", "end", "end_door"] },
+        "z": { "type": "number" },
+        "door": { "$ref": "#/$defs/id" },
+        "night": { "$ref": "#/$defs/date" }
+      }
+    },
+    "corridorDoor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "sign", "side", "z"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "dream": { "$ref": "#/$defs/uuid" },
+        "dreamt_on": { "$ref": "#/$defs/date" },
+        "night_order": { "type": "integer", "minimum": 1 },
+        "status": { "enum": ["captured", "reading", "building", "rendered", "failed"] },
+        "state": { "enum": ["ajar", "shut-lit", "shut-dark"] },
+        "sign": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "string", "maxLength": 120 } },
+        "side": { "enum": ["l", "r", "end"] },
+        "z": { "type": "number" }
+      }
+    }
+  }
+}

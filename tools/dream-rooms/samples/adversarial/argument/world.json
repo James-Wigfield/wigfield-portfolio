@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "kind": "dream",
+  "dream_version": 1,
+  "look": { "light": "kitchen-dusk", "warmth": 0.45, "fog": { "color": "#7d776c", "density": 0.11 }, "for": ["v1"] },
+  "sound": { "bed": "room-tone", "reverb": "room", "for": ["f2"] },
+  "modules": [
+    {
+      "id": "kitchen", "kit": "room", "origin": [0, 0, 0], "size": [4.2, 2.7, 3.6], "scale": 1.15,
+      "finishes": {
+        "floor": { "is": "plain", "invented": true, "why": "floor for p1" },
+        "walls": { "is": "plain", "invented": true, "why": "walls to close p1" }
+      },
+      "ceiling": { "is": "plain", "invented": true, "why": "a ceiling to close p1" },
+      "lights": { "is": "glow", "invented": true, "why": "light to see p1 by" },
+      "props": [ { "id": "jacket", "kit": "coat", "wall": "w", "at": 1.6, "for": ["o1"] } ],
+      "for": ["p1"]
+    }
+  ],
+  "figures": [ { "as": "voice", "module": "kitchen", "keep": "other-room", "for": ["f2"] } ],
+  "words": [ { "text": "I always do this", "on": "kitchen/wall-n", "for": ["f1"] } ],
+  "route": ["kitchen"],
+  "spawn": { "module": "kitchen", "at": [3.4, 0, 2.8], "facing": "n" },
+  "wake": { "after": "kitchen", "delay": 12, "line": "I couldn't think of anything to say back.", "for": ["v1"] },
+  "dropped": [ { "id": "f1", "reason": "the dream is a conversation with him; figures are absences only, so only one line of his stays, on the wall" } ]
+}

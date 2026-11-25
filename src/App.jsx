@@ -48,6 +48,16 @@ const memories = (page) => (
   </Suspense>
 );
 
+// Dream Rooms (src/dream-rooms/CONTRACTS.md): password-gated dreams, the Dream Corridor at /dreams.
+// One lazy chunk; `page` picks the screen inside it.
+const DreamRooms = lazy(() => import('./dream-rooms/DreamRoomsApp.jsx'));
+const dreamsGround = <div style={{ position: 'fixed', inset: 0, background: '#0b0a09' }} />;
+const dreams = (page) => (
+  <Suspense fallback={dreamsGround}>
+    <DreamRooms page={page} />
+  </Suspense>
+);
+
 // Courtney's slides: a public, unlisted motion-graphics talk deck (src/courtney-slides/).
 const CourtneySlides = lazy(() => import('./courtney-slides/CourtneySlides.jsx'));
 const slidesGround = <div style={{ position: 'fixed', inset: 0, background: '#1b1d21' }} />;
@@ -133,6 +143,10 @@ export default function App() {
       <Route path="/memories/:spotId" element={memories('spot')} />
       <Route path="/memories/:spotId/edit" element={memories('edit')} />
       <Route path="/memories/:spotId/walk" element={memories('walk')} />
+      {/* Dream Rooms: password-gated, private dreams, see src/dream-rooms/CONTRACTS.md */}
+      <Route path="/dreams" element={dreams('corridor')} />
+      <Route path="/dreams/new" element={dreams('new')} />
+      <Route path="/dreams/:id" element={dreams('dream')} />
       {/* Private management portal — gated client-side (placeholder for Supabase Auth).
           /portal/<toolId>/<sub> deep-links to a tool (see portal/portalRoute.js). */}
       <Route path="/portal/:toolId?/*" element={<Portal />} />

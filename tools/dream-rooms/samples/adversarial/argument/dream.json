@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "title": "The jacket",
+  "mood": {
+    "felt": [
+      "annoyed",
+      "stuck"
+    ],
+    "intensity": 0.55,
+    "valence": -0.5,
+    "quote": [
+      "I woke up still annoyed at him"
+    ],
+    "src": [
+      [
+        330,
+        360
+      ]
+    ]
+  },
+  "places": [
+    {
+      "id": "p1",
+      "is": [
+        "a kitchen"
+      ],
+      "archetype": "room",
+      "certainty": 0.4,
+      "quote": [
+        "we were standing in a kitchen but I don't remember whose"
+      ],
+      "src": [
+        [
+          130,
+          186
+        ]
+      ]
+    }
+  ],
+  "figures": [
+    {
+      "id": "f1",
+      "who": "Sam",
+      "certainty": 0.9,
+      "presence": "felt",
+      "at": "p1",
+      "quote": [
+        "I was arguing with Sam about whether he'd borrowed my jacket",
+        "he got really quiet and then said I always do this"
+      ],
+      "src": [
+        [
+          0,
+          60
+        ],
+        [
+          188,
+          238
+        ]
+      ]
+    },
+    {
+      "id": "f2",
+      "who": "Mum",
+      "certainty": 0.5,
+      "presence": "voice-only",
+      "at": null,
+      "quote": [
+        "Mum was in the next room listening I think"
+      ],
+      "src": [
+        [
+          286,
+          328
+        ]
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "o1",
+      "what": "my jacket",
+      "at": "p1",
+      "salience": 0.6,
+      "quote": [
+        "borrowed my jacket"
+      ],
+      "src": [
+        [
+          42,
+          60
+        ]
+      ]
+    }
+  ],
+  "vague": [
+    {
+      "id": "v1",
+      "what": "whose kitchen",
+      "quote": [
+        "I don't remember whose"
+      ],
+      "src": [
+        [
+          164,
+          186
+        ]
+      ]
+    }
+  ],
+  "fragments": [
+    {
+      "text": "I couldn't think of anything to say back",
+      "at": "wake",
+      "src": [
+        244,
+        284
+      ]
+    }
+  ],
+  "motifs": [
+    "argument",
+    "sam",
+    "jacket",
+    "kitchen",
+    "mum"
+  ]
+}

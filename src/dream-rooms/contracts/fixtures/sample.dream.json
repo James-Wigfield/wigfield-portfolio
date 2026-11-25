@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "title": "The gate I couldn't find",
+  "mood": { "felt": ["searching", "uneasy"], "intensity": 0.6, "valence": -0.2, "quote": ["more like I'd forgotten something really important"] },
+  "time": { "id": "time", "said": ["late afternoon", "dark outside"], "contradiction": true, "quote": ["it was late afternoon but also dark outside the windows somehow"] },
+  "places": [
+    { "id": "p1", "is": ["school", "Perth airport hall"], "archetype": "hall", "certainty": 0.8, "scale": 1.3,
+      "features": ["year 9 lockers along the walls", "green school carpet", "everyone already gone"],
+      "quote": ["I was back at school but it was also the airport", "the year 9 lockers all along the walls", "that green school carpet"] },
+    { "id": "p2", "is": ["corridor"], "archetype": "corridor", "endless": true, "features": ["every door numbered 14"],
+      "quote": ["it just kept going", "every door had the same number, 14"] },
+    { "id": "p3", "is": ["indoor pool from swimming lessons"], "archetype": "pool", "features": ["water completely still"],
+      "rule": "not allowed in", "quote": ["the indoor pool from swimming lessons", "I knew I wasn't allowed in"] }
+  ],
+  "links": [
+    { "id": "l1", "from": "p2", "to": "p2", "via": "door", "impossible": "loops-back", "quote": ["when I went through one I was back at the start of the same corridor"] },
+    { "id": "l2", "from": "p2", "to": "p3", "via": "became", "impossible": "transforms", "quote": ["then the corridor was the indoor pool"] }
+  ],
+  "figures": [
+    { "id": "f1", "who": "mum, or someone who was mum", "certainty": 0.5, "presence": "always-far", "at": "p2", "quote": ["or someone who was mum", "but I never got any closer"] }
+  ],
+  "objects": [ { "id": "o1", "what": "year 9 lockers", "at": "p1", "salience": 0.7, "quote": ["the year 9 lockers"] } ],
+  "changes": [ { "id": "c1", "target": "o1", "to": "gone", "trigger": "look-away", "quote": ["when I turned around the lockers were gone"] } ],
+  "vague": [
+    { "id": "v1", "what": "the ending", "quote": ["can't remember the end"] },
+    { "id": "v2", "what": "where the flight went", "quote": ["I didn't know where to"] }
+  ],
+  "sound": [ { "id": "s1", "what": "a hum like the lights", "quote": ["a hum the whole time like the lights"] } ],
+  "fragments": [ { "text": "every door had the same number, 14", "at": "p2" }, { "text": "I think I just stood there", "at": "wake" } ],
+  "motifs": ["school", "airport", "corridor", "pool", "mum", "missed-flight", "lockers"]
+}

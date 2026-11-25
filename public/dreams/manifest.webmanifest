@@ -1,0 +1,17 @@
+{
+  "id": "/dreams/new",
+  "name": "Dreams",
+  "short_name": "Dreams",
+  "description": "Write a dream down before it goes.",
+  "start_url": "/dreams/new",
+  "scope": "/dreams",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0a09",
+  "theme_color": "#0b0a09",
+  "icons": [
+    { "src": "/dreams/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/dreams/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/dreams/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
