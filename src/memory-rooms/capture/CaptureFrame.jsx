@@ -11,8 +11,7 @@ export const Arrow = ({ back = false }) => (
   </svg>
 );
 
-export default function CaptureFrame({ step, onBack, primary, note, children }) {
-  const steps = COPY.capture.steps;
+export default function CaptureFrame({ step, onBack, primary, note, steps = COPY.capture.steps, children }) {
   return (
     <div className="mr-capture">
       <ol className="mr-steps" aria-label={COPY.capture.step(step + 1, steps.length)}>

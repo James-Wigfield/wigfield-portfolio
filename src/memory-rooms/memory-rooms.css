@@ -1163,6 +1163,8 @@ html:where([data-mr-theme='dark']) .mr-mbx .mapboxgl-ctrl-attrib-button { filter
   flex-direction: column;
 }
 .mr-capture-loading { padding: var(--mr-space-6) var(--mr-gutter); }
+/* the layout step (old photos) needs room for the plan and the picked photo beside it */
+.mr-capture:has([data-mr='layout-step']) { max-width: 1120px; }
 
 .mr-steps {
   flex: none;
@@ -1599,6 +1601,33 @@ html:where([data-mr-theme='dark']) .mr-mbx .mapboxgl-ctrl-attrib-button { filter
 /* ── whole places: the place page (checklist on the plan), the sketch plan, capture ── */
 
 .mr-kinds[data-count='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* old photos (capture.mode = 'freeform', CONTRACTS.md 8): the toggle on step 1, the photo grid with captions,
+   the optional layout step */
+.mr-oldtoggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-3);
+  padding: var(--mr-space-3) 0;
+  border-top: var(--mr-hairline) solid var(--mr-rule);
+  border-bottom: var(--mr-hairline) solid var(--mr-rule);
+  cursor: pointer;
+}
+.mr-oldtoggle input { flex: none; width: 22px; height: 22px; margin: 2px 0 0; font-size: 16px; accent-color: var(--mr-ink); }
+.mr-oldtoggle__text { display: flex; flex-direction: column; gap: 2px; }
+.mr-oldtoggle__label { font-weight: 500; }
+.mr-oldphotos__lede { margin: 0; color: var(--mr-ink-2); font-size: var(--mr-text-s); }
+.mr-oldphotos__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--mr-space-3); list-style: none; margin: 0; padding: 0; }
+.mr-oldphotos__item { display: flex; flex-direction: column; gap: var(--mr-space-1); min-width: 0; }
+.mr-oldphotos__item .mr-thumb { aspect-ratio: 3 / 4; }
+.mr-oldphotos__caption { min-height: 40px; font-size: 1rem; }
+@media (max-width: 819px) {
+  .mr-oldphotos__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mr-oldphotos__caption { min-height: var(--mr-tap); }
+}
+.mr-steplayout { gap: var(--mr-space-4); }
+.mr-steplayout__choice { flex-wrap: wrap; }
+.mr-steplayout__choice button { min-height: var(--mr-tap); }
 @media (max-width: 480px) {
   .mr-kinds[data-count='3'] { grid-template-columns: 1fr 1fr; }
   .mr-kinds[data-count='3'] > :last-child { grid-column: 1 / -1; }

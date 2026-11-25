@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory-rooms/capture.schema.json",
+  "title": "Memory Rooms spot capture v1",
+  "description": "How a spot's photos were taken, and the hints for placing them (CONTRACTS.md 8). `guided` = the shot guide's corner shots (the default; a spot without `capture` is guided). `freeform` = old photos in any order (up to 40), which the render session has to place itself: James can help with a rough outline of the room (`layout`) and viewpoints (`views`: where he stood and which way he faced). Metres in the scene frame of CONTRACTS.md 1 (x east, z south, y up); `yaw` uses rotY's convention (degrees about +y: 0 = looking south (+z), 90 = east, 180 = north, 270 = west). Captions are PER PHOTO (`captions`, keyed by photo number), not per viewpoint: a photo can have one without being placed. Validated by src/memory-rooms/capture/freeform.js (JS only: the phone and the Worker write it).",
+  "type": "object",
+  "required": ["mode"],
+  "additionalProperties": false,
+  "properties": {
+    "mode": { "enum": ["guided", "freeform"] },
+    "era": { "type": "string", "minLength": 1, "maxLength": 60, "description": "When this was, in James's words: \"lived here 2019–2021\"." },
+    "captions": {
+      "type": "object",
+      "description": "Photo number (\"1\"…\"40\") → a short caption (\"from the bed\"). Keys checked by freeform.js.",
+      "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "outline": {
+          "description": "The room's walls as a polygon (inner faces), 3–64 corners, either direction, simple. A rough sketch: metres are only right when sizeKnown.",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/xz" }
+        },
+        "sizeKnown": { "type": "boolean", "description": "true when James typed the size (\"about 4 × 3\") or the outline came from a measured plan; false = proportions only." },
+        "openings": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["edge", "offset", "width", "type"],
+            "additionalProperties": false,
+            "properties": {
+              "edge": { "type": "integer", "minimum": 0, "maximum": 63, "description": "0 = outline[0] → outline[1] (as written)." },
+              "offset": { "type": "number", "minimum": 0, "maximum": 100, "description": "From outline[edge] toward the next corner, to the opening's near side." },
+              "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 20 },
+              "type": { "enum": ["door", "window"] }
+            }
+          }
+        }
+      }
+    },
+    "views": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": ["photo", "x", "z", "yaw", "conf"],
+        "additionalProperties": false,
+        "properties": {
+          "photo": { "type": "integer", "minimum": 1, "maximum": 40 },
+          "x": { "type": "number", "minimum": -100, "maximum": 100 },
+          "z": { "type": "number", "minimum": -100, "maximum": 100 },
+          "yaw": { "type": "number", "minimum": 0, "exclusiveMaximum": 360 },
+          "conf": { "enum": ["exact", "rough"], "description": "exact = he knows he stood right there facing that way; rough = about there." }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "xz": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number", "minimum": -100, "maximum": 100 },
+        { "type": "number", "minimum": -100, "maximum": 100 }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

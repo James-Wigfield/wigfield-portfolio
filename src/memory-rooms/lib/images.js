@@ -1,6 +1,11 @@
 /* Photo processing on the phone: decode (EXIF orientation applied, HEIC on
    Safari), re-encode a JPEG at a 2048 px long edge (never upscaled) and a
-   480 px thumbnail drawn from that. One photo at a time keeps memory low. */
+   480 px thumbnail drawn from that. One photo at a time keeps memory low.
+   The canvas drops every bit of metadata, so the EXIF the render side uses is
+   read from the ORIGINAL first (lib/exif.js) and returned beside the photo,
+   with the original's pixel size (CONTRACTS.md 8). */
+
+import { readExif } from './exif.js';
 
 export const PHOTO_LONG_EDGE = 2048;
 export const THUMB_LONG_EDGE = 480;
@@ -72,17 +77,21 @@ function release(cv) {
 }
 
 /**
- * file → { photo: Blob, width, height, thumb: Blob, thumbWidth, thumbHeight }
+ * file → { photo: Blob, width, height, thumb: Blob, thumbWidth, thumbHeight, exif }
+ * exif = { focal35?, focal?, make?, model?, takenAt?, width, height } (width / height: the ORIGINAL's, upright)
  * Throws if the browser can't decode the file.
  */
 export async function processPhoto(file) {
+  const meta = await readExif(file); // before the canvas: it keeps none of it
   const src = await decode(file);
   try {
     const big = draw(src.source, src.width, src.height, PHOTO_LONG_EDGE);
     const photo = await toJpeg(big, PHOTO_QUALITY);
     const small = draw(big.c, big.width, big.height, THUMB_LONG_EDGE);
     const thumb = await toJpeg(small, THUMB_QUALITY);
-    const out = { photo, width: big.width, height: big.height, thumb, thumbWidth: small.width, thumbHeight: small.height };
+    const { orientation: _o, ...facts } = meta || {};
+    const exif = { ...facts, width: src.width, height: src.height };
+    const out = { photo, width: big.width, height: big.height, thumb, thumbWidth: small.width, thumbHeight: small.height, exif };
     release(big);
     release(small);
     return out;

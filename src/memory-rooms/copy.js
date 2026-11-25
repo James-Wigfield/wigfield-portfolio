@@ -609,6 +609,7 @@ export const COPY = {
     viewpoints: 'Photo viewpoints',
     viewpointsHint: 'Stand where each photo was taken.',
     viewpoint: (n) => `View from photo ${n}`,
+    viewpointRough: (n) => `View from photo ${n}: roughly where it was taken`,
     home: 'Back to the room',
     reset: 'Reset view',
     spin: 'Spin',
@@ -625,6 +626,7 @@ export const COPY = {
     pinPhoto: (n) => `Photo ${n}`,
     camTag: (n) => `Photo ${n}`,
     thumbCaption: (n) => `Photo ${n}`,
+    thumbCaptionRough: (n) => `Photo ${n} · roughly here`,
   },
   // ── /memories "Play": the flyover through a collection (map/flyover/) ──────
   fly: {

@@ -18,6 +18,7 @@ import { readWho } from '../lib/storage.js';
 import { useOnline } from '../lib/useOnline.js';
 import { paths } from '../routes.js';
 import EditPlace from './edit/EditPlace.jsx';
+import EditLayout from './edit/EditLayout.jsx';
 import CollectionPicker from '../capture/CollectionPicker.jsx';
 import { createCollectionNow, useCollections } from '../lib/collections.js';
 import { clearDraft, readDraft, writeDraft } from './edit/draft.js';
@@ -351,6 +352,13 @@ function EditForm({ spotId, spot }) {
             />
             <FieldError name="collection" text={errors.collection} />
           </section>
+
+          {spot && (
+            <>
+              <EditLayout spot={spot} capture={form.capture} onChange={(capture) => set('capture', capture, 'layout')} />
+              <FieldError name="layout" text={errors.layout} />
+            </>
+          )}
 
           <section className="mr-edit-sec" data-mr="edit-kind" data-locked={locked ? '' : undefined}>
             {locked ? (

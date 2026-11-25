@@ -14,7 +14,11 @@
    (CONTRACTS.md 7): create once, rename, 409, bounds, a spot and a place in one, a
    delete that leaves them ungrouped, a share link that never shows it; with
    `--no-collections` (or PGREST_NO_COLLECTIONS=1) that spots still save before
-   supabase/memory_collections.sql has run.
+   supabase/memory_collections.sql has run. Then freeform spots (CONTRACTS.md 8): a
+   capture validated on POST and PATCH (409 on a stale edit), photos 13–40 only on a
+   freeform spot (guided stays 1–12), a photo's EXIF on its media row (a garbled
+   header just leaves it off); `--no-freeform` (or PGREST_NO_FREEFORM=1) that guided
+   spots and their photos still save before supabase/memory_freeform.sql has run.
    Exits 1 on the first failure. */
 
 import fs from 'node:fs';
@@ -315,6 +319,11 @@ if (noBuildings) {
   await api.deleteBuilding(bid);
 }
 
+/** A fresh plain capture (a new id each time). */
+function captureSpot() {
+  return { ...capture, id: crypto.randomUUID(), title: `api-check ${Date.now().toString(36)}` };
+}
+
 // ── collections (CONTRACTS.md 7) ─────────────────────────────────────────────
 const noCollections = noBuildings || process.env.PGREST_NO_COLLECTIONS === '1' || args.includes('--no-collections');
 {
@@ -393,6 +402,69 @@ const noCollections = noBuildings || process.env.PGREST_NO_COLLECTIONS === '1' |
     }
     await expectStatus(api.deleteCollection(cid), 404, 'deleting it again is 404');
     await api.deleteSpot(sid);
+  }
+}
+
+// ── freeform spots: old photos, the layout + viewpoints, EXIF (CONTRACTS.md 8) ────
+const noFreeform = noCollections || process.env.PGREST_NO_FREEFORM === '1' || args.includes('--no-freeform');
+{
+  const auth = { authorization: `Bearer ${cfg.token}`, 'content-type': 'application/json' };
+  const jpeg = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#557' } }).jpeg().toBuffer();
+  const exif = { focal35: 24, focal: 6.86, make: 'Apple', model: 'iPhone 15 Pro', takenAt: '2019-06-02T18:40:11+08:00', width: 4032, height: 3024 };
+  const capture = {
+    mode: 'freeform',
+    era: 'lived here 2019–2021',
+    captions: { 2: 'from the bed' },
+    layout: { outline: [[0, 0], [4, 0], [4, 3], [0, 3]], sizeKnown: false, openings: [{ edge: 2, offset: 1.1, width: 0.8, type: 'door' }] },
+    views: [{ photo: 14, x: 1.2, z: 2.0, yaw: 40, conf: 'rough' }],
+  };
+  if (noFreeform) {
+    ok(Array.isArray(ping.features) && !ping.features.includes('freeform'), 'ping does not claim freeform before the SQL', JSON.stringify(ping.features));
+    const rf = await raw('/api/memories/spots', { method: 'POST', headers: auth, body: JSON.stringify({ ...captureSpot(), capture }) });
+    const jf = await rf.json().catch(() => ({}));
+    ok(rf.status === 503 && jf.code === 'needs-sql', 'a freeform spot before the SQL is 503 needs-sql (held on the phone)', `${rf.status} ${JSON.stringify(jf)}`);
+    const guided = await api.saveSpot(captureSpot());
+    const ph = await api.putMedia(guided.id, 'photo', 1, jpeg, { contentType: 'image/jpeg', width: 64, height: 48, exif });
+    ok(ph && !ph.exif, 'a guided spot and its photo still save; the EXIF is just left off');
+    await api.deleteSpot(guided.id).catch(() => {});
+  } else {
+    ok(Array.isArray(ping.features) && ping.features.includes('freeform'), 'ping lists the freeform feature');
+    const bad = await expectStatus(api.saveSpot({ ...captureSpot(), capture: { mode: 'freeform', views: [{ photo: 41, x: 0, z: 0, yaw: 0, conf: 'rough' }] } }), 400, 'a capture with a viewpoint on photo 41 is 400');
+    ok((bad.details || []).some((d) => String(d).startsWith('capture/views/0/photo')), 'its details name the field (capture/views/0/photo)', JSON.stringify(bad.details));
+    const ff = await api.saveSpot({ ...captureSpot(), capture });
+    ok(ff.capture?.mode === 'freeform' && ff.capture.views?.[0]?.photo === 14 && ff.capture.layout?.openings?.length === 1, 'POST a freeform spot: its capture is stored');
+    const p40 = await api.putMedia(ff.id, 'photo', 40, jpeg, { contentType: 'image/jpeg', width: 64, height: 48 });
+    ok(p40?.name === '40' && p40.r2Key.endsWith('/photos/40.jpg'), 'a freeform spot takes photo 40');
+    await expectStatus(api.putMedia(ff.id, 'photo', 41, jpeg, { contentType: 'image/jpeg' }), 400, 'but not photo 41');
+    const t13 = await api.putMedia(ff.id, 'thumb', 13, jpeg, { contentType: 'image/jpeg', width: 64, height: 48 });
+    ok(t13?.name === '13', 'and thumbs past 12 too');
+    const guided = await api.saveSpot(captureSpot());
+    await expectStatus(api.putMedia(guided.id, 'photo', 13, jpeg, { contentType: 'image/jpeg' }), 400, 'a GUIDED spot still stops at photo 12');
+    const pe = await api.putMedia(ff.id, 'photo', 1, jpeg, { contentType: 'image/jpeg', width: 64, height: 48, exif });
+    ok(pe?.exif?.focal35 === 24 && pe.exif.make === 'Apple' && pe.exif.takenAt === exif.takenAt && pe.exif.width === 4032, "a photo's EXIF lands on its media row", JSON.stringify(pe?.exif));
+    const garbled = await raw(`/api/memories/spots/${ff.id}/media/photo/2`, { method: 'PUT', headers: { authorization: `Bearer ${cfg.token}`, 'content-type': 'image/jpeg', 'x-exif': '%7Bnot json' }, body: jpeg });
+    const gj = await garbled.json().catch(() => ({}));
+    ok(garbled.status === 200 && !gj.data?.exif, 'a garbled x-exif never fails the upload (it is just left off)', `${garbled.status}`);
+    const listed = (await api.getSpot(ff.id)).media.find((m) => m.type === 'photo' && m.name === '1');
+    ok(listed?.exif?.focal35 === 24, 'GET returns the EXIF with the photo');
+    // PATCH: viewpoints added after the fact, ifUpdatedAt, a bad one, clearing it
+    const before = await api.getSpot(ff.id);
+    const more = { ...capture, views: [...capture.views, { photo: 3, x: 3, z: 1, yaw: 270, conf: 'exact' }] };
+    const patched = await api.patchSpot(ff.id, { capture: more, ifUpdatedAt: before.updatedAt });
+    ok(patched.capture?.views?.length === 2, 'PATCH a capture (a second viewpoint) with ifUpdatedAt');
+    await expectStatus(api.patchSpot(ff.id, { capture: more, ifUpdatedAt: before.updatedAt }), 409, 'the same PATCH again, stale, is 409');
+    await expectStatus(api.patchSpot(ff.id, { capture: { ...more, layout: { outline: [[0, 0], [2, 2], [2, 0], [0, 2]] } } }), 400, 'a crossed outline is 400');
+    const g2 = await api.patchSpot(guided.id, { capture: { mode: 'freeform' } });
+    ok(g2.capture?.mode === 'freeform', 'an existing spot can be made freeform');
+    const g3 = await api.patchSpot(guided.id, { capture: null });
+    ok(g3.capture === null, 'and back (capture: null)');
+    // a shared room never shows the capture (era, captions, viewpoints)
+    const sh = (await (await raw('/api/memories/shares', { method: 'POST', headers: auth, body: JSON.stringify({ kind: 'spot', id: ff.id }) })).json()).data;
+    const shText = await (await raw(`/api/memories/shared/${sh.token}`)).text();
+    ok(!/lived here|from the bed|"capture"|exif|focal/.test(shText), 'a share link shows neither the capture nor any EXIF');
+    await raw(`/api/memories/shares/${sh.token}`, { method: 'DELETE', headers: auth });
+    await api.deleteSpot(ff.id);
+    await api.deleteSpot(guided.id);
   }
 }
 

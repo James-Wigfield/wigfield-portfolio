@@ -78,10 +78,12 @@ export const api = {
   deleteSpot: (id) => call(`/spots/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   restoreSpot: (id) => call(`/spots/${encodeURIComponent(id)}/restore`, { method: 'POST' }),
   /** Raw upload of one file. type: photo|thumb|scan|model|render|compare; n: 1…12 or a name. */
-  putMedia: (id, type, n, blob, { width, height, contentType, signal } = {}) => {
+  putMedia: (id, type, n, blob, { width, height, contentType, signal, exif } = {}) => {
     const headers = { 'content-type': contentType || blob.type || 'application/octet-stream' };
     if (width) headers['x-width'] = String(Math.round(width));
     if (height) headers['x-height'] = String(Math.round(height));
+    // a photo's EXIF, read from the original before it was resized (CONTRACTS.md 8): URI-encoded JSON
+    if (exif) headers['x-exif'] = encodeURIComponent(JSON.stringify(exif));
     return call(`/spots/${encodeURIComponent(id)}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: blob, headers, signal });
   },
   /** Walk in together: a short-lived ticket for the room's WebSocket → { ticket, expiresAt, socket }. */

@@ -1,0 +1,152 @@
+/* The layout + viewpoint editor (capture/layout/LayoutEditor.jsx). Tokens only (memory-rooms.css): the plan is
+   drafting paper (hairline grid, ink outline), the viewpoints are ink wedges like the viewer's photo frustums,
+   the picked one in the accent. No filled pills, no coloured callout boxes: status is a labelled dot. */
+
+.mr-lay { display: flex; flex-direction: column; gap: var(--mr-space-3); min-width: 0; }
+.mr-lay__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--mr-space-4); flex-wrap: wrap; }
+.mr-lay__history { display: flex; gap: var(--mr-space-4); }
+.mr-lay__history .mr-linkbtn[disabled] { opacity: 0.35; cursor: default; }
+.mr-lay__hint { margin: 0; font-size: var(--mr-text-s); color: var(--mr-ink-2); min-height: 1.4em; }
+
+.mr-lay__body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--mr-space-4); align-items: start; }
+.mr-lay[data-compact] .mr-lay__body { grid-template-columns: minmax(0, 1fr); }
+
+/* the plan: a drafting sheet the finger owns (no page scroll or browser pinch while on it) */
+.mr-lay__stage {
+  position: relative;
+  height: clamp(320px, 58vh, 620px);
+  border: var(--mr-hairline) solid var(--mr-rule-strong);
+  background: var(--mr-surface);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: crosshair;
+  outline: none;
+}
+.mr-lay__stage:focus-visible { box-shadow: inset 0 0 0 2px var(--mr-accent); }
+.mr-lay[data-compact] .mr-lay__stage { height: clamp(300px, 52vh, 480px); }
+.mr-lay__stage svg { display: block; touch-action: none; }
+.mr-lay__layer { transform-origin: 0 0; will-change: transform; }
+.mr-lay__paper { stroke: none; }
+.mr-lay__grid-minor { stroke: var(--mr-rule); stroke-width: 1; fill: none; }
+.mr-lay__grid-major { stroke: var(--mr-rule-strong); stroke-width: 1; fill: none; }
+.mr-lay__guide { fill: none; stroke: var(--mr-ink-3); stroke-width: 1.5; stroke-dasharray: 5 5; opacity: 0.7; pointer-events: none; }
+.mr-lay__outline { fill: none; stroke: var(--mr-ink); stroke-width: 2; stroke-linejoin: round; pointer-events: none; }
+.mr-lay__outline[data-closed] { fill: var(--mr-bg); fill-opacity: 0.55; }
+.mr-lay__preview { fill: none; stroke: var(--mr-ink-2); stroke-width: 1.5; stroke-dasharray: 4 4; pointer-events: none; }
+.mr-lay__edgehit { stroke: transparent; stroke-width: 22; cursor: pointer; }
+.mr-lay[data-touch] .mr-lay__edgehit { stroke-width: 44; }
+.mr-lay__edgehit[data-picked] { stroke: var(--mr-accent); stroke-opacity: 0.18; }
+.mr-lay__len text {
+  font: 500 11px var(--mr-font-mono);
+  letter-spacing: 0.03em;
+  fill: var(--mr-ink-2);
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--mr-surface);
+  stroke-width: 4px;
+  pointer-events: none;
+}
+.mr-lay__hit { fill: transparent; stroke: none; }
+.mr-lay__hit-line { stroke: transparent; stroke-width: 24; }
+.mr-lay__mid { cursor: copy; }
+.mr-lay__mid-dot { fill: var(--mr-surface); stroke: var(--mr-ink-3); stroke-width: 1; }
+.mr-lay__mid path { stroke: var(--mr-ink-2); stroke-width: 1.2; pointer-events: none; }
+.mr-lay__corner { cursor: grab; }
+.mr-lay__corner-dot { fill: var(--mr-surface); stroke: var(--mr-ink); stroke-width: 2; }
+.mr-lay__corner[data-first] .mr-lay__corner-dot { stroke: var(--mr-accent); stroke-width: 2.5; }
+.mr-lay__corner[data-picked] .mr-lay__corner-dot { fill: var(--mr-accent); stroke: var(--mr-accent); }
+.mr-lay__opening { cursor: ew-resize; }
+.mr-lay__opening-mark { stroke-width: 6; stroke-linecap: butt; }
+.mr-lay__opening[data-type='door'] .mr-lay__opening-mark { stroke: var(--mr-surface); }
+.mr-lay__opening[data-type='window'] .mr-lay__opening-mark { stroke: var(--mr-ink-3); stroke-dasharray: 2 2; }
+.mr-lay__opening[data-picked] .mr-lay__opening-mark { stroke: var(--mr-accent); stroke-dasharray: none; }
+
+/* a viewpoint: where he stood (the numbered body) and which way he faced (the fan + the dot at its tip) */
+.mr-lay__view { cursor: grab; }
+.mr-lay__fan { fill: var(--mr-frustum); fill-opacity: 0.09; stroke: var(--mr-frustum); stroke-width: 1.3; stroke-linejoin: round; }
+.mr-lay__view[data-conf='rough'] .mr-lay__fan { stroke-dasharray: 4 3; fill-opacity: 0.05; }
+.mr-lay__body { fill: var(--mr-surface); stroke: var(--mr-ink); stroke-width: 1.6; }
+.mr-lay__num { font: 600 11px var(--mr-font-mono); fill: var(--mr-ink); text-anchor: middle; pointer-events: none; }
+.mr-lay__aim-dot { fill: var(--mr-ink); }
+.mr-lay__view [data-part='aim'] { cursor: alias; }
+.mr-lay__view[data-picked] .mr-lay__fan { stroke: var(--mr-accent); fill: var(--mr-accent); fill-opacity: 0.14; }
+.mr-lay__view[data-picked] .mr-lay__body { stroke: var(--mr-accent); stroke-width: 2.2; }
+.mr-lay__view[data-picked] .mr-lay__aim-dot { fill: var(--mr-accent); }
+
+/* the side panel: the picked photo large, the controls ruled */
+.mr-lay__side { min-width: 0; }
+.mr-lay__panel { display: flex; flex-direction: column; gap: var(--mr-space-3); padding-top: var(--mr-space-2); border-top: var(--mr-hairline) solid var(--mr-rule-strong); }
+.mr-lay__photo { margin: 0; display: flex; flex-direction: column; gap: var(--mr-space-2); }
+.mr-lay__photo img { display: block; width: 100%; max-height: 52vh; object-fit: contain; background: var(--mr-surface-2); border: var(--mr-hairline) solid var(--mr-rule); }
+.mr-lay[data-compact] .mr-lay__photo img { max-height: 34vh; }
+.mr-lay__viewacts,
+.mr-lay__edgeacts { display: flex; flex-direction: column; gap: var(--mr-space-2); }
+.mr-lay__row { display: flex; gap: var(--mr-space-3); flex-wrap: wrap; }
+.mr-lay__yaw { color: var(--mr-ink-3); }
+.mr-lay__size { display: flex; flex-direction: column; gap: var(--mr-space-2); }
+.mr-lay__size-row { display: flex; gap: var(--mr-space-3); }
+.mr-lay__size-row .mr-input { flex: 1; min-width: 0; }
+.mr-lay__clear { color: var(--mr-ink-2); }
+
+/* the photo strip: drag one onto the plan (or tap it, then tap the plan). Beside the plan on a desktop: a grid that
+   scrolls on its own, above the picked photo; under the plan on a phone: a sideways strip. */
+.mr-lay__side .mr-lay__strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  max-height: min(34vh, 300px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0 var(--mr-space-2);
+  margin-bottom: var(--mr-space-2);
+}
+.mr-lay__side .mr-lay__thumb { width: 100%; height: 78px; touch-action: pan-y; }
+.mr-lay__strip {
+  display: flex;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 0 0 var(--mr-space-2);
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.mr-lay__thumb {
+  position: relative;
+  display: block;
+  width: 76px;
+  height: 92px;
+  padding: 0;
+  border: var(--mr-hairline) solid var(--mr-rule-strong);
+  background: var(--mr-surface-2);
+  cursor: grab;
+  touch-action: pan-x; /* sliding along the strip scrolls it; a drag up out of it carries the photo */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.mr-lay__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.mr-lay__thumb[data-placed] img { opacity: 0.55; }
+.mr-lay__thumb[aria-pressed='true'] { outline: 2px solid var(--mr-accent); outline-offset: 2px; }
+.mr-lay__thumb-n {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  padding: 1px 4px;
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  font: 600 10px / 1.3 var(--mr-font-mono);
+}
+.mr-lay__placed { position: absolute; left: 4px; bottom: 4px; padding: 1px 4px; background: var(--mr-bg); font-size: 10px; }
+.mr-lay__ghost { position: fixed; left: -20px; top: -20px; z-index: 50; pointer-events: none; }
+.mr-lay__ghost path { fill: var(--mr-accent); fill-opacity: 0.25; stroke: var(--mr-accent); stroke-width: 1.5; }
+.mr-lay__ghost circle { fill: var(--mr-surface); stroke: var(--mr-accent); stroke-width: 2; }
+
+@media (max-width: 819px) {
+  .mr-lay__body { grid-template-columns: minmax(0, 1fr); }
+  .mr-lay__stage { height: clamp(300px, 52vh, 480px); }
+  .mr-lay__thumb { width: 68px; height: 84px; }
+  .mr-lay__photo img { max-height: 34vh; }
+}

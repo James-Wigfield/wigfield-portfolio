@@ -27,7 +27,7 @@ function KindGlyph({ kind }) {
   );
 }
 
-export default function StepKind({ kind, title, places = true, onKind, onTitle, onSubmit }) {
+export default function StepKind({ kind, title, places = true, onKind, onTitle, onSubmit, mode = 'guided', onMode }) {
   const c = COPY.capture;
   // a room of a whole place is always an interior; the third choice starts a whole place
   const kinds = places ? ['interior', 'exterior', 'place'] : ['interior', 'exterior'];
@@ -63,6 +63,15 @@ export default function StepKind({ kind, title, places = true, onKind, onTitle, 
           data-mr="title-input"
         />
       </label>
+      {onMode && kind && kind !== 'place' && (
+        <label className="mr-oldtoggle" data-mr="freeform-toggle">
+          <input type="checkbox" checked={mode === 'freeform'} onChange={(e) => onMode(e.target.checked ? 'freeform' : 'guided')} />
+          <span className="mr-oldtoggle__text">
+            <span className="mr-oldtoggle__label">{COPY.freeform.toggle}</span>
+            <span className="mr-field-hint">{COPY.freeform.toggleHint}</span>
+          </span>
+        </label>
+      )}
     </div>
   );
 }

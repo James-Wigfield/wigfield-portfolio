@@ -104,10 +104,11 @@ export function client({ base, token } = config()) {
     patchSpot: (id, patch) => call(`/spots/${id}`, { method: 'PATCH', body: patch }),
     deleteSpot: (id) => call(`/spots/${id}`, { method: 'DELETE' }),
     restoreSpot: (id) => call(`/spots/${id}/restore`, { method: 'POST' }),
-    putMedia: (id, type, n, buf, { contentType, width, height } = {}) => {
+    putMedia: (id, type, n, buf, { contentType, width, height, exif } = {}) => {
       const headers = { 'content-type': contentType || 'application/octet-stream' };
       if (width) headers['x-width'] = String(width);
       if (height) headers['x-height'] = String(height);
+      if (exif) headers['x-exif'] = encodeURIComponent(JSON.stringify(exif));
       return call(`/spots/${id}/media/${type}/${encodeURIComponent(n)}`, { method: 'PUT', body: buf, headers });
     },
     // collections (CONTRACTS.md 7)

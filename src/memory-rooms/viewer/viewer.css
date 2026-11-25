@@ -418,6 +418,8 @@
 }
 .mr-vpthumb:hover .mr-vpthumb__img { outline-color: var(--mr-rule-strong); }
 .mr-vpthumb:hover { color: var(--mr-ink-2); }
+/* a rough fit (old photos, CONTRACTS.md 8): drawn fainter, its caption says so */
+.mr-vpthumb[data-fit='rough'] .mr-vpthumb__img { opacity: 0.6; outline-style: dashed; }
 .mr-vpthumb[aria-pressed='true'] { color: var(--mr-ink); }
 .mr-vpthumb[aria-pressed='true'] .mr-vpthumb__img { outline: 2px solid var(--mr-ink); outline-offset: 2px; }
 .mr-vpthumb[disabled] { opacity: 0.45; cursor: default; }

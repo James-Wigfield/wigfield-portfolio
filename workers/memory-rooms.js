@@ -11,7 +11,8 @@
      PATCH  /api/memories/spots/:id                    → edit; scene is validated + versioned
      DELETE /api/memories/spots/:id                    → soft delete
      POST   /api/memories/spots/:id/restore            → undo soft delete
-     PUT    /api/memories/spots/:id/media/:type/:n     → raw bytes into R2 + media row
+     PUT    /api/memories/spots/:id/media/:type/:n     → raw bytes into R2 + media row (photo / thumb n: 1–12, or 1–40 for a
+                                                         freeform spot; a photo may carry its EXIF in x-exif)
      GET    /api/memories/file/<r2Key>[?t=<exp>.<sig>] → the file (bearer OR signed token)
      POST   /api/memories/spots/:id/walk               → { ticket } for walking the room together
      GET    /api/memories/spots/:id/walk               → who's walking it now
@@ -55,6 +56,7 @@ import { createClient } from '@supabase/supabase-js';
 import { validateScene } from '../src/memory-rooms/scene/validate.js';
 import { validateBuilding } from '../src/memory-rooms/building/validate.js';
 import { validateSketch } from '../src/memory-rooms/building/sketch.js';
+import { MAX_GUIDED_PHOTOS, maxPhotosOf, validateCapture } from '../src/memory-rooms/capture/freeform.js';
 
 const PREFIX = '/api/memories/';
 const MEDIA_TYPES = ['photo', 'thumb', 'scan', 'model', 'render', 'compare'];
@@ -99,6 +101,8 @@ export async function handleMemoriesApi(request, env, url, { json, readJson }) {
       // 'collections' = the collection routes + spot / place collectionId (once supabase/memory_collections.sql has run)
       const features = (await store.hasBuildings()) ? ['buildings', 'empty', 'place-walk'] : ['empty'];
       if (await store.hasCollections()) features.push('collections');
+      // 'freeform' = a spot's `capture` (old photos, up to 40, the layout + viewpoints) and a photo's EXIF (CONTRACTS.md 8)
+      if (await store.hasFreeform()) features.push('freeform');
       return json({ data: { ok: true, rowStore: store.kind, models: SPOT_MODELS, features } });
     }
     if (section === 'buildings') return await buildingsRoute(ctx, request, id, sub, type, n);
@@ -166,6 +170,7 @@ async function upsertSpot(ctx, body) {
   const capture = captureFields(body, problems);
   const place = buildingLink(body, problems);
   const grouped = collectionLink(body, problems);
+  const how = captureOf(body, problems);
   if (place.roomId && !place.buildingId) problems.push('roomId needs a buildingId');
   if (problems.length) return ctx.json({ error: 'Invalid spot', details: problems }, 400);
 
@@ -185,6 +190,7 @@ async function upsertSpot(ctx, body) {
     ...capture,
     ...place,
     ...grouped,
+    ...how,
   };
   await ctx.store.putSpot(spot);
   return ctx.json({ data: await withMedia(ctx, spot) }, 201);
@@ -216,6 +222,45 @@ function buildingLink(body, problems) {
     else problems.push('roomId must look like "kitchen" or "bed-2" (or null)');
   }
   return out;
+}
+
+/** A spot's `capture` (capture/capture.schema.json, CONTRACTS.md 8): { capture } when sent (null clears it). Each problem
+    starts with "capture" and its path, so the edit page can show it by the editor. */
+function captureOf(body, problems) {
+  if (!('capture' in body)) return {};
+  if (body.capture === null) return { capture: null };
+  const { ok, errors } = validateCapture(body.capture);
+  if (!ok) {
+    problems.push(...errors.map((e) => `capture${e.path} ${e.message}`));
+    return {};
+  }
+  return { capture: body.capture };
+}
+
+/** A photo's EXIF from the phone (x-exif: JSON, URI-encoded): the few facts the render side reads, checked and
+    trimmed, or null. Never fails an upload: anything odd is just left out. */
+function exifOf(header) {
+  if (!header) return null;
+  let raw;
+  try {
+    raw = JSON.parse(decodeURIComponent(header));
+  } catch {
+    return null;
+  }
+  if (!raw || typeof raw !== 'object') return null;
+  const out = {};
+  const num = (k, lo, hi) => {
+    const v = Number(raw[k]);
+    if (Number.isFinite(v) && v >= lo && v <= hi) out[k] = Math.round(v * 100) / 100;
+  };
+  num('focal35', 1, 2000);
+  num('focal', 0.5, 2000);
+  num('width', 1, 100000);
+  num('height', 1, 100000);
+  num('orientation', 1, 8);
+  for (const k of ['make', 'model']) if (typeof raw[k] === 'string' && raw[k].trim()) out[k] = raw[k].trim().slice(0, 40);
+  if (typeof raw.takenAt === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?$/.test(raw.takenAt)) out.takenAt = raw.takenAt;
+  return Object.keys(out).length ? out : null;
 }
 
 /** A spot's or place's collection: { collectionId } (uuid or null). The collection need not exist yet: the outbox
@@ -279,7 +324,8 @@ async function patchSpot(ctx, id, body) {
     if (body.frameGroup === null || /^[a-z0-9][a-z0-9-]{0,47}$/.test(body.frameGroup)) next.frameGroup = body.frameGroup;
     else problems.push('frameGroup must look like "home" or "nyc-hostel"');
   }
-  Object.assign(next, buildingLink(body, problems), collectionLink(body, problems));
+  Object.assign(next, buildingLink(body, problems), collectionLink(body, problems), captureOf(body, problems));
+  if (spot.capture != null) Object.defineProperty(next, 'hadCapture', { value: true, enumerable: false });
   // Supabase: clearing a link must reach the row (putSpot only sends building_id / room_id / collection_id when there is one)
   if (spot.buildingId != null || spot.roomId != null) Object.defineProperty(next, 'hadBuilding', { value: true, enumerable: false });
   if (spot.collectionId != null) Object.defineProperty(next, 'hadCollection', { value: true, enumerable: false });
@@ -320,10 +366,12 @@ async function setDeleted(ctx, id, when) {
 
 async function putMedia(ctx, request, spotId, type, n) {
   if (!MEDIA_TYPES.includes(type)) return ctx.json({ error: `media type must be one of ${MEDIA_TYPES.join(', ')}` }, 400);
-  const key = mediaKey(spotId, type, n);
-  if (!key) return ctx.json({ error: `bad media name "${n}" for ${type}` }, 400);
+  if (!mediaKey(spotId, type, n, maxPhotosOf({ capture: { mode: 'freeform' } }))) return ctx.json({ error: `bad media name "${n}" for ${type}` }, 400);
   const spot = await ctx.store.getSpot(spotId);
   if (!spot) return ctx.json({ error: 'Spot not found (POST the spot before its media)' }, 404);
+  // photos and thumbs: 1–12 (the shot guide), or 1–40 for a freeform spot (old photos)
+  const key = mediaKey(spotId, type, n, maxPhotosOf(spot));
+  if (!key) return ctx.json({ error: `bad media name "${n}" for ${type}: this spot takes photos 1–${maxPhotosOf(spot)}` }, 400);
 
   const contentType = (request.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
   const allowed = {
@@ -362,7 +410,10 @@ async function putMedia(ctx, request, spotId, type, n) {
     contentType: storedType,
     createdAt: ctx.now,
   };
-  await ctx.store.putMedia(media);
+  const exif = type === 'photo' ? exifOf(request.headers.get('x-exif')) : null;
+  if (exif) media.exif = exif;
+  const put = await ctx.store.putMedia(media);
+  if (put?.droppedExif) delete media.exif; // the database can't keep it yet (memory_freeform.sql): say what was stored
   return ctx.json({ data: await signMedia(ctx.env, media) });
 }
 
@@ -830,11 +881,11 @@ async function sharedRoute(request, env, token, sub, json) {
 
 // ── media helpers ────────────────────────────────────────────────────────────
 
-/** R2 key for a media upload (CONTRACTS.md §2), or null if `n` is not valid for the type. */
-export function mediaKey(spotId, type, n) {
+/** R2 key for a media upload (CONTRACTS.md §2), or null if `n` is not valid for the type (photos: 1–max). */
+export function mediaKey(spotId, type, n, max = MAX_GUIDED_PHOTOS) {
   const base = `spots/${spotId}`;
   if (type === 'photo' || type === 'thumb') {
-    if (!/^\d{1,2}$/.test(n || '') || Number(n) < 1 || Number(n) > 12) return null;
+    if (!/^\d{1,2}$/.test(n || '') || Number(n) < 1 || Number(n) > max) return null;
     return `${base}/${type === 'photo' ? 'photos' : 'thumbs'}/${Number(n)}.jpg`;
   }
   if (type === 'scan') return `${base}/scan.spz`;
@@ -961,6 +1012,7 @@ function localStore(bucket) {
     kind: 'local',
     hasBuildings: async () => true,
     hasCollections: async () => true,
+    hasFreeform: async () => true,
     listCollections: async () => readAll(await listKeys('rows/collections/')),
     getCollection: async (id) => (await bucket.get(collectionKey(id)))?.json() ?? null,
     putCollection: (c) => put(collectionKey(c.id), c),
@@ -1008,7 +1060,7 @@ const SPOT_COLS = {
   title: 'title', note: 'note', kind: 'kind', lat: 'lat', lng: 'lng', locAccuracyM: 'loc_accuracy_m',
   placeLabel: 'place_label', locSource: 'loc_source', scaleHint: 'scale_hint', capturedAt: 'captured_at',
   status: 'status', frameGroup: 'frame_group', scene: 'scene', sceneVersion: 'scene_version', tripStopId: 'trip_stop_id',
-  buildingId: 'building_id', roomId: 'room_id', collectionId: 'collection_id',
+  buildingId: 'building_id', roomId: 'room_id', collectionId: 'collection_id', capture: 'capture',
 };
 const COLLECTION_COLS = { id: 'id', name: 'name', createdAt: 'created_at', updatedAt: 'updated_at', sort: 'sort', bounds: 'bounds' };
 const BUILDING_COLS = {
@@ -1023,7 +1075,7 @@ const BMEDIA_COLS = {
 };
 const MEDIA_COLS = {
   id: 'id', spotId: 'spot_id', type: 'type', name: 'name', r2Key: 'r2_key', width: 'width', height: 'height',
-  bytes: 'bytes', sort: 'sort', contentType: 'content_type', createdAt: 'created_at',
+  bytes: 'bytes', sort: 'sort', contentType: 'content_type', createdAt: 'created_at', exif: 'exif',
 };
 const toRow = (obj, cols, skip = []) =>
   Object.fromEntries(Object.entries(cols).filter(([k]) => k in obj && !skip.includes(k)).map(([k, col]) => [col, obj[k]]));
@@ -1033,6 +1085,8 @@ const fromRow = (row, cols) => Object.fromEntries(Object.entries(cols).map(([k, 
 const NEEDS_SQL = new Set(['42P01', '42703', 'PGRST204', 'PGRST205']);
 const NEEDS_SQL_MESSAGE = 'Whole places need the database update first (supabase/memory_buildings.sql).';
 const NEEDS_COLLECTIONS_MESSAGE = 'Collections need the database update first (supabase/memory_collections.sql).';
+const NEEDS_FREEFORM_MESSAGE = 'Old-photo (freeform) spots need the database update first (supabase/memory_freeform.sql).';
+let freeformProbe = { at: 0, ok: false };
 let buildingsProbe = { at: 0, ok: false };
 let collectionsProbe = { at: 0, ok: false };
 
@@ -1048,6 +1102,8 @@ function supabaseStore(db) {
   // a write that names collection_id (or a collections table call) before memory_collections.sql has run
   const checkC = failWith(NEEDS_COLLECTIONS_MESSAGE);
   const wantsCollection = (row) => row.collectionId != null || row.hadCollection;
+  const checkF = failWith(NEEDS_FREEFORM_MESSAGE);
+  const wantsCapture = (row) => row.capture != null || row.hadCapture;
   return {
     kind: 'supabase',
     /** Have the building tables been made? (asked at most once a minute per isolate) */
@@ -1067,17 +1123,32 @@ function supabaseStore(db) {
     putSpot: async (spot) => {
       const skip = ['updatedAt'];
       if (spot.buildingId == null && spot.roomId == null && !spot.hadBuilding) skip.push('buildingId', 'roomId');
-      // collection_id is only sent once a spot has one (or had one): spots save as ever before the SQL has run
+      // collection_id / capture are only sent once a spot has one (or had one): spots save as ever before the SQL has run
       if (!wantsCollection(spot)) skip.push('collectionId');
+      if (!wantsCapture(spot)) skip.push('capture');
       const res = await db.from('memory_spots').upsert(toRow(spot, SPOT_COLS, skip), { onConflict: 'id' });
-      return (wantsCollection(spot) ? checkC : check)(res);
+      return (wantsCapture(spot) ? checkF : wantsCollection(spot) ? checkC : check)(res);
     },
     listMedia: async (spotId) => {
       let q = db.from('memory_media').select('*');
       if (spotId) q = q.eq('spot_id', spotId);
       return check(await q).map((r) => fromRow(r, MEDIA_COLS));
     },
-    putMedia: async (m) => check(await db.from('memory_media').upsert(toRow(m, MEDIA_COLS, ['createdAt']), { onConflict: 'id' })),
+    putMedia: async (m) => {
+      const res = await db.from('memory_media').upsert(toRow(m, MEDIA_COLS, m.exif ? ['createdAt'] : ['createdAt', 'exif']), { onConflict: 'id' });
+      // a photo's EXIF before memory_freeform.sql has run: the photo still saves, without it (never block an upload)
+      if (res.error && m.exif && NEEDS_SQL.has(res.error.code)) {
+        check(await db.from('memory_media').upsert(toRow(m, MEDIA_COLS, ['createdAt', 'exif']), { onConflict: 'id' }));
+        return { droppedExif: true };
+      }
+      return check(res);
+    },
+    hasFreeform: async () => {
+      if (Date.now() - freeformProbe.at < 60_000) return freeformProbe.ok;
+      const { error } = await db.from('memory_spots').select('capture').limit(1);
+      freeformProbe = { at: Date.now(), ok: !error };
+      return freeformProbe.ok;
+    },
     listBuildings: async () => check(await db.from('memory_buildings').select('*')).map((r) => fromRow(r, BUILDING_COLS)),
     getBuilding: async (id) => {
       const data = check(await db.from('memory_buildings').select('*').eq('id', id).maybeSingle());

@@ -144,8 +144,9 @@ export function StageBar({ viewer, cameras = [], thumbs = {}, homeLabel }) {
                   data-mr="viewpoint"
                   data-photo={c.photo}
                   aria-pressed={active === c.photo}
-                  aria-label={copy.viewpoint(c.photo)}
-                  title={copy.viewpoint(c.photo)}
+                  aria-label={c.fit === 'rough' ? copy.viewpointRough(c.photo) : copy.viewpoint(c.photo)}
+                  title={c.fit === 'rough' ? copy.viewpointRough(c.photo) : copy.viewpoint(c.photo)}
+                  data-fit={c.fit || undefined}
                   disabled={!ready}
                   onClick={() => viewer?.flyToPhoto(c.photo)}
                   onPointerEnter={() => light(c.photo)}
@@ -154,7 +155,7 @@ export function StageBar({ viewer, cameras = [], thumbs = {}, homeLabel }) {
                   onBlur={() => light(null)}
                 >
                   <span className="mr-vpthumb__img">{thumbs[c.photo] && <img src={thumbs[c.photo]} alt="" draggable="false" />}</span>
-                  <span className="mr-vpthumb__n">{copy.thumbCaption(c.photo)}</span>
+                  <span className="mr-vpthumb__n">{c.fit === 'rough' ? copy.thumbCaptionRough(c.photo) : copy.thumbCaption(c.photo)}</span>
                 </button>
               ))}
             </div>

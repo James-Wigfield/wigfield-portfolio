@@ -122,6 +122,7 @@ export async function addCapture(spot, files, { clearDraft = true } = {}) {
       height: f.height || null,
       contentType: f.contentType,
       bytes: f.blob.size,
+      ...(f.exif ? { exif: f.exif } : {}), // a photo's EXIF (CONTRACTS.md 8): sent as x-exif with it
       uploaded: false,
     })),
     spotSaved: false,
@@ -403,6 +404,7 @@ async function uploadEntry(entry) {
             height: f.height,
             contentType: f.contentType,
             signal: ctrl.signal,
+            exif: f.exif || null,
           });
           f.uploaded = true;
         } catch (err) {

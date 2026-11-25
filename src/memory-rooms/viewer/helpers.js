@@ -23,12 +23,20 @@ export function aimCamera(obj, pos, look, roll = 0, isCamera = true) {
  * One wireframe camera per scene camera: apex at the lens, a rectangle with
  * the photo's aspect, a small tick on top. Each gets an invisible pick box.
  * Returns { group, picks: Mesh[] (userData.photo = n), setColor(hex), setHover(n) }.
+ *
+ * Old photos (CONTRACTS.md 8): a camera whose fit is "rough" (the render could only place it roughly) is drawn
+ * fainter, and dashed; with more than CROWD cameras (a freeform spot keeps every used photo, up to 40) every
+ * frustum rests faint and only the hovered / picked one draws in full, so the room stays readable.
  */
+export const CROWD = 12;
 export function buildCameraGlyphs(cameras, aspectOf, depth = GLYPH_DEPTH) {
   const group = new THREE.Group();
   group.name = 'viewer__cameras';
+  const crowd = cameras.length > CROWD;
+  const rest = crowd ? 0.16 : 0.42;
   // thin ink, quiet until hovered (the "Recall" sheet: drawn, not neon)
-  const line = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.42 });
+  const line = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: rest });
+  const rough = new THREE.LineDashedMaterial({ color: 0x000000, transparent: true, opacity: rest * 0.6, dashSize: 0.03, gapSize: 0.025 });
   const hot = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.95 });
   const pickMat = new THREE.MeshBasicMaterial({ visible: false });
   const picks = [];
@@ -56,7 +64,10 @@ export function buildCameraGlyphs(cameras, aspectOf, depth = GLYPH_DEPTH) {
     seg([0, hh * 1.08 + tick, z], [tick, hh * 1.08, z]);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    const glyph = new THREE.LineSegments(geo, line);
+    const isRough = cam.fit === 'rough';
+    const glyph = new THREE.LineSegments(geo, isRough ? rough : line);
+    if (isRough) glyph.computeLineDistances();
+    glyph.userData.rest = isRough ? rough : line;
     glyph.name = `viewer__camera${cam.photo}`;
     glyph.raycast = () => {};
     aimCamera(glyph, cam.pos, cam.look, cam.roll, false);
@@ -91,11 +102,13 @@ export function buildCameraGlyphs(cameras, aspectOf, depth = GLYPH_DEPTH) {
     picks,
     setColor(color) {
       line.color.set(color);
+      rough.color.set(color);
       hot.color.set(color);
     },
     /** The line materials may be off-mesh (hover swaps them), so free them here; thumbnails too. */
     disposeMaterials() {
       line.dispose();
+      rough.dispose();
       hot.dispose();
       for (const t of thumbs.values()) {
         t.mat.map?.dispose();
@@ -116,10 +129,11 @@ export function buildCameraGlyphs(cameras, aspectOf, depth = GLYPH_DEPTH) {
       hovered = photo ?? null;
       for (const g of glyphs) {
         const on = g.children[0].userData.photo === photo;
-        g.material = on ? hot : line;
+        g.material = on ? hot : g.userData.rest;
         g.scale.setScalar(on ? HOVER_SCALE : 1); // big enough for its photo to read
       }
-      line.opacity = photo == null ? 0.42 : 0.24;
+      line.opacity = photo == null ? rest : rest * 0.57;
+      rough.opacity = line.opacity * 0.6;
       showThumbs();
     },
   };

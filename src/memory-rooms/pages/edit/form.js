@@ -8,6 +8,7 @@
 
 import { COPY } from '../../copy.js';
 import { pad2 } from '../../lib/format.js';
+import { tidyCapture } from '../../capture/freeform.js';
 
 const hasXY = (l) => Boolean(l && Number.isFinite(l.lat) && Number.isFinite(l.lng));
 
@@ -69,11 +70,13 @@ export function baseOf(spot) {
     day: dayOf(spot.capturedAt),
     loc: locOf(spot),
     collectionId: spot.collectionId || null,
+    capture: spot.capture || null, // CONTRACTS.md 8: old photos, the layout, the viewpoints (the editor's)
     buildingId: spot.buildingId || null, // a room of a whole place: "none" means its place's collection
   };
 }
 
-const FIELDS = ['title', 'note', 'kind', 'scaleHint', 'createdBy', 'day', 'loc', 'collectionId'];
+const FIELDS = ['title', 'note', 'kind', 'scaleHint', 'createdBy', 'day', 'loc', 'collectionId', 'capture'];
+const sameCapture = (a, b) => JSON.stringify(tidyCapture(a)) === JSON.stringify(tidyCapture(b));
 export const formOf = (base) => Object.fromEntries(FIELDS.map((k) => [k, base[k]]));
 
 const PRESETS = COPY.capture.scalePresets.map((p) => p.value);
@@ -82,6 +85,7 @@ export const presetOf = (scaleHint) => (PRESETS.includes(scaleHint) ? scaleHint 
 /** True when the form's field k differs from the base's. */
 function changed(base, form, k) {
   if (k === 'loc') return !sameLoc(base.loc, form.loc);
+  if (k === 'capture') return !sameCapture(base.capture, form.capture);
   if (k === 'title' || k === 'note' || k === 'scaleHint') return form[k].trim() !== base[k];
   return form[k] !== base[k];
 }
@@ -96,6 +100,7 @@ export function patchOf(base, form) {
   if (changed(base, form, 'createdBy')) p.createdBy = form.createdBy;
   if (changed(base, form, 'day')) p.capturedAt = withDay(base.capturedAt, form.day);
   if (changed(base, form, 'collectionId')) p.collectionId = form.collectionId || null;
+  if (changed(base, form, 'capture')) p.capture = tidyCapture(form.capture);
   const a = locFields(base.loc);
   const b = locFields(form.loc);
   if (a.lat !== b.lat || a.lng !== b.lng) Object.assign(p, { lat: b.lat, lng: b.lng });
@@ -107,6 +112,7 @@ export function patchOf(base, form) {
 export function sameDetails(a, b) {
   if (['title', 'note', 'kind', 'scaleHint', 'createdBy'].some((k) => a[k] !== b[k])) return false;
   if ((a.collectionId || null) !== (b.collectionId || null)) return false;
+  if (!sameCapture(a.capture, b.capture)) return false;
   return Date.parse(a.capturedAt) === Date.parse(b.capturedAt) && sameLoc(a.loc, b.loc);
 }
 
@@ -132,6 +138,7 @@ const FIELD_OF = {
   locSource: 'place',
   placeLabel: 'place',
   collectionId: 'collection',
+  capture: 'layout',
 };
 export function fieldErrors(details) {
   const out = {};

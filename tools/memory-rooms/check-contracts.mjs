@@ -22,6 +22,7 @@ import { checkScene } from './check-scene.mjs';
 import { ceilingAt, resolveShell, buildingRoomShell } from '../../src/memory-rooms/scene/shell.js';
 import { exteriorLoops, planToLngLat, roomFrame, stairFootprint } from '../../src/memory-rooms/building/geometry.js';
 import { roomIdFor, sketchToBuilding, validateSketch } from '../../src/memory-rooms/building/sketch.js';
+import { photoFov, tidyCapture, validateCapture } from '../../src/memory-rooms/capture/freeform.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '../..');
@@ -317,6 +318,39 @@ jobs.forEach((job, i) => {
   ok(validateSketch(two([3.99, 0, 3, 3])).errors.some((e) => /overlaps/.test(e.message)), 'sketch: a 1 cm overlap is refused');
   ok(validateSketch(two([4, 1, 3, 2])).ok && validateBuilding(sketchToBuilding(two([4, 1, 3, 2]))).ok, 'sketch: rooms sharing part of a side are fine and build');
   ok(validateSketch(two([4.5, 0, 3, 3])).ok, 'sketch: rooms 50 cm apart are fine');
+}
+
+// ── a spot's capture: old photos, the layout + viewpoints (CONTRACTS.md 8; JS only, like the sketch) ───────────
+{
+  const cap = {
+    mode: 'freeform',
+    era: 'lived here 2019–2021',
+    captions: { 7: 'from the bed', 31: 'the window' },
+    layout: { outline: [[0, 0], [4, 0], [4, 3], [0, 3]], sizeKnown: false, openings: [{ edge: 2, offset: 1.1, width: 0.8, type: 'door' }] },
+    views: [{ photo: 7, x: 1.2, z: 2.0, yaw: 40, conf: 'rough' }, { photo: 31, x: 3, z: 1, yaw: 270, conf: 'exact' }],
+  };
+  ok(validateCapture(cap).ok, 'capture: a freeform capture with a caption, an outline, a door and two viewpoints is valid', JSON.stringify(validateCapture(cap).errors));
+  ok(validateCapture({ mode: 'guided' }).ok, 'capture: { mode: guided } alone is valid');
+  const fails = (mut, path, label) => {
+    const c = clone(cap);
+    mut(c);
+    const r = validateCapture(c);
+    ok(!r.ok && r.errors.some((e) => e.path.startsWith(path)), `capture: ${label} is refused (${path})`, JSON.stringify(r.errors.slice(0, 2)));
+  };
+  fails((c) => (c.mode = 'free'), '/mode', 'an unknown mode');
+  fails((c) => (c.mode = 'guided'), '/captions/31', 'a caption on photo 31 of a GUIDED spot (12 at most)');
+  fails((c) => (c.captions['41'] = 'x'), '/captions/41', 'a caption on photo 41');
+  fails((c) => c.views.push({ ...c.views[0] }), '/views/2/photo', 'two viewpoints on one photo');
+  fails((c) => (c.views[0].yaw = 360), '/views/0/yaw', 'a yaw of 360 (0 ≤ yaw < 360)');
+  fails((c) => (c.views[0].conf = 'maybe'), '/views/0/conf', 'a viewpoint neither exact nor rough');
+  fails((c) => (c.layout.outline = [[0, 0], [2, 2], [2, 0], [0, 2]]), '/layout/outline', 'an outline that crosses itself');
+  fails((c) => (c.layout.outline = [[0, 0], [0.5, 0], [0.5, 0.5], [0, 0.5]]), '/layout/outline', 'an outline under 0.5 m²');
+  fails((c) => (c.layout.openings[0].edge = 4), '/layout/openings/0/edge', 'an opening on an edge the outline lacks');
+  fails((c) => (c.layout.openings[0].offset = 3.5), '/layout/openings/0', 'an opening running past its edge');
+  fails((c) => (c.surprise = 1), '/surprise', 'an unknown field');
+  ok(tidyCapture({ mode: 'guided' }) === null && tidyCapture({ mode: 'freeform', era: ' ', captions: { 2: ' ' } }).era === undefined, 'capture: tidy drops what is empty (a bare guided capture is none at all)');
+  const p = photoFov({ focal35: 26 }, { width: 3024, height: 4032 });
+  ok(Math.abs(p.longDeg - 69.4) < 0.1 && p.deg < p.longDeg && p.known, 'capture: a 26 mm-equivalent portrait photo spreads ~55° across, 69° along its long edge', `${p.deg.toFixed(1)}° / ${p.longDeg.toFixed(1)}°`);
 }
 
 // ── check-scene on v2 shells: the reviewer's cases ───────────────────────────

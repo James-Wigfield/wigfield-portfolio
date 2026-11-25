@@ -46,6 +46,7 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
   "frameGroup": "home" | null,
   "buildingId": "uuid" | null, "roomId": "kitchen" | null,   // a room of a whole place (section 6.4)
   "collectionId": "uuid" | null,                   // its collection (section 7); a room of a place: null = the place's
+  "capture": { …capture.schema.json… } | null,     // how its photos were taken: guided | freeform old photos (section 8)
   "scene": { …scene.json v1 or v2… } | null,
   "sceneVersion": 0,                               // bumped by every scene write
   "tripStopId": null,
@@ -61,6 +62,8 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
   "width": 2048, "height": 1536, "bytes": 412345, "sort": 1,
   "contentType": "image/jpeg",
   "createdAt": "ISO",
+  "exif": { "focal35": 24, "focal": 6.86, "make": "Apple", "model": "iPhone 15 Pro",   // a PHOTO's, optional (section 8):
+            "takenAt": "2019-06-02T18:40:11+08:00", "width": 4032, "height": 3024 },  //   read from the original
   "url": "/api/memories/file/spots/<id>/photos/1.jpg?t=<exp>.<sig>"   // signed, ~12 h; added by GET routes
 }
 ```
@@ -69,8 +72,8 @@ Node scripts, Blender kit and viewer. Change a contract here first, then the cod
 
 | type | `:n` | key |
 |---|---|---|
-| photo | 1…12 | `spots/<id>/photos/<n>.jpg` |
-| thumb | 1…12 | `spots/<id>/thumbs/<n>.jpg` |
+| photo | 1…12 (1…40 for a freeform spot, section 8) | `spots/<id>/photos/<n>.jpg` |
+| thumb | 1…12 (1…40 for a freeform spot) | `spots/<id>/thumbs/<n>.jpg` |
 | scan | `scan` (ignored) | `spots/<id>/scan.spz` |
 | model | `room` (any other name too) | `spots/<id>/model/room.glb`: the baked room the viewer shows |
 | model | `map` | `spots/<id>/model/map.glb`: its small copy for the map's 3D dioramas (§4) |
@@ -92,12 +95,12 @@ Every JSON response is `{ data }` or `{ error, details? }`.
 
 | Method & path | Body | Response |
 |---|---|---|
-| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map", "empty"], features: ["buildings", "empty", "place-walk", "collections"] } }` (the gate's password check; scripts upload `model/map` / `model/empty` only when `models` has it: an older Worker stores every model name as room.glb. `features`: `buildings` once the building tables answer, `empty` = the empty / furnished bake (§6.4), `place-walk` = walking a whole place, `collections` once the collections table answers (§7)) |
+| `GET /api/memories/ping` | – | `{ data: { ok: true, rowStore: "local"\|"supabase", models: ["room", "map", "empty"], features: ["buildings", "empty", "place-walk", "collections", "freeform"] } }` (the gate's password check; scripts upload `model/map` / `model/empty` only when `models` has it: an older Worker stores every model name as room.glb. `features`: `buildings` once the building tables answer, `empty` = the empty / furnished bake (§6.4), `place-walk` = walking a whole place, `collections` once the collections table answers (§7), `freeform` once a spot's `capture` column answers (§8)) |
 | `GET /api/memories/spots` | `?deleted=1` includes soft-deleted | `{ data: [Spot…] }` newest `capturedAt` first, media with signed urls |
 | `GET /api/memories/spots/:id` | – | `{ data: Spot }` (404 if missing) |
 | `POST /api/memories/spots` | Spot capture fields incl. client `id` | `{ data: Spot }` 201 new / 200 existing. **Create once**: a POST for an id that already exists changes nothing and returns the stored row, so a retry never duplicates and never resets anything, and a late outbox re-send can't undo an edit. Every later change goes through PATCH. |
-| `PUT /api/memories/spots/:id/media/:type/:n` | raw bytes; headers `content-type`, optional `x-width`, `x-height` | `{ data: Media }` (upserts the media row; the spot must exist) |
-| `PATCH /api/memories/spots/:id` | any of `title, note, kind, lat, lng, locAccuracyM, placeLabel, locSource, scaleHint, capturedAt, createdBy, status, frameGroup, tripStopId, collectionId, scene`, plus optional `ifUpdatedAt` | `{ data: Spot }`, its `updatedAt` the stored one (send it back as the next `ifUpdatedAt`). A `scene` is validated with `validateScene` (400 + `details: errors[]` if invalid), bumps `sceneVersion`, and sets `frameGroup` from `scene.frame.group`. Other fields are checked as listed below (400, every problem in `details`); unknown fields are ignored. |
+| `PUT /api/memories/spots/:id/media/:type/:n` | raw bytes; headers `content-type`, optional `x-width`, `x-height`, and for a photo optional `x-exif` (URI-encoded JSON, section 8) | `{ data: Media }` (upserts the media row; the spot must exist; photo / thumb `n` 1–12, or 1–40 for a freeform spot) |
+| `PATCH /api/memories/spots/:id` | any of `title, note, kind, lat, lng, locAccuracyM, placeLabel, locSource, scaleHint, capturedAt, createdBy, status, frameGroup, tripStopId, collectionId, capture, scene`, plus optional `ifUpdatedAt` | `{ data: Spot }`, its `updatedAt` the stored one (send it back as the next `ifUpdatedAt`). A `scene` is validated with `validateScene` (400 + `details: errors[]` if invalid), bumps `sceneVersion`, and sets `frameGroup` from `scene.frame.group`. Other fields are checked as listed below (400, every problem in `details`); unknown fields are ignored. |
 | `DELETE /api/memories/spots/:id` | – | soft delete → `{ data: { id, deletedAt } }` |
 | `POST /api/memories/spots/:id/restore` | – | clears `deletedAt` |
 | `GET /api/memories/file/<r2Key>` | bearer or `?t=` | the bytes, with `content-type`, `etag`, `cache-control: private, max-age=3600` |
@@ -115,12 +118,14 @@ so a form can show it next to that field):
 - `locSource` gps | pin | typed | `null`; `createdBy` james | justin.
 - `capturedAt` an ISO 8601 date-time with a zone (`2026-12-20T19:30:00.000Z`).
 - `collectionId` a uuid or `null` (POST and PATCH; the collection need not exist yet, §7).
+- `capture` passes `validateCapture` (POST and PATCH; each problem in `details` starts `capture/<path>`), or `null`.
 - `kind` can't change while the spot has a scene (the 3D room was built as that kind): 400.
 - `ifUpdatedAt`: when present and not the spot's current `updatedAt`, nothing is saved and the answer is
   **409** (someone else changed the spot since the form opened). The edit page sends it; scripts don't.
 
 Limits: photo/thumb must be `image/jpeg` ≤ 15 MB; scan ≤ 100 MB; model ≤ 40 MB (`model/gltf-binary`);
-render/compare `image/png` or `image/jpeg` ≤ 25 MB. `:n` for photo/thumb is 1–12.
+render/compare `image/png` or `image/jpeg` ≤ 25 MB. `:n` for photo/thumb is 1–12, or 1–40 when the spot's
+`capture.mode` is `freeform` (section 8).
 
 Clients: browser `src/memory-rooms/lib/api.js`, Node `tools/memory-rooms/lib/api.mjs`.
 
@@ -499,3 +504,66 @@ shared building frame of §3–6). The UI says "Collection".
 - **The map** opens on `map/start.js` `START` (Perth), not on the spots. Picking a collection's name in the list flies
   the map to its `bounds` (or its spots and places) and offers **Play <name>**: the flyover through its spots in
   capture order. `/memories?c=<id>` opens with it picked, `&play=1` plays it.
+
+## 8. Freeform spots: old photos, the layout + viewpoints (2026-11-25)
+
+Photos of places James can't go back to (where he used to live): any number, any order, no shot guide. He can help
+the render session place them with a rough outline of the room and **viewpoints** (where he stood and which way he
+faced: the wedge the viewer draws for a photo). "Viewpoints" everywhere (code, copy, contracts): "pins" are the
+memory notes in scene.json. Schema: `src/memory-rooms/capture/capture.schema.json`; validator + helpers:
+`capture/freeform.js` (`validateCapture`, `tidyCapture`, `photoFov`, `maxPhotosOf`), shared by the phone and the
+Worker like `building/sketch.js`.
+
+```jsonc
+// Spot gains (optional; null / absent = guided, as every spot before it):
+"capture": {
+  "mode": "guided" | "freeform",
+  "era": "lived here 2019–2021",                       // ≤ 60 characters
+  "captions": { "7": "from the bed" },                 // PER PHOTO (photo number → ≤ 120 characters)
+  "layout": {
+    "outline": [[x, z], …],                            // 3–64 corners, simple, ≥ 0.5 m², either direction
+    "sizeKnown": false,                                // true = he typed the size: the metres are real
+    "openings": [{ "edge": 2, "offset": 1.1, "width": 0.8, "type": "door" | "window" }]
+  },
+  "views": [{ "photo": 7, "x": 1.2, "z": 3.0, "yaw": 40, "conf": "exact" | "rough" }]
+}
+```
+
+- **Frame**: metres in the scene frame of section 1 (x east, z south). `yaw` is rotY's convention: degrees about +y,
+  0 = looking south (+z), 90 = east, 180 = north, 270 = west; look direction `[sin yaw, cos yaw]` (`lookOf`).
+  An opening's `edge` / `offset` work as a polygon shell's (6.1): edge i runs from `outline[i]` to the next corner,
+  offset from `outline[i]`. A viewpoint needs no outline.
+- **Captions live per photo** (`captions`), not in `views`: a photo can have one without being placed.
+- **Photo numbers**: freeform 1–40, guided 1–12 (captions and views follow the mode's limit). The phone numbers its
+  photos in the order they were added when it saves; until then captions and viewpoints are kept by photo id.
+- **The minimum**: 1 photo (a guessed room from one view beats none); guided keeps 4.
+- **sizeKnown false**: the outline's metres are proportions only; the render session scales it (an anchor: a door,
+  a bed, a typed size hint).
+- **A photo's EXIF** is read on the phone from the ORIGINAL file before it is resized through a canvas (which drops
+  it): `lib/exif.js` reads JPEG (APP1) and HEIC (the `meta` box's Exif item). It travels with the photo as
+  `x-exif: <URI-encoded JSON>` and is stored, checked and trimmed, on the photo's media row as `exif`:
+  `focal35` (35 mm-equivalent focal length, mm: the field of view; `photoFov` turns it into the wedge's spread),
+  `focal` + `make` + `model` (the real lens, to look a sensor up), `takenAt` (DateTimeOriginal, ISO, with its offset
+  when the phone wrote one), `width` / `height` (the original's, upright). Any of them may be missing; a garbled
+  header never fails an upload.
+- **Rooms of a whole place** can be freeform too: when the place's sketch has a `rect` for the room, capture offers
+  it as the starting outline (in the room frame: its north-west corner at [0, 0]).
+- **Before `supabase/memory_freeform.sql` has run** (Supabase row store): a spot write carrying `capture` answers
+  `503 needs-sql` (the outbox holds it on the phone); spots without one save as ever (`capture` is only sent for a
+  spot that has, or had, one); a photo's EXIF is left off its row (the photo always uploads, and the response shows
+  what was stored). `GET /ping` lists `features: ['freeform']` only once the column answers. The local row store
+  needs nothing.
+- **Share links** show neither `capture` nor any EXIF.
+- **The render side** (`.claude/skills/memory-render/SKILL.md`, "Freeform spots"): `pull.mjs` writes `capture.json`
+  (mode, era, layout, views, captions, and per photo its caption / view / EXIF) and, past 12 photos, `contact.jpg`
+  (every photo numbered). `build.mjs` / `compare.mjs --cams 2,5,7` render and compare 6–8 chosen cameras per
+  round. `tools/memory-rooms/freeform/fit.py` (numpy only) fits the cameras, the room and marked points from pixel
+  marks, with the viewpoints as starting places and soft priors (exact: 0.15 m / 8°, rough: 1.5 m / 60°; on a
+  sketch whose size isn't known they set where the photos are relative to each other, never the room's scale).
+- **Scene cameras** (scene.schema.json): `photo` 1–40; optional `fit: "good" | "rough"` (how well the render placed
+  it). A freeform scene keeps every USED photo as a camera, so the viewer can fly to it; a discarded photo has none,
+  so it never shows as a viewpoint.
+- **The viewer**: a `rough` camera's frustum is drawn fainter and dashed, its viewpoint button says "roughly here"
+  (it still flies to the photo); with more than 12 cameras every frustum rests faint and only the hovered / picked
+  one draws in full (`viewer/helpers.js` `CROWD`).
+

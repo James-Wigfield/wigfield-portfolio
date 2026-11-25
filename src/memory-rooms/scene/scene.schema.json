@@ -386,17 +386,21 @@
       }
     },
     "camera": {
-      "description": "Where photo N was taken from. fov = field of view across the photo's LONG edge in degrees (phone main camera ~ 68-73; 0.5x ultrawide ~ 105-120). aspect = photo width / height (0.75 portrait, 1.333 landscape).",
+      "description": "Where photo N was taken from. fov = field of view across the photo's LONG edge in degrees (phone main camera ~ 68-73; 0.5x ultrawide ~ 105-120). aspect = photo width / height (0.75 portrait, 1.333 landscape). photo: 1-12 for the shot guide, up to 40 for a freeform spot (old photos, CONTRACTS.md 8). fit: how well the render could place it (old photos: 'rough' cameras are drawn fainter, 'roughly here'); absent = good.",
       "type": "object",
       "required": ["photo", "pos", "look"],
       "additionalProperties": false,
       "properties": {
-        "photo": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "photo": { "type": "integer", "minimum": 1, "maximum": 40 },
         "pos": { "$ref": "#/$defs/vec3" },
         "look": { "$ref": "#/$defs/vec3" },
         "fov": { "type": "number", "minimum": 10, "maximum": 130 },
         "aspect": { "type": "number", "minimum": 0.3, "maximum": 3.5 },
-        "roll": { "type": "number", "minimum": -45, "maximum": 45, "description": "Degrees, positive = clockwise as seen by the photographer." }
+        "roll": { "type": "number", "minimum": -45, "maximum": 45, "description": "Degrees, positive = clockwise as seen by the photographer." },
+        "fit": {
+          "enum": ["good", "rough"],
+          "description": "How well the render placed this photo (a freeform spot: every used photo is a camera so the viewer can fly to it). rough = drawn fainter in the viewer, 'roughly here'. Absent = good."
+        }
       }
     },
     "frame": {

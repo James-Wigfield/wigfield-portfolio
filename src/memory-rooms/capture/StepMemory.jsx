@@ -9,7 +9,7 @@ const Plus = () => (
   </svg>
 );
 
-export default function StepMemory({ note, scaleHint, scalePreset, scan, onNote, onScale, onScan, onRemoveScan }) {
+export default function StepMemory({ note, scaleHint, scalePreset, scan, onNote, onScale, onScan, onRemoveScan, era = null, onEra = null }) {
   const c = COPY.capture;
   const [scanError, setScanError] = useState(null);
   const [scanOpen, setScanOpen] = useState(false);
@@ -43,6 +43,12 @@ export default function StepMemory({ note, scaleHint, scalePreset, scan, onNote,
         />
         <span className="mr-field-hint">{c.noteHint}</span>
       </label>
+      {onEra && (
+        <label className="mr-field">
+          <span className="mr-label">{COPY.freeform.eraLabel}</span>
+          <input className="mr-input" type="text" value={era || ''} maxLength={60} placeholder={COPY.freeform.eraPlaceholder} autoComplete="off" onChange={(e) => onEra(e.target.value)} data-mr="era-input" />
+        </label>
+      )}
 
       <fieldset className="mr-field">
         <legend className="mr-label">{c.scaleLabel}</legend>

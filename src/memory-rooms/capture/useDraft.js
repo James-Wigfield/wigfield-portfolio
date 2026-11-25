@@ -8,11 +8,14 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { get, getAll, put, del, write } from '../lib/idb.js';
 import { addCapture } from '../lib/outbox.js';
 import { NONE, lastCollection, rememberCollection } from '../lib/collections.js';
+import { MAX_FREEFORM_PHOTOS, MIN_FREEFORM_PHOTOS, tidyCapture } from './freeform.js';
 import { writeLastLoc } from '../lib/storage.js';
 import { newId } from '../lib/uuid.js';
 
 export const MIN_PHOTOS = 4;
 export const MAX_PHOTOS = 12;
+/** The photo limits of a draft: the shot guide's 4–12, or old photos' 1–40 (CONTRACTS.md 8). */
+export const photoLimits = (draft) => (draft?.mode === 'freeform' ? { min: MIN_FREEFORM_PHOTOS, max: MAX_FREEFORM_PHOTOS } : { min: MIN_PHOTOS, max: MAX_PHOTOS });
 export const MAX_SCAN_BYTES = 100 * 1024 * 1024;
 
 const fresh = () => ({
@@ -31,6 +34,13 @@ const fresh = () => ({
   roomOf: null, //   the place's name, for the Saved screen's way back
   roomName: null, //  the room's name on the checklist (the title may be renamed; the room stays)
   collectionId: startCollection(), // CONTRACTS.md 7: the collection picked last on this phone, else none
+  // old photos (CONTRACTS.md 8): mode 'freeform' = any order, up to 40, no shot guide
+  mode: 'guided',
+  era: '',
+  captions: {}, // photo id → caption (numbered only at save, so removing a photo never shifts them)
+  layout: null, // { outline, sizeKnown, openings } from the layout editor
+  views: [], // [{ photoId, x, z, yaw, conf }]
+  layoutChoice: null, // 'skip' | 'sketch' (the layout step's answer)
 });
 
 /** A fresh capture starts in the collection used last (or none). */
@@ -39,14 +49,17 @@ function startCollection() {
   return last && last !== NONE ? last : null;
 }
 
+/** A photo of the draft by id (its EXIF lives on it too). */
+const p0 = (state, id) => state.photos.find((p) => p.id === id) || null;
+
 /** A plain in-memory copy of a Blob (one read out of IndexedDB is backed by the database's own file). */
 async function inMemory(blob) {
   return new Blob([await blob.arrayBuffer()], { type: blob.type || 'image/jpeg' });
 }
 
-const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan', 'buildingId', 'roomId', 'roomOf', 'roomName', 'collectionId'];
+const META_KEYS = ['id', 'step', 'kind', 'title', 'note', 'scaleHint', 'scalePreset', 'loc', 'scan', 'buildingId', 'roomId', 'roomOf', 'roomName', 'collectionId', 'mode', 'era', 'captions', 'layout', 'views', 'layoutChoice'];
 const metaOf = (s) => Object.fromEntries(META_KEYS.map((k) => [k, s[k]]));
-const isDirty = (s) => Boolean(s.kind || s.title || s.note || s.photos.length || s.scan || s.loc);
+const isDirty = (s) => Boolean(s.kind || s.title || s.note || s.photos.length || s.scan || s.loc || s.mode === 'freeform');
 
 function reducer(state, a) {
   switch (a.type) {
@@ -58,8 +71,11 @@ function reducer(state, a) {
       return { ...state, ...a.fn(state) };
     case 'addPhoto':
       return { ...state, photos: [...state.photos, a.photo] };
-    case 'removePhoto':
-      return { ...state, photos: state.photos.filter((p) => p.id !== a.id) };
+    case 'removePhoto': {
+      // its caption and viewpoint go with it
+      const { [a.id]: _gone, ...captions } = state.captions || {};
+      return { ...state, photos: state.photos.filter((p) => p.id !== a.id), captions, views: (state.views || []).filter((v) => v.photoId !== a.id) };
+    }
     case 'scan':
       return { ...state, scan: a.scan };
     case 'reset':
@@ -110,6 +126,7 @@ export function useDraft() {
               thumbWidth: r.thumbWidth,
               thumbHeight: r.thumbHeight,
               name: r.name,
+              exif: r.exif || null,
             }));
           const scanRow = rows.find((r) => r.id === 'scan');
           draft = { ...fresh(), ...meta, photos, scan: scanRow ? { name: scanRow.name, size: scanRow.size } : null };
@@ -150,7 +167,7 @@ export function useDraft() {
     const seq = Date.now() + Math.random();
     blobs.current.set(id, { photo: p.photo, thumb: p.thumb });
     try {
-      await put('draftPhotos', { id, seq, name, photo: p.photo, thumb: p.thumb, width: p.width, height: p.height, thumbWidth: p.thumbWidth, thumbHeight: p.thumbHeight });
+      await put('draftPhotos', { id, seq, name, photo: p.photo, thumb: p.thumb, width: p.width, height: p.height, thumbWidth: p.thumbWidth, thumbHeight: p.thumbHeight, exif: p.exif || null });
     } catch (err) {
       console.warn('[memory-rooms] photo kept in memory only', err);
     }
@@ -158,7 +175,7 @@ export function useDraft() {
     urls.current.add(url);
     dispatch({
       type: 'addPhoto',
-      photo: { id, seq, url, width: p.width, height: p.height, thumbWidth: p.thumbWidth, thumbHeight: p.thumbHeight, name },
+      photo: { id, seq, url, width: p.width, height: p.height, thumbWidth: p.thumbWidth, thumbHeight: p.thumbHeight, name, exif: p.exif || null },
     });
   }, []);
 
@@ -230,7 +247,7 @@ export function useDraft() {
         }
         const files = [
           ...pics.map((r, i) => ({ type: 'thumb', n: i + 1, blob: r.thumb, width: r.thumbWidth, height: r.thumbHeight, contentType: 'image/jpeg' })),
-          ...pics.map((r, i) => ({ type: 'photo', n: i + 1, blob: r.photo, width: r.width, height: r.height, contentType: 'image/jpeg' })),
+          ...pics.map((r, i) => ({ type: 'photo', n: i + 1, blob: r.photo, width: r.width, height: r.height, contentType: 'image/jpeg', exif: r.exif || p0(state, r.id)?.exif || null })),
         ];
         const scan = blobs.current.get('scan')?.blob || (stored.get('scan')?.blob ? await inMemory(stored.get('scan').blob) : null);
         if (state.scan && scan) files.push({ type: 'scan', n: 'scan', blob: scan, contentType: 'application/octet-stream' });
@@ -257,6 +274,17 @@ export function useDraft() {
         }
         // a room of a whole place files under its place's collection (no collectionId of its own)
         if (!state.buildingId) spot.collectionId = state.collectionId || null;
+        // old photos: how they were taken, and James's hints for placing them, by photo NUMBER (their order now)
+        if (state.mode === 'freeform') {
+          const nOf = new Map(pics.map((r, i) => [r.id, i + 1]));
+          spot.capture = tidyCapture({
+            mode: 'freeform',
+            era: state.era,
+            captions: Object.fromEntries(Object.entries(state.captions || {}).filter(([id]) => nOf.has(id)).map(([id, text]) => [String(nOf.get(id)), text])),
+            layout: state.layout,
+            views: (state.views || []).filter((v) => nOf.has(v.photoId)).map(({ photoId, ...v }) => ({ ...v, photo: nOf.get(photoId) })),
+          });
+        }
         await addCapture(spot, files);
         if (!state.buildingId) rememberCollection(state.collectionId);
         writeLastLoc(spot.lat, spot.lng);

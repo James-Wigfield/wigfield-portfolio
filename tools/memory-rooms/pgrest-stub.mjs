@@ -22,7 +22,10 @@
 
    Collections (supabase/memory_collections.sql) are in by default too: the memory_collections table, PATCH
    (update with eq filters, rows back when asked) and DELETE. PGREST_NO_COLLECTIONS=1 plays a project where that
-   SQL hasn't run: no memory_collections table, and sending collection_id is PGRST204. */
+   SQL hasn't run: no memory_collections table, and sending collection_id is PGRST204.
+
+   Freeform (supabase/memory_freeform.sql): memory_spots.capture and memory_media.exif. PGREST_NO_FREEFORM=1 plays a
+   project before it: sending either column (or selecting capture) is PGRST204 / 42703. */
 
 import http from 'node:http';
 
@@ -31,6 +34,8 @@ const NO_BUILDINGS = process.env.PGREST_NO_BUILDINGS === '1';
 const NO_COLLECTIONS = NO_BUILDINGS || process.env.PGREST_NO_COLLECTIONS === '1';
 const tables = NO_BUILDINGS ? { memory_spots: [], memory_media: [] } : { memory_spots: [], memory_media: [], memory_buildings: [], memory_building_media: [] };
 if (!NO_COLLECTIONS) tables.memory_collections = [];
+const NO_FREEFORM = NO_COLLECTIONS || process.env.PGREST_NO_FREEFORM === '1';
+const FREEFORM_COLUMN = { memory_spots: 'capture', memory_media: 'exif' };
 const now = () => new Date().toISOString();
 
 const DEFAULTS = {
@@ -106,6 +111,7 @@ http
 
     if (req.method === 'GET') {
       if (NO_COLLECTIONS && COLLECTION_COLUMN.has(table) && filtersCollection()) return pgError(res, 400, '42703', 'column collection_id does not exist');
+      if (NO_FREEFORM && table === 'memory_spots' && (url.searchParams.get('select') || '').split(',').includes('capture')) return pgError(res, 400, '42703', 'column capture does not exist');
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify(matching()));
     }
@@ -140,6 +146,7 @@ http
       const merge = /resolution=merge-duplicates/.test(String(req.headers.prefer || ''));
       for (const input of Array.isArray(body) ? body : [body]) {
         if (NO_COLLECTIONS && COLLECTION_COLUMN.has(table) && 'collection_id' in input) return noColumn(res, table);
+        if (NO_FREEFORM && FREEFORM_COLUMN[table] && FREEFORM_COLUMN[table] in input) return pgError(res, 400, 'PGRST204', `Could not find the '${FREEFORM_COLUMN[table]}' column of '${table}' in the schema cache`);
         if (NO_BUILDINGS && table === 'memory_spots' && ('building_id' in input || 'room_id' in input)) {
           return pgError(res, 400, 'PGRST204', `Could not find the '${'building_id' in input ? 'building_id' : 'room_id'}' column of 'memory_spots' in the schema cache`);
         }

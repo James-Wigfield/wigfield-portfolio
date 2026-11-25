@@ -4,7 +4,8 @@ import { useCallback, useRef, useState } from 'react';
 import { processPhoto } from '../lib/images.js';
 import { MAX_PHOTOS } from './useDraft.js';
 
-export function usePhotoQueue({ count, addPhoto }) {
+/** max: how many photos this capture takes (12 guided, 40 for old photos). */
+export function usePhotoQueue({ count, addPhoto, max = MAX_PHOTOS }) {
   const [progress, setProgress] = useState(null); // { i, n }
   const [errors, setErrors] = useState([]);
   const [trimmed, setTrimmed] = useState(0);
@@ -15,7 +16,7 @@ export function usePhotoQueue({ count, addPhoto }) {
       const files = Array.from(fileList || []);
       if (!files.length || busy.current) return;
       busy.current = true;
-      const take = files.slice(0, Math.max(0, MAX_PHOTOS - count));
+      const take = files.slice(0, Math.max(0, max - count));
       setTrimmed(files.length - take.length);
       setErrors([]);
       const failed = [];
@@ -33,7 +34,7 @@ export function usePhotoQueue({ count, addPhoto }) {
       setProgress(null);
       busy.current = false;
     },
-    [count, addPhoto],
+    [count, addPhoto, max],
   );
 
   return { addFiles, progress, errors, trimmed, busy: Boolean(progress) };

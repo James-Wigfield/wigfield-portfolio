@@ -228,7 +228,7 @@ try {
     record(`index ${L}: rows numbered "No. 001"…`, nos.length > 0 && nos.every((t) => /^No\. \d{3}$/.test(t)), nos.slice(0, 3).join(', '));
     // the map is for any place now: no trip day strip, and the index's dates carry the year (DECISIONS 212)
     const strip = await map.$('.mr-days');
-    const dated = await map.$$eval('.mr-row-sub', (els) => els.map((e) => e.textContent).filter((t) => /(19|20)\d\d/.test(t)).length);
+    const dated = await map.$$eval('.mr-row-sub', (els) => els.map((e) => e.textContent).filter((t) => /\b(19|20)\d\d\b/.test(t)).length);
     record(`index ${L}: no day-of-the-trip strip; rows dated with the year`, !strip && dated > 0, `${dated} dated rows`);
     // the map opens on Perth: zoom the atlas out to the world so every spot is on screen for the hover check
     for (let i = 0; i < 12; i++) await map.click(sel('zoom-out')).catch(() => {});

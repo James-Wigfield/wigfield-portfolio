@@ -146,9 +146,22 @@ const ownCollection = new Map(); // spot id → its collectionId before the run 
   }
 }
 const C = `c=${FLY_COLL}`;
+// Cleanup retries and never fails quietly: a swallowed error once left the five test spots and the test collection
+// on the Worker (the end of a long run can hit Windows' socket-buffer limit), and every later page-check saw them.
+const cleanupFailed = [];
+async function tidy(what, fn) {
+  for (let i = 0; i < 4; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (i === 3) cleanupFailed.push(`${what}: ${String(e.message).split(/\r?\n/)[0]}`);
+      else await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+}
 async function restoreCollections() {
-  for (const [id, was] of ownCollection) await api.patchSpot(id, { collectionId: was }).catch(() => {});
-  await api.deleteCollection(FLY_COLL).catch(() => {});
+  for (const [id, was] of ownCollection) await tidy(`put ${id.slice(0, 8)} back in its collection`, () => api.patchSpot(id, { collectionId: was }));
+  await tidy('delete the test collection', () => api.deleteCollection(FLY_COLL));
 }
 
 /* ── what the flyover should do with the spots on the Worker ─────────────── */
@@ -1245,7 +1258,8 @@ if (only.has('reduced')) {
 
 await browser.close();
 await restoreCollections();
-if (seeded) for (const s of FLY_SPOTS) await api.deleteSpot(uuidFor(s.title)).catch(() => {});
+if (seeded) for (const s of FLY_SPOTS) await tidy(`delete "${s.title}"`, () => api.deleteSpot(uuidFor(s.title)));
+record('cleanup: the test spots are deleted and every spot is back in its own collection', !cleanupFailed.length, cleanupFailed.join('; '));
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed (${scheme}). Mapbox loads this run: ${mapLoads}. Screenshots: ${OUT}`);
 for (const l of fpsLines) console.log(`fps  ${l}`);

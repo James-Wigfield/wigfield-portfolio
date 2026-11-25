@@ -27,7 +27,8 @@
                (page-check-edit.mjs; it puts every spot it edits back)
      console   zero console errors and zero page errors on every screen
      extras    then ar-check, fly-check, walk-check, walk-mp-check, viewer-upgrades-check (theme, spin,
-               furnished) and place-walk-check (a whole place, two players, stairs) as their own processes (logs
+               furnished), place-walk-check (a whole place, two players, stairs) and freeform-check (old photos:
+               capture, the layout + viewpoint editor at 1440 + a 390 touch drag, the edit page) as their own processes (logs
                in _page-check/<name>-<scheme>.log; exit 2 = nothing to check here, counted as skipped);
                --no-extras skips them, --python goes to ar-check
    Screenshots → memory-rooms-work/_page-check/. Exit 1 if anything fails.
@@ -759,6 +760,7 @@ if (!args.includes('--no-extras')) {
     ['walk-mp-check.mjs', []],
     ['viewer-upgrades-check.mjs', []],
     ['place-walk-check.mjs', []],
+    ['freeform-check.mjs', []],
   ];
   for (const [file, more] of extra) {
     const script = path.join(here, file);
