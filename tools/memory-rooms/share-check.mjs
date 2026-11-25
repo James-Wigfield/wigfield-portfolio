@@ -82,8 +82,8 @@ try {
   const item = sh.json?.data?.item;
   record('GET /shared/:token with no password opens the place', sh.status === 200 && sh.json?.data?.kind === 'building' && item?.id === BID, `${sh.status}`);
   record('…marked noindex + no-store', /noindex/.test(sh.headers.get('x-robots-tag') || '') && /no-store/.test(sh.headers.get('cache-control') || ''));
-  const leaked = ['lat', 'lng', 'note', 'sketch', 'createdBy', 'locAccuracyM', 'tripStopId', 'deletedAt'].filter((k) => item && k in item);
-  record('…with no location, note, sketch or who', leaked.length === 0 && !item?.plan?.geo, leaked.join(', '));
+  const leaked = ['lat', 'lng', 'note', 'sketch', 'createdBy', 'locAccuracyM', 'tripStopId', 'deletedAt', 'collectionId', 'collection'].filter((k) => item && k in item);
+  record('…with no location, note, sketch, who or collection', leaked.length === 0 && !item?.plan?.geo && !/collection/i.test(JSON.stringify(sh.json || {})), leaked.join(', '));
   const types = [...new Set((item?.media || []).map((m) => m.type))];
   record('…only its model / render files', types.length > 0 && types.every((t) => ['model', 'render'].includes(t)), types.join(','));
   const own = (item?.media || []).every((m) => m.url.startsWith(`/api/memories/file/buildings/${BID}/`) && /\?t=/.test(m.url) && !('r2Key' in m));
@@ -115,9 +115,10 @@ try {
     if (st) made.push(st);
     const ss = await call(`/shared/${st}`, { auth: null });
     const si = ss.json?.data?.item;
-    const sl = ['lat', 'lng', 'note', 'createdBy', 'frameGroup'].filter((k) => si && k in si);
+    const sl = ['lat', 'lng', 'note', 'createdBy', 'frameGroup', 'collectionId', 'capture'].filter((k) => si && k in si);
     const stypes = [...new Set((si?.media || []).map((m) => m.type))];
-    record('a room link opens that room alone, trimmed', ss.status === 200 && si?.id === spot.id && sl.length === 0 && stypes.every((x) => ['photo', 'thumb', 'model', 'scan', 'render'].includes(x)), `${ss.status} ${sl.join(',')} ${stypes.join(',')}`);
+    const exif = (si?.media || []).some((m) => 'exif' in m);
+    record('a room link opens that room alone, trimmed (no collection, no old-photo capture or EXIF)', ss.status === 200 && si?.id === spot.id && sl.length === 0 && !exif && !/collection/i.test(JSON.stringify(ss.json || {})) && stypes.every((x) => ['photo', 'thumb', 'model', 'scan', 'render'].includes(x)), `${ss.status} ${sl.join(',')}${exif ? ' exif' : ''} ${stypes.join(',')}`);
   }
 
   // ── the page ──
