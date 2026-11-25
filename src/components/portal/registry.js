@@ -81,6 +81,7 @@ import PortaraMotion from './modules/PortaraMotion';
 import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BaristaGuide from './modules/barista/BaristaGuide';
 import MemoryRoomsPlan from './modules/memory-rooms-plan/MemoryRoomsPlan';
+import DreamRoomsPlan from './modules/dream-rooms-plan/DreamRoomsPlan';
 import DevSetup from './modules/dev-setup/DevSetup';
 import Resume from './modules/resume/Resume';
 import SkippersForms from './modules/skippers/SkippersForms';
@@ -402,6 +403,14 @@ export const MODULES = [
     icon: 'cube',
     group: 'Personal',
     component: MemoryRoomsPlan,
+  },
+  {
+    // Plan + build prompt for the /dreams tool. Deep-linked: /portal/dream-rooms-plan/<tab>.
+    id: 'dream-rooms-plan',
+    label: 'Dream Rooms · Plan',
+    icon: 'moon',
+    group: 'Personal',
+    component: DreamRoomsPlan,
   },
   {
     // Home-PC dev workflow plan (layout, start-dev launch, mouse, terminal). Deep-linked: /portal/dev-setup/<tab>.

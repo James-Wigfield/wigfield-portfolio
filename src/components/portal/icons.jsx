@@ -364,6 +364,13 @@ const PATHS = {
       <path d="M13.5 6.5 17.5 10.5" />
     </>
   ),
+  // Moon - a crescent with a small star (Dream Rooms)
+  moon: (
+    <>
+      <path d="M19.5 14.6A7.8 7.8 0 1 1 10.2 4.4a6.3 6.3 0 0 0 9.3 10.2Z" />
+      <path d="M16.5 4.2v2.6M15.2 5.5h2.6" />
+    </>
+  ),
   cloud: <path d="M7.5 18.5h9.5a4.2 4.2 0 0 0 .4-8.4 6.2 6.2 0 0 0-12-1.1A4.6 4.6 0 0 0 7.5 18.5Z" />,
   download: (
     <>

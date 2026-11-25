@@ -41,3 +41,6 @@ seminar-export/
 memory-rooms-work/
 # Python bytecode (Blender kit imports)
 __pycache__/
+
+# Dream Rooms plan: generated renders, screenshots and bench output (tools/dream-rooms-plan/*.mjs rebuild them)
+tools/dream-rooms-plan/out/
