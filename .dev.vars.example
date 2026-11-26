@@ -28,3 +28,9 @@ DREAMS_PASSWORD=
 # Optional: the HMAC key for signed dream file links (≤ 1 h). Unset = derived from
 # DREAMS_PASSWORD + PORTAL_PASSWORD. Production: wrangler secret put DREAMS_SIGNING_KEY
 # DREAMS_SIGNING_KEY=
+
+# Specta Selecta desktop app updates (workers/specta-selecta.js). Production:
+#   wrangler secret put SPECTA_UPDATE_KEY     (same value as the app repo's secret)
+#   wrangler secret put SPECTA_GITHUB_TOKEN   (fine-grained, Contents read-only)
+SPECTA_UPDATE_KEY=
+SPECTA_GITHUB_TOKEN=

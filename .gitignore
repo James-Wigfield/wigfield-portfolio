@@ -48,3 +48,6 @@ tools/dream-rooms-plan/out/
 # Dream Rooms: per-dream work folders (pull.mjs / build.mjs / bake.mjs write them); local only
 dream-rooms-work/
 tools/dream-rooms/out/
+
+# Specta Selecta: private build prompts (this repo is public); local only
+Documents/specta-selecta/

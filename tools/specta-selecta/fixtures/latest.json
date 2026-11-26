@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0",
+  "notes": "First release.",
+  "pub_date": "2026-11-26T10:00:00.000Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "c2lnLWRhcndpbi1hYXJjaDY0",
+      "url": "https://github.com/James-Wigfield/specta-selecta/releases/download/v0.1.0/Specta.Selecta_aarch64.app.tar.gz"
+    },
+    "darwin-aarch64-app": {
+      "signature": "c2lnLWRhcndpbi1hYXJjaDY0",
+      "url": "https://github.com/James-Wigfield/specta-selecta/releases/download/v0.1.0/Specta.Selecta_aarch64.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "c2lnLXdpbmRvd3MteDY0",
+      "url": "https://github.com/James-Wigfield/specta-selecta/releases/download/v0.1.0/Specta.Selecta_0.1.0_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "c2lnLXdpbmRvd3MteDY0",
+      "url": "https://github.com/James-Wigfield/specta-selecta/releases/download/v0.1.0/Specta.Selecta_0.1.0_x64-setup.exe"
+    }
+  }
+}

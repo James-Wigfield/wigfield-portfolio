@@ -404,6 +404,15 @@ const PATHS = {
       <path d="M7 12.5v3.5M17 12.5v3.5M4.5 18.5h5M14.5 18.5h5" />
     </>
   ),
+  // Record - a vinyl record: rim, two grooves, the label and its spindle hole (Specta Selecta)
+  record: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M6.6 9.4a6 6 0 0 1 2.8-2.8M17.4 14.6a6 6 0 0 1-2.8 2.8" />
+      <circle cx="12" cy="12" r="2.6" />
+      <circle cx="12" cy="12" r="0.55" fill="currentColor" stroke="none" />
+    </>
+  ),
   // Anchor - ring, shank, stock and curved arms with flukes (Skippers forms)
   anchor: (
     <>

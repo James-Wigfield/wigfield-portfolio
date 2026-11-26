@@ -80,6 +80,7 @@ import PortaraPlatform from './modules/PortaraPlatform';
 import PortaraMotion from './modules/PortaraMotion';
 import AmericaFirstPlan from './modules/america/AmericaFirstPlan';
 import BaristaGuide from './modules/barista/BaristaGuide';
+import SpectaSelecta from './modules/specta-selecta/SpectaSelecta';
 import MemoryRoomsPlan from './modules/memory-rooms-plan/MemoryRoomsPlan';
 import DreamRoomsPlan from './modules/dream-rooms-plan/DreamRoomsPlan';
 import DevSetup from './modules/dev-setup/DevSetup';
@@ -395,6 +396,14 @@ export const MODULES = [
     icon: 'cup',
     group: 'Personal',
     component: BaristaGuide,
+  },
+  {
+    // Desktop app releases + install steps. Deep-linked: /portal/specta-selecta/<tab> (id must not change).
+    id: 'specta-selecta',
+    label: 'Specta Selecta',
+    icon: 'record',
+    group: 'Personal',
+    component: SpectaSelecta,
   },
   {
     // Plan + build prompt for the /memories tool. Deep-linked: /portal/memory-rooms-plan/<tab>.

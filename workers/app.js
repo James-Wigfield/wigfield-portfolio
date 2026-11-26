@@ -21,6 +21,7 @@ import { handleDeckRemoteApi } from './deck-remote.js';
 import { handlePapersApi } from './papers.js';
 import { handleMemoriesApi } from './memory-rooms.js';
 import { handleDreamsApi } from './dream-rooms.js';
+import { handleSpectaSelectaApi } from './specta-selecta.js';
 
 // The arcade's Durable Object. One class serves every arcade game — see
 // workers/arcade/room.js and ADR-005. Must be re-exported from the Worker entry
@@ -74,6 +75,13 @@ async function handleApi(request, env, url) {
   // Dream Rooms — James's private dreams (R2 rows + files, DREAMS_PASSWORD or PORTAL_PASSWORD, never MEMORIES_PASSWORD). See workers/dream-rooms.js.
   if (url.pathname === '/api/dreams' || url.pathname.startsWith('/api/dreams/')) {
     return handleDreamsApi(request, env, url);
+  }
+
+  // Specta Selecta — the desktop app's update feed (Bearer = SPECTA_UPDATE_KEY)
+  // and the portal's releases page (portal password). Its releases live in a
+  // private GitHub repo; see workers/specta-selecta.js.
+  if (url.pathname.startsWith('/api/specta-selecta/')) {
+    return handleSpectaSelectaApi(request, env, url, { requirePortalAuth, json });
   }
 
   // Health check — confirms the Worker is live and whether Supabase is wired up.
