@@ -56,8 +56,8 @@ def _meet(p0, d0, p1, d1):
 
 
 def junctions(b, level_id):
-    """{ wall_id: {"a": {"left", "right"}, "b": {"left", "right"}} } corner points of each wall's faces at its two
-    ends, plus "hubs": [{"node", "points", "owner"}] for nodes where three or more walls meet."""
+    """{ wall_id: {"a": {"left", "right", "free"}, "b": {...}} } corner points of each wall's faces at its two
+    ends (free = no other wall meets that end), plus "hubs": [{"node", "points", "owner"}] for nodes where three or more walls meet."""
     lines = B.wall_lines(b, level_id)
     nodes = B.node_map(B.level_by_id(b, level_id))
     at_node: dict = {}
@@ -93,10 +93,11 @@ def junctions(b, level_id):
                 if c_minus is None or math.hypot(*_sub(c_minus, n)) > lim or _dot(_sub(c_minus, n), it["v"]) < -lim:
                     c_minus = square_minus
             # map the wall's own left / right (looking a -> b): at a, v = d so left = rot_minus; at b it flips
+            # "free": no other wall meets this end (a wall ending in a room: its end is a finished face, not a cap)
             if it["end"] == "a":
-                out[it["w"]["id"]]["a"] = {"left": c_minus, "right": c_plus}
+                out[it["w"]["id"]]["a"] = {"left": c_minus, "right": c_plus, "free": k == 1}
             else:
-                out[it["w"]["id"]]["b"] = {"left": c_plus, "right": c_minus}
+                out[it["w"]["id"]]["b"] = {"left": c_plus, "right": c_minus, "free": k == 1}
             it["c_plus"], it["c_minus"] = c_plus, c_minus
         if k >= 3:
             ring = []

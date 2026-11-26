@@ -480,3 +480,45 @@ Brief: `Documents/memory-rooms/prompt-dumping/freeform-capture-prompt.md` (Part 
    grid search, and its matched points as extra `marks`. The rest (room model, anchors, Huber LM, the viewer's
    `fit` flag) stays. It needs a GPU and a Python env (the WSL `tf-2.20-gpu` pattern), so it would be a separate
    `freeform/pose_init.py` writing fit-input.json, never a Worker or phone dependency.
+
+### Library Hallway (12B Fletcher St, 2026-11-25)
+
+Spot `3922493f-…`, room `library-hallway`; work notes in its `layout.md`.
+
+228. **A camera may stand past a building room's open side** (`check-scene.mjs`): a hallway open to its landing has
+   no wall on that edge (the shell's `open` wall), so its "wide from the door" photos are taken from the next room
+   (photo 6 from the top step of the stair, 2.1 m out; photo 4 from the landing). Within the open edge's span (±0.3 m)
+   and up to 3 m beyond it, that is now a warning, like a camera in a doorway (DECISIONS 41); anywhere else outside is
+   still an error.
+229. **A building wall's free end and a low wall's top are finished faces** (`building_mesh.junctions` marks an end
+   where no other wall meets it `free`; `shell_v2.wall_slab` takes `end_mats` / `top_mat`; `build_building.py`
+   passes the wall paint): every wall end used to get the dark section cap, which is right at a mitred corner or the
+   dollhouse cut but rendered the hall niche's return wall as a black strip in the photo views, and the 1.1 m wall
+   beside the stair with a black top. A wall lower than its level (balustrade walls, the balcony upstand) now has a
+   painted top; walls that reach the ceiling keep the section colour.
+230. **The wall-backed split separates exactly the marked faces** (`bake_export.split_wall_backed`): it set the
+   polygon flags and entered edit mode in vertex-select mode, which re-selects any face whose vertices are all
+   selected. A bulkhead box against the wall, the ceiling and both end walls (plus its 45 deg bevels) lost every face
+   to `__backed`, and the empty original crashed the UV pass (`KeyError` in `ISLAND_STATS`). It now separates in
+   face-select mode with the vertex / edge flags cleared, and drops an original that ends up empty. Earlier bakes may
+   have sent a few extra faces through the dollhouse pass this way; they bake normally from now on.
+231. **Built-in joinery to the ceiling is one bespoke piece per run, bulkhead included, `mount: "wall"`**
+   (`bespoke/hall_joinery.py`): the runs are the walls' inner skin (A.25: 600 / 770 deep, square bulkheads 650 / 820
+   at 28c), so the dollhouse hides each with its wall (DECISIONS 45 keeps floor-standing furniture, which would leave
+   a 2.65 m block between the camera and the passage). Sections (doors / open shelves / a seat with overheads) are
+   params, so another built-in wall can reuse it. Soft things on a built-in (the window seat's cushions) are part of
+   the piece too (`cushions` on a seat section): as free objects they float once the piece hides. The bulkhead's
+   top is a 3 mm cap in the builder's section colour (`shell.section_mat`): it sits 7 mm under the ceiling, so it
+   bakes black, and once the dollhouse removes the ceiling it should read like the wall tops beside it. (The
+   wall-backed split's ceiling test compares a level-local height with world z, so on a building level it never fires;
+   left alone here, noted for whoever next needs lit furniture tops against a building ceiling.)
+232. **On a building room's spot page, wall-mounted pieces hide with their walls again** (`viewer/dollhouse.js`):
+   the spot page (and its map diorama, walk and AR) loads the room's slice without building.json, so `shellOf`
+   returned null and `attachedWall` attached nothing: in every building room the TV, prints, curtains and uppers
+   stayed standing when their wall faded (the Upstairs Living's "sheer in front of the sofa"), and the hall's
+   full-height joinery blocked the passage. `groupRoom` now rebuilds the walls from the slice's own `wall__<id>`
+   nodes (inner face = the plane nearest the room along `mrWall.normal` over the node's vertices, span along the
+   wall; walls starting > 0.5 m above the floor, the level above in a double-height slice, left out). A
+   wall-mounted piece touching two walls (a corner) now goes with the one it runs along further (`MOUNT_TIE_M`
+   0.1 m), not whichever came first. Check: `node tools/memory-rooms/dev/attach-check.mjs <spotId>...` (reads the
+   real slice, no browser). Needs a site deploy to go live.

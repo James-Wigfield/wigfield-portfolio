@@ -334,7 +334,18 @@ function checkGeneric(scene, sh, { errors, warnings, objs, boxes }) {
         const out = (px - wall.a[0]) * wall.out[0] + (pz - wall.a[1]) * wall.out[1];
         return along >= op.offset && along <= op.offset + op.width && out <= 0.6 && out > -m - 0.001 && py < op.head;
       });
+      // a room of a building whose side is open to the next room (no wall on that edge, e.g. a hallway onto its
+      // landing): a photo taken from the next room, looking in through the open side, stands there (DECISIONS 228)
+      const pastOpenSide = !inDoorway && py >= 0.1 && sh.walls.some((wall) => {
+        if (!wall.open) return false;
+        const ux = (wall.b[0] - wall.a[0]) / (wall.length || 1);
+        const uz = (wall.b[1] - wall.a[1]) / (wall.length || 1);
+        const along = (px - wall.a[0]) * ux + (pz - wall.a[1]) * uz;
+        const out = (px - wall.a[0]) * wall.out[0] + (pz - wall.a[1]) * wall.out[1];
+        return along >= -0.3 && along <= wall.length + 0.3 && out > 0 && out <= 3.0;
+      });
       if (inDoorway) warnings.push(`${label}: pos [${cam.pos}] is in a doorway (fine for "wide from the door")`);
+      else if (pastOpenSide) warnings.push(`${label}: pos [${cam.pos}] stands past the room's open side, in the next room (fine for a photo looking in)`);
       else errors.push(`${label}: pos [${cam.pos}] is outside the room`);
     }
     const [lx, ly, lz] = cam.look;

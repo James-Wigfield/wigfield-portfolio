@@ -41,6 +41,8 @@ const FADE_MS = 220;
 const WALL_KITS = new Set(['frame', 'curtain', 'tv', 'sign', 'shelf']);
 const FLUSH_M = 0.03;
 const MOUNT_REACH_M = 0.35;
+/** Two walls this close to a wall-mounted piece tie; the one it runs along further wins. */
+const MOUNT_TIE_M = 0.1;
 
 /** Below this base height a thing stands on the floor and never hides with a wall. */
 const FLOOR_STANDING_M = 0.05;
@@ -78,6 +80,10 @@ export function attachedWallAny(o, sh) {
   const corners = footprint(o);
   let best = null;
   let bestD = Infinity;
+  let bestRun = -Infinity;
+  // a wall-mounted piece in a corner touches two walls: it belongs to the one it runs along further (a built-in
+  // run against its long wall, not the short return at its end), whatever order the walls come in
+  const tie = o.mount === 'wall' ? MOUNT_TIE_M : 0;
   for (const w of sh.walls) {
     if (w.open || !(w.length > 0)) continue;
     const ux = (w.b[0] - w.a[0]) / w.length;
@@ -95,14 +101,65 @@ export function attachedWallAny(o, sh) {
     }
     if (hi < -0.05 || lo > w.length + 0.05) continue; // not alongside this wall
     const d = Math.abs(reach);
-    if (d < bestD) {
+    const run = Math.min(hi, w.length) - Math.max(lo, 0);
+    if (d < bestD - tie || (d <= bestD + tie && run > bestRun)) {
       bestD = d;
+      bestRun = run;
       best = w.id;
     }
   }
   if (best === null) return null;
   if (o.mount === 'wall') return bestD <= MOUNT_REACH_M ? best : null;
   return WALL_KITS.has(o.kit) && bestD <= FLUSH_M ? best : null;
+}
+
+/**
+ * Walls for attachedWallAny, rebuilt from a room slice's wall nodes (a building room's room.glb, CONTRACTS.md 6.4):
+ * each top-level `wall__<id>` carries `mrWall.normal`, outward from this room, in the room frame. Its inner face is
+ * the plane nearest the room along that normal (over the wall's vertices: its skirting and frames stand a few cm
+ * proud, well inside MOUNT_REACH_M), its span the vertices' extent along the wall. Walls that start well above this
+ * room's floor (the level above, sliced in for a double-height room) are left out. Null when none qualify.
+ */
+function wallsFromNodes(root, nodes) {
+  if (!nodes.size) return null;
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const m = new THREE.Matrix4();
+  const p = new THREE.Vector3();
+  const out = [];
+  for (const [id, node] of nodes) {
+    const n = node.userData?.mrWall?.normal;
+    if (!Array.isArray(n) || n.length !== 2) continue;
+    const ux = -n[1];
+    const uz = n[0];
+    let inner = Infinity;
+    let lo = Infinity;
+    let hi = -Infinity;
+    let minY = Infinity;
+    node.traverse((o) => {
+      const pos = o.isMesh && o.geometry?.attributes?.position;
+      if (!pos) return;
+      m.multiplyMatrices(inv, o.matrixWorld);
+      for (let i = 0; i < pos.count; i++) {
+        p.fromBufferAttribute(pos, i).applyMatrix4(m);
+        inner = Math.min(inner, p.x * n[0] + p.z * n[1]);
+        const t = p.x * ux + p.z * uz;
+        lo = Math.min(lo, t);
+        hi = Math.max(hi, t);
+        minY = Math.min(minY, p.y);
+      }
+    });
+    if (!(hi > lo) || minY > 0.5) continue;
+    out.push({
+      id,
+      a: [n[0] * inner + ux * lo, n[1] * inner + uz * lo],
+      b: [n[0] * inner + ux * hi, n[1] * inner + uz * hi],
+      out: n,
+      length: hi - lo,
+      open: false,
+    });
+  }
+  return out.length ? { walls: out } : null;
 }
 
 /**
@@ -123,12 +180,14 @@ export function groupRoom(root, scene = null, building = null) {
   }
   const ceilings = [];
   const byName = new Map();
+  const wallNodes = new Map();
   root.traverse((obj) => {
     const name = obj.name || '';
     const wall = parseWallNode(name);
     if (wall && (!v1Box || wall.legacy || !scene)) {
       const key = wallKey(wall.id);
       (walls[key] ||= []).push(obj);
+      if (name === `wall__${wall.id}` && !wallNodes.has(wall.id)) wallNodes.set(wall.id, obj);
       if (!(key in normals)) {
         const mw = obj.userData?.mrWall;
         if (mw && 'exterior' in mw) {
@@ -144,6 +203,9 @@ export function groupRoom(root, scene = null, building = null) {
     } else if (name.startsWith('ceiling')) ceilings.push(obj);
     if (name.startsWith('obj__') && !byName.has(name)) byName.set(name, obj);
   });
+  // a building room seen without its building (the spot page, its map diorama, walk, AR) has no shell to attach
+  // wall-mounted pieces to: rebuild its walls from the slice's own wall nodes
+  const attachSh = sh || (!v1Box && scene?.shell?.building ? wallsFromNodes(root, wallNodes) : null);
   for (const o of scene?.objects || []) {
     if (o.kit === 'pendant' || o.mount === 'ceiling') {
       // hung from the ceiling: it floats once the ceiling is cut away, so it goes with it
@@ -151,7 +213,7 @@ export function groupRoom(root, scene = null, building = null) {
       if (node) ceilings.push(node);
       continue;
     }
-    const side = attachedWall(o, scene.shell, sh);
+    const side = attachedWall(o, scene.shell, attachSh);
     const node = side && byName.get(`obj__${o.id}`);
     if (node) (walls[wallKey(side)] ||= []).push(node);
   }

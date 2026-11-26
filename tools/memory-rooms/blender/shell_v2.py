@@ -77,11 +77,13 @@ class PolyWallFrame:
                  P_(u0, v1, w0), P_(u1, v1, w0), P_(u1, v1, w1), P_(u0, v1, w1)], mat)
 
 
-def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat, imat=None, omat=None, bands=None):
+def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat, imat=None, omat=None, bands=None, end_mats=None, top_mat=None):
     """shell._wall_slab for a PolyWallFrame: a gridded slab with clean holes, mitred ends, section-coloured caps.
     imat / omat (optional) replace wmat on the w = 0 / w = t face (a building wall's outside finish).
     bands (optional): [{a, b, s, h, imat?, omat?}] = rectangles of another material on a face (cladding panels);
-    the grid is cut at their edges so they sit exactly, and a band that reaches u = 0 / L runs to the mitred end."""
+    the grid is cut at their edges so they sit exactly, and a band that reaches u = 0 / L runs to the mitred end.
+    end_mats (optional): (material at u = 0, material at u = L), None = the section colour (a building wall's free end
+    is a finished face); top_mat (optional): the top's material (a wall lower than its level has a real top)."""
     L, t = F.L, F.t
     bands = bands or []
     U = sorted({0.0, L, *[o["a"] for o in holes], *[o["b"] for o in holes], *[x["a"] for x in bands], *[x["b"] for x in bands]})
@@ -118,7 +120,8 @@ def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat, imat=None, omat=None, band
                 continue
             u, v0, v1 = U[i], V[j], V[j + 1]
             if i == 0 or i == nU - 1:
-                mb.poly([P_(u, v0, 0), P_(u, v1, 0), P_(uo(u), v1, t), P_(uo(u), v0, t)], cmat, F.N(-1 if i == 0 else 1, 0, 0))
+                emat = (end_mats or (None, None))[0 if i == 0 else 1] or cmat
+                mb.poly([P_(u, v0, 0), P_(u, v1, 0), P_(uo(u), v1, t), P_(uo(u), v0, t)], emat, F.N(-1 if i == 0 else 1, 0, 0))
             else:
                 mb.poly([P_(u, v0, 0), P_(u, v1, 0), P_(u, v1, t), P_(u, v0, t)], wmat, F.N(1 if ls else -1, 0, 0))
     for j in range(nV):
@@ -128,7 +131,7 @@ def wall_slab(F: PolyWallFrame, H, holes, wmat, cmat, imat=None, omat=None, band
                 continue
             v, u0, u1 = V[j], U[i], U[i + 1]
             if j == nV - 1:
-                mb.poly([P_(u0, v, 0), P_(u1, v, 0), P_(uo(u1), v, t), P_(uo(u0), v, t)], cmat, F.N(0, 1, 0))
+                mb.poly([P_(u0, v, 0), P_(u1, v, 0), P_(uo(u1), v, t), P_(uo(u0), v, t)], top_mat or cmat, F.N(0, 1, 0))
             else:
                 mb.poly([P_(u0, v, 0), P_(u1, v, 0), P_(u1, v, t), P_(u0, v, t)], wmat, F.N(0, 1 if bs else -1, 0))
     return mb

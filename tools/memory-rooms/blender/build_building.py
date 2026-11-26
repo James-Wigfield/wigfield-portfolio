@@ -516,7 +516,14 @@ def build_level(b, level, coll, scenes, report):
                 pmat = SH.wall_mat(OUTSIDE_FINISH.get(pnl.get("finish"), "paint"), pnl.get("color"))
                 bands.append({"a": a_, "b": b_, "s": s_, "h": h_, "imat": pmat if f_in is not None else None,
                               "omat": pmat if f_out is not None else None})
-        wall = link(S2.wall_slab(F, H, holes, wmat, cmat, imat=f_in, omat=f_out, bands=bands), name)
+        # a free end (no other wall meets it) and the top of a wall lower than its level are finished faces, not
+        # section caps (DECISIONS 229: the hall niche's return wall, the low wall beside the stair at 12B Fletcher)
+        free0 = bool((ends0["b"] if flip else ends0["a"]).get("free"))
+        free1 = bool((ends0["a"] if flip else ends0["b"]).get("free"))
+        end_mats = (wmat if free0 else None, wmat if free1 else None)
+        top_mat = wmat if H < float(level.get("height", 2.6)) - 0.01 else None
+        wall = link(S2.wall_slab(F, H, holes, wmat, cmat, imat=f_in, omat=f_out, bands=bands, end_mats=end_mats,
+                                 top_mat=top_mat), name)
         if wall is None:
             continue
         wall.location.z = elev

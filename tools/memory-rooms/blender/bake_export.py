@@ -357,6 +357,12 @@ def split_wall_backed(objs, info, log_fn):
             (Vector((0, 0, 1)), lambda c: H - c.z),       # ceiling
         ]
     made = []
+    # separate EXACTLY the marked faces: in the default vertex-select mode, entering edit mode re-selects every face
+    # whose vertices are all selected, so a box with four sides against the walls + ceiling (and its 45 deg bevels)
+    # lost every face to `__backed` and the empty original broke the UV pass (the 12B hall bulkheads, 2026-11-25)
+    ts = bpy.context.scene.tool_settings
+    prev_select_mode = tuple(ts.mesh_select_mode)
+    ts.mesh_select_mode = (False, False, True)
     for ob in list(objs):
         root_name = top_root(ob).name
         if not (root_name.startswith("obj__") or "__obj__" in root_name):  # a building's pieces: room__<r>__obj__<id>
@@ -379,6 +385,8 @@ def split_wall_backed(objs, info, log_fn):
             ob["mr_backed"] = True
             made.append(ob)
             continue
+        ob.data.vertices.foreach_set("select", [False] * len(ob.data.vertices))
+        ob.data.edges.foreach_set("select", [False] * len(ob.data.edges))
         ob.data.polygons.foreach_set("select", marks)
         before = set(bpy.data.objects)
         select_only([ob])
@@ -389,6 +397,10 @@ def split_wall_backed(objs, info, log_fn):
             nb.name = f"{ob.name}__backed"
             nb["mr_backed"] = True
             made.append(nb)
+        if len(ob.data.polygons) == 0:   # never leave an empty original behind (the UV pass needs faces)
+            objs.remove(ob)
+            bpy.data.objects.remove(ob, do_unlink=True)
+    ts.mesh_select_mode = prev_select_mode
     log_fn("wall-backed meshes", len(made))
     return made
 
