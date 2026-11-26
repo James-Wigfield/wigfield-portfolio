@@ -1,0 +1,142 @@
+{
+  "_about": "Point Peron v2: the built things on the headland, in world metres (x east, z south) of the v2 frame (box 115.6806,-32.27315 -> 115.692,-32.264). Read by prep2.py (ground edits: pads flattened, gun pits carved, footprints blocked for walking) and by build_v2.py (Blender geometry). Positions from OSM (node / way ids); sizes estimated from the Wikimedia Commons photos (Calistemon, 2019-2023, CC BY-SA 4.0) using known objects for scale (the interpretive sign ~0.6 m wide, steps ~0.17 m risers, a 1.0 m railing) unless a source is named. Ground = the LiDAR height around the site, rounded.",
+  "sites": [
+    {
+      "id": "gun_north",
+      "kind": "panama",
+      "name": "Peron Battery, northern gun position",
+      "osm": "node 7497148005",
+      "at": [
+        94.0,
+        -126.1
+      ],
+      "ground": 18.9,
+      "restored": true,
+      "replica": true,
+      "rear": 90,
+      "pit": {
+        "floor": 0.85,
+        "r_floor": 4.7,
+        "r_lip": 5.5,
+        "r_out": 6.2
+      },
+      "pad": {
+        "r": 8.5,
+        "blend": 4.0
+      },
+      "notes": "Restored Panama mount: brick ring floor, green drum pedestal with a steel turntable plate, rail ring, sloping brick inner wall, concrete lip; since January 2021 a replica Canon de 155 mm GPF on the pedestal (Commons photos 2021). Two green-painted ready-use lockers at the rear."
+    },
+    {
+      "id": "gun_south",
+      "kind": "panama",
+      "name": "Peron Battery, southern gun position",
+      "osm": "node 7497148006",
+      "at": [
+        111.4,
+        -14.2
+      ],
+      "ground": 20.0,
+      "restored": false,
+      "replica": false,
+      "rear": 90,
+      "pit": {
+        "floor": 0.6,
+        "r_floor": 4.6,
+        "r_lip": 5.3,
+        "r_out": 5.9
+      },
+      "pad": {
+        "r": 8.0,
+        "blend": 4.5
+      },
+      "notes": "Unrestored Panama mount: rough concrete walls, sandy floor, concrete pedestal with a rusty bolted plate, green-painted shelters (Commons photos May 2020)."
+    },
+    {
+      "id": "bunker_north",
+      "kind": "bunker",
+      "name": "Peron Battery storage bunker (north)",
+      "osm": "way 322833798",
+      "ground": 18.3,
+      "above": 1.15,
+      "entry": "east",
+      "pad": {
+        "pad": 1.2,
+        "blend": 3.0
+      },
+      "notes": "Semi-buried munitions store, dark-green painted concrete, steps down to its door (Commons photo May 2020)."
+    },
+    {
+      "id": "ops_centre",
+      "kind": "opscentre",
+      "name": "Peron Battery operations centre",
+      "osm": "way 322833800",
+      "ground": 17.8,
+      "above": 0.95,
+      "entry": "east",
+      "pad": {
+        "pad": 1.5,
+        "blend": 3.0
+      },
+      "notes": "Command bunker: low flat concrete slabs with raised bars on the roof, green walls (Commons photos 2020-2021)."
+    },
+    {
+      "id": "obs_post",
+      "kind": "op",
+      "name": "Peron Battery observation post",
+      "osm": "way 322833804",
+      "ground": 25.0,
+      "above": 3.3,
+      "pad": {
+        "pad": 2.2,
+        "blend": 3.0
+      },
+      "notes": "Two-storey dark-green concrete post with a long observation slit under a cantilevered roof slab; a steel tripod carrying a dark disc above it; a concrete apron with a steel railing on the sea side, reached by concrete steps edged with limestone (Commons photos 2020-2023)."
+    },
+    {
+      "id": "lookout_cape",
+      "kind": "lookout_walkway",
+      "name": "Cape Peron lookout",
+      "osm": "node 3296307127",
+      "at": [
+        142.1,
+        351.3
+      ],
+      "ground": 7.8,
+      "facing": 160,
+      "pad": {
+        "r": 4.5,
+        "blend": 3.0
+      },
+      "notes": "Concrete octagonal pad with a central plinth, grey steel pipe railings and information boards; a steel walkway cantilevered out over the cliff, hung from two masts with a crossbar by stays (Commons photos 2019-2021; under construction July 2019)."
+    },
+    {
+      "id": "lookout_john",
+      "kind": "lookout_pad",
+      "name": "John Point lookout",
+      "osm": "node 6612984248",
+      "at": [
+        8.7,
+        -352.9
+      ],
+      "ground": 7.4,
+      "facing": 300,
+      "pad": {
+        "r": 4.0,
+        "blend": 3.0
+      },
+      "notes": "A concrete viewing platform with a curved steel railing and a concrete bench, overlooking the limestone cliffs and Garden Island (OSM description; Commons photos 2019-2023)."
+    },
+    {
+      "id": "mushroom_rock",
+      "kind": "mushroom",
+      "name": "Mushroom Rock",
+      "osm": "node 7497184690",
+      "at": [
+        -208.1,
+        -132.9
+      ],
+      "ground": -0.1,
+      "notes": "A free-standing limestone stack in the surf off the west shore, undercut all round by the waves, about 10 m across the cap and 5-6 m above the water, a tuft of heath on top (scaled from the fisherman in the July 2019 photo)."
+    }
+  ]
+}

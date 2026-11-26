@@ -125,7 +125,10 @@ const ROOMS = all
   .filter((s) => {
     const inBuilding = Boolean(s.scene?.shell?.building);
     if (inBuilding) console.log(`  · ${s.title}: a room of a whole place, walked in place-walk-check (skipped here)`);
-    return !inBuilding;
+    // a landscape: a v1 diorama has no walk; a live one (site.terrain.live) has its own check (landscape/v2/walk-land.mjs)
+    const landscape = Boolean(s.scene?.site?.terrain);
+    if (landscape) console.log(`  · ${s.title}: a landscape, walked in landscape/v2/walk-land.mjs (skipped here)`);
+    return !inBuilding && !landscape;
   })
   .map((s) => ({ spot: s, name: slug(s.title), kind: s.scene.kind }))
   .filter((r) => !only || only.some((o) => r.name.includes(o)));

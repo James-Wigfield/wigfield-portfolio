@@ -147,6 +147,8 @@ function Walk({ title, back, net: netOpts, load }) {
   const [hint, setHint] = useState(null);
   const [view, setView] = useState(THIRD_PERSON_ENABLED ? 'third' : 'first');
   const [chatOpen, setChatOpen] = useState(false);
+  // a live landscape (WalkGame.loadLandscape): its own keys line (a map, no seats); known once it's ready
+  const landWalk = state === 'ready' && Boolean(gameRef.current?.land);
   const [text, setText] = useState('');
   const [touch] = useState(isTouch);
 
@@ -345,8 +347,8 @@ function Walk({ title, back, net: netOpts, load }) {
           </form>
         ) : (
           <>
-            {!touch && <p className="mr-walk__keys mr-label">{THIRD_PERSON_ENABLED ? c.keysThird : c.keys}</p>}
-            {touch && <p className="mr-walk__keys mr-label">{c.touch}</p>}
+            {!touch && <p className="mr-walk__keys mr-label">{landWalk ? c.keysLand : THIRD_PERSON_ENABLED ? c.keysThird : c.keys}</p>}
+            {touch && <p className="mr-walk__keys mr-label">{landWalk ? c.touchLand : c.touch}</p>}
             <div className="mr-walk__buttons" role="group" aria-label={c.emotesLabel}>
               {act && (
                 <button type="button" className="mr-btn mr-btn--primary" onClick={() => g()?.interact()} data-mr="walk-interact">

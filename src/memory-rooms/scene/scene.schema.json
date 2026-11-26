@@ -292,7 +292,45 @@
               "maxItems": 2
             },
             "vexag": { "type": "number", "minimum": 1, "maximum": 5, "description": "Vertical exaggeration baked into the GLB (1 = true scale)." },
-            "sources": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+            "sources": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+            "live": {
+              "type": "object",
+              "required": ["spawn"],
+              "additionalProperties": false,
+              "description": "A LIVE landscape (v2, tools/memory-rooms/landscape/v2/): the GLB carries the ground's data (root extras mrLandscape) and the browser lights and draws it; it can be walked (first person on a height field). spawn = [x, z, yaw clockwise from north, degrees] where the walk starts; pois = the points of interest (marker + info card).",
+              "properties": {
+                "spawn": {
+                  "type": "array",
+                  "prefixItems": [
+                    { "type": "number", "minimum": -10000, "maximum": 10000 },
+                    { "type": "number", "minimum": -10000, "maximum": 10000 },
+                    { "type": "number", "minimum": -360, "maximum": 360 }
+                  ],
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "home": {
+                  "type": "number", "minimum": 20, "maximum": 5000,
+                  "description": "How far the spot page's orbit opens from the landscape's centre (m); default 300."
+                },
+                "pois": {
+                  "type": "array",
+                  "maxItems": 24,
+                  "items": {
+                    "type": "object",
+                    "required": ["id", "name", "at"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": { "type": "string", "minLength": 1, "maxLength": 40 },
+                      "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+                      "at": { "$ref": "#/$defs/vec3" },
+                      "text": { "type": "string", "maxLength": 700 },
+                      "sources": { "type": "array", "maxItems": 6, "items": { "type": "string", "minLength": 1, "maxLength": 240 } }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

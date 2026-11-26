@@ -44,6 +44,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { sceneBounds, verticalFov } from '../scene/geometry.js';
 import { resolveShell } from '../scene/shell.js';
 import { applyBakedMaterials } from '../viewer/bakedMaterials.js';
@@ -54,6 +55,9 @@ import { CHARACTERS, FPS } from './characters.js';
 import { THIRD_PERSON_ENABLED } from './flags.js';
 import { EYE_M, SIT_EYE_M } from './scale.js';
 import { buildGrid, findPath, nearestWalkable, slide } from './grid.js';
+import { buildLandGrid } from './heightfield.js';
+import { Landscape } from '../landscape/Landscape.js';
+import { LandOverlay } from '../landscape/overlay.js';
 import { stairFootprint, wallLines, wallOpenings } from '../building/geometry.js';
 import { levelFootprint } from '../building/planLayout.js';
 import { kindOf } from '../viewer/furnishing.js';
@@ -227,7 +231,7 @@ export class WalkGame {
     this.scene = new THREE.Scene();
     this.world = new THREE.Group();
     this.scene.add(this.world);
-    this.loader = new GLTFLoader();
+    this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder); // a live landscape's props are meshopt-compressed
     this.raycaster = new THREE.Raycaster();
     this.readTheme();
 
@@ -254,6 +258,8 @@ export class WalkGame {
   /* ── loading ── */
 
   async load({ glbUrl, scene, photos = [], building = null }) {
+    // a live landscape (site.terrain.live, CONTRACTS §6.8): the ground is a height field, not a floor
+    if (scene?.site?.terrain?.live) return this.loadLandscape({ glbUrl, scene });
     // a room of a whole place: its walls come from the building (scene.shell = { building, room })
     if (building) this.building = building;
     try {
@@ -306,6 +312,51 @@ export class WalkGame {
     } catch (err) {
       if (this.disposed) return;
       console.info('[memory-rooms] walk load failed:', err?.message || err);
+      this.container.dataset.state = 'error';
+      this.emit('error', err);
+    }
+  }
+
+  /**
+   * A live landscape (Point Peron v2): the GLB carries the ground's data (landscape/Landscape.js fromGltf), the
+   * walkable grid is a 0.5 m height-field grid (walk/heightfield.js), you stand on the ground under you, and
+   * you appear at site.terrain.live.spawn = [x, z, yaw°] (yaw clockwise from north).
+   */
+  async loadLandscape({ glbUrl, scene }) {
+    try {
+      const [gltf] = await Promise.all([this.loader.loadAsync(glbUrl), this.loadCharacters()]);
+      if (this.disposed) return;
+      const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+      const land = await Landscape.fromGltf(gltf, { anisotropy: Math.min(8, this.renderer.capabilities.getMaxAnisotropy()), quality: coarse ? 'low' : 'high' });
+      if (this.disposed) {
+        land.dispose();
+        return;
+      }
+      this.land = land;
+      this.world.add(land.group);
+      this.scene3 = scene;
+      this.photos = [];
+      const live = scene.site.terrain.live;
+      // the points of interest (labels + their cards) and the minimap, over the stage
+      this.landOverlay = new LandOverlay(this.overlay, land, { pois: live.pois || [], mode: 'walk' });
+      const spawn = live.spawn || [0, 0, 0];
+      const t0 = performance.now();
+      this.grid = buildLandGrid(land, { start: { x: spawn[0], z: spawn[1] } });
+      this.gridMs = Math.round(performance.now() - t0);
+      const b = land.field.box;
+      this.bounds = new THREE.Box3(new THREE.Vector3(b.min[0], land.meta.hRange[0], -b.max[1]), new THREE.Vector3(b.max[0], land.meta.hRange[1], -b.min[1]));
+      this.camera.near = 0.15;
+      this.camera.far = 6000;
+      this.buildMarks([]);
+      this.buildSeats([]);
+      const yaw = THREE.MathUtils.degToRad(spawn[2] || 0);
+      const s0 = this.grid.start;
+      const centre = { x: s0.x + Math.sin(yaw) * 10, z: s0.z - Math.cos(yaw) * 10 };
+      this.centre = new THREE.Vector3(centre.x, 0, centre.z);
+      this.start({ x: s0.x, y: this.grid.heightAt(s0.x, s0.z), z: s0.z }, centre);
+    } catch (err) {
+      if (this.disposed) return;
+      console.info('[memory-rooms] landscape walk failed:', err?.message || err);
       this.container.dataset.state = 'error';
       this.emit('error', err);
     }
@@ -465,6 +516,7 @@ export class WalkGame {
 
   /** The floor height under you (a flight's slope while you're on one). */
   floorY() {
+    if (this.land) return this.grid.heightAt(this.me.pos.x, this.me.pos.z);
     if (this.me.flight) return this.me.pos.y;
     return this.floorOf(this.level)?.elevation ?? 0;
   }
@@ -890,14 +942,16 @@ export class WalkGame {
       this.me.flight = null;
     }
     const at = this.grid.walkable(p[0], p[2]) ? { x: p[0], z: p[2] } : nearestWalkable(this.grid, p[0], p[2]);
-    this.me.pos.set(at.x, this.floorY(), at.z);
+    this.me.pos.set(at.x, this.me.pos.y, at.z);
+    this.me.pos.y = this.floorY(); // after x / z: on a landscape the floor is the ground under the new spot
     this.path = null;
     this.sendLocal(true);
   }
 
   /** Put yourself somewhere (the headless check's spoof test uses it, through the socket). */
   teleport(x, z) {
-    this.me.pos.set(x, this.floorY(), z);
+    this.me.pos.set(x, this.me.pos.y, z);
+    this.me.pos.y = this.floorY();
     this.sendLocal(true);
   }
 
@@ -965,7 +1019,10 @@ export class WalkGame {
       peer.level = l ?? null;
       this.levelsChanged = true;
     }
-    const pos = new THREE.Vector3(p[0], this.floors.length ? p[1] || 0 : 0, p[2]);
+    // a place sends its level's height; on a landscape each walker stands on the same ground, so it's looked up here
+    // (the protocol stays x / z: CONTRACTS §6.6)
+    const y = this.land ? this.grid.heightAt(p[0], p[2]) : this.floors.length ? p[1] || 0 : 0;
+    const pos = new THREE.Vector3(p[0], y, p[2]);
     const last = peer.buf[peer.buf.length - 1];
     const now = performance.now();
     if (last && last.p.distanceTo(pos) > SNAP_M) peer.buf = []; // a big jump: snap, don't glide through walls
@@ -1116,6 +1173,7 @@ export class WalkGame {
       const moved = Math.hypot(next.x - me.pos.x, next.z - me.pos.z);
       me.pos.x = next.x;
       me.pos.z = next.z;
+      if (this.land) me.pos.y = this.floorY(); // a landscape: stand on the ground under you
       moving = moved > 1e-4;
       // a step toward a flight's foot (or, upstairs, its head) takes it
       if (this.flights.length && !me.sitting) this.maybeTakeFlight(vx, vz);
@@ -1336,6 +1394,7 @@ export class WalkGame {
     }
     for (const m of this.marks) m.mesh.visible = (this.view !== 'photo' || !this.photoView) && (!m.level || m.level === this.level);
 
+    if (this.land) this.land.update(camera, dt);
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, this.width, this.height);
     renderer.clear();
@@ -1346,6 +1405,10 @@ export class WalkGame {
     renderer.render(this.scene, camera);
     renderer.setScissorTest(false);
     this.placeOverlay(r);
+    if (this.landOverlay) {
+      const heading = this.view === 'first' ? this.yaw : me.heading;
+      this.landOverlay.update(camera, r, { x: me.pos.x, z: me.pos.z, heading }, [...this.peers.values()].filter((p) => p.pos).map((p) => ({ x: p.pos.x, z: p.pos.z })));
+    }
   }
 
   placeOverlay(r) {
@@ -1419,6 +1482,8 @@ export class WalkGame {
     if (this.floors.length) for (const f of this.floors) disposeTree(f.holder);
     else if (this.room) disposeTree(this.room.holder);
     if (this.exterior) disposeTree(this.exterior);
+    this.landOverlay?.dispose();
+    this.land?.dispose();
     this.renderer.renderLists.dispose();
     this.renderer.dispose();
     this.renderer.forceContextLoss();

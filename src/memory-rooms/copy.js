@@ -700,6 +700,9 @@ export const COPY = {
     // with third person back on (walk/flags.js)
     keysThird: 'WASD walk · ←/→ turn · Shift run · drag to look · E sit · 1 2 3 wave, jump, sit · V first person · Enter to talk',
     touch: 'Left thumb walks · drag right to look · tap the floor to walk there',
+    // a live landscape (no seats; a minimap)
+    keysLand: 'WASD walk · ←/→ turn · Shift run · drag to look · M map · Enter to talk',
+    touchLand: 'Left thumb walks · drag right to look · tap the ground to walk there · tap the map to enlarge it',
   },
 
   // ── the spot page's "See it in your space" (ar/) ──────────────────────────

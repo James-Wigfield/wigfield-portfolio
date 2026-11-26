@@ -522,3 +522,46 @@ Spot `3922493f-…`, room `library-hallway`; work notes in its `layout.md`.
    wall-mounted piece touching two walls (a corner) now goes with the one it runs along further (`MOUNT_TIE_M`
    0.1 m), not whichever came first. Check: `node tools/memory-rooms/dev/attach-check.mjs <spotId>...` (reads the
    real slice, no browser). Needs a site deploy to go live.
+
+### Point Peron v2: a live, walkable landscape (2026-11-26)
+
+233. **A landscape can be live: `site.terrain.live { spawn, home, pois }`** (CONTRACTS §6.8). v1 baked the ground
+   into four top-down ortho textures, which read as a draped satellite photo from the ground. v2 ships the
+   ground's DATA (heights, ground mix, plant densities, water depth / shore distance, baked shade) and the browser
+   builds and lights it: quadtree LOD terrain from the heights grid, a splat of tileable layers made here (no
+   downloaded packs), instanced plants that stand up and sway, a live water surface, the same sun on everything,
+   its own tone curve (the renderer keeps NoToneMapping for the baked rooms). Runtime `src/memory-rooms/landscape/`.
+234. **Still one `room.glb`** (`landscape/v2/pack.mjs`): the props (plant prototypes, boulders, sites, cliffs) as
+   meshes, quantised + meshopt; every data file a byte accessor named `mrLand:<file>` (WebP lossless for data,
+   JPEG / lossy WebP for texture layers), listed with its MIME type in the root extras `mrLandscape`. No new media
+   type, no new upload path; both GLTFLoaders now have the MeshoptDecoder. Every data PNG is opaque: a 2D-canvas
+   decode premultiplies alpha and would wipe the colour where alpha is 0.
+235. **Heights: Geoscience Australia's 5 m LiDAR DEM through its open WCS** (`DEM_LiDAR_5m_2025` GetCoverage, a
+   plain GET; the CloudFront in front of services.ga.gov.au refuses curl's user agent, a generic browser one
+   works). 1 m needs an ELVIS order (not done, James's rule). Cliffs the 5 m grid smears into slopes are cut back
+   in by `coast.py` (seaward of each rocky lip down to platform level, the land behind squared up), and a modelled
+   face (notch, foot, strata) stands on the line.
+236. **The sea floor is WA Transport's LiDAR bathymetry survey, read off its colour image** (SLIP `WA_Bathymetry`
+   layer 21): only the hill-shaded colour ramp is served openly, so depth = the hue, red at the waterline, green
+   10 m and cyan 20 m where DoT's own depth-band polygons split best over the whole Cockburn Sound survey, linear
+   between (Sentinel-2's Stumpf ratio rises with the hue: a cross-check, not the source). "Modelled from survey,
+   ±1–2 m" in the scene notes.
+237. **Sites are one spec for both the ground and the geometry** (`landscape/v2/peron-sites.json`): positions from
+   OSM, sizes from the Commons photos with known objects for scale; `prep2.py` flattens pads, carves the gun pits
+   and blocks pedestals / footprints from it, `build_v2.py` builds on the same heights, so the walker's ground
+   matches the model.
+238. **The walk on a landscape is a 0.5 m height-field grid shaped like `walk/grid.js`'s** (`walk/heightfield.js`),
+   so slide / nearestWalkable / findPath work unchanged: blocked by slopes over 32°, the data's flags (fence,
+   footprints, water over 0.6 m: a soft stop), site meshes between knee and head height, shrubs over 0.8 m and
+   boulders over 0.45 m; paths always walkable. First person only (walk/flags.js). A walker stands on the ground
+   under them; a peer's height is looked up locally (the protocol stays x / z), and a teleport or a server
+   `correct` re-reads the floor after moving x / z.
+239. **POIs are data with their sources** (`live.pois`, `<work>/pois.json`): a labelled dot over each, a card that
+   opens as you walk up (or on a tap) with the facts and where they come from; a minimap in the walk (M). Facts
+   only from named sources (Wikipedia "Peron Battery" / "Cape Peron", the battery's interpretive board, OSM, the
+   LiDAR).
+240. **Phones get a lighter tier** (`(pointer: coarse)`): plants drawn to 60 % of the distance and a coarser
+   terrain LOD (~0.87 M triangles at ground level vs ~1.5 M). Headless Edge (this PC's GPU, CPU ÷4 at 390 px)
+   holds the frame cap; a real phone GPU is not measured.
+241. **A new version of a spot hides the old one when it goes live** (James, 2026-11-26): v1 Point Peron is hidden,
+   not deleted, once v2 is live.

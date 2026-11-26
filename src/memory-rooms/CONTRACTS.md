@@ -444,7 +444,7 @@ multi-level plan uses (pure; `building-selftest.mjs` checks it on 12B Fletcher a
 
 ### 6.8 Landscapes: `site.terrain` (2026-11-24)
 
-- An exterior whose `site.terrain` is set is a real-world **landscape diorama** (first one: Point Peron), built by
+- An exterior whose `site.terrain` is set is a real-world **landscape** (first one: Point Peron; v1 a baked diorama, v2 live: below), built by
   `tools/memory-rooms/landscape/` (not `build_room.py`): `{ size: [w, d], heights: [base, top], vexag?, sources? }`,
   the block centred on the origin (= the spot's lat/lng), base at `heights[0]` (negative: the sea floor sits under
   0 = sea level), x east, z south, as every scene. `site.ground` is still required and ignored (`[2, 2]`).
@@ -455,6 +455,27 @@ multi-level plan uses (pure; `building-selftest.mjs` checks it on 12B Fletcher a
   `structures` mesh (baked atlas), the diorama sides (`side_skirt_*`, a strata strip; `side_waterside_*`, translucent
   water band) and `side_base`. Every node `mrKind: structure` (Furnished/empty never applies).
 - A contract addition: the live Worker validates `scene` with its bundled schema, so deploy before pushing one.
+
+**Live landscapes (v2, 2026-11-26, Point Peron v2).** `site.terrain.live` makes the landscape live and walkable:
+
+```jsonc
+"terrain": { "size": [w, d], "heights": [base, top], "vexag": 1, "sources": [...],
+  "live": {
+    "spawn": [x, z, yaw],          // where the walk starts (world metres; yaw degrees clockwise from north)
+    "home": 300,                   // optional: the spot page's orbit opens this far from the centre (m)
+    "pois": [{ "id": "gun_north", "name": "…", "at": [x, y, z], "text": "…", "sources": ["…"] }]   // ≤ 24
+  } }
+```
+
+- The GLB (`tools/memory-rooms/landscape/v2/pack.mjs`) is the props scene (plant prototypes `proto__<kind>__<lod>`,
+  sites `site__<id>__<material>`, the cliffs), quantised + meshopt, plus every data file as a byte accessor named
+  `mrLand:<file>`, listed in the root extras `mrLandscape { version, meta (data.json), files { <file>: { accessor,
+  bytes, type } } }`. The viewer and the walk build it with `landscape/Landscape.js` `fromGltf` (never
+  `applyBakedMaterials`); its frame is the scene's (x east, y up, z south).
+- Spot page: the live landscape (its own sky and sea, no drafting table), opening `home` m out; POI labels and cards;
+  Walk in offered (no AR). Walk: `WalkGame.loadLandscape`, a 0.5 m height-field grid (`walk/heightfield.js`), the
+  minimap. A peer's state is still `p: [x, 0, z]` (the receiver puts it on its own ground).
+- Phones (`(pointer: coarse)`) get the lighter tier (shorter plant distances, coarser terrain LOD).
 
 ## 7. Collections (2026-11-25)
 

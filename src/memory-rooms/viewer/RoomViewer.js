@@ -31,6 +31,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { sceneBounds, verticalFov } from '../scene/geometry.js';
 import { COPY } from '../copy.js';
 import { applyBakedMaterials } from './bakedMaterials.js';
+import { Landscape } from '../landscape/Landscape.js';
+import { LandOverlay } from '../landscape/overlay.js';
 import { buildLayoutPreview } from './layoutPreview.js';
 import { applyDollhouse, hiddenAtView, indexRoom, stepFades } from './dollhouse.js';
 import { CUT_Y, PlanCut } from './planCut.js';
@@ -206,7 +208,7 @@ export class RoomViewer {
     controls.rotateSpeed = 0.7;
     controls.zoomSpeed = 0.8;
 
-    this.loader = new GLTFLoader();
+    this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder); // a live landscape's props are meshopt-compressed
     this.raycaster = new THREE.Raycaster();
     this.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
@@ -563,6 +565,20 @@ export class RoomViewer {
         disposeTree(gltf.scene);
         return null;
       }
+      // a live landscape (site.terrain.live): built and lit here, not a baked room
+      if (scene?.site?.terrain?.live) {
+        const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+        const land = await Landscape.fromGltf(gltf, { anisotropy: this.anisotropy, quality: coarse ? 'low' : 'high' });
+        if (token !== this.loadToken || this.disposed) {
+          land.dispose();
+          return null;
+        }
+        this.land?.dispose();
+        this.landOverlay?.dispose();
+        this.land = land;
+        this.landOverlay = new LandOverlay(this.overlay, land, { pois: scene.site.terrain.live.pois || [], mode: 'orbit' });
+        return land.group;
+      }
       return applyBakedMaterials(gltf.scene, { anisotropy: this.anisotropy });
     }
     if (scene) return buildLayoutPreview(scene);
@@ -687,6 +703,8 @@ export class RoomViewer {
     this.ground = buildDraftingGround({ radius, centre, box: foot, cell, major: cell >= 1 ? 5 : 4, shadow: exterior ? 0.6 : 1 });
     // a landscape stands on the table: the table is at the diorama's base, not at sea level
     if (terrain) this.ground.position.y = terrain.heights[0];
+    // a live landscape has its own sea and sky out to the horizon: no table
+    if (terrain?.live) this.ground.visible = false;
     this.extras.add(this.ground);
 
     if (scene?.cameras?.length) {
@@ -754,6 +772,17 @@ export class RoomViewer {
   // ── framing ─────────────────────────────────────────────────────────────
 
   computeHome(box, interior, { azimuth, elevation } = {}) {
+    // a live landscape opens close in (~300 m from its centre, CONTRACTS §6.8), not on the whole block
+    const live = !interior && this.land ? this.spec?.scene?.site?.terrain?.live : null;
+    if (live) {
+      const c = box.getCenter(new THREE.Vector3());
+      const target = new THREE.Vector3(c.x, Math.max(0, this.land.field.heightAt(c.x, c.z)) + 4, c.z);
+      const d = live.home || 300;
+      const az = (azimuth ?? -24) * RAD;
+      const el = (elevation ?? 30) * RAD;
+      const pos = new THREE.Vector3().setFromSphericalCoords(d, Math.PI / 2 - el, az).add(target);
+      return { pose: { pos, target }, limits: { minDistance: 15, maxDistance: d * 4, minPolarAngle: 0.12, maxPolarAngle: 86 * RAD } };
+    }
     const size = box.getSize(new THREE.Vector3());
     const centre = box.getCenter(new THREE.Vector3());
     const radius = Math.max(0.5 * size.length(), 0.6);
@@ -1880,7 +1909,13 @@ export class RoomViewer {
     if (this.spin && this.stepSpin(dt)) again = true;
     if (this.controls.enabled && this.controls.update()) again = true;
     if (this.recall && this.stepRecall(now)) again = true;
+    // a live landscape moves (water, wind): keep drawing while it's on screen
+    if (this.land) {
+      this.land.update(this.camera, dt / 1000);
+      if (document.visibilityState !== 'hidden') again = true;
+    }
     this.renderNow(dt);
+    if (this.landOverlay) this.landOverlay.update(this.camera, this.viewRect());
     if (again || this.tweens.size || this.fading) {
       this.requestRender();
       return;
@@ -2108,8 +2143,13 @@ export class RoomViewer {
     if (this.controls) this.controls.enabled = true;
     for (const room of this.rooms) {
       disposeFurnishing(room);
+      if (this.land && room.root === this.land.group) room.holder.remove(room.root); // the landscape disposes itself
       disposeTree(room.holder);
     }
+    this.landOverlay?.dispose();
+    this.landOverlay = null;
+    this.land?.dispose();
+    this.land = null;
     this.rooms = [];
     this.furnished = true;
     if (this.extras) {

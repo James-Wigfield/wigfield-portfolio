@@ -1,0 +1,104 @@
+/* A live landscape's overlay (landscape/overlay.js): POI labels (a labelled dot, no pill), the facts card (ruled,
+   editorial), the walk's minimap. Colours through the .mr tokens only. */
+
+.mr-land {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mr-land__poi {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mr-space-1);
+  margin: 0;
+  padding: 2px var(--mr-space-1);
+  border: 0;
+  border-bottom: var(--mr-hairline) solid var(--mr-rule-strong);
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  font: 600 var(--mr-text-xs) / 1.3 var(--mr-font-mono);
+  letter-spacing: var(--mr-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  translate: -50% -100%;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.mr-land__poi:focus-visible { outline: 2px solid var(--mr-ink); outline-offset: 2px; }
+.mr-land__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mr-dot, var(--mr-ink));
+}
+.mr-land[data-open] .mr-land__poi[data-poi] .mr-land__dot { background: var(--mr-ink-3); }
+
+.mr-land__card {
+  position: absolute;
+  left: var(--mr-space-3);
+  bottom: calc(var(--mr-space-3) + 56px);
+  width: min(380px, calc(100% - 2 * var(--mr-space-3)));
+  max-height: 46%;
+  overflow: auto;
+  padding: var(--mr-space-3);
+  border-top: var(--mr-hairline) solid var(--mr-rule-strong);
+  border-bottom: var(--mr-hairline) solid var(--mr-rule);
+  background: var(--mr-bg);
+  color: var(--mr-ink);
+  pointer-events: auto;
+  animation: mr-rise var(--mr-dur) var(--mr-ease);
+}
+.mr-land__title {
+  margin: 0 var(--mr-space-4) var(--mr-space-2) 0;
+  font: 400 var(--mr-text-l, 1.25rem) / 1.15 var(--mr-font-serif);
+}
+.mr-land__text {
+  margin: 0 0 var(--mr-space-2);
+  font-size: var(--mr-text-s);
+  line-height: 1.5;
+  color: var(--mr-ink-2);
+}
+.mr-land__sources {
+  margin: 0;
+  padding-top: var(--mr-space-2);
+  border-top: var(--mr-hairline) solid var(--mr-rule);
+  font: 400 var(--mr-text-xs) / 1.4 var(--mr-font-mono);
+  color: var(--mr-ink-3);
+}
+.mr-land__close {
+  float: right;
+  margin: -4px -4px 0 var(--mr-space-2);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--mr-ink-2);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mr-land__map {
+  position: absolute;
+  right: var(--mr-space-3);
+  top: calc(var(--mr-header-h, 56px) + var(--mr-space-3));
+  width: 150px;
+  padding: 0;
+  border: var(--mr-hairline) solid var(--mr-rule-strong);
+  background: var(--mr-bg);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: width var(--mr-dur) var(--mr-ease);
+}
+.mr-land__map[data-big] { width: min(360px, 60vw); }
+.mr-land__map canvas { display: block; width: 100%; height: auto; }
+.mr-land[data-mode='orbit'] .mr-land__card { bottom: calc(var(--mr-space-3) + 64px); }
+
+@media (max-width: 480px) {
+  .mr-land__map { width: 112px; }
+  .mr-land__card { max-height: 38%; }
+}
